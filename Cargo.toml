@@ -1,0 +1,17 @@
+[package]
+name = "dis_rs"
+version = "0.1.0"
+authors = ["Zeeger <zeeger@lubsen.eu>"]
+description = """
+An implementation of the Distributed Interactive Simulation protocol in Rust.
+"""
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+#default =
+
+[dependencies]
+#serde = "1.0.130"
+#nom = "7.1.0"
