@@ -1,50 +1,51 @@
 use super::*;
+use entity_state_builder::EntityStateBuilder;
 
 pub struct EntityState {
-    header : PduHeader, // struct
-    entity_id : EntityId, // struct
-    force_id : ForceId, // enum
-    articulated_parts_no : u8, // FIXME can be obtained from length of articulation_parameter field
-    entity_type : EntityType, // struct
-    alternative_entity_type : EntityType, // struct
-    entity_linear_velocity : VectorF32, // struct
-    entity_location : Location, // struct
-    entity_orientation : Orientation, // struct
-    entity_appearance : Appearance, // struct
-    dead_reckoning_parameters : DrParameters, // struct
-    entity_marking : EntityMarking, // struct
-    entity_capabilities : EntityCapabilities, // struct
-    articulation_parameter : Option<List<ArticulationParameter>>, // optional list of records
+    pub header : PduHeader, // struct
+    pub entity_id : EntityId, // struct
+    pub force_id : ForceId, // enum
+    pub articulated_parts_no : u8, // FIXME can be obtained from length of articulation_parameter field
+    pub entity_type : EntityType, // struct
+    pub alternative_entity_type : EntityType, // struct
+    pub entity_linear_velocity : VectorF32, // struct
+    pub entity_location : Location, // struct
+    pub entity_orientation : Orientation, // struct
+    pub entity_appearance : Appearance, // struct
+    pub dead_reckoning_parameters : DrParameters, // struct
+    pub entity_marking : EntityMarking, // struct
+    pub entity_capabilities : EntityCapabilities, // struct
+    pub articulation_parameter : Option<List<ArticulationParameter>>, // optional list of records
 }
 
-struct EntityId {
+pub struct EntityId {
     simulation_address : SimulationAddress,
     entity_id : u16
 }
 
-struct SimulationAddress {
+pub struct SimulationAddress {
     site_id : u16,
     application_id : u16,
 }
 
-enum ForceId {
+pub enum ForceId {
     Other = 0,
     Friendly = 1,
     Opposing = 2,
     Neutral = 3,
 }
 
-struct EntityType {
+pub struct EntityType {
     kind : EntityKind,
     domain : u8,
-    country : Country,
+    country : Country, // TODO u16 instead of big enum? Put codes and names in config file?
     category : u8,
     subcategory : u8,
     specific : u8,
     extra : u8,
 }
 
-enum EntityKind {
+pub enum EntityKind {
     Other = 0,
     Platform = 1,
     Munition = 2,
@@ -57,298 +58,297 @@ enum EntityKind {
     SensorEmitter = 9,
 }
 
-enum Country {
+// regex: (?<value>[0-9]*)[\t]+(?<field>[\w (),'-.]+)$
+// replace: \t${field} = ${value}, | $2 = $1
+pub enum Country {
     Other = 0,
-// TODO
-// regex: (?<value>\d)+\s+(?<field>\S)+
-// replace: \t${field} = ${value},
-// 1	Afghanistan
-// 10	Argentina
-// 100	Indonesia
-// 101	Iran
-// 102	Iraq
-// 104	Ireland
-// 105	Israel
-// 106	Italy
-// 107	Cote D'Ivoire (aka Ivory Coast)
-// 108	Jamaica
-// 109	Jan Mayen (Norway)
-// 11	Aruba
-// 110	Japan
-// 111	Jarvis Island (United States)
-// 112	Jersey (United Kingdom)
-// 113	Johnston Atoll (United States)
-// 114	Jordan
-// 115	Juan de Nova Island
-// 116	Kenya
-// 117	Kingman Reef (United States)
-// 118	Kiribati
-// 119	Korea, Democratic People's Republic of (North)
-// 12	Ashmore and Cartier Islands (Australia)
-// 120	Korea, Republic of (South)
-// 121	Kuwait
-// 122	Laos
-// 123	Lebanon
-// 124	Lesotho
-// 125	Liberia
-// 126	Libya
-// 127	Liechtenstein
-// 128	Luxembourg
-// 129	Madagascar
-// 13	Australia
-// 130	Macau (Portugal)
-// 131	Malawi
-// 132	Malaysia
-// 133	Maldives
-// 134	Mali
-// 135	Malta
-// 136	Man, Isle of (United Kingdom)
-// 137	Marshall Islands
-// 138	Martinique (France)
-// 139	Mauritania
-// 14	Austria
-// 140	Mauritius
-// 141	Mayotte (France)
-// 142	Mexico
-// 143	Micronesia, Federative States of
-// 144	Monaco
-// 145	Mongolia
-// 146	Montserrat (United Kingdom)
-// 147	Morocco
-// 148	Mozambique
-// 149	Namibia (South West Africa)
-// 15	Bahamas
-// 150	Nauru
-// 151	Navassa Island (United States)
-// 152	Nepal
-// 153	Netherlands
-// 154	Netherlands Antilles (Curacao, Bonaire, Saba, Sint Maarten Sint Eustatius)
-// 155	New Caledonia (France)
-// 156	New Zealand
-// 157	Nicaragua
-// 158	Niger
-// 159	Nigeria
-// 16	Bahrain
-// 160	Niue (New Zealand)
-// 161	Norfolk Island (Australia)
-// 162	Northern Mariana Islands (United States)
-// 163	Norway
-// 164	Oman
-// 165	Pakistan
-// 166	Palmyra Atoll (United States)
-// 168	Panama
-// 169	Papua New Guinea
-// 17	Baker Island (United States)
-// 170	Paracel Islands (International - Occupied by China, also claimed by Taiwan and Vietnam)
-// 171	Paraguay
-// 172	Peru
-// 173	Philippines
-// 174	Pitcairn Islands (United Kingdom)
-// 175	Poland
-// 176	Portugal
-// 177	Puerto Rico (United States)
-// 178	Qatar
-// 179	Reunion (France)
-// 18	Bangladesh
-// 180	Romania
-// 181	Rwanda
-// 182	St. Kitts and Nevis
-// 183	St. Helena (United Kingdom)
-// 184	St. Lucia
-// 185	St. Pierre and Miquelon (France)
-// 186	St. Vincent and the Grenadines
-// 187	San Marino
-// 188	Sao Tome and Principe
-// 189	Saudi Arabia
-// 19	Barbados
-// 190	Senegal
-// 191	Seychelles
-// 192	Sierra Leone
-// 193	Singapore
-// 194	Solomon Islands
-// 195	Somalia
-// 196	South Georgia and the South Sandwich Islands(United Kingdom)
-// 197	South Africa
-// 198	Spain
-// 199	Spratly Islands (International - parts occupied and claimed by China,Malaysia, Philippines, Taiwan, Vietnam)
-// 2	Albania
-// 20	Bassas da India (France)
-// 200	Sri Lanka
-// 201	Sudan
-// 202	Suriname
-// 203	Svalbard (Norway)
-// 204	Swaziland
-// 205	Sweden
-// 206	Switzerland
-// 207	Syria
-// 208	Taiwan
-// 209	Tanzania
-// 21	Belgium
-// 210	Thailand
-// 211	Togo
-// 212	Tokelau (New Zealand)
-// 213	Tonga
-// 214	Trinidad and Tobago
-// 215	Tromelin Island (France)
-// 216	Pacific Islands, Trust Territory of the (Palau)
-// 217	Tunisia
-// 218	Turkey
-// 219	Turks and Caicos Islands (United Kingdom)
-// 22	Belize
-// 220	Tuvalu
-// 221	Uganda
-// 222	Commonwealth of Independent States
-// 223	United Arab Emirates
-// 224	United Kingdom
-// 225	United States
-// 226	Uruguay
-// 227	Vanuatu
-// 228	Vatican City (Holy See)
-// 229	Venezuela
-// 23	Benin (aka Dahomey)
-// 230	Vietnam
-// 231	Virgin Islands (United States)
-// 232	Wake Island (United States)
-// 233	Wallis and Futuna (France)
-// 234	Western Sahara
-// 235	West Bank (Israel)
-// 236	Western Samoa
-// 237	Yemen
-// 24	Bermuda (United Kingdom)
-// 241	Zaire
-// 242	Zambia
-// 243	Zimbabwe
-// 244	Armenia
-// 245	Azerbaijan
-// 246	Belarus
-// 247	Bosnia and Hercegovina
-// 248	Clipperton Island (France)
-// 249	Croatia
-// 25	Bhutan
-// 250	Estonia
-// 251	Georgia
-// 252	Kazakhstan
-// 253	Kyrgyzstan
-// 254	Latvia
-// 255	Lithuania
-// 256	Macedonia
-// 257	Midway Islands (United States)
-// 258	Moldova
-// 259	Montenegro
-// 26	Bolivia
-// 260	Russia
-// 261	Serbia and Montenegro (Montenegro to separate)
-// 262	Slovenia
-// 263	Tajikistan
-// 264	Turkmenistan
-// 265	Ukraine
-// 266	Uzbekistan
-// 27	Botswana
-// 28	Bouvet Island (Norway)
-// 29	Brazil
-// 3	Algeria
-// 30	British Indian Ocean Territory (United Kingdom)
-// 31	British Virgin Islands (United Kingdom)
-// 32	Brunei
-// 33	Bulgaria
-// 34	Burkina (aka Burkina Faso or Upper Volta
-// 35	Burma (Myanmar)
-// 36	Burundi
-// 37	Cambodia (aka Kampuchea)
-// 38	Cameroon
-// 39	Canada
-// 4	American Samoa (United States)
-// 40	Cape Verde, Republic of
-// 41	Cayman Islands (United Kingdom)
-// 42	Central African Republic
-// 43	Chad
-// 44	Chile
-// 45	China, People's Republic of
-// 46	Christmas Island (Australia)
-// 47	Cocos (Keeling) Islands (Australia)
-// 48	Colombia
-// 49	Comoros
-// 5	Andorra
-// 50	Congo, Republic of
-// 51	Cook Islands (New Zealand)
-// 52	Coral Sea Islands (Australia)
-// 53	Costa Rica
-// 54	Cuba
-// 55	Cyprus
-// 56	Czechoslovakia (separating into Czech Republic and Slovak Republic)
-// 57	Denmark
-// 58	Djibouti
-// 59	Dominica
-// 6	Angola
-// 60	Dominican Republic
-// 61	Ecuador
-// 62	Egypt
-// 63	El Salvador
-// 64	Equatorial Guinea
-// 65	Ethiopia
-// 66	Europa Island (France)
-// 67	Falkland Islands (aka Islas Malvinas) (United Kingdom)
-// 68	Faroe Islands (Denmark)
-// 69	Fiji
-// 7	Anguilla
-// 70	Finland
-// 71	France
-// 72	French Guiana (France)
-// 73	French Polynesia (France)
-// 74	French Southern and Antarctic Islands (France)
-// 75	Gabon
-// 76	Gambia, The
-// 77	Gaza Strip (Israel)
-// 78	Germany
-// 79	Ghana
-// 8	Antarctica (International)
-// 80	Gibraltar (United Kingdom)
-// 81	Glorioso Islands (France)
-// 82	Greece
-// 83	Greenland (Denmark)
-// 84	Grenada
-// 85	Guadaloupe (France)
-// 86	Guam (United States)
-// 87	Guatemala
-// 88	Guernsey (United Kingdom)
-// 89	Guinea
-// 9	Antigua and Barbuda
-// 90	Guinea- Bissau
-// 91	Guyana
-// 92	Haiti
-// 93	Heard Island and McDonald Islands (Australia)
-// 94	Honduras
-// 95	Hong Kong (United Kingdom)
-// 96	Howland Island (United States)
-// 97	Hungary
-// 98	Iceland
-// 99	India
+    Afghanistan = 1,
+    Albania = 2,
+    Algeria = 3,
+    AmericanSamoa = 4,
+    Andorra = 5,
+    Angola = 6,
+    Anguilla = 7,
+    Antarctica = 8,
+    AntiguaBarbuda = 9,
+    Argentina = 10,
+    Aruba = 11,
+    AshmoreCartierIslands = 12,
+    Australia = 13,
+    Austria = 14,
+    Bahamas = 15,
+    Bahrain = 16,
+    BakerIsland = 17,
+    Bangladesh = 18,
+    Barbados = 19,
+    BassasDaIndia = 20,
+    Belgium = 21,
+    Belize = 22,
+    Benin = 23,
+    Bermuda = 24,
+    Bhutan = 25,
+    Bolivia = 26,
+    Botswana = 27,
+    BouvetIsland = 28,
+    Brazil = 29,
+    BritishIndianOceanTerritory = 30,
+    BritishVirginIslands = 31,
+    Brunei = 32,
+    Bulgaria = 33,
+    Burkina = 34,
+    Burma = 35,
+    Burundi = 36,
+    Cambodia = 37,
+    Cameroon = 38,
+    Canada = 39,
+    CapeVerde = 40,
+    CaymanIslands = 41,
+    CentralAfricanRepublic = 42,
+    Chad = 43,
+    Chile = 44,
+    China = 45,
+    ChristmasIsland = 46,
+    CocosIslands = 47,
+    Colombia = 48,
+    Comoros = 49,
+    Congo = 50,
+    CookIslands = 51,
+    CoralSeaIslands = 52,
+    CostaRica = 53,
+    Cuba = 54,
+    Cyprus = 55,
+    Czechoslovakia = 56,
+    Denmark = 57,
+    Djibouti = 58,
+    Dominica = 59,
+    DominicanRepublic = 60,
+    Ecuador = 61,
+    Egypt = 62,
+    ElSalvador = 63,
+    EquatorialGuinea = 64,
+    Ethiopia = 65,
+    EuropaIsland = 66,
+    FalklandIslands = 67,
+    FaroeIslands = 68,
+    Fiji = 69,
+    Finland = 70,
+    France = 71,
+    FrenchGuiana = 72,
+    FrenchPolynesia = 73,
+    FrenchSouthernAntarcticIslands = 74,
+    Gabon = 75,
+    GambiaThe = 76,
+    GazaStrip = 77,
+    Germany = 78,
+    Ghana = 79,
+    Gibraltar = 80,
+    GloriosoIslands = 81,
+    Greece = 82,
+    Greenland = 83,
+    Grenada = 84,
+    Guadaloupe = 85,
+    Guam = 86,
+    Guatemala = 87,
+    Guernsey = 88,
+    Guinea = 89,
+    GuineaBissau = 90,
+    Guyana = 91,
+    Haiti = 92,
+    HeardIslandMcDonaldIslands = 93,
+    Honduras = 94,
+    HongKong = 95,
+    HowlandIsland = 96,
+    Hungary = 97,
+    Iceland = 98,
+    India = 99,
+    Indonesia = 100,
+    Iran = 101,
+    Iraq = 102,
+    Ireland = 104,
+    Israel = 105,
+    Italy = 106,
+    CoteDIvoire = 107,
+    Jamaica = 108,
+    JanMayen = 109,
+    Japan = 110,
+    JarvisIsland = 111,
+    Jersey = 112,
+    JohnstonAtoll = 113,
+    Jordan = 114,
+    JuanDeNovaIsland = 115,
+    Kenya = 116,
+    KingmanReef = 117,
+    Kiribati = 118,
+    KoreaNorth = 119,
+    KoreaSouth = 120,
+    Kuwait = 121,
+    Laos = 122,
+    Lebanon = 123,
+    Lesotho = 124,
+    Liberia = 125,
+    Libya = 126,
+    Liechtenstein = 127,
+    Luxembourg = 128,
+    Madagascar = 129,
+    Macau = 130,
+    Malawi = 131,
+    Malaysia = 132,
+    Maldives = 133,
+    Mali = 134,
+    Malta = 135,
+    ManIsle = 136,
+    MarshallIslands = 137,
+    Martinique = 138,
+    Mauritania = 139,
+    Mauritius = 140,
+    Mayotte = 141,
+    Mexico = 142,
+    Micronesia = 143,
+    Monaco = 144,
+    Mongolia = 145,
+    Montserrat = 146,
+    Morocco = 147,
+    Mozambique = 148,
+    Namibia = 149,
+    Nauru = 150,
+    NavassaIsland = 151,
+    Nepal = 152,
+    Netherlands = 153,
+    NetherlandsAntilles = 154,
+    NewCaledonia = 155,
+    NewZealand = 156,
+    Nicaragua = 157,
+    Niger = 158,
+    Nigeria = 159,
+    Niue = 160,
+    NorfolkIsland = 161,
+    NorthernMarianaIslands = 162,
+    Norway = 163,
+    Oman = 164,
+    Pakistan = 165,
+    PalmyraAtoll = 166,
+    Panama = 168,
+    PapuaNewGuinea = 169,
+    ParacelIslands = 170,
+    Paraguay = 171,
+    Peru = 172,
+    Philippines = 173,
+    PitcairnIslands = 174,
+    Poland = 175,
+    Portugal = 176,
+    PuertoRico = 177,
+    Qatar = 178,
+    Reunion = 179,
+    Romania = 180,
+    Rwanda = 181,
+    StKittsAndNevis = 182,
+    StHelena = 183,
+    StLucia = 184,
+    StPierreAndMiquelon = 185,
+    StVincentAndTheGrenadines = 186,
+    SanMarino = 187,
+    SaoTomeAndPrincipe = 188,
+    SaudiArabia = 189,
+    Senegal = 190,
+    Seychelles = 191,
+    SierraLeone = 192,
+    Singapore = 193,
+    SolomonIslands = 194,
+    Somalia = 195,
+    SouthGeorgiaSouthSandwichIslands = 196,
+    SouthAfrica = 197,
+    Spain = 198,
+    SpratlyIslands = 199,
+    SriLanka = 200,
+    Sudan = 201,
+    Suriname = 202,
+    Svalbard_ = 203,
+    Swaziland = 204,
+    Sweden = 205,
+    Switzerland = 206,
+    Syria = 207,
+    Taiwan = 208,
+    Tanzania = 209,
+    Thailand = 210,
+    Togo = 211,
+    Tokelau = 212,
+    Tonga = 213,
+    TrinidadAndTobago = 214,
+    TromelinIsland = 215,
+    PacificIslands = 216,
+    Tunisia = 217,
+    Turkey = 218,
+    TurksCaicosIslands = 219,
+    Tuvalu = 220,
+    Uganda = 221,
+    CommonwealthOfIndependentStates = 222,
+    UnitedArabEmirates = 223,
+    UnitedKingdom = 224,
+    UnitedStates = 225,
+    Uruguay = 226,
+    Vanuatu = 227,
+    VaticanCity = 228,
+    Venezuela = 229,
+    Vietnam = 230,
+    VirginIslands = 231,
+    WakeIsland = 232,
+    WallisFutuna = 233,
+    WesternSahara = 234,
+    WestBank = 235,
+    WesternSamoa = 236,
+    Yemen = 237,
+    Zaire = 241,
+    Zambia = 242,
+    Zimbabwe = 243,
+    Armenia = 244,
+    Azerbaijan = 245,
+    Belarus = 246,
+    BosniaHercegovina = 247,
+    ClippertonIsland = 248,
+    Croatia = 249,
+    Estonia = 250,
+    Georgia = 251,
+    Kazakhstan = 252,
+    Kyrgyzstan = 253,
+    Latvia = 254,
+    Lithuania = 255,
+    Macedonia = 256,
+    MidwayIslands = 257,
+    Moldova = 258,
+    Montenegro = 259,
+    Russia = 260,
+    SerbiaMontenegro = 261,
+    Slovenia = 262,
+    Tajikistan = 263,
+    Turkmenistan = 264,
+    Ukraine = 265,
+    Uzbekistan = 266,
 }
 
-struct VectorF32 {
+pub struct VectorF32 {
     first_vector_component : f32,
     second_vector_component : f32,
     third_vector_component : f32,
 }
 
-struct Location {
+pub struct Location {
     x_coordinate : f64,
     y_coordinate : f64,
     z_coordinate : f64,
 }
 
-struct Orientation {
+pub struct Orientation {
     psi : f32,
     theta : f32,
     phi : f32,
 }
 
-struct Appearance {
+pub struct Appearance {
     general_appearance : GeneralAppearance,
     specific_appearance : SpecificAppearance,
 }
 
-struct GeneralAppearance {
+pub struct GeneralAppearance {
     entity_paint_scheme : EntityPaintScheme, // enum
     entity_mobility_kill : EntityMobilityKill, // enum
     entity_fire_power : EntityFirePower, // enum
@@ -360,43 +360,43 @@ struct GeneralAppearance {
     entity_flaming_effect : EntityFlamingEffect, // enum
 }
 
-enum EntityPaintScheme {
+pub enum EntityPaintScheme {
     UniformColor = 0,
     Camouflage = 1,
 }
 
-enum EntityMobilityKill {
+pub enum EntityMobilityKill {
     NoMobilityKill = 0,
     MobilityKill = 1,
 }
 
-enum EntityFirePower {
+pub enum EntityFirePower {
     NoFirePowerKill = 0,
     FirePowerKill = 1,
 }
 
-enum EntityDamage {
+pub enum EntityDamage {
     NoDamage = 0,
     SlightDamage = 1,
     ModerateDamage = 2,
     Destroyed = 3,
 }
 
-enum EntitySmoke {
+pub enum EntitySmoke {
     NotSmoking = 0,
     SmokePlumeRising = 1,
     EmittingEngineSmoke = 2,
     EmittingEngineSmokeAndSmokePlumeRising = 3,
 }
 
-enum EntityTrailingEffect {
+pub enum EntityTrailingEffect {
     None = 0,
     Small = 1,
     Medium = 2,
     Large = 3,
 }
 
-enum EntityHatchState {
+pub enum EntityHatchState {
     NotApplicable = 0,
     Closed = 1,
     Popped = 2,
@@ -407,7 +407,7 @@ enum EntityHatchState {
     Unused2 = 7,
 }
 
-enum EntityLights {
+pub enum EntityLights {
     None = 0,
     RunningLightsOn = 1,
     NavigationLightsOn = 2,
@@ -418,13 +418,13 @@ enum EntityLights {
     Unused4 = 7,
 }
 
-enum EntityFlamingEffect {
+pub enum EntityFlamingEffect {
     None = 0,
     FlamesPresent = 1,
 }
 
 // TODO replace u16 with specific types for the variants
-enum SpecificAppearance {
+pub enum SpecificAppearance {
     LandPlatform(u16),
     AirPlatform(u16),
     SurfacePlatform(u16),
@@ -435,14 +435,14 @@ enum SpecificAppearance {
     Environmental(u16),
 }
 
-struct DrParameters {
+pub struct DrParameters {
     algorithm : DrAlgorithm,
     other_parameters : DrOtherParameters,
     linear_acceleration : VectorF32,
     angular_velocity : VectorF32,
 }
 
-enum DrAlgorithm {
+pub enum DrAlgorithm {
     Other = 0,
     Static = 1,
     DrmFPW = 2,
@@ -455,23 +455,23 @@ enum DrAlgorithm {
     DrmFVB = 9,
 }
 
-struct DrOtherParameters {
+pub struct DrOtherParameters {
     // 120-bits padding
 }
 
-struct EntityMarking {
+pub struct EntityMarking {
     marking_character_set : EntityMarkingCharacterSet,
     marking_string : [u8; 11], // 11 byte String
 }
 
-enum EntityMarkingCharacterSet {
+pub enum EntityMarkingCharacterSet {
     Unused = 0,
     ASCII = 1,
     ArmyMarking = 2,
     DigitChevron = 3,
 }
 
-struct EntityCapabilities {
+pub struct EntityCapabilities {
     ammunition_supply : bool,
     fuel_supply : bool,
     recovery : bool,
@@ -479,7 +479,7 @@ struct EntityCapabilities {
     // 28-bits padding
 }
 
-struct ArticulationParameter {
+pub struct ArticulationParameter {
     parameter_type_designator : ApTypeDesignator,
     parameter_change_indicator : u8,
     articulation_attachment_ic : u16,
@@ -487,12 +487,12 @@ struct ArticulationParameter {
     articulation_parameter_value : ArticulationParameterValue,
 }
 
-enum ApTypeDesignator {
+pub enum ApTypeDesignator {
     Articulated = 0,
     Attached = 1,
 }
 
-struct ParameterTypeVariant {
+pub struct ParameterTypeVariant {
     attached_parts : u32,
     // 0	Nothing, Empty
     // 1-511	Sequential IDs for model-specific stations
@@ -513,12 +513,12 @@ struct ParameterTypeVariant {
     articulated_parts : ArticulatedParts,
 }
 
-struct ArticulatedParts {
+pub struct ArticulatedParts {
     low_bits : ApLowBits,
     high_bits : ApHighBits,
 }
 
-enum ApLowBits {
+pub enum ApLowBits {
     Position = 1,
     ZRate = 10,
     Azimuth = 11,
@@ -537,7 +537,7 @@ enum ApLowBits {
     Z = 9,
 }
 
-enum ApHighBits {
+pub enum ApHighBits {
     Placeholder = 0,
 // TODO
 // 1024	rudder
@@ -668,4 +668,10 @@ enum ApHighBits {
 // 7200	Secondary radar 8
 // 7232	Secondary radar 9
 // 7264	Secondary radar 10
+}
+
+impl EntityState {
+    fn builder() -> EntityStateBuilder {
+        EntityStateBuilder {}
+    }
 }
