@@ -1,22 +1,42 @@
 mod entity_state;
 mod entity_state_builder;
-// TODO define different PDU types in separate modules
 
+use bytes::BytesMut;
+
+// TODO define different PDU types in separate modules
 // TODO re-export the PDU types
 // TODO review pub settings in PDU modules
+
 pub use entity_state::EntityState;
 
-struct PduHeader {
-    protocol_version : ProtocolVersion, // enum
+// TODO put in an util mod
+pub enum PduConversionError {
+    SerializationError,
+    DeserializationError,
+}
+
+// TODO put in an util mod
+pub trait Serialize {
+    fn serialize(&self, mut buf: &BytesMut) -> Result<usize, PduConversionError>;
+}
+
+// TODO put in an util mod
+// TODO use this trait of use From?
+pub trait Deserialize<T> {
+    fn deserialize(&T) -> Result<Self, PduConversionError>;
+}
+
+pub struct PduHeader {
+    protocol_version : ProtocolVersion,
     exercise_id : u8,
-    pdu_type : PduType, // enum
-    protocol_family : ProtocolFamily, // enum
+    pdu_type : PduType,
+    protocol_family : ProtocolFamily,
     time_stamp : u32,
     pdu_length : u16,
     padding_field : u16,
 }
 
-enum ProtocolVersion {
+pub enum ProtocolVersion {
     Other = 0,
     VERSION_1_0_MAY_92 = 1,             // DIS PDU version 1.0 (May 92)
     IEEE_1278_1993 = 2,                 // IEEE 1278-1993
@@ -25,7 +45,7 @@ enum ProtocolVersion {
     IEEE_1278_1_1995 = 5,               // IEEE 1278.1-1995
 }
 
-enum PduType {
+pub enum PduType {
     Other = 0,
     EntityState = 1,
     Fire = 2,
@@ -78,7 +98,7 @@ enum PduType {
     Aggregate = 170,
 }
 
-enum ProtocolFamily {
+pub enum ProtocolFamily {
     Other = 0,
     EntityInformationInteraction = 1,
     ExperimentalCGF = 129,
@@ -92,3 +112,61 @@ enum ProtocolFamily {
     SimulationManagement = 5,
     DistributedEmissionRegeneration = 6,
 }
+
+pub enum Pdu {
+    Other(Other),
+    EntityState(EntityState),
+    Fire = 2,
+    Detonation = 3,
+    Collision = 4,
+    ServiceRequest = 5,
+    ResupplyOffer = 6,
+    ResupplyReceived = 7,
+    ResupplyCancel = 8,
+    RepairComplete = 9,
+    RepairResponse = 10,
+    CreateEntity = 11,
+    RemoveEntity = 12,
+    StartResume = 13,
+    StopFreeze = 14,
+    Acknowledge = 15,
+    ActionRequest = 16,
+    ActionResponse = 17,
+    DataQuery = 18,
+    SetData = 19,
+    Data = 20,
+    EventReport = 21,
+    Comment = 22,
+    ElectromagneticEmission = 23,
+    Designator = 24,
+    Transmitter = 25,
+    Signal = 26,
+    Receiver = 27,
+    AnnounceObject = 129,
+    DeleteObject = 130,
+    DescribeApplication = 131,
+    DescribeEvent = 132,
+    DescribeObject = 133,
+    RequestEvent = 134,
+    RequestObject = 135,
+    TimeSpacePositionIndicatorFI = 140,
+    AppearanceFI = 141,
+    ArticulatedPartsFI = 142,
+    FireFI = 143,
+    DetonationFI = 144,
+    PointObjectState = 150,
+    LinearObjectState = 151,
+    ArealObjectState = 152,
+    Environment = 153,
+    TransferControlRequest = 155,
+    TransferControl = 156,
+    TransferControlAcknowledge = 157,
+    IntercomControl = 160,
+    IntercomSignal = 161,
+    Aggregate = 170,
+}
+
+pub fn parse_pdu() -> Result<Pdu, PduConversionError> {
+
+}
+

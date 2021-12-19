@@ -1,5 +1,7 @@
+use bytes::BytesMut;
 use super::*;
 use entity_state_builder::EntityStateBuilder;
+use crate::dis::v6::pdu::PduType::EntityState;
 
 pub struct EntityState {
     pub header : PduHeader, // struct
@@ -15,7 +17,7 @@ pub struct EntityState {
     pub dead_reckoning_parameters : DrParameters, // struct
     pub entity_marking : EntityMarking, // struct
     pub entity_capabilities : EntityCapabilities, // struct
-    pub articulation_parameter : Option<List<ArticulationParameter>>, // optional list of records
+    pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
 }
 
 pub struct EntityId {
@@ -671,7 +673,21 @@ pub enum ApHighBits {
 }
 
 impl EntityState {
-    fn builder() -> EntityStateBuilder {
-        EntityStateBuilder {}
+    pub fn builder() -> EntityStateBuilder {
+        EntityStateBuilder::new()
+    }
+
+    pub fn serialize() ->
+}
+
+impl From<BytesMut> for EntityState {
+    fn from(buf: BytesMut) -> Self {
+        EntityState::from(buf.as_ref())
+    }
+}
+
+impl From<&[u8]> for EntityState {
+    fn from(_: &[u8]) -> Self {
+        todo!()
     }
 }
