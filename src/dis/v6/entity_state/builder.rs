@@ -1,8 +1,5 @@
-use std::error::Error;
-use std::mem::size_of;
-use crate::dis::v6::pdu::*;
-use crate::dis::v6::pdu::entity_state::*;
-use crate::dis::v6::pdu::PduType::EntityState;
+use crate::dis::v6::entity_state::model::*;
+use crate::dis::v6::model::PduHeader;
 
 pub struct EntityStateBuilder {
     header : Option<PduHeader>,
@@ -18,10 +15,6 @@ pub struct EntityStateBuilder {
     entity_marking : Option<EntityMarking>,
     entity_capabilities : Option<EntityCapabilities>,
     articulation_parameter : Vec<ArticulationParameter>,
-}
-
-pub enum EntityStateValidationError {
-    SomeFieldNotOkError,
 }
 
 impl EntityStateBuilder {
@@ -41,6 +34,42 @@ impl EntityStateBuilder {
             entity_capabilities: None,
             articulation_parameter: vec![]
         }
+    }
+
+    pub fn header(mut self, header: PduHeader) -> Self {
+        self.header = Some(header);
+        self
+    }
+
+    pub fn entity_id(mut self, entity_id: EntityId) -> Self {
+        self.entity_id = Some(entity_id);
+        self
+    }
+
+    pub fn entity_id_triplet(mut self, site_id: u16, application_id: u16, entity_id: u16) -> Self {
+        self.entity_id = Some(EntityId {
+            simulation_address: SimulationAddress {
+                site_id,
+                application_id
+            },
+            entity_id
+        });
+        self
+    }
+
+    pub fn force_id(mut self, force_id: ForceId) -> Self {
+        self.force_id = Some(force_id);
+        self
+    }
+
+    pub fn entity_type(mut self, entity_type: EntityType) -> Self {
+        self.entity_type = Some(entity_type);
+        self
+    }
+
+    pub fn alt_entity_type(mut self, entity_type: EntityType) -> Self {
+        self.alternative_entity_type = Some(entity_type);
+        self
     }
 
     fn validate(&self) -> Result<bool, EntityStateValidationError> {
@@ -69,7 +98,7 @@ impl EntityStateBuilder {
             header: self.header.expect("Value expected, but not found."),
             entity_id: self.entity_id.expect("Value expected, but not found."),
             force_id: self.force_id.expect("Value expected, but not found."),
-            articulated_parts_no: self.articulation_parameter.expect("").len() as u8,
+            articulated_parts_no: self.articulation_parameter.len() as u8,
             entity_type: self.entity_type.expect("Value expected, but not found."),
             alternative_entity_type: self.alternative_entity_type.expect("Value expected, but not found."),
             entity_linear_velocity: self.entity_linear_velocity.expect("Value expected, but not found."),

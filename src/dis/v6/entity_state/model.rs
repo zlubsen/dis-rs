@@ -1,7 +1,11 @@
 use bytes::BytesMut;
-use super::*;
-use entity_state_builder::EntityStateBuilder;
-use crate::dis::v6::pdu::PduType::EntityState;
+use crate::dis::errors::DisError;
+use crate::dis::v6::model::PduHeader;
+use super::builder::EntityStateBuilder;
+
+pub enum EntityStateValidationError {
+    SomeFieldNotOkError,
+}
 
 pub struct EntityState {
     pub header : PduHeader, // struct
@@ -21,7 +25,7 @@ pub struct EntityState {
 }
 
 pub struct EntityId {
-    simulation_address : SimulationAddress,
+    pub(crate) simulation_address : SimulationAddress,
     entity_id : u16
 }
 
@@ -339,6 +343,7 @@ pub struct Location {
     z_coordinate : f64,
 }
 
+// TODO alias to vectorf32?
 pub struct Orientation {
     psi : f32,
     theta : f32,
@@ -486,7 +491,7 @@ pub struct ArticulationParameter {
     parameter_change_indicator : u8,
     articulation_attachment_ic : u16,
     parameter_type_variant : ParameterTypeVariant,
-    articulation_parameter_value : ArticulationParameterValue,
+    articulation_parameter_value : f64,
 }
 
 pub enum ApTypeDesignator {
@@ -677,17 +682,22 @@ impl EntityState {
         EntityStateBuilder::new()
     }
 
-    pub fn serialize() ->
+    // pub fn serialize() ->
 }
 
-impl From<BytesMut> for EntityState {
-    fn from(buf: BytesMut) -> Self {
-        EntityState::from(buf.as_ref())
+impl TryFrom<&BytesMut> for EntityState {
+    type Error = DisError;
+
+
+    fn try_from(buf: &BytesMut) -> Result<Self, Self::Error> {
+        EntityState::try_from(&buf[..])
     }
 }
 
-impl From<&[u8]> for EntityState {
-    fn from(_: &[u8]) -> Self {
+impl TryFrom<&[u8]> for EntityState {
+    type Error = DisError;
+
+    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
         todo!()
     }
 }
