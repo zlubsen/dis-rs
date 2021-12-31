@@ -3,6 +3,9 @@ use crate::dis::errors::DisError;
 use crate::dis::v6::model::PduHeader;
 use super::builder::EntityStateBuilder;
 
+// TODO check primitive types in TryFrom impls for enums (u8, u16, bits, ...)
+
+// TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
     SomeFieldNotOkError,
 }
@@ -41,6 +44,20 @@ pub enum ForceId {
     Neutral = 3,
 }
 
+impl TryFrom<u8> for ForceId {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(ForceId::Other),
+            1 => Ok(ForceId::Friendly),
+            2 => Ok(ForceId::Opposing),
+            3 => Ok(ForceId::Neutral),
+            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+        }
+    }
+}
+
 pub struct EntityType {
     kind : EntityKind,
     domain : u8,
@@ -62,6 +79,26 @@ pub enum EntityKind {
     Radio = 7,
     Expendable = 8,
     SensorEmitter = 9,
+}
+
+impl TryFrom<u8> for EntityKind {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityKind::Other),
+            1 => Ok(EntityKind::Platform),
+            2 => Ok(EntityKind::Munition),
+            3 => Ok(EntityKind::LifeForm),
+            4 => Ok(EntityKind::Environmental),
+            5 => Ok(EntityKind::CulturalFeature),
+            6 => Ok(EntityKind::Supply),
+            7 => Ok(EntityKind::Radio),
+            8 => Ok(EntityKind::Expendable),
+            9 => Ok(EntityKind::SensorEmitter),
+            n => Err(DisError::InvalidEnumValue(9, n as usize)),
+        }
+    }
 }
 
 // regex: (?<value>[0-9]*)[\t]+(?<field>[\w (),'-.]+)$
@@ -268,7 +305,7 @@ pub enum Country {
     SriLanka = 200,
     Sudan = 201,
     Suriname = 202,
-    Svalbard_ = 203,
+    Svalbard_Norway = 203,
     Swaziland = 204,
     Sweden = 205,
     Switzerland = 206,
@@ -331,6 +368,278 @@ pub enum Country {
     Uzbekistan = 266,
 }
 
+impl TryFrom<u8> for Country {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Country::Other),
+            1 => Ok(Country::Afghanistan),
+            2 => Ok(Country::Albania),
+            3 => Ok(Country::Algeria),
+            4 => Ok(Country::AmericanSamoa),
+            5 => Ok(Country::Andorra),
+            6 => Ok(Country::Angola),
+            7 => Ok(Country::Anguilla),
+            8 => Ok(Country::Antarctica),
+            9 => Ok(Country::AntiguaBarbuda),
+            10 => Ok(Country::Argentina),
+            11 => Ok(Country::Aruba),
+            12 => Ok(Country::AshmoreCartierIslands),
+            13 => Ok(Country::Australia),
+            14 => Ok(Country::Austria),
+            15 => Ok(Country::Bahamas),
+            16 => Ok(Country::Bahrain),
+            17 => Ok(Country::BakerIsland),
+            18 => Ok(Country::Bangladesh),
+            19 => Ok(Country::Barbados),
+            20 => Ok(Country::BassasDaIndia),
+            21 => Ok(Country::Belgium),
+            22 => Ok(Country::Belize),
+            23 => Ok(Country::Benin),
+            24 => Ok(Country::Bermuda),
+            25 => Ok(Country::Bhutan),
+            26 => Ok(Country::Bolivia),
+            27 => Ok(Country::Botswana),
+            28 => Ok(Country::BouvetIsland),
+            29 => Ok(Country::Brazil),
+            30 => Ok(Country::BritishIndianOceanTerritory),
+            31 => Ok(Country::BritishVirginIslands),
+            32 => Ok(Country::Brunei),
+            33 => Ok(Country::Bulgaria),
+            34 => Ok(Country::Burkina),
+            35 => Ok(Country::Burma),
+            36 => Ok(Country::Burundi),
+            37 => Ok(Country::Cambodia),
+            38 => Ok(Country::Cameroon),
+            39 => Ok(Country::Canada),
+            40 => Ok(Country::CapeVerde),
+            41 => Ok(Country::CaymanIslands),
+            42 => Ok(Country::CentralAfricanRepublic),
+            43 => Ok(Country::Chad),
+            44 => Ok(Country::Chile),
+            45 => Ok(Country::China),
+            46 => Ok(Country::ChristmasIsland),
+            47 => Ok(Country::CocosIslands),
+            48 => Ok(Country::Colombia),
+            49 => Ok(Country::Comoros),
+            50 => Ok(Country::Congo),
+            51 => Ok(Country::CookIslands),
+            52 => Ok(Country::CoralSeaIslands),
+            53 => Ok(Country::CostaRica),
+            54 => Ok(Country::Cuba),
+            55 => Ok(Country::Cyprus),
+            56 => Ok(Country::Czechoslovakia),
+            57 => Ok(Country::Denmark),
+            58 => Ok(Country::Djibouti),
+            59 => Ok(Country::Dominica),
+            60 => Ok(Country::DominicanRepublic),
+            61 => Ok(Country::Ecuador),
+            62 => Ok(Country::Egypt),
+            63 => Ok(Country::ElSalvador),
+            64 => Ok(Country::EquatorialGuinea),
+            65 => Ok(Country::Ethiopia),
+            66 => Ok(Country::EuropaIsland),
+            67 => Ok(Country::FalklandIslands),
+            68 => Ok(Country::FaroeIslands),
+            69 => Ok(Country::Fiji),
+            70 => Ok(Country::Finland),
+            71 => Ok(Country::France),
+            72 => Ok(Country::FrenchGuiana),
+            73 => Ok(Country::FrenchPolynesia),
+            74 => Ok(Country::FrenchSouthernAntarcticIslands),
+            75 => Ok(Country::Gabon),
+            76 => Ok(Country::GambiaThe),
+            77 => Ok(Country::GazaStrip),
+            78 => Ok(Country::Germany),
+            79 => Ok(Country::Ghana),
+            80 => Ok(Country::Gibraltar),
+            81 => Ok(Country::GloriosoIslands),
+            82 => Ok(Country::Greece),
+            83 => Ok(Country::Greenland),
+            84 => Ok(Country::Grenada),
+            85 => Ok(Country::Guadaloupe),
+            86 => Ok(Country::Guam),
+            87 => Ok(Country::Guatemala),
+            88 => Ok(Country::Guernsey),
+            89 => Ok(Country::Guinea),
+            90 => Ok(Country::GuineaBissau),
+            91 => Ok(Country::Guyana),
+            92 => Ok(Country::Haiti),
+            93 => Ok(Country::HeardIslandMcDonaldIslands),
+            94 => Ok(Country::Honduras),
+            95 => Ok(Country::HongKong),
+            96 => Ok(Country::HowlandIsland),
+            97 => Ok(Country::Hungary),
+            98 => Ok(Country::Iceland),
+            99 => Ok(Country::India),
+            100 => Ok(Country::Indonesia),
+            101 => Ok(Country::Iran),
+            102 => Ok(Country::Iraq),
+            104 => Ok(Country::Ireland),
+            105 => Ok(Country::Israel),
+            106 => Ok(Country::Italy),
+            107 => Ok(Country::CoteDIvoire),
+            108 => Ok(Country::Jamaica),
+            109 => Ok(Country::JanMayen),
+            110 => Ok(Country::Japan),
+            111 => Ok(Country::JarvisIsland),
+            112 => Ok(Country::Jersey),
+            113 => Ok(Country::JohnstonAtoll),
+            114 => Ok(Country::Jordan),
+            115 => Ok(Country::JuanDeNovaIsland),
+            116 => Ok(Country::Kenya),
+            117 => Ok(Country::KingmanReef),
+            118 => Ok(Country::Kiribati),
+            119 => Ok(Country::KoreaNorth),
+            120 => Ok(Country::KoreaSouth),
+            121 => Ok(Country::Kuwait),
+            122 => Ok(Country::Laos),
+            123 => Ok(Country::Lebanon),
+            124 => Ok(Country::Lesotho),
+            125 => Ok(Country::Liberia),
+            126 => Ok(Country::Libya),
+            127 => Ok(Country::Liechtenstein),
+            128 => Ok(Country::Luxembourg),
+            129 => Ok(Country::Madagascar),
+            130 => Ok(Country::Macau),
+            131 => Ok(Country::Malawi),
+            132 => Ok(Country::Malaysia),
+            133 => Ok(Country::Maldives),
+            134 => Ok(Country::Mali),
+            135 => Ok(Country::Malta),
+            136 => Ok(Country::ManIsle),
+            137 => Ok(Country::MarshallIslands),
+            138 => Ok(Country::Martinique),
+            139 => Ok(Country::Mauritania),
+            140 => Ok(Country::Mauritius),
+            141 => Ok(Country::Mayotte),
+            142 => Ok(Country::Mexico),
+            143 => Ok(Country::Micronesia),
+            144 => Ok(Country::Monaco),
+            145 => Ok(Country::Mongolia),
+            146 => Ok(Country::Montserrat),
+            147 => Ok(Country::Morocco),
+            148 => Ok(Country::Mozambique),
+            149 => Ok(Country::Namibia),
+            150 => Ok(Country::Nauru),
+            151 => Ok(Country::NavassaIsland),
+            152 => Ok(Country::Nepal),
+            153 => Ok(Country::Netherlands),
+            154 => Ok(Country::NetherlandsAntilles),
+            155 => Ok(Country::NewCaledonia),
+            156 => Ok(Country::NewZealand),
+            157 => Ok(Country::Nicaragua),
+            158 => Ok(Country::Niger),
+            159 => Ok(Country::Nigeria),
+            160 => Ok(Country::Niue),
+            161 => Ok(Country::NorfolkIsland),
+            162 => Ok(Country::NorthernMarianaIslands),
+            163 => Ok(Country::Norway),
+            164 => Ok(Country::Oman),
+            165 => Ok(Country::Pakistan),
+            166 => Ok(Country::PalmyraAtoll),
+            168 => Ok(Country::Panama),
+            169 => Ok(Country::PapuaNewGuinea),
+            170 => Ok(Country::ParacelIslands),
+            171 => Ok(Country::Paraguay),
+            172 => Ok(Country::Peru),
+            173 => Ok(Country::Philippines),
+            174 => Ok(Country::PitcairnIslands),
+            175 => Ok(Country::Poland),
+            176 => Ok(Country::Portugal),
+            177 => Ok(Country::PuertoRico),
+            178 => Ok(Country::Qatar),
+            179 => Ok(Country::Reunion),
+            180 => Ok(Country::Romania),
+            181 => Ok(Country::Rwanda),
+            182 => Ok(Country::StKittsAndNevis),
+            183 => Ok(Country::StHelena),
+            184 => Ok(Country::StLucia),
+            185 => Ok(Country::StPierreAndMiquelon),
+            186 => Ok(Country::StVincentAndTheGrenadines),
+            187 => Ok(Country::SanMarino),
+            188 => Ok(Country::SaoTomeAndPrincipe),
+            189 => Ok(Country::SaudiArabia),
+            190 => Ok(Country::Senegal),
+            191 => Ok(Country::Seychelles),
+            192 => Ok(Country::SierraLeone),
+            193 => Ok(Country::Singapore),
+            194 => Ok(Country::SolomonIslands),
+            195 => Ok(Country::Somalia),
+            196 => Ok(Country::SouthGeorgiaSouthSandwichIslands),
+            197 => Ok(Country::SouthAfrica),
+            198 => Ok(Country::Spain),
+            199 => Ok(Country::SpratlyIslands),
+            200 => Ok(Country::SriLanka),
+            201 => Ok(Country::Sudan),
+            202 => Ok(Country::Suriname),
+            203 => Ok(Country::Svalbard_Norway),
+            204 => Ok(Country::Swaziland),
+            205 => Ok(Country::Sweden),
+            206 => Ok(Country::Switzerland),
+            207 => Ok(Country::Syria),
+            208 => Ok(Country::Taiwan),
+            209 => Ok(Country::Tanzania),
+            210 => Ok(Country::Thailand),
+            211 => Ok(Country::Togo),
+            212 => Ok(Country::Tokelau),
+            213 => Ok(Country::Tonga),
+            214 => Ok(Country::TrinidadAndTobago),
+            215 => Ok(Country::TromelinIsland),
+            216 => Ok(Country::PacificIslands),
+            217 => Ok(Country::Tunisia),
+            218 => Ok(Country::Turkey),
+            219 => Ok(Country::TurksCaicosIslands),
+            220 => Ok(Country::Tuvalu),
+            221 => Ok(Country::Uganda),
+            222 => Ok(Country::CommonwealthOfIndependentStates),
+            223 => Ok(Country::UnitedArabEmirates),
+            224 => Ok(Country::UnitedKingdom),
+            225 => Ok(Country::UnitedStates),
+            226 => Ok(Country::Uruguay),
+            227 => Ok(Country::Vanuatu),
+            228 => Ok(Country::VaticanCity),
+            229 => Ok(Country::Venezuela),
+            230 => Ok(Country::Vietnam),
+            231 => Ok(Country::VirginIslands),
+            232 => Ok(Country::WakeIsland),
+            233 => Ok(Country::WallisFutuna),
+            234 => Ok(Country::WesternSahara),
+            235 => Ok(Country::WestBank),
+            236 => Ok(Country::WesternSamoa),
+            237 => Ok(Country::Yemen),
+            241 => Ok(Country::Zaire),
+            242 => Ok(Country::Zambia),
+            243 => Ok(Country::Zimbabwe),
+            244 => Ok(Country::Armenia),
+            245 => Ok(Country::Azerbaijan),
+            246 => Ok(Country::Belarus),
+            247 => Ok(Country::BosniaHercegovina),
+            248 => Ok(Country::ClippertonIsland),
+            249 => Ok(Country::Croatia),
+            250 => Ok(Country::Estonia),
+            251 => Ok(Country::Georgia),
+            252 => Ok(Country::Kazakhstan),
+            253 => Ok(Country::Kyrgyzstan),
+            254 => Ok(Country::Latvia),
+            255 => Ok(Country::Lithuania),
+            256 => Ok(Country::Macedonia),
+            257 => Ok(Country::MidwayIslands),
+            258 => Ok(Country::Moldova),
+            259 => Ok(Country::Montenegro),
+            260 => Ok(Country::Russia),
+            261 => Ok(Country::SerbiaMontenegro),
+            262 => Ok(Country::Slovenia),
+            263 => Ok(Country::Tajikistan),
+            264 => Ok(Country::Turkmenistan),
+            265 => Ok(Country::Ukraine),
+            266 => Ok(Country::Uzbekistan),
+            n => Err(DisError::InvalidEnumValue(266, n as usize)),
+        }
+    }
+}
+
 pub struct VectorF32 {
     first_vector_component : f32,
     second_vector_component : f32,
@@ -372,14 +681,50 @@ pub enum EntityPaintScheme {
     Camouflage = 1,
 }
 
+impl TryFrom<u8> for EntityPaintScheme {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityPaintScheme::UniformColor),
+            1 => Ok(EntityPaintScheme::Camouflage),
+            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+        }
+    }
+}
+
 pub enum EntityMobilityKill {
     NoMobilityKill = 0,
     MobilityKill = 1,
 }
 
+impl TryFrom<u8> for EntityMobilityKill {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityMobilityKill::NoMobilityKill),
+            1 => Ok(EntityMobilityKill::MobilityKill),
+            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+        }
+    }
+}
+
 pub enum EntityFirePower {
     NoFirePowerKill = 0,
     FirePowerKill = 1,
+}
+
+impl TryFrom<u8> for EntityFirePower {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityFirePower::NoFirePowerKill),
+            1 => Ok(EntityFirePower::FirePowerKill),
+            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+        }
+    }
 }
 
 pub enum EntityDamage {
@@ -389,6 +734,20 @@ pub enum EntityDamage {
     Destroyed = 3,
 }
 
+impl TryFrom<u8> for EntityDamage {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityDamage::NoDamage),
+            1 => Ok(EntityDamage::SlightDamage),
+            2 => Ok(EntityDamage::ModerateDamage),
+            3 => Ok(EntityDamage::Destroyed),
+            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+        }
+    }
+}
+
 pub enum EntitySmoke {
     NotSmoking = 0,
     SmokePlumeRising = 1,
@@ -396,11 +755,39 @@ pub enum EntitySmoke {
     EmittingEngineSmokeAndSmokePlumeRising = 3,
 }
 
+impl TryFrom<u8> for EntitySmoke {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntitySmoke::NotSmoking),
+            1 => Ok(EntitySmoke::SmokePlumeRising),
+            2 => Ok(EntitySmoke::EmittingEngineSmoke),
+            3 => Ok(EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising),
+            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+        }
+    }
+}
+
 pub enum EntityTrailingEffect {
     None = 0,
     Small = 1,
     Medium = 2,
     Large = 3,
+}
+
+impl TryFrom<u8> for EntityTrailingEffect {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityTrailingEffect::None),
+            1 => Ok(EntityTrailingEffect::Small),
+            2 => Ok(EntityTrailingEffect::Medium),
+            3 => Ok(EntityTrailingEffect::Large),
+            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+        }
+    }
 }
 
 pub enum EntityHatchState {
@@ -414,6 +801,24 @@ pub enum EntityHatchState {
     Unused2 = 7,
 }
 
+impl TryFrom<u8> for EntityHatchState {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityHatchState::NotApplicable),
+            1 => Ok(EntityHatchState::Closed),
+            2 => Ok(EntityHatchState::Popped),
+            3 => Ok(EntityHatchState::PoppedAndPersonVisible),
+            4 => Ok(EntityHatchState::Open),
+            5 => Ok(EntityHatchState::OpenAndPersonVisible),
+            6 => Ok(EntityHatchState::Unused1),
+            7 => Ok(EntityHatchState::Unused2),
+            n => Err(DisError::InvalidEnumValue(7, n as usize)),
+        }
+    }
+}
+
 pub enum EntityLights {
     None = 0,
     RunningLightsOn = 1,
@@ -425,12 +830,42 @@ pub enum EntityLights {
     Unused4 = 7,
 }
 
+impl TryFrom<u8> for EntityLights {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityLights::None),
+            1 => Ok(EntityLights::RunningLightsOn),
+            2 => Ok(EntityLights::NavigationLightsOn),
+            3 => Ok(EntityLights::FromationLightsOn),
+            4 => Ok(EntityLights::Unused1),
+            5 => Ok(EntityLights::Unused2),
+            6 => Ok(EntityLights::Unused3),
+            7 => Ok(EntityLights::Unused4),
+            n => Err(DisError::InvalidEnumValue(7, n as usize)),
+        }
+    }
+}
+
 pub enum EntityFlamingEffect {
     None = 0,
     FlamesPresent = 1,
 }
 
-// TODO replace u16 with specific types for the variants
+impl TryFrom<u8> for EntityFlamingEffect {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityFlamingEffect::None),
+            1 => Ok(EntityFlamingEffect::FlamesPresent),
+            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+        }
+    }
+}
+
+// TODO replace u16 with specific types for the variants; should be a struct?
 pub enum SpecificAppearance {
     LandPlatform(u16),
     AirPlatform(u16),
@@ -462,6 +897,26 @@ pub enum DrAlgorithm {
     DrmFVB = 9,
 }
 
+impl TryFrom<u8> for DrAlgorithm {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(DrAlgorithm::Other),
+            1 => Ok(DrAlgorithm::Static),
+            2 => Ok(DrAlgorithm::DrmFPW),
+            3 => Ok(DrAlgorithm::DrmRPW),
+            4 => Ok(DrAlgorithm::DrmRVW),
+            5 => Ok(DrAlgorithm::DrmFVW),
+            6 => Ok(DrAlgorithm::DrmFPB),
+            7 => Ok(DrAlgorithm::DrmRPB),
+            8 => Ok(DrAlgorithm::DrmRVB),
+            9 => Ok(DrAlgorithm::DrmFVB),
+            n => Err(DisError::InvalidEnumValue(9, n as usize)),
+        }
+    }
+}
+
 pub struct DrOtherParameters {
     // 120-bits padding
 }
@@ -476,6 +931,20 @@ pub enum EntityMarkingCharacterSet {
     ASCII = 1,
     ArmyMarking = 2,
     DigitChevron = 3,
+}
+
+impl TryFrom<u8> for EntityMarkingCharacterSet {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(EntityMarkingCharacterSet::Unused),
+            1 => Ok(EntityMarkingCharacterSet::ASCII),
+            2 => Ok(EntityMarkingCharacterSet::ArmyMarking),
+            3 => Ok(EntityMarkingCharacterSet::DigitChevron),
+            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+        }
+    }
 }
 
 pub struct EntityCapabilities {
@@ -497,6 +966,18 @@ pub struct ArticulationParameter {
 pub enum ApTypeDesignator {
     Articulated = 0,
     Attached = 1,
+}
+
+impl TryFrom<u8> for ApTypeDesignator {
+    type Error = DisError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(ApTypeDesignator::Articulated),
+            1 => Ok(ApTypeDesignator::Attached),
+            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+        }
+    }
 }
 
 pub struct ParameterTypeVariant {
@@ -544,9 +1025,35 @@ pub enum ApLowBits {
     Z = 9,
 }
 
+impl TryFrom<u16> for ApLowBits {
+    type Error = DisError;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(ApLowBits::Position),
+            2 => Ok(ApLowBits::PositionRate),
+            3 => Ok(ApLowBits::Extension),
+            4 => Ok(ApLowBits::ExtensionRate),
+            5 => Ok(ApLowBits::X),
+            6 => Ok(ApLowBits::XRate),
+            7 => Ok(ApLowBits::Y),
+            8 => Ok(ApLowBits::YRate),
+            9 => Ok(ApLowBits::Z),
+            10 => Ok(ApLowBits::ZRate),
+            11 => Ok(ApLowBits::Azimuth),
+            12 => Ok(ApLowBits::AzimuthRate),
+            13 => Ok(ApLowBits::Elevation),
+            14 => Ok(ApLowBits::ElevationRate),
+            15 => Ok(ApLowBits::Rotation),
+            16 => Ok(ApLowBits::RotationRate),
+            n => Err(DisError::InvalidEnumValue(16, n as usize)),
+        }
+    }
+}
+
 pub enum ApHighBits {
     Placeholder = 0,
-// TODO
+// TODO finish enum values
 // 1024	rudder
 // 1056	left flap
 // 1088	right flap
@@ -685,19 +1192,18 @@ impl EntityState {
     // pub fn serialize() ->
 }
 
-impl TryFrom<&BytesMut> for EntityState {
-    type Error = DisError;
-
-
-    fn try_from(buf: &BytesMut) -> Result<Self, Self::Error> {
-        EntityState::try_from(&buf[..])
-    }
-}
-
-impl TryFrom<&[u8]> for EntityState {
-    type Error = DisError;
-
-    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
-        todo!()
-    }
-}
+// impl TryFrom<&BytesMut> for EntityState {
+//     type Error = DisError;
+//
+//     fn try_from(buf: &BytesMut) -> Result<Self, Self::Error> {
+//         EntityState::try_from(&buf[..])
+//     }
+// }
+//
+// impl TryFrom<&[u8]> for EntityState {
+//     type Error = DisError;
+//
+//     fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+//         todo!()
+//     }
+// }

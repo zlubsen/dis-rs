@@ -5,4 +5,5 @@ pub enum DisError {
     InvalidProtocolVersionValue(u8),
     InvalidPduTypeValue(u8),
     InvalidProtocolFamilyValue(u8),
+    InvalidEnumValue(usize, usize), // a field contains an enum value which is outside of the spec for that field; (usize max allowed, usize found)
 }
