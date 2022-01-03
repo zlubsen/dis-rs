@@ -1,4 +1,3 @@
-use bytes::BytesMut;
 use crate::dis::errors::DisError;
 use crate::dis::v6::model::PduHeader;
 use super::builder::EntityStateBuilder;
@@ -44,16 +43,14 @@ pub enum ForceId {
     Neutral = 3,
 }
 
-impl TryFrom<u8> for ForceId {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for ForceId {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(ForceId::Other),
-            1 => Ok(ForceId::Friendly),
-            2 => Ok(ForceId::Opposing),
-            3 => Ok(ForceId::Neutral),
-            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+            0 => ForceId::Other,
+            1 => ForceId::Friendly,
+            2 => ForceId::Opposing,
+            3 => ForceId::Neutral,
+            unspecified_value => ForceId::Other,
         }
     }
 }
@@ -81,22 +78,20 @@ pub enum EntityKind {
     SensorEmitter = 9,
 }
 
-impl TryFrom<u8> for EntityKind {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntityKind {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntityKind::Other),
-            1 => Ok(EntityKind::Platform),
-            2 => Ok(EntityKind::Munition),
-            3 => Ok(EntityKind::LifeForm),
-            4 => Ok(EntityKind::Environmental),
-            5 => Ok(EntityKind::CulturalFeature),
-            6 => Ok(EntityKind::Supply),
-            7 => Ok(EntityKind::Radio),
-            8 => Ok(EntityKind::Expendable),
-            9 => Ok(EntityKind::SensorEmitter),
-            n => Err(DisError::InvalidEnumValue(9, n as usize)),
+            0 => EntityKind::Other,
+            1 => EntityKind::Platform,
+            2 => EntityKind::Munition,
+            3 => EntityKind::LifeForm,
+            4 => EntityKind::Environmental,
+            5 => EntityKind::CulturalFeature,
+            6 => EntityKind::Supply,
+            7 => EntityKind::Radio,
+            8 => EntityKind::Expendable,
+            9 => EntityKind::SensorEmitter,
+            unspecified_value => EntityKind::Other,
         }
     }
 }
@@ -305,7 +300,7 @@ pub enum Country {
     SriLanka = 200,
     Sudan = 201,
     Suriname = 202,
-    Svalbard_Norway = 203,
+    SvalbardNorway = 203,
     Swaziland = 204,
     Sweden = 205,
     Switzerland = 206,
@@ -368,312 +363,310 @@ pub enum Country {
     Uzbekistan = 266,
 }
 
-impl TryFrom<u8> for Country {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u16> for Country {
+    fn from(value: u16) -> Self {
         match value {
-            0 => Ok(Country::Other),
-            1 => Ok(Country::Afghanistan),
-            2 => Ok(Country::Albania),
-            3 => Ok(Country::Algeria),
-            4 => Ok(Country::AmericanSamoa),
-            5 => Ok(Country::Andorra),
-            6 => Ok(Country::Angola),
-            7 => Ok(Country::Anguilla),
-            8 => Ok(Country::Antarctica),
-            9 => Ok(Country::AntiguaBarbuda),
-            10 => Ok(Country::Argentina),
-            11 => Ok(Country::Aruba),
-            12 => Ok(Country::AshmoreCartierIslands),
-            13 => Ok(Country::Australia),
-            14 => Ok(Country::Austria),
-            15 => Ok(Country::Bahamas),
-            16 => Ok(Country::Bahrain),
-            17 => Ok(Country::BakerIsland),
-            18 => Ok(Country::Bangladesh),
-            19 => Ok(Country::Barbados),
-            20 => Ok(Country::BassasDaIndia),
-            21 => Ok(Country::Belgium),
-            22 => Ok(Country::Belize),
-            23 => Ok(Country::Benin),
-            24 => Ok(Country::Bermuda),
-            25 => Ok(Country::Bhutan),
-            26 => Ok(Country::Bolivia),
-            27 => Ok(Country::Botswana),
-            28 => Ok(Country::BouvetIsland),
-            29 => Ok(Country::Brazil),
-            30 => Ok(Country::BritishIndianOceanTerritory),
-            31 => Ok(Country::BritishVirginIslands),
-            32 => Ok(Country::Brunei),
-            33 => Ok(Country::Bulgaria),
-            34 => Ok(Country::Burkina),
-            35 => Ok(Country::Burma),
-            36 => Ok(Country::Burundi),
-            37 => Ok(Country::Cambodia),
-            38 => Ok(Country::Cameroon),
-            39 => Ok(Country::Canada),
-            40 => Ok(Country::CapeVerde),
-            41 => Ok(Country::CaymanIslands),
-            42 => Ok(Country::CentralAfricanRepublic),
-            43 => Ok(Country::Chad),
-            44 => Ok(Country::Chile),
-            45 => Ok(Country::China),
-            46 => Ok(Country::ChristmasIsland),
-            47 => Ok(Country::CocosIslands),
-            48 => Ok(Country::Colombia),
-            49 => Ok(Country::Comoros),
-            50 => Ok(Country::Congo),
-            51 => Ok(Country::CookIslands),
-            52 => Ok(Country::CoralSeaIslands),
-            53 => Ok(Country::CostaRica),
-            54 => Ok(Country::Cuba),
-            55 => Ok(Country::Cyprus),
-            56 => Ok(Country::Czechoslovakia),
-            57 => Ok(Country::Denmark),
-            58 => Ok(Country::Djibouti),
-            59 => Ok(Country::Dominica),
-            60 => Ok(Country::DominicanRepublic),
-            61 => Ok(Country::Ecuador),
-            62 => Ok(Country::Egypt),
-            63 => Ok(Country::ElSalvador),
-            64 => Ok(Country::EquatorialGuinea),
-            65 => Ok(Country::Ethiopia),
-            66 => Ok(Country::EuropaIsland),
-            67 => Ok(Country::FalklandIslands),
-            68 => Ok(Country::FaroeIslands),
-            69 => Ok(Country::Fiji),
-            70 => Ok(Country::Finland),
-            71 => Ok(Country::France),
-            72 => Ok(Country::FrenchGuiana),
-            73 => Ok(Country::FrenchPolynesia),
-            74 => Ok(Country::FrenchSouthernAntarcticIslands),
-            75 => Ok(Country::Gabon),
-            76 => Ok(Country::GambiaThe),
-            77 => Ok(Country::GazaStrip),
-            78 => Ok(Country::Germany),
-            79 => Ok(Country::Ghana),
-            80 => Ok(Country::Gibraltar),
-            81 => Ok(Country::GloriosoIslands),
-            82 => Ok(Country::Greece),
-            83 => Ok(Country::Greenland),
-            84 => Ok(Country::Grenada),
-            85 => Ok(Country::Guadaloupe),
-            86 => Ok(Country::Guam),
-            87 => Ok(Country::Guatemala),
-            88 => Ok(Country::Guernsey),
-            89 => Ok(Country::Guinea),
-            90 => Ok(Country::GuineaBissau),
-            91 => Ok(Country::Guyana),
-            92 => Ok(Country::Haiti),
-            93 => Ok(Country::HeardIslandMcDonaldIslands),
-            94 => Ok(Country::Honduras),
-            95 => Ok(Country::HongKong),
-            96 => Ok(Country::HowlandIsland),
-            97 => Ok(Country::Hungary),
-            98 => Ok(Country::Iceland),
-            99 => Ok(Country::India),
-            100 => Ok(Country::Indonesia),
-            101 => Ok(Country::Iran),
-            102 => Ok(Country::Iraq),
-            104 => Ok(Country::Ireland),
-            105 => Ok(Country::Israel),
-            106 => Ok(Country::Italy),
-            107 => Ok(Country::CoteDIvoire),
-            108 => Ok(Country::Jamaica),
-            109 => Ok(Country::JanMayen),
-            110 => Ok(Country::Japan),
-            111 => Ok(Country::JarvisIsland),
-            112 => Ok(Country::Jersey),
-            113 => Ok(Country::JohnstonAtoll),
-            114 => Ok(Country::Jordan),
-            115 => Ok(Country::JuanDeNovaIsland),
-            116 => Ok(Country::Kenya),
-            117 => Ok(Country::KingmanReef),
-            118 => Ok(Country::Kiribati),
-            119 => Ok(Country::KoreaNorth),
-            120 => Ok(Country::KoreaSouth),
-            121 => Ok(Country::Kuwait),
-            122 => Ok(Country::Laos),
-            123 => Ok(Country::Lebanon),
-            124 => Ok(Country::Lesotho),
-            125 => Ok(Country::Liberia),
-            126 => Ok(Country::Libya),
-            127 => Ok(Country::Liechtenstein),
-            128 => Ok(Country::Luxembourg),
-            129 => Ok(Country::Madagascar),
-            130 => Ok(Country::Macau),
-            131 => Ok(Country::Malawi),
-            132 => Ok(Country::Malaysia),
-            133 => Ok(Country::Maldives),
-            134 => Ok(Country::Mali),
-            135 => Ok(Country::Malta),
-            136 => Ok(Country::ManIsle),
-            137 => Ok(Country::MarshallIslands),
-            138 => Ok(Country::Martinique),
-            139 => Ok(Country::Mauritania),
-            140 => Ok(Country::Mauritius),
-            141 => Ok(Country::Mayotte),
-            142 => Ok(Country::Mexico),
-            143 => Ok(Country::Micronesia),
-            144 => Ok(Country::Monaco),
-            145 => Ok(Country::Mongolia),
-            146 => Ok(Country::Montserrat),
-            147 => Ok(Country::Morocco),
-            148 => Ok(Country::Mozambique),
-            149 => Ok(Country::Namibia),
-            150 => Ok(Country::Nauru),
-            151 => Ok(Country::NavassaIsland),
-            152 => Ok(Country::Nepal),
-            153 => Ok(Country::Netherlands),
-            154 => Ok(Country::NetherlandsAntilles),
-            155 => Ok(Country::NewCaledonia),
-            156 => Ok(Country::NewZealand),
-            157 => Ok(Country::Nicaragua),
-            158 => Ok(Country::Niger),
-            159 => Ok(Country::Nigeria),
-            160 => Ok(Country::Niue),
-            161 => Ok(Country::NorfolkIsland),
-            162 => Ok(Country::NorthernMarianaIslands),
-            163 => Ok(Country::Norway),
-            164 => Ok(Country::Oman),
-            165 => Ok(Country::Pakistan),
-            166 => Ok(Country::PalmyraAtoll),
-            168 => Ok(Country::Panama),
-            169 => Ok(Country::PapuaNewGuinea),
-            170 => Ok(Country::ParacelIslands),
-            171 => Ok(Country::Paraguay),
-            172 => Ok(Country::Peru),
-            173 => Ok(Country::Philippines),
-            174 => Ok(Country::PitcairnIslands),
-            175 => Ok(Country::Poland),
-            176 => Ok(Country::Portugal),
-            177 => Ok(Country::PuertoRico),
-            178 => Ok(Country::Qatar),
-            179 => Ok(Country::Reunion),
-            180 => Ok(Country::Romania),
-            181 => Ok(Country::Rwanda),
-            182 => Ok(Country::StKittsAndNevis),
-            183 => Ok(Country::StHelena),
-            184 => Ok(Country::StLucia),
-            185 => Ok(Country::StPierreAndMiquelon),
-            186 => Ok(Country::StVincentAndTheGrenadines),
-            187 => Ok(Country::SanMarino),
-            188 => Ok(Country::SaoTomeAndPrincipe),
-            189 => Ok(Country::SaudiArabia),
-            190 => Ok(Country::Senegal),
-            191 => Ok(Country::Seychelles),
-            192 => Ok(Country::SierraLeone),
-            193 => Ok(Country::Singapore),
-            194 => Ok(Country::SolomonIslands),
-            195 => Ok(Country::Somalia),
-            196 => Ok(Country::SouthGeorgiaSouthSandwichIslands),
-            197 => Ok(Country::SouthAfrica),
-            198 => Ok(Country::Spain),
-            199 => Ok(Country::SpratlyIslands),
-            200 => Ok(Country::SriLanka),
-            201 => Ok(Country::Sudan),
-            202 => Ok(Country::Suriname),
-            203 => Ok(Country::Svalbard_Norway),
-            204 => Ok(Country::Swaziland),
-            205 => Ok(Country::Sweden),
-            206 => Ok(Country::Switzerland),
-            207 => Ok(Country::Syria),
-            208 => Ok(Country::Taiwan),
-            209 => Ok(Country::Tanzania),
-            210 => Ok(Country::Thailand),
-            211 => Ok(Country::Togo),
-            212 => Ok(Country::Tokelau),
-            213 => Ok(Country::Tonga),
-            214 => Ok(Country::TrinidadAndTobago),
-            215 => Ok(Country::TromelinIsland),
-            216 => Ok(Country::PacificIslands),
-            217 => Ok(Country::Tunisia),
-            218 => Ok(Country::Turkey),
-            219 => Ok(Country::TurksCaicosIslands),
-            220 => Ok(Country::Tuvalu),
-            221 => Ok(Country::Uganda),
-            222 => Ok(Country::CommonwealthOfIndependentStates),
-            223 => Ok(Country::UnitedArabEmirates),
-            224 => Ok(Country::UnitedKingdom),
-            225 => Ok(Country::UnitedStates),
-            226 => Ok(Country::Uruguay),
-            227 => Ok(Country::Vanuatu),
-            228 => Ok(Country::VaticanCity),
-            229 => Ok(Country::Venezuela),
-            230 => Ok(Country::Vietnam),
-            231 => Ok(Country::VirginIslands),
-            232 => Ok(Country::WakeIsland),
-            233 => Ok(Country::WallisFutuna),
-            234 => Ok(Country::WesternSahara),
-            235 => Ok(Country::WestBank),
-            236 => Ok(Country::WesternSamoa),
-            237 => Ok(Country::Yemen),
-            241 => Ok(Country::Zaire),
-            242 => Ok(Country::Zambia),
-            243 => Ok(Country::Zimbabwe),
-            244 => Ok(Country::Armenia),
-            245 => Ok(Country::Azerbaijan),
-            246 => Ok(Country::Belarus),
-            247 => Ok(Country::BosniaHercegovina),
-            248 => Ok(Country::ClippertonIsland),
-            249 => Ok(Country::Croatia),
-            250 => Ok(Country::Estonia),
-            251 => Ok(Country::Georgia),
-            252 => Ok(Country::Kazakhstan),
-            253 => Ok(Country::Kyrgyzstan),
-            254 => Ok(Country::Latvia),
-            255 => Ok(Country::Lithuania),
-            256 => Ok(Country::Macedonia),
-            257 => Ok(Country::MidwayIslands),
-            258 => Ok(Country::Moldova),
-            259 => Ok(Country::Montenegro),
-            260 => Ok(Country::Russia),
-            261 => Ok(Country::SerbiaMontenegro),
-            262 => Ok(Country::Slovenia),
-            263 => Ok(Country::Tajikistan),
-            264 => Ok(Country::Turkmenistan),
-            265 => Ok(Country::Ukraine),
-            266 => Ok(Country::Uzbekistan),
-            n => Err(DisError::InvalidEnumValue(266, n as usize)),
+            0 => Country::Other,
+            1 => Country::Afghanistan,
+            2 => Country::Albania,
+            3 => Country::Algeria,
+            4 => Country::AmericanSamoa,
+            5 => Country::Andorra,
+            6 => Country::Angola,
+            7 => Country::Anguilla,
+            8 => Country::Antarctica,
+            9 => Country::AntiguaBarbuda,
+            10 => Country::Argentina,
+            11 => Country::Aruba,
+            12 => Country::AshmoreCartierIslands,
+            13 => Country::Australia,
+            14 => Country::Austria,
+            15 => Country::Bahamas,
+            16 => Country::Bahrain,
+            17 => Country::BakerIsland,
+            18 => Country::Bangladesh,
+            19 => Country::Barbados,
+            20 => Country::BassasDaIndia,
+            21 => Country::Belgium,
+            22 => Country::Belize,
+            23 => Country::Benin,
+            24 => Country::Bermuda,
+            25 => Country::Bhutan,
+            26 => Country::Bolivia,
+            27 => Country::Botswana,
+            28 => Country::BouvetIsland,
+            29 => Country::Brazil,
+            30 => Country::BritishIndianOceanTerritory,
+            31 => Country::BritishVirginIslands,
+            32 => Country::Brunei,
+            33 => Country::Bulgaria,
+            34 => Country::Burkina,
+            35 => Country::Burma,
+            36 => Country::Burundi,
+            37 => Country::Cambodia,
+            38 => Country::Cameroon,
+            39 => Country::Canada,
+            40 => Country::CapeVerde,
+            41 => Country::CaymanIslands,
+            42 => Country::CentralAfricanRepublic,
+            43 => Country::Chad,
+            44 => Country::Chile,
+            45 => Country::China,
+            46 => Country::ChristmasIsland,
+            47 => Country::CocosIslands,
+            48 => Country::Colombia,
+            49 => Country::Comoros,
+            50 => Country::Congo,
+            51 => Country::CookIslands,
+            52 => Country::CoralSeaIslands,
+            53 => Country::CostaRica,
+            54 => Country::Cuba,
+            55 => Country::Cyprus,
+            56 => Country::Czechoslovakia,
+            57 => Country::Denmark,
+            58 => Country::Djibouti,
+            59 => Country::Dominica,
+            60 => Country::DominicanRepublic,
+            61 => Country::Ecuador,
+            62 => Country::Egypt,
+            63 => Country::ElSalvador,
+            64 => Country::EquatorialGuinea,
+            65 => Country::Ethiopia,
+            66 => Country::EuropaIsland,
+            67 => Country::FalklandIslands,
+            68 => Country::FaroeIslands,
+            69 => Country::Fiji,
+            70 => Country::Finland,
+            71 => Country::France,
+            72 => Country::FrenchGuiana,
+            73 => Country::FrenchPolynesia,
+            74 => Country::FrenchSouthernAntarcticIslands,
+            75 => Country::Gabon,
+            76 => Country::GambiaThe,
+            77 => Country::GazaStrip,
+            78 => Country::Germany,
+            79 => Country::Ghana,
+            80 => Country::Gibraltar,
+            81 => Country::GloriosoIslands,
+            82 => Country::Greece,
+            83 => Country::Greenland,
+            84 => Country::Grenada,
+            85 => Country::Guadaloupe,
+            86 => Country::Guam,
+            87 => Country::Guatemala,
+            88 => Country::Guernsey,
+            89 => Country::Guinea,
+            90 => Country::GuineaBissau,
+            91 => Country::Guyana,
+            92 => Country::Haiti,
+            93 => Country::HeardIslandMcDonaldIslands,
+            94 => Country::Honduras,
+            95 => Country::HongKong,
+            96 => Country::HowlandIsland,
+            97 => Country::Hungary,
+            98 => Country::Iceland,
+            99 => Country::India,
+            100 => Country::Indonesia,
+            101 => Country::Iran,
+            102 => Country::Iraq,
+            104 => Country::Ireland,
+            105 => Country::Israel,
+            106 => Country::Italy,
+            107 => Country::CoteDIvoire,
+            108 => Country::Jamaica,
+            109 => Country::JanMayen,
+            110 => Country::Japan,
+            111 => Country::JarvisIsland,
+            112 => Country::Jersey,
+            113 => Country::JohnstonAtoll,
+            114 => Country::Jordan,
+            115 => Country::JuanDeNovaIsland,
+            116 => Country::Kenya,
+            117 => Country::KingmanReef,
+            118 => Country::Kiribati,
+            119 => Country::KoreaNorth,
+            120 => Country::KoreaSouth,
+            121 => Country::Kuwait,
+            122 => Country::Laos,
+            123 => Country::Lebanon,
+            124 => Country::Lesotho,
+            125 => Country::Liberia,
+            126 => Country::Libya,
+            127 => Country::Liechtenstein,
+            128 => Country::Luxembourg,
+            129 => Country::Madagascar,
+            130 => Country::Macau,
+            131 => Country::Malawi,
+            132 => Country::Malaysia,
+            133 => Country::Maldives,
+            134 => Country::Mali,
+            135 => Country::Malta,
+            136 => Country::ManIsle,
+            137 => Country::MarshallIslands,
+            138 => Country::Martinique,
+            139 => Country::Mauritania,
+            140 => Country::Mauritius,
+            141 => Country::Mayotte,
+            142 => Country::Mexico,
+            143 => Country::Micronesia,
+            144 => Country::Monaco,
+            145 => Country::Mongolia,
+            146 => Country::Montserrat,
+            147 => Country::Morocco,
+            148 => Country::Mozambique,
+            149 => Country::Namibia,
+            150 => Country::Nauru,
+            151 => Country::NavassaIsland,
+            152 => Country::Nepal,
+            153 => Country::Netherlands,
+            154 => Country::NetherlandsAntilles,
+            155 => Country::NewCaledonia,
+            156 => Country::NewZealand,
+            157 => Country::Nicaragua,
+            158 => Country::Niger,
+            159 => Country::Nigeria,
+            160 => Country::Niue,
+            161 => Country::NorfolkIsland,
+            162 => Country::NorthernMarianaIslands,
+            163 => Country::Norway,
+            164 => Country::Oman,
+            165 => Country::Pakistan,
+            166 => Country::PalmyraAtoll,
+            168 => Country::Panama,
+            169 => Country::PapuaNewGuinea,
+            170 => Country::ParacelIslands,
+            171 => Country::Paraguay,
+            172 => Country::Peru,
+            173 => Country::Philippines,
+            174 => Country::PitcairnIslands,
+            175 => Country::Poland,
+            176 => Country::Portugal,
+            177 => Country::PuertoRico,
+            178 => Country::Qatar,
+            179 => Country::Reunion,
+            180 => Country::Romania,
+            181 => Country::Rwanda,
+            182 => Country::StKittsAndNevis,
+            183 => Country::StHelena,
+            184 => Country::StLucia,
+            185 => Country::StPierreAndMiquelon,
+            186 => Country::StVincentAndTheGrenadines,
+            187 => Country::SanMarino,
+            188 => Country::SaoTomeAndPrincipe,
+            189 => Country::SaudiArabia,
+            190 => Country::Senegal,
+            191 => Country::Seychelles,
+            192 => Country::SierraLeone,
+            193 => Country::Singapore,
+            194 => Country::SolomonIslands,
+            195 => Country::Somalia,
+            196 => Country::SouthGeorgiaSouthSandwichIslands,
+            197 => Country::SouthAfrica,
+            198 => Country::Spain,
+            199 => Country::SpratlyIslands,
+            200 => Country::SriLanka,
+            201 => Country::Sudan,
+            202 => Country::Suriname,
+            203 => Country::SvalbardNorway,
+            204 => Country::Swaziland,
+            205 => Country::Sweden,
+            206 => Country::Switzerland,
+            207 => Country::Syria,
+            208 => Country::Taiwan,
+            209 => Country::Tanzania,
+            210 => Country::Thailand,
+            211 => Country::Togo,
+            212 => Country::Tokelau,
+            213 => Country::Tonga,
+            214 => Country::TrinidadAndTobago,
+            215 => Country::TromelinIsland,
+            216 => Country::PacificIslands,
+            217 => Country::Tunisia,
+            218 => Country::Turkey,
+            219 => Country::TurksCaicosIslands,
+            220 => Country::Tuvalu,
+            221 => Country::Uganda,
+            222 => Country::CommonwealthOfIndependentStates,
+            223 => Country::UnitedArabEmirates,
+            224 => Country::UnitedKingdom,
+            225 => Country::UnitedStates,
+            226 => Country::Uruguay,
+            227 => Country::Vanuatu,
+            228 => Country::VaticanCity,
+            229 => Country::Venezuela,
+            230 => Country::Vietnam,
+            231 => Country::VirginIslands,
+            232 => Country::WakeIsland,
+            233 => Country::WallisFutuna,
+            234 => Country::WesternSahara,
+            235 => Country::WestBank,
+            236 => Country::WesternSamoa,
+            237 => Country::Yemen,
+            241 => Country::Zaire,
+            242 => Country::Zambia,
+            243 => Country::Zimbabwe,
+            244 => Country::Armenia,
+            245 => Country::Azerbaijan,
+            246 => Country::Belarus,
+            247 => Country::BosniaHercegovina,
+            248 => Country::ClippertonIsland,
+            249 => Country::Croatia,
+            250 => Country::Estonia,
+            251 => Country::Georgia,
+            252 => Country::Kazakhstan,
+            253 => Country::Kyrgyzstan,
+            254 => Country::Latvia,
+            255 => Country::Lithuania,
+            256 => Country::Macedonia,
+            257 => Country::MidwayIslands,
+            258 => Country::Moldova,
+            259 => Country::Montenegro,
+            260 => Country::Russia,
+            261 => Country::SerbiaMontenegro,
+            262 => Country::Slovenia,
+            263 => Country::Tajikistan,
+            264 => Country::Turkmenistan,
+            265 => Country::Ukraine,
+            266 => Country::Uzbekistan,
+            unspecified_value => Country::Other,
         }
     }
 }
 
 pub struct VectorF32 {
-    first_vector_component : f32,
-    second_vector_component : f32,
-    third_vector_component : f32,
+    pub first_vector_component : f32,
+    pub second_vector_component : f32,
+    pub third_vector_component : f32,
 }
 
 pub struct Location {
-    x_coordinate : f64,
-    y_coordinate : f64,
-    z_coordinate : f64,
+    pub x_coordinate : f64,
+    pub y_coordinate : f64,
+    pub z_coordinate : f64,
 }
 
 // TODO alias to vectorf32?
 pub struct Orientation {
-    psi : f32,
-    theta : f32,
-    phi : f32,
+    pub psi : f32,
+    pub theta : f32,
+    pub phi : f32,
 }
 
 pub struct Appearance {
-    general_appearance : GeneralAppearance,
-    specific_appearance : SpecificAppearance,
+    pub general_appearance : GeneralAppearance,
+    pub specific_appearance : SpecificAppearance,
 }
 
 pub struct GeneralAppearance {
-    entity_paint_scheme : EntityPaintScheme, // enum
-    entity_mobility_kill : EntityMobilityKill, // enum
-    entity_fire_power : EntityFirePower, // enum
-    entity_damage : EntityDamage, // enum
-    entity_smoke : EntitySmoke, // enum
-    entity_trailing_effect : EntityTrailingEffect, // enum
-    entity_hatch_state : EntityHatchState, // enum
-    entity_lights : EntityLights, // enum
-    entity_flaming_effect : EntityFlamingEffect, // enum
+    pub entity_paint_scheme : EntityPaintScheme, // enum
+    pub entity_mobility_kill : EntityMobilityKill, // enum
+    pub entity_fire_power : EntityFirePower, // enum
+    pub entity_damage : EntityDamage, // enum
+    pub entity_smoke : EntitySmoke, // enum
+    pub entity_trailing_effect : EntityTrailingEffect, // enum
+    pub entity_hatch_state : EntityHatchState, // enum
+    pub entity_lights : EntityLights, // enum
+    pub entity_flaming_effect : EntityFlamingEffect, // enum
 }
 
 pub enum EntityPaintScheme {
@@ -681,14 +674,11 @@ pub enum EntityPaintScheme {
     Camouflage = 1,
 }
 
-impl TryFrom<u8> for EntityPaintScheme {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<bool> for EntityPaintScheme {
+    fn from(value: bool) -> Self {
         match value {
-            0 => Ok(EntityPaintScheme::UniformColor),
-            1 => Ok(EntityPaintScheme::Camouflage),
-            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+            false => EntityPaintScheme::UniformColor,
+            true => EntityPaintScheme::Camouflage,
         }
     }
 }
@@ -698,14 +688,11 @@ pub enum EntityMobilityKill {
     MobilityKill = 1,
 }
 
-impl TryFrom<u8> for EntityMobilityKill {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<bool> for EntityMobilityKill {
+    fn from(value: bool) -> Self {
         match value {
-            0 => Ok(EntityMobilityKill::NoMobilityKill),
-            1 => Ok(EntityMobilityKill::MobilityKill),
-            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+            false => EntityMobilityKill::NoMobilityKill,
+            true => EntityMobilityKill::MobilityKill,
         }
     }
 }
@@ -715,14 +702,11 @@ pub enum EntityFirePower {
     FirePowerKill = 1,
 }
 
-impl TryFrom<u8> for EntityFirePower {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<bool> for EntityFirePower {
+    fn from(value: bool) -> Self {
         match value {
-            0 => Ok(EntityFirePower::NoFirePowerKill),
-            1 => Ok(EntityFirePower::FirePowerKill),
-            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+            false => EntityFirePower::NoFirePowerKill,
+            true => EntityFirePower::FirePowerKill,
         }
     }
 }
@@ -734,16 +718,14 @@ pub enum EntityDamage {
     Destroyed = 3,
 }
 
-impl TryFrom<u8> for EntityDamage {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntityDamage {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntityDamage::NoDamage),
-            1 => Ok(EntityDamage::SlightDamage),
-            2 => Ok(EntityDamage::ModerateDamage),
-            3 => Ok(EntityDamage::Destroyed),
-            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+            0 => EntityDamage::NoDamage,
+            1 => EntityDamage::SlightDamage,
+            2 => EntityDamage::ModerateDamage,
+            3 => EntityDamage::Destroyed,
+            unspecified_value => EntityDamage::NoDamage,
         }
     }
 }
@@ -755,16 +737,14 @@ pub enum EntitySmoke {
     EmittingEngineSmokeAndSmokePlumeRising = 3,
 }
 
-impl TryFrom<u8> for EntitySmoke {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntitySmoke {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntitySmoke::NotSmoking),
-            1 => Ok(EntitySmoke::SmokePlumeRising),
-            2 => Ok(EntitySmoke::EmittingEngineSmoke),
-            3 => Ok(EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising),
-            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+            0 => EntitySmoke::NotSmoking,
+            1 => EntitySmoke::SmokePlumeRising,
+            2 => EntitySmoke::EmittingEngineSmoke,
+            3 => EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising,
+            unspecified_value => EntitySmoke::NotSmoking,
         }
     }
 }
@@ -776,16 +756,14 @@ pub enum EntityTrailingEffect {
     Large = 3,
 }
 
-impl TryFrom<u8> for EntityTrailingEffect {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntityTrailingEffect {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntityTrailingEffect::None),
-            1 => Ok(EntityTrailingEffect::Small),
-            2 => Ok(EntityTrailingEffect::Medium),
-            3 => Ok(EntityTrailingEffect::Large),
-            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+            0 => EntityTrailingEffect::None,
+            1 => EntityTrailingEffect::Small,
+            2 => EntityTrailingEffect::Medium,
+            3 => EntityTrailingEffect::Large,
+            unspecified_value => EntityTrailingEffect::None,
         }
     }
 }
@@ -801,20 +779,18 @@ pub enum EntityHatchState {
     Unused2 = 7,
 }
 
-impl TryFrom<u8> for EntityHatchState {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntityHatchState {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntityHatchState::NotApplicable),
-            1 => Ok(EntityHatchState::Closed),
-            2 => Ok(EntityHatchState::Popped),
-            3 => Ok(EntityHatchState::PoppedAndPersonVisible),
-            4 => Ok(EntityHatchState::Open),
-            5 => Ok(EntityHatchState::OpenAndPersonVisible),
-            6 => Ok(EntityHatchState::Unused1),
-            7 => Ok(EntityHatchState::Unused2),
-            n => Err(DisError::InvalidEnumValue(7, n as usize)),
+            0 => EntityHatchState::NotApplicable,
+            1 => EntityHatchState::Closed,
+            2 => EntityHatchState::Popped,
+            3 => EntityHatchState::PoppedAndPersonVisible,
+            4 => EntityHatchState::Open,
+            5 => EntityHatchState::OpenAndPersonVisible,
+            6 => EntityHatchState::Unused1,
+            7 => EntityHatchState::Unused2,
+            unspecified_value => EntityHatchState::NotApplicable,
         }
     }
 }
@@ -830,20 +806,18 @@ pub enum EntityLights {
     Unused4 = 7,
 }
 
-impl TryFrom<u8> for EntityLights {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntityLights {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntityLights::None),
-            1 => Ok(EntityLights::RunningLightsOn),
-            2 => Ok(EntityLights::NavigationLightsOn),
-            3 => Ok(EntityLights::FromationLightsOn),
-            4 => Ok(EntityLights::Unused1),
-            5 => Ok(EntityLights::Unused2),
-            6 => Ok(EntityLights::Unused3),
-            7 => Ok(EntityLights::Unused4),
-            n => Err(DisError::InvalidEnumValue(7, n as usize)),
+            0 => EntityLights::None,
+            1 => EntityLights::RunningLightsOn,
+            2 => EntityLights::NavigationLightsOn,
+            3 => EntityLights::FromationLightsOn,
+            4 => EntityLights::Unused1,
+            5 => EntityLights::Unused2,
+            6 => EntityLights::Unused3,
+            7 => EntityLights::Unused4,
+            unspecified_value => EntityLights::None,
         }
     }
 }
@@ -853,14 +827,11 @@ pub enum EntityFlamingEffect {
     FlamesPresent = 1,
 }
 
-impl TryFrom<u8> for EntityFlamingEffect {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<bool> for EntityFlamingEffect {
+    fn from(value: bool) -> Self {
         match value {
-            0 => Ok(EntityFlamingEffect::None),
-            1 => Ok(EntityFlamingEffect::FlamesPresent),
-            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+            false => EntityFlamingEffect::None,
+            true => EntityFlamingEffect::FlamesPresent,
         }
     }
 }
@@ -897,22 +868,20 @@ pub enum DrAlgorithm {
     DrmFVB = 9,
 }
 
-impl TryFrom<u8> for DrAlgorithm {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for DrAlgorithm {
+    fn try_from(value: u8) -> Self {
         match value {
-            0 => Ok(DrAlgorithm::Other),
-            1 => Ok(DrAlgorithm::Static),
-            2 => Ok(DrAlgorithm::DrmFPW),
-            3 => Ok(DrAlgorithm::DrmRPW),
-            4 => Ok(DrAlgorithm::DrmRVW),
-            5 => Ok(DrAlgorithm::DrmFVW),
-            6 => Ok(DrAlgorithm::DrmFPB),
-            7 => Ok(DrAlgorithm::DrmRPB),
-            8 => Ok(DrAlgorithm::DrmRVB),
-            9 => Ok(DrAlgorithm::DrmFVB),
-            n => Err(DisError::InvalidEnumValue(9, n as usize)),
+            0 => DrAlgorithm::Other,
+            1 => DrAlgorithm::Static,
+            2 => DrAlgorithm::DrmFPW,
+            3 => DrAlgorithm::DrmRPW,
+            4 => DrAlgorithm::DrmRVW,
+            5 => DrAlgorithm::DrmFVW,
+            6 => DrAlgorithm::DrmFPB,
+            7 => DrAlgorithm::DrmRPB,
+            8 => DrAlgorithm::DrmRVB,
+            9 => DrAlgorithm::DrmFVB,
+            unspecified_value => DrAlgorithm::Other,
         }
     }
 }
@@ -933,16 +902,14 @@ pub enum EntityMarkingCharacterSet {
     DigitChevron = 3,
 }
 
-impl TryFrom<u8> for EntityMarkingCharacterSet {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<u8> for EntityMarkingCharacterSet {
+    fn from(value: u8) -> Self {
         match value {
-            0 => Ok(EntityMarkingCharacterSet::Unused),
-            1 => Ok(EntityMarkingCharacterSet::ASCII),
-            2 => Ok(EntityMarkingCharacterSet::ArmyMarking),
-            3 => Ok(EntityMarkingCharacterSet::DigitChevron),
-            n => Err(DisError::InvalidEnumValue(3, n as usize)),
+            0 => EntityMarkingCharacterSet::Unused,
+            1 => EntityMarkingCharacterSet::ASCII,
+            2 => EntityMarkingCharacterSet::ArmyMarking,
+            3 => EntityMarkingCharacterSet::DigitChevron,
+            unspecified_value => EntityMarkingCharacterSet::Unused,
         }
     }
 }
@@ -968,14 +935,11 @@ pub enum ApTypeDesignator {
     Attached = 1,
 }
 
-impl TryFrom<u8> for ApTypeDesignator {
-    type Error = DisError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+impl From<bool> for ApTypeDesignator {
+    fn from(value: bool) -> Self {
         match value {
-            0 => Ok(ApTypeDesignator::Articulated),
-            1 => Ok(ApTypeDesignator::Attached),
-            n => Err(DisError::InvalidEnumValue(1, n as usize)),
+            false => ApTypeDesignator::Articulated,
+            true => ApTypeDesignator::Attached,
         }
     }
 }
@@ -1025,28 +989,26 @@ pub enum ApLowBits {
     Z = 9,
 }
 
-impl TryFrom<u16> for ApLowBits {
-    type Error = DisError;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
+impl From<u16> for ApLowBits {
+    fn from(value: u16) -> Self {
         match value {
-            1 => Ok(ApLowBits::Position),
-            2 => Ok(ApLowBits::PositionRate),
-            3 => Ok(ApLowBits::Extension),
-            4 => Ok(ApLowBits::ExtensionRate),
-            5 => Ok(ApLowBits::X),
-            6 => Ok(ApLowBits::XRate),
-            7 => Ok(ApLowBits::Y),
-            8 => Ok(ApLowBits::YRate),
-            9 => Ok(ApLowBits::Z),
-            10 => Ok(ApLowBits::ZRate),
-            11 => Ok(ApLowBits::Azimuth),
-            12 => Ok(ApLowBits::AzimuthRate),
-            13 => Ok(ApLowBits::Elevation),
-            14 => Ok(ApLowBits::ElevationRate),
-            15 => Ok(ApLowBits::Rotation),
-            16 => Ok(ApLowBits::RotationRate),
-            n => Err(DisError::InvalidEnumValue(16, n as usize)),
+            1 => ApLowBits::Position,
+            2 => ApLowBits::PositionRate,
+            3 => ApLowBits::Extension,
+            4 => ApLowBits::ExtensionRate,
+            5 => ApLowBits::X,
+            6 => ApLowBits::XRate,
+            7 => ApLowBits::Y,
+            8 => ApLowBits::YRate,
+            9 => ApLowBits::Z,
+            10 => ApLowBits::ZRate,
+            11 => ApLowBits::Azimuth,
+            12 => ApLowBits::AzimuthRate,
+            13 => ApLowBits::Elevation,
+            14 => ApLowBits::ElevationRate,
+            15 => ApLowBits::Rotation,
+            16 => ApLowBits::RotationRate,
+            unspecified_value => ApLowBits::Position, // TODO this is not Ok.
         }
     }
 }

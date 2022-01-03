@@ -1,4 +1,5 @@
-use crate::dis::v6::model::{PduHeader, PduType, ProtocolFamily, ProtocolVersion};
+use crate::dis::common::model::ProtocolVersion;
+use crate::dis::v6::model::{PduHeader, PduType, ProtocolFamily};
 
 pub struct PduHeaderBuilder {
     pub protocol_version : Option<ProtocolVersion>,

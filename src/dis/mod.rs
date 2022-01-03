@@ -18,6 +18,7 @@ pub enum Pdu {
 /// This function tries to parse as many PDUs as there are in the buffer,
 /// assuming there are only complete PDUs present in the input.
 pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, errors::DisError> {
+    // let (input, version) = peek
     todo!()
 }
 
