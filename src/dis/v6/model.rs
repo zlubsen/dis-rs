@@ -7,6 +7,7 @@ use super::entity_state::model::EntityState;
 
 pub const PDU_HEADER_LEN_BYTES : usize = 96;
 
+#[derive(Copy, Clone)]
 pub struct PduHeader {
     pub protocol_version : ProtocolVersion,
     pub exercise_id : u8,
@@ -17,6 +18,7 @@ pub struct PduHeader {
     pub padding : u16,
 }
 
+#[derive(Copy, Clone)]
 pub enum PduType {
     OtherPdu = 0,
     EntityStatePdu = 1,
@@ -128,6 +130,7 @@ impl From<u8> for PduType {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum ProtocolFamily {
     Other = 0,
     EntityInformationInteraction = 1,

@@ -1,4 +1,6 @@
-use nom::{Err, IResult};
+use nom::bytes::complete::take;
+use nom::IResult;
+use nom::multi::many1;
 use nom::number::complete::{be_u32, be_u8, be_u16};
 use nom::sequence::tuple;
 
@@ -9,44 +11,49 @@ use crate::dis::v6::entity_state::parser::entity_state_body;
 use crate::dis::v6::other::model::Other;
 use crate::dis::v6::other::parser::other_body;
 
+pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
+    match many1(pdu)(input) {
+        Ok((_, pdus)) => { Ok(pdus) }
+        Err(_) => { Err(DisError::ParseError) } // TODO not very descriptive / error means we can not match any PDUs
+    }
+}
+
+pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
+    match pdu(input) {
+        Ok((_, pdu)) => { Ok(pdu) }
+        Err(_) => { Err(DisError::ParseError) } // TODO not very descriptive / error means we can not match any PDUs
+    }
+}
+
+pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
+    match many1(pdu_header_skip_body)(input) {
+        Ok((_, headers)) => { Ok(headers) }
+        Err(_) => { Err(DisError::ParseError) } // TODO not very descriptive / error means we can not match any PDUs
+    }
+}
+
+/// Parse the input for a PDU header, and skip the rest of the pdu body in the input
+pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
+    match pdu_header(input) {
+        Ok((input, header)) => {
+            let skipped = skip_body(&header)(input); // Discard the body
+            if let Err(err) = skipped {
+                return Err(DisError::ParseError) // TODO not very descriptive / error means we can not skip enough bytes for the body
+            }
+            Ok(header)
+        }
+        Err(_) => { Err(DisError::ParseError) } // TODO not very descriptive / error means we can not match any PDUs
+    }
+}
 
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
-    let header_result = pdu_header(input);
-    if let Err(err) = header_result {
-        match err {
-            // TODO return error from this match
-            Err::Incomplete(_) => {  } // working with complete data, should not happen
-            Err::Error(_) => {  } // would mean a malformed or too short PDU
-            Err::Failure(_) => {  } // found some invalid data
-        }
-    }
-    let (input, header) = header_result?;
+    let (input, header) = pdu_header(input)?;
     // parse the body based on the type
     // and produce the final pdu combined with the header
-    let (input, pdu) = pdu_body(input, header)?;
+    let (input, pdu) = pdu_body(header)(input)?;
 
     Ok((input, pdu))
-}
-
-// TODO handle using a parser error type (Err::Error)
-// TODO alternative: implement for a custom wrapper type on the buffer?
-fn has_minimal_header_len(input: &[u8]) -> Result<(), DisError> {
-    if input.len() >= PDU_HEADER_LEN_BYTES {
-        Ok(())
-    } else {
-        Err(DisError::InsufficientHeaderLength(PDU_HEADER_LEN_BYTES, input.len()))
-    }
-}
-
-// TODO handle using a parser error type (Err::Error)
-// TODO alternative: implement for a custom wrapper type on the buffer?
-fn has_minimal_pdu_len(input: &[u8], expected_len: usize) -> Result<(), DisError> {
-    if input.len() >= expected_len {
-        Ok(())
-    } else {
-        Err(DisError::InsufficientPduLength(expected_len, input.len()))
-    }
 }
 
 fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
@@ -73,6 +80,19 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
         }))
 }
 
+fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
+    let (input, header) = pdu_header(input)?;
+    let (input, _) = skip_body(&header)(input)?;
+    Ok((input, header))
+}
+
+fn skip_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
+    let bytes_to_skip = header.pdu_length as usize - PDU_HEADER_LEN_BYTES;
+    move |input| {
+        take(bytes_to_skip)(input)
+    }
+}
+
 fn protocol_version(input: &[u8]) -> IResult<&[u8], ProtocolVersion> {
     let (input, protocol_version) = be_u8(input)?;
     let protocol_version = ProtocolVersion::from(protocol_version);
@@ -91,69 +111,64 @@ fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
     Ok((input, protocol_family))
 }
 
-// TODO This is probably not the correct way to give parsers extra arguments > fix
-// fn pdu_body<Input, Error: ParseError<Input>>(
-//     header: PduHeader,
-// ) -> impl Fn(Input) -> IResult<Input, Pdu, Error>
-//     where
-//         Input: InputIter + InputTake,
-fn pdu_body(input: &[u8], header: PduHeader) -> IResult<&[u8], Pdu>
-{
-    // parse the body of the PDU based on the type
-    let (input, pdu) = match header.pdu_type {
-        PduType::OtherPdu => { other_body(input, header)? }
-        PduType::EntityStatePdu => { entity_state_body(input, header)? }
-        _ => (input, Pdu::Other(Other{header, body: Vec::new()})),
-        // PduType::FirePdu => {}
-        // PduType::DetonationPdu => {}
-        // PduType::CollisionPdu => {}
-        // PduType::ServiceRequestPdu => {}
-        // PduType::ResupplyOfferPdu => {}
-        // PduType::ResupplyReceivedPdu => {}
-        // PduType::ResupplyCancelPdu => {}
-        // PduType::RepairCompletePdu => {}
-        // PduType::RepairResponsePdu => {}
-        // PduType::CreateEntityPdu => {}
-        // PduType::RemoveEntityPdu => {}
-        // PduType::StartResumePdu => {}
-        // PduType::StopFreezePdu => {}
-        // PduType::AcknowledgePdu => {}
-        // PduType::ActionRequestPdu => {}
-        // PduType::ActionResponsePdu => {}
-        // PduType::DataQueryPdu => {}
-        // PduType::SetDataPdu => {}
-        // PduType::DataPdu => {}
-        // PduType::EventReportPdu => {}
-        // PduType::CommentPdu => {}
-        // PduType::ElectromagneticEmissionPdu => {}
-        // PduType::DesignatorPdu => {}
-        // PduType::TransmitterPdu => {}
-        // PduType::SignalPdu => {}
-        // PduType::ReceiverPdu => {}
-        // PduType::AnnounceObjectPdu => {}
-        // PduType::DeleteObjectPdu => {}
-        // PduType::DescribeApplicationPdu => {}
-        // PduType::DescribeEventPdu => {}
-        // PduType::DescribeObjectPdu => {}
-        // PduType::RequestEventPdu => {}
-        // PduType::RequestObjectPdu => {}
-        // PduType::TimeSpacePositionIndicatorFIPdu => {}
-        // PduType::AppearanceFIPdu => {}
-        // PduType::ArticulatedPartsFIPdu => {}
-        // PduType::FireFIPdu => {}
-        // PduType::DetonationFIPdu => {}
-        // PduType::PointObjectStatePdu => {}
-        // PduType::LinearObjectStatePdu => {}
-        // PduType::ArealObjectStatePdu => {}
-        // PduType::EnvironmentPdu => {}
-        // PduType::TransferControlRequestPdu => {}
-        // PduType::TransferControlPdu => {}
-        // PduType::TransferControlAcknowledgePdu => {}
-        // PduType::IntercomControlPdu => {}
-        // PduType::IntercomSignalPdu => {}
-        // PduType::AggregatePdu => {}
-    };
-    // TODO handle result of pdu variable
-    Ok((input, pdu))
+fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
+    move | input: &[u8] | {
+        // parse the body of the PDU based on the type
+        let (input, pdu) = match header.pdu_type {
+            PduType::OtherPdu => { other_body(header)(input)? }
+            PduType::EntityStatePdu => { entity_state_body(header)(input)? }
+            _ => (input, Pdu::Other(Other { header, body: Vec::new() })),
+            // PduType::FirePdu => {}
+            // PduType::DetonationPdu => {}
+            // PduType::CollisionPdu => {}
+            // PduType::ServiceRequestPdu => {}
+            // PduType::ResupplyOfferPdu => {}
+            // PduType::ResupplyReceivedPdu => {}
+            // PduType::ResupplyCancelPdu => {}
+            // PduType::RepairCompletePdu => {}
+            // PduType::RepairResponsePdu => {}
+            // PduType::CreateEntityPdu => {}
+            // PduType::RemoveEntityPdu => {}
+            // PduType::StartResumePdu => {}
+            // PduType::StopFreezePdu => {}
+            // PduType::AcknowledgePdu => {}
+            // PduType::ActionRequestPdu => {}
+            // PduType::ActionResponsePdu => {}
+            // PduType::DataQueryPdu => {}
+            // PduType::SetDataPdu => {}
+            // PduType::DataPdu => {}
+            // PduType::EventReportPdu => {}
+            // PduType::CommentPdu => {}
+            // PduType::ElectromagneticEmissionPdu => {}
+            // PduType::DesignatorPdu => {}
+            // PduType::TransmitterPdu => {}
+            // PduType::SignalPdu => {}
+            // PduType::ReceiverPdu => {}
+            // PduType::AnnounceObjectPdu => {}
+            // PduType::DeleteObjectPdu => {}
+            // PduType::DescribeApplicationPdu => {}
+            // PduType::DescribeEventPdu => {}
+            // PduType::DescribeObjectPdu => {}
+            // PduType::RequestEventPdu => {}
+            // PduType::RequestObjectPdu => {}
+            // PduType::TimeSpacePositionIndicatorFIPdu => {}
+            // PduType::AppearanceFIPdu => {}
+            // PduType::ArticulatedPartsFIPdu => {}
+            // PduType::FireFIPdu => {}
+            // PduType::DetonationFIPdu => {}
+            // PduType::PointObjectStatePdu => {}
+            // PduType::LinearObjectStatePdu => {}
+            // PduType::ArealObjectStatePdu => {}
+            // PduType::EnvironmentPdu => {}
+            // PduType::TransferControlRequestPdu => {}
+            // PduType::TransferControlPdu => {}
+            // PduType::TransferControlAcknowledgePdu => {}
+            // PduType::IntercomControlPdu => {}
+            // PduType::IntercomSignalPdu => {}
+            // PduType::AggregatePdu => {}
+        };
+        // TODO handle result of pdu variable
+        Ok((input, pdu))
+    }
 }
 

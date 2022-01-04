@@ -1,4 +1,6 @@
 pub enum DisError {
+    UnsupportedProtocolVersion,
+    ParseError, // the parsing of a PDU resulted in an error
     InsufficientHeaderLength(usize, usize), // the buffer is too small to contain a valid DIS header; (usize expected, usize found)
     InsufficientPduLength(usize, usize), // the buffer is too small to contain a valid DIS Pdu based on the header; (usize expected, usize found)
     MalformedPdu,

@@ -72,7 +72,7 @@ impl EntityStateBuilder {
         self
     }
 
-    fn validate(&self) -> Result<bool, EntityStateValidationError> {
+    fn validate(&self) -> Result<(), EntityStateValidationError> {
         // TODO "Check if all fields are filled in properly; required are set, valid values..., based on the standard"
 
         return if self.header.is_some() &&
@@ -87,14 +87,16 @@ impl EntityStateBuilder {
             self.dead_reckoning_parameters.is_some() &&
             self.entity_marking.is_some() &&
             self.entity_capabilities.is_some() {
-            Ok(true)
+            Ok(())
         } else { Err(EntityStateValidationError::SomeFieldNotOkError )}
     }
 
-    pub fn build(self) -> EntityState {
-        self.validate();
+    pub fn build(self) -> Result<EntityState, ()> { // TODO sane error type
+        if let Err(err) = self.validate() {
+            return Err(())
+        }
 
-        EntityState {
+        Ok(EntityState {
             header: self.header.expect("Value expected, but not found."),
             entity_id: self.entity_id.expect("Value expected, but not found."),
             force_id: self.force_id.expect("Value expected, but not found."),
@@ -109,6 +111,6 @@ impl EntityStateBuilder {
             entity_marking: self.entity_marking.expect("Value expected, but not found."),
             entity_capabilities: self.entity_capabilities.expect("Value expected, but not found."),
             articulation_parameter: if self.articulation_parameter.is_empty() { Some(self.articulation_parameter) } else { None },
-        }
+        })
     }
 }

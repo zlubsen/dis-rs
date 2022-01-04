@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub enum ProtocolVersion {
     Other = 0,
     VERSION_1_0_MAY_92 = 1,             // DIS PDU version 1.0 (May 92)

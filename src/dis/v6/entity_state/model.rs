@@ -1,4 +1,3 @@
-use crate::dis::errors::DisError;
 use crate::dis::v6::model::PduHeader;
 use super::builder::EntityStateBuilder;
 
@@ -27,13 +26,13 @@ pub struct EntityState {
 }
 
 pub struct EntityId {
-    pub(crate) simulation_address : SimulationAddress,
-    entity_id : u16
+    pub simulation_address : SimulationAddress,
+    pub entity_id : u16
 }
 
 pub struct SimulationAddress {
-    site_id : u16,
-    application_id : u16,
+    pub site_id : u16,
+    pub application_id : u16,
 }
 
 pub enum ForceId {
@@ -56,13 +55,13 @@ impl From<u8> for ForceId {
 }
 
 pub struct EntityType {
-    kind : EntityKind,
-    domain : u8,
-    country : Country, // TODO u16 instead of big enum? Put codes and names in config file?
-    category : u8,
-    subcategory : u8,
-    specific : u8,
-    extra : u8,
+    pub kind : EntityKind,
+    pub domain : u8,
+    pub country : Country, // TODO u16 instead of big enum? Put codes and names in config file?
+    pub category : u8,
+    pub subcategory : u8,
+    pub specific : u8,
+    pub extra : u8,
 }
 
 pub enum EntityKind {
@@ -869,7 +868,7 @@ pub enum DrAlgorithm {
 }
 
 impl From<u8> for DrAlgorithm {
-    fn try_from(value: u8) -> Self {
+    fn from(value: u8) -> Self {
         match value {
             0 => DrAlgorithm::Other,
             1 => DrAlgorithm::Static,
