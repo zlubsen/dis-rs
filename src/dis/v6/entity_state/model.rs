@@ -1,8 +1,6 @@
 use crate::dis::v6::model::PduHeader;
 use super::builder::EntityStateBuilder;
 
-// TODO check primitive types in TryFrom impls for enums (u8, u16, bits, ...)
-
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
     SomeFieldNotOkError,

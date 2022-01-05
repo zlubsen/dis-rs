@@ -24,8 +24,57 @@ impl PduHeaderBuilder {
         }
     }
 
-    pub fn build(self) -> PduHeader {
-        PduHeader {
+    fn protocol_version(mut self, version: ProtocolVersion) -> Self {
+        self.protocol_version = Some(version);
+        self
+    }
+
+    fn exercise_id(mut self, id: u8) -> Self {
+        self.exercise_id = Some(id);
+        self
+    }
+
+    fn pdu_type(mut self, pdu_type: PduType) -> Self {
+        self.pdu_type = Some(pdu_type);
+        self
+    }
+
+    fn protocol_family(mut self, family: ProtocolFamily) -> Self {
+        self.protocol_family = Some(family);
+        self
+    }
+
+    fn time_stamp(mut self, time: u32) -> Self {
+        self.time_stamp = Some(time);
+        self
+    }
+
+    fn pdu_length(mut self, length: u16) -> Self {
+        self.pdu_length = Some(length);
+        self
+    }
+
+    fn padding(mut self, padding: u16) -> Self {
+        self.padding = padding;
+        self
+    }
+
+    fn validate(&self) -> Result<(), ()> {
+        return if self.protocol_version.is_some() &&
+            self.exercise_id.is_some() &&
+            self.pdu_type.is_some() &&
+            self.protocol_family.is_some() &&
+            self.time_stamp.is_some() &&
+            self.pdu_length.is_some() {
+            Ok(())
+        } else { Err(()) }
+    }
+
+    pub fn build(&self) -> Result<PduHeader, ()> {
+        if let Err(_) = self.validate() {
+            return Err(())
+        }
+        Ok(PduHeader {
             protocol_version: self.protocol_version.expect("Value expected, but not found."),
             exercise_id: self.exercise_id.expect("Value expected, but not found."),
             pdu_type: self.pdu_type.expect("Value expected, but not found."),
@@ -33,6 +82,6 @@ impl PduHeaderBuilder {
             time_stamp: self.time_stamp.expect("Value expected, but not found."),
             pdu_length: self.pdu_length.expect("Value expected, but not found."),
             padding: self.padding,
-        }
+        })
     }
 }

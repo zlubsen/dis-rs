@@ -172,3 +172,25 @@ fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::dis::common::model::ProtocolVersion;
+    use crate::dis::v6::model::{PduType, ProtocolFamily};
+    use crate::parse_v6_header;
+
+    #[test]
+    fn parse_header() {
+        let bytes : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x60, 0x00, 0x00];
+
+        let header = parse_v6_header(&bytes);
+        assert!(header.is_ok());
+        let header = header.unwrap();
+        assert_eq!(header.protocol_version, ProtocolVersion::IEEE_1278_1a_1998);
+        assert_eq!(header.exercise_id, 1);
+        assert_eq!(header.pdu_type, PduType::EntityStatePdu);
+        assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
+        assert_eq!(header.time_stamp, 1323973472);
+        assert_eq!(header.pdu_length, 96); // only the header, 0-bytes pdu body
+    }
+}
+

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum DisError {
     UnsupportedProtocolVersion,
     ParseError, // the parsing of a PDU resulted in an error
