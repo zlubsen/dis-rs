@@ -28,8 +28,8 @@ pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     // TODO we should check version per PDU in the buffer, to support mixed types on a single port?
     let peeked_protocol_version = parse_peek_protocol_version(input)?;
     let version = match peeked_protocol_version {
-        ProtocolVersion::IEEE_1278_1_1995 => { Version::V6 }
-        ProtocolVersion::IEEE_1278_1_2012 => { Version::V7 }
+        ProtocolVersion::Ieee1278_1_1995 => { Version::V6 }
+        ProtocolVersion::Ieee1278_1_2012 => { Version::V7 }
         _ => { return Err(DisError::UnsupportedProtocolVersion) }
     };
     parse_as_version(input, version)

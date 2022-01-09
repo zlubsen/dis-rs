@@ -835,14 +835,170 @@ impl From<bool> for EntityFlamingEffect {
 
 // TODO replace u16 with specific types for the variants; should be a struct?
 pub enum SpecificAppearance {
-    LandPlatform(u16),
-    AirPlatform(u16),
-    SurfacePlatform(u16),
-    SubsurfacePlatform(u16),
-    SpacePlatform(u16),
-    GuidedMunition(u16),
-    LifeForm(u16),
-    Environmental(u16),
+    LandPlatform(LandPlatformsRecord),
+    AirPlatform(AirPlatformsRecord),
+    SurfacePlatform(SurfacePlatformRecord),
+    SubsurfacePlatform(SubsurfacePlatformsRecord),
+    SpacePlatform(SpacePlatformsRecord),
+    GuidedMunition(GuidedMunitionsRecord),
+    LifeForm(LifeFormsRecord),
+    Environmental(EnvironmentalsRecord),
+}
+
+pub struct LandPlatformsRecord {
+    launcher : Launcher,
+    camouflage_type : Camouflage,
+    concealed : Concealed,
+    frozen_status : FrozenStatus,
+    power_plant_status : PowerPlantStatus,
+    state : State,
+    tent : Tent,
+    ramp : Ramp,
+}
+
+pub struct AirPlatformsRecord {
+    afterburner : Afterburner,
+    frozen_status : FrozenStatus,
+    power_plant_status : PowerPlantStatus,
+    state : State,
+}
+
+pub struct SurfacePlatformRecord {
+    frozen_status : FrozenStatus,
+    power_plant_status : PowerPlantStatus,
+    state : State,
+}
+
+pub struct SubsurfacePlatformsRecord {
+    frozen_status : FrozenStatus,
+    power_plant_status : PowerPlantStatus,
+    state : State,
+}
+
+pub struct SpacePlatformsRecord {
+    frozen_status : FrozenStatus,
+    power_plant_status : PowerPlantStatus,
+    state : State,
+}
+
+pub struct GuidedMunitionsRecord {
+    launch_flash : LaunchFlash,
+    frozen_status : FrozenStatus,
+    state : State,
+}
+
+pub struct LifeFormsRecord {
+    life_form_state : LifeFormsState,
+    frozen_status : FrozenStatus,
+    activity_state : ActivityState,
+    weapon_1 : Weapon,
+    weapon_2 : Weapon,
+}
+
+pub struct EnvironmentalsRecord {
+    density : Density,
+}
+
+pub enum Launcher {
+    NotRaised,
+    Raised,
+}
+
+// TODO parsing from u8 or bool?
+impl From<bool> for Launcher {
+    fn from(value: bool) -> Self {
+        match value {
+            false => Launcher::NotRaised,
+            true => Launcher::Raised,
+        }
+    }
+}
+
+// TODO from implementation
+pub enum Camouflage {
+    Desert,
+    Winter,
+    Forest,
+    //Unused,
+}
+
+// TODO from implementation
+pub enum Concealed {
+    NotConcealed,
+    Concealed,
+}
+
+// TODO from implementation
+pub enum FrozenStatus {
+    NotFrozen,
+    Frozen,
+}
+
+// TODO from implementation
+pub enum PowerPlantStatus {
+    Off,
+    On,
+}
+
+// TODO from implementation
+pub enum State {
+    Active,
+    Deactivated,
+}
+
+// TODO from implementation
+pub enum Tent {
+    NotExtended,
+    Extended,
+}
+
+// TODO from implementation
+pub enum Ramp {
+    Up,
+    Down,
+}
+
+// TODO from implementation
+pub enum Afterburner {
+    NotOn,
+    On,
+}
+
+// TODO from implementation
+pub enum LaunchFlash {
+    NotPresent,
+    Present,
+}
+
+// TODO from implementation
+pub enum LifeFormsState {
+    Null,
+    UprightStandingStill,
+    UprightWalking,
+    UprightRunning,
+    Kneeling,
+    Prone,
+    Crawling,
+    Swimming,
+    Parachuting,
+    Jumping,
+}
+
+// TODO from implementation
+pub enum Weapon {
+    NotPresent,
+    Stowed,
+    Deployed,
+    FiringPosition,
+}
+
+// TODO from implementation
+pub enum Density {
+    Clear,
+    Hazy,
+    Dense,
+    VeryDense,
+    Opaque,
 }
 
 pub struct DrParameters {

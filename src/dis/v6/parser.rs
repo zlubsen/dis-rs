@@ -37,7 +37,7 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     match pdu_header(input) {
         Ok((input, header)) => {
             let skipped = skip_body(&header)(input); // Discard the body
-            if let Err(err) = skipped {
+            if let Err(_) = skipped {
                 return Err(DisError::ParseError) // TODO not very descriptive / error means we can not skip enough bytes for the body
             }
             Ok(header)
@@ -175,7 +175,7 @@ fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
 #[cfg(test)]
 mod tests {
     use crate::dis::common::model::ProtocolVersion;
-    use crate::dis::v6::model::{PduType, ProtocolFamily};
+    use crate::dis::v6::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
     use crate::parse_v6_header;
 
     #[test]
@@ -185,12 +185,27 @@ mod tests {
         let header = parse_v6_header(&bytes);
         assert!(header.is_ok());
         let header = header.unwrap();
-        assert_eq!(header.protocol_version, ProtocolVersion::IEEE_1278_1a_1998);
+        assert_eq!(header.protocol_version, ProtocolVersion::Ieee1278_1a1998);
         assert_eq!(header.exercise_id, 1);
         assert_eq!(header.pdu_type, PduType::EntityStatePdu);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
         assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, 96); // only the header, 0-bytes pdu body
+        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES); // only the header, 0-bytes pdu body
+    }
+
+    #[test]
+    fn parse_header_unspecified_version() {
+        let bytes : [u8;12] = [0x1F, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x60, 0x00, 0x00];
+
+        let header = parse_v6_header(&bytes);
+        assert!(header.is_ok());
+        let header = header.unwrap();
+        assert_eq!(header.protocol_version, ProtocolVersion::Other);
+        assert_eq!(header.exercise_id, 1);
+        assert_eq!(header.pdu_type, PduType::EntityStatePdu);
+        assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
+        assert_eq!(header.time_stamp, 1323973472);
+        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES); // only the header, 0-bytes pdu body
     }
 }
 
