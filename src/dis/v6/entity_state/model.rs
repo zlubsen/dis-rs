@@ -52,6 +52,13 @@ impl From<u8> for ForceId {
     }
 }
 
+// TODO Needed?
+impl Default for ForceId {
+    fn default() -> Self {
+        ForceId::Neutral
+    }
+}
+
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : u8,
@@ -630,18 +637,21 @@ impl From<u16> for Country {
     }
 }
 
+// TODO to common/model
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
     pub third_vector_component : f32,
 }
 
+// TODO to common/model
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
     pub z_coordinate : f64,
 }
 
+// TODO to common/model
 // TODO alias to vectorf32?
 pub struct Orientation {
     pub psi : f32,
@@ -680,6 +690,12 @@ impl From<bool> for EntityPaintScheme {
     }
 }
 
+impl Default for EntityPaintScheme {
+    fn default() -> Self {
+        EntityPaintScheme::UniformColor
+    }
+}
+
 pub enum EntityMobilityKill {
     NoMobilityKill = 0,
     MobilityKill = 1,
@@ -694,6 +710,12 @@ impl From<bool> for EntityMobilityKill {
     }
 }
 
+impl Default for EntityMobilityKill {
+    fn default() -> Self {
+        EntityMobilityKill::NoMobilityKill
+    }
+}
+
 pub enum EntityFirePower {
     NoFirePowerKill = 0,
     FirePowerKill = 1,
@@ -705,6 +727,12 @@ impl From<bool> for EntityFirePower {
             false => EntityFirePower::NoFirePowerKill,
             true => EntityFirePower::FirePowerKill,
         }
+    }
+}
+
+impl Default for EntityFirePower {
+    fn default() -> Self {
+        EntityFirePower::NoFirePowerKill
     }
 }
 
@@ -727,6 +755,12 @@ impl From<u8> for EntityDamage {
     }
 }
 
+impl Default for EntityDamage {
+    fn default() -> Self {
+        EntityDamage::NoDamage
+    }
+}
+
 pub enum EntitySmoke {
     NotSmoking = 0,
     SmokePlumeRising = 1,
@@ -746,6 +780,12 @@ impl From<u8> for EntitySmoke {
     }
 }
 
+impl Default for EntitySmoke {
+    fn default() -> Self {
+        EntitySmoke::NotSmoking
+    }
+}
+
 pub enum EntityTrailingEffect {
     None = 0,
     Small = 1,
@@ -762,6 +802,12 @@ impl From<u8> for EntityTrailingEffect {
             3 => EntityTrailingEffect::Large,
             unspecified_value => EntityTrailingEffect::None,
         }
+    }
+}
+
+impl Default for EntityTrailingEffect {
+    fn default() -> Self {
+        EntityTrailingEffect::None
     }
 }
 
@@ -792,6 +838,12 @@ impl From<u8> for EntityHatchState {
     }
 }
 
+impl Default for EntityHatchState {
+    fn default() -> Self {
+        EntityHatchState::NotApplicable
+    }
+}
+
 pub enum EntityLights {
     None = 0,
     RunningLightsOn = 1,
@@ -819,6 +871,12 @@ impl From<u8> for EntityLights {
     }
 }
 
+impl Default for EntityLights {
+    fn default() -> Self {
+        EntityLights::None
+    }
+}
+
 pub enum EntityFlamingEffect {
     None = 0,
     FlamesPresent = 1,
@@ -833,7 +891,13 @@ impl From<bool> for EntityFlamingEffect {
     }
 }
 
-// TODO replace u16 with specific types for the variants; should be a struct?
+impl Default for EntityFlamingEffect {
+    fn default() -> Self {
+        EntityFlamingEffect::None
+    }
+}
+
+#[derive(Default)]
 pub enum SpecificAppearance {
     LandPlatform(LandPlatformsRecord),
     AirPlatform(AirPlatformsRecord),
@@ -845,6 +909,7 @@ pub enum SpecificAppearance {
     Environmental(EnvironmentalsRecord),
 }
 
+#[derive(Default)]
 pub struct LandPlatformsRecord {
     launcher : Launcher,
     camouflage_type : Camouflage,
@@ -856,6 +921,7 @@ pub struct LandPlatformsRecord {
     ramp : Ramp,
 }
 
+#[derive(Default)]
 pub struct AirPlatformsRecord {
     afterburner : Afterburner,
     frozen_status : FrozenStatus,
@@ -863,30 +929,35 @@ pub struct AirPlatformsRecord {
     state : State,
 }
 
+#[derive(Default)]
 pub struct SurfacePlatformRecord {
     frozen_status : FrozenStatus,
     power_plant_status : PowerPlantStatus,
     state : State,
 }
 
+#[derive(Default)]
 pub struct SubsurfacePlatformsRecord {
     frozen_status : FrozenStatus,
     power_plant_status : PowerPlantStatus,
     state : State,
 }
 
+#[derive(Default)]
 pub struct SpacePlatformsRecord {
     frozen_status : FrozenStatus,
     power_plant_status : PowerPlantStatus,
     state : State,
 }
 
+#[derive(Default)]
 pub struct GuidedMunitionsRecord {
     launch_flash : LaunchFlash,
     frozen_status : FrozenStatus,
     state : State,
 }
 
+#[derive(Default)]
 pub struct LifeFormsRecord {
     life_form_state : LifeFormsState,
     frozen_status : FrozenStatus,
@@ -895,6 +966,7 @@ pub struct LifeFormsRecord {
     weapon_2 : Weapon,
 }
 
+#[derive(Default)]
 pub struct EnvironmentalsRecord {
     density : Density,
 }
@@ -904,73 +976,205 @@ pub enum Launcher {
     Raised,
 }
 
-// TODO parsing from u8 or bool?
-impl From<bool> for Launcher {
-    fn from(value: bool) -> Self {
+impl From<u8> for Launcher {
+    fn from(value: u8) -> Self {
         match value {
-            false => Launcher::NotRaised,
-            true => Launcher::Raised,
+            1 => Launcher::Raised,
+            0 | _ => Launcher::NotRaised,
         }
     }
 }
 
-// TODO from implementation
+impl Default for Launcher {
+    fn default() -> Self {
+        Launcher::NotRaised
+    }
+}
+
 pub enum Camouflage {
     Desert,
     Winter,
     Forest,
-    //Unused,
+    Unspecified(u8),
 }
 
-// TODO from implementation
+impl From<u8> for Camouflage {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Camouflage::Desert,
+            1 => Camouflage::Winter,
+            2 => Camouflage::Forest,
+            unspecified_value => Camouflage::Unspecified(unspecified_value),
+        }
+    }
+}
+
+impl Default for Camouflage {
+    fn default() -> Self {
+        Camouflage::Desert
+    }
+}
+
 pub enum Concealed {
     NotConcealed,
     Concealed,
 }
 
-// TODO from implementation
+impl From<u8> for Concealed {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Concealed::Concealed,
+            0 | _ => Concealed::NotConcealed,
+        }
+    }
+}
+
+impl Default for Concealed {
+    fn default() -> Self {
+        Concealed::NotConcealed
+    }
+}
+
 pub enum FrozenStatus {
     NotFrozen,
     Frozen,
 }
 
-// TODO from implementation
+impl From<u8> for FrozenStatus {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => FrozenStatus::Frozen,
+            0 | _ => FrozenStatus::NotFrozen,
+        }
+    }
+}
+
+impl Default for FrozenStatus {
+    fn default() -> Self {
+        FrozenStatus::NotFrozen
+    }
+}
+
 pub enum PowerPlantStatus {
     Off,
     On,
 }
 
-// TODO from implementation
+impl From<u8> for PowerPlantStatus {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => PowerPlantStatus::On,
+            0 | _ => PowerPlantStatus::Off,
+        }
+    }
+}
+
+impl Default for PowerPlantStatus {
+    fn default() -> Self {
+        PowerPlantStatus::Off
+    }
+}
+
 pub enum State {
     Active,
     Deactivated,
 }
 
-// TODO from implementation
+impl From<u8> for State {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => State::Active,
+            0 | _ => State::Deactivated,
+        }
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::Active
+    }
+}
+
 pub enum Tent {
     NotExtended,
     Extended,
 }
 
-// TODO from implementation
+impl From<u8> for Tent {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Tent::Extended,
+            0 | _ => Tent::NotExtended,
+        }
+    }
+}
+
+impl Default for Tent {
+    fn default() -> Self {
+        Tent::NotExtended
+    }
+}
+
 pub enum Ramp {
     Up,
     Down,
 }
 
-// TODO from implementation
+impl From<u8> for Ramp {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Ramp::Down,
+            0 | _ => Ramp::Up,
+        }
+    }
+}
+
+impl Default for Ramp {
+    fn default() -> Self {
+        Ramp::Up
+    }
+}
+
 pub enum Afterburner {
     NotOn,
     On,
 }
 
-// TODO from implementation
+impl From<u8> for Afterburner {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Afterburner::On,
+            0 | _ => Afterburner::NotOn,
+        }
+    }
+}
+
+impl Default for Afterburner {
+    fn default() -> Self {
+        Afterburner::NotOn
+    }
+}
+
 pub enum LaunchFlash {
     NotPresent,
     Present,
 }
 
-// TODO from implementation
+impl From<u8> for LaunchFlash {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => LaunchFlash::Present,
+            0 | _ => LaunchFlash::NotPresent,
+        }
+    }
+}
+
+impl Default for LaunchFlash {
+    fn default() -> Self {
+        LaunchFlash::NotPresent
+    }
+}
+
 pub enum LifeFormsState {
     Null,
     UprightStandingStill,
@@ -984,7 +1188,29 @@ pub enum LifeFormsState {
     Jumping,
 }
 
-// TODO from implementation
+impl From<u8> for LifeFormsState {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => LifeFormsState::UprightStandingStill,
+            2 => LifeFormsState::UprightWalking,
+            3 => LifeFormsState::UprightRunning,
+            4 => LifeFormsState::Kneeling,
+            5 => LifeFormsState::Prone,
+            6 => LifeFormsState::Crawling,
+            7 => LifeFormsState::Swimming,
+            8 => LifeFormsState::Parachuting,
+            9 => LifeFormsState::Jumping,
+            0 | _ => LifeFormsState::Null,
+        }
+    }
+}
+
+impl Default for LifeFormsState {
+    fn default() -> Self {
+        LifeFormsState::UprightStandingStill
+    }
+}
+
 pub enum Weapon {
     NotPresent,
     Stowed,
@@ -992,7 +1218,23 @@ pub enum Weapon {
     FiringPosition,
 }
 
-// TODO from implementation
+impl From<u8> for Weapon {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Weapon::Stowed,
+            2 => Weapon::Deployed,
+            3 => Weapon::FiringPosition,
+            0 | _ => Weapon::NotPresent,
+        }
+    }
+}
+
+impl Default for Weapon {
+    fn default() -> Self {
+        Weapon::NotPresent
+    }
+}
+
 pub enum Density {
     Clear,
     Hazy,
@@ -1001,11 +1243,29 @@ pub enum Density {
     Opaque,
 }
 
+impl From<u8> for Density {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Density::Hazy,
+            2 => Density::Dense,
+            3 => Density::VeryDense,
+            4 => Density::Opaque,
+            0 | _ => Density::Clear,
+        }
+    }
+}
+
+impl Default for Density {
+    fn default() -> Self {
+        Density::Clear
+    }
+}
+
 pub struct DrParameters {
-    algorithm : DrAlgorithm,
-    other_parameters : DrOtherParameters,
-    linear_acceleration : VectorF32,
-    angular_velocity : VectorF32,
+    pub algorithm : DrAlgorithm,
+    pub other_parameters : DrOtherParameters,
+    pub linear_acceleration : VectorF32,
+    pub angular_velocity : VectorF32,
 }
 
 pub enum DrAlgorithm {
@@ -1039,13 +1299,20 @@ impl From<u8> for DrAlgorithm {
     }
 }
 
+// TODO which one?
+impl Default for DrAlgorithm {
+    fn default() -> Self {
+        DrAlgorithm::DrmFPW
+    }
+}
+
 pub struct DrOtherParameters {
     // 120-bits padding
 }
 
 pub struct EntityMarking {
-    marking_character_set : EntityMarkingCharacterSet,
-    marking_string : [u8; 11], // 11 byte String
+    pub marking_character_set : EntityMarkingCharacterSet,
+    pub marking_string : String, // 11 byte String
 }
 
 pub enum EntityMarkingCharacterSet {
@@ -1067,20 +1334,26 @@ impl From<u8> for EntityMarkingCharacterSet {
     }
 }
 
+impl Default for EntityMarkingCharacterSet {
+    fn default() -> Self {
+        EntityMarkingCharacterSet::ASCII
+    }
+}
+
 pub struct EntityCapabilities {
-    ammunition_supply : bool,
-    fuel_supply : bool,
-    recovery : bool,
-    repair : bool,
+    pub ammunition_supply : bool,
+    pub fuel_supply : bool,
+    pub recovery : bool,
+    pub repair : bool,
     // 28-bits padding
 }
 
 pub struct ArticulationParameter {
-    parameter_type_designator : ApTypeDesignator,
-    parameter_change_indicator : u8,
-    articulation_attachment_ic : u16,
-    parameter_type_variant : ParameterTypeVariant,
-    articulation_parameter_value : f64,
+    pub parameter_type_designator : ApTypeDesignator,
+    pub parameter_change_indicator : u8,
+    pub articulation_attachment_ic : u16,
+    pub parameter_type_variant : ParameterTypeVariant,
+    pub articulation_parameter_value : f64,
 }
 
 pub enum ApTypeDesignator {
@@ -1097,8 +1370,14 @@ impl From<bool> for ApTypeDesignator {
     }
 }
 
-pub struct ParameterTypeVariant {
-    attached_parts : u32,
+impl Default for ApTypeDesignator {
+    fn default() -> Self {
+        ApTypeDesignator::Articulated
+    }
+}
+
+pub enum ParameterTypeVariant {
+    AttachedParts(u32),
     // 0	Nothing, Empty
     // 1-511	Sequential IDs for model-specific stations
     // 512-639	Fuselage Stations
@@ -1115,15 +1394,16 @@ pub struct ParameterTypeVariant {
     // 904	MK19 Grenade Launcher
     // 905	M2 Machine Gun
     // 906-1023	Other attached parts
-    articulated_parts : ArticulatedParts,
+    ArticulatedParts(ArticulatedParts),
 }
 
 pub struct ArticulatedParts {
-    low_bits : ApLowBits,
-    high_bits : ApHighBits,
+    pub low_bits : ApLowBits,
+    pub high_bits : u16,
 }
 
 pub enum ApLowBits {
+    Unspecified = 0,
     Position = 1,
     ZRate = 10,
     Azimuth = 11,
@@ -1161,13 +1441,19 @@ impl From<u16> for ApLowBits {
             14 => ApLowBits::ElevationRate,
             15 => ApLowBits::Rotation,
             16 => ApLowBits::RotationRate,
-            unspecified_value => ApLowBits::Position, // TODO this is not Ok.
+            0 | _unspecified_value => ApLowBits::Unspecified,
         }
     }
 }
 
-pub enum ApHighBits {
-    Placeholder = 0,
+impl Default for ApLowBits {
+    fn default() -> Self {
+        ApLowBits::Unspecified
+    }
+}
+
+// pub enum ApHighBits {
+//     Placeholder = 0,
 // TODO finish enum values
 // 1024	rudder
 // 1056	left flap
@@ -1297,7 +1583,7 @@ pub enum ApHighBits {
 // 7200	Secondary radar 8
 // 7232	Secondary radar 9
 // 7264	Secondary radar 10
-}
+// }
 
 impl EntityState {
     pub fn builder() -> EntityStateBuilder {

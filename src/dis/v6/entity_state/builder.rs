@@ -72,6 +72,102 @@ impl EntityStateBuilder {
         self
     }
 
+    pub fn linear_velocity(mut self, velocity : VectorF32) -> Self {
+        self.entity_linear_velocity = Some(velocity);
+        self
+    }
+
+    pub fn linear_velocity_from_components(mut self, first_vector_component: f32, second_vector_component: f32, third_vector_component: f32) -> Self {
+        self.entity_linear_velocity = Some(VectorF32 {
+            first_vector_component,
+            second_vector_component,
+            third_vector_component,
+        });
+        self
+    }
+
+    pub fn location(mut self, location : Location) -> Self {
+        self.entity_location = Some(location);
+        self
+    }
+
+    pub fn location_from_coordinates(mut self, x_coordinate : f64, y_coordinate : f64, z_coordinate : f64) -> Self {
+        self.entity_location = Some(Location {
+            x_coordinate,
+            y_coordinate,
+            z_coordinate,
+        });
+        self
+    }
+
+    pub fn orientation(mut self, orientation : Orientation) -> Self {
+        self.entity_orientation = Some(orientation);
+        self
+    }
+
+    pub fn location_from_angles(mut self, psi : f32, theta : f32, phi : f32) -> Self {
+        self.entity_orientation = Some(Orientation {
+            psi,
+            theta,
+            phi,
+        });
+        self
+    }
+
+    pub fn appearance(mut self, appearance: Appearance) -> Self {
+        // TODO
+        self.entity_appearance = Some(appearance);
+        self
+    }
+
+    // TODO separate builder methods for general and each specific appearance types.
+
+    pub fn dead_reckoning(mut self, parameters : DrParameters) -> Self {
+        self.dead_reckoning_parameters = Some(parameters);
+        self
+    }
+
+    // TODO dead_reckoning building with separate variables
+
+    pub fn marking(mut self, marking : EntityMarking) -> Self {
+        self.entity_marking = Some(marking);
+        self
+    }
+
+    pub fn marking_from_string_ascii(mut self, marking : String) -> Self {
+        self.entity_marking = Some(EntityMarking {
+            marking_character_set : EntityMarkingCharacterSet::ASCII,
+            marking_string: marking.to_ascii_uppercase(),
+        });
+        self
+    }
+
+    pub fn capabilities(mut self, capabilities : EntityCapabilities) -> Self {
+        self.entity_capabilities = Some(capabilities);
+        self
+    }
+
+    pub fn capabilities_flags(mut self,
+                        ammunition_supply : bool,
+                        fuel_supply : bool,
+                        recovery : bool,
+                        repair : bool) -> Self {
+        self.entity_capabilities = Some(EntityCapabilities {
+            ammunition_supply,
+            fuel_supply,
+            recovery,
+            repair,
+        });
+        self
+    }
+
+    pub fn add_articulation_parameter(mut self) -> Self {
+        // TODO
+        self
+    }
+    // TODO add attached part
+    // TODO add articulated part
+
     fn validate(&self) -> Result<(), EntityStateValidationError> {
         // TODO "Check if all fields are filled in properly; required are set, valid values..., based on the standard"
 
