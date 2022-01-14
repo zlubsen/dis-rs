@@ -1,3 +1,4 @@
+use crate::dis::v6::entity_state::builder::{AirPlatformBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
 use crate::dis::v6::model::PduHeader;
 use super::builder::EntityStateBuilder;
 
@@ -676,16 +677,22 @@ pub struct GeneralAppearance {
     pub entity_flaming_effect : EntityFlamingEffect, // enum
 }
 
+impl GeneralAppearance {
+    pub fn builder() -> GeneralAppearanceBuilder {
+        GeneralAppearanceBuilder::new()
+    }
+}
+
 pub enum EntityPaintScheme {
     UniformColor = 0,
     Camouflage = 1,
 }
 
-impl From<bool> for EntityPaintScheme {
-    fn from(value: bool) -> Self {
+impl From<u8> for EntityPaintScheme {
+    fn from(value: u8) -> Self {
         match value {
-            false => EntityPaintScheme::UniformColor,
-            true => EntityPaintScheme::Camouflage,
+            1 => EntityPaintScheme::Camouflage,
+            0 | _ => EntityPaintScheme::UniformColor,
         }
     }
 }
@@ -701,11 +708,11 @@ pub enum EntityMobilityKill {
     MobilityKill = 1,
 }
 
-impl From<bool> for EntityMobilityKill {
-    fn from(value: bool) -> Self {
+impl From<u8> for EntityMobilityKill {
+    fn from(value: u8) -> Self {
         match value {
-            false => EntityMobilityKill::NoMobilityKill,
-            true => EntityMobilityKill::MobilityKill,
+            1 => EntityMobilityKill::MobilityKill,
+            0 | _ => EntityMobilityKill::NoMobilityKill,
         }
     }
 }
@@ -721,11 +728,11 @@ pub enum EntityFirePower {
     FirePowerKill = 1,
 }
 
-impl From<bool> for EntityFirePower {
-    fn from(value: bool) -> Self {
+impl From<u8> for EntityFirePower {
+    fn from(value: u8) -> Self {
         match value {
-            false => EntityFirePower::NoFirePowerKill,
-            true => EntityFirePower::FirePowerKill,
+            1 => EntityFirePower::FirePowerKill,
+            0 | _ => EntityFirePower::NoFirePowerKill,
         }
     }
 }
@@ -882,11 +889,11 @@ pub enum EntityFlamingEffect {
     FlamesPresent = 1,
 }
 
-impl From<bool> for EntityFlamingEffect {
-    fn from(value: bool) -> Self {
+impl From<u8> for EntityFlamingEffect {
+    fn from(value: u8) -> Self {
         match value {
-            false => EntityFlamingEffect::None,
-            true => EntityFlamingEffect::FlamesPresent,
+            1 => EntityFlamingEffect::FlamesPresent,
+            0 | _ => EntityFlamingEffect::None,
         }
     }
 }
@@ -897,7 +904,6 @@ impl Default for EntityFlamingEffect {
     }
 }
 
-#[derive(Default)]
 pub enum SpecificAppearance {
     LandPlatform(LandPlatformsRecord),
     AirPlatform(AirPlatformsRecord),
@@ -909,66 +915,92 @@ pub enum SpecificAppearance {
     Environmental(EnvironmentalsRecord),
 }
 
-#[derive(Default)]
+impl SpecificAppearance {
+    pub fn builder_land_platform() -> LandPlatformBuilder {
+        LandPlatformBuilder::new()
+    }
+
+    pub fn builder_air_platform() -> AirPlatformBuilder {
+        AirPlatformBuilder::new()
+    }
+
+    pub fn builder_surface_platform() -> SurfacePlatformBuilder {
+        SurfacePlatformBuilder::new()
+    }
+
+    pub fn builder_subsurface_platform() -> SubsurfacePlatformBuilder {
+        SubsurfacePlatformBuilder::new()
+    }
+
+    pub fn builder_space_platform() -> SpacePlatformBuilder {
+        SpacePlatformBuilder::new()
+    }
+
+    pub fn builder_guided_munition() -> GuidedMunitionBuilder {
+        GuidedMunitionBuilder::new()
+    }
+
+    pub fn builder_life_form() -> LifeFormBuilder {
+        LifeFormBuilder::new()
+    }
+
+    pub fn builder_environmental() -> EnvironmentalBuilder {
+        EnvironmentalBuilder::new()
+    }
+}
+
 pub struct LandPlatformsRecord {
-    launcher : Launcher,
-    camouflage_type : Camouflage,
-    concealed : Concealed,
-    frozen_status : FrozenStatus,
-    power_plant_status : PowerPlantStatus,
-    state : State,
-    tent : Tent,
-    ramp : Ramp,
+    pub launcher : Launcher,
+    pub camouflage_type : Camouflage,
+    pub concealed : Concealed,
+    pub frozen_status : FrozenStatus,
+    pub power_plant_status : PowerPlantStatus,
+    pub state : State,
+    pub tent : Tent,
+    pub ramp : Ramp,
 }
 
-#[derive(Default)]
 pub struct AirPlatformsRecord {
-    afterburner : Afterburner,
-    frozen_status : FrozenStatus,
-    power_plant_status : PowerPlantStatus,
-    state : State,
+    pub afterburner : Afterburner,
+    pub frozen_status : FrozenStatus,
+    pub power_plant_status : PowerPlantStatus,
+    pub state : State,
 }
 
-#[derive(Default)]
 pub struct SurfacePlatformRecord {
-    frozen_status : FrozenStatus,
-    power_plant_status : PowerPlantStatus,
-    state : State,
+    pub frozen_status : FrozenStatus,
+    pub power_plant_status : PowerPlantStatus,
+    pub state : State,
 }
 
-#[derive(Default)]
 pub struct SubsurfacePlatformsRecord {
-    frozen_status : FrozenStatus,
-    power_plant_status : PowerPlantStatus,
-    state : State,
+    pub frozen_status : FrozenStatus,
+    pub power_plant_status : PowerPlantStatus,
+    pub state : State,
 }
 
-#[derive(Default)]
 pub struct SpacePlatformsRecord {
-    frozen_status : FrozenStatus,
-    power_plant_status : PowerPlantStatus,
-    state : State,
+    pub frozen_status : FrozenStatus,
+    pub power_plant_status : PowerPlantStatus,
+    pub state : State,
 }
 
-#[derive(Default)]
 pub struct GuidedMunitionsRecord {
-    launch_flash : LaunchFlash,
-    frozen_status : FrozenStatus,
-    state : State,
+    pub launch_flash : LaunchFlash,
+    pub frozen_status : FrozenStatus,
+    pub state : State,
 }
 
-#[derive(Default)]
 pub struct LifeFormsRecord {
-    life_form_state : LifeFormsState,
-    frozen_status : FrozenStatus,
-    activity_state : ActivityState,
-    weapon_1 : Weapon,
-    weapon_2 : Weapon,
+    pub life_form_state : LifeFormsState,
+    pub frozen_status : FrozenStatus,
+    pub activity_state : ActivityState,
+    pub weapon_1 : Weapon,
+    pub weapon_2 : Weapon,
 }
 
-#[derive(Default)]
 pub struct EnvironmentalsRecord {
-    density : Density,
+    pub density : Density,
 }
 
 pub enum Launcher {
@@ -1211,6 +1243,26 @@ impl Default for LifeFormsState {
     }
 }
 
+pub enum ActivityState {
+    Active,
+    Deactivated,
+}
+
+impl From<u8> for ActivityState {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => ActivityState::Deactivated,
+            0 | _ => ActivityState::Active,
+        }
+    }
+}
+
+impl Default for ActivityState {
+    fn default() -> Self {
+        ActivityState::Active
+    }
+}
+
 pub enum Weapon {
     NotPresent,
     Stowed,
@@ -1441,7 +1493,7 @@ impl From<u16> for ApLowBits {
             14 => ApLowBits::ElevationRate,
             15 => ApLowBits::Rotation,
             16 => ApLowBits::RotationRate,
-            0 | _unspecified_value => ApLowBits::Unspecified,
+            0 | _ => ApLowBits::Unspecified,
         }
     }
 }
