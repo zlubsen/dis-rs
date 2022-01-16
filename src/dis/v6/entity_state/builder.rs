@@ -120,8 +120,6 @@ impl EntityStateBuilder {
         self
     }
 
-    // TODO separate builder methods for general and each specific appearance types.
-
     pub fn dead_reckoning(mut self, parameters : DrParameters) -> Self {
         self.dead_reckoning_parameters = Some(parameters);
         self

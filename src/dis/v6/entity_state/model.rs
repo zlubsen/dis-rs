@@ -60,6 +60,7 @@ impl Default for ForceId {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : u8,
@@ -70,6 +71,7 @@ pub struct EntityType {
     pub extra : u8,
 }
 
+#[derive(Copy, Clone)]
 pub enum EntityKind {
     Other = 0,
     Platform = 1,
@@ -103,6 +105,7 @@ impl From<u8> for EntityKind {
 
 // regex: (?<value>[0-9]*)[\t]+(?<field>[\w (),'-.]+)$
 // replace: \t${field} = ${value}, | $2 = $1
+#[derive(Copy, Clone)]
 pub enum Country {
     Other = 0,
     Afghanistan = 1,
@@ -913,6 +916,7 @@ pub enum SpecificAppearance {
     GuidedMunition(GuidedMunitionsRecord),
     LifeForm(LifeFormsRecord),
     Environmental(EnvironmentalsRecord),
+    Other([u8;2]), // when we cannot determine the specific entity kind
 }
 
 impl SpecificAppearance {
