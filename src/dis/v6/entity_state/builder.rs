@@ -346,7 +346,7 @@ impl LandPlatformBuilder {
             self.ramp.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::LandPlatform(
                 LandPlatformsRecord {
@@ -391,7 +391,7 @@ impl AirPlatformBuilder {
             self.state.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::AirPlatform(
                 AirPlatformsRecord {
@@ -429,7 +429,7 @@ impl SurfacePlatformBuilder {
             self.state.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::SurfacePlatform(
                 SurfacePlatformRecord {
@@ -466,7 +466,7 @@ impl SubsurfacePlatformBuilder {
                 self.state.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::SubsurfacePlatform(
                 SubsurfacePlatformsRecord {
@@ -503,7 +503,7 @@ impl SpacePlatformBuilder {
                 self.state.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::SpacePlatform(
                 SpacePlatformsRecord {
@@ -540,7 +540,7 @@ impl GuidedMunitionBuilder {
             self.state.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::GuidedMunition(
                 GuidedMunitionsRecord {
@@ -583,7 +583,7 @@ impl LifeFormBuilder {
             self.weapon_2.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::LifeForm(
                 LifeFormsRecord {
@@ -617,7 +617,7 @@ impl EnvironmentalBuilder {
             self.density.is_some()
     }
 
-    pub fn build(&self) -> Result<SpecificAppearance,()> {
+    pub fn build(self) -> Result<SpecificAppearance,()> {
         return if self.validate() {
             Ok(SpecificAppearance::Environmental(
                 EnvironmentalsRecord {

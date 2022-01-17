@@ -5,7 +5,7 @@ use nom::bits::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
 use nom::error::{Error};
 use nom::sequence::tuple;
-use crate::dis::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Country, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
+use crate::dis::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Country, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
 use crate::dis::v6::model::{Pdu, PduHeader};
 
 pub fn entity_state_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
@@ -178,12 +178,14 @@ fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u
 }
 
 fn other_specific_appearance(input: &[u8]) -> IResult<&[u8], [u8;2]> {
-    if let Ok((input,slice)) = take_bytes(2usize)(input) {
-        let two_bytes : [u8;2] = [slice[0], slice[1]];
-        Ok((input, two_bytes))
-    } else {
-        Ok((input, [ 0, 0 ]))
-    }
+    // if let Ok((input,slice)) = take_bytes(2usize)(input) {
+    //     let two_bytes : [u8;2] = [slice[0], slice[1]];
+    //     Ok((input, two_bytes))
+    // } else {
+    //     Ok((input, [ 0, 0 ]))
+    // }
+
+    Ok((input, [ 0, 0 ]))
 }
 
 fn land_platform_record(input: &[u8]) -> IResult<&[u8], LandPlatformsRecord> {
@@ -370,12 +372,40 @@ fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     todo!()
 }
 
+// TODO review if this is an efficient way to read the string and trim trailing whitespace
 fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
-    todo!()
+    let mut buf : [u8;11] = [0;11];
+    let (input, character_set) = be_u8(input)?;
+    let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
+
+    let mut marking = String::from_utf8_lossy(&buf[..]).into_owned();
+    marking.truncate(marking.trim_end().len());
+
+    Ok((input, EntityMarking{
+        marking_character_set: EntityMarkingCharacterSet::from(character_set),
+        marking_string: marking,
+    }))
 }
 
 fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
-    todo!()
+    let (input,
+        (ammunition_supply,
+            fuel_supply,
+            recovery,
+            repair,
+            _pad_out)) : (&[u8], (u8,u8,u8,u8,u8)) = bits::<_,_,Error<(&[u8], usize)>,_,_>(tuple(
+        (take_bits(1usize),
+         take_bits(1usize),
+         take_bits(1usize),
+         take_bits(1usize),
+         take_bits(28usize))))(input)?;
+
+    Ok((input, EntityCapabilities {
+        ammunition_supply: ammunition_supply == 1,
+        fuel_supply: fuel_supply == 1,
+        recovery: recovery == 1,
+        repair: repair == 1,
+    }))
 }
 
 fn articulation_records(input: &[u8], num_records: u8) -> IResult<&[u8], Vec<ArticulationParameter>> {
@@ -388,3 +418,19 @@ fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
     todo!()
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::dis::v6::entity_state::model::EntityMarkingCharacterSet;
+    use crate::dis::v6::entity_state::parser::entity_marking;
+
+    #[test]
+    fn parse_marking_ascii() {
+        let bytes: [u8; 12] = [0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20];
+
+        let marking = entity_marking(&bytes);
+        assert!(marking.is_ok());
+        let marking = marking.unwrap().1;
+        assert_eq!(marking.marking_character_set, EntityMarkingCharacterSet::ASCII);
+        assert_eq!(marking.marking_string, "EYE 10");
+    }
+}

@@ -190,7 +190,7 @@ mod tests {
         assert_eq!(header.pdu_type, PduType::EntityStatePdu);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
         assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES); // only the header, 0-bytes pdu body
+        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
     }
 
     #[test]
@@ -205,7 +205,7 @@ mod tests {
         assert_eq!(header.pdu_type, PduType::EntityStatePdu);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
         assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES); // only the header, 0-bytes pdu body
+        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
     }
 }
 

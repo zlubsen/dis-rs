@@ -1371,6 +1371,7 @@ pub struct EntityMarking {
     pub marking_string : String, // 11 byte String
 }
 
+#[derive(PartialEq, Debug)]
 pub enum EntityMarkingCharacterSet {
     Unused = 0,
     ASCII = 1,
