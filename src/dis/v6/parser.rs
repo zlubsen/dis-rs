@@ -8,7 +8,6 @@ use crate::dis::common::model::ProtocolVersion;
 use crate::dis::errors::DisError;
 use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduHeader, PduType, ProtocolFamily};
 use crate::dis::v6::entity_state::parser::entity_state_body;
-use crate::dis::v6::other::model::Other;
 use crate::dis::v6::other::parser::other_body;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
@@ -117,7 +116,7 @@ fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
         let (input, pdu) = match header.pdu_type {
             PduType::OtherPdu => { other_body(header)(input)? }
             PduType::EntityStatePdu => { entity_state_body(header)(input)? }
-            _ => (input, Pdu::Other(Other { header, body: Vec::new() })),
+            _ => { other_body(header)(input)? }
             // PduType::FirePdu => {}
             // PduType::DetonationPdu => {}
             // PduType::CollisionPdu => {}

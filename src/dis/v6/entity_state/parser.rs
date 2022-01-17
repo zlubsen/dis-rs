@@ -1,11 +1,11 @@
 use nom::{bits, IResult};
 use nom::multi::count;
-use nom::number::complete::{u8, be_u16, be_u8, be_f32, be_f64};
+use nom::number::complete::{u8, be_u16, be_u8, be_f32, be_f64, be_u32};
 use nom::bits::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
 use nom::error::{Error};
 use nom::sequence::tuple;
-use crate::dis::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Country, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
+use crate::dis::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, ApLowBits, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Country, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
 use crate::dis::v6::model::{Pdu, PduHeader};
 
 pub fn entity_state_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
@@ -15,23 +15,36 @@ pub fn entity_state_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let (input, articulated_parts_no) = u8(input)?;
         let (input, entity_type_val) = entity_type(input)?;
         let (input, alternative_entity_type) = entity_type(input)?;
-        let (input, entity_linear_velocity) = velocity(input)?;
-        let (input, entity_location) = location(input)?; // struct - 3x f64 be
-        let (input, entity_orientation) = orientation(input)?; // struct - 3x f32 be
-        let (input, entity_appearance) = appearance(entity_type_val.clone())(input)?; // struct
-        let (input, dead_reckoning_parameters) = dr_parameters(input)?; // struct
-        let (input, entity_marking) = entity_marking(input)?; // struct
-        let (input, entity_capabilities) = entity_capabilities(input)?; // struct
+        let (input, entity_linear_velocity) = vec3_f32(input)?;
+        let (input, entity_location) = location(input)?;
+        let (input, entity_orientation) = orientation(input)?;
+        let (input, entity_appearance) = appearance(entity_type_val.clone())(input)?;
+        let (input, dead_reckoning_parameters) = dr_parameters(input)?;
+        let (input, entity_marking) = entity_marking(input)?;
+        let (input, entity_capabilities) = entity_capabilities(input)?;
         let (input, articulation_parameter) = if articulated_parts_no > 0 {
             let (input, params) = count(articulation_record, articulated_parts_no as usize)(input)?;
             (input, Some(params))
         } else { (input, None) };
 
-        todo!();
-        let pdu = EntityState::builder()
+        let builder = EntityState::builder()
             .header(header)
-            // TODO insert all fields
-            .build();
+            .entity_id(entity_id_val)
+            .force_id(force_id_val)
+            .entity_type(entity_type_val)
+            .alt_entity_type(alternative_entity_type)
+            .linear_velocity(entity_linear_velocity)
+            .location(entity_location)
+            .orientation(entity_orientation)
+            .appearance(entity_appearance)
+            .dead_reckoning(dead_reckoning_parameters)
+            .marking(entity_marking)
+            .capabilities(entity_capabilities);
+        let builder = if let Some(params) = articulation_parameter {
+            builder.add_articulation_parameters_vec(params)
+        } else { builder };
+        let pdu = builder.build();
+
         Ok((input, Pdu::EntityState(pdu.unwrap())))
     }
 }
@@ -85,12 +98,12 @@ fn country(input: &[u8]) -> IResult<&[u8], Country> {
     Ok((input, country))
 }
 
-fn velocity(input: &[u8]) -> IResult<&[u8], VectorF32> {
-    let (input, velocities) = count(be_f32, 3)(input)?;
+fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
+    let (input, elements) = count(be_f32, 3)(input)?;
     Ok((input, VectorF32 {
-        first_vector_component: *velocities.get(0).expect("Value supposed to be parsed successfully"),
-        second_vector_component: *velocities.get(1).expect("Value supposed to be parsed successfully"),
-        third_vector_component: *velocities.get(2).expect("Value supposed to be parsed successfully"),
+        first_vector_component: *elements.get(0).expect("Value supposed to be parsed successfully"),
+        second_vector_component: *elements.get(1).expect("Value supposed to be parsed successfully"),
+        third_vector_component: *elements.get(2).expect("Value supposed to be parsed successfully"),
     }))
 }
 
@@ -369,7 +382,19 @@ fn environmentals_record(input: &[u8]) -> IResult<&[u8], EnvironmentalsRecord> {
 }
 
 fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
-    todo!()
+    let (input, algorithm) = be_u8(input)?;
+    let (input, other_parameters) = take_bytes(15usize)(input)?;
+    let (input, acceleration) = vec3_f32(input)?;
+    let (input, velocity) = vec3_f32(input)?;
+
+    let other_parameters = other_parameters.try_into().unwrap();
+
+    Ok((input, DrParameters {
+        algorithm: DrAlgorithm::from(algorithm),
+        other_parameters,
+        linear_acceleration: acceleration,
+        angular_velocity: velocity,
+    }))
 }
 
 // TODO review if this is an efficient way to read the string and trim trailing whitespace
@@ -408,6 +433,7 @@ fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
     }))
 }
 
+// TODO rewrite parse to Fn(&[u8])
 fn articulation_records(input: &[u8], num_records: u8) -> IResult<&[u8], Vec<ArticulationParameter>> {
     let (input, records) =
         count(articulation_record, num_records as usize)(input)?;
@@ -415,7 +441,38 @@ fn articulation_records(input: &[u8], num_records: u8) -> IResult<&[u8], Vec<Art
 }
 
 fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
-    todo!()
+    let (input, parameter_type_designator) = be_u8(input)?;
+    let (input, parameter_change_indicator) = be_u8(input)?;
+    let (input, articulation_attachment_id) = be_u16(input)?;
+    let parameter_type_designator : ApTypeDesignator = ApTypeDesignator::from(parameter_type_designator);
+    let (input, parameter_type_variant) = match parameter_type_designator {
+        ApTypeDesignator::Articulated => { articulated_part(input)? }
+        ApTypeDesignator::Attached => { attached_part(input)? }
+    };
+    let (input, articulation_parameter_value) = be_f64(input)?;
+
+    Ok((input, ArticulationParameter {
+        parameter_type_designator,
+        parameter_change_indicator,
+        articulation_attachment_id,
+        parameter_type_variant,
+        articulation_parameter_value,
+    }))
+}
+
+fn attached_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
+    let (input, attached_part) = be_u32(input)?;
+    Ok((input, ParameterTypeVariant::AttachedParts(attached_part)))
+}
+
+fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
+    let (input, low_bits) = be_u16(input)?;
+    let (input, high_bits) = be_u16(input)?;
+
+    Ok((input, ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
+        low_bits: ApLowBits::from(low_bits),
+        high_bits,
+    })))
 }
 
 #[cfg(test)]

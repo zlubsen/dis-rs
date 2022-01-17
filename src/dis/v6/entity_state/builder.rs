@@ -159,8 +159,13 @@ impl EntityStateBuilder {
         self
     }
 
-    pub fn add_articulation_parameter(mut self) -> Self {
-        // TODO
+    pub fn add_articulation_parameters_vec(mut self, parameters : Vec<ArticulationParameter>) -> Self {
+        self.articulation_parameter = parameters;
+        self
+    }
+
+    pub fn add_articulation_parameter(mut self, parameter : ArticulationParameter) -> Self {
+        self.articulation_parameter.push(parameter);
         self
     }
     // TODO add attached part
@@ -186,7 +191,7 @@ impl EntityStateBuilder {
     }
 
     pub fn build(self) -> Result<EntityState, ()> { // TODO sane error type
-        if let Err(err) = self.validate() {
+        if let Err(_) = self.validate() {
             return Err(())
         }
 
@@ -204,7 +209,7 @@ impl EntityStateBuilder {
             dead_reckoning_parameters: self.dead_reckoning_parameters.expect("Value expected, but not found."),
             entity_marking: self.entity_marking.expect("Value expected, but not found."),
             entity_capabilities: self.entity_capabilities.expect("Value expected, but not found."),
-            articulation_parameter: if self.articulation_parameter.is_empty() { Some(self.articulation_parameter) } else { None },
+            articulation_parameter: if !self.articulation_parameter.is_empty() { Some(self.articulation_parameter) } else { None },
         })
     }
 }

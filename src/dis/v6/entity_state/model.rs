@@ -1319,7 +1319,7 @@ impl Default for Density {
 
 pub struct DrParameters {
     pub algorithm : DrAlgorithm,
-    pub other_parameters : DrOtherParameters,
+    pub other_parameters : [u8; 15],
     pub linear_acceleration : VectorF32,
     pub angular_velocity : VectorF32,
 }
@@ -1360,10 +1360,6 @@ impl Default for DrAlgorithm {
     fn default() -> Self {
         DrAlgorithm::DrmFPW
     }
-}
-
-pub struct DrOtherParameters {
-    // 120-bits padding
 }
 
 pub struct EntityMarking {
@@ -1408,7 +1404,7 @@ pub struct EntityCapabilities {
 pub struct ArticulationParameter {
     pub parameter_type_designator : ApTypeDesignator,
     pub parameter_change_indicator : u8,
-    pub articulation_attachment_ic : u16,
+    pub articulation_attachment_id: u16,
     pub parameter_type_variant : ParameterTypeVariant,
     pub articulation_parameter_value : f64,
 }
@@ -1418,11 +1414,11 @@ pub enum ApTypeDesignator {
     Attached = 1,
 }
 
-impl From<bool> for ApTypeDesignator {
-    fn from(value: bool) -> Self {
+impl From<u8> for ApTypeDesignator {
+    fn from(value: u8) -> Self {
         match value {
-            false => ApTypeDesignator::Articulated,
-            true => ApTypeDesignator::Attached,
+            1 => ApTypeDesignator::Attached,
+            0 | _ => ApTypeDesignator::Articulated,
         }
     }
 }
