@@ -173,14 +173,14 @@ fn general_appearance(input: &[u8]) -> IResult<&[u8], GeneralAppearance> {
 
 fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], SpecificAppearance> {
     move |input: &[u8]| {
-        // TODO how to match is TBD, domain is part of the Entity Type Database.
+        // domain codes are defined as part of the Entity Type Database > v29.
         let appearance = match (entity_type.kind, entity_type.domain) {
-            (EntityKind::Platform, _) => { SpecificAppearance::LandPlatform(land_platform_record(input)?.1) } // land
-            // TODO distinguish domains
-            // (EntityKind::Platform, _) => { SpecificAppearance::AirPlatform(air_platform_record(input)?.1) } // air
-            // (EntityKind::Platform, _) => { SpecificAppearance::SurfacePlatform(surface_platform_record(input)?.1) } // surface
-            // (EntityKind::Platform, _) => { SpecificAppearance::SubsurfacePlatform(subsurface_platforms_record(input)?.1) } // subsurface
-            // (EntityKind::Platform, _) => { SpecificAppearance::SpacePlatform(space_platforms_record(input)?.1) } // space
+            (EntityKind::Platform, 1u8) => { SpecificAppearance::LandPlatform(land_platform_record(input)?.1) } // land
+            (EntityKind::Platform, 2u8) => { SpecificAppearance::AirPlatform(air_platform_record(input)?.1) } // air
+            (EntityKind::Platform, 3u8) => { SpecificAppearance::SurfacePlatform(surface_platform_record(input)?.1) } // surface
+            (EntityKind::Platform, 4u8) => { SpecificAppearance::SubsurfacePlatform(subsurface_platforms_record(input)?.1) } // subsurface
+            (EntityKind::Platform, 5u8) => { SpecificAppearance::SpacePlatform(space_platforms_record(input)?.1) } // space
+            (EntityKind::Platform, _) => { SpecificAppearance::Other(other_specific_appearance(input)?.1) } // other: 0 and unspecified
             (EntityKind::Munition, _) => { SpecificAppearance::GuidedMunition(guided_munitions_record(input)?.1) } // guided munition
             (EntityKind::LifeForm, _) => { SpecificAppearance::LifeForm(life_forms_record(input)?.1) } // lifeform
             (EntityKind::Environmental, _) => { SpecificAppearance::Environmental(environmentals_record(input)?.1) } // environmental
@@ -191,14 +191,12 @@ fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u
 }
 
 fn other_specific_appearance(input: &[u8]) -> IResult<&[u8], [u8;2]> {
-    // if let Ok((input,slice)) = take_bytes(2usize)(input) {
-    //     let two_bytes : [u8;2] = [slice[0], slice[1]];
-    //     Ok((input, two_bytes))
-    // } else {
-    //     Ok((input, [ 0, 0 ]))
-    // }
-
-    Ok((input, [ 0, 0 ]))
+    if let Ok((input,slice)) = take_bytes::<usize, &[u8], Error<&[u8]>>(2usize)(input) {
+        let two_bytes : [u8;2] = slice.try_into().unwrap();
+        Ok((input, two_bytes))
+    } else {
+        Ok((input, [ 0, 0 ]))
+    }
 }
 
 fn land_platform_record(input: &[u8]) -> IResult<&[u8], LandPlatformsRecord> {
@@ -431,13 +429,6 @@ fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
         recovery: recovery == 1,
         repair: repair == 1,
     }))
-}
-
-// TODO rewrite parse to Fn(&[u8])
-fn articulation_records(input: &[u8], num_records: u8) -> IResult<&[u8], Vec<ArticulationParameter>> {
-    let (input, records) =
-        count(articulation_record, num_records as usize)(input)?;
-    Ok((input, records))
 }
 
 fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {

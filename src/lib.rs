@@ -11,10 +11,11 @@ pub use dis::v6::parse_multiple_header as parse_v6_headers;
 /*
 TODO:
 - Finish EntityState model and builder functions (such as Appearance impl)
-- Finish parsing EntityState PDU
-- Finish parsing Other PDU
-- Build DIS v7 Header; model, builder, parser
+- Tests for parsing EntityState PDU
+- Tests for parsing Other PDU
 - Writing headers and pdus to buffer/network
+- Build DIS v7 Header; model, builder, parser
+- Incorporate versions of enumeration document into the lib (domain types, country codes, etc). Possibly set version to use as config option; default to latest.
 
 TESTS:
 - Build Other PDU

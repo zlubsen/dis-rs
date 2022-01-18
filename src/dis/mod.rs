@@ -72,6 +72,6 @@ pub fn parse_v6(input: &[u8]) -> Result<Vec<v6::model::Pdu>, DisError> {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// Assumes there will only be a single DIS version of PDUs in a buffer (packet).
-pub fn parse_v7(input: &[u8]) -> Result<Vec<v7::model::Pdu>, DisError> {
+pub fn parse_v7(_input: &[u8]) -> Result<Vec<v7::model::Pdu>, DisError> {
     todo!()
 }
