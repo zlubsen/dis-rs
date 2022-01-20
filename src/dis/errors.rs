@@ -1,12 +1,7 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DisError {
     UnsupportedProtocolVersion,
     ParseError, // the parsing of a PDU resulted in an error
-    InsufficientHeaderLength(usize, usize), // the buffer is too small to contain a valid DIS header; (usize expected, usize found)
-    InsufficientPduLength(usize, usize), // the buffer is too small to contain a valid DIS Pdu based on the header; (usize expected, usize found)
-    MalformedPdu,
-    InvalidProtocolVersionValue(u8),
-    InvalidPduTypeValue(u8),
-    InvalidProtocolFamilyValue(u8),
-    InvalidEnumValue(usize, usize), // a field contains an enum value which is outside of the spec for that field; (usize max allowed, usize found)
+    InsufficientHeaderLength(usize), // the input was too small to contain a valid DIS header; (usize found)
+    InsufficientPduLength(usize, usize), // the input was too small to contain a valid DIS Pdu based on the header and parsing; (usize expected, usize found)
 }
