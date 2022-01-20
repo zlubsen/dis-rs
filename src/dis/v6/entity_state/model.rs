@@ -34,6 +34,7 @@ pub struct SimulationAddress {
     pub application_id : u16,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ForceId {
     Other = 0,
     Friendly = 1,
@@ -48,7 +49,7 @@ impl From<u8> for ForceId {
             1 => ForceId::Friendly,
             2 => ForceId::Opposing,
             3 => ForceId::Neutral,
-            unspecified_value => ForceId::Other,
+            _unspecified_value => ForceId::Other,
         }
     }
 }
@@ -60,7 +61,7 @@ impl Default for ForceId {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : u8,
@@ -71,7 +72,7 @@ pub struct EntityType {
     pub extra : u8,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityKind {
     Other = 0,
     Platform = 1,
@@ -98,14 +99,14 @@ impl From<u8> for EntityKind {
             7 => EntityKind::Radio,
             8 => EntityKind::Expendable,
             9 => EntityKind::SensorEmitter,
-            unspecified_value => EntityKind::Other,
+            _unspecified_value => EntityKind::Other,
         }
     }
 }
 
 // regex: (?<value>[0-9]*)[\t]+(?<field>[\w (),'-.]+)$
 // replace: \t${field} = ${value}, | $2 = $1
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Country {
     Other = 0,
     Afghanistan = 1,
@@ -636,7 +637,7 @@ impl From<u16> for Country {
             264 => Country::Turkmenistan,
             265 => Country::Ukraine,
             266 => Country::Uzbekistan,
-            unspecified_value => Country::Other,
+            _unspecified_value => Country::Other,
         }
     }
 }
@@ -668,6 +669,7 @@ pub struct Appearance {
     pub specific_appearance : SpecificAppearance,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct GeneralAppearance {
     pub entity_paint_scheme : EntityPaintScheme, // enum
     pub entity_mobility_kill : EntityMobilityKill, // enum
@@ -686,6 +688,7 @@ impl GeneralAppearance {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityPaintScheme {
     UniformColor = 0,
     Camouflage = 1,
@@ -706,6 +709,7 @@ impl Default for EntityPaintScheme {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityMobilityKill {
     NoMobilityKill = 0,
     MobilityKill = 1,
@@ -726,6 +730,7 @@ impl Default for EntityMobilityKill {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityFirePower {
     NoFirePowerKill = 0,
     FirePowerKill = 1,
@@ -746,6 +751,7 @@ impl Default for EntityFirePower {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityDamage {
     NoDamage = 0,
     SlightDamage = 1,
@@ -760,7 +766,7 @@ impl From<u8> for EntityDamage {
             1 => EntityDamage::SlightDamage,
             2 => EntityDamage::ModerateDamage,
             3 => EntityDamage::Destroyed,
-            unspecified_value => EntityDamage::NoDamage,
+            _unspecified_value => EntityDamage::NoDamage,
         }
     }
 }
@@ -771,6 +777,7 @@ impl Default for EntityDamage {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntitySmoke {
     NotSmoking = 0,
     SmokePlumeRising = 1,
@@ -785,7 +792,7 @@ impl From<u8> for EntitySmoke {
             1 => EntitySmoke::SmokePlumeRising,
             2 => EntitySmoke::EmittingEngineSmoke,
             3 => EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising,
-            unspecified_value => EntitySmoke::NotSmoking,
+            _unspecified_value => EntitySmoke::NotSmoking,
         }
     }
 }
@@ -796,6 +803,7 @@ impl Default for EntitySmoke {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityTrailingEffect {
     None = 0,
     Small = 1,
@@ -810,7 +818,7 @@ impl From<u8> for EntityTrailingEffect {
             1 => EntityTrailingEffect::Small,
             2 => EntityTrailingEffect::Medium,
             3 => EntityTrailingEffect::Large,
-            unspecified_value => EntityTrailingEffect::None,
+            _unspecified_value => EntityTrailingEffect::None,
         }
     }
 }
@@ -821,6 +829,7 @@ impl Default for EntityTrailingEffect {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityHatchState {
     NotApplicable = 0,
     Closed = 1,
@@ -843,7 +852,7 @@ impl From<u8> for EntityHatchState {
             5 => EntityHatchState::OpenAndPersonVisible,
             6 => EntityHatchState::Unused1,
             7 => EntityHatchState::Unused2,
-            unspecified_value => EntityHatchState::NotApplicable,
+            _unspecified_value => EntityHatchState::NotApplicable,
         }
     }
 }
@@ -854,6 +863,7 @@ impl Default for EntityHatchState {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityLights {
     None = 0,
     RunningLightsOn = 1,
@@ -876,7 +886,7 @@ impl From<u8> for EntityLights {
             5 => EntityLights::Unused2,
             6 => EntityLights::Unused3,
             7 => EntityLights::Unused4,
-            unspecified_value => EntityLights::None,
+            _unspecified_value => EntityLights::None,
         }
     }
 }
@@ -887,6 +897,7 @@ impl Default for EntityLights {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EntityFlamingEffect {
     None = 0,
     FlamesPresent = 1,
@@ -953,6 +964,7 @@ impl SpecificAppearance {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct LandPlatformsRecord {
     pub launcher : Launcher,
     pub camouflage_type : Camouflage,
@@ -964,6 +976,7 @@ pub struct LandPlatformsRecord {
     pub ramp : Ramp,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct AirPlatformsRecord {
     pub afterburner : Afterburner,
     pub frozen_status : FrozenStatus,
@@ -971,30 +984,35 @@ pub struct AirPlatformsRecord {
     pub state : State,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct SurfacePlatformRecord {
     pub frozen_status : FrozenStatus,
     pub power_plant_status : PowerPlantStatus,
     pub state : State,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct SubsurfacePlatformsRecord {
     pub frozen_status : FrozenStatus,
     pub power_plant_status : PowerPlantStatus,
     pub state : State,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct SpacePlatformsRecord {
     pub frozen_status : FrozenStatus,
     pub power_plant_status : PowerPlantStatus,
     pub state : State,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct GuidedMunitionsRecord {
     pub launch_flash : LaunchFlash,
     pub frozen_status : FrozenStatus,
     pub state : State,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct LifeFormsRecord {
     pub life_form_state : LifeFormsState,
     pub frozen_status : FrozenStatus,
@@ -1003,10 +1021,12 @@ pub struct LifeFormsRecord {
     pub weapon_2 : Weapon,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct EnvironmentalsRecord {
     pub density : Density,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Launcher {
     NotRaised,
     Raised,
@@ -1027,6 +1047,7 @@ impl Default for Launcher {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Camouflage {
     Desert,
     Winter,
@@ -1051,6 +1072,7 @@ impl Default for Camouflage {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Concealed {
     NotConcealed,
     Concealed,
@@ -1071,6 +1093,7 @@ impl Default for Concealed {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum FrozenStatus {
     NotFrozen,
     Frozen,
@@ -1091,6 +1114,7 @@ impl Default for FrozenStatus {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum PowerPlantStatus {
     Off,
     On,
@@ -1111,6 +1135,7 @@ impl Default for PowerPlantStatus {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum State {
     Active,
     Deactivated,
@@ -1119,8 +1144,8 @@ pub enum State {
 impl From<u8> for State {
     fn from(value: u8) -> Self {
         match value {
-            1 => State::Active,
-            0 | _ => State::Deactivated,
+            1 => State::Deactivated,
+            0 | _ => State::Active,
         }
     }
 }
@@ -1131,6 +1156,7 @@ impl Default for State {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Tent {
     NotExtended,
     Extended,
@@ -1151,6 +1177,7 @@ impl Default for Tent {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Ramp {
     Up,
     Down,
@@ -1171,6 +1198,7 @@ impl Default for Ramp {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Afterburner {
     NotOn,
     On,
@@ -1191,6 +1219,7 @@ impl Default for Afterburner {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum LaunchFlash {
     NotPresent,
     Present,
@@ -1211,6 +1240,7 @@ impl Default for LaunchFlash {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum LifeFormsState {
     Null,
     UprightStandingStill,
@@ -1247,6 +1277,7 @@ impl Default for LifeFormsState {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ActivityState {
     Active,
     Deactivated,
@@ -1267,6 +1298,7 @@ impl Default for ActivityState {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Weapon {
     NotPresent,
     Stowed,
@@ -1291,6 +1323,7 @@ impl Default for Weapon {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Density {
     Clear,
     Hazy,
@@ -1324,6 +1357,7 @@ pub struct DrParameters {
     pub angular_velocity : VectorF32,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum DrAlgorithm {
     Other = 0,
     Static = 1,
@@ -1350,7 +1384,7 @@ impl From<u8> for DrAlgorithm {
             7 => DrAlgorithm::DrmRPB,
             8 => DrAlgorithm::DrmRVB,
             9 => DrAlgorithm::DrmFVB,
-            unspecified_value => DrAlgorithm::Other,
+            _unspecified_value => DrAlgorithm::Other,
         }
     }
 }
@@ -1382,7 +1416,7 @@ impl From<u8> for EntityMarkingCharacterSet {
             1 => EntityMarkingCharacterSet::ASCII,
             2 => EntityMarkingCharacterSet::ArmyMarking,
             3 => EntityMarkingCharacterSet::DigitChevron,
-            unspecified_value => EntityMarkingCharacterSet::Unused,
+            _unspecified_value => EntityMarkingCharacterSet::Unused,
         }
     }
 }
@@ -1393,6 +1427,7 @@ impl Default for EntityMarkingCharacterSet {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct EntityCapabilities {
     pub ammunition_supply : bool,
     pub fuel_supply : bool,
@@ -1406,9 +1441,10 @@ pub struct ArticulationParameter {
     pub parameter_change_indicator : u8,
     pub articulation_attachment_id: u16,
     pub parameter_type_variant : ParameterTypeVariant,
-    pub articulation_parameter_value : f64,
+    pub articulation_parameter_value : f32,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ApTypeDesignator {
     Articulated = 0,
     Attached = 1,
@@ -1429,6 +1465,7 @@ impl Default for ApTypeDesignator {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ParameterTypeVariant {
     AttachedParts(u32),
     // 0	Nothing, Empty
@@ -1450,12 +1487,14 @@ pub enum ParameterTypeVariant {
     ArticulatedParts(ArticulatedParts),
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArticulatedParts {
-    pub low_bits : ApLowBits,
-    pub high_bits : u16,
+    pub type_metric : ApTypeMetric,
+    pub type_class : u32,
 }
 
-pub enum ApLowBits {
+#[derive(Debug, PartialEq)]
+pub enum ApTypeMetric {
     Unspecified = 0,
     Position = 1,
     ZRate = 10,
@@ -1475,33 +1514,33 @@ pub enum ApLowBits {
     Z = 9,
 }
 
-impl From<u16> for ApLowBits {
-    fn from(value: u16) -> Self {
+impl From<u8> for ApTypeMetric {
+    fn from(value: u8) -> Self {
         match value {
-            1 => ApLowBits::Position,
-            2 => ApLowBits::PositionRate,
-            3 => ApLowBits::Extension,
-            4 => ApLowBits::ExtensionRate,
-            5 => ApLowBits::X,
-            6 => ApLowBits::XRate,
-            7 => ApLowBits::Y,
-            8 => ApLowBits::YRate,
-            9 => ApLowBits::Z,
-            10 => ApLowBits::ZRate,
-            11 => ApLowBits::Azimuth,
-            12 => ApLowBits::AzimuthRate,
-            13 => ApLowBits::Elevation,
-            14 => ApLowBits::ElevationRate,
-            15 => ApLowBits::Rotation,
-            16 => ApLowBits::RotationRate,
-            0 | _ => ApLowBits::Unspecified,
+            1 => ApTypeMetric::Position,
+            2 => ApTypeMetric::PositionRate,
+            3 => ApTypeMetric::Extension,
+            4 => ApTypeMetric::ExtensionRate,
+            5 => ApTypeMetric::X,
+            6 => ApTypeMetric::XRate,
+            7 => ApTypeMetric::Y,
+            8 => ApTypeMetric::YRate,
+            9 => ApTypeMetric::Z,
+            10 => ApTypeMetric::ZRate,
+            11 => ApTypeMetric::Azimuth,
+            12 => ApTypeMetric::AzimuthRate,
+            13 => ApTypeMetric::Elevation,
+            14 => ApTypeMetric::ElevationRate,
+            15 => ApTypeMetric::Rotation,
+            16 => ApTypeMetric::RotationRate,
+            0 | _ => ApTypeMetric::Unspecified,
         }
     }
 }
 
-impl Default for ApLowBits {
+impl Default for ApTypeMetric {
     fn default() -> Self {
-        ApLowBits::Unspecified
+        ApTypeMetric::Unspecified
     }
 }
 
@@ -1645,19 +1684,3 @@ impl EntityState {
 
     // pub fn serialize() ->
 }
-
-// impl TryFrom<&BytesMut> for EntityState {
-//     type Error = DisError;
-//
-//     fn try_from(buf: &BytesMut) -> Result<Self, Self::Error> {
-//         EntityState::try_from(&buf[..])
-//     }
-// }
-//
-// impl TryFrom<&[u8]> for EntityState {
-//     type Error = DisError;
-//
-//     fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
-//         todo!()
-//     }
-// }

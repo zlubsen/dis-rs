@@ -5,7 +5,7 @@ use nom::bits::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
 use nom::error::{Error};
 use nom::sequence::tuple;
-use crate::dis::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, ApLowBits, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Country, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
+use crate::dis::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, ApTypeMetric, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Country, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
 use crate::dis::v6::model::{Pdu, PduHeader};
 
 pub fn entity_state_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
@@ -20,6 +20,8 @@ pub fn entity_state_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let (input, entity_orientation) = orientation(input)?;
         let (input, entity_appearance) = appearance(entity_type_val.clone())(input)?;
         let (input, dead_reckoning_parameters) = dr_parameters(input)?;
+
+        // FIXME before the marking two few bytes are read;
         let (input, entity_marking) = entity_marking(input)?;
         let (input, entity_capabilities) = entity_capabilities(input)?;
         let (input, articulation_parameter) = if articulated_parts_no > 0 {
@@ -173,18 +175,49 @@ fn general_appearance(input: &[u8]) -> IResult<&[u8], GeneralAppearance> {
 
 fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], SpecificAppearance> {
     move |input: &[u8]| {
+        // FIXME it seems the bit-level parsers do not consume the bytes from the input.
         // domain codes are defined as part of the Entity Type Database > v29.
-        let appearance = match (entity_type.kind, entity_type.domain) {
-            (EntityKind::Platform, 1u8) => { SpecificAppearance::LandPlatform(land_platform_record(input)?.1) } // land
-            (EntityKind::Platform, 2u8) => { SpecificAppearance::AirPlatform(air_platform_record(input)?.1) } // air
-            (EntityKind::Platform, 3u8) => { SpecificAppearance::SurfacePlatform(surface_platform_record(input)?.1) } // surface
-            (EntityKind::Platform, 4u8) => { SpecificAppearance::SubsurfacePlatform(subsurface_platforms_record(input)?.1) } // subsurface
-            (EntityKind::Platform, 5u8) => { SpecificAppearance::SpacePlatform(space_platforms_record(input)?.1) } // space
-            (EntityKind::Platform, _) => { SpecificAppearance::Other(other_specific_appearance(input)?.1) } // other: 0 and unspecified
-            (EntityKind::Munition, _) => { SpecificAppearance::GuidedMunition(guided_munitions_record(input)?.1) } // guided munition
-            (EntityKind::LifeForm, _) => { SpecificAppearance::LifeForm(life_forms_record(input)?.1) } // lifeform
-            (EntityKind::Environmental, _) => { SpecificAppearance::Environmental(environmentals_record(input)?.1) } // environmental
-            (_, _) => { SpecificAppearance::Other(other_specific_appearance(input)?.1) }
+        let (input, appearance) = match (entity_type.kind, entity_type.domain) {
+            (EntityKind::Platform, 1u8) => { // land
+                let (input, record) = land_platform_record(input)?;
+                (input, SpecificAppearance::LandPlatform(record))
+            }
+            (EntityKind::Platform, 2u8) => { // air
+                let (input, record) = air_platform_record(input)?;
+                (input, SpecificAppearance::AirPlatform(record))
+            }
+            (EntityKind::Platform, 3u8) => { // surface
+                let (input, record) = surface_platform_record(input)?;
+                (input, SpecificAppearance::SurfacePlatform(record))
+            }
+            (EntityKind::Platform, 4u8) => { // subsurface
+                let (input, record) = subsurface_platforms_record(input)?;
+                (input, SpecificAppearance::SubsurfacePlatform(record))
+            }
+            (EntityKind::Platform, 5u8) => { // space
+                let (input, record) = space_platforms_record(input)?;
+                (input, SpecificAppearance::SpacePlatform(record))
+            }
+            (EntityKind::Platform, _) => { // other platform, 0 and unspecified
+                let (input, record) = other_specific_appearance(input)?;
+                (input, SpecificAppearance::Other(record))
+            }
+            (EntityKind::Munition, _) => { // guided munitions // FIXME more specific than just entity kind 'Munition'?
+                let (input, record) = guided_munitions_record(input)?;
+                (input, SpecificAppearance::GuidedMunition(record))
+            }
+            (EntityKind::LifeForm, 1u8) => { // lifeform
+                let (input, record) = life_forms_record(input)?;
+                (input, SpecificAppearance::LifeForm(record))
+            }
+            (EntityKind::Environmental, _) => { // environmental
+                let (input, record) = environmentals_record(input)?;
+                (input, SpecificAppearance::Environmental(record))
+            }
+            (_, _) => {
+                let (input, record) = other_specific_appearance(input)?;
+                (input, SpecificAppearance::Other(record))
+            }
         };
         Ok((input, appearance))
     }
@@ -421,13 +454,14 @@ fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
          take_bits(1usize),
          take_bits(1usize),
          take_bits(1usize),
-         take_bits(28usize))))(input)?;
+         take_bits(3usize))))(input)?;
+    let (input, _pad_3_bytes) = take_bytes(3usize)(input)?;
 
     Ok((input, EntityCapabilities {
-        ammunition_supply: ammunition_supply == 1,
-        fuel_supply: fuel_supply == 1,
-        recovery: recovery == 1,
-        repair: repair == 1,
+        ammunition_supply: ammunition_supply != 0,
+        fuel_supply: fuel_supply != 0,
+        recovery: recovery != 0,
+        repair: repair != 0,
     }))
 }
 
@@ -440,7 +474,8 @@ fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
         ApTypeDesignator::Articulated => { articulated_part(input)? }
         ApTypeDesignator::Attached => { attached_part(input)? }
     };
-    let (input, articulation_parameter_value) = be_f64(input)?;
+    let (input, articulation_parameter_value) = be_f32(input)?;
+    let (input, _pad_out) = take_bytes(4usize)(input)?;
 
     Ok((input, ArticulationParameter {
         parameter_type_designator,
@@ -457,19 +492,22 @@ fn attached_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
 }
 
 fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
-    let (input, low_bits) = be_u16(input)?;
-    let (input, high_bits) = be_u16(input)?;
+    let (input, type_varient) = be_u32(input)?;
+    let type_metric = (type_varient & 0x1f) as u8;  // 5 least significant bits (0x1f) are the type metric
+    let type_class = type_varient - (type_metric as u32);   // rest of the bits (minus type metric value) are the type class
 
     Ok((input, ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-        low_bits: ApLowBits::from(low_bits),
-        high_bits,
+        type_metric: ApTypeMetric::from(type_metric),
+        type_class,
     })))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::dis::v6::entity_state::model::EntityMarkingCharacterSet;
-    use crate::dis::v6::entity_state::parser::entity_marking;
+    use crate::dis::v6::entity_state::model::{ApTypeDesignator, ApTypeMetric, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarkingCharacterSet, EntityMobilityKill, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
+    use crate::dis::v6::entity_state::parser::{articulation_record, entity_capabilities, entity_marking};
+    use crate::dis::v6::entity_state::model::EntityPaintScheme;
+    use crate::dis::v6::entity_state::parser::general_appearance;
 
     #[test]
     fn parse_marking_ascii() {
@@ -477,8 +515,114 @@ mod tests {
 
         let marking = entity_marking(&bytes);
         assert!(marking.is_ok());
-        let marking = marking.unwrap().1;
+        let (input, marking) = marking.unwrap();
         assert_eq!(marking.marking_character_set, EntityMarkingCharacterSet::ASCII);
         assert_eq!(marking.marking_string, "EYE 10");
+
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_general_appearance_none() {
+        let input : [u8;2] = [0x00,0x00];
+
+        let res = general_appearance(&input);
+        assert!(res.is_ok());
+        let (input, appearance) = res.expect("value is Ok");
+        assert_eq!(appearance.entity_paint_scheme, EntityPaintScheme::UniformColor);
+        assert_eq!(appearance.entity_mobility_kill, EntityMobilityKill::NoMobilityKill);
+        assert_eq!(appearance.entity_fire_power, EntityFirePower::NoFirePowerKill);
+        assert_eq!(appearance.entity_damage, EntityDamage::NoDamage);
+        assert_eq!(appearance.entity_smoke, EntitySmoke::NotSmoking);
+        assert_eq!(appearance.entity_trailing_effect, EntityTrailingEffect::None);
+        assert_eq!(appearance.entity_hatch_state, EntityHatchState::NotApplicable);
+        assert_eq!(appearance.entity_lights, EntityLights::None);
+        assert_eq!(appearance.entity_flaming_effect, EntityFlamingEffect::None);
+
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_general_appearance_emitting_engine_smoke() {
+        let input : [u8;2] = [0x04,0x00];
+
+        let res = general_appearance(&input);
+        assert!(res.is_ok());
+        let (input, appearance) = res.expect("value is Ok");
+        assert_eq!(appearance.entity_paint_scheme, EntityPaintScheme::UniformColor);
+        assert_eq!(appearance.entity_mobility_kill, EntityMobilityKill::NoMobilityKill);
+        assert_eq!(appearance.entity_fire_power, EntityFirePower::NoFirePowerKill);
+        assert_eq!(appearance.entity_damage, EntityDamage::NoDamage);
+        assert_eq!(appearance.entity_smoke, EntitySmoke::EmittingEngineSmoke);
+        assert_eq!(appearance.entity_trailing_effect, EntityTrailingEffect::None);
+        assert_eq!(appearance.entity_hatch_state, EntityHatchState::NotApplicable);
+        assert_eq!(appearance.entity_lights, EntityLights::None);
+        assert_eq!(appearance.entity_flaming_effect, EntityFlamingEffect::None);
+
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_entity_capabilities_none() {
+        let input : [u8;4] = [0x00,0x00,0x00,0x00];
+
+        let res = entity_capabilities(&input);
+        assert!(res.is_ok());
+        let (input, capabilities) = res.expect("value is Ok");
+        assert!(!capabilities.ammunition_supply);
+        assert!(!capabilities.fuel_supply);
+        assert!(!capabilities.recovery);
+        assert!(!capabilities.repair);
+
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_articulated_parameter_gun1_azimuth() {
+        let input : [u8;16] =
+            [0x00,  // u8; type articulated
+            0x00,   // u8; no change
+            0x00,0x00,  // u16; 0 value attachment id
+                0x00,0x00,  // u32; type varient metric - 11 - azimuth
+                0x10,0x0b,  // type varient high bits - 4096 - primary gun 1
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 1
+
+        let parameter = articulation_record(&input);
+        assert!(parameter.is_ok());
+        let (input, parameter) = parameter.expect("should be Ok");
+        assert_eq!(parameter.parameter_type_designator, ApTypeDesignator::Articulated);
+        assert_eq!(parameter.parameter_change_indicator, 0);
+        assert_eq!(parameter.articulation_attachment_id, 0);
+        if let ParameterTypeVariant::ArticulatedParts(type_varient) = parameter.parameter_type_variant {
+            assert_eq!(type_varient.type_class, 4096);
+            assert_eq!(type_varient.type_metric, ApTypeMetric::Azimuth);
+        }
+
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_articulated_parameter_landing_gear_down() {
+        let input : [u8;16] =
+            [0x00,  // u8; type articulated
+                0x00,   // u8; no change
+                0x00,0x00,  // u16; 0 value attachment id
+                0x00,0x00,  // u32; type varient metric - 11 - position
+                0x0C,0x01,  // type varient high bits - 4096 - primary gun 1
+                0x3F,0x80,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 1
+
+        let parameter = articulation_record(&input);
+        assert!(parameter.is_ok());
+        let (input, parameter) = parameter.expect("should be Ok");
+        assert_eq!(parameter.parameter_type_designator, ApTypeDesignator::Articulated);
+        assert_eq!(parameter.parameter_change_indicator, 0);
+        assert_eq!(parameter.articulation_attachment_id, 0);
+        if let ParameterTypeVariant::ArticulatedParts(type_varient) = parameter.parameter_type_variant {
+            assert_eq!(type_varient.type_class, 3072);
+            assert_eq!(type_varient.type_metric, ApTypeMetric::Position);
+        }
+        assert_eq!(parameter.articulation_parameter_value, 1f32);
+
+        assert!(input.is_empty());
     }
 }

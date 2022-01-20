@@ -17,6 +17,7 @@ pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     }
 }
 
+#[allow(dead_code)]
 pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     match pdu(input) {
         Ok((_, pdu)) => { Ok(pdu) }
@@ -174,7 +175,9 @@ fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
 #[cfg(test)]
 mod tests {
     use crate::dis::common::model::ProtocolVersion;
-    use crate::dis::v6::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
+    use crate::dis::v6::entity_state::model::{ApTypeMetric, ApTypeDesignator, Country, EntityCapabilities, EntityKind, EntityType, ForceId, ParameterTypeVariant, GeneralAppearance, EntityPaintScheme, EntityMobilityKill, EntityFirePower, EntityDamage, EntitySmoke, EntityTrailingEffect, EntityHatchState, EntityLights, EntityFlamingEffect, DrAlgorithm, SpecificAppearance, AirPlatformsRecord, Afterburner, FrozenStatus, PowerPlantStatus, State};
+    use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
+    use crate::dis::v6::parse_pdu;
     use crate::parse_v6_header;
 
     #[test]
@@ -206,5 +209,83 @@ mod tests {
         assert_eq!(header.time_stamp, 1323973472);
         assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
     }
+
+    #[test]
+    fn parse_pdu_entity_state() {
+        let bytes : [u8;208] =
+            [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4, 0x03, 0x84,
+            0x00, 0x0e, 0x01, 0x04, 0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00, 0x01, 0x02, 0x00, 0x99,
+            0x32, 0x04, 0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50, 0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d,
+            0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78, 0xbf, 0x3e, 0xdd, 0xfa, 0x3e, 0x2e, 0x36, 0xdd,
+            0x3f, 0xe6, 0x27, 0xc9, 0x00, 0x40, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x01, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x4d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+
+        let pdu = parse_pdu(&bytes);
+        assert!(pdu.is_ok());
+        let pdu = pdu.unwrap();
+        if let Pdu::EntityState(pdu) = pdu {
+            assert_eq!(pdu.header.pdu_type, PduType::EntityStatePdu);
+            assert_eq!(pdu.header.pdu_length, 208u16);
+            assert_eq!(pdu.entity_id.simulation_address.site_id, 500u16);
+            assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
+            assert_eq!(pdu.entity_id.entity_id, 14u16);
+            assert_eq!(pdu.force_id, ForceId::Friendly);
+            assert_eq!(pdu.articulated_parts_no, 4u8);
+            assert_eq!(pdu.entity_type, EntityType {
+                kind: EntityKind::Platform,
+                domain: 2,
+                country: Country::Netherlands,
+                category: 50,
+                subcategory: 4,
+                specific: 4,
+                extra: 0
+            });
+            assert_eq!(pdu.entity_appearance.general_appearance, GeneralAppearance {
+                entity_paint_scheme: EntityPaintScheme::UniformColor,
+                entity_mobility_kill: EntityMobilityKill::NoMobilityKill,
+                entity_fire_power: EntityFirePower::NoFirePowerKill,
+                entity_damage: EntityDamage::NoDamage,
+                entity_smoke: EntitySmoke::NotSmoking,
+                entity_trailing_effect: EntityTrailingEffect::None,
+                entity_hatch_state: EntityHatchState::Open,
+                entity_lights: EntityLights::None,
+                entity_flaming_effect: EntityFlamingEffect::None,
+            });
+            if let SpecificAppearance::AirPlatform(record) = pdu.entity_appearance.specific_appearance {
+                assert_eq!(record, AirPlatformsRecord {
+                    afterburner: Afterburner::NotOn,
+                    frozen_status: FrozenStatus::NotFrozen,
+                    power_plant_status: PowerPlantStatus::Off,
+                    state: State::Active,
+                })
+            } else { assert!(false) };
+            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DrAlgorithm::DrmRVW);
+            assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
+            assert_eq!(pdu.entity_capabilities, EntityCapabilities {
+                ammunition_supply: false,
+                fuel_supply: false,
+                recovery: false,
+                repair: false,
+            });
+            let articulation_parameters = pdu.articulation_parameter.unwrap();
+            assert_eq!(articulation_parameters.len(), 4);
+            let parameter_1 = articulation_parameters.get(0).unwrap();
+            assert_eq!(parameter_1.parameter_type_designator, ApTypeDesignator::Articulated);
+            if let ParameterTypeVariant::ArticulatedParts(type_varient) = &parameter_1.parameter_type_variant {
+                assert_eq!(type_varient.type_metric, ApTypeMetric::Position);
+                assert_eq!(type_varient.type_class, 3072); // landing gear
+            } else { assert!(false) }
+            assert_eq!(parameter_1.articulation_parameter_value, 1f32);
+
+        } else { assert!(false) }
+    }
 }
+
 

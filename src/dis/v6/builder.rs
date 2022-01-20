@@ -1,6 +1,7 @@
 use crate::dis::common::model::ProtocolVersion;
 use crate::dis::v6::model::{PduHeader, PduType, ProtocolFamily};
 
+#[allow(dead_code)]
 pub struct PduHeaderBuilder {
     pub protocol_version : Option<ProtocolVersion>,
     pub exercise_id : Option<u8>,
@@ -24,37 +25,38 @@ impl PduHeaderBuilder {
         }
     }
 
-    fn protocol_version(mut self, version: ProtocolVersion) -> Self {
+    pub fn protocol_version(mut self, version: ProtocolVersion) -> Self {
         self.protocol_version = Some(version);
         self
     }
 
-    fn exercise_id(mut self, id: u8) -> Self {
+    pub fn exercise_id(mut self, id: u8) -> Self {
         self.exercise_id = Some(id);
         self
     }
 
-    fn pdu_type(mut self, pdu_type: PduType) -> Self {
+    pub fn pdu_type(mut self, pdu_type: PduType) -> Self {
         self.pdu_type = Some(pdu_type);
         self
     }
 
-    fn protocol_family(mut self, family: ProtocolFamily) -> Self {
+    pub fn protocol_family(mut self, family: ProtocolFamily) -> Self {
         self.protocol_family = Some(family);
         self
     }
 
-    fn time_stamp(mut self, time: u32) -> Self {
+    pub fn time_stamp(mut self, time: u32) -> Self {
         self.time_stamp = Some(time);
         self
     }
 
-    fn pdu_length(mut self, length: u16) -> Self {
+    pub fn pdu_length(mut self, length: u16) -> Self {
         self.pdu_length = Some(length);
         self
     }
 
-    fn padding(mut self, padding: u16) -> Self {
+    #[allow(dead_code)]
+    pub fn padding(mut self, padding: u16) -> Self {
         self.padding = padding;
         self
     }

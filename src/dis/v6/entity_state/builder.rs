@@ -168,12 +168,11 @@ impl EntityStateBuilder {
         self.articulation_parameter.push(parameter);
         self
     }
-    // TODO add attached part
-    // TODO add articulated part
+
+    // TODO fn to more simply add an attached part
+    // TODO fn to more simply add an articulated part
 
     fn validate(&self) -> Result<(), EntityStateValidationError> {
-        // TODO "Check if all fields are filled in properly; required are set, valid values..., based on the standard"
-
         return if self.header.is_some() &&
             self.entity_id.is_some() &&
             self.force_id.is_some() &&
@@ -339,6 +338,46 @@ impl LandPlatformBuilder {
         }
     }
 
+    pub fn launcher(mut self, launcher : Launcher) -> Self {
+        self.launcher = Some(launcher);
+        self
+    }
+
+    pub fn camouflage_type(mut self, camouflage_type : Camouflage) -> Self {
+        self.camouflage_type = Some(camouflage_type);
+        self
+    }
+
+    pub fn concealed(mut self, concealed : Concealed) -> Self {
+        self.concealed = Some(concealed);
+        self
+    }
+
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn power_plant_status(mut self, power_plant_status : PowerPlantStatus) -> Self {
+        self.power_plant_status = Some(power_plant_status);
+        self
+    }
+
+    pub fn state(mut self, state : State) -> Self {
+        self.state = Some(state);
+        self
+    }
+
+    pub fn tent(mut self, tent : Tent) -> Self {
+        self.tent = Some(tent);
+        self
+    }
+
+    pub fn ramp(mut self, ramp : Ramp) -> Self {
+        self.ramp = Some(ramp);
+        self
+    }
+
     pub fn validate(&self) -> bool {
         return
             self.launcher.is_some() &&
@@ -388,6 +427,27 @@ impl AirPlatformBuilder {
         }
     }
 
+    pub fn afterburner(mut self, afterburner : Afterburner) -> Self {
+        self.afterburner = Some(afterburner);
+        self
+    }
+
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn power_plant_status(mut self, power_plant_status : PowerPlantStatus) -> Self {
+        self.power_plant_status = Some(power_plant_status);
+        self
+    }
+
+    pub fn state(mut self, state : State) -> Self {
+        self.state = Some(state);
+        self
+    }
+
+
     pub fn validate(&self) -> bool {
         return
             self.afterburner.is_some() &&
@@ -427,6 +487,21 @@ impl SurfacePlatformBuilder {
         }
     }
 
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn power_plant_status(mut self, power_plant_status : PowerPlantStatus) -> Self {
+        self.power_plant_status = Some(power_plant_status);
+        self
+    }
+
+    pub fn state(mut self, state : State) -> Self {
+        self.state = Some(state);
+        self
+    }
+
     pub fn validate(&self) -> bool {
         return
             self.frozen_status.is_some() &&
@@ -462,6 +537,21 @@ impl SubsurfacePlatformBuilder {
             power_plant_status: None,
             state: None
         }
+    }
+
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn power_plant_status(mut self, power_plant_status : PowerPlantStatus) -> Self {
+        self.power_plant_status = Some(power_plant_status);
+        self
+    }
+
+    pub fn state(mut self, state : State) -> Self {
+        self.state = Some(state);
+        self
     }
 
     pub fn validate(&self) -> bool {
@@ -501,6 +591,21 @@ impl SpacePlatformBuilder {
         }
     }
 
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn power_plant_status(mut self, power_plant_status : PowerPlantStatus) -> Self {
+        self.power_plant_status = Some(power_plant_status);
+        self
+    }
+
+    pub fn state(mut self, state : State) -> Self {
+        self.state = Some(state);
+        self
+    }
+
     pub fn validate(&self) -> bool {
         return
             self.frozen_status.is_some() &&
@@ -536,6 +641,21 @@ impl GuidedMunitionBuilder {
             frozen_status: None,
             state: None
         }
+    }
+
+    pub fn launch_flash(mut self, launch_flash : LaunchFlash) -> Self {
+        self.launch_flash = Some(launch_flash);
+        self
+    }
+
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn state(mut self, state : State) -> Self {
+        self.state = Some(state);
+        self
     }
 
     pub fn validate(&self) -> bool {
@@ -579,6 +699,31 @@ impl LifeFormBuilder {
         }
     }
 
+    pub fn life_form_state(mut self, state : LifeFormsState) -> Self {
+        self.life_form_state = Some(state);
+        self
+    }
+
+    pub fn frozen_status(mut self, frozen_status : FrozenStatus) -> Self {
+        self.frozen_status = Some(frozen_status);
+        self
+    }
+
+    pub fn activity_state(mut self, activity_state : ActivityState) -> Self {
+        self.activity_state = Some(activity_state);
+        self
+    }
+
+    pub fn weapon_1(mut self, weapon : Weapon) -> Self {
+        self.weapon_1 = Some(weapon);
+        self
+    }
+
+    pub fn weapon_2(mut self, weapon : Weapon) -> Self {
+        self.weapon_2 = Some(weapon);
+        self
+    }
+
     pub fn validate(&self) -> bool {
         return
             self.life_form_state.is_some() &&
@@ -605,7 +750,6 @@ impl LifeFormBuilder {
     }
 }
 
-// Environmental(EnvironmentalsRecord),
 pub struct EnvironmentalBuilder {
     density: Option<Density>,
 }
@@ -615,6 +759,11 @@ impl EnvironmentalBuilder {
         EnvironmentalBuilder {
             density: None,
         }
+    }
+
+    pub fn density(mut self, density: Density) -> Self {
+        self.density = Some(density);
+        self
     }
 
     pub fn validate(&self) -> bool {
