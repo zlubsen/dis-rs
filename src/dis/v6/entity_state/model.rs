@@ -54,6 +54,17 @@ impl From<u8> for ForceId {
     }
 }
 
+impl Into<u8> for ForceId {
+    fn into(self) -> u8 {
+        match self {
+            ForceId::Other => { 0u8 }
+            ForceId::Friendly => { 1u8 }
+            ForceId::Opposing => { 2u8 }
+            ForceId::Neutral => { 3u8 }
+        }
+    }
+}
+
 // TODO Needed?
 impl Default for ForceId {
     fn default() -> Self {
@@ -100,6 +111,23 @@ impl From<u8> for EntityKind {
             8 => EntityKind::Expendable,
             9 => EntityKind::SensorEmitter,
             _unspecified_value => EntityKind::Other,
+        }
+    }
+}
+
+impl Into<u8> for EntityKind {
+    fn into(self) -> u8 {
+        match self {
+            EntityKind::Other => { 0u8 }
+            EntityKind::Platform => { 1u8 }
+            EntityKind::Munition => { 2u8 }
+            EntityKind::LifeForm => { 3u8 }
+            EntityKind::Environmental => { 4u8 }
+            EntityKind::CulturalFeature => { 5u8 }
+            EntityKind::Supply => { 6u8 }
+            EntityKind::Radio => { 7u8 }
+            EntityKind::Expendable => { 8u8 }
+            EntityKind::SensorEmitter => { 9u8 }
         }
     }
 }
@@ -703,6 +731,15 @@ impl From<u8> for EntityPaintScheme {
     }
 }
 
+impl Into<u8> for EntityPaintScheme {
+    fn into(self) -> u8 {
+        match self {
+            EntityPaintScheme::UniformColor => { 0u8}
+            EntityPaintScheme::Camouflage => { 1u8 }
+        }
+    }
+}
+
 impl Default for EntityPaintScheme {
     fn default() -> Self {
         EntityPaintScheme::UniformColor
@@ -724,6 +761,15 @@ impl From<u8> for EntityMobilityKill {
     }
 }
 
+impl Into<u8> for EntityMobilityKill {
+    fn into(self) -> u8 {
+        match self {
+            EntityMobilityKill::NoMobilityKill => { 0u8 }
+            EntityMobilityKill::MobilityKill => { 1u8 }
+        }
+    }
+}
+
 impl Default for EntityMobilityKill {
     fn default() -> Self {
         EntityMobilityKill::NoMobilityKill
@@ -741,6 +787,15 @@ impl From<u8> for EntityFirePower {
         match value {
             1 => EntityFirePower::FirePowerKill,
             0 | _ => EntityFirePower::NoFirePowerKill,
+        }
+    }
+}
+
+impl Into<u8> for EntityFirePower {
+    fn into(self) -> u8 {
+        match self {
+            EntityFirePower::NoFirePowerKill => { 0u8 }
+            EntityFirePower::FirePowerKill => { 1u8 }
         }
     }
 }
@@ -771,6 +826,17 @@ impl From<u8> for EntityDamage {
     }
 }
 
+impl Into<u8> for EntityDamage {
+    fn into(self) -> u8 {
+        match self {
+            EntityDamage::NoDamage => { 0u8 }
+            EntityDamage::SlightDamage => { 1u8  }
+            EntityDamage::ModerateDamage => { 2u8 }
+            EntityDamage::Destroyed => { 3u8 }
+        }
+    }
+}
+
 impl Default for EntityDamage {
     fn default() -> Self {
         EntityDamage::NoDamage
@@ -797,6 +863,17 @@ impl From<u8> for EntitySmoke {
     }
 }
 
+impl Into<u8> for EntitySmoke {
+    fn into(self) -> u8 {
+        match self {
+            EntitySmoke::NotSmoking => { 0u8 }
+            EntitySmoke::SmokePlumeRising => { 1u8 }
+            EntitySmoke::EmittingEngineSmoke => { 2u8 }
+            EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising => { 3u8 }
+        }
+    }
+}
+
 impl Default for EntitySmoke {
     fn default() -> Self {
         EntitySmoke::NotSmoking
@@ -819,6 +896,17 @@ impl From<u8> for EntityTrailingEffect {
             2 => EntityTrailingEffect::Medium,
             3 => EntityTrailingEffect::Large,
             _unspecified_value => EntityTrailingEffect::None,
+        }
+    }
+}
+
+impl Into<u8> for EntityTrailingEffect {
+    fn into(self) -> u8 {
+        match self {
+            EntityTrailingEffect::None => { 0u8 }
+            EntityTrailingEffect::Small => { 1u8 }
+            EntityTrailingEffect::Medium => { 2u8 }
+            EntityTrailingEffect::Large => { 3u8 }
         }
     }
 }
@@ -857,6 +945,21 @@ impl From<u8> for EntityHatchState {
     }
 }
 
+impl Into<u8> for EntityHatchState {
+    fn into(self) -> u8 {
+        match self {
+            EntityHatchState::NotApplicable => { 0u8 }
+            EntityHatchState::Closed => { 1u8 }
+            EntityHatchState::Popped => { 2u8 }
+            EntityHatchState::PoppedAndPersonVisible => { 3u8 }
+            EntityHatchState::Open => { 4u8 }
+            EntityHatchState::OpenAndPersonVisible => { 5u8 }
+            EntityHatchState::Unused1 => { 6u8 }
+            EntityHatchState::Unused2 => { 7u8 }
+        }
+    }
+}
+
 impl Default for EntityHatchState {
     fn default() -> Self {
         EntityHatchState::NotApplicable
@@ -891,6 +994,21 @@ impl From<u8> for EntityLights {
     }
 }
 
+impl Into<u8> for EntityLights {
+    fn into(self) -> u8 {
+        match self {
+            EntityLights::None => { 0u8 }
+            EntityLights::RunningLightsOn => { 1u8 }
+            EntityLights::NavigationLightsOn => { 2u8 }
+            EntityLights::FromationLightsOn => { 3u8 }
+            EntityLights::Unused1 => { 4u8 }
+            EntityLights::Unused2 => { 5u8 }
+            EntityLights::Unused3 => { 6u8 }
+            EntityLights::Unused4 => { 7u8 }
+        }
+    }
+}
+
 impl Default for EntityLights {
     fn default() -> Self {
         EntityLights::None
@@ -908,6 +1026,15 @@ impl From<u8> for EntityFlamingEffect {
         match value {
             1 => EntityFlamingEffect::FlamesPresent,
             0 | _ => EntityFlamingEffect::None,
+        }
+    }
+}
+
+impl Into<u8> for EntityFlamingEffect {
+    fn into(self) -> u8 {
+        match self {
+            EntityFlamingEffect::None => { 0u8 }
+            EntityFlamingEffect::FlamesPresent => { 1u8 }
         }
     }
 }

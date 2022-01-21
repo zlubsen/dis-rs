@@ -24,3 +24,18 @@ impl From<u8> for ProtocolVersion {
         }
     }
 }
+
+impl Into<u8> for ProtocolVersion {
+    fn into(self) -> u8 {
+        match self {
+            ProtocolVersion::Other => { 0u8 }
+            ProtocolVersion::Version1_0May92 => { 1u8 }
+            ProtocolVersion::Ieee1278_1993 => { 2u8 }
+            ProtocolVersion::Version2_0ThirdDraft => { 3u8 }
+            ProtocolVersion::Version2_0FourthDraft => { 4u8 }
+            ProtocolVersion::Ieee1278_1_1995 => { 5u8 }
+            ProtocolVersion::Ieee1278_1a1998 => { 6u8 }
+            ProtocolVersion::Ieee1278_1_2012 => { 7u8 }
+        }
+    }
+}

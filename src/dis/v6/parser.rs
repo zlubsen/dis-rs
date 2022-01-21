@@ -323,7 +323,6 @@ mod tests {
                 assert_eq!(type_varient.type_class, 3072); // landing gear
             } else { assert!(false) }
             assert_eq!(parameter_1.articulation_parameter_value, 1f32);
-
         } else { assert!(false) }
     }
 

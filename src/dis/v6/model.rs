@@ -130,6 +130,63 @@ impl From<u8> for PduType {
     }
 }
 
+impl Into<u8> for PduType {
+    fn into(self) -> u8 {
+        match self {
+            PduType::OtherPdu => { 0u8 }
+            PduType::EntityStatePdu => { 1u8 }
+            PduType::FirePdu => { 2u8 }
+            PduType::DetonationPdu => { 3u8 }
+            PduType::CollisionPdu => { 4u8 }
+            PduType::ServiceRequestPdu => { 5u8 }
+            PduType::ResupplyOfferPdu => { 6u8 }
+            PduType::ResupplyReceivedPdu => { 7u8 }
+            PduType::ResupplyCancelPdu => { 8u8 }
+            PduType::RepairCompletePdu => { 9u8 }
+            PduType::RepairResponsePdu => { 10u8 }
+            PduType::CreateEntityPdu => { 11u8 }
+            PduType::RemoveEntityPdu => { 12u8 }
+            PduType::StartResumePdu => { 13u8 }
+            PduType::StopFreezePdu => { 14u8 }
+            PduType::AcknowledgePdu => { 15u8 }
+            PduType::ActionRequestPdu => { 16u8 }
+            PduType::ActionResponsePdu => { 17u8 }
+            PduType::DataQueryPdu => { 18u8 }
+            PduType::SetDataPdu => { 19u8 }
+            PduType::DataPdu => { 20u8 }
+            PduType::EventReportPdu => { 21u8 }
+            PduType::CommentPdu => { 22u8 }
+            PduType::ElectromagneticEmissionPdu => { 23u8 }
+            PduType::DesignatorPdu => { 24u8 }
+            PduType::TransmitterPdu => { 25u8 }
+            PduType::SignalPdu => { 26u8 }
+            PduType::ReceiverPdu => { 27u8 }
+            PduType::AnnounceObjectPdu => { 129u8 }
+            PduType::DeleteObjectPdu => { 130u8 }
+            PduType::DescribeApplicationPdu => { 131u8 }
+            PduType::DescribeEventPdu => { 132u8 }
+            PduType::DescribeObjectPdu => { 133u8 }
+            PduType::RequestEventPdu => { 134u8 }
+            PduType::RequestObjectPdu => { 135u8 }
+            PduType::TimeSpacePositionIndicatorFIPdu => { 140u8 }
+            PduType::AppearanceFIPdu => { 141u8 }
+            PduType::ArticulatedPartsFIPdu => { 142u8 }
+            PduType::FireFIPdu => { 143u8 }
+            PduType::DetonationFIPdu => { 144u8 }
+            PduType::PointObjectStatePdu => { 150u8 }
+            PduType::LinearObjectStatePdu => { 151u8 }
+            PduType::ArealObjectStatePdu => { 152u8 }
+            PduType::EnvironmentPdu => { 153u8 }
+            PduType::TransferControlRequestPdu => { 155u8 }
+            PduType::TransferControlPdu => { 156u8 }
+            PduType::TransferControlAcknowledgePdu => { 157u8 }
+            PduType::IntercomControlPdu => { 160u8 }
+            PduType::IntercomSignalPdu => { 161u8 }
+            PduType::AggregatePdu => { 170u8 }
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ProtocolFamily {
     Other = 0,
@@ -163,6 +220,25 @@ impl From<u8> for ProtocolFamily {
             133 => ProtocolFamily::ExperimentalEntityManagement,
             0 | _ => ProtocolFamily::Other,
             // unspecified_enum => ProtocolFamily::Unspecified(unspecified_enum),
+        }
+    }
+}
+
+impl Into<u8> for ProtocolFamily {
+    fn into(self) -> u8 {
+        match self {
+            ProtocolFamily::Other => { 0u8 }
+            ProtocolFamily::EntityInformationInteraction => { 1u8 }
+            ProtocolFamily::ExperimentalCGF => { 129u8 }
+            ProtocolFamily::ExperimentalEntityInteractionInformationFieldInstrumentation => { 130u8 }
+            ProtocolFamily::ExperimentalWarfareFieldInstrumentation => { 131u8 }
+            ProtocolFamily::ExperimentalEnvironmentObjectInformationInteraction => { 132u8 }
+            ProtocolFamily::ExperimentalEntityManagement => { 133u8 }
+            ProtocolFamily::Warfare => { 2u8 }
+            ProtocolFamily::Logistics => { 3u8 }
+            ProtocolFamily::RadioCommunication => { 4u8 }
+            ProtocolFamily::SimulationManagement => { 5u8 }
+            ProtocolFamily::DistributedEmissionRegeneration => { 6u8 }
         }
     }
 }

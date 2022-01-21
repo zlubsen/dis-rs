@@ -14,6 +14,16 @@ impl OtherBuilder {
         }
     }
 
+    pub fn header(mut self, header: PduHeader) -> Self {
+        self.header = Some(header);
+        self
+    }
+
+    pub fn body(mut self, bytes : Vec<u8>) -> Self {
+        self.body = Some(bytes);
+        self
+    }
+
     pub fn validate(&self) -> bool {
         return self.header.is_some() && self.body.is_some()
     }
