@@ -298,18 +298,20 @@ impl GeneralAppearanceBuilder {
             self.entity_flaming_effect.is_some();
     }
 
-    pub fn build(&self) -> GeneralAppearance {
-        GeneralAppearance {
-            entity_paint_scheme: Default::default(),
-            entity_mobility_kill: Default::default(),
-            entity_fire_power: Default::default(),
-            entity_damage: Default::default(),
-            entity_smoke: Default::default(),
-            entity_trailing_effect: Default::default(),
-            entity_hatch_state: Default::default(),
-            entity_lights: Default::default(),
-            entity_flaming_effect: Default::default()
-        }
+    pub fn build(&self) -> Result<GeneralAppearance,()> {
+        if self.validate() {
+            Ok(GeneralAppearance {
+                entity_paint_scheme: self.entity_paint_scheme.expect("Should be Some"),
+                entity_mobility_kill: self.entity_mobility_kill.expect("Should be Some"),
+                entity_fire_power: self.entity_fire_power.expect("Should be Some"),
+                entity_damage: self.entity_damage.expect("Should be Some"),
+                entity_smoke: self.entity_smoke.expect("Should be Some"),
+                entity_trailing_effect: self.entity_trailing_effect.expect("Should be Some"),
+                entity_hatch_state: self.entity_hatch_state.expect("Should be Some"),
+                entity_lights: self.entity_lights.expect("Should be Some"),
+                entity_flaming_effect: self.entity_flaming_effect.expect("Should be Some"),
+            })
+        } else { Err(()) }
     }
 }
 

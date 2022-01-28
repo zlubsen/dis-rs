@@ -34,7 +34,7 @@ pub struct SimulationAddress {
     pub application_id : u16,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ForceId {
     Other = 0,
     Friendly = 1,
@@ -54,9 +54,9 @@ impl From<u8> for ForceId {
     }
 }
 
-impl Into<u8> for ForceId {
-    fn into(self) -> u8 {
-        match self {
+impl From<ForceId> for u8 {
+    fn from(value: ForceId) -> Self {
+        match value {
             ForceId::Other => { 0u8 }
             ForceId::Friendly => { 1u8 }
             ForceId::Opposing => { 2u8 }
@@ -115,9 +115,9 @@ impl From<u8> for EntityKind {
     }
 }
 
-impl Into<u8> for EntityKind {
-    fn into(self) -> u8 {
-        match self {
+impl From<EntityKind> for u8 {
+    fn from(value: EntityKind) -> Self {
+        match value {
             EntityKind::Other => { 0u8 }
             EntityKind::Platform => { 1u8 }
             EntityKind::Munition => { 2u8 }
@@ -670,6 +670,275 @@ impl From<u16> for Country {
     }
 }
 
+impl From<Country> for u16 {
+    fn from(value: Country) -> Self {
+        match value {
+            Country::Other => { 0u16 },
+            Country::Afghanistan => { 1u16 },
+            Country::Albania => { 2u16 },
+            Country::Algeria => { 3u16 },
+            Country::AmericanSamoa => { 4u16 },
+            Country::Andorra => { 5u16 },
+            Country::Angola => { 6u16 },
+            Country::Anguilla => { 7u16 },
+            Country::Antarctica => { 8u16 },
+            Country::AntiguaBarbuda => { 9u16 },
+            Country::Argentina => { 10u16 },
+            Country::Aruba => { 11u16 },
+            Country::AshmoreCartierIslands => { 12u16 },
+            Country::Australia => { 13u16 },
+            Country::Austria => { 14u16 },
+            Country::Bahamas => { 15u16 },
+            Country::Bahrain => { 16u16 },
+            Country::BakerIsland => { 17u16 },
+            Country::Bangladesh => { 18u16 },
+            Country::Barbados => { 19u16 },
+            Country::BassasDaIndia => { 20u16 },
+            Country::Belgium => { 21u16 },
+            Country::Belize => { 22u16 },
+            Country::Benin => { 23u16 },
+            Country::Bermuda => { 24u16 },
+            Country::Bhutan => { 25u16 },
+            Country::Bolivia => { 26u16 },
+            Country::Botswana => { 27u16 },
+            Country::BouvetIsland => { 28u16 },
+            Country::Brazil => { 29u16 },
+            Country::BritishIndianOceanTerritory => { 30u16 },
+            Country::BritishVirginIslands => { 31u16 },
+            Country::Brunei => { 32u16 },
+            Country::Bulgaria => { 33u16 },
+            Country::Burkina => { 34u16 },
+            Country::Burma => { 35u16 },
+            Country::Burundi => { 36u16 },
+            Country::Cambodia => { 37u16 },
+            Country::Cameroon => { 38u16 },
+            Country::Canada => { 39u16 },
+            Country::CapeVerde => { 40u16 },
+            Country::CaymanIslands => { 41u16 },
+            Country::CentralAfricanRepublic => { 42u16 },
+            Country::Chad => { 43u16 },
+            Country::Chile => { 44u16 },
+            Country::China => { 45u16 },
+            Country::ChristmasIsland => { 46u16 },
+            Country::CocosIslands => { 47u16 },
+            Country::Colombia => { 48u16 },
+            Country::Comoros => { 49u16 },
+            Country::Congo => { 50u16 },
+            Country::CookIslands => { 51u16 },
+            Country::CoralSeaIslands => { 52u16 },
+            Country::CostaRica => { 53u16 },
+            Country::Cuba => { 54u16 },
+            Country::Cyprus => { 55u16 },
+            Country::Czechoslovakia => { 56u16 },
+            Country::Denmark => { 57u16 },
+            Country::Djibouti => { 58u16 },
+            Country::Dominica => { 59u16 },
+            Country::DominicanRepublic => { 60u16 },
+            Country::Ecuador => { 61u16 },
+            Country::Egypt => { 62u16 },
+            Country::ElSalvador => { 63u16 },
+            Country::EquatorialGuinea => { 64u16 },
+            Country::Ethiopia => { 65u16 },
+            Country::EuropaIsland => { 66u16 },
+            Country::FalklandIslands => { 67u16 },
+            Country::FaroeIslands => { 68u16 },
+            Country::Fiji => { 69u16 },
+            Country::Finland => { 70u16 },
+            Country::France => { 71u16 },
+            Country::FrenchGuiana => { 72u16 },
+            Country::FrenchPolynesia => { 73u16 },
+            Country::FrenchSouthernAntarcticIslands => { 74u16 },
+            Country::Gabon => { 75u16 },
+            Country::GambiaThe => { 76u16 },
+            Country::GazaStrip => { 77u16 },
+            Country::Germany => { 78u16 },
+            Country::Ghana => { 79u16 },
+            Country::Gibraltar => { 80u16 },
+            Country::GloriosoIslands => { 81u16 },
+            Country::Greece => { 82u16 },
+            Country::Greenland => { 83u16 },
+            Country::Grenada => { 84u16 },
+            Country::Guadaloupe => { 85u16 },
+            Country::Guam => { 86u16 },
+            Country::Guatemala => { 87u16 },
+            Country::Guernsey => { 88u16 },
+            Country::Guinea => { 89u16 },
+            Country::GuineaBissau => { 90u16 },
+            Country::Guyana => { 91u16 },
+            Country::Haiti => { 92u16 },
+            Country::HeardIslandMcDonaldIslands => { 93u16 },
+            Country::Honduras => { 94u16 },
+            Country::HongKong => { 95u16 },
+            Country::HowlandIsland => { 96u16 },
+            Country::Hungary => { 97u16 },
+            Country::Iceland => { 98u16 },
+            Country::India => { 99u16 },
+            Country::Indonesia => { 100u16 },
+            Country::Iran => { 101u16 },
+            Country::Iraq => { 102u16 },
+            Country::Ireland => { 104u16 },
+            Country::Israel => { 105u16 },
+            Country::Italy => { 106u16 },
+            Country::CoteDIvoire => { 107u16 },
+            Country::Jamaica => { 108u16 },
+            Country::JanMayen => { 109u16 },
+            Country::Japan => { 110u16 },
+            Country::JarvisIsland => { 111u16 },
+            Country::Jersey => { 112u16 },
+            Country::JohnstonAtoll => { 113u16 },
+            Country::Jordan => { 114u16 },
+            Country::JuanDeNovaIsland => { 115u16 },
+            Country::Kenya => { 116u16 },
+            Country::KingmanReef => { 117u16 },
+            Country::Kiribati => { 118u16 },
+            Country::KoreaNorth => { 119u16 },
+            Country::KoreaSouth => { 120u16 },
+            Country::Kuwait => { 121u16 },
+            Country::Laos => { 122u16 },
+            Country::Lebanon => { 123u16 },
+            Country::Lesotho => { 124u16 },
+            Country::Liberia => { 125u16 },
+            Country::Libya => { 126u16 },
+            Country::Liechtenstein => { 127u16 },
+            Country::Luxembourg => { 128u16 },
+            Country::Madagascar => { 129u16 },
+            Country::Macau => { 130u16 },
+            Country::Malawi => { 131u16 },
+            Country::Malaysia => { 132u16 },
+            Country::Maldives => { 133u16 },
+            Country::Mali => { 134u16 },
+            Country::Malta => { 135u16 },
+            Country::ManIsle => { 136u16 },
+            Country::MarshallIslands => { 137u16 },
+            Country::Martinique => { 138u16 },
+            Country::Mauritania => { 139u16 },
+            Country::Mauritius => { 140u16 },
+            Country::Mayotte => { 141u16 },
+            Country::Mexico => { 142u16 },
+            Country::Micronesia => { 143u16 },
+            Country::Monaco => { 144u16 },
+            Country::Mongolia => { 145u16 },
+            Country::Montserrat => { 146u16 },
+            Country::Morocco => { 147u16 },
+            Country::Mozambique => { 148u16 },
+            Country::Namibia => { 149u16 },
+            Country::Nauru => { 150u16 },
+            Country::NavassaIsland => { 151u16 },
+            Country::Nepal => { 152u16 },
+            Country::Netherlands => { 153u16 },
+            Country::NetherlandsAntilles => { 154u16 },
+            Country::NewCaledonia => { 155u16 },
+            Country::NewZealand => { 156u16 },
+            Country::Nicaragua => { 157u16 },
+            Country::Niger => { 158u16 },
+            Country::Nigeria => { 159u16 },
+            Country::Niue => { 160u16 },
+            Country::NorfolkIsland => { 161u16 },
+            Country::NorthernMarianaIslands => { 162u16 },
+            Country::Norway => { 163u16 },
+            Country::Oman => { 164u16 },
+            Country::Pakistan => { 165u16 },
+            Country::PalmyraAtoll => { 166u16 },
+            Country::Panama => { 168u16 },
+            Country::PapuaNewGuinea => { 169u16 },
+            Country::ParacelIslands => { 170u16 },
+            Country::Paraguay => { 171u16 },
+            Country::Peru => { 172u16 },
+            Country::Philippines => { 173u16 },
+            Country::PitcairnIslands => { 174u16 },
+            Country::Poland => { 175u16 },
+            Country::Portugal => { 176u16 },
+            Country::PuertoRico => { 177u16 },
+            Country::Qatar => { 178u16 },
+            Country::Reunion => { 179u16 },
+            Country::Romania => { 180u16 },
+            Country::Rwanda => { 181u16 },
+            Country::StKittsAndNevis => { 182u16 },
+            Country::StHelena => { 183u16 },
+            Country::StLucia => { 184u16 },
+            Country::StPierreAndMiquelon => { 185u16 },
+            Country::StVincentAndTheGrenadines => { 186u16 },
+            Country::SanMarino => { 187u16 },
+            Country::SaoTomeAndPrincipe => { 188u16 },
+            Country::SaudiArabia => { 189u16 },
+            Country::Senegal => { 190u16 },
+            Country::Seychelles => { 191u16 },
+            Country::SierraLeone => { 192u16 },
+            Country::Singapore => { 193u16 },
+            Country::SolomonIslands => { 194u16 },
+            Country::Somalia => { 195u16 },
+            Country::SouthGeorgiaSouthSandwichIslands => { 196u16 },
+            Country::SouthAfrica => { 197u16 },
+            Country::Spain => { 198u16 },
+            Country::SpratlyIslands => { 199u16 },
+            Country::SriLanka => { 200u16 },
+            Country::Sudan => { 201u16 },
+            Country::Suriname => { 202u16 },
+            Country::SvalbardNorway => { 203u16 },
+            Country::Swaziland => { 204u16 },
+            Country::Sweden => { 205u16 },
+            Country::Switzerland => { 206u16 },
+            Country::Syria => { 207u16 },
+            Country::Taiwan => { 208u16 },
+            Country::Tanzania => { 209u16 },
+            Country::Thailand => { 210u16 },
+            Country::Togo => { 211u16 },
+            Country::Tokelau => { 212u16 },
+            Country::Tonga => { 213u16 },
+            Country::TrinidadAndTobago => { 214u16 },
+            Country::TromelinIsland => { 215u16 },
+            Country::PacificIslands => { 216u16 },
+            Country::Tunisia => { 217u16 },
+            Country::Turkey => { 218u16 },
+            Country::TurksCaicosIslands => { 219u16 },
+            Country::Tuvalu => { 220u16 },
+            Country::Uganda => { 221u16 },
+            Country::CommonwealthOfIndependentStates => { 222u16 },
+            Country::UnitedArabEmirates => { 223u16 },
+            Country::UnitedKingdom => { 224u16 },
+            Country::UnitedStates => { 225u16 },
+            Country::Uruguay => { 226u16 },
+            Country::Vanuatu => { 227u16 },
+            Country::VaticanCity => { 228u16 },
+            Country::Venezuela => { 229u16 },
+            Country::Vietnam => { 230u16 },
+            Country::VirginIslands => { 231u16 },
+            Country::WakeIsland => { 232u16 },
+            Country::WallisFutuna => { 233u16 },
+            Country::WesternSahara => { 234u16 },
+            Country::WestBank => { 235u16 },
+            Country::WesternSamoa => { 236u16 },
+            Country::Yemen => { 237u16 },
+            Country::Zaire => { 241u16 },
+            Country::Zambia => { 242u16 },
+            Country::Zimbabwe => { 243u16 },
+            Country::Armenia => { 244u16 },
+            Country::Azerbaijan => { 245u16 },
+            Country::Belarus => { 246u16 },
+            Country::BosniaHercegovina => { 247u16 },
+            Country::ClippertonIsland => { 248u16 },
+            Country::Croatia => { 249u16 },
+            Country::Estonia => { 250u16 },
+            Country::Georgia => { 251u16 },
+            Country::Kazakhstan => { 252u16 },
+            Country::Kyrgyzstan => { 253u16 },
+            Country::Latvia => { 254u16 },
+            Country::Lithuania => { 255u16 },
+            Country::Macedonia => { 256u16 },
+            Country::MidwayIslands => { 257u16 },
+            Country::Moldova => { 258u16 },
+            Country::Montenegro => { 259u16 },
+            Country::Russia => { 260u16 },
+            Country::SerbiaMontenegro => { 261u16 },
+            Country::Slovenia => { 262u16 },
+            Country::Tajikistan => { 263u16 },
+            Country::Turkmenistan => { 264u16 },
+            Country::Ukraine => { 265u16 },
+            Country::Uzbekistan => { 266u16 },
+        }
+    }
+}
+
 // TODO to common/model
 pub struct VectorF32 {
     pub first_vector_component : f32,
@@ -716,7 +985,7 @@ impl GeneralAppearance {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityPaintScheme {
     UniformColor = 0,
     Camouflage = 1,
@@ -731,11 +1000,11 @@ impl From<u8> for EntityPaintScheme {
     }
 }
 
-impl Into<u8> for EntityPaintScheme {
-    fn into(self) -> u8 {
-        match self {
-            EntityPaintScheme::UniformColor => { 0u8}
-            EntityPaintScheme::Camouflage => { 1u8 }
+impl From<EntityPaintScheme> for u16 {
+    fn from(value: EntityPaintScheme) -> Self {
+        match value {
+            EntityPaintScheme::UniformColor => { 0u16 }
+            EntityPaintScheme::Camouflage => { 1u16 }
         }
     }
 }
@@ -746,7 +1015,7 @@ impl Default for EntityPaintScheme {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityMobilityKill {
     NoMobilityKill = 0,
     MobilityKill = 1,
@@ -761,11 +1030,11 @@ impl From<u8> for EntityMobilityKill {
     }
 }
 
-impl Into<u8> for EntityMobilityKill {
-    fn into(self) -> u8 {
-        match self {
-            EntityMobilityKill::NoMobilityKill => { 0u8 }
-            EntityMobilityKill::MobilityKill => { 1u8 }
+impl From<EntityMobilityKill> for u16 {
+    fn from(value: EntityMobilityKill) -> Self {
+        match value {
+            EntityMobilityKill::NoMobilityKill => { 0u16 }
+            EntityMobilityKill::MobilityKill => { 1u16 }
         }
     }
 }
@@ -776,7 +1045,7 @@ impl Default for EntityMobilityKill {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityFirePower {
     NoFirePowerKill = 0,
     FirePowerKill = 1,
@@ -791,11 +1060,11 @@ impl From<u8> for EntityFirePower {
     }
 }
 
-impl Into<u8> for EntityFirePower {
-    fn into(self) -> u8 {
-        match self {
-            EntityFirePower::NoFirePowerKill => { 0u8 }
-            EntityFirePower::FirePowerKill => { 1u8 }
+impl From<EntityFirePower> for u16 {
+    fn from(value: EntityFirePower) -> Self {
+        match value {
+            EntityFirePower::NoFirePowerKill => { 0u16 }
+            EntityFirePower::FirePowerKill => { 1u16 }
         }
     }
 }
@@ -806,7 +1075,7 @@ impl Default for EntityFirePower {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityDamage {
     NoDamage = 0,
     SlightDamage = 1,
@@ -826,13 +1095,13 @@ impl From<u8> for EntityDamage {
     }
 }
 
-impl Into<u8> for EntityDamage {
-    fn into(self) -> u8 {
-        match self {
-            EntityDamage::NoDamage => { 0u8 }
-            EntityDamage::SlightDamage => { 1u8  }
-            EntityDamage::ModerateDamage => { 2u8 }
-            EntityDamage::Destroyed => { 3u8 }
+impl From<EntityDamage> for u16 {
+    fn from(value: EntityDamage) -> Self {
+        match value {
+            EntityDamage::NoDamage => { 0u16 }
+            EntityDamage::SlightDamage => { 1u16  }
+            EntityDamage::ModerateDamage => { 2u16 }
+            EntityDamage::Destroyed => { 3u16 }
         }
     }
 }
@@ -843,7 +1112,7 @@ impl Default for EntityDamage {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntitySmoke {
     NotSmoking = 0,
     SmokePlumeRising = 1,
@@ -863,13 +1132,13 @@ impl From<u8> for EntitySmoke {
     }
 }
 
-impl Into<u8> for EntitySmoke {
-    fn into(self) -> u8 {
-        match self {
-            EntitySmoke::NotSmoking => { 0u8 }
-            EntitySmoke::SmokePlumeRising => { 1u8 }
-            EntitySmoke::EmittingEngineSmoke => { 2u8 }
-            EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising => { 3u8 }
+impl From<EntitySmoke> for u16 {
+    fn from(value: EntitySmoke) -> Self {
+        match value {
+            EntitySmoke::NotSmoking => { 0u16 }
+            EntitySmoke::SmokePlumeRising => { 1u16 }
+            EntitySmoke::EmittingEngineSmoke => { 2u16 }
+            EntitySmoke::EmittingEngineSmokeAndSmokePlumeRising => { 3u16 }
         }
     }
 }
@@ -880,7 +1149,7 @@ impl Default for EntitySmoke {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityTrailingEffect {
     None = 0,
     Small = 1,
@@ -900,13 +1169,13 @@ impl From<u8> for EntityTrailingEffect {
     }
 }
 
-impl Into<u8> for EntityTrailingEffect {
-    fn into(self) -> u8 {
-        match self {
-            EntityTrailingEffect::None => { 0u8 }
-            EntityTrailingEffect::Small => { 1u8 }
-            EntityTrailingEffect::Medium => { 2u8 }
-            EntityTrailingEffect::Large => { 3u8 }
+impl From<EntityTrailingEffect> for u16 {
+    fn from(value: EntityTrailingEffect) -> Self {
+        match value {
+            EntityTrailingEffect::None => { 0u16 }
+            EntityTrailingEffect::Small => { 1u16 }
+            EntityTrailingEffect::Medium => { 2u16 }
+            EntityTrailingEffect::Large => { 3u16 }
         }
     }
 }
@@ -917,7 +1186,7 @@ impl Default for EntityTrailingEffect {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityHatchState {
     NotApplicable = 0,
     Closed = 1,
@@ -945,17 +1214,17 @@ impl From<u8> for EntityHatchState {
     }
 }
 
-impl Into<u8> for EntityHatchState {
-    fn into(self) -> u8 {
-        match self {
-            EntityHatchState::NotApplicable => { 0u8 }
-            EntityHatchState::Closed => { 1u8 }
-            EntityHatchState::Popped => { 2u8 }
-            EntityHatchState::PoppedAndPersonVisible => { 3u8 }
-            EntityHatchState::Open => { 4u8 }
-            EntityHatchState::OpenAndPersonVisible => { 5u8 }
-            EntityHatchState::Unused1 => { 6u8 }
-            EntityHatchState::Unused2 => { 7u8 }
+impl From<EntityHatchState> for u16 {
+    fn from(value: EntityHatchState) -> Self {
+        match value {
+            EntityHatchState::NotApplicable => { 0u16 }
+            EntityHatchState::Closed => { 1u16 }
+            EntityHatchState::Popped => { 2u16 }
+            EntityHatchState::PoppedAndPersonVisible => { 3u16 }
+            EntityHatchState::Open => { 4u16 }
+            EntityHatchState::OpenAndPersonVisible => { 5u16 }
+            EntityHatchState::Unused1 => { 6u16 }
+            EntityHatchState::Unused2 => { 7u16 }
         }
     }
 }
@@ -966,7 +1235,7 @@ impl Default for EntityHatchState {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityLights {
     None = 0,
     RunningLightsOn = 1,
@@ -994,17 +1263,17 @@ impl From<u8> for EntityLights {
     }
 }
 
-impl Into<u8> for EntityLights {
-    fn into(self) -> u8 {
-        match self {
-            EntityLights::None => { 0u8 }
-            EntityLights::RunningLightsOn => { 1u8 }
-            EntityLights::NavigationLightsOn => { 2u8 }
-            EntityLights::FromationLightsOn => { 3u8 }
-            EntityLights::Unused1 => { 4u8 }
-            EntityLights::Unused2 => { 5u8 }
-            EntityLights::Unused3 => { 6u8 }
-            EntityLights::Unused4 => { 7u8 }
+impl From<EntityLights> for u16 {
+    fn from(value: EntityLights) -> Self {
+        match value {
+            EntityLights::None => { 0u16 }
+            EntityLights::RunningLightsOn => { 1u16 }
+            EntityLights::NavigationLightsOn => { 2u16 }
+            EntityLights::FromationLightsOn => { 3u16 }
+            EntityLights::Unused1 => { 4u16 }
+            EntityLights::Unused2 => { 5u16 }
+            EntityLights::Unused3 => { 6u16 }
+            EntityLights::Unused4 => { 7u16 }
         }
     }
 }
@@ -1015,7 +1284,7 @@ impl Default for EntityLights {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityFlamingEffect {
     None = 0,
     FlamesPresent = 1,
@@ -1030,11 +1299,11 @@ impl From<u8> for EntityFlamingEffect {
     }
 }
 
-impl Into<u8> for EntityFlamingEffect {
-    fn into(self) -> u8 {
-        match self {
-            EntityFlamingEffect::None => { 0u8 }
-            EntityFlamingEffect::FlamesPresent => { 1u8 }
+impl From<EntityFlamingEffect> for u16 {
+    fn from(value: EntityFlamingEffect) -> Self {
+        match value {
+            EntityFlamingEffect::None => { 0u16 }
+            EntityFlamingEffect::FlamesPresent => { 1u16 }
         }
     }
 }
@@ -1153,7 +1422,7 @@ pub struct EnvironmentalsRecord {
     pub density : Density,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Launcher {
     NotRaised,
     Raised,
@@ -1168,13 +1437,22 @@ impl From<u8> for Launcher {
     }
 }
 
+impl From<Launcher> for u16 {
+    fn from(value: Launcher) -> Self {
+        match value {
+            Launcher::NotRaised => { 0u16 }
+            Launcher::Raised => { 1u16 }
+        }
+    }
+}
+
 impl Default for Launcher {
     fn default() -> Self {
         Launcher::NotRaised
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Camouflage {
     Desert,
     Winter,
@@ -1193,13 +1471,25 @@ impl From<u8> for Camouflage {
     }
 }
 
+impl From<Camouflage> for u16 {
+    fn from(value: Camouflage) -> Self {
+        match value {
+            Camouflage::Desert => { 0u16 }
+            Camouflage::Winter => { 1u16 }
+            Camouflage::Forest => { 2u16 }
+            Camouflage::Unspecified(value) => { value as u16 }
+        }
+    }
+}
+
+
 impl Default for Camouflage {
     fn default() -> Self {
         Camouflage::Desert
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Concealed {
     NotConcealed,
     Concealed,
@@ -1214,13 +1504,22 @@ impl From<u8> for Concealed {
     }
 }
 
+impl From<Concealed> for u16 {
+    fn from(value: Concealed) -> Self {
+        match value {
+            Concealed::NotConcealed => { 0u16 }
+            Concealed::Concealed => { 1u16 }
+        }
+    }
+}
+
 impl Default for Concealed {
     fn default() -> Self {
         Concealed::NotConcealed
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum FrozenStatus {
     NotFrozen,
     Frozen,
@@ -1235,13 +1534,22 @@ impl From<u8> for FrozenStatus {
     }
 }
 
+impl From<FrozenStatus> for u16 {
+    fn from(value: FrozenStatus) -> Self {
+        match value {
+            FrozenStatus::NotFrozen => { 0u16 }
+            FrozenStatus::Frozen => { 1u16 }
+        }
+    }
+}
+
 impl Default for FrozenStatus {
     fn default() -> Self {
         FrozenStatus::NotFrozen
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PowerPlantStatus {
     Off,
     On,
@@ -1256,13 +1564,22 @@ impl From<u8> for PowerPlantStatus {
     }
 }
 
+impl From<PowerPlantStatus> for u16 {
+    fn from(value: PowerPlantStatus) -> Self {
+        match value {
+            PowerPlantStatus::Off => { 0u16 }
+            PowerPlantStatus::On => { 1u16 }
+        }
+    }
+}
+
 impl Default for PowerPlantStatus {
     fn default() -> Self {
         PowerPlantStatus::Off
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
     Active,
     Deactivated,
@@ -1277,13 +1594,22 @@ impl From<u8> for State {
     }
 }
 
+impl From<State> for u16 {
+    fn from(value: State) -> Self {
+        match value {
+            State::Active => { 0u16 }
+            State::Deactivated => { 1u16 }
+        }
+    }
+}
+
 impl Default for State {
     fn default() -> Self {
         State::Active
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Tent {
     NotExtended,
     Extended,
@@ -1298,13 +1624,22 @@ impl From<u8> for Tent {
     }
 }
 
+impl From<Tent> for u16 {
+    fn from(value: Tent) -> Self {
+        match value {
+            Tent::NotExtended => { 0u16 }
+            Tent::Extended => { 1u16 }
+        }
+    }
+}
+
 impl Default for Tent {
     fn default() -> Self {
         Tent::NotExtended
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Ramp {
     Up,
     Down,
@@ -1319,13 +1654,22 @@ impl From<u8> for Ramp {
     }
 }
 
+impl From<Ramp> for u16 {
+    fn from(value: Ramp) -> Self {
+        match value {
+            Ramp::Up => { 0u16 }
+            Ramp::Down => { 1u16 }
+        }
+    }
+}
+
 impl Default for Ramp {
     fn default() -> Self {
         Ramp::Up
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Afterburner {
     NotOn,
     On,
@@ -1340,13 +1684,22 @@ impl From<u8> for Afterburner {
     }
 }
 
+impl From<Afterburner> for u16 {
+    fn from(value: Afterburner) -> Self {
+        match value {
+            Afterburner::NotOn => { 0u16 }
+            Afterburner::On => { 1u16 }
+        }
+    }
+}
+
 impl Default for Afterburner {
     fn default() -> Self {
         Afterburner::NotOn
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LaunchFlash {
     NotPresent,
     Present,
@@ -1361,13 +1714,22 @@ impl From<u8> for LaunchFlash {
     }
 }
 
+impl From<LaunchFlash> for u16 {
+    fn from(value: LaunchFlash) -> Self {
+        match value {
+            LaunchFlash::NotPresent => { 0u16 }
+            LaunchFlash::Present => { 1u16 }
+        }
+    }
+}
+
 impl Default for LaunchFlash {
     fn default() -> Self {
         LaunchFlash::NotPresent
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LifeFormsState {
     Null,
     UprightStandingStill,
@@ -1398,13 +1760,30 @@ impl From<u8> for LifeFormsState {
     }
 }
 
+impl From<LifeFormsState> for u16 {
+    fn from(value: LifeFormsState) -> Self {
+        match value {
+            LifeFormsState::Null => { 0u16 }
+            LifeFormsState::UprightStandingStill => { 1u16 }
+            LifeFormsState::UprightWalking => { 2u16 }
+            LifeFormsState::UprightRunning => { 3u16 }
+            LifeFormsState::Kneeling => { 4u16 }
+            LifeFormsState::Prone => { 5u16 }
+            LifeFormsState::Crawling => { 6u16 }
+            LifeFormsState::Swimming => { 7u16 }
+            LifeFormsState::Parachuting => { 8u16 }
+            LifeFormsState::Jumping => { 9u16 }
+        }
+    }
+}
+
 impl Default for LifeFormsState {
     fn default() -> Self {
         LifeFormsState::UprightStandingStill
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ActivityState {
     Active,
     Deactivated,
@@ -1419,13 +1798,22 @@ impl From<u8> for ActivityState {
     }
 }
 
+impl From<ActivityState> for u16 {
+    fn from(value: ActivityState) -> Self {
+        match value {
+            ActivityState::Active => { 0u16 }
+            ActivityState::Deactivated => { 1u16 }
+        }
+    }
+}
+
 impl Default for ActivityState {
     fn default() -> Self {
         ActivityState::Active
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Weapon {
     NotPresent,
     Stowed,
@@ -1444,13 +1832,24 @@ impl From<u8> for Weapon {
     }
 }
 
+impl From<Weapon> for u16 {
+    fn from(value: Weapon) -> Self {
+        match value {
+            Weapon::NotPresent => { 0u16 }
+            Weapon::Stowed => { 1u16 }
+            Weapon::Deployed => { 2u16 }
+            Weapon::FiringPosition => { 3u16 }
+        }
+    }
+}
+
 impl Default for Weapon {
     fn default() -> Self {
         Weapon::NotPresent
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Density {
     Clear,
     Hazy,
@@ -1471,6 +1870,18 @@ impl From<u8> for Density {
     }
 }
 
+impl From<Density> for u16 {
+    fn from(value: Density) -> Self {
+        match value {
+            Density::Clear => { 0u16 }
+            Density::Hazy => { 1u16 }
+            Density::Dense => { 2u16 }
+            Density::VeryDense => { 3u16 }
+            Density::Opaque => { 4u16 }
+        }
+    }
+}
+
 impl Default for Density {
     fn default() -> Self {
         Density::Clear
@@ -1484,7 +1895,7 @@ pub struct DrParameters {
     pub angular_velocity : VectorF32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum DrAlgorithm {
     Other = 0,
     Static = 1,
@@ -1516,6 +1927,23 @@ impl From<u8> for DrAlgorithm {
     }
 }
 
+impl From<DrAlgorithm> for u8 {
+    fn from(value: DrAlgorithm) -> Self {
+        match value {
+            DrAlgorithm::Other => { 0u8 }
+            DrAlgorithm::Static => { 1u8 }
+            DrAlgorithm::DrmFPW => { 2u8 }
+            DrAlgorithm::DrmRPW => { 3u8 }
+            DrAlgorithm::DrmRVW => { 4u8 }
+            DrAlgorithm::DrmFVW => { 5u8 }
+            DrAlgorithm::DrmFPB => { 6u8 }
+            DrAlgorithm::DrmRPB => { 7u8 }
+            DrAlgorithm::DrmRVB => { 8u8 }
+            DrAlgorithm::DrmFVB => { 9u8 }
+        }
+    }
+}
+
 // TODO which one?
 impl Default for DrAlgorithm {
     fn default() -> Self {
@@ -1528,7 +1956,7 @@ pub struct EntityMarking {
     pub marking_string : String, // 11 byte String
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum EntityMarkingCharacterSet {
     Unused = 0,
     ASCII = 1,
@@ -1544,6 +1972,17 @@ impl From<u8> for EntityMarkingCharacterSet {
             2 => EntityMarkingCharacterSet::ArmyMarking,
             3 => EntityMarkingCharacterSet::DigitChevron,
             _unspecified_value => EntityMarkingCharacterSet::Unused,
+        }
+    }
+}
+
+impl From<EntityMarkingCharacterSet> for u8 {
+    fn from(value: EntityMarkingCharacterSet) -> Self {
+        match value {
+            EntityMarkingCharacterSet::Unused => { 0u8 }
+            EntityMarkingCharacterSet::ASCII => { 1u8 }
+            EntityMarkingCharacterSet::ArmyMarking => { 2u8 }
+            EntityMarkingCharacterSet::DigitChevron => { 3u8 }
         }
     }
 }
@@ -1571,7 +2010,7 @@ pub struct ArticulationParameter {
     pub articulation_parameter_value : f32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ApTypeDesignator {
     Articulated = 0,
     Attached = 1,
@@ -1582,6 +2021,15 @@ impl From<u8> for ApTypeDesignator {
         match value {
             1 => ApTypeDesignator::Attached,
             0 | _ => ApTypeDesignator::Articulated,
+        }
+    }
+}
+
+impl From<ApTypeDesignator> for u8 {
+    fn from(value: ApTypeDesignator) -> Self {
+        match value {
+            ApTypeDesignator::Articulated => { 0u8 }
+            ApTypeDesignator::Attached => { 1u8 }
         }
     }
 }
@@ -1614,23 +2062,16 @@ pub enum ParameterTypeVariant {
     ArticulatedParts(ArticulatedParts),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct ArticulatedParts {
     pub type_metric : ApTypeMetric,
     pub type_class : u32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ApTypeMetric {
     Unspecified = 0,
     Position = 1,
-    ZRate = 10,
-    Azimuth = 11,
-    AzimuthRate = 12,
-    Elevation = 13,
-    ElevationRate = 14,
-    Rotation = 15,
-    RotationRate = 16,
     PositionRate = 2,
     Extension = 3,
     ExtensionRate = 4,
@@ -1639,6 +2080,13 @@ pub enum ApTypeMetric {
     Y = 7,
     YRate = 8,
     Z = 9,
+    ZRate = 10,
+    Azimuth = 11,
+    AzimuthRate = 12,
+    Elevation = 13,
+    ElevationRate = 14,
+    Rotation = 15,
+    RotationRate = 16,
 }
 
 impl From<u8> for ApTypeMetric {
@@ -1661,6 +2109,30 @@ impl From<u8> for ApTypeMetric {
             15 => ApTypeMetric::Rotation,
             16 => ApTypeMetric::RotationRate,
             0 | _ => ApTypeMetric::Unspecified,
+        }
+    }
+}
+
+impl From<ApTypeMetric> for u32 {
+    fn from(value: ApTypeMetric) -> Self {
+        match value {
+            ApTypeMetric::Unspecified => { 0u32 }
+            ApTypeMetric::Position => { 1u32 }
+            ApTypeMetric::PositionRate => { 2u32 }
+            ApTypeMetric::Extension => { 3u32 }
+            ApTypeMetric::ExtensionRate => { 4u32 }
+            ApTypeMetric::X => { 5u32 }
+            ApTypeMetric::XRate => { 6u32 }
+            ApTypeMetric::Y => { 7u32 }
+            ApTypeMetric::YRate => { 8u32 }
+            ApTypeMetric::Z => { 9u32 }
+            ApTypeMetric::ZRate => { 10u32 }
+            ApTypeMetric::Azimuth => { 11u32 }
+            ApTypeMetric::AzimuthRate => { 12u32 }
+            ApTypeMetric::Elevation => { 13u32 }
+            ApTypeMetric::ElevationRate => { 14u32 }
+            ApTypeMetric::Rotation => { 15u32 }
+            ApTypeMetric::RotationRate => { 16u32 }
         }
     }
 }

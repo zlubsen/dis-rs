@@ -1,11 +1,12 @@
 use crate::dis::common::model::ProtocolVersion;
+use crate::dis::v6::builder::PduHeaderBuilder;
 use crate::dis::v6::other::model::Other;
 use super::entity_state::model::EntityState;
 
 // TODO re-export the PDU types
 // TODO review pub settings in PDU modules
 
-pub const PDU_HEADER_LEN_BYTES : usize = 96;
+pub const PDU_HEADER_LEN_BYTES : usize = 12;
 
 #[derive(Copy, Clone, Debug)]
 pub struct PduHeader {
@@ -130,9 +131,9 @@ impl From<u8> for PduType {
     }
 }
 
-impl Into<u8> for PduType {
-    fn into(self) -> u8 {
-        match self {
+impl From<PduType> for u8 {
+    fn from(value: PduType) -> Self {
+        match value {
             PduType::OtherPdu => { 0u8 }
             PduType::EntityStatePdu => { 1u8 }
             PduType::FirePdu => { 2u8 }
@@ -224,9 +225,9 @@ impl From<u8> for ProtocolFamily {
     }
 }
 
-impl Into<u8> for ProtocolFamily {
-    fn into(self) -> u8 {
-        match self {
+impl From<ProtocolFamily> for u8 {
+    fn from(value: ProtocolFamily) -> Self {
+        match value {
             ProtocolFamily::Other => { 0u8 }
             ProtocolFamily::EntityInformationInteraction => { 1u8 }
             ProtocolFamily::ExperimentalCGF => { 129u8 }
@@ -240,6 +241,12 @@ impl Into<u8> for ProtocolFamily {
             ProtocolFamily::SimulationManagement => { 5u8 }
             ProtocolFamily::DistributedEmissionRegeneration => { 6u8 }
         }
+    }
+}
+
+impl PduHeader {
+    pub fn builder() -> PduHeaderBuilder {
+        PduHeaderBuilder::new()
     }
 }
 

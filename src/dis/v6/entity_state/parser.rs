@@ -505,9 +505,23 @@ fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
 #[cfg(test)]
 mod tests {
     use crate::dis::v6::entity_state::model::{ApTypeDesignator, ApTypeMetric, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarkingCharacterSet, EntityMobilityKill, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
-    use crate::dis::v6::entity_state::parser::{articulation_record, entity_capabilities, entity_marking};
+    use crate::dis::v6::entity_state::parser::{articulation_record, entity_capabilities, entity_marking, location};
     use crate::dis::v6::entity_state::model::EntityPaintScheme;
     use crate::dis::v6::entity_state::parser::general_appearance;
+
+    #[test]
+    fn parse_entity_location() {
+        let bytes: [u8; 24] = [0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50,
+            0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d, 0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78];
+
+        let location = location(&bytes);
+        assert!(location.is_ok());
+        let (input, location) = location.unwrap();
+        assert_eq!(input.len(), 0);
+        assert_eq!(location.x_coordinate, 4395115.478805255);
+        assert_eq!(location.y_coordinate, 4401128.300594416);
+        assert_eq!(location.z_coordinate, 1407254.6190504115);
+    }
 
     #[test]
     fn parse_marking_ascii() {
@@ -609,7 +623,7 @@ mod tests {
                 0x00,0x00,  // u16; 0 value attachment id
                 0x00,0x00,  // u32; type varient metric - 11 - position
                 0x0C,0x01,  // type varient high bits - 4096 - primary gun 1
-                0x3F,0x80,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 1
+                0x3F,0x80,0x00,0x00,0x00,0x00,0x00,0x00]; // f32 - value '1' and 4 bytes padding
 
         let parameter = articulation_record(&input);
         assert!(parameter.is_ok());

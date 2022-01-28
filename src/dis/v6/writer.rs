@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use crate::dis::common::Serialize;
-use crate::dis::v6::model::PduHeader;
+use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduHeader};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -11,7 +11,66 @@ impl Serialize for PduHeader {
         buf.put_u32(self.time_stamp);
         buf.put_u16(self.pdu_length);
         buf.put_u16(0u16);
-        12 // amount of bytes written
+
+        PDU_HEADER_LEN_BYTES
+    }
+}
+
+impl Serialize for Pdu {
+    fn serialize(&self, buf: &mut BytesMut) -> usize {
+        match self {
+            Pdu::Other(pdu) => { pdu.serialize(buf) }
+            Pdu::EntityState(pdu) => { pdu.serialize(buf) }
+            _ => { todo!() }
+            // Pdu::Fire => {}
+            // Pdu::Detonation => {}
+            // Pdu::Collision => {}
+            // Pdu::ServiceRequest => {}
+            // Pdu::ResupplyOffer => {}
+            // Pdu::ResupplyReceived => {}
+            // Pdu::ResupplyCancel => {}
+            // Pdu::RepairComplete => {}
+            // Pdu::RepairResponse => {}
+            // Pdu::CreateEntity => {}
+            // Pdu::RemoveEntity => {}
+            // Pdu::StartResume => {}
+            // Pdu::StopFreeze => {}
+            // Pdu::Acknowledge => {}
+            // Pdu::ActionRequest => {}
+            // Pdu::ActionResponse => {}
+            // Pdu::DataQuery => {}
+            // Pdu::SetData => {}
+            // Pdu::Data => {}
+            // Pdu::EventReport => {}
+            // Pdu::Comment => {}
+            // Pdu::ElectromagneticEmission => {}
+            // Pdu::Designator => {}
+            // Pdu::Transmitter => {}
+            // Pdu::Signal => {}
+            // Pdu::Receiver => {}
+            // Pdu::AnnounceObject => {}
+            // Pdu::DeleteObject => {}
+            // Pdu::DescribeApplication => {}
+            // Pdu::DescribeEvent => {}
+            // Pdu::DescribeObject => {}
+            // Pdu::RequestEvent => {}
+            // Pdu::RequestObject => {}
+            // Pdu::TimeSpacePositionIndicatorFI => {}
+            // Pdu::AppearanceFI => {}
+            // Pdu::ArticulatedPartsFI => {}
+            // Pdu::FireFI => {}
+            // Pdu::DetonationFI => {}
+            // Pdu::PointObjectState => {}
+            // Pdu::LinearObjectState => {}
+            // Pdu::ArealObjectState => {}
+            // Pdu::Environment => {}
+            // Pdu::TransferControlRequest => {}
+            // Pdu::TransferControl => {}
+            // Pdu::TransferControlAcknowledge => {}
+            // Pdu::IntercomControl => {}
+            // Pdu::IntercomSignal => {}
+            // Pdu::Aggregate => {}
+        }
     }
 }
 
@@ -37,7 +96,7 @@ mod tests {
 
         header.serialize(&mut buf);
 
-        let expected : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x60, 0x00, 0x00];
+        let expected : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x00, 0x00];
         assert_eq!(buf.as_ref(), expected.as_ref());
     }
 }

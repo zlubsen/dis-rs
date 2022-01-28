@@ -25,9 +25,9 @@ impl From<u8> for ProtocolVersion {
     }
 }
 
-impl Into<u8> for ProtocolVersion {
-    fn into(self) -> u8 {
-        match self {
+impl From<ProtocolVersion> for u8 {
+    fn from(value: ProtocolVersion) -> Self {
+        match value {
             ProtocolVersion::Other => { 0u8 }
             ProtocolVersion::Version1_0May92 => { 1u8 }
             ProtocolVersion::Ieee1278_1993 => { 2u8 }
