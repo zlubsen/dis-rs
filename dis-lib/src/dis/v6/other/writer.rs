@@ -16,10 +16,10 @@ impl Serialize for Other {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::dis::common::model::ProtocolVersion;
+    use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, ProtocolFamily, ProtocolVersion};
     use crate::dis::common::Serialize;
     use crate::dis::v6::builder::PduHeaderBuilder;
-    use crate::dis::v6::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
+    use crate::dis::common::model::PduType;
     use crate::dis::v6::other::builder::OtherBuilder;
 
     #[test]

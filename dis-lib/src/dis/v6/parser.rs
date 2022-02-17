@@ -2,12 +2,12 @@ use nom::bytes::complete::take;
 use nom::{Err, IResult};
 use nom::error::ErrorKind::Eof;
 use nom::multi::many1;
-use nom::number::complete::{be_u32, be_u8, be_u16};
+use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::sequence::tuple;
 
-use crate::dis::common::model::ProtocolVersion;
+use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily, ProtocolVersion};
 use crate::dis::errors::DisError;
-use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduHeader, PduType, ProtocolFamily};
+use crate::dis::v6::model::{Pdu, PduHeader};
 use crate::dis::v6::entity_state::parser::entity_state_body;
 use crate::dis::v6::other::parser::other_body;
 
@@ -191,10 +191,10 @@ fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
 
 #[cfg(test)]
 mod tests {
-    use crate::dis::common::model::ProtocolVersion;
+    use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily, ProtocolVersion};
     use crate::dis::errors::DisError;
-    use crate::dis::v6::entity_state::model::{ApTypeMetric, ApTypeDesignator, Country, EntityCapabilities, EntityKind, EntityType, ForceId, ParameterTypeVariant, GeneralAppearance, EntityPaintScheme, EntityMobilityKill, EntityFirePower, EntityDamage, EntitySmoke, EntityTrailingEffect, EntityHatchState, EntityLights, EntityFlamingEffect, DrAlgorithm, SpecificAppearance, AirPlatformsRecord, Afterburner, FrozenStatus, PowerPlantStatus, State};
-    use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
+    use crate::dis::v6::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, ApTypeMetric, Country, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityKind, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, EntityType, ForceId, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::dis::v6::model::Pdu;
     use crate::dis::v6::{parse_multiple_header, parse_pdu};
     use crate::parse_v6_header;
 

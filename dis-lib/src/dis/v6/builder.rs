@@ -1,5 +1,5 @@
-use crate::dis::common::model::ProtocolVersion;
-use crate::dis::v6::model::{PduHeader, PduType, ProtocolFamily};
+use crate::dis::common::model::{PduType, ProtocolFamily, ProtocolVersion};
+use crate::dis::v6::model::PduHeader;
 
 #[allow(dead_code)]
 pub struct PduHeaderBuilder {

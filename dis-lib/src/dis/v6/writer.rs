@@ -1,6 +1,7 @@
 use bytes::{BufMut, BytesMut};
+use crate::dis::common::model::PDU_HEADER_LEN_BYTES;
 use crate::dis::common::Serialize;
-use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduHeader};
+use crate::dis::v6::model::{Pdu, PduHeader};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -77,10 +78,10 @@ impl Serialize for Pdu {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::dis::common::model::ProtocolVersion;
+    use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, ProtocolFamily, ProtocolVersion};
     use crate::dis::common::Serialize;
     use crate::dis::v6::builder::PduHeaderBuilder;
-    use crate::dis::v6::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
+    use crate::dis::common::model::PduType;
 
     #[test]
     fn serialize_header() {

@@ -1,6 +1,7 @@
 use nom::bytes::complete::take;
 use nom::IResult;
-use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduHeader};
+use crate::dis::common::model::PDU_HEADER_LEN_BYTES;
+use crate::dis::v6::model::{Pdu, PduHeader};
 use crate::dis::v6::other::model::Other as OtherStruct;
 
 pub fn other_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
@@ -15,9 +16,9 @@ pub fn other_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
 
 #[cfg(test)]
 mod tests {
-    use crate::dis::common::model::ProtocolVersion;
+    use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily, ProtocolVersion};
     use crate::dis::v6::builder::PduHeaderBuilder;
-    use crate::dis::v6::model::{Pdu, PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily};
+    use crate::dis::v6::model::Pdu;
     use crate::dis::v6::other::parser::other_body;
 
     #[test]

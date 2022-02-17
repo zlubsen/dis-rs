@@ -342,10 +342,10 @@ impl Serialize for EntityCapabilities {
 mod tests {
     use bytes::BytesMut;
     use crate::dis::common::Serialize;
-    use crate::dis::common::model::ProtocolVersion;
+    use crate::dis::common::model::{PduType, ProtocolFamily, ProtocolVersion};
     use crate::dis::v6::entity_state::builder::GeneralAppearanceBuilder;
     use crate::dis::v6::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, ForceId, FrozenStatus, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, SimulationAddress, SpecificAppearance, State, VectorF32};
-    use crate::dis::v6::model::{Pdu, PduHeader, PduType, ProtocolFamily};
+    use crate::dis::v6::model::{Pdu, PduHeader};
 
     #[test]
     fn entity_marking() {
