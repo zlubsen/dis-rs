@@ -1,0 +1,16 @@
+[package]
+name = "dis_rs_macros"
+version = "0.1.0"
+authors = ["Zeeger Lubsen"]
+description = "Macros for the dis-rs crate"
+keywords = ["template", "proc_macro", "procmacro"]
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+proc-macro2 = "1.0"
+syn = "1.0"
+

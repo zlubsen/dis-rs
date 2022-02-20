@@ -1,5 +1,5 @@
 [package]
-name = "dis_rs"
+name = "dis_lib"
 version = "0.1.0"
 authors = ["Zeeger <zeeger@lubsen.eu>"]
 description = """
@@ -15,3 +15,4 @@ edition = "2021"
 [dependencies]
 bytes = "1.1.0"
 nom = "7.1.0"
+dis_rs_macros = { path = "../dis_rs_macros" }
