@@ -1,4 +1,6 @@
 extern crate proc_macro;
+
+use std::str::FromStr;
 use proc_macro2::{Span, TokenStream};
 
 use syn::{Data, parse_macro_input, DeriveInput, Type, TypeParen};
@@ -45,7 +47,7 @@ use quote::quote;
 ///     }
 /// }
 /// '''
-#[proc_macro_derive(PduField)]
+#[proc_macro_derive(PduConversion)]
 pub fn derive_pdu_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -62,6 +64,7 @@ fn derive_pdu_field_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
     for attr in attrs {
         let path = &attr.path;
         let tokens = &attr.tokens;
+
         if path.leading_colon.is_some() {
             continue;
         }
@@ -70,9 +73,6 @@ fn derive_pdu_field_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
         }
         let segment = path.segments.first().unwrap();
         if segment.ident != "repr" {
-            continue;
-        }
-        if segment.arguments.is_empty() {
             continue;
         }
         let typ_paren = match syn::parse2::<Type>(tokens.clone()) {
@@ -88,6 +88,7 @@ fn derive_pdu_field_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
                 "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize",
             ] {
                 if seg.ident == t {
+                    // discriminant_ident = seg.ident.clone();
                     discriminant_type = typ_paren;
                     break;
                 }
@@ -110,21 +111,13 @@ fn derive_pdu_field_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
             return Err(syn::Error::new(Span::call_site(), "Discriminant value must be set."))
         };
 
-        // let into_value = format!("{}{}", discriminant, discriminant_type);
-
         from_arms.push(quote! {#discriminant => #name::#ident});
-        // into_arms.push(quote! {#name::#ident => { #into_value }});
-        into_arms.push(quote! {#name::#ident => { #discriminant }});
+        let into_value_formatted = TokenStream::from_str(format!("{}{}", quote! { #discriminant }, quote! { #discriminant_type }).as_str()).unwrap();
+        into_arms.push(quote! {#name::#ident => { #into_value_formatted }});
     }
 
-    // Add exhaustive arm resulting in the first variant of the enum
-    from_arms.push(quote! { _ => #name::default() });
-    // if let Some(first_variant) = &variants.first() {
-    //     let default_ident = &first_variant.ident;
-    //     from_arms.push(quote! { _ => #name::#default_ident });
-    // } else {
-    //     return Err(syn::Error::new(Span::call_site(), "Enum has no variants."));
-    // }
+    // For conversion from bytes to enum, add exhaustive arm resulting in the default variant of the enum
+    from_arms.push(quote! { _unspecified_value => #name::default() });
 
     Ok(quote! {
         impl From<#discriminant_type> for #name {
