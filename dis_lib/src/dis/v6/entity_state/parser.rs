@@ -161,15 +161,15 @@ fn general_appearance(input: &[u8]) -> IResult<&[u8], GeneralAppearance> {
              take_bits(1usize))))(input)?;
 
     Ok((input, GeneralAppearance{
-        entity_paint_scheme : EntityPaintScheme::from(entity_paint_scheme),
-        entity_mobility_kill : EntityMobilityKill::from(entity_mobility_kill),
-        entity_fire_power : EntityFirePower::from(entity_fire_power),
-        entity_damage : EntityDamage::from(entity_damage),
-        entity_smoke : EntitySmoke::from(entity_smoke),
-        entity_trailing_effect : EntityTrailingEffect::from(entity_trailing_effect),
-        entity_hatch_state : EntityHatchState::from(entity_hatch_state),
-        entity_lights : EntityLights::from(entity_lights),
-        entity_flaming_effect : EntityFlamingEffect::from(entity_flaming_effect),
+        entity_paint_scheme : EntityPaintScheme::from(entity_paint_scheme as u16),
+        entity_mobility_kill : EntityMobilityKill::from(entity_mobility_kill as u16),
+        entity_fire_power : EntityFirePower::from(entity_fire_power as u16),
+        entity_damage : EntityDamage::from(entity_damage as u16),
+        entity_smoke : EntitySmoke::from(entity_smoke as u16),
+        entity_trailing_effect : EntityTrailingEffect::from(entity_trailing_effect as u16),
+        entity_hatch_state : EntityHatchState::from(entity_hatch_state as u16),
+        entity_lights : EntityLights::from(entity_lights as u16),
+        entity_flaming_effect : EntityFlamingEffect::from(entity_flaming_effect as u16),
     }))
 }
 
@@ -254,14 +254,14 @@ fn land_platform_record(input: &[u8]) -> IResult<&[u8], LandPlatformsRecord> {
          take_bits(6usize))))(input)?;
 
     Ok((input, LandPlatformsRecord {
-        launcher: Launcher::from(launcher),
-        camouflage_type: Camouflage::from(camouflage),
-        concealed: Concealed::from(concealed),
-        frozen_status: FrozenStatus::from(frozen_status),
-        power_plant_status: PowerPlantStatus::from(power_plant_status),
-        state: State::from(state),
-        tent: Tent::from(tent),
-        ramp: Ramp::from(ramp),
+        launcher: Launcher::from(launcher as u16),
+        camouflage_type: Camouflage::from(camouflage as u16),
+        concealed: Concealed::from(concealed as u16),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        power_plant_status: PowerPlantStatus::from(power_plant_status as u16),
+        state: State::from(state as u16),
+        tent: Tent::from(tent as u16),
+        ramp: Ramp::from(ramp as u16),
     }))
 }
 
@@ -281,10 +281,10 @@ fn air_platform_record(input: &[u8]) -> IResult<&[u8], AirPlatformsRecord> {
          take_bits(8usize))))(input)?;
 
     Ok((input, AirPlatformsRecord {
-        afterburner: Afterburner::from(afterburner),
-        frozen_status: FrozenStatus::from(frozen_status),
-        power_plant_status: PowerPlantStatus::from(power_plant_status),
-        state: State::from(state),
+        afterburner: Afterburner::from(afterburner as u16),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        power_plant_status: PowerPlantStatus::from(power_plant_status as u16),
+        state: State::from(state as u16),
     }))
 }
 
@@ -302,9 +302,9 @@ fn surface_platform_record(input: &[u8]) -> IResult<&[u8], SurfacePlatformRecord
          take_bits(8usize))))(input)?;
 
     Ok((input, SurfacePlatformRecord {
-        frozen_status: FrozenStatus::from(frozen_status),
-        power_plant_status: PowerPlantStatus::from(power_plant_status),
-        state: State::from(state),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        power_plant_status: PowerPlantStatus::from(power_plant_status as u16),
+        state: State::from(state as u16),
     }))
 }
 
@@ -322,9 +322,9 @@ fn subsurface_platforms_record(input: &[u8]) -> IResult<&[u8], SubsurfacePlatfor
          take_bits(8usize))))(input)?;
 
     Ok((input, SubsurfacePlatformsRecord {
-        frozen_status: FrozenStatus::from(frozen_status),
-        power_plant_status: PowerPlantStatus::from(power_plant_status),
-        state: State::from(state),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        power_plant_status: PowerPlantStatus::from(power_plant_status as u16),
+        state: State::from(state as u16),
     }))
 }
 
@@ -342,9 +342,9 @@ fn space_platforms_record(input: &[u8]) -> IResult<&[u8], SpacePlatformsRecord> 
          take_bits(8usize))))(input)?;
 
     Ok((input, SpacePlatformsRecord {
-        frozen_status: FrozenStatus::from(frozen_status),
-        power_plant_status: PowerPlantStatus::from(power_plant_status),
-        state: State::from(state),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        power_plant_status: PowerPlantStatus::from(power_plant_status as u16),
+        state: State::from(state as u16),
     }))
 }
 
@@ -364,9 +364,9 @@ fn guided_munitions_record(input: &[u8]) -> IResult<&[u8], GuidedMunitionsRecord
          take_bits(8usize))))(input)?;
 
     Ok((input, GuidedMunitionsRecord {
-        launch_flash: LaunchFlash::from(launch_flash),
-        frozen_status: FrozenStatus::from(frozen_status),
-        state: State::from(state),
+        launch_flash: LaunchFlash::from(launch_flash as u16),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        state: State::from(state as u16),
     }))
 }
 
@@ -390,11 +390,11 @@ fn life_forms_record(input: &[u8]) -> IResult<&[u8], LifeFormsRecord> {
          take_bits(4usize))))(input)?;
 
     Ok((input, LifeFormsRecord {
-        life_form_state: LifeFormsState::from(life_form_state),
-        frozen_status: FrozenStatus::from(frozen_status),
-        activity_state: ActivityState::from(activity_state),
-        weapon_1: Weapon::from(weapon_1),
-        weapon_2: Weapon::from(weapon_2),
+        life_form_state: LifeFormsState::from(life_form_state as u16),
+        frozen_status: FrozenStatus::from(frozen_status as u16),
+        activity_state: ActivityState::from(activity_state as u16),
+        weapon_1: Weapon::from(weapon_1 as u16),
+        weapon_2: Weapon::from(weapon_2 as u16),
     }))
 }
 
@@ -408,7 +408,7 @@ fn environmentals_record(input: &[u8]) -> IResult<&[u8], EnvironmentalsRecord> {
          take_bits(8usize))))(input)?;
 
     Ok((input, EnvironmentalsRecord {
-        density: Density::from(density),
+        density: Density::from(density as u16),
     }))
 }
 
