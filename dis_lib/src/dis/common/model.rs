@@ -65,6 +65,7 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
+// TODO add v7 pdu types
 #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
 #[repr(u8)]
 pub enum PduType {

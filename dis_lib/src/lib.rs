@@ -15,9 +15,10 @@ V Tests for parsing EntityState PDU
 V Tests for parsing Other PDU
 V Tests for parsing incomplete input / some santity checks on pdu lengths
 - common function for calculating body length based on header data (pdu_length - header_length); now at several places
-- Writing headers and pdus to buffer/network
+V Writing headers and pdus to buffer/network
 - Build DIS v7 Header; model, builder, parser
 - Incorporate versions of enumeration document into the lib (domain types, country codes, etc). Possibly set version to use as config option; default to latest.
+- Incorporate Symbolic names from the standard (v7 - table 25)
 - Dead-reckoning algorithms
 
 TESTS:

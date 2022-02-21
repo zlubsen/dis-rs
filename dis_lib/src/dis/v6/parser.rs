@@ -1,16 +1,18 @@
-use nom::bytes::complete::take;
 use nom::{Err, IResult};
 use nom::error::ErrorKind::Eof;
 use nom::multi::many1;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::sequence::tuple;
 
-use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily, ProtocolVersion};
+use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType};
+use crate::dis::common::parser;
+use crate::dis::common::parser::{pdu_type, protocol_family, protocol_version};
 use crate::dis::errors::DisError;
 use crate::dis::v6::model::{Pdu, PduHeader};
 use crate::dis::v6::entity_state::parser::entity_state_body;
 use crate::dis::v6::other::parser::other_body;
 
+// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
         Ok((_, pdus)) => { Ok(pdus) }
@@ -18,6 +20,7 @@ pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     }
 }
 
+// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 #[allow(dead_code)]
 pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     match pdu(input) {
@@ -26,6 +29,7 @@ pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     }
 }
 
+// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     match many1(pdu_header_skip_body)(input) {
         Ok((_, headers)) => { Ok(headers) }
@@ -40,11 +44,12 @@ pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     }
 }
 
+// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 /// Parse the input for a PDU header, and skip the rest of the pdu body in the input
 pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     match pdu_header(input) {
         Ok((input, header)) => {
-            let skipped = skip_body(&header)(input); // Discard the body
+            let skipped = parser::skip_body(header.pdu_length)(input); // Discard the body
             if let Err(Err::Error(error)) = skipped {
                 return if error.code == Eof {
                     Err(DisError::InsufficientPduLength(header.pdu_length as usize - PDU_HEADER_LEN_BYTES, input.len()))
@@ -63,6 +68,7 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     }
 }
 
+// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
     let (input, header) = pdu_header(input)?;
@@ -99,38 +105,14 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
 
 fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let (input, header) = pdu_header(input)?;
-    let (input, _) = skip_body(&header)(input)?;
+    let (input, _) = parser::skip_body(header.pdu_length)(input)?;
     Ok((input, header))
-}
-
-fn skip_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
-    let bytes_to_skip = header.pdu_length as usize - PDU_HEADER_LEN_BYTES;
-    move |input| {
-        take(bytes_to_skip)(input)
-    }
-}
-
-fn protocol_version(input: &[u8]) -> IResult<&[u8], ProtocolVersion> {
-    let (input, protocol_version) = be_u8(input)?;
-    let protocol_version = ProtocolVersion::from(protocol_version);
-    Ok((input, protocol_version))
-}
-
-fn pdu_type(input: &[u8]) -> IResult<&[u8], PduType> {
-    let (input, pdu_type) = be_u8(input)?;
-    let pdu_type = PduType::from(pdu_type);
-    Ok((input, pdu_type))
-}
-
-fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
-    let (input, protocol_family) = be_u8(input)?;
-    let protocol_family = ProtocolFamily::from(protocol_family);
-    Ok((input, protocol_family))
 }
 
 fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
     move | input: &[u8] | {
         // parse the body of the PDU based on the type
+        // TODO only process v6 supported PduTypes; process others (v7+ supported) as 'Other'
         let (input, pdu) = match header.pdu_type {
             PduType::OtherPdu => { other_body(header)(input)? }
             PduType::EntityStatePdu => { entity_state_body(header)(input)? }

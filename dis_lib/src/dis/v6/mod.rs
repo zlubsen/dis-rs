@@ -1,4 +1,4 @@
-// functional modules
+// v6 functional modules
 pub mod model;
 pub mod parser;
 pub mod builder;

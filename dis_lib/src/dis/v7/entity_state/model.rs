@@ -1,5 +1,5 @@
-use crate::dis::v6::entity_state::builder::{AirPlatformBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
-use crate::dis::v6::model::PduHeader;
+use crate::dis::v7::entity_state::builder::{AirPlatformBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
+use crate::dis::v7::model::PduHeader;
 use super::builder::EntityStateBuilder;
 use dis_rs_macros::PduConversion;
 
