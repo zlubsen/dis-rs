@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use crate::dis::common::Serialize;
-use crate::dis::v6::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityId, EntityMarking, EntityState, EntityType, EnvironmentalsRecord, ForceId, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, Location, Orientation, ParameterTypeVariant, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord, VectorF32};
+use crate::dis::v6::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityState, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, ParameterTypeVariant, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
 
 impl Serialize for EntityState {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -51,84 +51,6 @@ impl Serialize for ArticulationParameter {
         buf.put_f32(self.articulation_parameter_value);
         buf.put_u32(0u32); // 4-byte padding
         16
-    }
-}
-
-impl Serialize for EntityId {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        let num_bytes = self.simulation_address.serialize(buf);
-        buf.put_u16(self.entity_id);
-        num_bytes + 2
-    }
-}
-
-impl Serialize for SimulationAddress {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_u16(self.site_id);
-        buf.put_u16(self.application_id);
-        4
-    }
-}
-
-impl Serialize for ForceId {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        let force_id = *self;
-        buf.put_u8(force_id.into());
-        1
-    }
-}
-
-impl Serialize for EntityType {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_u8(self.kind.into());
-        buf.put_u8(self.domain);
-        buf.put_u16(self.country.into()); // TODO: country Into<u16>;
-        buf.put_u8(self.category);
-        buf.put_u8(self.subcategory);
-        buf.put_u8(self.specific);
-        buf.put_u8(self.extra);
-        8
-    }
-}
-
-impl Serialize for VectorF32 {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_f32(self.first_vector_component);
-        buf.put_f32(self.second_vector_component);
-        buf.put_f32(self.third_vector_component);
-        12
-    }
-}
-
-impl Serialize for Location {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_f64(self.x_coordinate);
-        buf.put_f64(self.y_coordinate);
-        buf.put_f64(self.z_coordinate);
-        24
-    }
-}
-
-impl Serialize for Orientation {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_f32(self.psi);
-        buf.put_f32(self.theta);
-        buf.put_f32(self.phi);
-        12
-    }
-}
-
-impl Serialize for EntityMarking {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_u8(self.marking_character_set.into());
-        let num_pad = 11 - self.marking_string.len();
-        let marking = self.marking_string.clone(); // TODO is this clone necessary?
-// for b in marking.as_bytes() {
-//     write!(buf, "{:02x}", b);
-// }
-        buf.put_slice(&marking.into_bytes()[..]);
-        (0..num_pad).for_each( |_i| buf.put_u8(0x20) );
-        12
     }
 }
 
@@ -341,10 +263,11 @@ impl Serialize for EntityCapabilities {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
+    use crate::dis::common::entity_state::model::{Country, EntityId, EntityKind, EntityMarking, EntityMarkingCharacterSet, EntityType, ForceId, Location, Orientation, SimulationAddress, VectorF32};
     use crate::dis::common::Serialize;
     use crate::dis::common::model::{PduType, ProtocolFamily, ProtocolVersion};
     use crate::dis::v6::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::dis::v6::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, ForceId, FrozenStatus, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, SimulationAddress, SpecificAppearance, State, VectorF32};
+    use crate::dis::v6::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::dis::v6::model::{Pdu, PduHeader};
 
     #[test]

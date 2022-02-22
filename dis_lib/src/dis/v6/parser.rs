@@ -173,9 +173,10 @@ fn pdu_body(header: PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pdu> {
 
 #[cfg(test)]
 mod tests {
+    use crate::dis::common::entity_state::model::{Country, EntityKind, EntityType, ForceId};
     use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType, ProtocolFamily, ProtocolVersion};
     use crate::dis::errors::DisError;
-    use crate::dis::v6::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, ApTypeMetric, Country, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityKind, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, EntityType, ForceId, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::dis::v6::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, ApTypeMetric, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::dis::v6::model::Pdu;
     use crate::dis::v6::{parse_multiple_header, parse_pdu};
     use crate::parse_v6_header;

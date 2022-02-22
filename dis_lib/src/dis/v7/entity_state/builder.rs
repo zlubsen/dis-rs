@@ -1,6 +1,8 @@
+use crate::dis::common::entity_state::model::{EntityId, EntityMarking, EntityMarkingCharacterSet, EntityType, ForceId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::dis::v7::entity_state::model::*;
 use crate::dis::v7::model::PduHeader;
 
+// TODO adapt to v7 from v6 version
 pub struct EntityStateBuilder {
     header : Option<PduHeader>,
     entity_id : Option<EntityId>,

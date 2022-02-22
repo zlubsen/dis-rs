@@ -7,6 +7,7 @@ use crate::dis::common::model::{PDU_HEADER_LEN_BYTES, PduType};
 use crate::dis::common::parser::{pdu_type, protocol_family, protocol_version, skip_body};
 
 use crate::dis::errors::DisError;
+use crate::dis::v7::entity_state::parser::entity_state_body;
 use crate::dis::v7::model::{ActiveInterrogationIndicator, build_pdu_status_aii_ism_cei_lvc_tei, build_pdu_status_cei_lvc, build_pdu_status_cei_lvc_tei, build_pdu_status_dti_cei_lvc, build_pdu_status_fti_cei_lvc, build_pdu_status_iai_cei_lvc_tei, build_pdu_status_lvc, build_pdu_status_rai_cei_lvc_tei, CoupledExtensionIndicator, DetonationTypeIndicator, FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator, Pdu, PduHeader, PduStatus, RadioAttachedIndicator, TransferredEntityIndicator};
 use crate::dis::v7::other::parser::other_body;
 

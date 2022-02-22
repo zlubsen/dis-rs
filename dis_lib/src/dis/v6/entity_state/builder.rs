@@ -1,3 +1,4 @@
+use crate::dis::common::entity_state::model::{EntityId, EntityMarking, EntityMarkingCharacterSet, EntityType, ForceId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::dis::v6::entity_state::model::*;
 use crate::dis::v6::model::PduHeader;
 

@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::dis::common::model::PDU_HEADER_LEN_BYTES;
 use crate::dis::common::Serialize;
-use crate::dis::v7::model::{Pdu, PduHeader, PduStatus};
+use crate::dis::v7::model::{PduHeader, PduStatus};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
