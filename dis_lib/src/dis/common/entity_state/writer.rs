@@ -71,9 +71,7 @@ impl Serialize for EntityMarking {
         buf.put_u8(self.marking_character_set.into());
         let num_pad = 11 - self.marking_string.len();
         let marking = self.marking_string.clone(); // TODO is this clone necessary?
-// for b in marking.as_bytes() {
-//     write!(buf, "{:02x}", b);
-// }
+
         buf.put_slice(&marking.into_bytes()[..]);
         (0..num_pad).for_each( |_i| buf.put_u8(0x20) );
         12

@@ -1,5 +1,6 @@
 use dis_rs_macros::PduConversion;
 use crate::dis::common::model::{PduType, ProtocolFamily, ProtocolVersion};
+use crate::dis::v7::entity_state::model::EntityState;
 use crate::dis::v7::other::model::Other;
 
 #[derive(Copy, Clone, Debug)]
@@ -279,6 +280,6 @@ pub fn build_pdu_status_lvc(lvc : LvcIndicator) -> PduStatus {
 
 pub enum Pdu {
     Other(Other), // No implementation for Other PDU Type
-//    EntityState(EntityState),
+    EntityState(EntityState),
 // TODO implement other PDU structs
 }

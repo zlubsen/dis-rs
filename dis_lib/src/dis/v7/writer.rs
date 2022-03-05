@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::dis::common::model::PDU_HEADER_LEN_BYTES;
 use crate::dis::common::Serialize;
-use crate::dis::v7::model::{PduHeader, PduStatus};
+use crate::dis::v7::model::{Pdu, PduHeader, PduStatus};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -51,5 +51,15 @@ impl Serialize for PduStatus {
         let status_field_byte = tei | lvc | cei | fti | dti | rai | iai | ism | aii;
         buf.put_u8(status_field_byte);
         1
+    }
+}
+
+impl Serialize for Pdu {
+    fn serialize(&self, buf: &mut BytesMut) -> usize {
+        match self {
+            Pdu::Other(pdu) => { pdu.serialize(buf) }
+            Pdu::EntityState(pdu) => { pdu.serialize(buf) }
+            _ => { todo!() }
+        }
     }
 }
