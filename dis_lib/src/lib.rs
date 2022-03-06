@@ -8,6 +8,10 @@ pub use dis::parse_v7 as parse_v7_pdus;
 pub use dis::v6::parse_header as parse_v6_header;
 pub use dis::v6::parse_multiple_header as parse_v6_headers;
 
+pub use dis::Pdu;
+pub use dis::v6::*;
+pub use dis::v7::*;
+
 /*
 TODO:
 V Finish EntityState model and builder functions (such as Appearance impl)
