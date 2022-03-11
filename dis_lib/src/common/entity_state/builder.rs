@@ -17,7 +17,7 @@ pub struct EntityStateBuilder {
 }
 
 impl EntityStateBuilder {
-    pub(crate) fn new() -> EntityStateBuilder {
+    pub fn new() -> EntityStateBuilder {
         EntityStateBuilder {
             entity_id: None,
             force_id: None,

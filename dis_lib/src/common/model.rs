@@ -5,8 +5,8 @@ use crate::common::other::model::Other;
 use crate::v7::model::PduStatus;
 
 pub struct Pdu {
-    pub(crate) header : PduHeader,
-    pub(crate) body : PduBody,
+    pub header : PduHeader,
+    pub body : PduBody,
 }
 
 #[derive(Copy, Clone, Debug)]
