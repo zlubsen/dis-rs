@@ -6,7 +6,7 @@ use nom::number::complete::{be_f32, be_f64, be_u16, be_u32, be_u8};
 use nom::multi::count;
 use nom::sequence::tuple;
 use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Country, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
-use crate::common::model::{PduBody, PduHeader};
+use crate::common::model::PduBody;
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {

@@ -6,7 +6,11 @@ impl Serialize for EntityState {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         let entity_id_bytes = self.entity_id.serialize(buf);
         let force_id_bytes = self.force_id.serialize(buf);
-        buf.put_u8(self.articulated_parts_no);
+        if let Some(params) = &self.articulation_parameter {
+            buf.put_u8(params.len() as u8);
+        } else {
+            buf.put_u8(0u8);
+        }
 
         let entity_type_bytes = self.entity_type.serialize(buf);
         let alt_entity_type_bytes = self.alternative_entity_type.serialize(buf);

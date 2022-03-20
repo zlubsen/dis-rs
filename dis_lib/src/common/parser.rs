@@ -128,7 +128,7 @@ fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
 fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {
         // parse the body of the PDU based on the type
-        // TODO only process v6 supported PduTypes; process others (v7+ supported) as 'Other'
+        // TODO only process supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
             PduType::OtherPdu => { other_body(header)(input)? }
             PduType::EntityStatePdu => { entity_state_body()(input)? }
@@ -159,28 +159,51 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::TransmitterPdu => {}
             // PduType::SignalPdu => {}
             // PduType::ReceiverPdu => {}
-            // PduType::AnnounceObjectPdu => {}
-            // PduType::DeleteObjectPdu => {}
-            // PduType::DescribeApplicationPdu => {}
-            // PduType::DescribeEventPdu => {}
-            // PduType::DescribeObjectPdu => {}
-            // PduType::RequestEventPdu => {}
-            // PduType::RequestObjectPdu => {}
-            // PduType::TimeSpacePositionIndicatorFIPdu => {}
-            // PduType::AppearanceFIPdu => {}
-            // PduType::ArticulatedPartsFIPdu => {}
-            // PduType::FireFIPdu => {}
-            // PduType::DetonationFIPdu => {}
-            // PduType::PointObjectStatePdu => {}
-            // PduType::LinearObjectStatePdu => {}
-            // PduType::ArealObjectStatePdu => {}
-            // PduType::EnvironmentPdu => {}
-            // PduType::TransferControlRequestPdu => {}
-            // PduType::TransferControlPdu => {}
-            // PduType::TransferControlAcknowledgePdu => {}
-            // PduType::IntercomControlPdu => {}
-            // PduType::IntercomSignalPdu => {}
-            // PduType::AggregatePdu => {}
+            // PduType::IFF => {}
+            // PduType::UnderwaterAcoustic => {}
+            // PduType::SupplementalEmissionEntityState => {}
+            // PduType::IntercomSignal => {}
+            // PduType::IntercomControl => {}
+            // PduType::AggregateState => {}
+            // PduType::IsGroupOf => {}
+            // PduType::TransferOwnership => {}
+            // PduType::IsPartOf => {}
+            // PduType::MinefieldState => {}
+            // PduType::MinefieldQuery => {}
+            // PduType::MinefieldData => {}
+            // PduType::MinefieldResponseNACK => {}
+            // PduType::EnvironmentalProcess => {}
+            // PduType::GriddedData => {}
+            // PduType::PointObjectState => {}
+            // PduType::LinearObjectState => {}
+            // PduType::ArealObjectState => {}
+            // PduType::TSPI => {}
+            // PduType::Appearance => {}
+            // PduType::ArticulatedParts => {}
+            // PduType::LEFire => {}
+            // PduType::LEDetonation => {}
+            // PduType::CreateEntityR => {}
+            // PduType::RemoveEntityR => {}
+            // PduType::StartResumeR => {}
+            // PduType::StopFreezeR => {}
+            // PduType::AcknowledgeR => {}
+            // PduType::ActionRequestR => {}
+            // PduType::ActionResponseR => {}
+            // PduType::DataQueryR => {}
+            // PduType::SetDataR => {}
+            // PduType::DataR => {}
+            // PduType::EventReportR => {}
+            // PduType::CommentR => {}
+            // PduType::RecordR => {}
+            // PduType::SetRecordR => {}
+            // PduType::RecordQueryR => {}
+            // PduType::CollisionElastic => {}
+            // PduType::EntityStateUpdate => {}
+            // PduType::DirectedEnergyFire => {}
+            // PduType::EntityDamageStatus => {}
+            // PduType::InformationOperationsAction => {}
+            // PduType::InformationOperationsReport => {}
+            // PduType::Attribute => {}
         };
         // TODO handle result of pdu variable
         Ok((input, body))
@@ -315,7 +338,9 @@ mod tests {
             assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
             assert_eq!(pdu.entity_id.entity_id, 14u16);
             assert_eq!(pdu.force_id, ForceId::Friendly);
-            assert_eq!(pdu.articulated_parts_no, 4u8);
+            assert!(pdu.articulation_parameter.is_some());
+            let articulation_parameters = pdu.articulation_parameter.unwrap();
+            assert_eq!(articulation_parameters.len(), 4usize);
             assert_eq!(pdu.entity_type, EntityType {
                 kind: EntityKind::Platform,
                 domain: 2,
@@ -352,7 +377,6 @@ mod tests {
                 recovery: false,
                 repair: false,
             });
-            let articulation_parameters = pdu.articulation_parameter.unwrap();
             assert_eq!(articulation_parameters.len(), 4);
             let parameter_1 = articulation_parameters.get(0).unwrap();
             assert_eq!(parameter_1.parameter_type_designator, ApTypeDesignator::Articulated);

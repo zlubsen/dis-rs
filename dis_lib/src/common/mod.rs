@@ -19,6 +19,14 @@ pub enum Version {
     UNSUPPORTED,
 }
 
+/// Trait for PDUs to implement whether an interaction between one or two
+/// entities happens. Used to generically query the originating ``EntityId`` and (optional) receiving ``EntityId`` of
+/// the interaction. When a PDU has no interaction, both the originator and receiver are ``None``.
+trait Interaction {
+    fn originator(&self) -> Option<&model::EntityId>;
+    fn receiver(&self) -> Option<&model::EntityId>;
+}
+
 /// Trait that implements writing the data structure to a buffer.
 /// Return the number of bytes written to the buffer.
 pub trait Serialize {

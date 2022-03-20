@@ -34,7 +34,7 @@ impl OtherBuilder {
             return Err(())
         }
 
-        Ok(PduBody::Other(Other{ body: self.body.expect("should be set")}))
+        Ok(PduBody::Other(Other{ originating_entity_id: None, receiving_entity_id: None, body: self.body.expect("should be set")}))
     }
 
     pub fn build_with_header(self, header: PduHeader) -> Result<Pdu, ()> {
@@ -44,7 +44,7 @@ impl OtherBuilder {
 
         Ok(Pdu {
             header,
-            body: PduBody::Other(Other{ body: self.body.expect("should be set")}),
+            body: PduBody::Other(Other{ originating_entity_id: None, receiving_entity_id: None, body: self.body.expect("should be set")}),
         })
     }
 }

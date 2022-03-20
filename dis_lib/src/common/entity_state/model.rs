@@ -1,5 +1,6 @@
 use dis_rs_macros::PduConversion;
 use crate::common::entity_state::builder::{AirPlatformBuilder, EntityStateBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
+use crate::common::Interaction;
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -9,7 +10,6 @@ pub enum EntityStateValidationError {
 pub struct EntityState {
     pub entity_id : EntityId, // struct
     pub force_id : ForceId, // enum
-    pub articulated_parts_no : u8, // FIXME can be obtained from length of articulation_parameter field
     pub entity_type : EntityType, // struct
     pub alternative_entity_type : EntityType, // struct
     pub entity_linear_velocity : VectorF32, // struct
@@ -1110,5 +1110,15 @@ impl Default for ApTypeMetric {
 impl EntityState {
     pub fn builder() -> EntityStateBuilder {
         EntityStateBuilder::new()
+    }
+}
+
+impl Interaction for EntityState {
+    fn originator(&self) -> Option<&EntityId> {
+        Some(&self.entity_id)
+    }
+
+    fn receiver(&self) -> Option<&EntityId> {
+        None
     }
 }

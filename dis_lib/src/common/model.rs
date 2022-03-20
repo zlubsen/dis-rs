@@ -1,12 +1,24 @@
 use dis_rs_macros::PduConversion;
 use crate::common::builder::PduHeaderBuilder;
+pub use crate::common::entity_state::model::EntityId;
 use crate::common::entity_state::model::EntityState;
+use crate::common::Interaction;
 use crate::common::other::model::Other;
 use crate::v7::model::PduStatus;
 
 pub struct Pdu {
     pub header : PduHeader,
     pub body : PduBody,
+}
+
+impl Interaction for Pdu {
+    fn originator(&self) -> Option<&EntityId> {
+        self.body.originator()
+    }
+
+    fn receiver(&self) -> Option<&EntityId> {
+        self.body.receiver()
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -19,6 +31,12 @@ pub struct PduHeader {
     pub pdu_length : u16,
     pub pdu_status : Option<PduStatus>,
     pub padding : u16,
+}
+
+impl PduHeader {
+    pub fn builder() -> PduHeaderBuilder {
+        PduHeaderBuilder::new()
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
@@ -248,8 +266,160 @@ pub enum PduBody {
     Attribute,
 }
 
-impl PduHeader {
-    pub fn builder() -> PduHeaderBuilder {
-        PduHeaderBuilder::new()
+impl Interaction for PduBody {
+    fn originator(&self) -> Option<&EntityId> {
+        match self {
+            PduBody::Other(body) => { body.originator() }
+            PduBody::EntityState(body) => { body.originator() }
+            PduBody::Fire => { None }
+            PduBody::Detonation => { None }
+            PduBody::Collision => { None }
+            PduBody::ServiceRequest => { None }
+            PduBody::ResupplyOffer => { None }
+            PduBody::ResupplyReceived => { None }
+            PduBody::ResupplyCancel => { None }
+            PduBody::RepairComplete => { None }
+            PduBody::RepairResponse => { None }
+            PduBody::CreateEntity => { None }
+            PduBody::RemoveEntity => { None }
+            PduBody::StartResume => { None }
+            PduBody::StopFreeze => { None }
+            PduBody::Acknowledge => { None }
+            PduBody::ActionRequest => { None }
+            PduBody::ActionResponse => { None }
+            PduBody::DataQuery => { None }
+            PduBody::SetData => { None }
+            PduBody::Data => { None }
+            PduBody::EventReport => { None }
+            PduBody::Comment => { None }
+            PduBody::ElectromagneticEmission => { None }
+            PduBody::Designator => { None }
+            PduBody::Transmitter => { None }
+            PduBody::Signal => { None }
+            PduBody::Receiver => { None }
+            PduBody::IFF => { None }
+            PduBody::UnderwaterAcoustic => { None }
+            PduBody::SupplementalEmissionEntityState => { None }
+            PduBody::IntercomSignal => { None }
+            PduBody::IntercomControl => { None }
+            PduBody::AggregateState => { None }
+            PduBody::IsGroupOf => { None }
+            PduBody::TransferOwnership => { None }
+            PduBody::IsPartOf => { None }
+            PduBody::MinefieldState => { None }
+            PduBody::MinefieldQuery => { None }
+            PduBody::MinefieldData => { None }
+            PduBody::MinefieldResponseNACK => { None }
+            PduBody::EnvironmentalProcess => { None }
+            PduBody::GriddedData => { None }
+            PduBody::PointObjectState => { None }
+            PduBody::LinearObjectState => { None }
+            PduBody::ArealObjectState => { None }
+            PduBody::TSPI => { None }
+            PduBody::Appearance => { None }
+            PduBody::ArticulatedParts => { None }
+            PduBody::LEFire => { None }
+            PduBody::LEDetonation => { None }
+            PduBody::CreateEntityR => { None }
+            PduBody::RemoveEntityR => { None }
+            PduBody::StartResumeR => { None }
+            PduBody::StopFreezeR => { None }
+            PduBody::AcknowledgeR => { None }
+            PduBody::ActionRequestR => { None }
+            PduBody::ActionResponseR => { None }
+            PduBody::DataQueryR => { None }
+            PduBody::SetDataR => { None }
+            PduBody::DataR => { None }
+            PduBody::EventReportR => { None }
+            PduBody::CommentR => { None }
+            PduBody::RecordR => { None }
+            PduBody::SetRecordR => { None }
+            PduBody::RecordQueryR => { None }
+            PduBody::CollisionElastic => { None }
+            PduBody::EntityStateUpdate => { None }
+            PduBody::DirectedEnergyFire => { None }
+            PduBody::EntityDamageStatus => { None }
+            PduBody::InformationOperationsAction => { None }
+            PduBody::InformationOperationsReport => { None }
+            PduBody::Attribute => { None }
+        }
+    }
+
+    fn receiver(&self) -> Option<&EntityId> {
+        match self {
+            PduBody::Other(body) => { body.receiver() }
+            PduBody::EntityState(body) => { body.receiver() }
+            PduBody::Fire => { None }
+            PduBody::Detonation => { None }
+            PduBody::Collision => { None }
+            PduBody::ServiceRequest => { None }
+            PduBody::ResupplyOffer => { None }
+            PduBody::ResupplyReceived => { None }
+            PduBody::ResupplyCancel => { None }
+            PduBody::RepairComplete => { None }
+            PduBody::RepairResponse => { None }
+            PduBody::CreateEntity => { None }
+            PduBody::RemoveEntity => { None }
+            PduBody::StartResume => { None }
+            PduBody::StopFreeze => { None }
+            PduBody::Acknowledge => { None }
+            PduBody::ActionRequest => { None }
+            PduBody::ActionResponse => { None }
+            PduBody::DataQuery => { None }
+            PduBody::SetData => { None }
+            PduBody::Data => { None }
+            PduBody::EventReport => { None }
+            PduBody::Comment => { None }
+            PduBody::ElectromagneticEmission => { None }
+            PduBody::Designator => { None }
+            PduBody::Transmitter => { None }
+            PduBody::Signal => { None }
+            PduBody::Receiver => { None }
+            PduBody::IFF => { None }
+            PduBody::UnderwaterAcoustic => { None }
+            PduBody::SupplementalEmissionEntityState => { None }
+            PduBody::IntercomSignal => { None }
+            PduBody::IntercomControl => { None }
+            PduBody::AggregateState => { None }
+            PduBody::IsGroupOf => { None }
+            PduBody::TransferOwnership => { None }
+            PduBody::IsPartOf => { None }
+            PduBody::MinefieldState => { None }
+            PduBody::MinefieldQuery => { None }
+            PduBody::MinefieldData => { None }
+            PduBody::MinefieldResponseNACK => { None }
+            PduBody::EnvironmentalProcess => { None }
+            PduBody::GriddedData => { None }
+            PduBody::PointObjectState => { None }
+            PduBody::LinearObjectState => { None }
+            PduBody::ArealObjectState => { None }
+            PduBody::TSPI => { None }
+            PduBody::Appearance => { None }
+            PduBody::ArticulatedParts => { None }
+            PduBody::LEFire => { None }
+            PduBody::LEDetonation => { None }
+            PduBody::CreateEntityR => { None }
+            PduBody::RemoveEntityR => { None }
+            PduBody::StartResumeR => { None }
+            PduBody::StopFreezeR => { None }
+            PduBody::AcknowledgeR => { None }
+            PduBody::ActionRequestR => { None }
+            PduBody::ActionResponseR => { None }
+            PduBody::DataQueryR => { None }
+            PduBody::SetDataR => { None }
+            PduBody::DataR => { None }
+            PduBody::EventReportR => { None }
+            PduBody::CommentR => { None }
+            PduBody::RecordR => { None }
+            PduBody::SetRecordR => { None }
+            PduBody::RecordQueryR => { None }
+            PduBody::CollisionElastic => { None }
+            PduBody::EntityStateUpdate => { None }
+            PduBody::DirectedEnergyFire => { None }
+            PduBody::EntityDamageStatus => { None }
+            PduBody::InformationOperationsAction => { None }
+            PduBody::InformationOperationsReport => { None }
+            PduBody::Attribute => { None }
+        }
     }
 }

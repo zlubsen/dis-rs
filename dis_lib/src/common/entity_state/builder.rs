@@ -189,7 +189,6 @@ impl EntityStateBuilder {
         Ok(PduBody::EntityState(EntityState {
             entity_id: self.entity_id.expect("Value expected, but not found."),
             force_id: self.force_id.expect("Value expected, but not found."),
-            articulated_parts_no: self.articulation_parameter.len() as u8,
             entity_type: self.entity_type.expect("Value expected, but not found."),
             alternative_entity_type: self.alternative_entity_type.expect("Value expected, but not found."),
             entity_linear_velocity: self.entity_linear_velocity.expect("Value expected, but not found."),
