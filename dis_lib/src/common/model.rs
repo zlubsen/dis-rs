@@ -106,7 +106,7 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
+#[derive(Copy, Clone, Debug, PartialEq, PduConversion, Eq, Hash)]
 #[repr(u8)]
 pub enum PduType {
     OtherPdu = 0,

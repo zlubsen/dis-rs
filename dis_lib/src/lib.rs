@@ -11,6 +11,7 @@ pub use common::symbolic_names::*;
 pub use common::errors::*;
 
 pub use common::entity_state::*;
+pub use common::entity_state::model::*;
 pub use common::other::*;
 
 

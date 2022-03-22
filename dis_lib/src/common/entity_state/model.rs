@@ -22,11 +22,25 @@ pub struct EntityState {
     pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
     pub entity_id : u16
 }
 
+impl EntityId {
+    pub fn new(site_id : u16, application_id : u16, entity_id : u16) -> Self {
+        Self {
+            simulation_address: SimulationAddress {
+                site_id,
+                application_id
+            },
+            entity_id
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,

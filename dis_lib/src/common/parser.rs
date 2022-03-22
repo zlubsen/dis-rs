@@ -13,7 +13,6 @@ use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::v7::parser::parse_pdu_status;
 
-// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
         Ok((_, pdus)) => { Ok(pdus) }
@@ -21,7 +20,6 @@ pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     }
 }
 
-// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 #[allow(dead_code)]
 pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     match pdu(input) {
@@ -30,7 +28,6 @@ pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     }
 }
 
-// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     match many1(pdu_header_skip_body)(input) {
         Ok((_, headers)) => { Ok(headers) }
@@ -45,7 +42,6 @@ pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     }
 }
 
-// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 /// Parse the input for a PDU header, and skip the rest of the pdu body in the input
 pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     match pdu_header(input) {
@@ -69,7 +65,6 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     }
 }
 
-// FIXME refactor v6 and v7 similarities: pass correct parser to generic function
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
     let (input, header) = pdu_header(input)?;
