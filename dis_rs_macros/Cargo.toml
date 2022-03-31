@@ -3,8 +3,12 @@ name = "dis_rs_macros"
 version = "0.1.0"
 authors = ["Zeeger Lubsen"]
 description = "Macros for the dis-rs crate"
-keywords = ["template", "proc_macro", "procmacro"]
 edition = "2021"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/zlubsen/dis-rs/dis_lib"
+categories = ["network-programming"]
+keywords = ["simulation", "DIS"]
 
 [lib]
 proc-macro = true
@@ -13,4 +17,3 @@ proc-macro = true
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = "1.0"
-
