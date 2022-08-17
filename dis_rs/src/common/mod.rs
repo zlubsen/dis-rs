@@ -3,6 +3,7 @@ mod builder;
 mod parser;
 
 pub mod entity_state;
+pub mod fire;
 pub mod other;
 pub mod symbolic_names;
 pub mod errors;

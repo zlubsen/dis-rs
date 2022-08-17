@@ -1,6 +1,7 @@
 use dis_rs_macros::PduConversion;
 use crate::common::entity_state::builder::{AirPlatformBuilder, EntityStateBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
 use crate::common::Interaction;
+use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -22,30 +23,6 @@ pub struct EntityState {
     pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct EntityId {
-    pub simulation_address : SimulationAddress,
-    pub entity_id : u16
-}
-
-impl EntityId {
-    pub fn new(site_id : u16, application_id : u16, entity_id : u16) -> Self {
-        Self {
-            simulation_address: SimulationAddress {
-                site_id,
-                application_id
-            },
-            entity_id
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct SimulationAddress {
-    pub site_id : u16,
-    pub application_id : u16,
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
 #[repr(u8)]
 pub enum ForceId {
@@ -61,17 +38,7 @@ impl Default for ForceId {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct EntityType {
-    pub kind : EntityKind,
-    pub domain : u8,
-    pub country : Country, // TODO u16 instead of big enum? Put codes and names in config file?
-    pub category : u8,
-    pub subcategory : u8,
-    pub specific : u8,
-    pub extra : u8,
-}
-
+// TODO enumeration refactoring
 #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
 #[repr(u8)]
 pub enum EntityKind {
@@ -93,7 +60,7 @@ impl Default for EntityKind {
     }
 }
 
-// TODO with enums v29
+// TODO enumeration refactoring
 // regex: (?<value>[0-9]*)[\t]+(?<field>[\w (),'-.]+)$
 // replace: \t${field} = ${value}, | $2 = $1
 #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
@@ -369,33 +336,12 @@ impl Default for Country {
     }
 }
 
-// TODO to common/model
-pub struct VectorF32 {
-    pub first_vector_component : f32,
-    pub second_vector_component : f32,
-    pub third_vector_component : f32,
-}
-
-// TODO to common/model
-pub struct Location {
-    pub x_coordinate : f64,
-    pub y_coordinate : f64,
-    pub z_coordinate : f64,
-}
-
-// TODO to common/model
-// TODO alias to vectorf32?
-pub struct Orientation {
-    pub psi : f32,
-    pub theta : f32,
-    pub phi : f32,
-}
-
 pub struct EntityMarking {
     pub marking_character_set : EntityMarkingCharacterSet,
     pub marking_string : String, // 11 byte String
 }
 
+// TODO enumeration refactoring
 #[derive(Copy, Clone, PartialEq, Debug, PduConversion)]
 #[repr(u8)]
 pub enum EntityMarkingCharacterSet {
@@ -1121,6 +1067,7 @@ impl Default for ApTypeMetric {
 // 7264	Secondary radar 10
 // }
 
+// TODO refactor builder
 impl EntityState {
     pub fn builder() -> EntityStateBuilder {
         EntityStateBuilder::new()

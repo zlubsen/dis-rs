@@ -2,22 +2,23 @@ use nom::bits::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
 use nom::{bits, IResult};
 use nom::error::Error;
-use nom::number::complete::{be_f32, be_f64, be_u16, be_u32, be_u8};
+use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use nom::multi::count;
 use nom::sequence::tuple;
-use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Country, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, Ramp, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, VectorF32, Weapon};
-use crate::common::model::PduBody;
+use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+use crate::common::model::{EntityType, PduBody};
+use crate::common::parser;
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
-        let (input, entity_id_val) = entity_id(input)?;
+        let (input, entity_id_val) = parser::entity_id(input)?;
         let (input, force_id_val) = force_id(input)?;
         let (input, articulated_parts_no) = be_u8(input)?;
-        let (input, entity_type_val) = entity_type(input)?;
-        let (input, alternative_entity_type) = entity_type(input)?;
-        let (input, entity_linear_velocity) = vec3_f32(input)?;
-        let (input, entity_location) = location(input)?;
-        let (input, entity_orientation) = orientation(input)?;
+        let (input, entity_type_val) = parser::entity_type(input)?;
+        let (input, alternative_entity_type) = parser::entity_type(input)?;
+        let (input, entity_linear_velocity) = parser::vec3_f32(input)?;
+        let (input, entity_location) = parser::location(input)?;
+        let (input, entity_orientation) = parser::orientation(input)?;
         let (input, entity_appearance) = appearance(entity_type_val.clone())(input)?;
         let (input, dead_reckoning_parameters) = dr_parameters(input)?;
         let (input, entity_marking) = entity_marking(input)?;
@@ -49,80 +50,9 @@ pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     }
 }
 
-pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
-    let (input, site_id) = be_u16(input)?;
-    let (input, application_id) = be_u16(input)?;
-    let (input, entity_id) = be_u16(input)?;
-    Ok((input, EntityId {
-        simulation_address: SimulationAddress {
-            site_id,
-            application_id,
-        },
-        entity_id,
-    }))
-}
-
 pub fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
     let (input, force_id) = be_u8(input)?;
     Ok((input, ForceId::from(force_id)))
-}
-
-pub fn entity_type(input: &[u8]) -> IResult<&[u8], EntityType> {
-    let (input, kind) = kind(input)?;
-    let (input, domain) = be_u8(input)?;
-    let (input, country) = country(input)?;
-    let (input, category) = be_u8(input)?;
-    let (input, subcategory) = be_u8(input)?;
-    let (input, specific) = be_u8(input)?;
-    let (input, extra) = be_u8(input)?;
-    Ok((input, EntityType {
-        kind,
-        domain,
-        country,
-        category,
-        subcategory,
-        specific,
-        extra,
-    }))
-}
-
-fn kind(input: &[u8]) -> IResult<&[u8], EntityKind> {
-    let (input, kind) = be_u8(input)?;
-    let kind = EntityKind::from(kind);
-    Ok((input, kind))
-}
-
-fn country(input: &[u8]) -> IResult<&[u8], Country> {
-    let (input, country) = be_u16(input)?;
-    let country = Country::from(country);
-    Ok((input, country))
-}
-
-pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
-    let (input, elements) = count(be_f32, 3)(input)?;
-    Ok((input, VectorF32 {
-        first_vector_component: *elements.get(0).expect("Value supposed to be parsed successfully"),
-        second_vector_component: *elements.get(1).expect("Value supposed to be parsed successfully"),
-        third_vector_component: *elements.get(2).expect("Value supposed to be parsed successfully"),
-    }))
-}
-
-pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
-    let (input, locations) = count(be_f64, 3)(input)?;
-    Ok((input, Location {
-        x_coordinate: *locations.get(0).expect("Value supposed to be parsed successfully"),
-        y_coordinate: *locations.get(1).expect("Value supposed to be parsed successfully"),
-        z_coordinate: *locations.get(2).expect("Value supposed to be parsed successfully"),
-    }))
-}
-
-pub fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
-    let (input, orientations) = count(be_f32, 3)(input)?;
-    Ok((input, Orientation {
-        psi: *orientations.get(0).expect("Value supposed to be parsed successfully"),
-        theta: *orientations.get(1).expect("Value supposed to be parsed successfully"),
-        phi: *orientations.get(2).expect("Value supposed to be parsed successfully"),
-    }))
 }
 
 // TODO review if this is an efficient way to read the string and trim trailing whitespace
@@ -428,8 +358,8 @@ fn environmentals_record(input: &[u8]) -> IResult<&[u8], EnvironmentalsRecord> {
 fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let (input, algorithm) = be_u8(input)?;
     let (input, other_parameters) = take_bytes(15usize)(input)?;
-    let (input, acceleration) = vec3_f32(input)?;
-    let (input, velocity) = vec3_f32(input)?;
+    let (input, acceleration) = parser::vec3_f32(input)?;
+    let (input, velocity) = parser::vec3_f32(input)?;
 
     let other_parameters = other_parameters.try_into().unwrap();
 
@@ -503,7 +433,8 @@ fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
 #[cfg(test)]
 mod tests {
     use crate::common::entity_state::model::{ApTypeDesignator, ApTypeMetric, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
-    use crate::common::entity_state::parser::{articulation_record, entity_capabilities, entity_marking, general_appearance, location};
+    use crate::common::entity_state::parser::{articulation_record, entity_capabilities, entity_marking, general_appearance};
+    use crate::common::parser::location;
 
     #[test]
     fn parse_entity_location() {

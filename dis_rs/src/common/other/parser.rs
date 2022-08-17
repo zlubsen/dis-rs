@@ -2,11 +2,11 @@ use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::IResult;
 use nom::sequence::tuple;
-use crate::common::entity_state::parser::entity_id;
-use crate::common::model::{PduBody, PduHeader};
+use crate::common::parser::entity_id;
+use crate::common::model::{EntityId, PduBody, PduHeader};
 use crate::common::other::model::Other;
 use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-use crate::{EntityId, PduType};
+use crate::PduType;
 
 pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {

@@ -1,6 +1,6 @@
 use crate::common::Interaction;
 use crate::common::other::builder::OtherBuilder;
-use crate::EntityId;
+use crate::common::model::EntityId;
 
 /// A PduBody implementation that contains the body of the PDU as raw bytes, in a vec.
 ///

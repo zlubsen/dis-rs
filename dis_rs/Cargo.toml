@@ -1,9 +1,12 @@
 [package]
-name = "dis_lib"
+name = "dis_rs"
 version = "0.1.0"
 authors = ["Zeeger <zeeger@lubsen.eu>"]
 description = """
 An implementation of the Distributed Interactive Simulation protocol in Rust.
+
+This main crate contains PDU implementations and facilities to read/write PDUs
+from Rust data structures to the wire format and vice versa.
 """
 edition = "2021"
 license = "MIT"
@@ -18,6 +21,11 @@ keywords = ["simulation", "DIS"]
 default = []
 
 [dependencies]
+#buildstructor = "0.3.2"
 bytes = "1.1.0"
 nom = "7.1.0"
 dis_rs_macros = { version = "0.1.0", path = "../dis_rs_macros" }
+
+[dev-dependencies]
+#quote = "1.0.20"
+quick-xml = "0.23.0"

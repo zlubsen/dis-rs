@@ -6,13 +6,13 @@ use proc_macro2::{Span, TokenStream};
 use syn::{Data, parse_macro_input, DeriveInput, Type, TypeParen};
 use quote::quote;
 
-/// Derive macro for reading and writing DIS PDU fields from byte format into dis-rs data structures (enums) and vice versa.
+/// Derive macro for reading and writing DIS PDU enumerated records from byte format into dis-rs data structures (enums) and vice versa.
 /// The derive macro will generate the correct From<T> trail implementations for enum data structures,
 /// provided that it is specified what representation (data type) is used in the wire specification (e.g., u8, u16, f32, ...).
 ///
 /// Example:
 /// '''
-/// #[derive(PduField)]
+/// #[derive(PduConversion)]
 /// #[repr(u8)]
 /// pub enum ForceId {
 ///     Other = 0,

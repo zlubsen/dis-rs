@@ -1,6 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::Serialize;
-use crate::common::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityId, EntityMarking, EntityState, EntityType, EnvironmentalsRecord, ForceId, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, Location, Orientation, ParameterTypeVariant, SimulationAddress, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord, VectorF32};
+use crate::common::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityMarking, EntityState, EnvironmentalsRecord, ForceId, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, ParameterTypeVariant, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
+use crate::common::model::EntityType;
 
 impl Serialize for EntityState {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -263,22 +264,6 @@ impl Serialize for EntityCapabilities {
     }
 }
 
-impl Serialize for EntityId {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        let num_bytes = self.simulation_address.serialize(buf);
-        buf.put_u16(self.entity_id);
-        num_bytes + 2
-    }
-}
-
-impl Serialize for SimulationAddress {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_u16(self.site_id);
-        buf.put_u16(self.application_id);
-        4
-    }
-}
-
 impl Serialize for ForceId {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         let force_id = *self;
@@ -300,33 +285,6 @@ impl Serialize for EntityType {
     }
 }
 
-impl Serialize for VectorF32 {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_f32(self.first_vector_component);
-        buf.put_f32(self.second_vector_component);
-        buf.put_f32(self.third_vector_component);
-        12
-    }
-}
-
-impl Serialize for Location {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_f64(self.x_coordinate);
-        buf.put_f64(self.y_coordinate);
-        buf.put_f64(self.z_coordinate);
-        24
-    }
-}
-
-impl Serialize for Orientation {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
-        buf.put_f32(self.psi);
-        buf.put_f32(self.theta);
-        buf.put_f32(self.phi);
-        12
-    }
-}
-
 impl Serialize for EntityMarking {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         buf.put_u8(self.marking_character_set.into());
@@ -343,8 +301,8 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityId, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EntityType, ForceId, FrozenStatus, Location, Orientation, ParameterTypeVariant, PowerPlantStatus, SimulationAddress, SpecificAppearance, State, VectorF32};
-    use crate::common::model::{Pdu, PduHeader, PduType, ProtocolFamily, ProtocolVersion};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, ForceId, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, PduType, ProtocolFamily, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
 
     #[test]
