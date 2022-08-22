@@ -22,10 +22,10 @@ default = []
 
 [dependencies]
 #buildstructor = "0.3.2"
-bytes = "1.1.0"
-nom = "7.1.0"
+bytes = "1.2.1"
+nom = "7.1.1"
 dis_rs_macros = { version = "0.1.0", path = "../dis_rs_macros" }
 
-[dev-dependencies]
-#quote = "1.0.20"
+[build-dependencies]
+quote = "1.0.21"
 quick-xml = "0.23.0"
