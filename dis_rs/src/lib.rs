@@ -1,6 +1,10 @@
 mod common;
 mod v7;
 
+include!("../gen_src/enumerations.rs");
+
+pub use enumerations::*;
+
 pub use common::parse;
 pub use common::parse_v6 as parse_v6_pdus;
 pub use common::parse_v7 as parse_v7_pdus;
@@ -13,7 +17,6 @@ pub use common::errors::*;
 pub use common::entity_state::*;
 pub use common::entity_state::model::*;
 pub use common::other::*;
-
 
 /*
 TODO:
