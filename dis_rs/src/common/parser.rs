@@ -249,12 +249,13 @@ pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::model::{Country, EntityKind, ForceId};
+    use crate::common::entity_state::model::Country;
     use crate::common::model::{EntityType, PduBody, PduType, ProtocolFamily, ProtocolVersion};
     use crate::common::errors::DisError;
     use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, ApTypeMetric, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+    use crate::enumerations::{EntityKind, ForceID};
 
     #[test]
     fn parse_header() {
@@ -334,7 +335,7 @@ mod tests {
             assert_eq!(pdu.entity_id.simulation_address.site_id, 500u16);
             assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
             assert_eq!(pdu.entity_id.entity_id, 14u16);
-            assert_eq!(pdu.force_id, ForceId::Friendly);
+            assert_eq!(pdu.force_id, ForceID::Friendly);
             assert!(pdu.articulation_parameter.is_some());
             let articulation_parameters = pdu.articulation_parameter.unwrap();
             assert_eq!(articulation_parameters.len(), 4usize);

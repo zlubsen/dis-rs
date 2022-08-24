@@ -1,7 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::Serialize;
-use crate::common::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityMarking, EntityState, EnvironmentalsRecord, ForceId, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, ParameterTypeVariant, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
+use crate::common::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityMarking, EntityState, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, ParameterTypeVariant, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
 use crate::common::model::EntityType;
+use crate::enumerations::ForceID;
 
 impl Serialize for EntityState {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -264,7 +265,7 @@ impl Serialize for EntityCapabilities {
     }
 }
 
-impl Serialize for ForceId {
+impl Serialize for ForceID {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         let force_id = *self;
         buf.put_u8(force_id.into());
@@ -301,9 +302,10 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, ForceId, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, PduType, ProtocolFamily, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
+    use crate::enumerations::{EntityKind, ForceID};
 
     #[test]
     fn entity_marking() {
@@ -355,7 +357,7 @@ mod tests {
                 simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
                 entity_id: 14
             })
-            .force_id(ForceId::Friendly)
+            .force_id(ForceID::Friendly)
             .entity_type(EntityType {
                 kind: EntityKind::Platform, domain: 2, country: Country::Netherlands, category: 50, subcategory: 4, specific: 4, extra: 0
             })

@@ -5,9 +5,10 @@ use nom::error::Error;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use nom::multi::count;
 use nom::sequence::tuple;
-use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityKind, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityType, PduBody};
 use crate::common::parser;
+use crate::enumerations::{EntityKind, ForceID};
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -50,9 +51,9 @@ pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     }
 }
 
-pub fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
+pub fn force_id(input: &[u8]) -> IResult<&[u8], ForceID> {
     let (input, force_id) = be_u8(input)?;
-    Ok((input, ForceId::from(force_id)))
+    Ok((input, ForceID::from(force_id)))
 }
 
 // TODO review if this is an efficient way to read the string and trim trailing whitespace
@@ -149,7 +150,7 @@ fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u
                 let (input, record) = guided_munitions_record(input)?;
                 (input, SpecificAppearance::GuidedMunition(record))
             }
-            (EntityKind::LifeForm, 1u8) => { // lifeform
+            (EntityKind::Lifeform, 1u8) => { // lifeform
                 let (input, record) = life_forms_record(input)?;
                 (input, SpecificAppearance::LifeForm(record))
             }

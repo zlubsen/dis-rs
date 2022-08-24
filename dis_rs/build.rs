@@ -46,16 +46,9 @@ const UIDS : [usize; 3] = [
 ];
 
 fn main() {
-    let out_dir = env::var_os("OUT_DIR").unwrap();
-    // let enums_input_file = env::var("SISO_REF_010_FILE").unwrap();
-    // println!("{}", enums_input_file);
-    // read the xml file from an env var
-    // let enums_file_path = format!("./enumerations/{}", enums_input_file.as_str());
-    // println!("{}", enums_file_path);
-    // let xml = std::fs::read_to_string(Path::new(enums_file_path.as_str())).unwrap();
-    // let mut reader = Reader::from_str(&xml);
-    // let mut reader = Reader::from_file(Path::new(enums_file_path.as_str())).unwrap();
-    let mut reader = Reader::from_file(Path::new("./enumerations/SISO-REF-010.xml")).unwrap();
+    let mut reader = Reader::from_file(
+        Path::new("./enumerations/SISO-REF-010.xml")
+    ).unwrap();
     reader.trim_text(true);
 
     let mut buf = Vec::new();
@@ -122,7 +115,7 @@ fn main() {
         let from_impl = quote_from_impl(&e, &name_ident);
         let into_impl = quote_into_impl(&e, &name_ident);
         // generate Display impl
-        let display_impl = quote_display_impl(&e);
+        let display_impl = quote_display_impl(&e, &name_ident);
         // generate Default impl
         let default_impl = quote_default_impl(&name_ident);
         generated_enums.push(quote!(
@@ -142,6 +135,8 @@ fn main() {
         &dest_path,
         quote!(
             pub mod enumerations {
+                use std::fmt::{Display, Formatter};
+
                 #(#generated_enums)*
             }
         ).to_string()
@@ -281,22 +276,27 @@ fn quote_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) 
     }).collect()
 }
 
-fn quote_display_impl(e: &Enum) -> TokenStream {
-    let name = e.name.as_str();
-    let items = quote_display_arms(&e.items);
+fn quote_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
+    let arms = quote_display_arms(&e.items, name_ident);
     quote!(
-        // TODO
+        impl Display for #name_ident {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    #(#arms),*
+                }
+            }
+        }
     )
 }
 
-fn quote_display_arms(items: &Vec<EnumItem>) -> Vec<TokenStream> {
+fn quote_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStream> {
     items.iter().map(|item| {
-        let item_name = item.description.clone();
-        let value = item.value;
+        let item_description = item.description.as_str();
+        let item_name = format_name(item_description);
+        let item_ident = format_ident!("{}", item_name);
         quote!(
-            // TODO
-                // #item_name = #value,
-            )
+            #name_ident::#item_ident => write!(f, "{}", #item_description)
+        )
     }).collect()
 }
 

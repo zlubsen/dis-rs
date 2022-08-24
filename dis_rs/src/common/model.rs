@@ -467,21 +467,18 @@ impl EventId {
     }
 }
 
-// TODO to common/model
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
     pub third_vector_component : f32,
 }
 
-// TODO to common/model
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
     pub z_coordinate : f64,
 }
 
-// TODO to common/model
 // TODO alias to vectorf32?
 pub struct Orientation {
     pub psi : f32,

@@ -2,6 +2,7 @@ use dis_rs_macros::PduConversion;
 use crate::common::entity_state::builder::{AirPlatformBuilder, EntityStateBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
 use crate::common::Interaction;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
+use crate::enumerations::ForceID;
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -10,7 +11,7 @@ pub enum EntityStateValidationError {
 
 pub struct EntityState {
     pub entity_id : EntityId, // struct
-    pub force_id : ForceId, // enum
+    pub force_id : ForceID, // enum
     pub entity_type : EntityType, // struct
     pub alternative_entity_type : EntityType, // struct
     pub entity_linear_velocity : VectorF32, // struct
@@ -23,20 +24,20 @@ pub struct EntityState {
     pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
-#[repr(u8)]
-pub enum ForceId {
-    Other = 0,
-    Friendly = 1,
-    Opposing = 2,
-    Neutral = 3,
-}
-
-impl Default for ForceId {
-    fn default() -> Self {
-        ForceId::Other
-    }
-}
+// #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
+// #[repr(u8)]
+// pub enum ForceId {
+//     Other = 0,
+//     Friendly = 1,
+//     Opposing = 2,
+//     Neutral = 3,
+// }
+//
+// impl Default for ForceId {
+//     fn default() -> Self {
+//         ForceId::Other
+//     }
+// }
 
 // // TODO enumeration refactoring
 // #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]

@@ -1,9 +1,10 @@
-use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityStateValidationError, EntityTrailingEffect, EnvironmentalsRecord, ForceId, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityStateValidationError, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VectorF32};
+use crate::enumerations::ForceID;
 
 pub struct EntityStateBuilder {
     entity_id : Option<EntityId>,
-    force_id : Option<ForceId>,
+    force_id : Option<ForceID>,
     entity_type : Option<EntityType>,
     alternative_entity_type : Option<EntityType>,
     entity_linear_velocity : Option<VectorF32>,
@@ -50,7 +51,7 @@ impl EntityStateBuilder {
         self
     }
 
-    pub fn force_id(mut self, force_id: ForceId) -> Self {
+    pub fn force_id(mut self, force_id: ForceID) -> Self {
         self.force_id = Some(force_id);
         self
     }
