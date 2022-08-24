@@ -29,3 +29,4 @@ dis_rs_macros = { version = "0.1.0", path = "../dis_rs_macros" }
 [build-dependencies]
 quote = "1.0.21"
 quick-xml = "0.23.0"
+#rustfmt = "0.10.0"

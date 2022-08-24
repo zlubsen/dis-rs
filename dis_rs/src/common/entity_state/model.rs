@@ -38,27 +38,27 @@ impl Default for ForceId {
     }
 }
 
-// TODO enumeration refactoring
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
-#[repr(u8)]
-pub enum EntityKind {
-    Other = 0,
-    Platform = 1,
-    Munition = 2,
-    LifeForm = 3,
-    Environmental = 4,
-    CulturalFeature = 5,
-    Supply = 6,
-    Radio = 7,
-    Expendable = 8,
-    SensorEmitter = 9,
-}
-
-impl Default for EntityKind {
-    fn default() -> Self {
-        EntityKind::Other
-    }
-}
+// // TODO enumeration refactoring
+// #[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
+// #[repr(u8)]
+// pub enum EntityKind {
+//     Other = 0,
+//     Platform = 1,
+//     Munition = 2,
+//     LifeForm = 3,
+//     Environmental = 4,
+//     CulturalFeature = 5,
+//     Supply = 6,
+//     Radio = 7,
+//     Expendable = 8,
+//     SensorEmitter = 9,
+// }
+//
+// impl Default for EntityKind {
+//     fn default() -> Self {
+//         EntityKind::Other
+//     }
+// }
 
 // TODO enumeration refactoring
 // regex: (?<value>[0-9]*)[\t]+(?<field>[\w (),'-.]+)$
