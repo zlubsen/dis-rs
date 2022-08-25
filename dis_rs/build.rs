@@ -17,7 +17,7 @@ const ENUM_ROW_ELEMENT : &[u8] = b"enumrow";
 const ENUM_ROW_ATTR_VALUE : &[u8] = b"value";
 const ENUM_ROW_ATTR_DESC : &[u8] = b"description";
 
-
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct Enum {
     uid: usize,
@@ -32,7 +32,7 @@ struct EnumItem {
     value: usize,
 }
 
-const UIDS : [usize; 3] = [
+const UIDS : [usize; 5] = [
     //3, 4, 5, // protocol version, pdu type, pdu family
     6, // Force Id
     7, // Entity Kind
@@ -41,7 +41,7 @@ const UIDS : [usize; 3] = [
     // 44, // DR algorithms
     45, // entity marking char set
     // 56, 57, 58, 59, // attached and articulated parts
-    // 60, 61 // Munition Descriptor-Warhead, Fuse
+    60, 61 // Munition Descriptor-Warhead, Fuse
     // 62, // Detonation result
 ];
 
@@ -146,7 +146,6 @@ fn main() {
 }
 
 fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<Enum, ()> {
-    // extract 'uid' 'name' 'size' attributes; create a struct for this with a vec for enumrow elements
     let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ENUM_ATTR_UID) {
         Some(usize::from_str(reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
     } else { None };
@@ -177,7 +176,6 @@ fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Resul
 }
 
 fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
-    // extract 'value' and 'description' attributes into an EnumItem struct, add to parent's list of items;
     let value = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE) {
         Some(usize::from_str(reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
     } else { None };
@@ -199,6 +197,7 @@ fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> 
 fn quote_decl(e: &Enum) -> TokenStream {
     let name = format_name(e.name.as_str());
     let name_ident = format_ident!("{}", name);
+    println!("decl: {} > {}", name, name_ident);
     let arms = quote_decl_arms(&e.items);
     quote!(
         #[derive(Copy, Clone, Debug, PartialEq)]
@@ -208,11 +207,13 @@ fn quote_decl(e: &Enum) -> TokenStream {
     )
 }
 
-fn quote_decl_arms(items: &Vec<EnumItem>) -> Vec<TokenStream> {
+fn quote_decl_arms(items: &Vec<EnumItem>, parent_ident: &Ident) -> Vec<TokenStream> {
     items.iter().map(|item| {
         let item_name = format_name(item.description.as_str());
         let item_ident = format_ident!("{}", item_name);
+        println!("{} > {}", item_name, item_ident);
         let discriminant_literal = Literal::isize_unsuffixed(item.value as isize);
+        println!("{} = {}", item_ident, discriminant_literal);
         quote!(
             #item_ident = #discriminant_literal
         )
@@ -315,14 +316,18 @@ fn format_name(value: &str) -> String {
         .replace(" ", "")
         .replace("-", "")// TODO decide on remove or replace with '_'
         .replace("/","")
-        .replace(".", "_");
+        .replace(".", "_")
+        .replace(",", "_");
+    let intermediate = if intermediate.chars().next().unwrap().is_digit(10) {
+        format!("_{}", intermediate)
+    } else { intermediate };
     let open_parenthesis = intermediate.find("(");
     let close_parenthesis = intermediate.find(")");
     if let (Some(open_idx), Some(close_idx)) = (open_parenthesis, close_parenthesis) {
         intermediate
             .chars()
             .take(open_idx)
-            .chain(intermediate.chars().skip(close_idx))
+            .chain(intermediate.chars().skip(close_idx+1))
             .collect()
     } else {
         intermediate

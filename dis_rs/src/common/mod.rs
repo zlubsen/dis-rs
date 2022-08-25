@@ -14,7 +14,8 @@ use crate::common::errors::DisError;
 use crate::common::model::{Pdu, ProtocolVersion};
 use crate::common::parser::parse_multiple_pdu;
 
-pub enum Version {
+#[allow(dead_code)]
+pub enum SupportedVersion {
     V6,
     V7,
     UNSUPPORTED,
