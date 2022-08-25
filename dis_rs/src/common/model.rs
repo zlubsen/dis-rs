@@ -3,7 +3,7 @@ use crate::common::builder::PduHeaderBuilder;
 use crate::common::entity_state::model::EntityState;
 use crate::common::Interaction;
 use crate::common::other::model::Other;
-use crate::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead};
+use crate::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolFamily};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
 
@@ -67,127 +67,18 @@ impl Default for ProtocolVersion {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
-#[repr(u8)]
-pub enum ProtocolFamily {
-    Other = 0,
-    EntityInformationInteraction = 1,
-    Warfare = 2,
-    Logistics = 3,
-    RadioCommunication = 4,
-    SimulationManagement = 5,
-    DistributedEmissionRegeneration = 6,
-    EntityManagement = 7,
-    Minefield = 8,
-    SyntheticEnvironment = 9,
-    SimulationManagementReliability = 10,
-    LiveEntityInformationInteraction = 11,
-    NonRealTime = 12,
-    InformationOperations = 13,
-}
-
-impl Default for ProtocolFamily {
-    fn default() -> Self {
-        ProtocolFamily::Other
-    }
-}
-
 // FIXME match PduType from updated list (72 pieces)
 impl From<PduType> for ProtocolFamily {
     fn from(pdu_type: PduType) -> Self {
         match pdu_type {
-            PduType::EntityStatePdu | PduType::CollisionPdu => ProtocolFamily::EntityInformationInteraction,
-            PduType::FirePdu | PduType::DetonationPdu => ProtocolFamily::Warfare,
-            PduType::ServiceRequestPdu | PduType::ResupplyOfferPdu | PduType::ResupplyReceivedPdu | PduType::ResupplyCancelPdu | PduType::RepairCompletePdu | PduType::RepairResponsePdu => ProtocolFamily::Logistics,
-            PduType::CreateEntityPdu | PduType::RemoveEntityPdu | PduType::StartResumePdu | PduType::StopFreezePdu | PduType::AcknowledgePdu | PduType::ActionRequestPdu | PduType::ActionResponsePdu | PduType::DataQueryPdu | PduType::SetDataPdu | PduType::DataPdu | PduType::EventReportPdu | PduType::CommentPdu => ProtocolFamily::SimulationManagement,
-            PduType::ElectromagneticEmissionPdu | PduType::DesignatorPdu => ProtocolFamily::DistributedEmissionRegeneration,
-            PduType::TransmitterPdu | PduType::SignalPdu | PduType::ReceiverPdu => ProtocolFamily::RadioCommunication,
+            PduType::EntityState | PduType::Collision => ProtocolFamily::EntityInformationInteraction,
+            PduType::Fire | PduType::Detonation => ProtocolFamily::Warfare,
+            PduType::ServiceRequest | PduType::ResupplyOffer | PduType::ResupplyReceived | PduType::ResupplyCancel | PduType::RepairComplete | PduType::RepairResponse => ProtocolFamily::Logistics,
+            PduType::CreateEntity | PduType::RemoveEntity | PduType::StartResume | PduType::StopFreeze | PduType::Acknowledge | PduType::ActionRequest | PduType::ActionResponse | PduType::DataQuery | PduType::SetData | PduType::Data | PduType::EventReport | PduType::Comment => ProtocolFamily::SimulationManagement,
+            PduType::ElectromagneticEmission | PduType::Designator => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::Transmitter | PduType::Signal | PduType::Receiver => ProtocolFamily::RadioCommunications,
             _ => ProtocolFamily::Other,
         }
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion, Eq, Hash)]
-#[repr(u8)]
-pub enum PduType {
-    OtherPdu = 0,
-    EntityStatePdu = 1,
-    FirePdu = 2,
-    DetonationPdu = 3,
-    CollisionPdu = 4,
-    ServiceRequestPdu = 5,
-    ResupplyOfferPdu = 6,
-    ResupplyReceivedPdu = 7,
-    ResupplyCancelPdu = 8,
-    RepairCompletePdu = 9,
-    RepairResponsePdu = 10,
-    CreateEntityPdu = 11,
-    RemoveEntityPdu = 12,
-    StartResumePdu = 13,
-    StopFreezePdu = 14,
-    AcknowledgePdu = 15,
-    ActionRequestPdu = 16,
-    ActionResponsePdu = 17,
-    DataQueryPdu = 18,
-    SetDataPdu = 19,
-    DataPdu = 20,
-    EventReportPdu = 21,
-    CommentPdu = 22,
-    ElectromagneticEmissionPdu = 23,
-    DesignatorPdu = 24,
-    TransmitterPdu = 25,
-    SignalPdu = 26,
-    ReceiverPdu = 27,
-    IFF = 28,
-    UnderwaterAcoustic = 29,
-    SupplementalEmissionEntityState = 30,
-    IntercomSignal = 31,
-    IntercomControl = 32,
-    AggregateState = 33,
-    IsGroupOf = 34,
-    TransferOwnership = 35,
-    IsPartOf = 36,
-    MinefieldState = 37,
-    MinefieldQuery = 38,
-    MinefieldData = 39,
-    MinefieldResponseNACK = 40,
-    EnvironmentalProcess = 41,
-    GriddedData = 42,
-    PointObjectState = 43,
-    LinearObjectState = 44,
-    ArealObjectState = 45,
-    TSPI = 46,
-    Appearance = 47,
-    ArticulatedParts = 48,
-    LEFire = 49,
-    LEDetonation = 50,
-    CreateEntityR = 51,
-    RemoveEntityR = 52,
-    StartResumeR = 53,
-    StopFreezeR = 54,
-    AcknowledgeR = 55,
-    ActionRequestR = 56,
-    ActionResponseR = 57,
-    DataQueryR = 58,
-    SetDataR = 59,
-    DataR = 60,
-    EventReportR = 61,
-    CommentR = 62,
-    RecordR = 63,
-    SetRecordR = 64,
-    RecordQueryR = 65,
-    CollisionElastic = 66,
-    EntityStateUpdate = 67,
-    DirectedEnergyFire = 68,
-    EntityDamageStatus = 69,
-    InformationOperationsAction = 70,
-    InformationOperationsReport = 71,
-    Attribute = 72,
-}
-
-impl Default for PduType {
-    fn default() -> Self {
-        PduType::OtherPdu
     }
 }
 
@@ -479,7 +370,6 @@ pub struct Location {
     pub z_coordinate : f64,
 }
 
-// TODO alias to vectorf32?
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
@@ -490,7 +380,7 @@ pub struct Orientation {
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : u8,
-    pub country : Country, // TODO u16 instead of big enum? Put codes and names in config file?
+    pub country : Country,
     pub category : u8,
     pub subcategory : u8,
     pub specific : u8,

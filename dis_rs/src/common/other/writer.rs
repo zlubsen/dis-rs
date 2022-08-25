@@ -16,10 +16,11 @@ impl Serialize for Other {
 mod tests {
     use bytes::BytesMut;
     use crate::common::builder::PduHeaderBuilder;
-    use crate::common::model::{PduType, ProtocolFamily, ProtocolVersion};
+    use crate::common::model::ProtocolVersion;
     use crate::common::other::builder::OtherBuilder;
     use crate::common::Serialize;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+    use crate::enumerations::{PduType, ProtocolFamily};
 
     #[test]
     fn serialize_other_pdu() {
@@ -27,7 +28,7 @@ mod tests {
         let header = PduHeaderBuilder::new()
             .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
             .exercise_id(1)
-            .pdu_type(PduType::OtherPdu)
+            .pdu_type(PduType::Other)
             .protocol_family(ProtocolFamily::Other)
             .time_stamp(10)
             .pdu_length(pdu_length as u16)

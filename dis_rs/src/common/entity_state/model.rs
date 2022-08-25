@@ -3,7 +3,7 @@ use crate::common::entity_state::builder::{AirPlatformBuilder, EntityStateBuilde
 use crate::common::Interaction;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
 use crate::EntityMarkingCharacterSet;
-use crate::enumerations::ForceID;
+use crate::enumerations::ForceId;
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -12,7 +12,7 @@ pub enum EntityStateValidationError {
 
 pub struct EntityState {
     pub entity_id : EntityId, // struct
-    pub force_id : ForceID, // enum
+    pub force_id : ForceId, // enum
     pub entity_type : EntityType, // struct
     pub alternative_entity_type : EntityType, // struct
     pub entity_linear_velocity : VectorF32, // struct

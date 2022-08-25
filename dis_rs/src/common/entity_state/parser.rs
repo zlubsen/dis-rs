@@ -8,7 +8,7 @@ use nom::sequence::tuple;
 use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityType, PduBody};
 use crate::common::parser;
-use crate::enumerations::{EntityKind, ForceID, EntityMarkingCharacterSet};
+use crate::enumerations::{EntityKind, ForceId, EntityMarkingCharacterSet};
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -51,9 +51,9 @@ pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     }
 }
 
-pub fn force_id(input: &[u8]) -> IResult<&[u8], ForceID> {
+pub fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
     let (input, force_id) = be_u8(input)?;
-    Ok((input, ForceID::from(force_id)))
+    Ok((input, ForceId::from(force_id)))
 }
 
 // TODO review if this is an efficient way to read the string and trim trailing whitespace

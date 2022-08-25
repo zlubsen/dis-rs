@@ -7,13 +7,14 @@ use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::common::entity_state::parser::entity_state_body;
-use crate::common::model::{Pdu, PduBody, PduHeader, PduType, ProtocolFamily, ProtocolVersion};
+use crate::common::model::{Pdu, PduBody, PduHeader, ProtocolVersion};
 use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::{Country, EntityId, EntityKind, EntityType, EventId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
+use crate::enumerations::{PduType, ProtocolFamily};
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -130,35 +131,35 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
         // parse the body of the PDU based on the type
         // TODO only process supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
-            PduType::OtherPdu => { other_body(header)(input)? }
-            PduType::EntityStatePdu => { entity_state_body()(input)? }
-            PduType::FirePdu => { fire_body()(input)? }
+            PduType::Other => { other_body(header)(input)? }
+            PduType::EntityState => { entity_state_body()(input)? }
+            PduType::Fire => { fire_body()(input)? }
             _ => { other_body(header)(input)? }
-            // PduType::DetonationPdu => {}
-            // PduType::CollisionPdu => {}
-            // PduType::ServiceRequestPdu => {}
-            // PduType::ResupplyOfferPdu => {}
-            // PduType::ResupplyReceivedPdu => {}
-            // PduType::ResupplyCancelPdu => {}
-            // PduType::RepairCompletePdu => {}
-            // PduType::RepairResponsePdu => {}
-            // PduType::CreateEntityPdu => {}
-            // PduType::RemoveEntityPdu => {}
-            // PduType::StartResumePdu => {}
-            // PduType::StopFreezePdu => {}
-            // PduType::AcknowledgePdu => {}
-            // PduType::ActionRequestPdu => {}
-            // PduType::ActionResponsePdu => {}
-            // PduType::DataQueryPdu => {}
-            // PduType::SetDataPdu => {}
-            // PduType::DataPdu => {}
-            // PduType::EventReportPdu => {}
-            // PduType::CommentPdu => {}
-            // PduType::ElectromagneticEmissionPdu => {}
-            // PduType::DesignatorPdu => {}
-            // PduType::TransmitterPdu => {}
-            // PduType::SignalPdu => {}
-            // PduType::ReceiverPdu => {}
+            // PduType::Detonation => {}
+            // PduType::Collision => {}
+            // PduType::ServiceRequest => {}
+            // PduType::ResupplyOffer => {}
+            // PduType::ResupplyReceived => {}
+            // PduType::ResupplyCancel => {}
+            // PduType::RepairComplete => {}
+            // PduType::RepairResponse => {}
+            // PduType::CreateEntity => {}
+            // PduType::RemoveEntity => {}
+            // PduType::StartResume => {}
+            // PduType::StopFreeze => {}
+            // PduType::Acknowledge => {}
+            // PduType::ActionRequest => {}
+            // PduType::ActionResponse => {}
+            // PduType::DataQuery => {}
+            // PduType::SetData => {}
+            // PduType::Data => {}
+            // PduType::EventReport => {}
+            // PduType::Comment => {}
+            // PduType::ElectromagneticEmission => {}
+            // PduType::Designator => {}
+            // PduType::Transmitter => {}
+            // PduType::Signal => {}
+            // PduType::Receiver => {}
             // PduType::IFF => {}
             // PduType::UnderwaterAcoustic => {}
             // PduType::SupplementalEmissionEntityState => {}
@@ -255,12 +256,12 @@ pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{EntityType, PduBody, PduType, ProtocolFamily, ProtocolVersion};
+    use crate::common::model::{EntityType, PduBody, ProtocolVersion};
     use crate::common::errors::DisError;
     use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, ApTypeMetric, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{EntityKind, ForceID, Country};
+    use crate::enumerations::{EntityKind, ForceId, Country, PduType, ProtocolFamily};
 
     #[test]
     fn parse_header() {
@@ -271,7 +272,7 @@ mod tests {
         let header = header.unwrap();
         assert_eq!(header.protocol_version, ProtocolVersion::Ieee1278_1a_1998);
         assert_eq!(header.exercise_id, 1);
-        assert_eq!(header.pdu_type, PduType::EntityStatePdu);
+        assert_eq!(header.pdu_type, PduType::EntityState);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
         assert_eq!(header.time_stamp, 1323973472);
         assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
@@ -296,7 +297,7 @@ mod tests {
         let header = header.unwrap();
         assert_eq!(header.protocol_version, ProtocolVersion::Other);
         assert_eq!(header.exercise_id, 1);
-        assert_eq!(header.pdu_type, PduType::EntityStatePdu);
+        assert_eq!(header.pdu_type, PduType::EntityState);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
         assert_eq!(header.time_stamp, 1323973472);
         assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
@@ -334,13 +335,13 @@ mod tests {
         let pdu = parse_pdu(&bytes);
         assert!(pdu.is_ok());
         let pdu = pdu.unwrap();
-        assert_eq!(pdu.header.pdu_type, PduType::EntityStatePdu);
+        assert_eq!(pdu.header.pdu_type, PduType::EntityState);
         assert_eq!(pdu.header.pdu_length, 208u16);
         if let PduBody::EntityState(pdu) = pdu.body {
             assert_eq!(pdu.entity_id.simulation_address.site_id, 500u16);
             assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
             assert_eq!(pdu.entity_id.entity_id, 14u16);
-            assert_eq!(pdu.force_id, ForceID::Friendly);
+            assert_eq!(pdu.force_id, ForceId::Friendly);
             assert!(pdu.articulation_parameter.is_some());
             let articulation_parameters = pdu.articulation_parameter.unwrap();
             assert_eq!(articulation_parameters.len(), 4usize);

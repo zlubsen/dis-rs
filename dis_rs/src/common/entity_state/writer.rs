@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::Serialize;
 use crate::common::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityMarking, EntityState, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, ParameterTypeVariant, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
 use crate::common::model::EntityType;
-use crate::enumerations::ForceID;
+use crate::enumerations::ForceId;
 
 impl Serialize for EntityState {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -265,7 +265,7 @@ impl Serialize for EntityCapabilities {
     }
 }
 
-impl Serialize for ForceID {
+impl Serialize for ForceId {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         let force_id = *self;
         buf.put_u8(force_id.into());
@@ -303,9 +303,9 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
     use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
-    use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, PduType, ProtocolFamily, ProtocolVersion, SimulationAddress, VectorF32};
+    use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceID};
+    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily};
 
     #[test]
     fn entity_marking() {
@@ -347,7 +347,7 @@ mod tests {
         let header = PduHeader::builder()
             .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
             .exercise_id(1)
-            .pdu_type(PduType::EntityStatePdu)
+            .pdu_type(PduType::EntityState)
             .protocol_family(ProtocolFamily::EntityInformationInteraction)
             .time_stamp(0)
             .pdu_length(208u16)
@@ -357,7 +357,7 @@ mod tests {
                 simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
                 entity_id: 14
             })
-            .force_id(ForceID::Friendly)
+            .force_id(ForceId::Friendly)
             .entity_type(EntityType {
                 kind: EntityKind::Platform, domain: 2, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })

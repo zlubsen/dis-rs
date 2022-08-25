@@ -13,38 +13,38 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
         // Based on the PDU type, peek at the originating and receiving EntityIds.
         let (input, originating, receiving) = match header.pdu_type {
             // PDUs with only an origin
-            PduType::EntityStatePdu |
-            PduType::ElectromagneticEmissionPdu |
-            PduType::DesignatorPdu |
-            PduType::TransmitterPdu |
-            PduType::SignalPdu |
-            PduType::ReceiverPdu |
+            PduType::EntityState |
+            PduType::ElectromagneticEmission |
+            PduType::Designator |
+            PduType::Transmitter |
+            PduType::Signal |
+            PduType::Receiver |
             PduType::IFF => {
                 let (input, originating) = peek_originating_field(input)?;
                 (input, Some(originating), None)
             }
             // PDUs with both an origin and a receiver
-            PduType::FirePdu |
-            PduType::DetonationPdu |
-            PduType::CollisionPdu |
-            PduType::ServiceRequestPdu |
-            PduType::ResupplyOfferPdu |
-            PduType::ResupplyReceivedPdu |
-            PduType::ResupplyCancelPdu |
-            PduType::RepairCompletePdu |
-            PduType::RepairResponsePdu |
-            PduType::CreateEntityPdu |
-            PduType::RemoveEntityPdu |
-            PduType::StartResumePdu |
-            PduType::StopFreezePdu |
-            PduType::AcknowledgePdu |
-            PduType::ActionRequestPdu |
-            PduType::ActionResponsePdu |
-            PduType::DataQueryPdu |
-            PduType::SetDataPdu |
-            PduType::DataPdu |
-            PduType::EventReportPdu |
-            PduType::CommentPdu => {
+            PduType::Fire |
+            PduType::Detonation |
+            PduType::Collision |
+            PduType::ServiceRequest |
+            PduType::ResupplyOffer |
+            PduType::ResupplyReceived |
+            PduType::ResupplyCancel |
+            PduType::RepairComplete |
+            PduType::RepairResponse |
+            PduType::CreateEntity |
+            PduType::RemoveEntity |
+            PduType::StartResume |
+            PduType::StopFreeze |
+            PduType::Acknowledge |
+            PduType::ActionRequest |
+            PduType::ActionResponse |
+            PduType::DataQuery |
+            PduType::SetData |
+            PduType::Data |
+            PduType::EventReport |
+            PduType::Comment => {
                 let (input, (origin, receiving)) = peek_originating_receiving_fields(input)?;
                 (input, Some(origin), Some(receiving))
             }
@@ -93,7 +93,8 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
             PduType::InformationOperationsAction |
             PduType::InformationOperationsReport |
             PduType::Attribute |
-            PduType::OtherPdu => { (input, None, None) }
+            PduType::Other |
+            PduType::Unspecified(_) => { (input, None, None) }
         };
 
         let body_length_bytes = header.pdu_length as usize - PDU_HEADER_LEN_BYTES;
@@ -117,16 +118,17 @@ fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, 
 #[cfg(test)]
 mod tests {
     use crate::common::builder::PduHeaderBuilder;
-    use crate::common::model::{PduBody, PduType, ProtocolFamily, ProtocolVersion};
+    use crate::common::model::{PduBody, ProtocolVersion};
     use crate::common::other::parser::other_body;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+    use crate::enumerations::{PduType, ProtocolFamily};
 
     #[test]
     fn parse_other_body() {
         let header = PduHeaderBuilder::new()
             .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
             .exercise_id(1)
-            .pdu_type(PduType::OtherPdu)
+            .pdu_type(PduType::Other)
             .protocol_family(ProtocolFamily::Other)
             .pdu_length((PDU_HEADER_LEN_BYTES + 10) as u16)
             .time_stamp(0)
@@ -145,7 +147,7 @@ mod tests {
         let header = PduHeaderBuilder::new()
             .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
             .exercise_id(1)
-            .pdu_type(PduType::EntityStatePdu) // EntityStatePdu has only an originating EntityId
+            .pdu_type(PduType::EntityState) // EntityStatePdu has only an originating EntityId
             .protocol_family(ProtocolFamily::EntityInformationInteraction)
             .pdu_length((PDU_HEADER_LEN_BYTES + 6) as u16)
             .time_stamp(0)
@@ -167,7 +169,7 @@ mod tests {
         let header = PduHeaderBuilder::new()
             .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
             .exercise_id(1)
-            .pdu_type(PduType::FirePdu)// FirePdu has both originating (Firing) and receiving (Target) EntityIds
+            .pdu_type(PduType::Fire)// FirePdu has both originating (Firing) and receiving (Target) EntityIds
             .protocol_family(ProtocolFamily::EntityInformationInteraction)
             .pdu_length((PDU_HEADER_LEN_BYTES + 12) as u16)
             .time_stamp(0)

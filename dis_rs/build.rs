@@ -32,18 +32,24 @@ struct EnumItem {
     value: usize,
 }
 
-const UIDS : [usize; 6] = [
-    //3, 4, 5, // protocol version, pdu type, pdu family
-    6, // Force Id
-    7, // Entity Kind
+/// Array containing all the uids that should be generated
+/// Each entry is a tuple containing the uid and an Optional string
+/// literal to override the name of the resulting enum
+/// For example, the 'DISPDUType' enum (having uid 4) has an override
+/// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
+const UIDS : [(usize, Option<&str>); 8] = [
+    // 3, // protocol version
+    (4, Some("PduType")), (5, Some("ProtocolFamily")), // pdu type, pdu family
+    (6, Some("ForceId")), // Force Id
+    (7, None), // Entity Kind
     //19, 20, 21
-    29, // Country
+    (29, None), // Country
     // 44, // DR algorithms
-    45, // entity marking char set
+    (45, None), // entity marking char set
     // 56, // Variable Parameter Record Type
     // 57, // Attached Parts
     // 58, 59, // Articulated parts // TODO
-    60, 61 // Munition Descriptor-Warhead, Fuse
+    (60, None), (61, None) // Munition Descriptor-Warhead, Fuse
     // 62, // Detonation result
 ];
 
@@ -149,13 +155,19 @@ fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Resul
     let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ENUM_ATTR_UID) {
         Some(usize::from_str(reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
     } else { None };
-    if !UIDS.contains(&uid.unwrap()) {
+    let should_generate = UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
+    if should_generate.is_none() {
         // skip this enum, not to be generated
         return Err(());
     }
+    let name_override = should_generate.unwrap().1;
 
     let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ENUM_ATTR_NAME) {
-        Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
+        if name_override.is_some() {
+            Some(name_override.unwrap().to_string())
+        } else {
+            Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
+        }
     } else { None };
 
     let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ENUM_ATTR_SIZE) {

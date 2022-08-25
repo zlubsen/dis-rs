@@ -1,5 +1,6 @@
-use crate::common::model::{PduHeader, PduType, ProtocolFamily, ProtocolVersion};
+use crate::common::model::{PduHeader, ProtocolVersion};
 use crate::v7::model::PduStatus;
+use crate::enumerations::{PduType, ProtocolFamily};
 
 #[allow(dead_code)]
 pub struct PduHeaderBuilder {
