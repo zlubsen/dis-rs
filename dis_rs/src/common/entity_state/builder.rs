@@ -1,6 +1,6 @@
-use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityStateValidationError, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulationParameter, Camouflage, Concealed, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityStateValidationError, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VectorF32};
-use crate::enumerations::ForceID;
+use crate::enumerations::{EntityMarkingCharacterSet, ForceID};
 
 pub struct EntityStateBuilder {
     entity_id : Option<EntityId>,

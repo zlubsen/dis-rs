@@ -30,6 +30,7 @@ pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     }
 }
 
+#[allow(dead_code)]
 pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     match many1(pdu_header_skip_body)(input) {
         Ok((_, headers)) => { Ok(headers) }
@@ -45,6 +46,7 @@ pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
 }
 
 /// Parse the input for a PDU header, and skip the rest of the pdu body in the input
+#[allow(dead_code)]
 pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     match pdu_header(input) {
         Ok((input, header)) => {
@@ -116,6 +118,7 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
         }))
 }
 
+#[allow(dead_code)]
 fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let (input, header) = pdu_header(input)?;
     let (input, _) = skip_body(header.pdu_length)(input)?;
@@ -207,6 +210,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
     }
 }
 
+#[allow(dead_code)]
 pub fn parse_peek_protocol_version(input: &[u8]) -> Result<ProtocolVersion,DisError> {
     let parse_result = peek_protocol_version(input);
     match parse_result {
@@ -217,6 +221,7 @@ pub fn parse_peek_protocol_version(input: &[u8]) -> Result<ProtocolVersion,DisEr
 
 /// Function tries to peek the protocol version field of the DIS header
 /// and return the raw value when successful.
+#[allow(dead_code)]
 fn peek_protocol_version(input: &[u8]) -> IResult<&[u8], u8> {
     let (input, protocol_version) = peek(be_u8)(input)?;
     Ok((input, protocol_version))
@@ -240,6 +245,7 @@ pub fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
     Ok((input, protocol_family))
 }
 
+#[allow(dead_code)]
 pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
     let bytes_to_skip = total_bytes as usize - PDU_HEADER_LEN_BYTES;
     move |input| {
@@ -249,13 +255,12 @@ pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::model::Country;
     use crate::common::model::{EntityType, PduBody, PduType, ProtocolFamily, ProtocolVersion};
     use crate::common::errors::DisError;
     use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, ApTypeMetric, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{EntityKind, ForceID};
+    use crate::enumerations::{EntityKind, ForceID, Country};
 
     #[test]
     fn parse_header() {
@@ -342,7 +347,7 @@ mod tests {
             assert_eq!(pdu.entity_type, EntityType {
                 kind: EntityKind::Platform,
                 domain: 2,
-                country: Country::Netherlands,
+                country: Country::Netherlands_NLD_,
                 category: 50,
                 subcategory: 4,
                 specific: 4,

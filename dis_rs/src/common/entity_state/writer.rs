@@ -277,7 +277,7 @@ impl Serialize for EntityType {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         buf.put_u8(self.kind.into());
         buf.put_u8(self.domain);
-        buf.put_u16(self.country.into()); // TODO: country Into<u16>;
+        buf.put_u16(self.country.into());
         buf.put_u8(self.category);
         buf.put_u8(self.subcategory);
         buf.put_u8(self.specific);
@@ -302,10 +302,10 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Country, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, PduType, ProtocolFamily, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{EntityKind, ForceID};
+    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceID};
 
     #[test]
     fn entity_marking() {
@@ -359,10 +359,10 @@ mod tests {
             })
             .force_id(ForceID::Friendly)
             .entity_type(EntityType {
-                kind: EntityKind::Platform, domain: 2, country: Country::Netherlands, category: 50, subcategory: 4, specific: 4, extra: 0
+                kind: EntityKind::Platform, domain: 2, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .alt_entity_type(EntityType {
-                kind: EntityKind::Platform, domain: 2, country: Country::Netherlands, category: 50, subcategory: 4, specific: 4, extra: 0
+                kind: EntityKind::Platform, domain: 2, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .linear_velocity(VectorF32 {
                 first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32

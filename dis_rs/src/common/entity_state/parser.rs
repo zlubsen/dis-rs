@@ -5,10 +5,10 @@ use nom::error::Error;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use nom::multi::count;
 use nom::sequence::tuple;
-use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityType, PduBody};
 use crate::common::parser;
-use crate::enumerations::{EntityKind, ForceID};
+use crate::enumerations::{EntityKind, ForceID, EntityMarkingCharacterSet};
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -433,9 +433,10 @@ fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::model::{ApTypeDesignator, ApTypeMetric, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarkingCharacterSet, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
+    use crate::common::entity_state::model::{ApTypeDesignator, ApTypeMetric, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
     use crate::common::entity_state::parser::{articulation_record, entity_capabilities, entity_marking, general_appearance};
     use crate::common::parser::location;
+    use crate::EntityMarkingCharacterSet;
 
     #[test]
     fn parse_entity_location() {

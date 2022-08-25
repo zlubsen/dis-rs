@@ -32,15 +32,17 @@ struct EnumItem {
     value: usize,
 }
 
-const UIDS : [usize; 5] = [
+const UIDS : [usize; 6] = [
     //3, 4, 5, // protocol version, pdu type, pdu family
     6, // Force Id
     7, // Entity Kind
     //19, 20, 21
-    // 29, // Country
+    29, // Country
     // 44, // DR algorithms
     45, // entity marking char set
-    // 56, 57, 58, 59, // attached and articulated parts
+    // 56, // Variable Parameter Record Type
+    // 57, // Attached Parts
+    // 58, 59, // Articulated parts // TODO
     60, 61 // Munition Descriptor-Warhead, Fuse
     // 62, // Detonation result
 ];
@@ -107,7 +109,7 @@ fn main() {
     // generate all code for enums
     let mut generated_enums = vec![];
     for e in enums {
-        let formatted_name = format_name(e.name.as_str());
+        let formatted_name = format_name(e.name.as_str(), e.uid);
         let name_ident = format_ident!("{}", formatted_name);
         // generate enum declarations
         let decl = quote_decl(&e);
@@ -141,8 +143,6 @@ fn main() {
             }
         ).to_string()
     ).unwrap();
-
-    // println!("cargo:rerun-if-changed={enums_file_path}");
 }
 
 fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<Enum, ()> {
@@ -195,29 +195,32 @@ fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> 
 }
 
 fn quote_decl(e: &Enum) -> TokenStream {
-    let name = format_name(e.name.as_str());
+    let name = format_name(e.name.as_str(), e.uid);
     let name_ident = format_ident!("{}", name);
-    println!("decl: {} > {}", name, name_ident);
-    let arms = quote_decl_arms(&e.items);
+    let arms = quote_decl_arms(&e.items, e.size);
     quote!(
         #[derive(Copy, Clone, Debug, PartialEq)]
+        #[allow(non_camel_case_types)]
         pub enum #name_ident {
             #(#arms),*
         }
     )
 }
 
-fn quote_decl_arms(items: &Vec<EnumItem>, parent_ident: &Ident) -> Vec<TokenStream> {
-    items.iter().map(|item| {
-        let item_name = format_name(item.description.as_str());
+fn quote_decl_arms(items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+    let mut arms : Vec<TokenStream> = items.iter().map(|item| {
+        let item_name = format_name(item.description.as_str(), item.value);
         let item_ident = format_ident!("{}", item_name);
-        println!("{} > {}", item_name, item_ident);
-        let discriminant_literal = Literal::isize_unsuffixed(item.value as isize);
-        println!("{} = {}", item_ident, discriminant_literal);
         quote!(
-            #item_ident = #discriminant_literal
+            #item_ident
         )
-    }).collect()
+    }).collect();
+    let size_type = size_to_type(data_size);
+    let size_ident = format_ident!("{}", size_type);
+    arms.push(quote!(
+        Unspecified(#size_ident)
+    ));
+    arms
 }
 
 fn quote_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
@@ -237,16 +240,17 @@ fn quote_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
 
 fn quote_from_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
     let mut arms: Vec<TokenStream> = items.iter().map(|item| {
-        let item_name = format_name(item.description.as_str());
+        let item_name = format_name(item.description.as_str(), item.value);
         let item_ident = format_ident!("{}", item_name);
         let discriminant_literal = discriminant_literal(item.value, data_size);
         quote!(
             #discriminant_literal => #name_ident::#item_ident
         )
     }).collect();
-    // For conversion from bytes to enum, add exhaustive arm resulting in the default variant of the enum
+    // For conversion from bytes to enum, add exhaustive arm resulting in the Unspecified variant of the enum
+    let unspecified_ident = format_ident!("{}", "unspecified_value");
     arms.push(quote!(
-        _unspecified_value => #name_ident::default()
+        #unspecified_ident => #name_ident::Unspecified(#unspecified_ident)
     ));
     arms
 }
@@ -267,14 +271,19 @@ fn quote_into_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
 }
 
 fn quote_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
-    items.iter().map(|item| {
-        let item_name = format_name(item.description.as_str());
+    let mut arms: Vec<TokenStream> = items.iter().map(|item| {
+        let item_name = format_name(item.description.as_str(), item.value);
         let item_ident = format_ident!("{}", item_name);
         let discriminant_literal = discriminant_literal(item.value, data_size);
         quote!(
             #name_ident::#item_ident => #discriminant_literal
         )
-    }).collect()
+    }).collect();
+    let unspecified_ident = format_ident!("{}", "unspecified_value");
+    arms.push(quote!(
+        #name_ident::Unspecified(#unspecified_ident) => #unspecified_ident
+    ));
+    arms
 }
 
 fn quote_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
@@ -291,14 +300,19 @@ fn quote_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
 }
 
 fn quote_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStream> {
-    items.iter().map(|item| {
+    let mut arms: Vec<TokenStream> = items.iter().map(|item| {
         let item_description = item.description.as_str();
-        let item_name = format_name(item_description);
+        let item_name = format_name(item_description, item.value);
         let item_ident = format_ident!("{}", item_name);
         quote!(
             #name_ident::#item_ident => write!(f, "{}", #item_description)
         )
-    }).collect()
+    }).collect();
+    let unspecified_ident = format_ident!("{}", "unspecified_value");
+    arms.push(quote!(
+        #name_ident::Unspecified(#unspecified_ident) => write!(f, "Unspecified ({})", #unspecified_ident)
+    ));
+    arms
 }
 
 fn quote_default_impl(name_ident: &Ident) -> TokenStream {
@@ -311,27 +325,38 @@ fn quote_default_impl(name_ident: &Ident) -> TokenStream {
     )
 }
 
-fn format_name(value: &str) -> String {
+fn format_name(value: &str, uid: usize) -> String {
+    // Remove / replace the following characters
     let intermediate = value
         .replace(" ", "")
-        .replace("-", "")// TODO decide on remove or replace with '_'
+        .replace("-", "")
         .replace("/","")
         .replace(".", "_")
-        .replace(",", "_");
+        .replace(",", "_")
+        .replace("'", "");
+
+    // Prefix values starting with a digit with '_'
     let intermediate = if intermediate.chars().next().unwrap().is_digit(10) {
-        format!("_{}", intermediate)
+        format!("_{}_{}", intermediate, uid)
     } else { intermediate };
-    let open_parenthesis = intermediate.find("(");
-    let close_parenthesis = intermediate.find(")");
-    if let (Some(open_idx), Some(close_idx)) = (open_parenthesis, close_parenthesis) {
-        intermediate
-            .chars()
-            .take(open_idx)
-            .chain(intermediate.chars().skip(close_idx+1))
-            .collect()
-    } else {
-        intermediate
-    }
+
+    // // Remove text sections between parenthesis
+    // let open_parenthesis = intermediate.find("(");
+    // let close_parenthesis = intermediate.find(")");
+    // let intermediate = if let (Some(open_idx), Some(close_idx)) = (open_parenthesis, close_parenthesis) {
+    //     intermediate
+    //         .chars()
+    //         .take(open_idx)
+    //         .chain(intermediate.chars().skip(close_idx+1))
+    //         .collect()
+    // } else {
+    //     intermediate
+    // };
+
+    // When there are multiple parenthesis sections, replace them with '_' (such as Countries)
+    intermediate
+        .replace("(","_")
+        .replace(")","_")
 }
 
 fn size_to_type(data_size: usize) -> &'static str {

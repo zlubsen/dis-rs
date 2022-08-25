@@ -1,9 +1,9 @@
 use nom::IResult;
 use nom::number::complete::{be_f32, be_u16, be_u32};
 use crate::common::fire::model::Fire;
-use crate::common::model::{BurstDescriptor, Fuse, Warhead};
+use crate::common::model::BurstDescriptor;
 use crate::common::parser::{entity_id, entity_type, event_id, location, vec3_f32};
-use crate::PduBody;
+use crate::{MunitionDescriptorFuse, MunitionDescriptorWarhead, PduBody};
 
 pub fn fire_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -49,14 +49,14 @@ pub fn burst_descriptor(input: &[u8]) -> IResult<&[u8], BurstDescriptor> {
     }))
 }
 
-fn warhead(input: &[u8]) -> IResult<&[u8], Warhead> {
+fn warhead(input: &[u8]) -> IResult<&[u8], MunitionDescriptorWarhead> {
     let (input, warhead) = be_u16(input)?;
-    let warhead = Warhead::from(warhead);
+    let warhead = MunitionDescriptorWarhead::from(warhead);
     Ok((input, warhead))
 }
 
-fn fuse(input: &[u8]) -> IResult<&[u8], Fuse> {
+fn fuse(input: &[u8]) -> IResult<&[u8], MunitionDescriptorFuse> {
     let (input, fuse) = be_u16(input)?;
-    let fuse = Fuse::from(fuse);
+    let fuse = MunitionDescriptorFuse::from(fuse);
     Ok((input, fuse))
 }
