@@ -49,7 +49,9 @@ impl Serialize for ArticulationParameter {
         match &self.parameter_type_variant {
             ParameterTypeVariant::AttachedParts(attached) => { buf.put_u32(*attached); }
             ParameterTypeVariant::ArticulatedParts(articulated) => {
-                let on_wire_value = articulated.type_class + &articulated.type_metric.into();
+                let type_class : u32 = articulated.type_class.into();
+                let type_metric : u8 = articulated.type_metric.into();
+                let on_wire_value = type_class + type_metric as u32;
                 buf.put_u32(on_wire_value);
             }
         }
@@ -302,10 +304,10 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily};
+    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass};
 
     #[test]
     fn entity_marking() {
@@ -328,8 +330,8 @@ mod tests {
             parameter_change_indicator: 0,
             articulation_attachment_id: 0,
             parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-                type_class: 3072,
-                type_metric: ApTypeMetric::Position
+                type_class: ArticulatedPartsTypeClass::LandingGear,
+                type_metric: ArticulatedPartsTypeMetric::Position
             }),
             articulation_parameter_value: 1.0
         };
@@ -412,8 +414,8 @@ mod tests {
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
                 parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-                    type_class: 3072,
-                    type_metric: ApTypeMetric::Position
+                    type_class: ArticulatedPartsTypeClass::LandingGear,
+                    type_metric: ArticulatedPartsTypeMetric::Position
                 }),
                 articulation_parameter_value: 1.0
             })
@@ -422,8 +424,8 @@ mod tests {
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
                 parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-                    type_class: 4096,
-                    type_metric: ApTypeMetric::Azimuth
+                    type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
+                    type_metric: ArticulatedPartsTypeMetric::Azimuth
                 }),
                 articulation_parameter_value: 0.0
             })
@@ -432,8 +434,8 @@ mod tests {
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
                 parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-                    type_class: 4096,
-                    type_metric: ApTypeMetric::AzimuthRate
+                    type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
+                    type_metric: ArticulatedPartsTypeMetric::AzimuthRate
                 }),
                 articulation_parameter_value: 0.0
             })
@@ -442,8 +444,8 @@ mod tests {
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
                 parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-                    type_class: 4416,
-                    type_metric: ApTypeMetric::Elevation
+                    type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
+                    type_metric: ArticulatedPartsTypeMetric::Elevation
                 }),
                 articulation_parameter_value: 0.0
             })

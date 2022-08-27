@@ -32,26 +32,34 @@ struct EnumItem {
     value: usize,
 }
 
-/// Array containing all the uids that should be generated
-/// Each entry is a tuple containing the uid and an Optional string
-/// literal to override the name of the resulting enum
+/// Array containing all the uids that should be generated.
+/// Each entry is a tuple containing the uid, an Optional string
+/// literal to override the name of the resulting enum, and an Optional data size (in bits).
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
-const UIDS : [(usize, Option<&str>); 8] = [
-    // 3, // protocol version
-    (4, Some("PduType")), (5, Some("ProtocolFamily")), // pdu type, pdu family
-    (6, Some("ForceId")), // Force Id
-    (7, None), // Entity Kind
+/// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
+const UIDS : [(usize, Option<&str>, Option<usize>); 10] = [
+    // 3,                          // protocol version
+    (4, Some("PduType"), None),           // pdu type
+    (5, Some("ProtocolFamily"), None),    // pdu family
+    (6, Some("ForceId"), None), // Force Id
+    (7, None, None), // Entity Kind
     //19, 20, 21
-    (29, None), // Country
+    (29, None, None), // Country
     // 44, // DR algorithms
-    (45, None), // entity marking char set
+    (45, None, None), // entity marking char set
     // 56, // Variable Parameter Record Type
     // 57, // Attached Parts
-    // 58, 59, // Articulated parts // TODO
-    (60, None), (61, None) // Munition Descriptor-Warhead, Fuse
+    (58, None, Some(32)), // Articulated Parts-Type Metric
+    (59, None, None), // Articulated Parts-Type Class
+    (60, None, None), // Munition Descriptor-Warhead, Fuse
+    (61, None, None), // Munition Descriptor-Fuse
     // 62, // Detonation result
 ];
+
+// TODO enums with type ranges
+// TODO bitfield enums
+// TODO DR algorithms uid 44
 
 fn main() {
     let mut reader = Reader::from_file(
@@ -345,7 +353,8 @@ fn format_name(value: &str, uid: usize) -> String {
         .replace("/","")
         .replace(".", "_")
         .replace(",", "_")
-        .replace("'", "");
+        .replace("'", "")
+        .replace("#", "");
 
     // Prefix values starting with a digit with '_'
     let intermediate = if intermediate.chars().next().unwrap().is_digit(10) {

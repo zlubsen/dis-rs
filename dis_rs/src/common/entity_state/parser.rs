@@ -5,10 +5,10 @@ use nom::error::Error;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use nom::multi::count;
 use nom::sequence::tuple;
-use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ApTypeMetric, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrAlgorithm, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityType, PduBody};
 use crate::common::parser;
-use crate::enumerations::{EntityKind, ForceId, EntityMarkingCharacterSet};
+use crate::enumerations::{EntityKind, ForceId, EntityMarkingCharacterSet, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass};
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -422,21 +422,21 @@ fn attached_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
 
 fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
     let (input, type_varient) = be_u32(input)?;
-    let type_metric = (type_varient & 0x1f) as u32;  // 5 least significant bits (0x1f) are the type metric
-    let type_class = type_varient - (type_metric as u32);   // rest of the bits (minus type metric value) are the type class
+    let type_metric = (type_varient & 0x1f) as u8;  // 5 least significant bits (0x1f) are the type metric
+    let type_class : u32 = type_varient - (type_metric as u32);   // rest of the bits (minus type metric value) are the type class
 
     Ok((input, ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
-        type_metric: ApTypeMetric::from(type_metric),
-        type_class,
+        type_metric: ArticulatedPartsTypeMetric::from(type_metric),
+        type_class: ArticulatedPartsTypeClass::from(type_class),
     })))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::model::{ApTypeDesignator, ApTypeMetric, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
+    use crate::common::entity_state::model::{ApTypeDesignator, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, ParameterTypeVariant};
     use crate::common::entity_state::parser::{articulation_record, entity_capabilities, entity_marking, general_appearance};
     use crate::common::parser::location;
-    use crate::EntityMarkingCharacterSet;
+    use crate::enumerations::{EntityMarkingCharacterSet, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass};
 
     #[test]
     fn parse_entity_location() {
@@ -537,8 +537,8 @@ mod tests {
         assert_eq!(parameter.parameter_change_indicator, 0);
         assert_eq!(parameter.articulation_attachment_id, 0);
         if let ParameterTypeVariant::ArticulatedParts(type_varient) = parameter.parameter_type_variant {
-            assert_eq!(type_varient.type_class, 4096);
-            assert_eq!(type_varient.type_metric, ApTypeMetric::Azimuth);
+            assert_eq!(type_varient.type_class, ArticulatedPartsTypeClass::PrimaryTurretNumber1);
+            assert_eq!(type_varient.type_metric, ArticulatedPartsTypeMetric::Azimuth);
         }
 
         assert!(input.is_empty());
@@ -551,7 +551,7 @@ mod tests {
                 0x00,   // u8; no change
                 0x00,0x00,  // u16; 0 value attachment id
                 0x00,0x00,  // u32; type varient metric - 11 - position
-                0x0C,0x01,  // type varient high bits - 4096 - primary gun 1
+                0x0C,0x01,  // type varient high bits - 3072 - landing gear
                 0x3F,0x80,0x00,0x00,0x00,0x00,0x00,0x00]; // f32 - value '1' and 4 bytes padding
 
         let parameter = articulation_record(&input);
@@ -561,8 +561,8 @@ mod tests {
         assert_eq!(parameter.parameter_change_indicator, 0);
         assert_eq!(parameter.articulation_attachment_id, 0);
         if let ParameterTypeVariant::ArticulatedParts(type_varient) = parameter.parameter_type_variant {
-            assert_eq!(type_varient.type_class, 3072);
-            assert_eq!(type_varient.type_metric, ApTypeMetric::Position);
+            assert_eq!(type_varient.type_class, ArticulatedPartsTypeClass::LandingGear);
+            assert_eq!(type_varient.type_metric, ArticulatedPartsTypeMetric::Position);
         }
         assert_eq!(parameter.articulation_parameter_value, 1f32);
 
