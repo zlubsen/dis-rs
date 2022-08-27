@@ -258,10 +258,10 @@ pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
 mod tests {
     use crate::common::model::{EntityType, PduBody, ProtocolVersion};
     use crate::common::errors::DisError;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, DrAlgorithm, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, ApTypeDesignator, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{EntityKind, ForceId, Country, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass};
+    use crate::enumerations::{EntityKind, ForceId, Country, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm};
 
     #[test]
     fn parse_header() {
@@ -373,7 +373,7 @@ mod tests {
                     state: State::Active,
                 })
             } else { assert!(false) };
-            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DrAlgorithm::DrmRVW);
+            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
             assert_eq!(pdu.entity_capabilities, EntityCapabilities {
                 ammunition_supply: false,
@@ -384,9 +384,9 @@ mod tests {
             assert_eq!(articulation_parameters.len(), 4);
             let parameter_1 = articulation_parameters.get(0).unwrap();
             assert_eq!(parameter_1.parameter_type_designator, ApTypeDesignator::Articulated);
-            if let ParameterTypeVariant::ArticulatedParts(type_varient) = &parameter_1.parameter_type_variant {
-                assert_eq!(type_varient.type_metric, ArticulatedPartsTypeMetric::Position);
-                assert_eq!(type_varient.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
+            if let ParameterTypeVariant::ArticulatedParts(type_variant) = &parameter_1.parameter_type_variant {
+                assert_eq!(type_variant.type_metric, ArticulatedPartsTypeMetric::Position);
+                assert_eq!(type_variant.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
             } else { assert!(false) }
             assert_eq!(parameter_1.articulation_parameter_value, 1f32);
         } else { assert!(false) }

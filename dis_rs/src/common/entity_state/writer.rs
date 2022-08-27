@@ -50,8 +50,8 @@ impl Serialize for ArticulationParameter {
             ParameterTypeVariant::AttachedParts(attached) => { buf.put_u32(*attached); }
             ParameterTypeVariant::ArticulatedParts(articulated) => {
                 let type_class : u32 = articulated.type_class.into();
-                let type_metric : u8 = articulated.type_metric.into();
-                let on_wire_value = type_class + type_metric as u32;
+                let type_metric : u32 = articulated.type_metric.into();
+                let on_wire_value = type_class + type_metric;
                 buf.put_u32(on_wire_value);
             }
         }
@@ -304,10 +304,10 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, DrAlgorithm, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass};
+    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm};
 
     #[test]
     fn entity_marking() {
@@ -395,7 +395,7 @@ mod tests {
                 })
             })
             .dead_reckoning(DrParameters {
-                algorithm: DrAlgorithm::DrmRVW,
+                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
                 other_parameters: [0u8;15],
                 linear_acceleration: VectorF32 {
                     first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32

@@ -1,6 +1,7 @@
 use std::{env, fs};
 use std::fs::File;
 use std::io::{BufReader};
+use std::ops::RangeInclusive;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -14,8 +15,43 @@ const ENUM_ATTR_UID : &[u8] = b"uid";
 const ENUM_ATTR_NAME : &[u8] = b"name";
 const ENUM_ATTR_SIZE : &[u8] = b"size";
 const ENUM_ROW_ELEMENT : &[u8] = b"enumrow";
+const ENUM_ROW_RANGE_ELEMENT : &[u8] = b"enumrow_range";
 const ENUM_ROW_ATTR_VALUE : &[u8] = b"value";
+const ENUM_ROW_ATTR_VALUE_MIN : &[u8] = b"value_min";
+const ENUM_ROW_ATTR_VALUE_MAX : &[u8] = b"value_max";
 const ENUM_ROW_ATTR_DESC : &[u8] = b"description";
+
+/// Array containing all the uids of enumerations that should be generated.
+/// Each entry is a tuple containing the uid, an Optional string
+/// literal to override the name of the resulting enum, and an Optional data size (in bits).
+/// For example, the 'DISPDUType' enum (having uid 4) has an override
+/// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
+/// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 15] = [
+    // 3,                          // protocol version
+    (4, Some("PduType"), None),           // pdu type
+    (5, Some("ProtocolFamily"), None),    // pdu family
+    (6, Some("ForceId"), None), // Force Id
+    (7, None, None), // Entity Kind
+    (8, None, None), // Domain
+    // 9-28 // (Sub-)Categories
+    (29, None, None), // Country
+    (44, None, None), // Dead Reckoning Algorithm
+    (45, None, None), // entity marking char set
+    // 55, // Entity Capabilities (together with bitfields 450-462)
+    (56, None, None), // Variable Parameter Record Type
+    (57, None, None), // Attached Parts
+    (58, None, Some(32)), // Articulated Parts-Type Metric
+    (59, None, None), // Articulated Parts-Type Class
+    (60, None, None), // Munition Descriptor-Warhead
+    (61, None, None), // Munition Descriptor-Fuse
+    (62, None, None), // Detonation result
+    // 63-75, // All kinds of stuff for lesser priority PDUs
+    // 76-79, // Emitter stuff
+    // 80-81, // Designator stuff
+    // 82-84, 87, 96-98 // IFF stuff
+    // 100-106, // Subcategories
+];
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -30,36 +66,20 @@ struct Enum {
 struct EnumItem {
     description: String,
     value: usize,
+    range: Option<RangeInclusive<usize>>
 }
 
-/// Array containing all the uids that should be generated.
-/// Each entry is a tuple containing the uid, an Optional string
-/// literal to override the name of the resulting enum, and an Optional data size (in bits).
-/// For example, the 'DISPDUType' enum (having uid 4) has an override
-/// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
-/// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const UIDS : [(usize, Option<&str>, Option<usize>); 10] = [
-    // 3,                          // protocol version
-    (4, Some("PduType"), None),           // pdu type
-    (5, Some("ProtocolFamily"), None),    // pdu family
-    (6, Some("ForceId"), None), // Force Id
-    (7, None, None), // Entity Kind
-    //19, 20, 21
-    (29, None, None), // Country
-    // 44, // DR algorithms
-    (45, None, None), // entity marking char set
-    // 56, // Variable Parameter Record Type
-    // 57, // Attached Parts
-    (58, None, Some(32)), // Articulated Parts-Type Metric
-    (59, None, None), // Articulated Parts-Type Class
-    (60, None, None), // Munition Descriptor-Warhead, Fuse
-    (61, None, None), // Munition Descriptor-Fuse
-    // 62, // Detonation result
-];
+struct Bitfields {
 
-// TODO enums with type ranges
-// TODO bitfield enums
-// TODO DR algorithms uid 44
+}
+
+// FIXME use generated VariableParameterRecordType and AttachedParts enums
+// TODO refactor a bit and make testable (include some unit tests in the regular code)
+// test generated impls for enums/enumrows (from, into, display)
+// test enumrow_range fields and unspecified values
+// TODO read and generate bitfield enums
+    // appearances: 31-43
+    // capabilities: 450-462
 
 fn main() {
     let mut reader = Reader::from_file(
@@ -88,6 +108,12 @@ fn main() {
                             Some(current)
                         } else { None };
                     },
+                    ENUM_ROW_RANGE_ELEMENT => {
+                        current_enum = if let (Some(mut current), Ok(item)) = (current_enum, extract_enum_range_item(element, &reader)) {
+                            current.items.push(item);
+                            Some(current)
+                        } else { None };
+                    },
                     _ => (),
                 }
             }
@@ -107,6 +133,12 @@ fn main() {
                 match element.name() {
                     ENUM_ROW_ELEMENT => {
                         current_enum = if let (Some(mut current), Ok(item)) = (current_enum, extract_enum_item(element, &reader)) {
+                            current.items.push(item);
+                            Some(current)
+                        } else { None };
+                    },
+                    ENUM_ROW_RANGE_ELEMENT => {
+                        current_enum = if let (Some(mut current), Ok(item)) = (current_enum, extract_enum_range_item(element, &reader)) {
                             current.items.push(item);
                             Some(current)
                         } else { None };
@@ -163,12 +195,13 @@ fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Resul
     let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ENUM_ATTR_UID) {
         Some(usize::from_str(reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
     } else { None };
-    let should_generate = UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
+    let should_generate = ENUM_UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
     if should_generate.is_none() {
         // skip this enum, not to be generated
         return Err(());
     }
     let name_override = should_generate.unwrap().1;
+    let size_override = should_generate.unwrap().2;
 
     let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ENUM_ATTR_NAME) {
         if name_override.is_some() {
@@ -179,7 +212,11 @@ fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Resul
     } else { None };
 
     let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ENUM_ATTR_SIZE) {
-        Some(usize::from_str(reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
+        if size_override.is_some() {
+            Some(size_override.unwrap())
+        } else {
+            Some(usize::from_str(reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
+        }
     } else { None };
 
     if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
@@ -206,7 +243,31 @@ fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> 
     if let (Some(value), Some(description)) = (value, description) {
         Ok(EnumItem {
             description,
-            value
+            value,
+            range: None,
+        })
+    } else {
+        // something is wrong with the attributes of the element, skip it.
+        Err(())
+    }
+}
+
+fn extract_enum_range_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
+    let value_min = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE_MIN) {
+        Some(usize::from_str(reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+    } else { None };
+    let value_max = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE_MAX) {
+        Some(usize::from_str(reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+    } else { None };
+    let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
+        Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
+    } else { None };
+
+    if let (Some(value_min), Some(value_max), Some(description)) = (value_min, value_max, description) {
+        Ok(EnumItem {
+            description,
+            value : 0,
+            range : Some(RangeInclusive::new(value_min, value_max)),
         })
     } else {
         // something is wrong with the attributes of the element, skip it.
@@ -228,15 +289,23 @@ fn quote_decl(e: &Enum) -> TokenStream {
 }
 
 fn quote_decl_arms(items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+    let size_type = size_to_type(data_size);
+    let size_ident = format_ident!("{}", size_type);
+
     let mut arms : Vec<TokenStream> = items.iter().map(|item| {
         let item_name = format_name(item.description.as_str(), item.value);
         let item_ident = format_ident!("{}", item_name);
-        quote!(
-            #item_ident
-        )
+        if item.range.is_some() {
+            quote!(
+                #item_ident(#size_ident)
+            )
+        } else {
+            quote!(
+                #item_ident
+            )
+        }
     }).collect();
-    let size_type = size_to_type(data_size);
-    let size_ident = format_ident!("{}", size_type);
+
     arms.push(quote!(
         Unspecified(#size_ident)
     ));
@@ -262,10 +331,18 @@ fn quote_from_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) 
     let mut arms: Vec<TokenStream> = items.iter().map(|item| {
         let item_name = format_name(item.description.as_str(), item.value);
         let item_ident = format_ident!("{}", item_name);
-        let discriminant_literal = discriminant_literal(item.value, data_size);
-        quote!(
-            #discriminant_literal => #name_ident::#item_ident
-        )
+        if let Some(range) = &item.range {
+            let discriminant_literal_min = discriminant_literal(range.start().clone(), data_size);
+            let discriminant_literal_max = discriminant_literal(range.end().clone(), data_size);
+            quote!(
+                #discriminant_literal_min..=#discriminant_literal_max => #name_ident::#item_ident(value)
+            )
+        } else {
+            let discriminant_literal = discriminant_literal(item.value, data_size);
+            quote!(
+                #discriminant_literal => #name_ident::#item_ident
+            )
+        }
     }).collect();
     // For conversion from bytes to enum, add exhaustive arm resulting in the Unspecified variant of the enum
     let unspecified_ident = format_ident!("{}", "unspecified_value");
@@ -294,10 +371,18 @@ fn quote_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) 
     let mut arms: Vec<TokenStream> = items.iter().map(|item| {
         let item_name = format_name(item.description.as_str(), item.value);
         let item_ident = format_ident!("{}", item_name);
-        let discriminant_literal = discriminant_literal(item.value, data_size);
-        quote!(
-            #name_ident::#item_ident => #discriminant_literal
-        )
+
+        if item.range.is_some() {
+            let value_ident = format_ident!("{}", "specific_value");
+            quote!(
+                #name_ident::#item_ident(#value_ident) => #value_ident
+            )
+        } else {
+            let discriminant_literal = discriminant_literal(item.value, data_size);
+            quote!(
+                #name_ident::#item_ident => #discriminant_literal
+            )
+        }
     }).collect();
     let unspecified_ident = format_ident!("{}", "unspecified_value");
     arms.push(quote!(
@@ -324,9 +409,16 @@ fn quote_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStr
         let item_description = item.description.as_str();
         let item_name = format_name(item_description, item.value);
         let item_ident = format_ident!("{}", item_name);
-        quote!(
-            #name_ident::#item_ident => write!(f, "{}", #item_description)
-        )
+        if item.range.is_some() {
+            let value_ident = format_ident!("{}", "specific_value");
+            quote!(
+                #name_ident::#item_ident(#value_ident) => write!(f, "{} ({})", #item_description, #value_ident)
+            )
+        } else {
+            quote!(
+                #name_ident::#item_ident => write!(f, "{}", #item_description)
+            )
+        }
     }).collect();
     let unspecified_ident = format_ident!("{}", "unspecified_value");
     arms.push(quote!(

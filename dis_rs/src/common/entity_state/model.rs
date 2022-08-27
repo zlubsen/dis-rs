@@ -2,8 +2,7 @@ use dis_rs_macros::PduConversion;
 use crate::common::entity_state::builder::{AirPlatformBuilder, EntityStateBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
 use crate::common::Interaction;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::EntityMarkingCharacterSet;
-use crate::enumerations::{ForceId, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass};
+use crate::enumerations::{ForceId, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, EntityMarkingCharacterSet};
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -494,31 +493,10 @@ impl Default for Density {
 }
 
 pub struct DrParameters {
-    pub algorithm : DrAlgorithm,
+    pub algorithm : DeadReckoningAlgorithm,
     pub other_parameters : [u8; 15],
     pub linear_acceleration : VectorF32,
     pub angular_velocity : VectorF32,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
-#[repr(u8)]
-pub enum DrAlgorithm {
-    Other = 0,
-    Static = 1,
-    DrmFPW = 2,
-    DrmRPW = 3,
-    DrmRVW = 4,
-    DrmFVW = 5,
-    DrmFPB = 6,
-    DrmRPB = 7,
-    DrmRVB = 8,
-    DrmFVB = 9,
-}
-
-impl Default for DrAlgorithm {
-    fn default() -> Self {
-        DrAlgorithm::Other
-    }
 }
 
 #[derive(Debug, PartialEq)]
