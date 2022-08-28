@@ -1,8 +1,9 @@
 use dis_rs_macros::PduConversion;
+use crate::AttachedParts;
 use crate::common::entity_state::builder::{AirPlatformBuilder, EntityStateBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
 use crate::common::Interaction;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ForceId, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, EntityMarkingCharacterSet};
+use crate::enumerations::{ForceId, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, EntityMarkingCharacterSet, VariableParameterRecordType};
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -509,46 +510,21 @@ pub struct EntityCapabilities {
 }
 
 pub struct ArticulationParameter {
-    pub parameter_type_designator : ApTypeDesignator,
+    pub parameter_type_designator : VariableParameterRecordType,
     pub parameter_change_indicator : u8,
     pub articulation_attachment_id: u16,
     pub parameter_type_variant : ParameterTypeVariant,
     pub articulation_parameter_value : f32,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
-#[repr(u8)]
-pub enum ApTypeDesignator {
-    Articulated = 0,
-    Attached = 1,
-}
-
-impl Default for ApTypeDesignator {
-    fn default() -> Self {
-        ApTypeDesignator::Articulated
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub enum ParameterTypeVariant {
-    AttachedParts(u32),
-    // 0	Nothing, Empty
-    // 1-511	Sequential IDs for model-specific stations
-    // 512-639	Fuselage Stations
-    // 640-767	Left-wing Stations
-    // 768-895	Right-wing Stations
-    // 896	M16A42 rifle
-    // 897	M249 SAW
-    // 898	M60 Machine gun
-    // 899	M203 Grenade Launcher
-    // 900	M136 AT4
-    // 901	M47 Dragon
-    // 902	AAWS-M Javelin
-    // 903	M18A1 Claymore Mine
-    // 904	MK19 Grenade Launcher
-    // 905	M2 Machine Gun
-    // 906-1023	Other attached parts
-    ArticulatedParts(ArticulatedParts),
+    Attached(AttachedParts),
+    Articulated(ArticulatedParts),
+    // TODO add following variants
+    // Separation
+    // Entity Type
+    // Entity Association
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

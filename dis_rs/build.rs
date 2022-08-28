@@ -27,6 +27,7 @@ const ENUM_ROW_ATTR_DESC : &[u8] = b"description";
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
+// FIXME replace with crate pfh::map
 const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 15] = [
     // 3,                          // protocol version
     (4, Some("PduType"), None),           // pdu type
@@ -38,6 +39,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 15] = [
     (29, None, None), // Country
     (44, None, None), // Dead Reckoning Algorithm
     (45, None, None), // entity marking char set
+    // 46-54 do not exist
     // 55, // Entity Capabilities (together with bitfields 450-462)
     (56, None, None), // Variable Parameter Record Type
     (57, None, None), // Attached Parts
@@ -63,23 +65,43 @@ struct Enum {
 }
 
 #[derive(Debug, Clone)]
-struct EnumItem {
+enum EnumItem {
+    Basic(BasicEnumItem),
+    Range(RangeEnumItem),
+    CrossRef(CrossRefEnumItem),
+}
+
+#[derive(Debug, Clone)]
+struct BasicEnumItem {
     description: String,
     value: usize,
-    range: Option<RangeInclusive<usize>>
 }
 
-struct Bitfields {
-
+#[derive(Debug, Clone)]
+struct RangeEnumItem {
+    description: String,
+    range: RangeInclusive<usize>
 }
 
-// FIXME use generated VariableParameterRecordType and AttachedParts enums
+#[derive(Debug, Clone)]
+struct CrossRefEnumItem {
+    description: String,
+    value: usize,
+    xref: usize,
+}
+
+struct Bitfield {
+    name: String,
+    bit_position: usize,
+    length: usize,
+}
+
 // TODO refactor a bit and make testable (include some unit tests in the regular code)
 // test generated impls for enums/enumrows (from, into, display)
 // test enumrow_range fields and unspecified values
 // TODO read and generate bitfield enums
-    // appearances: 31-43
-    // capabilities: 450-462
+    // appearances: 31-43, plus enums 378-411
+    // capabilities: 450-462 with enum 55
 
 fn main() {
     let mut reader = Reader::from_file(
@@ -241,11 +263,10 @@ fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> 
     } else { None };
 
     if let (Some(value), Some(description)) = (value, description) {
-        Ok(EnumItem {
+        Ok(EnumItem::Basic(BasicEnumItem {
             description,
             value,
-            range: None,
-        })
+        }))
     } else {
         // something is wrong with the attributes of the element, skip it.
         Err(())
@@ -264,11 +285,10 @@ fn extract_enum_range_item(element: &BytesStart, reader: &Reader<BufReader<File>
     } else { None };
 
     if let (Some(value_min), Some(value_max), Some(description)) = (value_min, value_max, description) {
-        Ok(EnumItem {
+        Ok(EnumItem::Range(RangeEnumItem {
             description,
-            value : 0,
-            range : Some(RangeInclusive::new(value_min, value_max)),
-        })
+            range : RangeInclusive::new(value_min, value_max),
+        }))
     } else {
         // something is wrong with the attributes of the element, skip it.
         Err(())
@@ -293,16 +313,22 @@ fn quote_decl_arms(items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> 
     let size_ident = format_ident!("{}", size_type);
 
     let mut arms : Vec<TokenStream> = items.iter().map(|item| {
-        let item_name = format_name(item.description.as_str(), item.value);
-        let item_ident = format_ident!("{}", item_name);
-        if item.range.is_some() {
-            quote!(
-                #item_ident(#size_ident)
-            )
-        } else {
-            quote!(
-                #item_ident
-            )
+        match item {
+            EnumItem::Basic(item) => {
+                let item_name = format_name(item.description.as_str(), item.value);
+                let item_ident = format_ident!("{}", item_name);
+                quote!(
+                    #item_ident
+                )
+            }
+            EnumItem::Range(item) => {
+                let item_name = format_name(item.description.as_str(), *item.range.start());
+                let item_ident = format_ident!("{}", item_name);
+                quote!(
+                    #item_ident(#size_ident)
+                )
+            }
+            EnumItem::CrossRef(item) => { todo!() }
         }
     }).collect();
 
@@ -329,19 +355,27 @@ fn quote_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
 
 fn quote_from_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
     let mut arms: Vec<TokenStream> = items.iter().map(|item| {
-        let item_name = format_name(item.description.as_str(), item.value);
-        let item_ident = format_ident!("{}", item_name);
-        if let Some(range) = &item.range {
-            let discriminant_literal_min = discriminant_literal(range.start().clone(), data_size);
-            let discriminant_literal_max = discriminant_literal(range.end().clone(), data_size);
-            quote!(
-                #discriminant_literal_min..=#discriminant_literal_max => #name_ident::#item_ident(value)
-            )
-        } else {
-            let discriminant_literal = discriminant_literal(item.value, data_size);
-            quote!(
-                #discriminant_literal => #name_ident::#item_ident
-            )
+        match item {
+            EnumItem::Basic(item) => {
+                let item_name = format_name(item.description.as_str(), item.value);
+                let item_ident = format_ident!("{}", item_name);
+                let discriminant_literal = discriminant_literal(item.value, data_size);
+                quote!(
+                    #discriminant_literal => #name_ident::#item_ident
+                )
+            }
+            EnumItem::Range(item) => {
+                let item_name = format_name(item.description.as_str(), *item.range.start());
+                let item_ident = format_ident!("{}", item_name);
+                let discriminant_literal_min = discriminant_literal(*item.range.start(), data_size);
+                let discriminant_literal_max = discriminant_literal(*item.range.end(), data_size);
+                quote!(
+                    #discriminant_literal_min..=#discriminant_literal_max => #name_ident::#item_ident(value)
+                )
+            }
+            EnumItem::CrossRef(item) => {
+                todo!()
+            }
         }
     }).collect();
     // For conversion from bytes to enum, add exhaustive arm resulting in the Unspecified variant of the enum
@@ -369,19 +403,26 @@ fn quote_into_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
 
 fn quote_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
     let mut arms: Vec<TokenStream> = items.iter().map(|item| {
-        let item_name = format_name(item.description.as_str(), item.value);
-        let item_ident = format_ident!("{}", item_name);
-
-        if item.range.is_some() {
-            let value_ident = format_ident!("{}", "specific_value");
-            quote!(
-                #name_ident::#item_ident(#value_ident) => #value_ident
-            )
-        } else {
-            let discriminant_literal = discriminant_literal(item.value, data_size);
-            quote!(
-                #name_ident::#item_ident => #discriminant_literal
-            )
+        match item {
+            EnumItem::Basic(item) => {
+                let item_name = format_name(item.description.as_str(), item.value);
+                let item_ident = format_ident!("{}", item_name);
+                let discriminant_literal = discriminant_literal(item.value, data_size);
+                quote!(
+                    #name_ident::#item_ident => #discriminant_literal
+                )
+            }
+            EnumItem::Range(item) => {
+                let item_name = format_name(item.description.as_str(), *item.range.start());
+                let item_ident = format_ident!("{}", item_name);
+                let value_ident = format_ident!("{}", "specific_value");
+                quote!(
+                    #name_ident::#item_ident(#value_ident) => #value_ident
+                )
+            }
+            EnumItem::CrossRef(item) => {
+                todo!()
+            }
         }
     }).collect();
     let unspecified_ident = format_ident!("{}", "unspecified_value");
@@ -406,18 +447,29 @@ fn quote_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
 
 fn quote_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStream> {
     let mut arms: Vec<TokenStream> = items.iter().map(|item| {
-        let item_description = item.description.as_str();
-        let item_name = format_name(item_description, item.value);
-        let item_ident = format_ident!("{}", item_name);
-        if item.range.is_some() {
-            let value_ident = format_ident!("{}", "specific_value");
-            quote!(
-                #name_ident::#item_ident(#value_ident) => write!(f, "{} ({})", #item_description, #value_ident)
-            )
-        } else {
-            quote!(
-                #name_ident::#item_ident => write!(f, "{}", #item_description)
-            )
+        match item {
+            EnumItem::Basic(item) => {
+                let item_description = item.description.as_str();
+                let item_name = format_name(item_description, item.value);
+                let item_ident = format_ident!("{}", item_name);
+
+                quote!(
+                    #name_ident::#item_ident => write!(f, "{}", #item_description)
+                )
+            }
+            EnumItem::Range(item) => {
+                let item_description = item.description.as_str();
+                let item_name = format_name(item_description, *item.range.start());
+                let item_ident = format_ident!("{}", item_name);
+
+                let value_ident = format_ident!("{}", "specific_value");
+                quote!(
+                    #name_ident::#item_ident(#value_ident) => write!(f, "{} ({})", #item_description, #value_ident)
+                )
+            }
+            EnumItem::CrossRef(item) => {
+                todo!()
+            }
         }
     }).collect();
     let unspecified_ident = format_ident!("{}", "unspecified_value");

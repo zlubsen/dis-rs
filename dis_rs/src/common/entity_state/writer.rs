@@ -47,8 +47,11 @@ impl Serialize for ArticulationParameter {
         buf.put_u8(self.parameter_change_indicator);
         buf.put_u16(self.articulation_attachment_id);
         match &self.parameter_type_variant {
-            ParameterTypeVariant::AttachedParts(attached) => { buf.put_u32(*attached); }
-            ParameterTypeVariant::ArticulatedParts(articulated) => {
+            ParameterTypeVariant::Attached(attached) => {
+                let attached : u32 = (*attached).into();
+                buf.put_u32(attached);
+            }
+            ParameterTypeVariant::Articulated(articulated) => {
                 let type_class : u32 = articulated.type_class.into();
                 let type_metric : u32 = articulated.type_metric.into();
                 let on_wire_value = type_class + type_metric;
@@ -304,10 +307,10 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ApTypeDesignator, ArticulatedParts, ArticulationParameter, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ArticulatedParts, ArticulationParameter, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm};
+    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType};
 
     #[test]
     fn entity_marking() {
@@ -326,10 +329,10 @@ mod tests {
     #[test]
     fn articulated_part() {
         let articulated_part = ArticulationParameter {
-            parameter_type_designator: ApTypeDesignator::Articulated,
+            parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
             parameter_change_indicator: 0,
             articulation_attachment_id: 0,
-            parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
+            parameter_type_variant: ParameterTypeVariant::Articulated(ArticulatedParts {
                 type_class: ArticulatedPartsTypeClass::LandingGear,
                 type_metric: ArticulatedPartsTypeMetric::Position
             }),
@@ -410,40 +413,40 @@ mod tests {
             })
             .capabilities_flags(false, false, false, false)
             .add_articulation_parameter(ArticulationParameter {
-                parameter_type_designator: ApTypeDesignator::Articulated,
+                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
-                parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
+                parameter_type_variant: ParameterTypeVariant::Articulated(ArticulatedParts {
                     type_class: ArticulatedPartsTypeClass::LandingGear,
                     type_metric: ArticulatedPartsTypeMetric::Position
                 }),
                 articulation_parameter_value: 1.0
             })
             .add_articulation_parameter(ArticulationParameter {
-                parameter_type_designator: ApTypeDesignator::Articulated,
+                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
-                parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
+                parameter_type_variant: ParameterTypeVariant::Articulated(ArticulatedParts {
                     type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                     type_metric: ArticulatedPartsTypeMetric::Azimuth
                 }),
                 articulation_parameter_value: 0.0
             })
             .add_articulation_parameter(ArticulationParameter {
-                parameter_type_designator: ApTypeDesignator::Articulated,
+                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
-                parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
+                parameter_type_variant: ParameterTypeVariant::Articulated(ArticulatedParts {
                     type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                     type_metric: ArticulatedPartsTypeMetric::AzimuthRate
                 }),
                 articulation_parameter_value: 0.0
             })
             .add_articulation_parameter(ArticulationParameter {
-                parameter_type_designator: ApTypeDesignator::Articulated,
+                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
                 parameter_change_indicator: 0,
                 articulation_attachment_id: 0,
-                parameter_type_variant: ParameterTypeVariant::ArticulatedParts(ArticulatedParts {
+                parameter_type_variant: ParameterTypeVariant::Articulated(ArticulatedParts {
                     type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
                     type_metric: ArticulatedPartsTypeMetric::Elevation
                 }),
