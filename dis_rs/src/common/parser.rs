@@ -134,6 +134,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Other => { other_body(header)(input)? }
             PduType::EntityState => { entity_state_body()(input)? }
             PduType::Fire => { fire_body()(input)? }
+            PduType::Unspecified(_type_number) => { other_body(header)(input)? }
             _ => { other_body(header)(input)? }
             // PduType::Detonation => {}
             // PduType::Collision => {}
@@ -252,6 +253,90 @@ pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
     move |input| {
         take(bytes_to_skip)(input)
     }
+}
+
+pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
+    let (input, site_id) = be_u16(input)?;
+    let (input, application_id) = be_u16(input)?;
+    let (input, entity_id) = be_u16(input)?;
+    Ok((input, EntityId {
+        simulation_address: SimulationAddress {
+            site_id,
+            application_id,
+        },
+        entity_id,
+    }))
+}
+
+pub fn entity_type(input: &[u8]) -> IResult<&[u8], EntityType> {
+    let (input, kind) = kind(input)?;
+    let (input, domain) = be_u8(input)?;
+    let (input, country) = country(input)?;
+    let (input, category) = be_u8(input)?;
+    let (input, subcategory) = be_u8(input)?;
+    let (input, specific) = be_u8(input)?;
+    let (input, extra) = be_u8(input)?;
+    Ok((input, EntityType {
+        kind,
+        domain,
+        country,
+        category,
+        subcategory,
+        specific,
+        extra,
+    }))
+}
+
+fn kind(input: &[u8]) -> IResult<&[u8], EntityKind> {
+    let (input, kind) = be_u8(input)?;
+    let kind = EntityKind::from(kind);
+    Ok((input, kind))
+}
+
+fn country(input: &[u8]) -> IResult<&[u8], Country> {
+    let (input, country) = be_u16(input)?;
+    let country = Country::from(country);
+    Ok((input, country))
+}
+
+pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
+    let (input, elements) = count(be_f32, 3)(input)?;
+    Ok((input, VectorF32 {
+        first_vector_component: *elements.get(0).expect("Value supposed to be parsed successfully"),
+        second_vector_component: *elements.get(1).expect("Value supposed to be parsed successfully"),
+        third_vector_component: *elements.get(2).expect("Value supposed to be parsed successfully"),
+    }))
+}
+
+pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
+    let (input, locations) = count(be_f64, 3)(input)?;
+    Ok((input, Location {
+        x_coordinate: *locations.get(0).expect("Value supposed to be parsed successfully"),
+        y_coordinate: *locations.get(1).expect("Value supposed to be parsed successfully"),
+        z_coordinate: *locations.get(2).expect("Value supposed to be parsed successfully"),
+    }))
+}
+
+pub fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
+    let (input, orientations) = count(be_f32, 3)(input)?;
+    Ok((input, Orientation {
+        psi: *orientations.get(0).expect("Value supposed to be parsed successfully"),
+        theta: *orientations.get(1).expect("Value supposed to be parsed successfully"),
+        phi: *orientations.get(2).expect("Value supposed to be parsed successfully"),
+    }))
+}
+
+pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
+    let (input, site_id) = be_u16(input)?;
+    let (input, application_id) = be_u16(input)?;
+    let (input, event_id) = be_u16(input)?;
+    Ok((input, EventId {
+        simulation_address: SimulationAddress {
+            site_id,
+            application_id,
+        },
+        event_id,
+    }))
 }
 
 #[cfg(test)]
@@ -427,88 +512,4 @@ mod tests {
         let error = headers.expect_err("Should be Err");
         assert_eq!(error, DisError::InsufficientHeaderLength(11));
     }
-}
-
-pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
-    let (input, site_id) = be_u16(input)?;
-    let (input, application_id) = be_u16(input)?;
-    let (input, entity_id) = be_u16(input)?;
-    Ok((input, EntityId {
-        simulation_address: SimulationAddress {
-            site_id,
-            application_id,
-        },
-        entity_id,
-    }))
-}
-
-pub fn entity_type(input: &[u8]) -> IResult<&[u8], EntityType> {
-    let (input, kind) = kind(input)?;
-    let (input, domain) = be_u8(input)?;
-    let (input, country) = country(input)?;
-    let (input, category) = be_u8(input)?;
-    let (input, subcategory) = be_u8(input)?;
-    let (input, specific) = be_u8(input)?;
-    let (input, extra) = be_u8(input)?;
-    Ok((input, EntityType {
-        kind,
-        domain,
-        country,
-        category,
-        subcategory,
-        specific,
-        extra,
-    }))
-}
-
-fn kind(input: &[u8]) -> IResult<&[u8], EntityKind> {
-    let (input, kind) = be_u8(input)?;
-    let kind = EntityKind::from(kind);
-    Ok((input, kind))
-}
-
-fn country(input: &[u8]) -> IResult<&[u8], Country> {
-    let (input, country) = be_u16(input)?;
-    let country = Country::from(country);
-    Ok((input, country))
-}
-
-pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
-    let (input, elements) = count(be_f32, 3)(input)?;
-    Ok((input, VectorF32 {
-        first_vector_component: *elements.get(0).expect("Value supposed to be parsed successfully"),
-        second_vector_component: *elements.get(1).expect("Value supposed to be parsed successfully"),
-        third_vector_component: *elements.get(2).expect("Value supposed to be parsed successfully"),
-    }))
-}
-
-pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
-    let (input, locations) = count(be_f64, 3)(input)?;
-    Ok((input, Location {
-        x_coordinate: *locations.get(0).expect("Value supposed to be parsed successfully"),
-        y_coordinate: *locations.get(1).expect("Value supposed to be parsed successfully"),
-        z_coordinate: *locations.get(2).expect("Value supposed to be parsed successfully"),
-    }))
-}
-
-pub fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
-    let (input, orientations) = count(be_f32, 3)(input)?;
-    Ok((input, Orientation {
-        psi: *orientations.get(0).expect("Value supposed to be parsed successfully"),
-        theta: *orientations.get(1).expect("Value supposed to be parsed successfully"),
-        phi: *orientations.get(2).expect("Value supposed to be parsed successfully"),
-    }))
-}
-
-pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
-    let (input, site_id) = be_u16(input)?;
-    let (input, application_id) = be_u16(input)?;
-    let (input, event_id) = be_u16(input)?;
-    Ok((input, EventId {
-        simulation_address: SimulationAddress {
-            site_id,
-            application_id,
-        },
-        event_id,
-    }))
 }

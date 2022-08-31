@@ -1,7 +1,8 @@
 mod common;
 mod v7;
 
-include!("../gen_src/enumerations.rs");
+include!(concat!(env!("OUT_DIR"), "/enumerations.rs"));
+// include!("../gen_src/enumerations.rs");
 
 pub use enumerations::*;
 
