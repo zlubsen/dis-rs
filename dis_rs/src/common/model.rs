@@ -379,7 +379,7 @@ pub struct Orientation {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityType {
     pub kind : EntityKind,
-    pub domain : u8,
+    pub domain : u8, // TODO replace with generated PlatformDomain enum
     pub country : Country,
     pub category : u8,
     pub subcategory : u8,

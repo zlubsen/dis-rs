@@ -120,7 +120,7 @@ fn general_appearance(input: &[u8]) -> IResult<&[u8], GeneralAppearance> {
 fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], SpecificAppearance> {
     move |input: &[u8]| {
         // FIXME it seems the bit-level parsers do not consume the bytes from the input.
-        // domain codes are defined as part of the Entity Type Database > v29.
+        // domain codes are defined as part of the Entity Type Database.
         let (input, appearance) = match (entity_type.kind, entity_type.domain) {
             (EntityKind::Platform, 1u8) => { // land
                 let (input, record) = land_platform_record(input)?;

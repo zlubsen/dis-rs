@@ -62,6 +62,29 @@ pub enum GenerationItem {
     Bitfield(Bitfield),
 }
 
+impl <'a> GenerationItem {
+    pub fn uid(&self) -> usize {
+        match self {
+            GenerationItem::Enum(e) => { e.uid }
+            GenerationItem::Bitfield(b) => { b.uid }
+        }
+    }
+
+    pub fn name(&'a self) -> &'a str {
+        match self {
+            GenerationItem::Enum(e) => { e.name.as_str() }
+            GenerationItem::Bitfield(b) => { b.name.as_str() }
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            GenerationItem::Enum(e) => { e.size }
+            GenerationItem::Bitfield(b) => { b.size }
+        }
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Enum {
@@ -437,13 +460,16 @@ mod extraction {
 
 mod generation {
     use quote::{format_ident, quote};
-    use crate::{Bitfield, Enum, EnumItem, format_name, GenerationItem, Ident, Literal, TokenStream};
+    use crate::{Bitfield, BitfieldItem, Enum, EnumItem, format_name, GenerationItem, Ident, Literal, TokenStream};
 
     pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
         let mut generated_items = vec![];
+        let lookup_xref = |xref:usize| {
+            items.iter().find(|&it| { it.uid() == xref })
+        };
         for item in items {
             match item {
-                GenerationItem::Enum(e) => generated_items.push(generate_enum(e)),
+                GenerationItem::Enum(e) => generated_items.push(generate_enum(e, &lookup_xref)),
                 GenerationItem::Bitfield(b) => generated_items.push(generate_bitfield(b)),
             }
         }
@@ -456,18 +482,19 @@ mod generation {
         )
     }
 
-    fn generate_enum(item: &Enum) -> TokenStream {
+    fn generate_enum<'a, F>(item: &Enum, lookup_xref: F) -> TokenStream
+    where F: Fn(usize)->Option<&'a GenerationItem> {
         let formatted_name = format_name(item.name.as_str(), item.uid);
         let name_ident = format_ident!("{}", formatted_name);
         // generate enum declarations
-        let decl = quote_decl(&item);
+        let decl = quote_enum_decl(&item, lookup_xref);
         // generate From impls (2x)
-        let from_impl = quote_from_impl(&item, &name_ident);
-        let into_impl = quote_into_impl(&item, &name_ident);
+        let from_impl = quote_enum_from_impl(&item, &name_ident);
+        let into_impl = quote_enum_into_impl(&item, &name_ident);
         // generate Display impl
-        let display_impl = quote_display_impl(&item, &name_ident);
+        let display_impl = quote_enum_display_impl(&item, &name_ident);
         // generate Default impl
-        let default_impl = quote_default_impl(&name_ident);
+        let default_impl = quote_enum_default_impl(&name_ident);
         quote!(
             #decl
             #from_impl
@@ -477,10 +504,11 @@ mod generation {
         )
     }
 
-    fn quote_decl(e: &Enum) -> TokenStream {
+    fn quote_enum_decl<'a, F>(e: &Enum, lookup_xref: F) -> TokenStream
+    where F: Fn(usize)->Option<&'a GenerationItem> {
         let name = format_name(e.name.as_str(), e.uid);
         let name_ident = format_ident!("{}", name);
-        let arms = quote_decl_arms(&e.items, e.size);
+        let arms = quote_enum_decl_arms(&e.items, e.size, lookup_xref);
         quote!(
             #[derive(Copy, Clone, Debug, PartialEq)]
             #[allow(non_camel_case_types)]
@@ -490,7 +518,8 @@ mod generation {
         )
     }
 
-    fn quote_decl_arms(items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+    fn quote_enum_decl_arms<'a, F>(items: &Vec<EnumItem>, data_size: usize, lookup_xref: F) -> Vec<TokenStream>
+    where F: Fn(usize)->Option<&'a GenerationItem>{
         let size_type = size_to_type(data_size);
         let size_ident = format_ident!("{}", size_type);
 
@@ -510,7 +539,19 @@ mod generation {
                         #item_ident(#size_ident)
                     )
                 }
-                EnumItem::CrossRef(item) => { todo!() }
+                EnumItem::CrossRef(item) => {
+                    let item_name = format_name(item.description.as_str(), item.value);
+                    let item_ident = format_ident!("{}", item_name);
+                    if let Some(xref_item) = lookup_xref(item.xref) {
+                        let xref_name = format_name(xref_item.name(), xref_item.size());
+                        let xref_ident = format_ident!("{}", xref_name);
+                        quote!(
+                            #item_ident(#xref_ident)
+                        )
+                    } else { // cannot find reference, skip
+                        quote!()
+                    }
+                }
             }
         }).collect();
 
@@ -520,8 +561,8 @@ mod generation {
         arms
     }
 
-    fn quote_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-        let arms = quote_from_arms(name_ident, &e.items, e.size);
+    fn quote_enum_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
+        let arms = quote_enum_from_arms(name_ident, &e.items, e.size);
         let discriminant_type = size_to_type(e.size);
         let discriminant_ident = format_ident!("{}", discriminant_type);
         quote!(
@@ -535,28 +576,29 @@ mod generation {
         )
     }
 
-    fn quote_from_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
-        let mut arms: Vec<TokenStream> = items.iter().map(|item| {
+    fn quote_enum_from_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+        let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
                     let item_name = format_name(item.description.as_str(), item.value);
                     let item_ident = format_ident!("{}", item_name);
                     let discriminant_literal = discriminant_literal(item.value, data_size);
-                    quote!(
+                    Some(quote!(
                         #discriminant_literal => #name_ident::#item_ident
-                    )
+                    ))
                 }
                 EnumItem::Range(item) => {
                     let item_name = format_name(item.description.as_str(), *item.range.start());
                     let item_ident = format_ident!("{}", item_name);
                     let discriminant_literal_min = discriminant_literal(*item.range.start(), data_size);
                     let discriminant_literal_max = discriminant_literal(*item.range.end(), data_size);
-                    quote!(
+                    Some(quote!(
                         #discriminant_literal_min..=#discriminant_literal_max => #name_ident::#item_ident(value)
-                    )
+                    ))
                 }
-                EnumItem::CrossRef(item) => {
-                    todo!()
+                EnumItem::CrossRef(_item) => {
+                    // Manual impl
+                    None
                 }
             }
         }).collect();
@@ -568,8 +610,8 @@ mod generation {
         arms
     }
 
-    fn quote_into_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-        let arms = quote_into_arms(name_ident, &e.items, e.size);
+    fn quote_enum_into_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
+        let arms = quote_enum_into_arms(name_ident, &e.items, e.size);
         let discriminant_type = size_to_type(e.size);
         let discriminant_ident = format_ident!("{}", discriminant_type);
         quote!(
@@ -583,27 +625,29 @@ mod generation {
         )
     }
 
-    fn quote_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
-        let mut arms: Vec<TokenStream> = items.iter().map(|item| {
+    fn quote_enum_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+        let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
                     let item_name = format_name(item.description.as_str(), item.value);
                     let item_ident = format_ident!("{}", item_name);
                     let discriminant_literal = discriminant_literal(item.value, data_size);
-                    quote!(
+                    Some(quote!(
                         #name_ident::#item_ident => #discriminant_literal
-                    )
+                    ))
                 }
                 EnumItem::Range(item) => {
                     let item_name = format_name(item.description.as_str(), *item.range.start());
                     let item_ident = format_ident!("{}", item_name);
                     let value_ident = format_ident!("{}", "specific_value");
-                    quote!(
+                    Some(quote!(
                         #name_ident::#item_ident(#value_ident) => #value_ident
-                    )
+                    ))
                 }
-                EnumItem::CrossRef(item) => {
-                    todo!()
+                EnumItem::CrossRef(_item) => {
+                    // TODO impl
+                    // #name_ident::#item_ident(#struct_ident) => #struct_ident::serialize()
+                    None
                 }
             }
         }).collect();
@@ -614,8 +658,8 @@ mod generation {
         arms
     }
 
-    fn quote_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-        let arms = quote_display_arms(&e.items, name_ident);
+    fn quote_enum_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
+        let arms = quote_enum_display_arms(&e.items, name_ident);
         quote!(
             impl Display for #name_ident {
                 fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -627,17 +671,17 @@ mod generation {
         )
     }
 
-    fn quote_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStream> {
-        let mut arms: Vec<TokenStream> = items.iter().map(|item| {
+    fn quote_enum_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStream> {
+        let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
                     let item_description = item.description.as_str();
                     let item_name = format_name(item_description, item.value);
                     let item_ident = format_ident!("{}", item_name);
 
-                    quote!(
+                    Some(quote!(
                         #name_ident::#item_ident => write!(f, "{}", #item_description)
-                    )
+                    ))
                 }
                 EnumItem::Range(item) => {
                     let item_description = item.description.as_str();
@@ -645,12 +689,13 @@ mod generation {
                     let item_ident = format_ident!("{}", item_name);
 
                     let value_ident = format_ident!("{}", "specific_value");
-                    quote!(
+                    Some(quote!(
                         #name_ident::#item_ident(#value_ident) => write!(f, "{} ({})", #item_description, #value_ident)
-                    )
+                    ))
                 }
-                EnumItem::CrossRef(item) => {
-                    todo!()
+                EnumItem::CrossRef(_item) => {
+                    // Manual impl
+                    None
                 }
             }
         }).collect();
@@ -661,7 +706,7 @@ mod generation {
         arms
     }
 
-    fn quote_default_impl(name_ident: &Ident) -> TokenStream {
+    fn quote_enum_default_impl(name_ident: &Ident) -> TokenStream {
         quote!(
             impl Default for #name_ident {
                 fn default() -> Self {
@@ -672,8 +717,43 @@ mod generation {
     }
 
     fn generate_bitfield(item: &Bitfield) -> TokenStream {
-        todo!();
-        quote!()
+        // TODO
+        let decl = quote_bitfield_decl(item);
+        quote!(
+            #decl
+        )
+    }
+
+    fn quote_bitfield_decl(item: &Bitfield) -> TokenStream {
+        let formatted_name = format_name(item.name.as_str(), item.uid);
+        let name_ident = format_ident!("{}", formatted_name);
+        let fields = quote_bitfield_decl_fields(&item.fields);
+        quote!(
+            #[derive(Copy, Clone, Debug, PartialEq)]
+            #[allow(non_camel_case_types)]
+            pub struct #name_ident {
+                #(#fields),*
+            }
+        )
+    }
+
+    fn format_field_name(name: &str) -> String {
+        name.to_lowercase().replace(" ", "_").replace("-","")
+    }
+
+    fn quote_bitfield_decl_fields(fields: &Vec<BitfieldItem>) -> Vec<TokenStream> {
+        let generated_fields: Vec<TokenStream> = fields.iter().map( |field| {
+            let field_name = format_field_name(field.name.as_str());
+            let field_ident = format_ident!("{}", field_name);
+            let type_literal = if field.xref.is_some() {
+                // TODO lookup xref for name of the type of the field
+                format_ident!("TODO")
+            } else { format_ident!("bool") };
+            quote!(
+                #field_ident : #type_literal
+            )
+        }).collect();
+        generated_fields
     }
 
     fn size_to_type(data_size: usize) -> &'static str {
