@@ -149,8 +149,6 @@ fn main() {
 
     // save to file
     let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join("enumerations.rs");
-    // let dest_path = env::current_dir().unwrap();
-    // let dest_path = dest_path.join("gen_src").join("enumerations.rs");
 
     fs::write(
         &dest_path,
@@ -191,6 +189,10 @@ fn format_name(value: &str, uid: usize) -> String {
     intermediate
         .replace("(", "_")
         .replace(")", "_")
+}
+
+fn format_field_name(name: &str) -> String {
+    name.to_lowercase().replace(" ", "_").replace("-","")
 }
 
 mod extraction {
@@ -460,7 +462,7 @@ mod extraction {
 
 mod generation {
     use quote::{format_ident, quote};
-    use crate::{Bitfield, BitfieldItem, Enum, EnumItem, format_name, GenerationItem, Ident, Literal, TokenStream};
+    use crate::{Bitfield, BitfieldItem, Enum, EnumItem, format_field_name, format_name, GenerationItem, Ident, Literal, TokenStream};
 
     pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
         let mut generated_items = vec![];
@@ -649,7 +651,7 @@ mod generation {
                     let item_ident = format_ident!("{}", item_name);
                     let value_ident = format_ident!("{}", "capabilities");
                     Some(quote!(
-                        #name_ident::#item_ident(#value_ident) => #value_ident.serialize()
+                        #name_ident::#item_ident(#value_ident) => #value_ident.into()
                     ))
                 }
             }
@@ -690,21 +692,23 @@ mod generation {
                     let item_description = item.description.as_str();
                     let item_name = format_name(item_description, *item.range.start());
                     let item_ident = format_ident!("{}", item_name);
-
                     let value_ident = format_ident!("{}", "specific_value");
+
                     Some(quote!(
                         #name_ident::#item_ident(#value_ident) => write!(f, "{} ({})", #item_description, #value_ident)
                     ))
                 }
                 EnumItem::CrossRef(item) => {
-                    // TODO defer impl to concrete struct
                     let item_description = item.description.as_str();
                     let item_name = format_name(item_description, item.value);
                     let item_ident = format_ident!("{}", item_name);
+                    let _value_ident = format_ident!("{}", "capability");
 
-                    let value_ident = format_ident!("{}", "capability");
                     Some(quote!(
-                        #name_ident::#item_ident(#value_ident) => #value_ident.display()
+                        // placeholder
+                        #name_ident::#item_ident(_) => write!(f, "#name_ident::#item_ident(_)",)
+                        // TODO Display impls for bitfield structs
+                        // #name_ident::#item_ident(#value_ident) => #value_ident.display()
                     ))
                 }
             }
@@ -729,11 +733,11 @@ mod generation {
     fn generate_bitfield(item: &Bitfield) -> TokenStream {
         let decl = quote_bitfield_decl(item);
         // TODO let from = quote_bitfield_from_impl(item); // struct from u32
-        // TODO let into = quote_bitfield_into_impl(item); // struct into u32
+        let into = quote_bitfield_into_impl(item); // struct into u32
         // TODO let display = quote_bitfield_display_impl(item); // display values of fields or bitstring
-        // TODO let serialize = quote_bitfield_serialize_impl(item); // needed?
         quote!(
             #decl
+            #into
         )
     }
 
@@ -749,23 +753,91 @@ mod generation {
         )
     }
 
-    fn format_field_name(name: &str) -> String {
-        name.to_lowercase().replace(" ", "_").replace("-","")
-    }
-
     fn quote_bitfield_decl_fields(fields: &Vec<BitfieldItem>) -> Vec<TokenStream> {
         let generated_fields: Vec<TokenStream> = fields.iter().map( |field| {
             let field_name = format_field_name(field.name.as_str());
             let field_ident = format_ident!("{}", field_name);
             let type_literal = if field.xref.is_some() {
                 // TODO lookup xref for name of the type of the field
-                format_ident!("TODO")
+                todo!();
             } else { format_ident!("bool") };
             quote!(
                 #field_ident : #type_literal
             )
         }).collect();
         generated_fields
+    }
+
+    fn quote_bitfield_from_impl(item: &Bitfield) -> TokenStream {
+        let formatted_name = format_name(item.name.as_str(), item.uid);
+        let name_ident = format_ident!("{}", formatted_name);
+        let size_type = size_to_type(item.size);
+        let size_ident = format_ident!("{}", size_type);
+        let field_assignments = quote_bitfield_from_fields(&item.fields, item.size);
+        let field_names: Vec<TokenStream> = item.fields.iter()
+            .map(|field| {
+                let ident = format_ident!("{}", format_field_name(field.name.as_str()));
+                quote!(#ident)
+            }).collect();
+        quote!(
+            impl From<#size_ident> for #name_ident {
+                fn from(value: #size_ident) -> Self {
+                    #(#field_assignments)*
+                    Self {
+                        #(#field_names),*
+                    }
+                }
+            }
+        )
+    }
+
+    fn quote_bitfield_from_fields(fields: &Vec<BitfieldItem>, data_size: usize) -> Vec<TokenStream> {
+        // let true_value_literal = discriminant_literal(1, data_size);
+        // let false_value_literal = discriminant_literal(0, data_size);
+        fields.iter().map(|field| {
+            let field_name = format_field_name(&field.name);
+            let field_ident = format_ident!("{}", field_name);
+            let position_shift_literal = data_size - field.length - field.bit_position;
+            quote!(
+                // TODO dit uitwerken
+                // let #field_ident = ((value shifted right 31-position) & (bitmask for length)) != 0;
+            )
+        }).collect()
+    }
+
+    fn quote_bitfield_into_impl(item: &Bitfield) -> TokenStream {
+        let formatted_name = format_name(item.name.as_str(), item.uid);
+        let name_ident = format_ident!("{}", formatted_name);
+        let size_type = size_to_type(item.size);
+        let size_ident = format_ident!("{}", size_type);
+        let field_assignments = quote_bitfield_into_fields(&item.fields, item.size);
+        let field_names: Vec<TokenStream> = item.fields.iter()
+            .map(|field| {
+                let ident = format_ident!("{}", format_field_name(field.name.as_str()));
+                quote!(#ident)
+            }).collect();
+        let base_size_literal = discriminant_literal(0, item.size);
+        quote!(
+            impl From<#name_ident> for #size_ident {
+                fn from(value: #name_ident) -> Self {
+                    #(#field_assignments)*
+                    #base_size_literal #( | #field_names)*
+                }
+            }
+        )
+    }
+
+    fn quote_bitfield_into_fields(fields: &Vec<BitfieldItem>, data_size: usize) -> Vec<TokenStream> {
+        let true_value_literal = discriminant_literal(1, data_size);
+        let false_value_literal = discriminant_literal(0, data_size);
+        fields.iter().map(|field| {
+            let field_name = format_field_name(&field.name);
+            let field_ident = format_ident!("{}", field_name);
+            let position_shift_literal = data_size - field.length - field.bit_position;
+            quote!(
+                let #field_ident = if value.#field_ident { #true_value_literal } else { #false_value_literal } << #position_shift_literal;
+            )
+        }).collect()
     }
 
     fn size_to_type(data_size: usize) -> &'static str {
