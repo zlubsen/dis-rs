@@ -597,7 +597,7 @@ mod generation {
                     ))
                 }
                 EnumItem::CrossRef(_item) => {
-                    // Manual impl
+                    // Manual impl, cannot be determined based on discriminant value alone (e.g., need domain enum for capabilities and appearance)
                     None
                 }
             }
@@ -644,10 +644,13 @@ mod generation {
                         #name_ident::#item_ident(#value_ident) => #value_ident
                     ))
                 }
-                EnumItem::CrossRef(_item) => {
-                    // TODO impl
-                    // #name_ident::#item_ident(#struct_ident) => #struct_ident::serialize()
-                    None
+                EnumItem::CrossRef(item) => {
+                    let item_name = format_name(item.description.as_str(), item.value);
+                    let item_ident = format_ident!("{}", item_name);
+                    let value_ident = format_ident!("{}", "capabilities");
+                    Some(quote!(
+                        #name_ident::#item_ident(#value_ident) => #value_ident.serialize()
+                    ))
                 }
             }
         }).collect();
@@ -693,9 +696,16 @@ mod generation {
                         #name_ident::#item_ident(#value_ident) => write!(f, "{} ({})", #item_description, #value_ident)
                     ))
                 }
-                EnumItem::CrossRef(_item) => {
-                    // Manual impl
-                    None
+                EnumItem::CrossRef(item) => {
+                    // TODO defer impl to concrete struct
+                    let item_description = item.description.as_str();
+                    let item_name = format_name(item_description, item.value);
+                    let item_ident = format_ident!("{}", item_name);
+
+                    let value_ident = format_ident!("{}", "capability");
+                    Some(quote!(
+                        #name_ident::#item_ident(#value_ident) => #value_ident.display()
+                    ))
                 }
             }
         }).collect();
@@ -717,8 +727,11 @@ mod generation {
     }
 
     fn generate_bitfield(item: &Bitfield) -> TokenStream {
-        // TODO
         let decl = quote_bitfield_decl(item);
+        // TODO let from = quote_bitfield_from_impl(item); // struct from u32
+        // TODO let into = quote_bitfield_into_impl(item); // struct into u32
+        // TODO let display = quote_bitfield_display_impl(item); // display values of fields or bitstring
+        // TODO let serialize = quote_bitfield_serialize_impl(item); // needed?
         quote!(
             #decl
         )
@@ -730,7 +743,6 @@ mod generation {
         let fields = quote_bitfield_decl_fields(&item.fields);
         quote!(
             #[derive(Copy, Clone, Debug, PartialEq)]
-            #[allow(non_camel_case_types)]
             pub struct #name_ident {
                 #(#fields),*
             }
