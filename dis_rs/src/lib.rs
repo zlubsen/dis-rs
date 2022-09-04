@@ -2,7 +2,6 @@ mod common;
 mod v7;
 
 include!(concat!(env!("OUT_DIR"), "/enumerations.rs"));
-// include!("../gen_src/enumerations.rs");
 
 pub use enumerations::*;
 
@@ -30,7 +29,7 @@ V Writing headers and pdus to buffer/network
 V Build DIS v7 Header; model, builder, parser
 V Factor out PDU types into common
 - Build DIS v7 EntityState
-- Incorporate versions of enumeration document into the lib (domain types, country codes, etc). Possibly set version to use as config option; default to latest.
+V- Incorporate versions of enumeration document into the lib (domain types, country codes, etc).
 - Incorporate Symbolic names from the standard (v7 - table 25)
 - Dead-reckoning algorithms
 
@@ -42,7 +41,6 @@ V Read Other PDU
 - DIS v7 header
 
 ISSUES:
-- Decide on use of 'Unspecified' enum values
 - Serialize OtherPdu: check for sufficient buffer size?
 
 */

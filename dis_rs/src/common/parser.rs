@@ -14,7 +14,7 @@ use crate::common::other::parser::other_body;
 use crate::{Country, EntityId, EntityKind, EntityType, EventId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{PduType, ProtocolFamily};
+use crate::enumerations::{PduType, ProtocolFamily, PlatformDomain};
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -270,7 +270,7 @@ pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
 
 pub fn entity_type(input: &[u8]) -> IResult<&[u8], EntityType> {
     let (input, kind) = kind(input)?;
-    let (input, domain) = be_u8(input)?;
+    let (input, domain) = domain(input)?;
     let (input, country) = country(input)?;
     let (input, category) = be_u8(input)?;
     let (input, subcategory) = be_u8(input)?;
@@ -291,6 +291,12 @@ fn kind(input: &[u8]) -> IResult<&[u8], EntityKind> {
     let (input, kind) = be_u8(input)?;
     let kind = EntityKind::from(kind);
     Ok((input, kind))
+}
+
+fn domain(input: &[u8]) -> IResult<&[u8], PlatformDomain> {
+    let (input, domain) = be_u8(input)?;
+    let domain = PlatformDomain::from(domain);
+    Ok((input, domain))
 }
 
 fn country(input: &[u8]) -> IResult<&[u8], Country> {
@@ -346,7 +352,7 @@ mod tests {
     use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{EntityKind, ForceId, Country, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType};
+    use crate::enumerations::{EntityKind, ForceId, Country, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType, PlatformDomain};
 
     #[test]
     fn parse_header() {
@@ -432,7 +438,7 @@ mod tests {
             assert_eq!(articulation_parameters.len(), 4usize);
             assert_eq!(pdu.entity_type, EntityType {
                 kind: EntityKind::Platform,
-                domain: 2,
+                domain: PlatformDomain::Air,
                 country: Country::Netherlands_NLD_,
                 category: 50,
                 subcategory: 4,

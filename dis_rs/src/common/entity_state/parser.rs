@@ -8,7 +8,7 @@ use nom::sequence::tuple;
 use crate::common::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, ArticulatedParts, ArticulationParameter, Camouflage, Concealed, Density, DrParameters, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, ParameterTypeVariant, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
 use crate::common::model::{EntityType, PduBody};
 use crate::common::parser;
-use crate::enumerations::{EntityKind, ForceId, EntityMarkingCharacterSet, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, AttachedParts, VariableParameterRecordType};
+use crate::enumerations::{EntityKind, ForceId, EntityMarkingCharacterSet, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, AttachedParts, VariableParameterRecordType, PlatformDomain};
 
 pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -122,23 +122,23 @@ fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u
         // FIXME it seems the bit-level parsers do not consume the bytes from the input.
         // domain codes are defined as part of the Entity Type Database.
         let (input, appearance) = match (entity_type.kind, entity_type.domain) {
-            (EntityKind::Platform, 1u8) => { // land
+            (EntityKind::Platform, PlatformDomain::Land) => { // land
                 let (input, record) = land_platform_record(input)?;
                 (input, SpecificAppearance::LandPlatform(record))
             }
-            (EntityKind::Platform, 2u8) => { // air
+            (EntityKind::Platform, PlatformDomain::Air) => { // air
                 let (input, record) = air_platform_record(input)?;
                 (input, SpecificAppearance::AirPlatform(record))
             }
-            (EntityKind::Platform, 3u8) => { // surface
+            (EntityKind::Platform, PlatformDomain::Surface) => { // surface
                 let (input, record) = surface_platform_record(input)?;
                 (input, SpecificAppearance::SurfacePlatform(record))
             }
-            (EntityKind::Platform, 4u8) => { // subsurface
+            (EntityKind::Platform, PlatformDomain::Subsurface) => { // subsurface
                 let (input, record) = subsurface_platforms_record(input)?;
                 (input, SpecificAppearance::SubsurfacePlatform(record))
             }
-            (EntityKind::Platform, 5u8) => { // space
+            (EntityKind::Platform, PlatformDomain::Space) => { // space
                 let (input, record) = space_platforms_record(input)?;
                 (input, SpecificAppearance::SpacePlatform(record))
             }
@@ -150,7 +150,7 @@ fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u
                 let (input, record) = guided_munitions_record(input)?;
                 (input, SpecificAppearance::GuidedMunition(record))
             }
-            (EntityKind::Lifeform, 1u8) => { // lifeform
+            (EntityKind::Lifeform, PlatformDomain::Land) => { // lifeform
                 let (input, record) = life_forms_record(input)?;
                 (input, SpecificAppearance::LifeForm(record))
             }
@@ -404,6 +404,7 @@ fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
         VariableParameterRecordType::ArticulatedPart => { articulated_part(input)? }
         _ => { attached_part(input)? } // TODO impl other VariableParameterRecordType; now defaults to Unspecified AttachedPart
     };
+    // FIXME attached parts has an 64-bit EntityType record, articulated part a 32-bit float value + 32-bit padding
     let (input, articulation_parameter_value) = be_f32(input)?;
     let (input, _pad_out) = take_bytes(4usize)(input)?;
 

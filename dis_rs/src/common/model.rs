@@ -3,7 +3,7 @@ use crate::common::builder::PduHeaderBuilder;
 use crate::common::entity_state::model::EntityState;
 use crate::common::Interaction;
 use crate::common::other::model::Other;
-use crate::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolFamily};
+use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolFamily, PlatformDomain};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
 
@@ -379,7 +379,7 @@ pub struct Orientation {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityType {
     pub kind : EntityKind,
-    pub domain : u8, // TODO replace with generated PlatformDomain enum
+    pub domain : PlatformDomain,
     pub country : Country,
     pub category : u8,
     pub subcategory : u8,

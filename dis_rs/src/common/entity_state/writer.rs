@@ -281,7 +281,7 @@ impl Serialize for ForceId {
 impl Serialize for EntityType {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         buf.put_u8(self.kind.into());
-        buf.put_u8(self.domain);
+        buf.put_u8(self.domain.into());
         buf.put_u16(self.country.into());
         buf.put_u8(self.category);
         buf.put_u8(self.subcategory);
@@ -310,7 +310,7 @@ mod tests {
     use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ArticulatedParts, ArticulationParameter, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType};
+    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType, PlatformDomain};
 
     #[test]
     fn entity_marking() {
@@ -364,10 +364,10 @@ mod tests {
             })
             .force_id(ForceId::Friendly)
             .entity_type(EntityType {
-                kind: EntityKind::Platform, domain: 2, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
+                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .alt_entity_type(EntityType {
-                kind: EntityKind::Platform, domain: 2, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
+                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .linear_velocity(VectorF32 {
                 first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32
