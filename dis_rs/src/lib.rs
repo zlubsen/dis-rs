@@ -1,4 +1,5 @@
 mod common;
+mod v6;
 mod v7;
 
 include!(concat!(env!("OUT_DIR"), "/enumerations.rs"));
@@ -9,7 +10,7 @@ pub use common::parse;
 pub use common::parse_v6 as parse_v6_pdus;
 pub use common::parse_v7 as parse_v7_pdus;
 
-// TODO required exports for the final API that the lib exposes
+// TODO review required exports for the final API that the lib exposes
 pub use common::model::*;
 pub use common::symbolic_names::*;
 pub use common::errors::*;
@@ -28,7 +29,6 @@ V Tests for parsing incomplete input / some santity checks on pdu lengths
 V Writing headers and pdus to buffer/network
 V Build DIS v7 Header; model, builder, parser
 V Factor out PDU types into common
-- Build DIS v7 EntityState
 V- Incorporate versions of enumeration document into the lib (domain types, country codes, etc).
 - Incorporate Symbolic names from the standard (v7 - table 25)
 - Dead-reckoning algorithms

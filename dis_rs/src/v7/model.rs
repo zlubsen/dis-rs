@@ -13,6 +13,7 @@ pub struct PduStatus {
     pub active_interrogation_indicator : Option<ActiveInterrogationIndicator>,
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for PduStatus {
     fn default() -> Self {
         PduStatus {

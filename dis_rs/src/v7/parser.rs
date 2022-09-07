@@ -1,10 +1,26 @@
+use nom::IResult;
+use nom::number::complete::be_u8;
+use crate::enumerations::PduType;
 use crate::v7::builder::{build_pdu_status_aii_ism_cei_lvc_tei, build_pdu_status_cei_lvc, build_pdu_status_cei_lvc_tei, build_pdu_status_dti_cei_lvc, build_pdu_status_fti_cei_lvc, build_pdu_status_iai_cei_lvc_tei, build_pdu_status_lvc, build_pdu_status_rai_cei_lvc_tei};
 use crate::v7::model::{ActiveInterrogationIndicator, CoupledExtensionIndicator, DetonationTypeIndicator, FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator, PduStatus, RadioAttachedIndicator, TransferredEntityIndicator};
 
-/// Parses the pdu status field into a PduStatus struct, depending on the PduType
+pub fn parse_pdu_status(pdu_type: PduType) -> impl Fn(&[u8]) -> IResult<&[u8], (PduStatus, u16)> {
+    move | input: &[u8] | {
+        let type_u8 : u8 = pdu_type.into();
+        let (input, status) = be_u8(input)?;
+        let (input, padding) = be_u8(input)?;
+        Ok(
+            (input,
+             (parse_pdu_status_fields(type_u8, status), padding as u16)
+            )
+        )
+    }
+}
+
+/// Parses the pdu status sub-fields into a PduStatus struct, depending on the PduType
 ///
 /// Note: parser should not be fed input that is consumed, but a copy of the pdu status byte (as it is already parsed earlier)
-pub fn parse_pdu_status(pdu_type: u8, input : u8) -> PduStatus {
+pub fn parse_pdu_status_fields(pdu_type: u8, input : u8) -> PduStatus {
     let tei = status_tei(input);
     let lvc = status_lvc(input);
     let cei = status_cei(input);

@@ -1,8 +1,9 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::Serialize;
-use crate::common::entity_state::model::{AirPlatformsRecord, Appearance, ArticulationParameter, DrParameters, EntityCapabilities, EntityMarking, EntityState, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, ParameterTypeVariant, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
+use crate::common::entity_state::model::{ArticulationParameter, DrParameters, EntityMarking, EntityState, ParameterTypeVariant};
 use crate::common::model::EntityType;
 use crate::enumerations::ForceId;
+use crate::v6::entity_state::model::{AirPlatformsRecord, Appearance, EntityCapabilities, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
 
 impl Serialize for EntityState {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -21,11 +22,11 @@ impl Serialize for EntityState {
         let location_bytes = self.entity_location.serialize(buf);
         let orientation_bytes = self.entity_orientation.serialize(buf);
 
-        let appearance_bytes = self.entity_appearance.serialize(buf);
+        let appearance_bytes = self.entity_appearance_v6.serialize(buf);
         let dr_params_bytes = self.dead_reckoning_parameters.serialize(buf);
 
         let marking_bytes = self.entity_marking.serialize(buf);
-        let capabilities_bytes = self.entity_capabilities.serialize(buf);
+        let capabilities_bytes = self.entity_capabilities_v6.serialize(buf);
 
         let art_params_bytes = if let Some(params) = &self.articulation_parameter {
             let mut num_bytes = 0;
@@ -92,7 +93,7 @@ impl Serialize for GeneralAppearance {
         let entity_lights = entity_lights << 1;
         let entity_flaming_effect : u16 = self.entity_flaming_effect.into();
 
-        let general_appearance : u16 = 0u16 | entity_paint_scheme | entity_mobility_kill
+        let general_appearance : u16 = entity_paint_scheme | entity_mobility_kill
             | entity_fire_power | entity_damage | entity_smoke | entity_trailing_effect
             | entity_hatch_state | entity_lights | entity_flaming_effect;
         buf.put_u16(general_appearance);
@@ -135,7 +136,7 @@ impl Serialize for LandPlatformsRecord {
         let ramp : u16 = self.ramp.into();
         let ramp = ramp << 6;
 
-        let land_appearance = 0u16 | launcher | camouflage | concealed
+        let land_appearance = launcher | camouflage | concealed
             | frozen_status | power_plant_status | state | tent | ramp;
         buf.put_u16(land_appearance);
         2
@@ -153,7 +154,7 @@ impl Serialize for AirPlatformsRecord {
         let state : u16 = self.state.into();
         let state = state << 8;
 
-        let air_appearance : u16 = 0u16 | afterburner | frozen_status | power_plant_status | state;
+        let air_appearance : u16 = afterburner | frozen_status | power_plant_status | state;
         buf.put_u16(air_appearance);
         2
     }
@@ -168,7 +169,7 @@ impl Serialize for SurfacePlatformRecord {
         let state : u16 = self.state.into();
         let state = state << 8;
 
-        let surface_appearance = 0u16 | frozen_status | power_plant_status | state;
+        let surface_appearance = frozen_status | power_plant_status | state;
         buf.put_u16(surface_appearance);
         2
     }
@@ -183,7 +184,7 @@ impl Serialize for SubsurfacePlatformsRecord {
         let state : u16 = self.state.into();
         let state = state << 8;
 
-        let subsurface_appearance = 0u16 | frozen_status | power_plant_status | state;
+        let subsurface_appearance = frozen_status | power_plant_status | state;
         buf.put_u16(subsurface_appearance);
         2
     }
@@ -198,7 +199,7 @@ impl Serialize for SpacePlatformsRecord {
         let state : u16 = self.state.into();
         let state = state << 8;
 
-        let space_appearance = 0u16 | frozen_status | power_plant_status | state;
+        let space_appearance = frozen_status | power_plant_status | state;
         buf.put_u16(space_appearance);
         2
     }
@@ -210,8 +211,8 @@ impl Serialize for GuidedMunitionsRecord {
         let frozen_status : u16 = self.frozen_status.into();
         let state : u16 = self.state.into();
 
-        let guided_appearance = 0u16
-            | (launch_flash << 15)
+        let guided_appearance =
+            (launch_flash << 15)
             | (frozen_status << 10)
             | (state << 8);
         buf.put_u16(guided_appearance);
@@ -227,8 +228,8 @@ impl Serialize for LifeFormsRecord {
         let weapon_1 : u16 = self.weapon_1.into();
         let weapon_2 : u16 = self.weapon_2.into();
 
-        let life_form_appearance = 0u16
-            | (life_form_state << 12)
+        let life_form_appearance =
+            (life_form_state << 12)
             | (frozen_status << 10)
             | (activity_state << 8)
             | (weapon_1 << 6)
@@ -242,7 +243,7 @@ impl Serialize for EnvironmentalsRecord {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
         let density : u16 = self.density.into();
 
-        let env_appearance = 0u16 | (density << 12);
+        let env_appearance = density << 12;
         buf.put_u16(env_appearance);
         2
     }
@@ -264,7 +265,7 @@ impl Serialize for EntityCapabilities {
         let fuel_supply = if self.fuel_supply { 1u32 } else { 0u32 } << 30;
         let recovery = if self.recovery { 1u32 } else { 0u32 } << 29;
         let repair = if self.repair { 1u32 } else { 0u32 } << 28;
-        let capabilities = 0u32 | ammunition_supply | fuel_supply | recovery | repair;
+        let capabilities = ammunition_supply | fuel_supply | recovery | repair;
         buf.put_u32(capabilities);
         4
     }
@@ -306,11 +307,12 @@ impl Serialize for EntityMarking {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, ArticulatedParts, ArticulationParameter, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMarking, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityState, EntityTrailingEffect, FrozenStatus, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::v6::entity_state::builder::GeneralAppearanceBuilder;
+    use crate::common::entity_state::model::{ArticulatedParts, ArticulationParameter, DrParameters, EntityMarking, EntityState, ParameterTypeVariant};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, ProtocolVersion, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType, PlatformDomain};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, ProtocolFamily, VariableParameterRecordType};
+    use crate::v6::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, PowerPlantStatus, SpecificAppearance, State};
 
     #[test]
     fn entity_marking() {

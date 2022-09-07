@@ -18,7 +18,7 @@ use crate::common::parser::parse_multiple_pdu;
 pub enum SupportedVersion {
     V6,
     V7,
-    UNSUPPORTED,
+    Unsupported,
 }
 
 /// Trait for PDUs to implement whether an interaction between one or two

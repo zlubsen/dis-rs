@@ -14,7 +14,7 @@ use crate::common::other::parser::other_body;
 use crate::{Country, EntityId, EntityKind, EntityType, EventId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{PduType, ProtocolFamily, PlatformDomain};
+use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily};
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -93,16 +93,17 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
 
     let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
         tuple((protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length))(input)?;
-    let type_u8 : u8 = pdu_type.into();
-    let (input, pdu_status, padding) = match protocol_version {
-        ProtocolVersion::Ieee1278_1_2012 => {
-            let (input, status) = be_u8(input)?;
-            let (input, padding) = be_u8(input)?;
-            (input, Some(
-                parse_pdu_status(type_u8, status)), padding as u16) }
-        _ => {
+    let (input, pdu_status, padding) = match protocol_version as usize {
+        0..=6 => {
             let (input, padding) = be_u16(input)?;
             (input, None, padding as u16)
+        }
+        7 => {
+            let (input, (status, padding)) = parse_pdu_status(pdu_type)(input)?;
+            (input, Some(status), padding)
+        }
+        _ => {
+            unimplemented!("V7 is the most recent DIS version at time of implementation.");
         }
     };
 
@@ -129,7 +130,7 @@ fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
 fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {
         // parse the body of the PDU based on the type
-        // TODO only process supported PduTypes; process others as 'Other'
+        // TODO - NOTE only processes supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
             PduType::Other => { other_body(header)(input)? }
             PduType::EntityState => { entity_state_body()(input)? }
@@ -349,10 +350,11 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
 mod tests {
     use crate::common::model::{EntityType, PduBody, ProtocolVersion};
     use crate::common::errors::DisError;
-    use crate::common::entity_state::model::{Afterburner, AirPlatformsRecord, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, ParameterTypeVariant, PowerPlantStatus, SpecificAppearance, State};
+    use crate::common::entity_state::model::ParameterTypeVariant;
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{EntityKind, ForceId, Country, PduType, ProtocolFamily, ArticulatedPartsTypeMetric, ArticulatedPartsTypeClass, DeadReckoningAlgorithm, VariableParameterRecordType, PlatformDomain};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolFamily, VariableParameterRecordType};
+    use crate::v6::entity_state::model::{Afterburner, AirPlatformsRecord, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, PowerPlantStatus, SpecificAppearance, State};
 
     #[test]
     fn parse_header() {
@@ -445,7 +447,7 @@ mod tests {
                 specific: 4,
                 extra: 0
             });
-            assert_eq!(pdu.entity_appearance.general_appearance, GeneralAppearance {
+            assert_eq!(pdu.entity_appearance_v6.general_appearance, GeneralAppearance {
                 entity_paint_scheme: EntityPaintScheme::UniformColor,
                 entity_mobility_kill: EntityMobilityKill::NoMobilityKill,
                 entity_fire_power: EntityFirePower::NoFirePowerKill,
@@ -456,7 +458,7 @@ mod tests {
                 entity_lights: EntityLights::None,
                 entity_flaming_effect: EntityFlamingEffect::None,
             });
-            if let SpecificAppearance::AirPlatform(record) = pdu.entity_appearance.specific_appearance {
+            if let SpecificAppearance::AirPlatform(record) = pdu.entity_appearance_v6.specific_appearance {
                 assert_eq!(record, AirPlatformsRecord {
                     afterburner: Afterburner::NotOn,
                     frozen_status: FrozenStatus::NotFrozen,
@@ -466,7 +468,7 @@ mod tests {
             } else { assert!(false) };
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            assert_eq!(pdu.entity_capabilities, EntityCapabilities {
+            assert_eq!(pdu.entity_capabilities_v6, EntityCapabilities {
                 ammunition_supply: false,
                 fuel_supply: false,
                 recovery: false,

@@ -70,7 +70,7 @@ impl PduHeaderBuilder {
     }
 
     fn validate(&self) -> Result<(), ()> {
-        return if self.protocol_version.is_some() &&
+        if self.protocol_version.is_some() &&
             self.exercise_id.is_some() &&
             self.pdu_type.is_some() &&
             self.protocol_family.is_some() &&
@@ -92,7 +92,7 @@ impl PduHeaderBuilder {
     }
 
     pub fn build(&self) -> Result<PduHeader, ()> {
-        if let Err(_) = self.validate() {
+        if self.validate().is_err() {
             return Err(())
         }
         Ok(PduHeader {

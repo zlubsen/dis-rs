@@ -40,7 +40,7 @@ impl PduHeader {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PduConversion)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, PduConversion)]
 #[repr(u8)]
 pub enum ProtocolVersion {
     Other = 0,

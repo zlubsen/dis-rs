@@ -154,13 +154,13 @@ fn main() {
 fn format_name(value: &str, uid: usize) -> String {
     // Remove / replace the following characters
     let intermediate = value
-        .replace(" ", "")
-        .replace("-", "")
-        .replace("/", "")
-        .replace(".", "_")
-        .replace(",", "_")
+        .replace(' ', "")
+        .replace('-', "")
+        .replace('/', "")
+        .replace('.', "_")
+        .replace(',', "_")
         .replace("'", "")
-        .replace("#", "");
+        .replace('#', "");
 
     // Prefix values starting with a digit with '_'
     let intermediate = if intermediate.chars().next().unwrap().is_digit(10) {
@@ -182,12 +182,12 @@ fn format_name(value: &str, uid: usize) -> String {
 
     // When there are multiple parenthesis sections, replace them with '_' (such as Countries)
     intermediate
-        .replace("(", "_")
-        .replace(")", "_")
+        .replace('(', "_")
+        .replace(')', "_")
 }
 
 fn format_field_name(name: &str) -> String {
-    name.to_lowercase().replace(" ", "_").replace("-","")
+    name.to_lowercase().replace(' ', "_").replace('-',"")
 }
 
 mod extraction {
@@ -228,29 +228,29 @@ mod extraction {
                 Ok(Event::Start(ref element)) => {
                     match element.name() {
                         ENUM_ELEMENT => {
-                            current_item = if let Ok(extracted) = extract_enum(element, &reader) {
+                            current_item = if let Ok(extracted) = extract_enum(element, reader) {
                                 Some(GenerationItem::Enum(extracted))
                             } else { None }
                         },
                         ENUM_ROW_ELEMENT => {
-                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_item(element, &reader)) {
+                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_item(element, reader)) {
                                 current.items.push(item);
                                 Some(GenerationItem::Enum(current))
                             } else { None };
                         },
                         ENUM_ROW_RANGE_ELEMENT => {
-                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_range_item(element, &reader)) {
+                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_range_item(element, reader)) {
                                 current.items.push(item);
                                 Some(GenerationItem::Enum(current))
                             } else { None };
                         },
                         BITFIELD_ELEMENT => {
-                            current_item = if let Ok(extracted) = extract_bitfield(element, &reader) {
+                            current_item = if let Ok(extracted) = extract_bitfield(element, reader) {
                                 Some(GenerationItem::Bitfield(extracted))
                             } else { None }
                         },
                         BITFIELD_ROW_ELEMENT => {
-                            current_item = if let (Some(GenerationItem::Bitfield(mut current)), Ok(item)) = (current_item, extract_bitfield_item(element, &reader)) {
+                            current_item = if let (Some(GenerationItem::Bitfield(mut current)), Ok(item)) = (current_item, extract_bitfield_item(element, reader)) {
                                 current.fields.push(item);
                                 Some(GenerationItem::Bitfield(current))
                             } else { None }
@@ -273,19 +273,19 @@ mod extraction {
                 Ok(Event::Empty(ref element)) => {
                     match element.name() {
                         ENUM_ROW_ELEMENT => {
-                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_item(element, &reader)) {
+                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_item(element, reader)) {
                                 current.items.push(item);
                                 Some(GenerationItem::Enum(current))
                             } else { None };
                         },
                         ENUM_ROW_RANGE_ELEMENT => {
-                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_range_item(element, &reader)) {
+                            current_item = if let (Some(GenerationItem::Enum(mut current)), Ok(item)) = (current_item, extract_enum_range_item(element, reader)) {
                                 current.items.push(item);
                                 Some(GenerationItem::Enum(current))
                             } else { None };
                         },
                         BITFIELD_ROW_ELEMENT => {
-                            current_item = if let (Some(GenerationItem::Bitfield(mut current)), Ok(item)) = (current_item, extract_bitfield_item(element, &reader)) {
+                            current_item = if let (Some(GenerationItem::Bitfield(mut current)), Ok(item)) = (current_item, extract_bitfield_item(element, reader)) {
                                 current.fields.push(item);
                                 Some(GenerationItem::Bitfield(current))
                             } else { None }
@@ -314,16 +314,16 @@ mod extraction {
         let size_override = should_generate.unwrap().2;
 
         let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            if name_override.is_some() {
-                Some(name_override.unwrap().to_string())
+            if let Some(name) = name_override {
+                Some(name.to_string())
             } else {
                 Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
             }
         } else { None };
 
         let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
-            if size_override.is_some() {
-                Some(size_override.unwrap())
+            if let Some(size) = size_override {
+                Some(size)
             } else {
                 Some(usize::from_str(reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
             }
@@ -484,12 +484,12 @@ mod generation {
         let formatted_name = format_name(item.name.as_str(), item.uid);
         let name_ident = format_ident!("{}", formatted_name);
         // generate enum declarations
-        let decl = quote_enum_decl(&item, lookup_xref);
+        let decl = quote_enum_decl(item, lookup_xref);
         // generate From impls (2x)
-        let from_impl = quote_enum_from_impl(&item, &name_ident);
-        let into_impl = quote_enum_into_impl(&item, &name_ident);
+        let from_impl = quote_enum_from_impl(item, &name_ident);
+        let into_impl = quote_enum_into_impl(item, &name_ident);
         // generate Display impl
-        let display_impl = quote_enum_display_impl(&item, &name_ident);
+        let display_impl = quote_enum_display_impl(item, &name_ident);
         // generate Default impl
         let default_impl = quote_enum_default_impl(&name_ident);
         quote!(
@@ -515,7 +515,7 @@ mod generation {
         )
     }
 
-    fn quote_enum_decl_arms<'a, F>(items: &Vec<EnumItem>, data_size: usize, lookup_xref: F) -> Vec<TokenStream>
+    fn quote_enum_decl_arms<'a, F>(items: &[EnumItem], data_size: usize, lookup_xref: F) -> Vec<TokenStream>
     where F: Fn(usize)->Option<&'a GenerationItem> {
         let size_type = size_to_type(data_size);
         let size_ident = format_ident!("{}", size_type);
@@ -573,7 +573,7 @@ mod generation {
         )
     }
 
-    fn quote_enum_from_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+    fn quote_enum_from_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
@@ -622,7 +622,7 @@ mod generation {
         )
     }
 
-    fn quote_enum_into_arms(name_ident: &Ident, items: &Vec<EnumItem>, data_size: usize) -> Vec<TokenStream> {
+    fn quote_enum_into_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
@@ -671,7 +671,7 @@ mod generation {
         )
     }
 
-    fn quote_enum_display_arms(items: &Vec<EnumItem>, name_ident: &Ident) -> Vec<TokenStream> {
+    fn quote_enum_display_arms(items: &[EnumItem], name_ident: &Ident) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
@@ -751,7 +751,7 @@ mod generation {
         )
     }
 
-    fn quote_bitfield_decl_fields<'a, F>(fields: &Vec<BitfieldItem>, lookup_xref: F) -> Vec<TokenStream>
+    fn quote_bitfield_decl_fields<'a, F>(fields: &[BitfieldItem], lookup_xref: F) -> Vec<TokenStream>
     where F: Fn(usize)->Option<&'a GenerationItem> {
         let generated_fields: Vec<TokenStream> = fields.iter().map( |field| {
             let field_name = format_field_name(field.name.as_str());
@@ -791,7 +791,7 @@ mod generation {
         )
     }
 
-    fn quote_bitfield_from_fields(fields: &Vec<BitfieldItem>, data_size: usize) -> Vec<TokenStream> {
+    fn quote_bitfield_from_fields(fields: &[BitfieldItem], data_size: usize) -> Vec<TokenStream> {
         fields.iter().map(|field| {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
@@ -826,7 +826,7 @@ mod generation {
         )
     }
 
-    fn quote_bitfield_into_fields(fields: &Vec<BitfieldItem>, data_size: usize) -> Vec<TokenStream> {
+    fn quote_bitfield_into_fields(fields: &[BitfieldItem], data_size: usize) -> Vec<TokenStream> {
         let true_value_literal = discriminant_literal(1, data_size);
         let false_value_literal = discriminant_literal(0, data_size);
         fields.iter().map(|field| {
@@ -844,7 +844,8 @@ mod generation {
             64 => "u64",
             32 => "u32",
             16 => "u16",
-            8 | _ => "u8",
+            8 => "u8",
+            _ => "u8",
         }
     }
 
@@ -853,7 +854,8 @@ mod generation {
             64 => Literal::u64_suffixed(value as u64),
             32 => Literal::u32_suffixed(value as u32),
             16 => Literal::u16_suffixed(value as u16),
-            8 | _ => Literal::u8_suffixed(value as u8),
+            8 => Literal::u8_suffixed(value as u8),
+            _ => Literal::u8_suffixed(value as u8),
         }
     }
 }

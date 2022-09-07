@@ -26,7 +26,7 @@ impl OtherBuilder {
     }
 
     pub fn validate(&self) -> bool {
-        return self.header.is_some() && self.body.is_some()
+        self.header.is_some() && self.body.is_some()
     }
 
     pub fn build(self) -> Result<PduBody, ()> {
