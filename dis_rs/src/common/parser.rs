@@ -133,7 +133,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
         // TODO - NOTE only processes supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
             PduType::Other => { other_body(header)(input)? }
-            PduType::EntityState => { entity_state_body()(input)? }
+            PduType::EntityState => { entity_state_body(header.protocol_version)(input)? }
             PduType::Fire => { fire_body()(input)? }
             PduType::Unspecified(_type_number) => { other_body(header)(input)? }
             _ => { other_body(header)(input)? }
@@ -468,12 +468,12 @@ mod tests {
             } else { assert!(false) };
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            assert_eq!(pdu.entity_capabilities_v6, EntityCapabilities {
+            assert_eq!(pdu.entity_capabilities_v6, Some(EntityCapabilities {
                 ammunition_supply: false,
                 fuel_supply: false,
                 recovery: false,
                 repair: false,
-            });
+            }));
             assert_eq!(articulation_parameters.len(), 4);
             let parameter_1 = articulation_parameters.get(0).unwrap();
             assert_eq!(parameter_1.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);

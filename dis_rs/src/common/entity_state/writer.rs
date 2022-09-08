@@ -26,7 +26,18 @@ impl Serialize for EntityState {
         let dr_params_bytes = self.dead_reckoning_parameters.serialize(buf);
 
         let marking_bytes = self.entity_marking.serialize(buf);
-        let capabilities_bytes = self.entity_capabilities_v6.serialize(buf);
+        let capabilities_bytes = {
+            if let Some(capabilities) = &self.entity_capabilities_v6 {
+                capabilities.serialize(buf)
+            } else if let Some(capabilities) = self.entity_capabilities {
+                let value : u32 = capabilities.into();
+                buf.put_u32(value);
+                4
+            } else {
+                buf.put_u32(0u32);
+                4
+            }
+        };
 
         let art_params_bytes = if let Some(params) = &self.articulation_parameter {
             let mut num_bytes = 0;

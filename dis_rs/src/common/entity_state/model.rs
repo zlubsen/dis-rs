@@ -2,8 +2,8 @@ use crate::AttachedParts;
 use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::Interaction;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType};
-use crate::v6::entity_state::model::{Appearance as AppearanceV6, EntityCapabilities as CapabilitiesV6};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType, EntityCapabilities};
+use crate::v6::entity_state::model::{Appearance as AppearanceV6, EntityCapabilities as EntityCapabilitiesV6};
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -21,7 +21,8 @@ pub struct EntityState {
     pub entity_appearance_v6: AppearanceV6, // struct
     pub dead_reckoning_parameters : DrParameters, // struct
     pub entity_marking : EntityMarking, // struct
-    pub entity_capabilities_v6 : CapabilitiesV6, // struct
+    pub entity_capabilities_v6 : Option<EntityCapabilitiesV6>, // struct
+    pub entity_capabilities : Option<EntityCapabilities>,
     pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
 }
 

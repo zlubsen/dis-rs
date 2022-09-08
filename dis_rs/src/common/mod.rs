@@ -1,6 +1,6 @@
 pub mod model;
 mod builder;
-mod parser;
+pub(crate) mod parser;
 
 pub mod entity_state;
 pub mod fire;

@@ -4,3 +4,7 @@
 // TODO v7 Attached Part model, parsing, writing.
 // TODO v7 Articulated Part model, parsing, writing.
 // TODO v7 Capabilities model, parsing, writing.
+
+pub struct Appearance {
+
+}

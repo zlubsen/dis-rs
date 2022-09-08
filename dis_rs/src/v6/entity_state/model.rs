@@ -470,5 +470,4 @@ pub struct EntityCapabilities {
     pub fuel_supply : bool,
     pub recovery : bool,
     pub repair : bool,
-    // 28-bits padding
 }

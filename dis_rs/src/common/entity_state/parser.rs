@@ -1,51 +1,28 @@
 use nom::bytes::complete::take;
 use nom::IResult;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use nom::multi::count;
-use crate::common::entity_state::model::{ArticulatedParts, ArticulationParameter, DrParameters, EntityMarking, EntityState, ParameterTypeVariant};
+use crate::common::entity_state::model::{ArticulatedParts, ArticulationParameter, DrParameters, EntityMarking, ParameterTypeVariant};
 use crate::common::model::PduBody;
 use crate::common::parser;
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType};
-use crate::v6::entity_state::parser::{appearance as appearance_v6, entity_capabilities as capabilities_v6};
+use crate::ProtocolVersion;
 
-pub fn entity_state_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
+pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
-        let (input, entity_id_val) = parser::entity_id(input)?;
-        let (input, force_id_val) = force_id(input)?;
-        let (input, articulated_parts_no) = be_u8(input)?;
-        let (input, entity_type_val) = parser::entity_type(input)?;
-        let (input, alternative_entity_type) = parser::entity_type(input)?;
-        let (input, entity_linear_velocity) = parser::vec3_f32(input)?;
-        let (input, entity_location) = parser::location(input)?;
-        let (input, entity_orientation) = parser::orientation(input)?;
-        let (input, entity_appearance) = appearance_v6(entity_type_val)(input)?;
-        let (input, dead_reckoning_parameters) = dr_parameters(input)?;
-        let (input, entity_marking) = entity_marking(input)?;
-        let (input, entity_capabilities) = capabilities_v6(input)?;
-        let (input, articulation_parameter) = if articulated_parts_no > 0 {
-            let (input, params) = count(articulation_record, articulated_parts_no as usize)(input)?;
-            (input, Some(params))
-        } else { (input, None) };
-
-        let builder = EntityState::builder()
-            // .header(header)
-            .entity_id(entity_id_val)
-            .force_id(force_id_val)
-            .entity_type(entity_type_val)
-            .alt_entity_type(alternative_entity_type)
-            .linear_velocity(entity_linear_velocity)
-            .location(entity_location)
-            .orientation(entity_orientation)
-            .appearance(entity_appearance)
-            .dead_reckoning(dead_reckoning_parameters)
-            .marking(entity_marking)
-            .capabilities(entity_capabilities);
-        let builder = if let Some(params) = articulation_parameter {
-            builder.add_articulation_parameters_vec(params)
-        } else { builder };
-        let body = builder.build();
-
-        Ok((input, body.unwrap()))
+        let (input, body) = match version as usize {
+            0..=6 => {
+                // versions 6 and lower
+                crate::v6::entity_state::parser::entity_state_body(input)?
+            }
+            7 => {
+                // version 7
+                crate::v7::entity_state::parser::entity_state_body(input)?
+            }
+            _ => {
+                unimplemented!("V7 is the most recent DIS version at time of implementation.");
+            }
+        };
+        Ok((input, body))
     }
 }
 
@@ -69,7 +46,7 @@ pub fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     }))
 }
 
-fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
+pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let (input, algorithm) = be_u8(input)?;
     let (input, other_parameters) = take(15usize)(input)?;
     let (input, acceleration) = parser::vec3_f32(input)?;
@@ -85,7 +62,7 @@ fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     }))
 }
 
-fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
+pub fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
     let (input, parameter_type_designator) = be_u8(input)?;
     let (input, parameter_change_indicator) = be_u8(input)?;
     let (input, articulation_attachment_id) = be_u16(input)?;

@@ -3,9 +3,52 @@ use nom::error::Error;
 use nom::sequence::tuple;
 use nom::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
+use nom::multi::count;
+use nom::number::complete::be_u8;
 use crate::enumerations::{EntityKind, PlatformDomain};
-use crate::EntityType;
+use crate::{EntityState, EntityType, PduBody};
+use crate::common::entity_state::parser::{articulation_record, entity_marking};
+use crate::common::parser;
 use crate::v6::entity_state::model::{ActivityState, Afterburner, AirPlatformsRecord, Appearance, Camouflage, Concealed, Density, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, EnvironmentalsRecord, FrozenStatus, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, Launcher, LaunchFlash, LifeFormsRecord, LifeFormsState, PowerPlantStatus, Ramp, SpacePlatformsRecord, SpecificAppearance, State, SubsurfacePlatformsRecord, SurfacePlatformRecord, Tent, Weapon};
+
+pub fn entity_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+    let (input, entity_id_val) = parser::entity_id(input)?;
+    let (input, force_id_val) = crate::common::entity_state::parser::force_id(input)?;
+    let (input, articulated_parts_no) = be_u8(input)?;
+    let (input, entity_type_val) = parser::entity_type(input)?;
+    let (input, alternative_entity_type) = parser::entity_type(input)?;
+    let (input, entity_linear_velocity) = parser::vec3_f32(input)?;
+    let (input, entity_location) = parser::location(input)?;
+    let (input, entity_orientation) = parser::orientation(input)?;
+    let (input, entity_appearance) = appearance(entity_type_val)(input)?;
+    let (input, dead_reckoning_parameters) = crate::common::entity_state::parser::dr_parameters(input)?;
+    let (input, entity_marking) = entity_marking(input)?;
+    let (input, entity_capabilities) = entity_capabilities(input)?;
+    let (input, articulation_parameter) = if articulated_parts_no > 0 {
+        let (input, params) = count(articulation_record, articulated_parts_no as usize)(input)?;
+        (input, Some(params))
+    } else { (input, None) };
+
+    let builder = EntityState::builder()
+        // .header(header)
+        .entity_id(entity_id_val)
+        .force_id(force_id_val)
+        .entity_type(entity_type_val)
+        .alt_entity_type(alternative_entity_type)
+        .linear_velocity(entity_linear_velocity)
+        .location(entity_location)
+        .orientation(entity_orientation)
+        .appearance(entity_appearance)
+        .dead_reckoning(dead_reckoning_parameters)
+        .marking(entity_marking)
+        .capabilities(entity_capabilities);
+    let builder = if let Some(params) = articulation_parameter {
+        builder.add_articulation_parameters_vec(params)
+    } else { builder };
+    let body = builder.build();
+
+    Ok((input, body.unwrap()))
+}
 
 pub fn appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], Appearance> {
     move | input: &[u8] | {
@@ -56,7 +99,6 @@ pub fn general_appearance(input: &[u8]) -> IResult<&[u8], GeneralAppearance> {
 
 fn specific_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], SpecificAppearance> {
     move |input: &[u8]| {
-        // FIXME it seems the bit-level parsers do not consume the bytes from the input.
         // domain codes are defined as part of the Entity Type Database.
         let (input, appearance) = match (entity_type.kind, entity_type.domain) {
             (EntityKind::Platform, PlatformDomain::Land) => { // land
