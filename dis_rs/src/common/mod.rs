@@ -13,12 +13,20 @@ use bytes::BytesMut;
 use crate::common::errors::DisError;
 use crate::common::model::{Pdu, ProtocolVersion};
 use crate::common::parser::parse_multiple_pdu;
+use crate::enumerations::{PduType, ProtocolFamily};
 
 #[allow(dead_code)]
 pub enum SupportedVersion {
     V6,
     V7,
     Unsupported,
+}
+
+/// Trait for PduBodies to query basic information, typically used in the header
+trait Body {
+    fn body_length(&self) -> usize;
+    fn body_type(&self) -> PduType;
+    fn protocol_family(&self) -> ProtocolFamily;
 }
 
 /// Trait for PDUs to implement whether an interaction between one or two

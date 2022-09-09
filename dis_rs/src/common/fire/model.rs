@@ -1,4 +1,4 @@
-use crate::common::Interaction;
+use crate::common::{Body, Interaction};
 use crate::common::model::{BurstDescriptor, EntityId};
 use crate::common::model::EventId;
 use crate::common::model::Location;
@@ -15,6 +15,20 @@ pub struct Fire {
     pub burst_descriptor : BurstDescriptor,
     pub velocity : VectorF32,
     pub range : f32,
+}
+
+impl Body for Fire {
+    fn body_length(&self) -> usize {
+        28
+    }
+
+    fn body_type(&self) -> PduType {
+        PduType::Fire
+    }
+
+    fn protocol_family(&self) -> ProtocolFamily {
+        ProtocolFamily::Warfare
+    }
 }
 
 impl Interaction for Fire {

@@ -1,8 +1,8 @@
 use crate::AttachedParts;
 use crate::common::entity_state::builder::EntityStateBuilder;
-use crate::common::Interaction;
+use crate::common::{Body, Interaction};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType, EntityCapabilities};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType, EntityCapabilities, PduType::EntityState, ProtocolFamily::EntityInformationInteraction};
 use crate::v6::entity_state::model::{Appearance as AppearanceV6, EntityCapabilities as EntityCapabilitiesV6};
 
 // TODO sensible errors for EntityState
@@ -24,6 +24,22 @@ pub struct EntityState {
     pub entity_capabilities_v6 : Option<EntityCapabilitiesV6>, // struct
     pub entity_capabilities : Option<EntityCapabilities>,
     pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
+}
+
+impl Body for EntityState {
+    fn body_length(&self) -> usize {
+        132 + if let Some(params) = &self.articulation_parameter {
+            16 *params.len()
+        } else { 0 }
+    }
+
+    fn body_type(&self) -> PduType {
+        PduType::EntityState
+    }
+
+    fn protocol_family(&self) -> ProtocolFamily {
+        ProtocolFamily::EntityInformationInteraction
+    }
 }
 
 pub struct EntityMarking {
