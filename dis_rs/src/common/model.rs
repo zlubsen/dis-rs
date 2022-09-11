@@ -1,9 +1,8 @@
-use dis_rs_macros::PduConversion;
 use crate::common::builder::PduHeaderBuilder;
 use crate::common::entity_state::model::EntityState;
 use crate::common::Interaction;
 use crate::common::other::model::Other;
-use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolFamily, PlatformDomain};
+use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolVersion, ProtocolFamily, PlatformDomain};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
 
@@ -40,32 +39,33 @@ impl PduHeader {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, PduConversion)]
-#[repr(u8)]
-pub enum ProtocolVersion {
-    Other = 0,
-    // DIS PDU version 1.0 (May 92)
-    Version1_0May92 = 1,
-    // IEEE 1278-1993
-    Ieee1278_1993 = 2,
-    // DIS PDU version 2.0 - third draft (May 93)
-    Version2_0ThirdDraft = 3,
-    // DIS PDU version 2.0 - fourth draft (revised) March 16, 1994
-    Version2_0FourthDraft = 4,
-    // IEEE 1278.1-1995 / DIS 5
-    Ieee1278_1_1995 = 5,
-    // IEEE 1278.1a-1998 / DIS 6
-    #[allow(non_camel_case_types)]
-    Ieee1278_1a_1998 = 6,
-    // IEEE 1278.1-2012 / DIS 7
-    Ieee1278_1_2012 = 7,
-}
-
-impl Default for ProtocolVersion {
-    fn default() -> Self {
-        ProtocolVersion::Other
-    }
-}
+// // FIXME replace with generated enumeration variant
+// #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, PduConversion)]
+// #[repr(u8)]
+// pub enum ProtocolVersion {
+//     Other = 0,
+//     // DIS PDU version 1.0 (May 92)
+//     Version1_0May92 = 1,
+//     // IEEE 1278-1993
+//     Ieee1278_1993 = 2,
+//     // DIS PDU version 2.0 - third draft (May 93)
+//     Version2_0ThirdDraft = 3,
+//     // DIS PDU version 2.0 - fourth draft (revised) March 16, 1994
+//     Version2_0FourthDraft = 4,
+//     // IEEE 1278.1-1995 / DIS 5
+//     Ieee1278_1_1995 = 5,
+//     // IEEE 1278.1a-1998 / DIS 6
+//     #[allow(non_camel_case_types)]
+//     Ieee1278_1a_1998 = 6,
+//     // IEEE 1278.1-2012 / DIS 7
+//     Ieee1278_1_2012 = 7,
+// }
+//
+// impl Default for ProtocolVersion {
+//     fn default() -> Self {
+//         ProtocolVersion::Other
+//     }
+// }
 
 // FIXME match PduType from updated list (72 pieces)
 impl From<PduType> for ProtocolFamily {

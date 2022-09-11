@@ -1,7 +1,7 @@
-use crate::common::entity_state::model::{ArticulationParameter, DrParameters, EntityMarking, EntityState, EntityStateValidationError};
+use crate::common::entity_state::model::{VariableParameter, EntityMarking, EntityState, EntityStateValidationError};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VectorF32};
 use crate::enumerations::{EntityMarkingCharacterSet, ForceId};
-use crate::v6::entity_state::model::{Appearance, EntityCapabilities};
+use crate::v6::entity_state::model::{Appearance, DrParameters, EntityCapabilities};
 
 pub struct EntityStateBuilder {
     entity_id : Option<EntityId>,
@@ -15,7 +15,7 @@ pub struct EntityStateBuilder {
     dead_reckoning_parameters : Option<DrParameters>,
     entity_marking : Option<EntityMarking>,
     entity_capabilities : Option<EntityCapabilities>,
-    articulation_parameter : Vec<ArticulationParameter>,
+    variable_parameters: Vec<VariableParameter>,
 }
 
 impl EntityStateBuilder {
@@ -32,7 +32,7 @@ impl EntityStateBuilder {
             dead_reckoning_parameters: None,
             entity_marking: None,
             entity_capabilities: None,
-            articulation_parameter: vec![]
+            variable_parameters: vec![]
         }
     }
 
@@ -154,13 +154,13 @@ impl EntityStateBuilder {
         self
     }
 
-    pub fn add_articulation_parameters_vec(mut self, parameters : Vec<ArticulationParameter>) -> Self {
-        self.articulation_parameter = parameters;
+    pub fn add_articulation_parameters_vec(mut self, parameters : Vec<VariableParameter>) -> Self {
+        self.variable_parameters = parameters;
         self
     }
 
-    pub fn add_articulation_parameter(mut self, parameter : ArticulationParameter) -> Self {
-        self.articulation_parameter.push(parameter);
+    pub fn add_articulation_parameter(mut self, parameter : VariableParameter) -> Self {
+        self.variable_parameters.push(parameter);
         self
     }
 
@@ -201,7 +201,7 @@ impl EntityStateBuilder {
             entity_marking: self.entity_marking.expect("Value expected, but not found."),
             entity_capabilities_v6: Some(self.entity_capabilities.expect("Value expected, but not found.")),
             entity_capabilities: None,
-            articulation_parameter: if !self.articulation_parameter.is_empty() { Some(self.articulation_parameter) } else { None },
+            variable_parameters: if !self.variable_parameters.is_empty() { self.variable_parameters } else { vec![] },
         }))
     }
 

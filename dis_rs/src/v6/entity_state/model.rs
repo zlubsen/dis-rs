@@ -1,5 +1,7 @@
 use dis_rs_macros::PduConversion;
 use crate::v6::entity_state::builder::{AirPlatformBuilder, EnvironmentalBuilder, GeneralAppearanceBuilder, GuidedMunitionBuilder, LandPlatformBuilder, LifeFormBuilder, SpacePlatformBuilder, SubsurfacePlatformBuilder, SurfacePlatformBuilder};
+use crate::VectorF32;
+use crate::enumerations::{DeadReckoningAlgorithm};
 
 pub struct Appearance {
     pub general_appearance : GeneralAppearance,
@@ -470,4 +472,11 @@ pub struct EntityCapabilities {
     pub fuel_supply : bool,
     pub recovery : bool,
     pub repair : bool,
+}
+
+pub struct DrParameters {
+    pub algorithm : DeadReckoningAlgorithm,
+    pub other_parameters : [u8; 15],
+    pub linear_acceleration : VectorF32,
+    pub angular_velocity : VectorF32,
 }

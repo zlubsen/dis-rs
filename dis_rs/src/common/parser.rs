@@ -7,14 +7,14 @@ use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::common::entity_state::parser::entity_state_body;
-use crate::common::model::{Pdu, PduBody, PduHeader, ProtocolVersion};
+use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::{Country, EntityId, EntityKind, EntityType, EventId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily};
+use crate::enumerations::{PduType, PlatformDomain, ProtocolVersion, ProtocolFamily};
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -93,8 +93,13 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
 
     let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
         tuple((protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length))(input)?;
-    let (input, pdu_status, padding) = match protocol_version as usize {
-        0..=6 => {
+    // FIXME factor out this match construct to filter/branch on DIS versions
+    let (input, pdu_status, padding) = match u8::from(protocol_version) {
+        legacy_version if legacy_version >= 1 && legacy_version <= 5 => {
+            let (input, padding) = be_u16(input)?;
+            (input, None, padding as u16)
+        }
+        6 => {
             let (input, padding) = be_u16(input)?;
             (input, None, padding as u16)
         }
@@ -102,8 +107,9 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
             let (input, (status, padding)) = parse_pdu_status(pdu_type)(input)?;
             (input, Some(status), padding)
         }
-        _ => {
-            unimplemented!("V7 is the most recent DIS version at time of implementation.");
+        _future_version => {
+            let (input, (status, padding)) = parse_pdu_status(pdu_type)(input)?;
+            (input, Some(status), padding)
         }
     };
 
@@ -348,12 +354,12 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{EntityType, PduBody, ProtocolVersion};
+    use crate::common::model::{EntityType, PduBody};
     use crate::common::errors::DisError;
-    use crate::common::entity_state::model::ParameterTypeVariant;
+    use crate::common::entity_state::model::ParameterVariant;
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolFamily, VariableParameterRecordType};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolVersion, ProtocolFamily, VariableParameterRecordType};
     use crate::v6::entity_state::model::{Afterburner, AirPlatformsRecord, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, PowerPlantStatus, SpecificAppearance, State};
 
     #[test]
@@ -363,7 +369,7 @@ mod tests {
         let header = crate::common::parser::parse_header(&bytes);
         assert!(header.is_ok());
         let header = header.unwrap();
-        assert_eq!(header.protocol_version, ProtocolVersion::Ieee1278_1a_1998);
+        assert_eq!(header.protocol_version, ProtocolVersion::IEEE1278_1A1998);
         assert_eq!(header.exercise_id, 1);
         assert_eq!(header.pdu_type, PduType::EntityState);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
@@ -388,7 +394,7 @@ mod tests {
         let header = crate::common::parser::parse_header(&bytes);
         assert!(header.is_ok());
         let header = header.unwrap();
-        assert_eq!(header.protocol_version, ProtocolVersion::Other);
+        assert_eq!(header.protocol_version, ProtocolVersion::Unspecified(31));
         assert_eq!(header.exercise_id, 1);
         assert_eq!(header.pdu_type, PduType::EntityState);
         assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
@@ -435,9 +441,8 @@ mod tests {
             assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
             assert_eq!(pdu.entity_id.entity_id, 14u16);
             assert_eq!(pdu.force_id, ForceId::Friendly);
-            assert!(pdu.articulation_parameter.is_some());
-            let articulation_parameters = pdu.articulation_parameter.unwrap();
-            assert_eq!(articulation_parameters.len(), 4usize);
+            assert!(!pdu.variable_parameters.is_empty());
+            assert_eq!(pdu.variable_parameters.len(), 4usize);
             assert_eq!(pdu.entity_type, EntityType {
                 kind: EntityKind::Platform,
                 domain: PlatformDomain::Air,
@@ -474,14 +479,14 @@ mod tests {
                 recovery: false,
                 repair: false,
             }));
-            assert_eq!(articulation_parameters.len(), 4);
-            let parameter_1 = articulation_parameters.get(0).unwrap();
+            assert_eq!(pdu.variable_parameters.len(), 4);
+            let parameter_1 = pdu.variable_parameters.get(0).unwrap();
             assert_eq!(parameter_1.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);
-            if let ParameterTypeVariant::Articulated(articulated_part) = &parameter_1.parameter_type_variant {
+            if let ParameterVariant::Articulated(articulated_part) = &parameter_1.parameter {
                 assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Position);
                 assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
+                assert_eq!(articulated_part.parameter_value, 1f32);
             } else { assert!(false) }
-            assert_eq!(parameter_1.articulation_parameter_value, 1f32);
         } else { assert!(false) }
     }
 

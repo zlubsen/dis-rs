@@ -33,6 +33,7 @@ pub fn fire_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     }
 }
 
+// FIXME move to common::parser, as the struct is also there (and used in other PDUs)
 pub fn burst_descriptor(input: &[u8]) -> IResult<&[u8], BurstDescriptor> {
     let (input, munition) = entity_type(input)?;
     let (input, warhead) = warhead(input)?;

@@ -1,6 +1,6 @@
-use crate::common::model::{PduHeader, ProtocolVersion};
+use crate::common::model::{PduHeader};
 use crate::v7::model::PduStatus;
-use crate::enumerations::{PduType, ProtocolFamily};
+use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
 
 #[allow(dead_code)]
 pub struct PduHeaderBuilder {
@@ -84,7 +84,7 @@ impl PduHeaderBuilder {
 
     fn validate_v7_has_status(&self) -> bool {
         if let Some(version) = self.protocol_version {
-            if version == ProtocolVersion::Ieee1278_1_2012 {
+            if version == ProtocolVersion::IEEE1278_12012 {
                 return self.pdu_status.is_some()
             }
         }

@@ -118,15 +118,15 @@ fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, 
 #[cfg(test)]
 mod tests {
     use crate::common::builder::PduHeaderBuilder;
-    use crate::common::model::{PduBody, ProtocolVersion};
+    use crate::common::model::{PduBody};
     use crate::common::other::parser::other_body;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, ProtocolFamily};
+    use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
 
     #[test]
     fn parse_other_body() {
         let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
+            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
             .exercise_id(1)
             .pdu_type(PduType::Other)
             .protocol_family(ProtocolFamily::Other)
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn parse_other_body_with_originating_id() {
         let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
+            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
             .exercise_id(1)
             .pdu_type(PduType::EntityState) // EntityStatePdu has only an originating EntityId
             .protocol_family(ProtocolFamily::EntityInformationInteraction)
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn parse_other_body_with_receiving_id() {
         let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
+            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
             .exercise_id(1)
             .pdu_type(PduType::Fire)// FirePdu has both originating (Firing) and receiving (Target) EntityIds
             .protocol_family(ProtocolFamily::EntityInformationInteraction)

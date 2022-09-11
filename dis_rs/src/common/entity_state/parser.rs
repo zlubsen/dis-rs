@@ -1,16 +1,22 @@
 use nom::bytes::complete::take;
 use nom::IResult;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::common::entity_state::model::{ArticulatedParts, ArticulationParameter, DrParameters, EntityMarking, ParameterTypeVariant};
+use crate::AttachedPart;
+use crate::common::entity_state::model::{ArticulatedPart, VariableParameter, EntityMarking, ParameterVariant};
 use crate::common::model::PduBody;
 use crate::common::parser;
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType};
-use crate::ProtocolVersion;
+use crate::common::parser::entity_type;
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion, VariableParameterRecordType};
+use crate::v6::entity_state::model::DrParameters;
 
 pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
-        let (input, body) = match version as usize {
-            0..=6 => {
+        // FIXME factor out this match construct to filter/branch on DIS versions
+        let (input, body) = match u8::from(version) {
+            legacy_version if legacy_version <= 5 => {
+                unimplemented!("DIS Versions 1-5 are not supported, found {}", legacy_version);
+            }
+            6 => {
                 // versions 6 and lower
                 crate::v6::entity_state::parser::entity_state_body(input)?
             }
@@ -18,8 +24,8 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
                 // version 7
                 crate::v7::entity_state::parser::entity_state_body(input)?
             }
-            _ => {
-                unimplemented!("V7 is the most recent DIS version at time of implementation.");
+            future_version => {
+                unimplemented!("DIS 7 is the most recent DIS version at time of implementation, found {}.", future_version);
             }
         };
         Ok((input, body))
@@ -62,9 +68,9 @@ pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     }))
 }
 
-pub fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter> {
+pub fn articulation_record(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, parameter_type_designator) = be_u8(input)?;
-    let (input, parameter_change_indicator) = be_u8(input)?;
+    let (input, changed_attached_indicator) = be_u8(input)?;
     let (input, articulation_attachment_id) = be_u16(input)?;
     let parameter_type_designator : VariableParameterRecordType = VariableParameterRecordType::from(parameter_type_designator);
     let (input, parameter_type_variant) = match parameter_type_designator {
@@ -72,38 +78,44 @@ pub fn articulation_record(input: &[u8]) -> IResult<&[u8], ArticulationParameter
         VariableParameterRecordType::ArticulatedPart => { articulated_part(input)? }
         _ => { attached_part(input)? } // TODO impl other VariableParameterRecordType; now defaults to Unspecified AttachedPart
     };
-    // FIXME attached parts has an 64-bit EntityType record, articulated part a 32-bit float value + 32-bit padding
-    let (input, articulation_parameter_value) = be_f32(input)?;
-    let (input, _pad_out) = take(4usize)(input)?;
+    // // FIXME attached parts has an 64-bit EntityType record, articulated part a 32-bit float value + 32-bit padding
+    // let (input, articulation_parameter_value) = be_f32(input)?;
+    // let (input, _pad_out) = take(4usize)(input)?;
 
-    Ok((input, ArticulationParameter {
+    Ok((input, VariableParameter {
         parameter_type_designator,
-        parameter_change_indicator,
+        changed_attached_indicator,
         articulation_attachment_id,
-        parameter_type_variant,
-        articulation_parameter_value,
+        parameter: parameter_type_variant,
     }))
 }
 
-fn attached_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
+fn attached_part(input: &[u8]) -> IResult<&[u8], ParameterVariant> {
     let (input, attached_part) = be_u32(input)?;
-    Ok((input, ParameterTypeVariant::Attached(AttachedParts::from(attached_part))))
+    let (input, entity_type) = entity_type(input)?;
+    Ok((input, ParameterVariant::Attached(AttachedPart {
+        parameter_type: AttachedParts::from(attached_part),
+        attached_part_type: entity_type
+    })))
 }
 
-fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterTypeVariant> {
+fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterVariant> {
     let (input, type_variant) = be_u32(input)?;
     let type_metric : u32 = type_variant & 0x1f;  // 5 least significant bits (0x1f) are the type metric
     let type_class : u32 = type_variant - type_metric;   // rest of the bits (minus type metric value) are the type class
+    let (input, value) = be_f32(input)?;
+    let (input, _pad_out) = be_u32(input)?;
 
-    Ok((input, ParameterTypeVariant::Articulated(ArticulatedParts {
+    Ok((input, ParameterVariant::Articulated(ArticulatedPart {
         type_metric: ArticulatedPartsTypeMetric::from(type_metric),
         type_class: ArticulatedPartsTypeClass::from(type_class),
+        parameter_value: value,
     })))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::model::ParameterTypeVariant;
+    use crate::common::entity_state::model::ParameterVariant;
     use crate::common::entity_state::parser::{articulation_record, entity_marking};
     use crate::common::parser::location;
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, EntityMarkingCharacterSet, VariableParameterRecordType};
@@ -200,15 +212,15 @@ mod tests {
                 0x00,0x00,  // u16; 0 value attachment id
                 0x00,0x00,  // u32; type variant metric - 11 - azimuth
                 0x10,0x0b,  // type variant high bits - 4096 - primary gun 1
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 1
+                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 0
 
         let parameter = articulation_record(&input);
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
         assert_eq!(parameter.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);
-        assert_eq!(parameter.parameter_change_indicator, 0);
+        assert_eq!(parameter.changed_attached_indicator, 0);
         assert_eq!(parameter.articulation_attachment_id, 0);
-        if let ParameterTypeVariant::Articulated(articulated_part) = parameter.parameter_type_variant {
+        if let ParameterVariant::Articulated(articulated_part) = parameter.parameter {
             assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::PrimaryTurretNumber1);
             assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Azimuth);
         }
@@ -230,13 +242,13 @@ mod tests {
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
         assert_eq!(parameter.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);
-        assert_eq!(parameter.parameter_change_indicator, 0);
+        assert_eq!(parameter.changed_attached_indicator, 0);
         assert_eq!(parameter.articulation_attachment_id, 0);
-        if let ParameterTypeVariant::Articulated(type_variant) = parameter.parameter_type_variant {
+        if let ParameterVariant::Articulated(type_variant) = parameter.parameter {
             assert_eq!(type_variant.type_class, ArticulatedPartsTypeClass::LandingGear);
             assert_eq!(type_variant.type_metric, ArticulatedPartsTypeMetric::Position);
+            assert_eq!(type_variant.parameter_value, 1f32);
         }
-        assert_eq!(parameter.articulation_parameter_value, 1f32);
 
         assert!(input.is_empty());
     }

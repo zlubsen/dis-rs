@@ -2,8 +2,8 @@ use crate::AttachedParts;
 use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::{Body, Interaction};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, VariableParameterRecordType, EntityCapabilities, PduType::EntityState, ProtocolFamily::EntityInformationInteraction};
-use crate::v6::entity_state::model::{Appearance as AppearanceV6, EntityCapabilities as EntityCapabilitiesV6};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, VariableParameterRecordType};
+use crate::v6::entity_state::model::{Appearance as AppearanceV6, DrParameters, EntityCapabilities as EntityCapabilitiesV6};
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -18,19 +18,20 @@ pub struct EntityState {
     pub entity_linear_velocity : VectorF32, // struct
     pub entity_location : Location, // struct
     pub entity_orientation : Orientation, // struct
+    // TODO
     pub entity_appearance_v6: AppearanceV6, // struct
     pub dead_reckoning_parameters : DrParameters, // struct
     pub entity_marking : EntityMarking, // struct
     pub entity_capabilities_v6 : Option<EntityCapabilitiesV6>, // struct
     pub entity_capabilities : Option<EntityCapabilities>,
-    pub articulation_parameter : Option<Vec<ArticulationParameter>>, // optional list of records
+    // FIXME factor out v6 and v7 variants, and distinction between articulated and attached parts > will be merged in the Variable Param
+    // pub articulation_parameters: Option<Vec<ArticulationParameter>>, // optional list of records
+    pub variable_parameters: Vec<VariableParameter>,
 }
 
 impl Body for EntityState {
     fn body_length(&self) -> usize {
-        132 + if let Some(params) = &self.articulation_parameter {
-            16 *params.len()
-        } else { 0 }
+        132 + (16 * &self.variable_parameters.len())
     }
 
     fn body_type(&self) -> PduType {
@@ -47,25 +48,17 @@ pub struct EntityMarking {
     pub marking_string : String, // 11 byte String
 }
 
-pub struct DrParameters {
-    pub algorithm : DeadReckoningAlgorithm,
-    pub other_parameters : [u8; 15],
-    pub linear_acceleration : VectorF32,
-    pub angular_velocity : VectorF32,
-}
-
-pub struct ArticulationParameter {
+pub struct VariableParameter {
     pub parameter_type_designator : VariableParameterRecordType,
-    pub parameter_change_indicator : u8,
+    pub changed_attached_indicator: u8,
     pub articulation_attachment_id: u16,
-    pub parameter_type_variant : ParameterTypeVariant,
-    pub articulation_parameter_value : f32,
+    pub parameter: ParameterVariant,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ParameterTypeVariant {
-    Attached(AttachedParts),
-    Articulated(ArticulatedParts),
+pub enum ParameterVariant {
+    Attached(AttachedPart),
+    Articulated(ArticulatedPart),
     // TODO add following variants
     // Separation
     // Entity Type
@@ -73,9 +66,16 @@ pub enum ParameterTypeVariant {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct ArticulatedParts {
+pub struct AttachedPart {
+    pub parameter_type: AttachedParts,
+    pub attached_part_type: EntityType,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ArticulatedPart {
     pub type_metric : ArticulatedPartsTypeMetric,
     pub type_class : ArticulatedPartsTypeClass,
+    pub parameter_value: f32,
 }
 
 // TODO refactor builder

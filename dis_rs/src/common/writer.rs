@@ -1,8 +1,9 @@
 use bytes::{BufMut, BytesMut};
-use crate::common::model::{Pdu, PduBody, PduHeader, ProtocolVersion};
+use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::Serialize;
 use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
 use crate::{EntityId, EventId, Location, Orientation, SimulationAddress, VectorF32};
+use crate::enumerations::{ProtocolVersion};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> usize {
@@ -13,7 +14,7 @@ impl Serialize for PduHeader {
         buf.put_u32(self.time_stamp);
         buf.put_u16(self.pdu_length);
         match self.protocol_version {
-            ProtocolVersion::Ieee1278_1_2012 => {
+            ProtocolVersion::IEEE1278_12012 => {
                 if let Some(status) = self.pdu_status {
                     status.serialize(buf);
                     buf.put_u8(0u8);
@@ -164,15 +165,14 @@ impl Serialize for Orientation {
 mod tests {
     use bytes::BytesMut;
     use crate::common::builder::PduHeaderBuilder;
-    use crate::common::model::ProtocolVersion;
     use crate::common::Serialize;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, ProtocolFamily};
+    use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
 
     #[test]
     fn serialize_header() {
         let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::Ieee1278_1a_1998)
+            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
             .exercise_id(1)
             .pdu_type(PduType::EntityState)
             .protocol_family(ProtocolFamily::EntityInformationInteraction)

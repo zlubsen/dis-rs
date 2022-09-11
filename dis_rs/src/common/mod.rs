@@ -11,9 +11,9 @@ mod writer;
 
 use bytes::BytesMut;
 use crate::common::errors::DisError;
-use crate::common::model::{Pdu, ProtocolVersion};
+use crate::common::model::{Pdu};
 use crate::common::parser::parse_multiple_pdu;
-use crate::enumerations::{PduType, ProtocolFamily};
+use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
 
 #[allow(dead_code)]
 pub enum SupportedVersion {
@@ -59,7 +59,7 @@ pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 /// This function will filter out any non-v6 PDUs in a buffer (packet).
 pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     let pdus = parse_multiple_pdu(input)?.into_iter()
-        .filter(|pdu| pdu.header.protocol_version == ProtocolVersion::Ieee1278_1a_1998)
+        .filter(|pdu| pdu.header.protocol_version == ProtocolVersion::IEEE1278_1A1998)
         .collect();
     Ok(pdus)
 }
@@ -71,7 +71,7 @@ pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 /// This function will filter out any non-v7 PDUs in a buffer (packet).
 pub fn parse_v7(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     let pdus = parse_multiple_pdu(input)?.into_iter()
-        .filter(|pdu| pdu.header.protocol_version == ProtocolVersion::Ieee1278_1_2012)
+        .filter(|pdu| pdu.header.protocol_version == ProtocolVersion::IEEE1278_12012)
         .collect();
     Ok(pdus)
 }

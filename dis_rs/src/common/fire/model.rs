@@ -3,6 +3,7 @@ use crate::common::model::{BurstDescriptor, EntityId};
 use crate::common::model::EventId;
 use crate::common::model::Location;
 use crate::common::model::VectorF32;
+use crate::enumerations::{PduType, ProtocolFamily};
 
 // #[derive(buildstructor::Builder)]
 pub struct Fire {

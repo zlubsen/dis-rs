@@ -19,8 +19,8 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 16] = [
-    // 3,                          // protocol version
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 17] = [
+    (3, Some("ProtocolVersion"), None),   // protocol version
     (4, Some("PduType"), None),           // pdu type
     (5, Some("ProtocolFamily"), None),    // pdu family
     (6, Some("ForceId"), None), // Force Id
@@ -184,6 +184,7 @@ fn format_name(value: &str, uid: usize) -> String {
     intermediate
         .replace('(', "_")
         .replace(')', "_")
+        .replace("__", "_")
 }
 
 fn format_field_name(name: &str) -> String {
@@ -196,26 +197,27 @@ mod extraction {
     use std::ops::RangeInclusive;
     use std::str::FromStr;
     use quick_xml::events::{BytesStart, Event};
+    use quick_xml::name::QName;
     use quick_xml::Reader;
     use crate::{BasicEnumItem, Bitfield, BITFIELD_UIDS, BitfieldItem, CrossRefEnumItem, Enum, ENUM_UIDS, EnumItem, GenerationItem, RangeEnumItem};
 
-    const ENUM_ELEMENT : &[u8] = b"enum";
-    const ELEMENT_ATTR_UID: &[u8] = b"uid";
-    const ELEMENT_ATTR_NAME: &[u8] = b"name";
-    const ELEMENT_ATTR_SIZE: &[u8] = b"size";
-    const ENUM_ROW_ELEMENT : &[u8] = b"enumrow";
-    const ENUM_ROW_RANGE_ELEMENT : &[u8] = b"enumrow_range";
-    const ENUM_ROW_ATTR_VALUE : &[u8] = b"value";
-    const ENUM_ROW_ATTR_VALUE_MIN : &[u8] = b"value_min";
-    const ENUM_ROW_ATTR_VALUE_MAX : &[u8] = b"value_max";
-    const ENUM_ROW_ATTR_DESC : &[u8] = b"description";
-    const ENUM_ROW_ATTR_XREF : &[u8] = b"xref";
-    const BITFIELD_ELEMENT : &[u8] = b"bitfield";
-    const BITFIELD_ROW_ELEMENT : &[u8] = b"bitfieldrow";
-    const BITFIELD_ROW_ATTR_NAME : &[u8] = b"name";
-    const BITFIELD_ROW_ATTR_BIT_POSITION : &[u8] = b"bit_position";
-    const BITFIELD_ROW_ATTR_LENGTH : &[u8] = b"length";
-    const BITFIELD_ROW_ATTR_XREF : &[u8] = b"xref";
+    const ENUM_ELEMENT: QName = QName(b"enum");
+    const ELEMENT_ATTR_UID: QName = QName(b"uid");
+    const ELEMENT_ATTR_NAME: QName = QName(b"name");
+    const ELEMENT_ATTR_SIZE: QName = QName(b"size");
+    const ENUM_ROW_ELEMENT: QName = QName(b"enumrow");
+    const ENUM_ROW_RANGE_ELEMENT : QName = QName(b"enumrow_range");
+    const ENUM_ROW_ATTR_VALUE : QName = QName(b"value");
+    const ENUM_ROW_ATTR_VALUE_MIN : QName = QName(b"value_min");
+    const ENUM_ROW_ATTR_VALUE_MAX : QName = QName(b"value_max");
+    const ENUM_ROW_ATTR_DESC : QName = QName(b"description");
+    const ENUM_ROW_ATTR_XREF : QName = QName(b"xref");
+    const BITFIELD_ELEMENT : QName = QName(b"bitfield");
+    const BITFIELD_ROW_ELEMENT : QName = QName(b"bitfieldrow");
+    const BITFIELD_ROW_ATTR_NAME : QName = QName(b"name");
+    const BITFIELD_ROW_ATTR_BIT_POSITION : QName = QName(b"bit_position");
+    const BITFIELD_ROW_ATTR_LENGTH : QName = QName(b"length");
+    const BITFIELD_ROW_ATTR_XREF : QName = QName(b"xref");
 
     pub fn extract(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
         let mut buf = Vec::new();
@@ -224,7 +226,7 @@ mod extraction {
 
         // find all enumerations that we want to generate
         loop {
-            match reader.read_event(&mut buf) {
+            match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(ref element)) => {
                     match element.name() {
                         ENUM_ELEMENT => {
@@ -303,7 +305,7 @@ mod extraction {
 
     fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<Enum, ()> {
         let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ELEMENT_ATTR_UID) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
         } else { None };
         let should_generate = ENUM_UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
         if should_generate.is_none() {
@@ -325,7 +327,7 @@ mod extraction {
             if let Some(size) = size_override {
                 Some(size)
             } else {
-                Some(usize::from_str(reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
+                Some(usize::from_str(&reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
             }
         } else { None };
 
@@ -344,13 +346,13 @@ mod extraction {
 
     fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
         let value = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
         } else { None };
         let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
             Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
         } else { None };
         let xref = if let Ok(Some(attr_xref)) = element.try_get_attribute(ENUM_ROW_ATTR_XREF) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
         } else { None };
 
         match (value, description, xref) {
@@ -376,10 +378,10 @@ mod extraction {
 
     fn extract_enum_range_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
         let value_min = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE_MIN) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
         } else { None };
         let value_max = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE_MAX) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
         } else { None };
         let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
             Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
@@ -398,7 +400,7 @@ mod extraction {
 
     fn extract_bitfield(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<Bitfield, ()> {
         let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ELEMENT_ATTR_UID) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
         } else { None };
         if let Some(uid) = uid {
             if BITFIELD_UIDS.iter().find(|range| range.contains(&uid)).is_none() {
@@ -411,7 +413,7 @@ mod extraction {
             Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
         } else { None };
         let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
         } else { None };
 
         if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
@@ -432,13 +434,13 @@ mod extraction {
             Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
         } else { None };
         let position = if let Ok(Some(attr_position)) = element.try_get_attribute(BITFIELD_ROW_ATTR_BIT_POSITION) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_position.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_position.value).unwrap()).unwrap())
         } else { None };
         let length = if let Ok(Some(attr_length)) = element.try_get_attribute(BITFIELD_ROW_ATTR_LENGTH) {
-            usize::from_str(reader.decoder().decode(&*attr_length.value).unwrap()).unwrap()
+            usize::from_str(&reader.decoder().decode(&*attr_length.value).unwrap()).unwrap()
         } else { 1 };
         let xref = if let Ok(Some(attr_xref)) = element.try_get_attribute(BITFIELD_ROW_ATTR_XREF) {
-            Some(usize::from_str(reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
         } else { None };
 
         if let (Some(name), Some(bit_position)) = (name, position) {
