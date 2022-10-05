@@ -15,23 +15,23 @@ impl Serialize for Other {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::builder::PduHeaderBuilder;
     use crate::common::other::builder::OtherBuilder;
     use crate::common::Serialize;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
+    use crate::enumerations::{PduType};
+    use crate::PduHeader;
 
     #[test]
     fn serialize_other_pdu() {
         let pdu_length = PDU_HEADER_LEN_BYTES + 3;
-        let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
+        let mut header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::Other)
-            .protocol_family(ProtocolFamily::Other)
+            .build();
+        header.fields()
             .time_stamp(10)
             .pdu_length(pdu_length as u16)
-            .build().expect("Should be Ok");
+            .finish();
         let pdu = OtherBuilder::new()
             .body( vec![0x01, 0x02, 0x03] )
             .build_with_header(header).expect("Should be Ok");

@@ -117,22 +117,24 @@ fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, 
 
 #[cfg(test)]
 mod tests {
-    use crate::common::builder::PduHeaderBuilder;
     use crate::common::model::{PduBody};
     use crate::common::other::parser::other_body;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
+    use crate::enumerations::{PduType};
+    use crate::PduHeader;
 
     #[test]
     fn parse_other_body() {
-        let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
+        let mut header = PduHeader::v6_builder()
+            // .protocol_version(ProtocolVersion::IEEE1278_1A1998)
             .exercise_id(1)
             .pdu_type(PduType::Other)
-            .protocol_family(ProtocolFamily::Other)
-            .pdu_length((PDU_HEADER_LEN_BYTES + 10) as u16)
+            // .protocol_family(ProtocolFamily::Other)
+            .build();
+        header.fields()
             .time_stamp(0)
-            .build().expect("Should be good");
+            .pdu_length((PDU_HEADER_LEN_BYTES + 10) as u16)
+            .finish();
         let input : [u8;10] = [0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {
@@ -144,14 +146,14 @@ mod tests {
 
     #[test]
     fn parse_other_body_with_originating_id() {
-        let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
+        let mut header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::EntityState) // EntityStatePdu has only an originating EntityId
-            .protocol_family(ProtocolFamily::EntityInformationInteraction)
+            .build();
+        header.fields()
             .pdu_length((PDU_HEADER_LEN_BYTES + 6) as u16)
             .time_stamp(0)
-            .build().expect("Should be good");
+            .finish();
         let input : [u8;6] = [0x00,0x10,0x00,0x0A,0x00,0x01];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {
@@ -166,14 +168,14 @@ mod tests {
 
     #[test]
     fn parse_other_body_with_receiving_id() {
-        let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
+        let mut header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::Fire)// FirePdu has both originating (Firing) and receiving (Target) EntityIds
-            .protocol_family(ProtocolFamily::EntityInformationInteraction)
+            .build();
+        header.fields()
             .pdu_length((PDU_HEADER_LEN_BYTES + 12) as u16)
             .time_stamp(0)
-            .build().expect("Should be good");
+            .finish();
         let input : [u8;12] = [0x00,0x10,0x00,0x0A,0x00,0x01,0x00,0x20,0x00,0x0B,0x00,0x08];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {

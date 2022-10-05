@@ -1,10 +1,14 @@
-use crate::common::builder::PduHeaderBuilder;
 use crate::common::entity_state::model::EntityState;
 use crate::common::Interaction;
 use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolVersion, ProtocolFamily, PlatformDomain};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
+
+const DEFAULT_SITE_ID: u16 = 1;
+const DEFAULT_APPLICATION_ID: u16 = 1;
+const DEFAULT_ENTITY_ID: u16 = 1;
+const DEFAULT_EVENT_ID: u16 = 1;
 
 pub struct Pdu {
     pub header : PduHeader,
@@ -33,52 +37,37 @@ pub struct PduHeader {
     pub padding : u16,
 }
 
+#[buildstructor::buildstructor]
 impl PduHeader {
-    pub fn builder() -> PduHeaderBuilder {
-        PduHeaderBuilder::new()
-    }
-}
-
-// // FIXME replace with generated enumeration variant
-// #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, PduConversion)]
-// #[repr(u8)]
-// pub enum ProtocolVersion {
-//     Other = 0,
-//     // DIS PDU version 1.0 (May 92)
-//     Version1_0May92 = 1,
-//     // IEEE 1278-1993
-//     Ieee1278_1993 = 2,
-//     // DIS PDU version 2.0 - third draft (May 93)
-//     Version2_0ThirdDraft = 3,
-//     // DIS PDU version 2.0 - fourth draft (revised) March 16, 1994
-//     Version2_0FourthDraft = 4,
-//     // IEEE 1278.1-1995 / DIS 5
-//     Ieee1278_1_1995 = 5,
-//     // IEEE 1278.1a-1998 / DIS 6
-//     #[allow(non_camel_case_types)]
-//     Ieee1278_1a_1998 = 6,
-//     // IEEE 1278.1-2012 / DIS 7
-//     Ieee1278_1_2012 = 7,
-// }
-//
-// impl Default for ProtocolVersion {
-//     fn default() -> Self {
-//         ProtocolVersion::Other
-//     }
-// }
-
-// FIXME match PduType from updated list (72 pieces)
-impl From<PduType> for ProtocolFamily {
-    fn from(pdu_type: PduType) -> Self {
-        match pdu_type {
-            PduType::EntityState | PduType::Collision => ProtocolFamily::EntityInformationInteraction,
-            PduType::Fire | PduType::Detonation => ProtocolFamily::Warfare,
-            PduType::ServiceRequest | PduType::ResupplyOffer | PduType::ResupplyReceived | PduType::ResupplyCancel | PduType::RepairComplete | PduType::RepairResponse => ProtocolFamily::Logistics,
-            PduType::CreateEntity | PduType::RemoveEntity | PduType::StartResume | PduType::StopFreeze | PduType::Acknowledge | PduType::ActionRequest | PduType::ActionResponse | PduType::DataQuery | PduType::SetData | PduType::Data | PduType::EventReport | PduType::Comment => ProtocolFamily::SimulationManagement,
-            PduType::ElectromagneticEmission | PduType::Designator => ProtocolFamily::DistributedEmissionRegeneration,
-            PduType::Transmitter | PduType::Signal | PduType::Receiver => ProtocolFamily::RadioCommunications,
-            _ => ProtocolFamily::Other,
+    #[builder]
+    pub fn new(protocol_version: ProtocolVersion, exercise_id: u8, pdu_type: PduType, protocol_family: ProtocolFamily) -> Self {
+        Self {
+            protocol_version,
+            exercise_id,
+            pdu_type,
+            protocol_family,
+            time_stamp: 0u32,
+            pdu_length: 0u16,
+            pdu_status: None,
+            padding: 0u16,
         }
+    }
+
+    #[builder]
+    pub fn v6_new(exercise_id: u8, pdu_type: PduType) -> Self {
+        PduHeader::new(ProtocolVersion::IEEE1278_1A1998, exercise_id, pdu_type, pdu_type.into())
+    }
+
+    #[builder]
+    pub fn v7_new(exercise_id: u8, pdu_type: PduType) -> Self {
+        PduHeader::new(ProtocolVersion::IEEE1278_12012, exercise_id, pdu_type, pdu_type.into())
+    }
+
+    #[builder(entry = "fields", exit = "finish", visibility="pub")]
+    fn add_pdu_data(&mut self, time_stamp: u32, pdu_length: u16, pdu_status: Option<PduStatus>) {
+        self.time_stamp = time_stamp;
+        self.pdu_length = pdu_length;
+        self.pdu_status = pdu_status;
     }
 }
 
@@ -316,13 +305,120 @@ impl Interaction for PduBody {
     }
 }
 
+impl From<PduType> for ProtocolFamily {
+    fn from(pdu_type: PduType) -> Self {
+        match pdu_type {
+            PduType::Other => ProtocolFamily::Other,
+            PduType::EntityState => ProtocolFamily::EntityInformationInteraction,
+            PduType::Fire => ProtocolFamily::Warfare,
+            PduType::Detonation => ProtocolFamily::Warfare,
+            PduType::Collision => ProtocolFamily::EntityInformationInteraction,
+            PduType::ServiceRequest => ProtocolFamily::Logistics,
+            PduType::ResupplyOffer => ProtocolFamily::Logistics,
+            PduType::ResupplyReceived => ProtocolFamily::Logistics,
+            PduType::ResupplyCancel => ProtocolFamily::Logistics,
+            PduType::RepairComplete => ProtocolFamily::Logistics,
+            PduType::RepairResponse => ProtocolFamily::Logistics,
+            PduType::CreateEntity => ProtocolFamily::SimulationManagement,
+            PduType::RemoveEntity => ProtocolFamily::SimulationManagement,
+            PduType::StartResume => ProtocolFamily::SimulationManagement,
+            PduType::StopFreeze => ProtocolFamily::SimulationManagement,
+            PduType::Acknowledge => ProtocolFamily::SimulationManagement,
+            PduType::ActionRequest => ProtocolFamily::SimulationManagement,
+            PduType::ActionResponse => ProtocolFamily::SimulationManagement,
+            PduType::DataQuery => ProtocolFamily::SimulationManagement,
+            PduType::SetData => ProtocolFamily::SimulationManagement,
+            PduType::Data => ProtocolFamily::SimulationManagement,
+            PduType::EventReport => ProtocolFamily::SimulationManagement,
+            PduType::Comment => ProtocolFamily::SimulationManagement,
+            PduType::ElectromagneticEmission => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::Designator => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::Transmitter => ProtocolFamily::RadioCommunications,
+            PduType::Signal => ProtocolFamily::RadioCommunications,
+            PduType::Receiver => ProtocolFamily::RadioCommunications,
+            PduType::IFF => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::UnderwaterAcoustic => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::SupplementalEmissionEntityState => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::IntercomSignal => ProtocolFamily::RadioCommunications,
+            PduType::IntercomControl => ProtocolFamily::RadioCommunications,
+            PduType::AggregateState => ProtocolFamily::EntityManagement,
+            PduType::IsGroupOf => ProtocolFamily::EntityManagement,
+            PduType::TransferOwnership => ProtocolFamily::EntityManagement,
+            PduType::IsPartOf => ProtocolFamily::EntityManagement,
+            PduType::MinefieldState => ProtocolFamily::Minefield,
+            PduType::MinefieldQuery => ProtocolFamily::Minefield,
+            PduType::MinefieldData => ProtocolFamily::Minefield,
+            PduType::MinefieldResponseNACK => ProtocolFamily::Minefield,
+            PduType::EnvironmentalProcess => ProtocolFamily::SyntheticEnvironment,
+            PduType::GriddedData => ProtocolFamily::SyntheticEnvironment,
+            PduType::PointObjectState => ProtocolFamily::SyntheticEnvironment,
+            PduType::LinearObjectState => ProtocolFamily::SyntheticEnvironment,
+            PduType::ArealObjectState => ProtocolFamily::SyntheticEnvironment,
+            PduType::TSPI => ProtocolFamily::LiveEntity_LE_InformationInteraction,
+            PduType::Appearance => ProtocolFamily::LiveEntity_LE_InformationInteraction,
+            PduType::ArticulatedParts => ProtocolFamily::LiveEntity_LE_InformationInteraction,
+            PduType::LEFire => ProtocolFamily::LiveEntity_LE_InformationInteraction,
+            PduType::LEDetonation => ProtocolFamily::LiveEntity_LE_InformationInteraction,
+            PduType::CreateEntityR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::RemoveEntityR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::StartResumeR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::StopFreezeR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::AcknowledgeR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::ActionRequestR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::ActionResponseR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::DataQueryR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::SetDataR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::DataR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::EventReportR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::CommentR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::RecordR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::SetRecordR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::RecordQueryR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::CollisionElastic => ProtocolFamily::EntityInformationInteraction,
+            PduType::EntityStateUpdate => ProtocolFamily::EntityInformationInteraction,
+            PduType::DirectedEnergyFire => ProtocolFamily::Warfare,
+            PduType::EntityDamageStatus => ProtocolFamily::Warfare,
+            PduType::InformationOperationsAction => ProtocolFamily::InformationOperations,
+            PduType::InformationOperationsReport => ProtocolFamily::InformationOperations,
+            PduType::Attribute => ProtocolFamily::EntityInformationInteraction,
+            PduType::Unspecified(unspecified_value) => ProtocolFamily::Unspecified(unspecified_value)
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, buildstructor::Builder)]
+pub struct SimulationAddress {
+    pub site_id : u16,
+    pub application_id : u16,
+}
+
+impl Default for SimulationAddress {
+    fn default() -> Self {
+        Self {
+            site_id: DEFAULT_SITE_ID,
+            application_id: DEFAULT_APPLICATION_ID
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
     pub entity_id : u16
 }
 
+impl Default for EntityId {
+    fn default() -> Self {
+        Self {
+            simulation_address: SimulationAddress::default(),
+            entity_id: DEFAULT_ENTITY_ID
+        }
+    }
+}
+
+#[buildstructor::buildstructor]
 impl EntityId {
+    #[builder]
     pub fn new(site_id : u16, application_id : u16, entity_id : u16) -> Self {
         Self {
             simulation_address: SimulationAddress {
@@ -332,12 +428,14 @@ impl EntityId {
             entity_id
         }
     }
-}
 
-#[derive(Copy, Clone, Debug)]
-pub struct SimulationAddress {
-    pub site_id : u16,
-    pub application_id : u16,
+    #[builder]
+    pub fn with_sim_address_new(simulation_address: SimulationAddress, entity_id : u16) -> Self {
+        Self {
+            simulation_address,
+            entity_id
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -346,36 +444,56 @@ pub struct EventId {
     pub event_id : u16
 }
 
+#[buildstructor::buildstructor]
 impl EventId {
-    pub fn new(site_id : u16, application_id : u16, event_id : u16) -> Self {
+    #[builder]
+    pub fn new(simulation_address: SimulationAddress, event_id: u16) -> Self {
         Self {
-            simulation_address: SimulationAddress {
-                site_id,
-                application_id
-            },
+            simulation_address,
+            event_id
+        }
+    }
+
+    #[builder]
+    pub fn with_sim_address_new(simulation_address: SimulationAddress, event_id : u16) -> Self {
+        Self {
+            simulation_address,
             event_id
         }
     }
 }
 
+impl Default for EventId {
+    fn default() -> Self {
+        Self {
+            simulation_address: SimulationAddress::default(),
+            event_id: DEFAULT_EVENT_ID
+        }
+    }
+}
+
+#[derive(buildstructor::Builder, Default)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
     pub third_vector_component : f32,
 }
 
+#[derive(buildstructor::Builder, Default)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
     pub z_coordinate : f64,
 }
 
+#[derive(buildstructor::Builder, Default)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
     pub phi : f32,
 }
 
+#[derive(buildstructor::Builder, Default)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityType {
     pub kind : EntityKind,
@@ -387,7 +505,7 @@ pub struct EntityType {
     pub extra : u8,
 }
 
-// #[derive(buildstructor::Builder)]
+#[derive(buildstructor::Builder, Default)]
 pub struct BurstDescriptor {
     pub munition : EntityType,
     pub warhead : MunitionDescriptorWarhead,

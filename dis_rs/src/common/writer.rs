@@ -164,21 +164,21 @@ impl Serialize for Orientation {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::builder::PduHeaderBuilder;
     use crate::common::Serialize;
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
+    use crate::enumerations::{PduType};
+    use crate::PduHeader;
 
     #[test]
     fn serialize_header() {
-        let header = PduHeaderBuilder::new()
-            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
+        let mut header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::EntityState)
-            .protocol_family(ProtocolFamily::EntityInformationInteraction)
+            .build();
+        header.fields()
             .time_stamp(10)
             .pdu_length(PDU_HEADER_LEN_BYTES as u16)
-            .build().expect("Should be Ok");
+            .finish();
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES);
 
         header.serialize(&mut buf);

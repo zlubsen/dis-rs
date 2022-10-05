@@ -319,7 +319,7 @@ mod tests {
     use crate::common::entity_state::model::{ArticulatedPart, VariableParameter, EntityMarking, EntityState, ParameterVariant};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableParameterRecordType};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, VariableParameterRecordType};
     use crate::v6::entity_state::model::{Afterburner, AirPlatformsRecord, Appearance, DrParameters, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, PowerPlantStatus, SpecificAppearance, State};
 
     #[test]
@@ -359,14 +359,14 @@ mod tests {
 
     #[test]
     fn entity_state_pdu() {
-        let header = PduHeader::builder()
-            .protocol_version(ProtocolVersion::IEEE1278_1A1998)
+        let mut header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::EntityState)
-            .protocol_family(ProtocolFamily::EntityInformationInteraction)
+            .build();
+        header.fields()
             .time_stamp(0)
             .pdu_length(208u16)
-            .build().expect("Should be Ok");
+            .finish();
         let body = EntityState::builder()
             .entity_id(EntityId {
                 simulation_address: SimulationAddress {site_id: 500, application_id: 900 },

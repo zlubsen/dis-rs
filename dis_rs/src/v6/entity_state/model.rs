@@ -8,6 +8,15 @@ pub struct Appearance {
     pub specific_appearance : SpecificAppearance,
 }
 
+impl Default for Appearance {
+    fn default() -> Self {
+        Self {
+            general_appearance: GeneralAppearance::default(),
+            specific_appearance: SpecificAppearance::default(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct GeneralAppearance {
     pub entity_paint_scheme : EntityPaintScheme, // enum
@@ -24,6 +33,22 @@ pub struct GeneralAppearance {
 impl GeneralAppearance {
     pub fn builder() -> GeneralAppearanceBuilder {
         GeneralAppearanceBuilder::new()
+    }
+}
+
+impl Default for GeneralAppearance {
+    fn default() -> Self {
+        Self {
+            entity_paint_scheme: Default::default(),
+            entity_mobility_kill: Default::default(),
+            entity_fire_power: Default::default(),
+            entity_damage: Default::default(),
+            entity_smoke: Default::default(),
+            entity_trailing_effect: Default::default(),
+            entity_hatch_state: Default::default(),
+            entity_lights: Default::default(),
+            entity_flaming_effect: Default::default(),
+        }
     }
 }
 
@@ -205,6 +230,12 @@ impl SpecificAppearance {
 
     pub fn builder_environmental() -> EnvironmentalBuilder {
         EnvironmentalBuilder::new()
+    }
+}
+
+impl Default for SpecificAppearance {
+    fn default() -> Self {
+        Self::Other([0u8; 2])
     }
 }
 
@@ -479,4 +510,15 @@ pub struct DrParameters {
     pub other_parameters : [u8; 15],
     pub linear_acceleration : VectorF32,
     pub angular_velocity : VectorF32,
+}
+
+impl Default for DrParameters {
+    fn default() -> Self {
+        Self {
+            algorithm: DeadReckoningAlgorithm::default(),
+            other_parameters: [0u8; 15],
+            linear_acceleration: VectorF32::default(),
+            angular_velocity: VectorF32::default(),
+        }
+    }
 }
