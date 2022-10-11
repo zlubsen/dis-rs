@@ -13,7 +13,7 @@ use bytes::BytesMut;
 use crate::common::errors::DisError;
 use crate::common::model::{Pdu};
 use crate::common::parser::parse_multiple_pdu;
-use crate::enumerations::{PduType, ProtocolVersion, ProtocolFamily};
+use crate::enumerations::{PduType, ProtocolVersion};
 
 #[allow(dead_code)]
 pub enum SupportedVersion {
@@ -24,9 +24,8 @@ pub enum SupportedVersion {
 
 /// Trait for PduBodies to query basic information, typically used in the header
 trait Body {
-    fn body_length(&self) -> usize;
+    fn body_length(&self) -> u16;
     fn body_type(&self) -> PduType;
-    fn protocol_family(&self) -> ProtocolFamily;
 }
 
 /// Trait for PDUs to implement whether an interaction between one or two
@@ -40,7 +39,7 @@ trait Interaction {
 /// Trait that implements writing the data structure to a buffer.
 /// Return the number of bytes written to the buffer.
 pub trait Serialize {
-    fn serialize(&self, buf : &mut BytesMut) -> usize;
+    fn serialize(&self, buf : &mut BytesMut) -> u16;
 }
 
 /// Parses the contents of the input, determining the DIS version by itself.

@@ -17,7 +17,7 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
                 unimplemented!("DIS Versions 1-5 are not supported, found {}", legacy_version);
             }
             6 => {
-                // versions 6 and lower
+                // versions 6
                 crate::v6::entity_state::parser::entity_state_body(input)?
             }
             7 => {

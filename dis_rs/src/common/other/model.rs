@@ -1,6 +1,7 @@
-use crate::common::Interaction;
+use crate::common::{Body, Interaction};
 use crate::common::other::builder::OtherBuilder;
 use crate::common::model::EntityId;
+use crate::enumerations::PduType;
 
 /// A PduBody implementation that contains the body of the PDU as raw bytes, in a vec.
 ///
@@ -13,6 +14,16 @@ pub struct Other {
     pub originating_entity_id : Option<EntityId>,
     pub receiving_entity_id : Option<EntityId>,
     pub body: Vec<u8>,
+}
+
+impl Body for Other {
+    fn body_length(&self) -> u16 {
+        self.body.len() as u16
+    }
+
+    fn body_type(&self) -> PduType {
+        PduType::Other
+    }
 }
 
 impl Other {

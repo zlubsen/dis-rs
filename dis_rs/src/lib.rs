@@ -21,15 +21,11 @@ pub use common::other::*;
 
 /*
 TODO:
-V Finish EntityState model and builder functions (such as Appearance impl)
-V Tests for parsing EntityState PDU
-V Tests for parsing Other PDU
-V Tests for parsing incomplete input / some santity checks on pdu lengths
+- Parse v7 entity_state PDU
+- finalize way to handle builders
+- revise writing pdu's based on version
+- add entity appearance v7 to entity state
 - common function for calculating body length based on header data (pdu_length - header_length); now at several places
-V Writing headers and pdus to buffer/network
-V Build DIS v7 Header; model, builder, parser
-V Factor out PDU types into common
-V- Incorporate versions of enumeration document into the lib (domain types, country codes, etc).
 - Incorporate Symbolic names from the standard (v7 - table 25)
 - Dead-reckoning algorithms
 

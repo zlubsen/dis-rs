@@ -6,7 +6,7 @@ use crate::{EntityId, EventId, Location, Orientation, SimulationAddress, VectorF
 use crate::enumerations::{ProtocolVersion};
 
 impl Serialize for PduHeader {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.protocol_version.into());
         buf.put_u8(self.exercise_id);
         buf.put_u8(self.pdu_type.into());
@@ -28,7 +28,7 @@ impl Serialize for PduHeader {
 }
 
 impl Serialize for Pdu {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let header_size = self.header.serialize(buf);
         let body_size = match &self.body {
             PduBody::Other(body) => { body.serialize(buf) } // TODO check if buffer capacity is enough for the body of an 'Other' PDU; perhaps make Serialize trait fallible
@@ -111,7 +111,7 @@ impl Serialize for Pdu {
 }
 
 impl Serialize for EntityId {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let num_bytes = self.simulation_address.serialize(buf);
         buf.put_u16(self.entity_id);
         num_bytes + 2
@@ -119,7 +119,7 @@ impl Serialize for EntityId {
 }
 
 impl Serialize for SimulationAddress {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u16(self.site_id);
         buf.put_u16(self.application_id);
         4
@@ -127,7 +127,7 @@ impl Serialize for SimulationAddress {
 }
 
 impl Serialize for EventId {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let num_bytes = self.simulation_address.serialize(buf);
         buf.put_u16(self.event_id);
         num_bytes + 2
@@ -135,7 +135,7 @@ impl Serialize for EventId {
 }
 
 impl Serialize for VectorF32 {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_f32(self.first_vector_component);
         buf.put_f32(self.second_vector_component);
         buf.put_f32(self.third_vector_component);
@@ -144,7 +144,7 @@ impl Serialize for VectorF32 {
 }
 
 impl Serialize for Location {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_f64(self.x_coordinate);
         buf.put_f64(self.y_coordinate);
         buf.put_f64(self.z_coordinate);
@@ -153,7 +153,7 @@ impl Serialize for Location {
 }
 
 impl Serialize for Orientation {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_f32(self.psi);
         buf.put_f32(self.theta);
         buf.put_f32(self.phi);
@@ -177,9 +177,9 @@ mod tests {
             .build();
         header.fields()
             .time_stamp(10)
-            .pdu_length(PDU_HEADER_LEN_BYTES as u16)
+            .body_length(PDU_HEADER_LEN_BYTES)
             .finish();
-        let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES);
+        let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
         header.serialize(&mut buf);
 

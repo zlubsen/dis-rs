@@ -3,7 +3,7 @@ use crate::common::Serialize;
 use crate::v7::model::PduStatus;
 
 impl Serialize for PduStatus {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let tei : u8 = if let Some(tei) = self.transferred_entity_indicator {
             tei as u8
         } else {0u8};

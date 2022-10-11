@@ -199,8 +199,7 @@ impl EntityStateBuilder {
             entity_appearance_v6: self.entity_appearance.expect("Value expected, but not found."),
             dead_reckoning_parameters: self.dead_reckoning_parameters.expect("Value expected, but not found."),
             entity_marking: self.entity_marking.expect("Value expected, but not found."),
-            entity_capabilities_v6: Some(self.entity_capabilities.expect("Value expected, but not found.")),
-            entity_capabilities: None,
+            entity_capabilities: self.entity_capabilities.expect("Value expected, but not found.").into(),
             variable_parameters: if !self.variable_parameters.is_empty() { self.variable_parameters } else { vec![] },
         }))
     }

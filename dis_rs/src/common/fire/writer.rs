@@ -4,7 +4,7 @@ use crate::common::model::BurstDescriptor;
 use crate::common::Serialize;
 
 impl Serialize for Fire {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let firing_entity_id_bytes = self.firing_entity_id.serialize(buf);
         let target_entity_id_bytes = self.target_entity_id.serialize(buf);
         let munition_id_bytes = self.munition_id.serialize(buf);
@@ -22,7 +22,7 @@ impl Serialize for Fire {
 }
 
 impl Serialize for BurstDescriptor {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let munition_bytes = self.munition.serialize(buf);
         buf.put_u16(self.warhead.into());
         buf.put_u16(self.fuse.into());

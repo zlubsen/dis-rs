@@ -1,12 +1,12 @@
 use buildstructor;
-use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::{Body, Interaction};
+use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, EntityCapabilities as EntityCapabilitiesV7, EntityMarkingCharacterSet, ForceId, PduType, ProtocolFamily, VariableParameterRecordType};
-use crate::v6::entity_state::model::{Appearance as AppearanceV6, DrParameters, EntityCapabilities as EntityCapabilitiesV6};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
+use crate::v6::entity_state::model::{Appearance as AppearanceV6, DrParameters};
 
-const BASE_ENTITY_STATE_BODY_LENGTH : usize = 132;
-const VARIABLE_PARAMETER_RECORD_LENGTH : usize = 16;
+const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
+const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
@@ -25,22 +25,18 @@ pub struct EntityState {
     pub entity_appearance_v6: AppearanceV6, // struct
     pub dead_reckoning_parameters : DrParameters, // struct
     pub entity_marking : EntityMarking, // struct
-    pub entity_capabilities_v6 : Option<EntityCapabilitiesV6>, // struct
-    pub entity_capabilities : Option<EntityCapabilitiesV7>,
+    // pub entity_capabilities_v6 : Option<EntityCapabilitiesV6>, // struct // TODO to remove
+    pub entity_capabilities : EntityCapabilities,
     pub variable_parameters: Vec<VariableParameter>,
 }
 
 impl Body for EntityState {
-    fn body_length(&self) -> usize {
-        BASE_ENTITY_STATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * &self.variable_parameters.len())
+    fn body_length(&self) -> u16 {
+        BASE_ENTITY_STATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (*&self.variable_parameters.len() as u16))
     }
 
     fn body_type(&self) -> PduType {
         PduType::EntityState
-    }
-
-    fn protocol_family(&self) -> ProtocolFamily {
-        ProtocolFamily::EntityInformationInteraction
     }
 }
 
@@ -103,11 +99,30 @@ impl EntityState {
             entity_appearance_v6: AppearanceV6::default(),
             dead_reckoning_parameters: DrParameters::default(),
             entity_marking: EntityMarking::default(), // TODO: EntityMarking::default_for_entity_type(&entity_type), // based on enumerations file
-            entity_capabilities_v6: None,
-            entity_capabilities: Some(EntityCapabilitiesV7::default()),
+            entity_capabilities: EntityCapabilities::default(),
             variable_parameters: vec![]
         }
     }
+
+    // #[builder]
+    // fn macro_new(entity_id: EntityId, force_id: ForceId, entity_type: EntityType,
+    //     alternative_entity_type : Option<EntityType>, entity_linear_velocity: Option<VectorF32>, entity_location: Option<Location>, entity_orientation: ) -> Self {
+    //     Self {
+    //         entity_id,
+    //         force_id,
+    //         entity_type,
+    //         alternative_entity_type: alternative_entity_type.unwrap_or(Default::default()),
+    //         entity_linear_velocity: Default::default(),
+    //         entity_location: Default::default(),
+    //         entity_orientation: Default::default(),
+    //         entity_appearance_v6: Default::default(),
+    //         dead_reckoning_parameters: Default::default(),
+    //         entity_marking: Default::default(),
+    //         entity_capabilities_v6: None,
+    //         entity_capabilities: None,
+    //         variable_parameters: vec![]
+    //     }
+    // }
 
     pub fn builder() -> EntityStateBuilder {
         EntityStateBuilder::new()

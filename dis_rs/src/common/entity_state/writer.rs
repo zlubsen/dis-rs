@@ -6,7 +6,7 @@ use crate::enumerations::ForceId;
 use crate::v6::entity_state::model::{AirPlatformsRecord, Appearance, DrParameters, EntityCapabilities, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
 
 impl Serialize for EntityState {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let entity_id_bytes = self.entity_id.serialize(buf);
         let force_id_bytes = self.force_id.serialize(buf);
         buf.put_u8(self.variable_parameters.len() as u8);
@@ -22,6 +22,7 @@ impl Serialize for EntityState {
         let dr_params_bytes = self.dead_reckoning_parameters.serialize(buf);
 
         let marking_bytes = self.entity_marking.serialize(buf);
+        // FIXME design method to serialize based on ProtocolVersion (perhaps new trait serialize_version taking the version and a buffer)
         let capabilities_bytes = {
             if let Some(capabilities) = &self.entity_capabilities_v6 {
                 capabilities.serialize(buf)
@@ -50,7 +51,7 @@ impl Serialize for EntityState {
 }
 
 impl Serialize for VariableParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.parameter_type_designator.into());
         buf.put_u8(self.changed_attached_indicator);
         buf.put_u16(self.articulation_attachment_id);
@@ -74,7 +75,7 @@ impl Serialize for VariableParameter {
 }
 
 impl Serialize for Appearance {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let general_bytes = self.general_appearance.serialize(buf);
         let specific_bytes = self.specific_appearance.serialize(buf);
         general_bytes + specific_bytes
@@ -82,7 +83,7 @@ impl Serialize for Appearance {
 }
 
 impl Serialize for GeneralAppearance {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let entity_paint_scheme : u16 = self.entity_paint_scheme.into();
         let entity_paint_scheme = entity_paint_scheme << 15;
         let entity_mobility_kill : u16 = self.entity_mobility_kill.into();
@@ -110,7 +111,7 @@ impl Serialize for GeneralAppearance {
 }
 
 impl Serialize for SpecificAppearance {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         match self {
             SpecificAppearance::LandPlatform(record) => { record.serialize(buf) }
             SpecificAppearance::AirPlatform(record) => { record.serialize(buf) }
@@ -126,7 +127,7 @@ impl Serialize for SpecificAppearance {
 }
 
 impl Serialize for LandPlatformsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let launcher : u16 = self.launcher.into();
         let launcher = launcher << 15;
         let camouflage : u16 = self.camouflage_type.into();
@@ -152,7 +153,7 @@ impl Serialize for LandPlatformsRecord {
 }
 
 impl Serialize for AirPlatformsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let afterburner : u16 = self.afterburner.into();
         let afterburner = afterburner << 15;
         let frozen_status : u16 = self.frozen_status.into();
@@ -169,7 +170,7 @@ impl Serialize for AirPlatformsRecord {
 }
 
 impl Serialize for SurfacePlatformRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let frozen_status : u16 = self.frozen_status.into();
         let frozen_status = frozen_status << 10;
         let power_plant_status : u16 = self.power_plant_status.into();
@@ -184,7 +185,7 @@ impl Serialize for SurfacePlatformRecord {
 }
 
 impl Serialize for SubsurfacePlatformsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let frozen_status : u16 = self.frozen_status.into();
         let frozen_status = frozen_status << 10;
         let power_plant_status : u16 = self.power_plant_status.into();
@@ -199,7 +200,7 @@ impl Serialize for SubsurfacePlatformsRecord {
 }
 
 impl Serialize for SpacePlatformsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let frozen_status : u16 = self.frozen_status.into();
         let frozen_status = frozen_status << 10;
         let power_plant_status : u16 = self.power_plant_status.into();
@@ -214,7 +215,7 @@ impl Serialize for SpacePlatformsRecord {
 }
 
 impl Serialize for GuidedMunitionsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let launch_flash : u16 = self.launch_flash.into();
         let frozen_status : u16 = self.frozen_status.into();
         let state : u16 = self.state.into();
@@ -229,7 +230,7 @@ impl Serialize for GuidedMunitionsRecord {
 }
 
 impl Serialize for LifeFormsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let life_form_state : u16 = self.life_form_state.into();
         let frozen_status : u16 = self.frozen_status.into();
         let activity_state : u16 = self.activity_state.into();
@@ -248,7 +249,7 @@ impl Serialize for LifeFormsRecord {
 }
 
 impl Serialize for EnvironmentalsRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let density : u16 = self.density.into();
 
         let env_appearance = density << 12;
@@ -258,7 +259,7 @@ impl Serialize for EnvironmentalsRecord {
 }
 
 impl Serialize for DrParameters {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.algorithm.into());
         buf.put_bytes(0u8, 15);
         let lin_acc_bytes = self.linear_acceleration.serialize(buf);
@@ -268,7 +269,7 @@ impl Serialize for DrParameters {
 }
 
 impl Serialize for EntityCapabilities {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let ammunition_supply = if self.ammunition_supply { 1u32 } else { 0u32 } << 31;
         let fuel_supply = if self.fuel_supply { 1u32 } else { 0u32 } << 30;
         let recovery = if self.recovery { 1u32 } else { 0u32 } << 29;
@@ -280,7 +281,7 @@ impl Serialize for EntityCapabilities {
 }
 
 impl Serialize for ForceId {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let force_id = *self;
         buf.put_u8(force_id.into());
         1
@@ -288,7 +289,7 @@ impl Serialize for ForceId {
 }
 
 impl Serialize for EntityType {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.kind.into());
         buf.put_u8(self.domain.into());
         buf.put_u16(self.country.into());
@@ -301,7 +302,7 @@ impl Serialize for EntityType {
 }
 
 impl Serialize for EntityMarking {
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.marking_character_set.into());
         let num_pad = 11 - self.marking_string.len();
         let marking = self.marking_string.clone(); // TODO is this clone necessary?
@@ -365,7 +366,7 @@ mod tests {
             .build();
         header.fields()
             .time_stamp(0)
-            .pdu_length(208u16)
+            .body_length(208u16)
             .finish();
         let body = EntityState::builder()
             .entity_id(EntityId {

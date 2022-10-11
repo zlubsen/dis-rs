@@ -66,7 +66,6 @@ pub fn entity_capabilities(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult
             (EntityKind::Platform, PlatformDomain::Surface) => EntityCapabilities::SurfacePlatformEntityCapabilities(SurfacePlatformCapabilities::from(capabilities)),
             (EntityKind::Platform, PlatformDomain::Subsurface) => EntityCapabilities::SubsurfacePlatformEntityCapabilities(SubsurfacePlatformCapabilities::from(capabilities)),
             (EntityKind::Platform, PlatformDomain::Space) => EntityCapabilities::SpacePlatformEntityCapabilities(SpacePlatformCapabilities::from(capabilities)),
-            // (EntityKind::Platform, _) => EntityCapabilities::Unspecified(capabilities),
             (EntityKind::Munition, _) => EntityCapabilities::MunitionEntityCapabilities(MunitionCapabilities::from(capabilities)),
             (EntityKind::Lifeform, _) => EntityCapabilities::LifeFormsEntityCapabilities(LifeFormsCapabilities::from(capabilities)),
             (EntityKind::Environmental, _) => EntityCapabilities::EnvironmentalEntityCapabilities(EnvironmentalCapabilities::from(capabilities)),

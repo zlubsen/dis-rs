@@ -497,7 +497,7 @@ impl Default for Density {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct EntityCapabilities {
     pub ammunition_supply : bool,
     pub fuel_supply : bool,

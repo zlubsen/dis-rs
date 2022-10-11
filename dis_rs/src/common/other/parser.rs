@@ -97,7 +97,7 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
             PduType::Unspecified(_) => { (input, None, None) }
         };
 
-        let body_length_bytes = header.pdu_length as usize - PDU_HEADER_LEN_BYTES;
+        let body_length_bytes = header.pdu_length - PDU_HEADER_LEN_BYTES;
         let (input, body) = take(body_length_bytes)(input)?;
         let body = body.to_vec();
 
@@ -133,7 +133,7 @@ mod tests {
             .build();
         header.fields()
             .time_stamp(0)
-            .pdu_length((PDU_HEADER_LEN_BYTES + 10) as u16)
+            .body_length(10u16)
             .finish();
         let input : [u8;10] = [0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
@@ -151,7 +151,7 @@ mod tests {
             .pdu_type(PduType::EntityState) // EntityStatePdu has only an originating EntityId
             .build();
         header.fields()
-            .pdu_length((PDU_HEADER_LEN_BYTES + 6) as u16)
+            .body_length((PDU_HEADER_LEN_BYTES + 6) as u16)
             .time_stamp(0)
             .finish();
         let input : [u8;6] = [0x00,0x10,0x00,0x0A,0x00,0x01];
@@ -173,7 +173,7 @@ mod tests {
             .pdu_type(PduType::Fire)// FirePdu has both originating (Firing) and receiving (Target) EntityIds
             .build();
         header.fields()
-            .pdu_length((PDU_HEADER_LEN_BYTES + 12) as u16)
+            .body_length(12u16)
             .time_stamp(0)
             .finish();
         let input : [u8;12] = [0x00,0x10,0x00,0x0A,0x00,0x01,0x00,0x20,0x00,0x0B,0x00,0x08];

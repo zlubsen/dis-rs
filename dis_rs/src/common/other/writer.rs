@@ -6,9 +6,9 @@ impl Serialize for Other {
     /// Serializes the Other PDU into a buffer.
     /// Assumes there is enough free space in the buffer and relies on the buffer's
     /// behaviour for what happens if this is not the case (probably panics - BytesMut does)
-    fn serialize(&self, buf: &mut BytesMut) -> usize {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put(self.body.as_slice());
-        self.body.len()
+        self.body.len() as u16
     }
 }
 
@@ -16,10 +16,10 @@ impl Serialize for Other {
 mod tests {
     use bytes::BytesMut;
     use crate::common::other::builder::OtherBuilder;
-    use crate::common::Serialize;
+    use crate::common::{Body, Serialize};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
-    use crate::PduHeader;
+    use crate::{Pdu, PduHeader};
 
     #[test]
     fn serialize_other_pdu() {
@@ -28,17 +28,14 @@ mod tests {
             .exercise_id(1)
             .pdu_type(PduType::Other)
             .build();
-        header.fields()
-            .time_stamp(10)
-            .pdu_length(pdu_length as u16)
-            .finish();
-        let pdu = OtherBuilder::new()
-            .body( vec![0x01, 0x02, 0x03] )
-            .build_with_header(header).expect("Should be Ok");
+        let body = OtherBuilder::new()
+            .body( vec![0x01, 0x02, 0x03] ).build().expect("Should be Ok");
+        let pdu = Pdu::finalize_from_parts(header, body, 10);
 
-        let mut buf = BytesMut::with_capacity(pdu_length);
+        let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        pdu.serialize(&mut buf);
+        let wire_size = pdu.serialize(&mut buf);
+        assert_eq!(wire_size, pdu.body.body_length() + PDU_HEADER_LEN_BYTES);
 
         let expected : [u8;15] = [0x06, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0f, 0x00, 0x00,
             0x01, 0x02, 0x03];

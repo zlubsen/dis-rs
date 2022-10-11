@@ -763,7 +763,7 @@ mod generation {
                 format_ident!("{}", format_name(xref.name(), xref.uid()))
             } else { format_ident!("bool") };
             quote!(
-                #field_ident : #type_literal
+                pub #field_ident : #type_literal
             )
         }).collect();
         generated_fields

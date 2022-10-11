@@ -1,9 +1,10 @@
 use crate::common::entity_state::model::EntityState;
-use crate::common::Interaction;
+use crate::common::{Body, Interaction};
 use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolVersion, ProtocolFamily, PlatformDomain};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
+use crate::PDU_HEADER_LEN_BYTES;
 
 const DEFAULT_SITE_ID: u16 = 1;
 const DEFAULT_APPLICATION_ID: u16 = 1;
@@ -13,6 +14,19 @@ const DEFAULT_EVENT_ID: u16 = 1;
 pub struct Pdu {
     pub header : PduHeader,
     pub body : PduBody,
+}
+
+impl Pdu {
+    pub fn finalize_from_parts(mut header: PduHeader, body: PduBody, time_stamp: u32) -> Self {
+        header.fields()
+            .time_stamp(time_stamp)
+            .body_length(body.body_length() as u16)
+            .finish();
+        Self {
+            header,
+            body,
+        }
+    }
 }
 
 impl Interaction for Pdu {
@@ -64,9 +78,9 @@ impl PduHeader {
     }
 
     #[builder(entry = "fields", exit = "finish", visibility="pub")]
-    fn add_pdu_data(&mut self, time_stamp: u32, pdu_length: u16, pdu_status: Option<PduStatus>) {
+    fn add_pdu_data(&mut self, time_stamp: u32, body_length: u16, pdu_status: Option<PduStatus>) {
         self.time_stamp = time_stamp;
-        self.pdu_length = pdu_length;
+        self.pdu_length = body_length + PDU_HEADER_LEN_BYTES;
         self.pdu_status = pdu_status;
     }
 }
@@ -145,6 +159,164 @@ pub enum PduBody {
     InformationOperationsAction,
     InformationOperationsReport,
     Attribute,
+}
+
+impl Body for PduBody {
+    fn body_length(&self) -> u16 {
+        match self {
+            PduBody::Other(body) => { body.body_length() }
+            PduBody::EntityState(body) => { body.body_length() }
+            PduBody::Fire(body) => { body.body_length() }
+            PduBody::Detonation => { 0 }
+            PduBody::Collision => { 0 }
+            PduBody::ServiceRequest => { 0 }
+            PduBody::ResupplyOffer => { 0 }
+            PduBody::ResupplyReceived => { 0 }
+            PduBody::ResupplyCancel => { 0 }
+            PduBody::RepairComplete => { 0 }
+            PduBody::RepairResponse => { 0 }
+            PduBody::CreateEntity => { 0 }
+            PduBody::RemoveEntity => { 0 }
+            PduBody::StartResume => { 0 }
+            PduBody::StopFreeze => { 0 }
+            PduBody::Acknowledge => { 0 }
+            PduBody::ActionRequest => { 0 }
+            PduBody::ActionResponse => { 0 }
+            PduBody::DataQuery => { 0 }
+            PduBody::SetData => { 0 }
+            PduBody::Data => { 0 }
+            PduBody::EventReport => { 0 }
+            PduBody::Comment => { 0 }
+            PduBody::ElectromagneticEmission => { 0 }
+            PduBody::Designator => { 0 }
+            PduBody::Transmitter => { 0 }
+            PduBody::Signal => { 0 }
+            PduBody::Receiver => { 0 }
+            PduBody::IFF => { 0 }
+            PduBody::UnderwaterAcoustic => { 0 }
+            PduBody::SupplementalEmissionEntityState => { 0 }
+            PduBody::IntercomSignal => { 0 }
+            PduBody::IntercomControl => { 0 }
+            PduBody::AggregateState => { 0 }
+            PduBody::IsGroupOf => { 0 }
+            PduBody::TransferOwnership => { 0 }
+            PduBody::IsPartOf => { 0 }
+            PduBody::MinefieldState => { 0 }
+            PduBody::MinefieldQuery => { 0 }
+            PduBody::MinefieldData => { 0 }
+            PduBody::MinefieldResponseNACK => { 0 }
+            PduBody::EnvironmentalProcess => { 0 }
+            PduBody::GriddedData => { 0 }
+            PduBody::PointObjectState => { 0 }
+            PduBody::LinearObjectState => { 0 }
+            PduBody::ArealObjectState => { 0 }
+            PduBody::TSPI => { 0 }
+            PduBody::Appearance => { 0 }
+            PduBody::ArticulatedParts => { 0 }
+            PduBody::LEFire => { 0 }
+            PduBody::LEDetonation => { 0 }
+            PduBody::CreateEntityR => { 0 }
+            PduBody::RemoveEntityR => { 0 }
+            PduBody::StartResumeR => { 0 }
+            PduBody::StopFreezeR => { 0 }
+            PduBody::AcknowledgeR => { 0 }
+            PduBody::ActionRequestR => { 0 }
+            PduBody::ActionResponseR => { 0 }
+            PduBody::DataQueryR => { 0 }
+            PduBody::SetDataR => { 0 }
+            PduBody::DataR => { 0 }
+            PduBody::EventReportR => { 0 }
+            PduBody::CommentR => { 0 }
+            PduBody::RecordR => { 0 }
+            PduBody::SetRecordR => { 0 }
+            PduBody::RecordQueryR => { 0 }
+            PduBody::CollisionElastic => { 0 }
+            PduBody::EntityStateUpdate => { 0 }
+            PduBody::DirectedEnergyFire => { 0 }
+            PduBody::EntityDamageStatus => { 0 }
+            PduBody::InformationOperationsAction => { 0 }
+            PduBody::InformationOperationsReport => { 0 }
+            PduBody::Attribute => { 0 }
+        }
+    }
+
+    fn body_type(&self) -> PduType {
+        match self {
+            PduBody::Other(body) => { body.body_type() }
+            PduBody::EntityState(body) => { body.body_type() }
+            PduBody::Fire(body) => { body.body_type() }
+            PduBody::Detonation => { PduType::Detonation }
+            PduBody::Collision => { PduType::Collision }
+            PduBody::ServiceRequest => { PduType::ServiceRequest }
+            PduBody::ResupplyOffer => { PduType::ResupplyOffer }
+            PduBody::ResupplyReceived => { PduType::ResupplyReceived }
+            PduBody::ResupplyCancel => { PduType::ResupplyCancel }
+            PduBody::RepairComplete => { PduType::RepairComplete }
+            PduBody::RepairResponse => { PduType::RepairResponse }
+            PduBody::CreateEntity => { PduType::CreateEntity }
+            PduBody::RemoveEntity => { PduType::RemoveEntity }
+            PduBody::StartResume => { PduType::StartResume }
+            PduBody::StopFreeze => { PduType::StopFreeze }
+            PduBody::Acknowledge => { PduType::Acknowledge }
+            PduBody::ActionRequest => { PduType::ActionRequest }
+            PduBody::ActionResponse => { PduType::ActionResponse }
+            PduBody::DataQuery => { PduType::DataQuery }
+            PduBody::SetData => { PduType::SetData }
+            PduBody::Data => { PduType::Data }
+            PduBody::EventReport => { PduType::EventReport }
+            PduBody::Comment => { PduType::Comment }
+            PduBody::ElectromagneticEmission => { PduType::ElectromagneticEmission }
+            PduBody::Designator => { PduType::Designator }
+            PduBody::Transmitter => { PduType::Transmitter }
+            PduBody::Signal => { PduType::Signal }
+            PduBody::Receiver => { PduType::Receiver }
+            PduBody::IFF => { PduType::IFF }
+            PduBody::UnderwaterAcoustic => { PduType::UnderwaterAcoustic }
+            PduBody::SupplementalEmissionEntityState => { PduType::SupplementalEmissionEntityState }
+            PduBody::IntercomSignal => { PduType::IntercomSignal }
+            PduBody::IntercomControl => { PduType::IntercomControl }
+            PduBody::AggregateState => { PduType::AggregateState }
+            PduBody::IsGroupOf => { PduType::IsGroupOf }
+            PduBody::TransferOwnership => { PduType::TransferOwnership }
+            PduBody::IsPartOf => { PduType::IsPartOf }
+            PduBody::MinefieldState => { PduType::MinefieldState }
+            PduBody::MinefieldQuery => { PduType::MinefieldQuery }
+            PduBody::MinefieldData => { PduType::MinefieldData }
+            PduBody::MinefieldResponseNACK => { PduType::MinefieldResponseNACK }
+            PduBody::EnvironmentalProcess => { PduType::EnvironmentalProcess }
+            PduBody::GriddedData => { PduType::GriddedData }
+            PduBody::PointObjectState => { PduType::PointObjectState }
+            PduBody::LinearObjectState => { PduType::LinearObjectState }
+            PduBody::ArealObjectState => { PduType::ArealObjectState }
+            PduBody::TSPI => { PduType::TSPI }
+            PduBody::Appearance => { PduType::Appearance }
+            PduBody::ArticulatedParts => { PduType::ArticulatedParts }
+            PduBody::LEFire => { PduType::LEFire }
+            PduBody::LEDetonation => { PduType::LEDetonation }
+            PduBody::CreateEntityR => { PduType::CreateEntityR }
+            PduBody::RemoveEntityR => { PduType::RemoveEntityR }
+            PduBody::StartResumeR => { PduType::StartResumeR }
+            PduBody::StopFreezeR => { PduType::StopFreezeR }
+            PduBody::AcknowledgeR => { PduType::AcknowledgeR }
+            PduBody::ActionRequestR => { PduType::ActionRequestR }
+            PduBody::ActionResponseR => { PduType::ActionResponseR }
+            PduBody::DataQueryR => { PduType::DataQueryR }
+            PduBody::SetDataR => { PduType::SetDataR }
+            PduBody::DataR => { PduType::DataR }
+            PduBody::EventReportR => { PduType::EventReportR }
+            PduBody::CommentR => { PduType::CommentR }
+            PduBody::RecordR => { PduType::RecordR }
+            PduBody::SetRecordR => { PduType::SetRecordR }
+            PduBody::RecordQueryR => { PduType::RecordQueryR }
+            PduBody::CollisionElastic => { PduType::CollisionElastic }
+            PduBody::EntityStateUpdate => { PduType::EntityStateUpdate }
+            PduBody::DirectedEnergyFire => { PduType::DirectedEnergyFire }
+            PduBody::EntityDamageStatus => { PduType::EntityDamageStatus }
+            PduBody::InformationOperationsAction => { PduType::InformationOperationsAction }
+            PduBody::InformationOperationsReport => { PduType::InformationOperationsReport }
+            PduBody::Attribute => { PduType::Attribute }
+        }
+    }
 }
 
 impl Interaction for PduBody {

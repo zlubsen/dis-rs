@@ -1,3 +1,4 @@
-/// Defines Symbolic names from the standard (v7 - table 25)
+/// Defines Symbolic names from the standard (v7 - tables 25)
 
-pub const PDU_HEADER_LEN_BYTES: usize = 12;
+// TODO move this to a constants.rs file, this one should only contain symbolic names from the standard
+pub const PDU_HEADER_LEN_BYTES: u16 = 12;

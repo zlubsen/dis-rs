@@ -38,7 +38,7 @@ pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
         Err(parse_error) => {
             if let Err::Error(error) = parse_error {
                 if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len()));
+                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
                 }
             }
             Err(DisError::ParseError)
@@ -54,7 +54,7 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
             let skipped = skip_body(header.pdu_length)(input); // Discard the body
             if let Err(Err::Error(error)) = skipped {
                 return if error.code == Eof {
-                    Err(DisError::InsufficientPduLength(header.pdu_length as usize - PDU_HEADER_LEN_BYTES, input.len()))
+                    Err(DisError::InsufficientPduLength(header.pdu_length - PDU_HEADER_LEN_BYTES, input.len() as u16))
                 } else { Err(DisError::ParseError) }
             }
             Ok(header)
@@ -62,7 +62,7 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
         Err(parse_error) => {
             if let Err::Error(error) = parse_error {
                 if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len()));
+                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
                 }
             }
             Err(DisError::ParseError)
@@ -256,7 +256,7 @@ pub fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
 
 #[allow(dead_code)]
 pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
-    let bytes_to_skip = total_bytes as usize - PDU_HEADER_LEN_BYTES;
+    let bytes_to_skip = total_bytes - PDU_HEADER_LEN_BYTES;
     move |input| {
         take(bytes_to_skip)(input)
     }

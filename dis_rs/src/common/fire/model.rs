@@ -3,7 +3,7 @@ use crate::common::model::{BurstDescriptor, EntityId};
 use crate::common::model::EventId;
 use crate::common::model::Location;
 use crate::common::model::VectorF32;
-use crate::enumerations::{PduType, ProtocolFamily};
+use crate::enumerations::PduType;
 
 // #[derive(buildstructor::Builder)]
 pub struct Fire {
@@ -19,16 +19,12 @@ pub struct Fire {
 }
 
 impl Body for Fire {
-    fn body_length(&self) -> usize {
+    fn body_length(&self) -> u16 {
         28
     }
 
     fn body_type(&self) -> PduType {
         PduType::Fire
-    }
-
-    fn protocol_family(&self) -> ProtocolFamily {
-        ProtocolFamily::Warfare
     }
 }
 
