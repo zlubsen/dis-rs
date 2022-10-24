@@ -1,15 +1,11 @@
 use crate::common::entity_state::model::EntityState;
-use crate::common::{Body, Interaction};
+use crate::common::{BodyInfo, Interaction};
+use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
 use crate::common::other::model::Other;
-use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, ProtocolVersion, ProtocolFamily, PlatformDomain};
+use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
 use crate::PDU_HEADER_LEN_BYTES;
-
-const DEFAULT_SITE_ID: u16 = 1;
-const DEFAULT_APPLICATION_ID: u16 = 1;
-const DEFAULT_ENTITY_ID: u16 = 1;
-const DEFAULT_EVENT_ID: u16 = 1;
 
 pub struct Pdu {
     pub header : PduHeader,
@@ -161,7 +157,7 @@ pub enum PduBody {
     Attribute,
 }
 
-impl Body for PduBody {
+impl BodyInfo for PduBody {
     fn body_length(&self) -> u16 {
         match self {
             PduBody::Other(body) => { body.body_length() }

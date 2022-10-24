@@ -29,6 +29,7 @@ pub fn entity_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         (input, Some(params))
     } else { (input, None) };
 
+    // TODO replace custom builder with buildstructor
     let builder = EntityState::builder()
         // .header(header)
         .entity_id(entity_id_val)

@@ -1,10 +1,11 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::fire::model::Fire;
 use crate::common::model::BurstDescriptor;
-use crate::common::Serialize;
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
 
-impl Serialize for Fire {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+impl SerializePdu for Fire {
+    fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
+        // TODO v6 and v7 serialization differences
         let firing_entity_id_bytes = self.firing_entity_id.serialize(buf);
         let target_entity_id_bytes = self.target_entity_id.serialize(buf);
         let munition_id_bytes = self.munition_id.serialize(buf);

@@ -21,13 +21,18 @@ pub use common::other::*;
 
 /*
 TODO:
+V Revise writing pdu's based on version
+V Finish model of entity_state PDU (with v6 and v7 capabilities)
+- Add entity appearance v7 to entity state
 - Parse v7 entity_state PDU
-- finalize way to handle builders
-- revise writing pdu's based on version
-- add entity appearance v7 to entity state
-- common function for calculating body length based on header data (pdu_length - header_length); now at several places
+- Finalize way to handle builders (how to build for different protocol versions, various fields with different layout)
+- Common function for calculating body length based on header data (pdu_length - header_length); now at several places
 - Incorporate Symbolic names from the standard (v7 - table 25)
 - Dead-reckoning algorithms
+- Improve error handling (specific errors for parsing and writing pdus, with possible validation checks)
+
+DOCUMENTATION:
+- Document behaviour that PduBodies try to model V7 as much as possible (parse v6 into), and use compatibility conversions to serialize (impl From<V7> for V6).
 
 TESTS:
 - Build Other PDU
@@ -36,7 +41,7 @@ V Read Other PDU
 - Reading EntityState PDU
 - DIS v7 header
 
-ISSUES:
+FIXES / ERROR HANDLING CASES:
 - Serialize OtherPdu: check for sufficient buffer size?
 
 */

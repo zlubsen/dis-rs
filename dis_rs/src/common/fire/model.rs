@@ -1,4 +1,4 @@
-use crate::common::{Body, Interaction};
+use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{BurstDescriptor, EntityId};
 use crate::common::model::EventId;
 use crate::common::model::Location;
@@ -18,7 +18,7 @@ pub struct Fire {
     pub range : f32,
 }
 
-impl Body for Fire {
+impl BodyInfo for Fire {
     fn body_length(&self) -> u16 {
         28
     }

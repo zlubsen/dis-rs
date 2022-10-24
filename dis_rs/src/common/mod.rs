@@ -6,6 +6,7 @@ pub mod entity_state;
 pub mod fire;
 pub mod other;
 pub mod symbolic_names;
+pub mod defaults;
 pub mod errors;
 mod writer;
 
@@ -22,8 +23,18 @@ pub enum SupportedVersion {
     Unsupported,
 }
 
-/// Trait for PduBodies to query basic information, typically used in the header
-trait Body {
+impl From<ProtocolVersion> for SupportedVersion {
+    fn from(version: ProtocolVersion) -> Self {
+        match version {
+            ProtocolVersion::IEEE1278_1A1998 => SupportedVersion::V6,
+            ProtocolVersion::IEEE1278_12012 => SupportedVersion::V7,
+            _ => SupportedVersion::Unsupported,
+        }
+    }
+}
+
+/// Trait for PduBody-s to query basic information, typically used in the header
+trait BodyInfo {
     fn body_length(&self) -> u16;
     fn body_type(&self) -> PduType;
 }
@@ -36,8 +47,16 @@ trait Interaction {
     fn receiver(&self) -> Option<&model::EntityId>;
 }
 
-/// Trait that implements writing the data structure to a buffer.
-/// Return the number of bytes written to the buffer.
+/// Trait that implements writing a PduBody to a buffer
+/// based on the protocol version of the PDU.
+/// Returns the number of bytes written to the buffer.
+pub trait SerializePdu {
+    fn serialize_pdu(&self, version: SupportedVersion, buf : &mut BytesMut) -> u16;
+}
+
+/// Trait that implements writing data structures to a buffer.
+/// This serialize must be independent of protocol version differences for the data structure.
+/// Returns the number of bytes written to the buffer.
 pub trait Serialize {
     fn serialize(&self, buf : &mut BytesMut) -> u16;
 }

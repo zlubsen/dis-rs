@@ -151,7 +151,7 @@ mod tests {
             .pdu_type(PduType::EntityState) // EntityStatePdu has only an originating EntityId
             .build();
         header.fields()
-            .body_length((PDU_HEADER_LEN_BYTES + 6) as u16)
+            .body_length(6 as u16)
             .time_stamp(0)
             .finish();
         let input : [u8;6] = [0x00,0x10,0x00,0x0A,0x00,0x01];

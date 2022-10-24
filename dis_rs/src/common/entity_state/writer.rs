@@ -1,12 +1,12 @@
 use bytes::{BufMut, BytesMut};
-use crate::common::Serialize;
-use crate::common::entity_state::model::{VariableParameter, EntityMarking, EntityState, ParameterVariant};
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use crate::common::entity_state::model::{EntityMarking, EntityState, ParameterVariant, VariableParameter};
 use crate::common::model::EntityType;
 use crate::enumerations::ForceId;
 use crate::v6::entity_state::model::{AirPlatformsRecord, Appearance, DrParameters, EntityCapabilities, EnvironmentalsRecord, GeneralAppearance, GuidedMunitionsRecord, LandPlatformsRecord, LifeFormsRecord, SpacePlatformsRecord, SpecificAppearance, SubsurfacePlatformsRecord, SurfacePlatformRecord};
 
-impl Serialize for EntityState {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+impl SerializePdu for EntityState {
+    fn serialize_pdu(&self, version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let entity_id_bytes = self.entity_id.serialize(buf);
         let force_id_bytes = self.force_id.serialize(buf);
         buf.put_u8(self.variable_parameters.len() as u8);
@@ -22,17 +22,18 @@ impl Serialize for EntityState {
         let dr_params_bytes = self.dead_reckoning_parameters.serialize(buf);
 
         let marking_bytes = self.entity_marking.serialize(buf);
-        // FIXME design method to serialize based on ProtocolVersion (perhaps new trait serialize_version taking the version and a buffer)
-        let capabilities_bytes = {
-            if let Some(capabilities) = &self.entity_capabilities_v6 {
+        let capabilities_bytes = match version {
+            SupportedVersion::V6 => {
+                let capabilities : EntityCapabilities = self.entity_capabilities.into();
                 capabilities.serialize(buf)
-            } else if let Some(capabilities) = self.entity_capabilities {
-                let value : u32 = capabilities.into();
-                buf.put_u32(value);
+            }
+            SupportedVersion::V7 => {
+                buf.put_u32(self.entity_capabilities.into());
                 4
-            } else {
-                buf.put_u32(0u32);
-                4
+            }
+            // TODO should not be possible to construct such a PDU, but need to handle the case
+            SupportedVersion::Unsupported => {
+                buf.put_u32(0u32); 4
             }
         };
 
@@ -268,18 +269,6 @@ impl Serialize for DrParameters {
     }
 }
 
-impl Serialize for EntityCapabilities {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let ammunition_supply = if self.ammunition_supply { 1u32 } else { 0u32 } << 31;
-        let fuel_supply = if self.fuel_supply { 1u32 } else { 0u32 } << 30;
-        let recovery = if self.recovery { 1u32 } else { 0u32 } << 29;
-        let repair = if self.repair { 1u32 } else { 0u32 } << 28;
-        let capabilities = ammunition_supply | fuel_supply | recovery | repair;
-        buf.put_u32(capabilities);
-        4
-    }
-}
-
 impl Serialize for ForceId {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let force_id = *self;
@@ -317,7 +306,7 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::v6::entity_state::builder::GeneralAppearanceBuilder;
-    use crate::common::entity_state::model::{ArticulatedPart, VariableParameter, EntityMarking, EntityState, ParameterVariant};
+    use crate::common::entity_state::model::{ArticulatedPart, EntityMarking, EntityState, ParameterVariant, VariableParameter};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32};
     use crate::common::Serialize;
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, VariableParameterRecordType};
@@ -364,10 +353,7 @@ mod tests {
             .exercise_id(1)
             .pdu_type(PduType::EntityState)
             .build();
-        header.fields()
-            .time_stamp(0)
-            .body_length(208u16)
-            .finish();
+        // TODO replace custom builder with buildstructor
         let body = EntityState::builder()
             .entity_id(EntityId {
                 simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
@@ -464,7 +450,7 @@ mod tests {
                 }),
             })
             .build().expect("Should be Ok");
-        let pdu = Pdu { header, body };
+        let pdu = Pdu::finalize_from_parts(header, body, 0);
 
         let mut buf = BytesMut::with_capacity(208);
 

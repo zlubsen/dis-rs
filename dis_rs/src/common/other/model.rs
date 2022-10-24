@@ -1,4 +1,4 @@
-use crate::common::{Body, Interaction};
+use crate::common::{BodyInfo, Interaction};
 use crate::common::other::builder::OtherBuilder;
 use crate::common::model::EntityId;
 use crate::enumerations::PduType;
@@ -16,7 +16,7 @@ pub struct Other {
     pub body: Vec<u8>,
 }
 
-impl Body for Other {
+impl BodyInfo for Other {
     fn body_length(&self) -> u16 {
         self.body.len() as u16
     }

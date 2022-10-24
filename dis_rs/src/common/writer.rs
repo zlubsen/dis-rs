@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
-use crate::common::Serialize;
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
 use crate::{EntityId, EventId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::enumerations::{ProtocolVersion};
@@ -30,10 +30,11 @@ impl Serialize for PduHeader {
 impl Serialize for Pdu {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let header_size = self.header.serialize(buf);
+        let version: SupportedVersion = self.header.protocol_version.into();
         let body_size = match &self.body {
-            PduBody::Other(body) => { body.serialize(buf) } // TODO check if buffer capacity is enough for the body of an 'Other' PDU; perhaps make Serialize trait fallible
-            PduBody::EntityState(body) => { body.serialize(buf) }
-            PduBody::Fire(body) => { body.serialize(buf) }
+            PduBody::Other(body) => { body.serialize_pdu(version, buf) } // TODO check if buffer capacity is enough for the body of an 'Other' PDU; perhaps make Serialize trait fallible
+            PduBody::EntityState(body) => { body.serialize_pdu(version, buf) }
+            PduBody::Fire(body) => { body.serialize_pdu(version, buf) }
             // PduBody::Detonation(body) => { body.serialize(buf) }
             // PduBody::Collision(body) => { body.serialize(buf) }
             // PduBody::ServiceRequest(body) => { body.serialize(buf) }
@@ -177,7 +178,7 @@ mod tests {
             .build();
         header.fields()
             .time_stamp(10)
-            .body_length(PDU_HEADER_LEN_BYTES)
+            .body_length(0)
             .finish();
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 

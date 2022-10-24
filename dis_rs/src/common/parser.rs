@@ -473,12 +473,13 @@ mod tests {
             } else { assert!(false) };
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            assert_eq!(pdu.entity_capabilities_v6, Some(EntityCapabilities {
+            let capabilities : EntityCapabilities = pdu.entity_capabilities.into();
+            assert_eq!(capabilities, EntityCapabilities {
                 ammunition_supply: false,
                 fuel_supply: false,
                 recovery: false,
                 repair: false,
-            }));
+            });
             assert_eq!(pdu.variable_parameters.len(), 4);
             let parameter_1 = pdu.variable_parameters.get(0).unwrap();
             assert_eq!(parameter_1.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);

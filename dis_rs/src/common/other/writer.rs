@@ -1,12 +1,12 @@
 use bytes::{BufMut, BytesMut};
-use crate::common::Serialize;
+use crate::common::{SerializePdu, SupportedVersion};
 use crate::common::other::model::Other;
 
-impl Serialize for Other {
+impl SerializePdu for Other {
     /// Serializes the Other PDU into a buffer.
     /// Assumes there is enough free space in the buffer and relies on the buffer's
     /// behaviour for what happens if this is not the case (probably panics - BytesMut does)
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+    fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         buf.put(self.body.as_slice());
         self.body.len() as u16
     }
@@ -16,7 +16,7 @@ impl Serialize for Other {
 mod tests {
     use bytes::BytesMut;
     use crate::common::other::builder::OtherBuilder;
-    use crate::common::{Body, Serialize};
+    use crate::common::{BodyInfo, Serialize};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
     use crate::{Pdu, PduHeader};

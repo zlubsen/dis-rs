@@ -1,5 +1,5 @@
 use buildstructor;
-use crate::common::{Body, Interaction};
+use crate::common::{BodyInfo, Interaction};
 use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
@@ -25,12 +25,11 @@ pub struct EntityState {
     pub entity_appearance_v6: AppearanceV6, // struct
     pub dead_reckoning_parameters : DrParameters, // struct
     pub entity_marking : EntityMarking, // struct
-    // pub entity_capabilities_v6 : Option<EntityCapabilitiesV6>, // struct // TODO to remove
     pub entity_capabilities : EntityCapabilities,
     pub variable_parameters: Vec<VariableParameter>,
 }
 
-impl Body for EntityState {
+impl BodyInfo for EntityState {
     fn body_length(&self) -> u16 {
         BASE_ENTITY_STATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (*&self.variable_parameters.len() as u16))
     }
