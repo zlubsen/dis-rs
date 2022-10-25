@@ -10,8 +10,6 @@ use quote::__private::{Ident, Literal, TokenStream};
 // test enumrow_range fields and unspecified values
 // TODO read and generate bitfield enums
 // appearances: 31-43, plus enums 378-411
-// TODO replace usage in lib code
-// capabilities: 450-462 with enum 55
 
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing the uid, an Optional string
@@ -19,7 +17,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 17] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 53] = [
     (3, Some("ProtocolVersion"), None),   // protocol version
     (4, Some("PduType"), None),           // pdu type
     (5, Some("ProtocolFamily"), None),    // pdu family
@@ -28,7 +26,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 17] = [
     (8, None, None), // Domain
     // 9-28 // (Sub-)Categories
     (29, None, None), // Country
-    // 31-43 // Appearance records
+    // 30 // Entity Types records
     (44, None, None), // Dead Reckoning Algorithm
     (45, None, None), // entity marking char set
     // 46-54 do not exist
@@ -45,10 +43,47 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 17] = [
     // 80-81, // Designator stuff
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    (378, None, None), // Appearance
+    (379, None, None), // Appearance
+    (380, None, None), // Appearance
+    (381, None, None), // Appearance
+    (382, None, None), // Appearance
+    (383, None, None), // Appearance
+    (384, None, None), // Appearance
+    (385, None, None), // Appearance
+    (386, None, None), // Appearance
+    (387, None, None), // Appearance
+    (388, None, None), // Appearance
+    (389, None, None), // Appearance
+    (390, None, None), // Appearance
+    (391, None, None), // Appearance
+    (392, None, None), // Appearance
+    (393, None, None), // Appearance
+    (394, None, None), // Appearance
+    (395, None, None), // Appearance
+    (396, None, None), // Appearance
+    (397, None, None), // Appearance
+    (398, None, None), // Appearance
+    (399, None, None), // Appearance
+    (400, None, None), // Appearance
+    (401, None, None), // Appearance
+    (402, None, None), // Appearance
+    (403, None, None), // Appearance
+    (404, None, None), // Appearance
+    (405, None, None), // Appearance
+    (406, None, None), // Appearance
+    (407, None, None), // Appearance
+    (408, None, None), // Appearance
+    (409, None, None), // Appearance
+    (410, None, None), // Appearance
+    (411, None, None), // Appearance
+    (426, None, None), // Cover/Shroud Status
+    (802, None, None), // Clothing IR Signature
 ];
 
-const BITFIELD_UIDS : [RangeInclusive<usize>; 1] = [
+const BITFIELD_UIDS : [RangeInclusive<usize>; 2] = [
     450..=462, // Capabilities
+    31..=43, // Appearances
 ];
 
 #[derive(Debug, Clone)]
@@ -188,7 +223,14 @@ fn format_name(value: &str, uid: usize) -> String {
 }
 
 fn format_field_name(name: &str) -> String {
-    name.to_lowercase().replace(' ', "_").replace('-',"")
+    name.to_lowercase()
+        .replace(' ', "_")
+        .replace('-',"")
+        .replace("/","")
+        .replace("#","")
+        .replace('(', "")
+        .replace(')', "")
+        .replace("__", "_")
 }
 
 mod extraction {
@@ -444,6 +486,7 @@ mod extraction {
         } else { None };
 
         if let (Some(name), Some(bit_position)) = (name, position) {
+            println!("{} {} {} {:?}", name, bit_position, length, xref);
             Ok(BitfieldItem {
                 name,
                 bit_position,
@@ -463,6 +506,7 @@ mod generation {
 
     pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
         let mut generated_items = vec![];
+        items.iter().for_each(|it| println!("{} {}", it.name(), it.uid()));
         let lookup_xref = |xref:usize| {
             items.iter().find(|&it| { it.uid() == xref })
         };
@@ -729,9 +773,9 @@ mod generation {
 
     fn generate_bitfield<'a, F>(item: &Bitfield, lookup_xref: F) -> TokenStream
         where F: Fn(usize)->Option<&'a GenerationItem> {
-        let decl = quote_bitfield_decl(item, lookup_xref);
-        let from = quote_bitfield_from_impl(item); // struct from u32
-        let into = quote_bitfield_into_impl(item); // struct into u32
+        let decl = quote_bitfield_decl(item, &lookup_xref);
+        let from = quote_bitfield_from_impl(item, &lookup_xref); // struct from u32
+        let into = quote_bitfield_into_impl(item, &lookup_xref); // struct into u32
         // TODO let display = quote_bitfield_display_impl(item); // display values of fields or bitstring
         quote!(
             #decl
@@ -759,7 +803,7 @@ mod generation {
             let field_name = format_field_name(field.name.as_str());
             let field_ident = format_ident!("{}", field_name);
             let type_literal = if let Some(xref_uid) = field.xref {
-                let xref = lookup_xref(xref_uid).unwrap();
+                let xref = lookup_xref(xref_uid).expect(format!("{}", xref_uid).as_str());
                 format_ident!("{}", format_name(xref.name(), xref.uid()))
             } else { format_ident!("bool") };
             quote!(
@@ -769,12 +813,13 @@ mod generation {
         generated_fields
     }
 
-    fn quote_bitfield_from_impl(item: &Bitfield) -> TokenStream {
+    fn quote_bitfield_from_impl<'a, F>(item: &Bitfield, lookup_xref: F) -> TokenStream
+    where F: Fn(usize)->Option<&'a GenerationItem> {
         let formatted_name = format_name(item.name.as_str(), item.uid);
         let name_ident = format_ident!("{}", formatted_name);
         let size_type = size_to_type(item.size);
         let size_ident = format_ident!("{}", size_type);
-        let field_assignments = quote_bitfield_from_fields(&item.fields, item.size);
+        let field_assignments = quote_bitfield_from_fields(&item.fields, item.size, lookup_xref);
         let field_names: Vec<TokenStream> = item.fields.iter()
             .map(|field| {
                 let ident = format_ident!("{}", format_field_name(field.name.as_str()));
@@ -793,24 +838,37 @@ mod generation {
         )
     }
 
-    fn quote_bitfield_from_fields(fields: &[BitfieldItem], data_size: usize) -> Vec<TokenStream> {
+    fn quote_bitfield_from_fields<'a, F>(fields: &[BitfieldItem], data_size: usize, lookup_xref: F) -> Vec<TokenStream>
+    where F: Fn(usize)->Option<&'a GenerationItem> {
         fields.iter().map(|field| {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
             let position_shift_literal = Literal::usize_unsuffixed(data_size - field.length - field.bit_position);
             let bitmask = Literal::usize_unsuffixed(2usize.pow(field.length as u32) - 1);
-            quote!(
-                let #field_ident = ((value >> #position_shift_literal) & #bitmask) != 0;
-            )
+            if let Some(xref) = field.xref {
+                let xref = lookup_xref(xref).unwrap();
+                let xref_name = format_name(xref.name(), xref.uid());
+                let xref_ident = format_ident!("{}", xref_name);
+                let xref_data_size = size_to_type(xref.size());
+                let xref_size_ident = format_ident!("{}", xref_data_size);
+                quote!(
+                    let #field_ident = #xref_ident::from(((value >> #position_shift_literal) & #bitmask) as #xref_size_ident);
+                )
+            } else {
+                quote!(
+                    let #field_ident = ((value >> #position_shift_literal) & #bitmask) != 0;
+                )
+            }
         }).collect()
     }
 
-    fn quote_bitfield_into_impl(item: &Bitfield) -> TokenStream {
+    fn quote_bitfield_into_impl<'a, F>(item: &Bitfield, lookup_xref: F) -> TokenStream
+    where F: Fn(usize)->Option<&'a GenerationItem> {
         let formatted_name = format_name(item.name.as_str(), item.uid);
         let name_ident = format_ident!("{}", formatted_name);
         let size_type = size_to_type(item.size);
         let size_ident = format_ident!("{}", size_type);
-        let field_assignments = quote_bitfield_into_fields(&item.fields, item.size);
+        let field_assignments = quote_bitfield_into_fields(&item.fields, item.size, lookup_xref);
         let field_names: Vec<TokenStream> = item.fields.iter()
             .map(|field| {
                 let ident = format_ident!("{}", format_field_name(field.name.as_str()));
@@ -828,16 +886,29 @@ mod generation {
         )
     }
 
-    fn quote_bitfield_into_fields(fields: &[BitfieldItem], data_size: usize) -> Vec<TokenStream> {
+    fn quote_bitfield_into_fields<'a, F>(fields: &[BitfieldItem], data_size: usize, lookup_xref: F) -> Vec<TokenStream>
+    where F: Fn(usize)->Option<&'a GenerationItem> {
         let true_value_literal = discriminant_literal(1, data_size);
         let false_value_literal = discriminant_literal(0, data_size);
+
+        let field_size_type = size_to_type(data_size);
+        let field_size_ident = format_ident!("{}", field_size_type);
+
         fields.iter().map(|field| {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
             let position_shift_literal = data_size - field.length - field.bit_position;
-            quote!(
-                let #field_ident = if value.#field_ident { #true_value_literal } else { #false_value_literal } << #position_shift_literal;
-            )
+            if let Some(xref) = field.xref {
+                let xref_size_type = size_to_type(lookup_xref(xref).unwrap().size());
+                let xref_size_ident = format_ident!("{}", xref_size_type);
+                quote!(
+                    let #field_ident = (#xref_size_ident::from(value.#field_ident) as #field_size_ident) << #position_shift_literal;
+                )
+            } else {
+                quote!(
+                    let #field_ident = if value.#field_ident { #true_value_literal } else { #false_value_literal } << #position_shift_literal;
+                )
+            }
         }).collect()
     }
 
