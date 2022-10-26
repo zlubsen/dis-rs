@@ -3,7 +3,8 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
-use crate::v6::entity_state::model::{Appearance as AppearanceV6, DrParameters};
+use crate::enumerations::{LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, SupplyAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance};
+use crate::v6::entity_state::model::{DrParameters};
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
 const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
@@ -21,11 +22,10 @@ pub struct EntityState {
     pub entity_linear_velocity : VectorF32, // struct
     pub entity_location : Location, // struct
     pub entity_orientation : Orientation, // struct
-    // TODO
-    pub entity_appearance_v6: AppearanceV6, // struct
+    pub entity_appearance: EntityAppearance, // enum
     pub dead_reckoning_parameters : DrParameters, // struct
     pub entity_marking : EntityMarking, // struct
-    pub entity_capabilities : EntityCapabilities,
+    pub entity_capabilities : EntityCapabilities, // enum
     pub variable_parameters: Vec<VariableParameter>,
 }
 
@@ -36,6 +36,29 @@ impl BodyInfo for EntityState {
 
     fn body_type(&self) -> PduType {
         PduType::EntityState
+    }
+}
+
+pub enum EntityAppearance {
+    LandPlatform(LandPlatformAppearance),
+    AirPlatform(AirPlatformAppearance),
+    SurfacePlatform(SurfacePlatformAppearance),
+    SubsurfacePlatform(SubsurfacePlatformAppearance),
+    SpacePlatform(SpacePlatformAppearance),
+    Munition(MunitionAppearance),
+    LifeForms(LifeFormsAppearance),
+    Environmental(EnvironmentalAppearance),
+    CulturalFeature(CulturalFeatureAppearance),
+    Supply(SupplyAppearance),
+    Radio(RadioAppearance),
+    Expendable(ExpendableAppearance),
+    SensorEmitter(SensorEmitterAppearance),
+    Unspecified(u32),
+}
+
+impl Default for EntityAppearance {
+    fn default() -> Self {
+        Self::Unspecified(0u32)
     }
 }
 
@@ -95,7 +118,7 @@ impl EntityState {
             entity_linear_velocity: VectorF32::default(),
             entity_location: Location::default(),
             entity_orientation: Orientation::default(),
-            entity_appearance_v6: AppearanceV6::default(),
+            entity_appearance: EntityAppearance::default(),
             dead_reckoning_parameters: DrParameters::default(),
             entity_marking: EntityMarking::default(), // TODO: EntityMarking::default_for_entity_type(&entity_type), // based on enumerations file
             entity_capabilities: EntityCapabilities::default(),

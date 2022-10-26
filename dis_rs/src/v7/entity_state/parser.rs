@@ -6,7 +6,7 @@ use nom::bytes::complete::take as take_bytes;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use crate::enumerations::*;
-use crate::{EntityState, EntityType, PduBody};
+use crate::{EntityType, PduBody};
 use crate::common::parser;
 
 pub fn entity_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
@@ -48,12 +48,6 @@ pub fn entity_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     //
     // Ok((input, body.unwrap()))
 }
-
-// pub fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], Appearance> {
-//     move | input: &[u8] | {
-//         todo!()
-//     }
-// }
 
 pub fn entity_capabilities(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityCapabilities> {
     move | input: &[u8] | {

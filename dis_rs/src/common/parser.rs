@@ -359,8 +359,10 @@ mod tests {
     use crate::common::entity_state::model::ParameterVariant;
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+    use crate::EntityAppearance;
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolVersion, ProtocolFamily, VariableParameterRecordType};
-    use crate::v6::entity_state::model::{Afterburner, AirPlatformsRecord, EntityCapabilities, EntityDamage, EntityFirePower, EntityFlamingEffect, EntityHatchState, EntityLights, EntityMobilityKill, EntityPaintScheme, EntitySmoke, EntityTrailingEffect, FrozenStatus, GeneralAppearance, PowerPlantStatus, SpecificAppearance, State};
+    use crate::enumerations::{AppearancePaintScheme, AppearanceDamage, AppearanceTrailingEffects, AppearanceCanopy, AppearanceEntityorObjectState};
+    use crate::v6::entity_state::model::{EntityCapabilities};
 
     #[test]
     fn parse_header() {
@@ -452,25 +454,27 @@ mod tests {
                 specific: 4,
                 extra: 0
             });
-            assert_eq!(pdu.entity_appearance_v6.general_appearance, GeneralAppearance {
-                entity_paint_scheme: EntityPaintScheme::UniformColor,
-                entity_mobility_kill: EntityMobilityKill::NoMobilityKill,
-                entity_fire_power: EntityFirePower::NoFirePowerKill,
-                entity_damage: EntityDamage::NoDamage,
-                entity_smoke: EntitySmoke::NotSmoking,
-                entity_trailing_effect: EntityTrailingEffect::None,
-                entity_hatch_state: EntityHatchState::Open,
-                entity_lights: EntityLights::None,
-                entity_flaming_effect: EntityFlamingEffect::None,
-            });
-            if let SpecificAppearance::AirPlatform(record) = pdu.entity_appearance_v6.specific_appearance {
-                assert_eq!(record, AirPlatformsRecord {
-                    afterburner: Afterburner::NotOn,
-                    frozen_status: FrozenStatus::NotFrozen,
-                    power_plant_status: PowerPlantStatus::Off,
-                    state: State::Active,
-                })
-            } else { assert!(false) };
+
+            if let EntityAppearance::AirPlatform(appearance) = pdu.entity_appearance {
+                assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
+                assert_eq!(appearance.propulsion_killed, false);
+                assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
+                assert_eq!(appearance.is_smoke_emanating, false);
+                assert_eq!(appearance.is_engine_emitting_smoke, false);
+                assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
+                assert_eq!(appearance.canopy_troop_door, AppearanceCanopy::SingleCanopySingleTroopDoorOpen);
+                assert_eq!(appearance.landing_lights_on, false);
+                assert_eq!(appearance.navigation_lights_on, false);
+                assert_eq!(appearance.anticollision_lights_on, false);
+                assert_eq!(appearance.is_flaming, false);
+                assert_eq!(appearance.afterburner_on, false);
+                assert_eq!(appearance.is_frozen, false);
+                assert_eq!(appearance.power_plant_on, false);
+                assert_eq!(appearance.state, AppearanceEntityorObjectState::Active);
+            } else {
+                assert!(false)
+            }
+
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
             let capabilities : EntityCapabilities = pdu.entity_capabilities.into();

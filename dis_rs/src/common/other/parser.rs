@@ -119,7 +119,6 @@ fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, 
 mod tests {
     use crate::common::model::{PduBody};
     use crate::common::other::parser::other_body;
-    use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
     use crate::PduHeader;
 

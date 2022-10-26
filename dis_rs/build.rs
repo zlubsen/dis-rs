@@ -224,13 +224,13 @@ fn format_name(value: &str, uid: usize) -> String {
 
 fn format_field_name(name: &str) -> String {
     name.to_lowercase()
+        .replace(" / ", "_")
         .replace(' ', "_")
         .replace('-',"")
-        .replace("/","")
+        .replace("/","_")
         .replace("#","")
         .replace('(', "")
         .replace(')', "")
-        .replace("__", "_")
 }
 
 mod extraction {
@@ -486,7 +486,6 @@ mod extraction {
         } else { None };
 
         if let (Some(name), Some(bit_position)) = (name, position) {
-            println!("{} {} {} {:?}", name, bit_position, length, xref);
             Ok(BitfieldItem {
                 name,
                 bit_position,
@@ -506,10 +505,11 @@ mod generation {
 
     pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
         let mut generated_items = vec![];
-        items.iter().for_each(|it| println!("{} {}", it.name(), it.uid()));
+
         let lookup_xref = |xref:usize| {
             items.iter().find(|&it| { it.uid() == xref })
         };
+
         for item in items {
             match item {
                 GenerationItem::Enum(e) => generated_items.push(generate_enum(e, &lookup_xref)),

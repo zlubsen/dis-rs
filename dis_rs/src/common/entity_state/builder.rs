@@ -1,7 +1,8 @@
 use crate::common::entity_state::model::{VariableParameter, EntityMarking, EntityState, EntityStateValidationError};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VectorF32};
+use crate::EntityAppearance;
 use crate::enumerations::{EntityMarkingCharacterSet, ForceId};
-use crate::v6::entity_state::model::{Appearance, DrParameters, EntityCapabilities};
+use crate::v6::entity_state::model::{DrParameters, EntityCapabilities};
 
 pub struct EntityStateBuilder {
     entity_id : Option<EntityId>,
@@ -11,7 +12,7 @@ pub struct EntityStateBuilder {
     entity_linear_velocity : Option<VectorF32>,
     entity_location : Option<Location>,
     entity_orientation : Option<Orientation>,
-    entity_appearance : Option<Appearance>,
+    entity_appearance : Option<EntityAppearance>,
     dead_reckoning_parameters : Option<DrParameters>,
     entity_marking : Option<EntityMarking>,
     entity_capabilities : Option<EntityCapabilities>,
@@ -109,7 +110,7 @@ impl EntityStateBuilder {
         self
     }
 
-    pub fn appearance(mut self, appearance: Appearance) -> Self {
+    pub fn appearance(mut self, appearance: EntityAppearance) -> Self {
         // TODO
         self.entity_appearance = Some(appearance);
         self
@@ -196,7 +197,7 @@ impl EntityStateBuilder {
             entity_linear_velocity: self.entity_linear_velocity.expect("Value expected, but not found."),
             entity_location: self.entity_location.expect("Value expected, but not found."),
             entity_orientation: self.entity_orientation.expect("Value expected, but not found."),
-            entity_appearance_v6: self.entity_appearance.expect("Value expected, but not found."),
+            entity_appearance: self.entity_appearance.expect("Value expected, but not found."),
             dead_reckoning_parameters: self.dead_reckoning_parameters.expect("Value expected, but not found."),
             entity_marking: self.entity_marking.expect("Value expected, but not found."),
             entity_capabilities: self.entity_capabilities.expect("Value expected, but not found.").into(),
