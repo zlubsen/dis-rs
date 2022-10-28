@@ -1,10 +1,10 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::entity_state::model::{EntityMarking, EntityState, ParameterVariant, VariableParameter};
+use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, ParameterVariant, VariableParameter};
 use crate::common::model::EntityType;
 use crate::EntityAppearance;
 use crate::enumerations::ForceId;
-use crate::v6::entity_state::model::{DrParameters, EntityCapabilities};
+use crate::v6::entity_state::model::EntityCapabilities;
 
 impl SerializePdu for EntityState {
     fn serialize_pdu(&self, version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -145,13 +145,12 @@ impl Serialize for EntityMarking {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::entity_state::model::{ArticulatedPart, EntityMarking, EntityState, ParameterVariant, VariableParameter};
+    use crate::common::entity_state::model::{ArticulatedPart, DrParameters, EntityMarking, EntityState, ParameterVariant, VariableParameter};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32};
     use crate::common::Serialize;
     use crate::EntityAppearance;
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, VariableParameterRecordType};
-    use crate::enumerations::{AirPlatformAppearance, AppearancePaintScheme, AppearanceNVGMode, AppearanceDamage, AppearanceTrailingEffects, AppearanceCanopy, AppearanceAntiCollisionDayNight, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness};
-    use crate::v6::entity_state::model::{DrParameters};
+    use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
 
     #[test]
     fn entity_marking() {

@@ -43,6 +43,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 53] = [
     // 80-81, // Designator stuff
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    // (296, Some("DrParametersType"), None), // Dead Reckoning Parameters Type -> Implemented manually
     (378, None, None), // Appearance
     (379, None, None), // Appearance
     (380, None, None), // Appearance

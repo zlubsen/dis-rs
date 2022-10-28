@@ -1,8 +1,8 @@
-use crate::common::entity_state::model::{VariableParameter, EntityMarking, EntityState, EntityStateValidationError};
+use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, EntityStateValidationError, VariableParameter};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VectorF32};
 use crate::EntityAppearance;
 use crate::enumerations::{EntityMarkingCharacterSet, ForceId};
-use crate::v6::entity_state::model::{DrParameters, EntityCapabilities};
+use crate::v6::entity_state::model::EntityCapabilities;
 
 pub struct EntityStateBuilder {
     entity_id : Option<EntityId>,

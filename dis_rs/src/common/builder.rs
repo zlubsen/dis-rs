@@ -1,1 +1,0 @@
-// FIXME remove builder.rs file when using buildstructor macros for building structs

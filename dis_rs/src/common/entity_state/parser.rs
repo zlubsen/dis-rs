@@ -1,14 +1,13 @@
 use nom::bytes::complete::take;
 use nom::IResult;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::{AttachedPart, EntityAppearance, EntityType};
-use crate::common::entity_state::model::{ArticulatedPart, VariableParameter, EntityMarking, ParameterVariant};
+use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityType};
+use crate::common::entity_state::model::{ArticulatedPart, DrOtherParameters, DrParameters, EntityMarking, ParameterVariant, VariableParameter};
 use crate::common::model::PduBody;
 use crate::common::parser;
-use crate::common::parser::entity_type;
+use crate::common::parser::{entity_type, vec3_f32};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain, ProtocolVersion, VariableParameterRecordType};
-use crate::enumerations::{LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, SupplyAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance};
-use crate::v6::entity_state::model::DrParameters;
+use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
 
 pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
@@ -80,18 +79,69 @@ pub fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
 
 pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let (input, algorithm) = be_u8(input)?;
-    let (input, other_parameters) = take(15usize)(input)?;
+    let algorithm = DeadReckoningAlgorithm::from(algorithm);
+
+    // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
+    let (input, other_parameters) = match algorithm {
+        DeadReckoningAlgorithm::StaticNonmovingEntity |
+            DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
+            DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
+            DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
+            DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
+            dr_other_parameters_euler(input)?
+        }
+        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
+            DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
+            DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
+            DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
+            dr_other_parameters_quaternion(input)?
+        }
+        DeadReckoningAlgorithm::Other | _ => {
+            dr_other_parameters_none(input)?
+        }
+    };
+
     let (input, acceleration) = parser::vec3_f32(input)?;
     let (input, velocity) = parser::vec3_f32(input)?;
 
-    let other_parameters = other_parameters.try_into().unwrap();
-
     Ok((input, DrParameters {
-        algorithm: DeadReckoningAlgorithm::from(algorithm),
+        algorithm,
         other_parameters,
         linear_acceleration: acceleration,
         angular_velocity: velocity,
     }))
+}
+
+pub fn dr_other_parameters_none(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
+    let (input, params) = take(15usize)(input)?;
+    Ok((input, DrOtherParameters::None(params.try_into().unwrap())))
+}
+
+pub fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
+    let (input, _param_type) = be_u8(input)?;
+    let (input, unused) = be_u16(input)?;
+    let (input, local_yaw) = vec3_f32(input)?;
+    let (input, local_pitch) = vec3_f32(input)?;
+    let (input, local_roll) = vec3_f32(input)?;
+    Ok((input, DrOtherParameters::LocalEulerAngles(DrEulerAngles {
+        local_yaw,
+        local_pitch,
+        local_roll,
+    })))
+}
+
+pub fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
+    let (input, _param_type) = be_u8(input)?;
+    let (input, nil) = be_u16(input)?;
+    let (input, x) = vec3_f32(input)?;
+    let (input, y) = vec3_f32(input)?;
+    let (input, z) = vec3_f32(input)?;
+    Ok((input, DrOtherParameters::WorldOrientationQuaternion(DrWorldOrientationQuaternion {
+        nil,
+        x,
+        y,
+        z,
+    })))
 }
 
 pub fn articulation_record(input: &[u8]) -> IResult<&[u8], VariableParameter> {

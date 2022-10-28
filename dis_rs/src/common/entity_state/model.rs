@@ -2,9 +2,8 @@ use buildstructor;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
-use crate::enumerations::{LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, SupplyAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance};
-use crate::v6::entity_state::model::{DrParameters};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
+use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
 const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
@@ -159,4 +158,49 @@ impl Interaction for EntityState {
     fn receiver(&self) -> Option<&EntityId> {
         None
     }
+}
+
+pub struct DrParameters {
+    pub algorithm : DeadReckoningAlgorithm,
+    pub other_parameters : DrOtherParameters,
+    pub linear_acceleration : VectorF32,
+    pub angular_velocity : VectorF32,
+}
+
+impl Default for DrParameters {
+    fn default() -> Self {
+        Self {
+            algorithm: DeadReckoningAlgorithm::default(),
+            other_parameters: DrOtherParameters::default(),
+            linear_acceleration: VectorF32::default(),
+            angular_velocity: VectorF32::default(),
+        }
+    }
+}
+
+pub enum DrOtherParameters {
+    None([u8; 15]),
+    LocalEulerAngles(DrEulerAngles),
+    WorldOrientationQuaternion(DrWorldOrientationQuaternion),
+}
+
+impl Default for DrOtherParameters {
+    fn default() -> Self {
+        Self::None([0u8;15])
+    }
+}
+
+#[derive(Default)]
+pub struct DrEulerAngles {
+    pub(crate) local_yaw : VectorF32,
+    pub(crate) local_pitch : VectorF32,
+    pub(crate) local_roll : VectorF32,
+}
+
+#[derive(Default)]
+pub struct DrWorldOrientationQuaternion {
+    pub(crate) nil : u16,
+    pub(crate) x: VectorF32,
+    pub(crate) y: VectorF32,
+    pub(crate) z: VectorF32,
 }
