@@ -192,15 +192,15 @@ impl Default for DrOtherParameters {
 
 #[derive(Default)]
 pub struct DrEulerAngles {
-    pub(crate) local_yaw : VectorF32,
-    pub(crate) local_pitch : VectorF32,
-    pub(crate) local_roll : VectorF32,
+    pub local_yaw : f32,
+    pub local_pitch : f32,
+    pub local_roll : f32,
 }
 
 #[derive(Default)]
 pub struct DrWorldOrientationQuaternion {
-    pub(crate) nil : u16,
-    pub(crate) x: VectorF32,
-    pub(crate) y: VectorF32,
-    pub(crate) z: VectorF32,
+    pub nil : u16,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }

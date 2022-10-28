@@ -1,34 +1,63 @@
 use nom::bytes::complete::take;
 use nom::IResult;
+use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityType};
+use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityState, EntityType};
 use crate::common::entity_state::model::{ArticulatedPart, DrOtherParameters, DrParameters, EntityMarking, ParameterVariant, VariableParameter};
 use crate::common::model::PduBody;
 use crate::common::parser;
 use crate::common::parser::{entity_type, vec3_f32};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain, ProtocolVersion, VariableParameterRecordType};
 use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
+use crate::v6::entity_state::parser::entity_capabilities;
 
 pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
-        // FIXME factor out this match construct to filter/branch on DIS versions
-        let (input, body) = match u8::from(version) {
-            legacy_version if legacy_version <= 5 => {
-                unimplemented!("DIS Versions 1-5 are not supported, found {}", legacy_version);
+        let (input, entity_id_val) = parser::entity_id(input)?;
+        let (input, force_id_val) = force_id(input)?;
+        let (input, articulated_parts_no) = be_u8(input)?;
+        let (input, entity_type_val) = parser::entity_type(input)?;
+        let (input, alternative_entity_type) = entity_type(input)?;
+        let (input, entity_linear_velocity) = vec3_f32(input)?;
+        let (input, entity_location) = parser::location(input)?;
+        let (input, entity_orientation) = parser::orientation(input)?;
+        let (input, entity_appearance) = entity_appearance(entity_type_val)(input)?;
+        let (input, dead_reckoning_parameters) = dr_parameters(input)?;
+        let (input, entity_marking) = entity_marking(input)?;
+        let (input, entity_capabilities) = match version {
+            ProtocolVersion::IEEE1278_12012 => {
+                crate::v7::entity_state::parser::entity_capabilities(entity_type_val)(input)?
             }
-            6 => {
-                // versions 6
-                crate::v6::entity_state::parser::entity_state_body(input)?
-            }
-            7 => {
-                // version 7
-                crate::v7::entity_state::parser::entity_state_body(input)?
-            }
-            future_version => {
-                unimplemented!("DIS 7 is the most recent DIS version at time of implementation, found {}.", future_version);
+            ProtocolVersion::IEEE1278_1A1998 | _ => {
+                let (input, entity_capabilities) = entity_capabilities(input)?;
+                (input, crate::enumerations::EntityCapabilities::from(entity_capabilities))
             }
         };
-        Ok((input, body))
+        let (input, articulation_parameter) = if articulated_parts_no > 0 {
+            let (input, params) = count(articulation_record, articulated_parts_no as usize)(input)?;
+            (input, Some(params))
+        } else { (input, None) };
+
+        // TODO replace custom builder with buildstructor
+        let builder = EntityState::builder()
+            // .header(header)
+            .entity_id(entity_id_val)
+            .force_id(force_id_val)
+            .entity_type(entity_type_val)
+            .alt_entity_type(alternative_entity_type)
+            .linear_velocity(entity_linear_velocity)
+            .location(entity_location)
+            .orientation(entity_orientation)
+            .appearance(entity_appearance)
+            .dead_reckoning(dead_reckoning_parameters)
+            .marking(entity_marking)
+            .capabilities(entity_capabilities);
+        let builder = if let Some(params) = articulation_parameter {
+            builder.add_articulation_parameters_vec(params)
+        } else { builder };
+        let body = builder.build();
+
+        Ok((input, body.unwrap()))
     }
 }
 
@@ -101,8 +130,8 @@ pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
         }
     };
 
-    let (input, acceleration) = parser::vec3_f32(input)?;
-    let (input, velocity) = parser::vec3_f32(input)?;
+    let (input, acceleration) = vec3_f32(input)?;
+    let (input, velocity) = vec3_f32(input)?;
 
     Ok((input, DrParameters {
         algorithm,
@@ -119,10 +148,10 @@ pub fn dr_other_parameters_none(input: &[u8]) -> IResult<&[u8], DrOtherParameter
 
 pub fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
     let (input, _param_type) = be_u8(input)?;
-    let (input, unused) = be_u16(input)?;
-    let (input, local_yaw) = vec3_f32(input)?;
-    let (input, local_pitch) = vec3_f32(input)?;
-    let (input, local_roll) = vec3_f32(input)?;
+    let (input, _unused) = be_u16(input)?;
+    let (input, local_yaw) = be_f32(input)?;
+    let (input, local_pitch) = be_f32(input)?;
+    let (input, local_roll) = be_f32(input)?;
     Ok((input, DrOtherParameters::LocalEulerAngles(DrEulerAngles {
         local_yaw,
         local_pitch,
@@ -133,9 +162,9 @@ pub fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherParamete
 pub fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
     let (input, _param_type) = be_u8(input)?;
     let (input, nil) = be_u16(input)?;
-    let (input, x) = vec3_f32(input)?;
-    let (input, y) = vec3_f32(input)?;
-    let (input, z) = vec3_f32(input)?;
+    let (input, x) = be_f32(input)?;
+    let (input, y) = be_f32(input)?;
+    let (input, z) = be_f32(input)?;
     Ok((input, DrOtherParameters::WorldOrientationQuaternion(DrWorldOrientationQuaternion {
         nil,
         x,

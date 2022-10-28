@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, ParameterVariant, VariableParameter};
 use crate::common::model::EntityType;
-use crate::EntityAppearance;
+use crate::{DrEulerAngles, DrOtherParameters, DrWorldOrientationQuaternion, EntityAppearance};
 use crate::enumerations::ForceId;
 use crate::v6::entity_state::model::EntityCapabilities;
 
@@ -102,10 +102,47 @@ impl Serialize for EntityAppearance {
 impl Serialize for DrParameters {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.algorithm.into());
-        buf.put_bytes(0u8, 15);
+        let other_parameters_bytes = self.other_parameters.serialize(buf);
         let lin_acc_bytes = self.linear_acceleration.serialize(buf);
         let ang_vel_bytes = self.angular_velocity.serialize(buf);
-        1 + 15 + lin_acc_bytes + ang_vel_bytes
+        1 + other_parameters_bytes + lin_acc_bytes + ang_vel_bytes
+    }
+}
+
+impl Serialize for DrOtherParameters {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        match self {
+            DrOtherParameters::None(bytes) => {
+                for x in bytes {
+                    buf.put_u8(*x)
+                }
+                15
+            }
+            DrOtherParameters::LocalEulerAngles(params) => { params.serialize(buf) }
+            DrOtherParameters::WorldOrientationQuaternion(params) => { params.serialize(buf) }
+        }
+    }
+}
+
+impl Serialize for DrEulerAngles {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(1u8); // FIXME get value from generated DrParametersType enum
+        buf.put_u16(0u16);
+        buf.put_f32(self.local_yaw);
+        buf.put_f32(self.local_pitch);
+        buf.put_f32(self.local_roll);
+        15
+    }
+}
+
+impl Serialize for DrWorldOrientationQuaternion {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(2u8); // FIXME get value from generated DrParametersType enum
+        buf.put_u16(self.nil);
+        buf.put_f32(self.x);
+        buf.put_f32(self.y);
+        buf.put_f32(self.z);
+        15
     }
 }
 
@@ -148,7 +185,7 @@ mod tests {
     use crate::common::entity_state::model::{ArticulatedPart, DrParameters, EntityMarking, EntityState, ParameterVariant, VariableParameter};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32};
     use crate::common::Serialize;
-    use crate::EntityAppearance;
+    use crate::{DrOtherParameters, EntityAppearance};
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, VariableParameterRecordType};
     use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
 
@@ -189,7 +226,7 @@ mod tests {
 
     #[test]
     fn entity_state_pdu() {
-        let mut header = PduHeader::v6_builder()
+        let header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::EntityState)
             .build();
@@ -247,7 +284,7 @@ mod tests {
             }))
             .dead_reckoning(DrParameters {
                 algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
-                other_parameters: [0u8;15],
+                other_parameters: DrOtherParameters::None([0u8;15]),
                 linear_acceleration: VectorF32 {
                     first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32
                 },

@@ -24,7 +24,7 @@ mod tests {
     #[test]
     fn serialize_other_pdu() {
         let pdu_length = PDU_HEADER_LEN_BYTES + 3;
-        let mut header = PduHeader::v6_builder()
+        let header = PduHeader::v6_builder()
             .exercise_id(1)
             .pdu_type(PduType::Other)
             .build();

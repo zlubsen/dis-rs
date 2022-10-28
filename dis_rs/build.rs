@@ -15,9 +15,9 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// Each entry is a tuple containing the uid, an Optional string
 /// literal to override the name of the resulting enum, and an Optional data size (in bits).
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
-/// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"))
+/// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"), None)
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 53] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 54] = [
     (3, Some("ProtocolVersion"), None),   // protocol version
     (4, Some("PduType"), None),           // pdu type
     (5, Some("ProtocolFamily"), None),    // pdu family
@@ -43,7 +43,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 53] = [
     // 80-81, // Designator stuff
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
-    // (296, Some("DrParametersType"), None), // Dead Reckoning Parameters Type -> Implemented manually
+    (296, Some("DrParametersType"), None), // Dead Reckoning Parameters Type
     (378, None, None), // Appearance
     (379, None, None), // Appearance
     (380, None, None), // Appearance

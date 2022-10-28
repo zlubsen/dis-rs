@@ -1,8 +1,7 @@
 use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, EntityStateValidationError, VariableParameter};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VectorF32};
 use crate::EntityAppearance;
-use crate::enumerations::{EntityMarkingCharacterSet, ForceId};
-use crate::v6::entity_state::model::EntityCapabilities;
+use crate::enumerations::{EntityCapabilities, EntityMarkingCharacterSet, ForceId};
 
 pub struct EntityStateBuilder {
     entity_id : Option<EntityId>,
@@ -146,12 +145,13 @@ impl EntityStateBuilder {
                               fuel_supply : bool,
                               recovery : bool,
                               repair : bool) -> Self {
-        self.entity_capabilities = Some(EntityCapabilities {
+        let v6_capabilities = crate::v6::entity_state::model::EntityCapabilities {
             ammunition_supply,
             fuel_supply,
             recovery,
             repair,
-        });
+        };
+        self.entity_capabilities = Some(EntityCapabilities::from(v6_capabilities));
         self
     }
 
