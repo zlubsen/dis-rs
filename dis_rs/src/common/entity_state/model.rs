@@ -1,10 +1,7 @@
-use buildstructor;
 use crate::common::{BodyInfo, Interaction};
-use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-// use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
-// use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
 use crate::enumerations::*;
+use crate::PduBody;
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
 const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
@@ -130,8 +127,6 @@ pub struct EntityAssociationParameter {
     pub group_number: u16,
 }
 
-// TODO refactor builder
-#[buildstructor::buildstructor]
 impl EntityState {
     pub fn new(entity_id: EntityId, force_id: ForceId, entity_type: EntityType) -> Self {
         Self {
@@ -148,6 +143,76 @@ impl EntityState {
             entity_capabilities: EntityCapabilities::default(),
             variable_parameters: vec![]
         }
+    }
+
+    pub fn with_alternative_entity_type(mut self, entity_type: EntityType) -> Self {
+        self.alternative_entity_type = entity_type;
+        self
+    }
+
+    pub fn with_velocity(mut self, velocity: VectorF32) -> Self {
+        self.entity_linear_velocity = velocity;
+        self
+    }
+
+    pub fn with_location(mut self, location: Location) -> Self {
+        self.entity_location = location;
+        self
+    }
+
+    pub fn with_orientation(mut self, orientation: Orientation) -> Self {
+        self.entity_orientation = orientation;
+        self
+    }
+
+    pub fn with_appearance(mut self, appearance: EntityAppearance) -> Self {
+        self.entity_appearance = appearance;
+        self
+    }
+
+    pub fn with_dead_reckoning_parameters(mut self, parameters: DrParameters) -> Self {
+        self.dead_reckoning_parameters = parameters;
+        self
+    }
+
+    pub fn with_marking(mut self, marking: EntityMarking) -> Self {
+        self.entity_marking = marking;
+        self
+    }
+
+    pub fn with_capabilities(mut self, capabilities: EntityCapabilities) -> Self {
+        self.entity_capabilities = capabilities;
+        self
+    }
+
+    pub fn with_capabilities_flags(mut self,
+                                   ammunition_supply : bool,
+                                   fuel_supply : bool,
+                                   recovery : bool,
+                                   repair : bool) -> Self {
+        use crate::v6::entity_state::model::EntityCapabilities as CapabilitiesV6;
+        let v6_capabilities = CapabilitiesV6 {
+            ammunition_supply,
+            fuel_supply,
+            recovery,
+            repair,
+        };
+        self.entity_capabilities = EntityCapabilities::from(v6_capabilities);
+        self
+    }
+
+    pub fn with_variable_parameter(mut self, parameter: VariableParameter) -> Self {
+        self.variable_parameters.push(parameter);
+        self
+    }
+
+    pub fn with_variable_parameters(mut self, parameters: &mut Vec<VariableParameter>) -> Self {
+        self.variable_parameters.append(parameters);
+        self
+    }
+
+    pub fn build(self) -> PduBody {
+        PduBody::EntityState(self)
     }
 
     // #[builder]
@@ -170,9 +235,9 @@ impl EntityState {
     //     }
     // }
 
-    pub fn builder() -> EntityStateBuilder {
-        EntityStateBuilder::new()
-    }
+    // pub fn builder() -> EntityStateBuilder {
+    //     EntityStateBuilder::new()
+    // }
 }
 
 impl Interaction for EntityState {

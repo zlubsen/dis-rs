@@ -37,26 +37,20 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
             (input, Some(params))
         } else { (input, None) };
 
-        // TODO replace custom builder with buildstructor
-        let builder = EntityState::builder()
-            // .header(header)
-            .entity_id(entity_id_val)
-            .force_id(force_id_val)
-            .entity_type(entity_type_val)
-            .alt_entity_type(alternative_entity_type)
-            .linear_velocity(entity_linear_velocity)
-            .location(entity_location)
-            .orientation(entity_orientation)
-            .appearance(entity_appearance)
-            .dead_reckoning(dead_reckoning_parameters)
-            .marking(entity_marking)
-            .capabilities(entity_capabilities);
-        let builder = if let Some(params) = articulation_parameter {
-            builder.add_articulation_parameters_vec(params)
+        let builder = EntityState::new(entity_id_val, force_id_val, entity_type_val)
+            .with_alternative_entity_type(alternative_entity_type)
+            .with_velocity(entity_linear_velocity)
+            .with_location(entity_location)
+            .with_orientation(entity_orientation)
+            .with_appearance(entity_appearance)
+            .with_dead_reckoning_parameters(dead_reckoning_parameters)
+            .with_marking(entity_marking)
+            .with_capabilities(entity_capabilities);
+        let builder = if let Some(mut params) = articulation_parameter {
+            builder.with_variable_parameters(&mut params)
         } else { builder };
-        let body = builder.build();
 
-        Ok((input, body.unwrap()))
+        Ok((input, builder.build()))
     }
 }
 

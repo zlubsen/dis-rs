@@ -306,28 +306,25 @@ mod tests {
             .pdu_type(PduType::EntityState)
             .build();
         // TODO replace custom builder with buildstructor
-        let body = EntityState::builder()
-            .entity_id(EntityId {
-                simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
-                entity_id: 14
-            })
-            .force_id(ForceId::Friendly)
-            .entity_type(EntityType {
+        let body = EntityState::new(EntityId {
+            simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
+            entity_id: 14
+        }, ForceId::Friendly, EntityType {
+            kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
+        })
+            .with_alternative_entity_type(EntityType {
                 kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
-            .alt_entity_type(EntityType {
-                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
-            })
-            .linear_velocity(VectorF32 {
+            .with_velocity(VectorF32 {
                 first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32
             })
-            .location(Location {
+            .with_location(Location {
                 x_coordinate: 0f64, y_coordinate : 0f64, z_coordinate: 0f64
             })
-            .orientation(Orientation {
+            .with_orientation(Orientation {
                 psi: 0f32, theta: 0f32, phi: 0f32
             })
-            .appearance(EntityAppearance::AirPlatform(AirPlatformAppearance {
+            .with_appearance(EntityAppearance::AirPlatform(AirPlatformAppearance {
                 paint_scheme: AppearancePaintScheme::UniformColor,
                 propulsion_killed: false,
                 nvg_mode: AppearanceNVGMode::default(),
@@ -357,7 +354,7 @@ mod tests {
                 reverse_thrust_engaged: false,
                 weightonwheels: false,
             }))
-            .dead_reckoning(DrParameters {
+            .with_dead_reckoning_parameters(DrParameters {
                 algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
                 other_parameters: DrOtherParameters::None([0u8;15]),
                 linear_acceleration: VectorF32 {
@@ -367,41 +364,41 @@ mod tests {
                     first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32
                 }
             })
-            .marking(EntityMarking {
+            .with_marking(EntityMarking {
                 marking_character_set: EntityMarkingCharacterSet::ASCII,
                 marking_string: "EYE 10".to_string()
             })
-            .capabilities_flags(false, false, false, false)
+            .with_capabilities_flags(false, false, false, false)
 
-            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+            .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
                 change_indicator: ChangeIndicator::from(0u8),
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::LandingGear,
                 type_metric: ArticulatedPartsTypeMetric::Position,
                 parameter_value: 1.0
             }))
-            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+            .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
                 change_indicator: ChangeIndicator::from(0u8),
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Azimuth,
                 parameter_value: 0.0
             }))
-            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+            .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
                 change_indicator: ChangeIndicator::from(0u8),
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::AzimuthRate,
                 parameter_value: 0.0
             }))
-            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+            .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
                 change_indicator: ChangeIndicator::from(0u8),
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Elevation,
                 parameter_value: 0.0
             }))
-            .build().expect("Should be Ok");
+            .build();
         let pdu = Pdu::finalize_from_parts(header, body, 0);
 
         let mut buf = BytesMut::with_capacity(208);
