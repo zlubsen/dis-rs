@@ -5,7 +5,6 @@ use crate::common::model::Location;
 use crate::common::model::VectorF32;
 use crate::enumerations::PduType;
 
-// #[derive(buildstructor::Builder)]
 pub struct Fire {
     pub firing_entity_id : EntityId,
     pub target_entity_id : EntityId,

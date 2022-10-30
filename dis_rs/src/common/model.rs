@@ -13,13 +13,11 @@ pub struct Pdu {
 }
 
 impl Pdu {
-    pub fn finalize_from_parts(mut header: PduHeader, body: PduBody, time_stamp: u32) -> Self {
-        header.fields()
-            .time_stamp(time_stamp)
-            .body_length(body.body_length() as u16)
-            .finish();
+    pub fn finalize_from_parts(header: PduHeader, body: PduBody, time_stamp: u32) -> Self {
         Self {
-            header,
+            header: header
+                .with_time_stamp(time_stamp)
+                .with_length(body.body_length() as u16),
             body,
         }
     }
@@ -47,9 +45,7 @@ pub struct PduHeader {
     pub padding : u16,
 }
 
-#[buildstructor::buildstructor]
 impl PduHeader {
-    #[builder]
     pub fn new(protocol_version: ProtocolVersion, exercise_id: u8, pdu_type: PduType, protocol_family: ProtocolFamily) -> Self {
         Self {
             protocol_version,
@@ -63,21 +59,27 @@ impl PduHeader {
         }
     }
 
-    #[builder]
-    pub fn v6_new(exercise_id: u8, pdu_type: PduType) -> Self {
+    pub fn new_v6(exercise_id: u8, pdu_type: PduType) -> Self {
         PduHeader::new(ProtocolVersion::IEEE1278_1A1998, exercise_id, pdu_type, pdu_type.into())
     }
 
-    #[builder]
-    pub fn v7_new(exercise_id: u8, pdu_type: PduType) -> Self {
+    pub fn new_v7(exercise_id: u8, pdu_type: PduType) -> Self {
         PduHeader::new(ProtocolVersion::IEEE1278_12012, exercise_id, pdu_type, pdu_type.into())
     }
 
-    #[builder(entry = "fields", exit = "finish", visibility="pub")]
-    fn add_pdu_data(&mut self, time_stamp: u32, body_length: u16, pdu_status: Option<PduStatus>) {
+    pub fn with_time_stamp(mut self, time_stamp: u32) -> Self {
         self.time_stamp = time_stamp;
-        self.pdu_length = body_length + PDU_HEADER_LEN_BYTES;
-        self.pdu_status = pdu_status;
+        self
+    }
+
+    pub fn with_length(mut self, body_length: u16) -> Self {
+        self.pdu_length = PDU_HEADER_LEN_BYTES + body_length;
+        self
+    }
+
+    pub fn with_pdu_status(mut self, pdu_status: PduStatus) -> Self {
+        self.pdu_status = Some(pdu_status);
+        self
     }
 }
 
@@ -554,10 +556,19 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
-#[derive(Copy, Clone, Debug, buildstructor::Builder)]
+#[derive(Copy, Clone, Debug)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,
+}
+
+impl SimulationAddress {
+    pub fn new(site_id: u16, application_id: u16) -> Self {
+        SimulationAddress {
+            site_id,
+            application_id
+        }
+    }
 }
 
 impl Default for SimulationAddress {
@@ -584,9 +595,7 @@ impl Default for EntityId {
     }
 }
 
-#[buildstructor::buildstructor]
 impl EntityId {
-    #[builder]
     pub fn new(site_id : u16, application_id : u16, entity_id : u16) -> Self {
         Self {
             simulation_address: SimulationAddress {
@@ -597,8 +606,7 @@ impl EntityId {
         }
     }
 
-    #[builder]
-    pub fn with_sim_address_new(simulation_address: SimulationAddress, entity_id : u16) -> Self {
+    pub fn new_sim_address(simulation_address: SimulationAddress, entity_id : u16) -> Self {
         Self {
             simulation_address,
             entity_id
@@ -612,9 +620,7 @@ pub struct EventId {
     pub event_id : u16
 }
 
-#[buildstructor::buildstructor]
 impl EventId {
-    #[builder]
     pub fn new(simulation_address: SimulationAddress, event_id: u16) -> Self {
         Self {
             simulation_address,
@@ -622,8 +628,7 @@ impl EventId {
         }
     }
 
-    #[builder]
-    pub fn with_sim_address_new(simulation_address: SimulationAddress, event_id : u16) -> Self {
+    pub fn new_sim_address(simulation_address: SimulationAddress, event_id : u16) -> Self {
         Self {
             simulation_address,
             event_id
@@ -640,29 +645,103 @@ impl Default for EventId {
     }
 }
 
-#[derive(buildstructor::Builder, Default)]
+#[derive(Default)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
     pub third_vector_component : f32,
 }
 
-#[derive(buildstructor::Builder, Default)]
+impl VectorF32 {
+    pub fn new(first: f32, second: f32, third: f32) -> Self {
+        VectorF32 {
+            first_vector_component: first,
+            second_vector_component: second,
+            third_vector_component: third
+        }
+    }
+
+    pub fn with_first(mut self, first: f32) -> Self {
+        self.first_vector_component = first;
+        self
+    }
+
+    pub fn with_second(mut self, second: f32) -> Self {
+        self.first_vector_component = second;
+        self
+    }
+
+    pub fn with_third(mut self, third: f32) -> Self {
+        self.first_vector_component = third;
+        self
+    }
+}
+
+#[derive(Default)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
     pub z_coordinate : f64,
 }
 
-#[derive(buildstructor::Builder, Default)]
+impl Location {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Location {
+            x_coordinate: x,
+            y_coordinate: y,
+            z_coordinate: z
+        }
+    }
+
+    pub fn with_x(mut self, x: f64) -> Self {
+        self.x_coordinate = x;
+        self
+    }
+
+    pub fn with_y(mut self, y: f64) -> Self {
+        self.y_coordinate = y;
+        self
+    }
+
+    pub fn with_z(mut self, z: f64) -> Self {
+        self.z_coordinate = z;
+        self
+    }
+}
+
+#[derive(Default)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
     pub phi : f32,
 }
 
-#[derive(buildstructor::Builder, Default)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+impl Orientation {
+    pub fn new(psi: f32, theta: f32, phi: f32) -> Self {
+        Orientation {
+            psi,
+            theta,
+            phi
+        }
+    }
+
+    pub fn with_psi(mut self, psi: f32) -> Self {
+        self.psi = psi;
+        self
+    }
+
+    pub fn with_theta(mut self, theta: f32) -> Self {
+        self.theta = theta;
+        self
+    }
+
+    pub fn with_phi(mut self, phi: f32) -> Self {
+        self.phi = phi;
+        self
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : PlatformDomain,
@@ -673,11 +752,75 @@ pub struct EntityType {
     pub extra : u8,
 }
 
-#[derive(buildstructor::Builder, Default)]
+impl EntityType {
+    pub fn with_kind(mut self, kind: EntityKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    pub fn with_domain(mut self, domain: PlatformDomain) -> Self {
+        self.domain = domain;
+        self
+    }
+
+    pub fn with_country(mut self, country: Country) -> Self {
+        self.country = country;
+        self
+    }
+
+    pub fn with_category(mut self, category: u8) -> Self {
+        self.category = category;
+        self
+    }
+
+    pub fn with_subcategory(mut self, subcategory: u8) -> Self {
+        self.subcategory = subcategory;
+        self
+    }
+
+    pub fn with_specific(mut self, specific: u8) -> Self {
+        self.specific = specific;
+        self
+    }
+
+    pub fn with_extra(mut self, extra: u8) -> Self {
+        self.extra = extra;
+        self
+    }
+}
+
+#[derive(Default)]
 pub struct BurstDescriptor {
     pub munition : EntityType,
     pub warhead : MunitionDescriptorWarhead,
     pub fuse : MunitionDescriptorFuse,
     pub quantity : u16,
     pub rate : u16,
+}
+
+impl BurstDescriptor {
+    pub fn with_munition(mut self, munition: EntityType) -> Self {
+        self.munition = munition;
+        self
+    }
+
+    pub fn with_warhead(mut self, warhead: MunitionDescriptorWarhead) -> Self {
+        self.warhead = warhead;
+        self
+    }
+
+    pub fn with_fuse(mut self, fuse: MunitionDescriptorFuse) -> Self {
+        self.fuse = fuse;
+        self
+    }
+
+    pub fn with_quantity(mut self, quantity: u16) -> Self {
+        self.quantity = quantity;
+        self
+    }
+
+    pub fn with_rate(mut self, rate: u16) -> Self {
+        self.rate = rate;
+        self
+    }
 }

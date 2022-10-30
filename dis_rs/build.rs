@@ -5,6 +5,7 @@ use std::path::Path;
 use quick_xml::Reader;
 use quote::__private::{Ident, Literal, TokenStream};
 
+// TODO formatting of generated code file (apply rustfmt)
 // TODO refactor a bit and make testable (include some unit tests in the regular code)
 // test generated impls for enums/enumrows (from, into, display)
 // test enumrow_range fields and unspecified values

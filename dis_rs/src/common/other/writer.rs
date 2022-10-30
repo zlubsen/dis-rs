@@ -23,16 +23,13 @@ mod tests {
 
     #[test]
     fn serialize_other_pdu() {
-        let pdu_length = PDU_HEADER_LEN_BYTES + 3;
-        let header = PduHeader::v6_builder()
-            .exercise_id(1)
-            .pdu_type(PduType::Other)
-            .build();
+        let body_length = 3;
+        let header = PduHeader::new_v6(1, PduType::Other);
         let body = OtherBuilder::new()
             .body( vec![0x01, 0x02, 0x03] ).build().expect("Should be Ok");
         let pdu = Pdu::finalize_from_parts(header, body, 10);
 
-        let mut buf = BytesMut::with_capacity(pdu_length as usize);
+        let mut buf = BytesMut::with_capacity(body_length as usize);
 
         let wire_size = pdu.serialize(&mut buf);
         assert_eq!(wire_size, pdu.body.body_length() + PDU_HEADER_LEN_BYTES);

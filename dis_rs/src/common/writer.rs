@@ -172,14 +172,9 @@ mod tests {
 
     #[test]
     fn serialize_header() {
-        let mut header = PduHeader::v6_builder()
-            .exercise_id(1)
-            .pdu_type(PduType::EntityState)
-            .build();
-        header.fields()
-            .time_stamp(10)
-            .body_length(0)
-            .finish();
+        let header = PduHeader::new_v6(1, PduType::EntityState)
+            .with_time_stamp(10)
+            .with_length(0);
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
         header.serialize(&mut buf);

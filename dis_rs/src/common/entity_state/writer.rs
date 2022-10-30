@@ -301,17 +301,14 @@ mod tests {
 
     #[test]
     fn entity_state_pdu() {
-        let header = PduHeader::v6_builder()
-            .exercise_id(1)
-            .pdu_type(PduType::EntityState)
-            .build();
-        // TODO replace custom builder with buildstructor
+        let header = PduHeader::new_v6(1, PduType::EntityState);
+
         let body = EntityState::new(EntityId {
-            simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
-            entity_id: 14
-        }, ForceId::Friendly, EntityType {
-            kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
-        })
+                simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
+                entity_id: 14
+            }, ForceId::Friendly, EntityType {
+                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
+            })
             .with_alternative_entity_type(EntityType {
                 kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
