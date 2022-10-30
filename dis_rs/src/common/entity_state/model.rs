@@ -2,8 +2,9 @@ use buildstructor;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::entity_state::builder::EntityStateBuilder;
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
-use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
+// use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityCapabilities, EntityMarkingCharacterSet, ForceId, PduType, VariableParameterRecordType};
+// use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
+use crate::enumerations::*;
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
 const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
@@ -75,34 +76,58 @@ impl Default for EntityMarking {
     }
 }
 
-pub struct VariableParameter {
-    pub parameter_type_designator : VariableParameterRecordType,
-    pub changed_attached_indicator: u8,
-    pub articulation_attachment_id: u16,
-    pub parameter: ParameterVariant,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ParameterVariant {
-    Attached(AttachedPart),
+#[derive(Debug)]
+pub enum VariableParameter {
     Articulated(ArticulatedPart),
-    // TODO add following variants
-    // Separation
-    // Entity Type
-    // Entity Association
+    Attached(AttachedPart),
+    Separation(SeparationParameter),
+    EntityType(EntityTypeParameter),
+    EntityAssociation(EntityAssociationParameter),
+    Unspecified(u8, [u8;15]),
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug)]
+pub struct ArticulatedPart {
+    pub change_indicator: ChangeIndicator,
+    pub attachment_id: u16,
+    pub type_metric: ArticulatedPartsTypeMetric,
+    pub type_class: ArticulatedPartsTypeClass,
+    pub parameter_value: f32,
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct AttachedPart {
+    pub detached_indicator: AttachedPartDetachedIndicator,
+    pub attachment_id: u16,
     pub parameter_type: AttachedParts,
     pub attached_part_type: EntityType,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct ArticulatedPart {
-    pub type_metric : ArticulatedPartsTypeMetric,
-    pub type_class : ArticulatedPartsTypeClass,
-    pub parameter_value: f32,
+#[derive(Copy, Clone, Debug)]
+pub struct SeparationParameter {
+    pub reason: SeparationReasonForSeparation,
+    pub pre_entity_indicator: SeparationPreEntityIndicator,
+    pub parent_entity_id: EntityId,
+    pub station_name: StationName,
+    pub station_number: u16,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct EntityTypeParameter {
+    pub change_indicator: ChangeIndicator,
+    pub entity_type: EntityType,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct EntityAssociationParameter {
+    pub change_indicator: ChangeIndicator,
+    pub association_status: EntityAssociationAssociationStatus,
+    pub association_type: EntityAssociationPhysicalAssociationType,
+    pub entity_id: EntityId,
+    pub own_station_location: StationName,
+    pub physical_connection_type: EntityAssociationPhysicalConnectionType,
+    pub group_member_type: EntityAssociationGroupMemberType,
+    pub group_number: u16,
 }
 
 // TODO refactor builder

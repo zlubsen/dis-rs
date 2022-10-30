@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::{EntityId, EventId, Location, Orientation, SimulationAddress, VectorF32};
 use crate::enumerations::{ProtocolVersion};
 
@@ -166,7 +166,7 @@ impl Serialize for Orientation {
 mod tests {
     use bytes::BytesMut;
     use crate::common::Serialize;
-    use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+    use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
     use crate::PduHeader;
 

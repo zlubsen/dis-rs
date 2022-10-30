@@ -8,7 +8,7 @@ use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::common::entity_state::parser::entity_state_body;
 use crate::common::model::{Pdu, PduBody, PduHeader};
-use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::{Country, EntityId, EntityKind, EntityType, EventId, Location, Orientation, SimulationAddress, VectorF32};
@@ -93,7 +93,6 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
 
     let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
         tuple((protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length))(input)?;
-    // FIXME factor out this match construct to filter/branch on DIS versions
     let (input, pdu_status, padding) = match u8::from(protocol_version) {
         legacy_version if legacy_version >= 1 && legacy_version <= 5 => {
             let (input, padding) = be_u16(input)?;
@@ -356,11 +355,10 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
 mod tests {
     use crate::common::model::{EntityType, PduBody};
     use crate::common::errors::DisError;
-    use crate::common::entity_state::model::ParameterVariant;
     use crate::common::parser::{parse_multiple_header, parse_pdu};
-    use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
-    use crate::EntityAppearance;
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolVersion, ProtocolFamily, VariableParameterRecordType};
+    use crate::constants::PDU_HEADER_LEN_BYTES;
+    use crate::{EntityAppearance, VariableParameter};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolVersion, ProtocolFamily };
     use crate::enumerations::{AppearancePaintScheme, AppearanceDamage, AppearanceTrailingEffects, AppearanceCanopy, AppearanceEntityorObjectState};
     use crate::v6::entity_state::model::{EntityCapabilities};
 
@@ -486,12 +484,15 @@ mod tests {
             });
             assert_eq!(pdu.variable_parameters.len(), 4);
             let parameter_1 = pdu.variable_parameters.get(0).unwrap();
-            assert_eq!(parameter_1.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);
-            if let ParameterVariant::Articulated(articulated_part) = &parameter_1.parameter {
-                assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Position);
-                assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
-                assert_eq!(articulated_part.parameter_value, 1f32);
-            } else { assert!(false) }
+            if let VariableParameter::Articulated(part) = parameter_1 {
+                assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
+                assert_eq!(part.attachment_id, 0u16);
+                assert_eq!(part.type_metric, ArticulatedPartsTypeMetric::Position);
+                assert_eq!(part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
+                assert_eq!(part.parameter_value, 1f32);
+            } else {
+                assert!(false);
+            }
         } else { assert!(false) }
     }
 

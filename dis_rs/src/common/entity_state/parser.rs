@@ -2,21 +2,20 @@ use nom::bytes::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityState, EntityType};
-use crate::common::entity_state::model::{ArticulatedPart, DrOtherParameters, DrParameters, EntityMarking, ParameterVariant, VariableParameter};
+use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityAssociationParameter, EntityState, EntityType, EntityTypeParameter, SeparationParameter};
+use crate::common::entity_state::model::{ArticulatedPart, DrOtherParameters, DrParameters, EntityMarking, VariableParameter};
 use crate::common::model::PduBody;
 use crate::common::parser;
-use crate::common::parser::{entity_type, vec3_f32};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedParts, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain, ProtocolVersion, VariableParameterRecordType};
-use crate::enumerations::{AirPlatformAppearance, CulturalFeatureAppearance, EnvironmentalAppearance, ExpendableAppearance, LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance};
+use crate::common::parser::{entity_id, entity_type, vec3_f32};
+use crate::enumerations::*;
 use crate::v6::entity_state::parser::entity_capabilities;
 
 pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
     move |input: &[u8]| {
-        let (input, entity_id_val) = parser::entity_id(input)?;
+        let (input, entity_id_val) = entity_id(input)?;
         let (input, force_id_val) = force_id(input)?;
-        let (input, articulated_parts_no) = be_u8(input)?;
-        let (input, entity_type_val) = parser::entity_type(input)?;
+        let (input, variable_parameters_no) = be_u8(input)?;
+        let (input, entity_type_val) = entity_type(input)?;
         let (input, alternative_entity_type) = entity_type(input)?;
         let (input, entity_linear_velocity) = vec3_f32(input)?;
         let (input, entity_location) = parser::location(input)?;
@@ -33,8 +32,8 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
                 (input, crate::enumerations::EntityCapabilities::from(entity_capabilities))
             }
         };
-        let (input, articulation_parameter) = if articulated_parts_no > 0 {
-            let (input, params) = count(articulation_record, articulated_parts_no as usize)(input)?;
+        let (input, articulation_parameter) = if variable_parameters_no > 0 {
+            let (input, params) = count(variable_parameter, variable_parameters_no as usize)(input)?;
             (input, Some(params))
         } else { (input, None) };
 
@@ -173,58 +172,115 @@ pub fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherPar
     })))
 }
 
-pub fn articulation_record(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+pub fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, parameter_type_designator) = be_u8(input)?;
-    let (input, changed_attached_indicator) = be_u8(input)?;
-    let (input, articulation_attachment_id) = be_u16(input)?;
-    let parameter_type_designator : VariableParameterRecordType = VariableParameterRecordType::from(parameter_type_designator);
-    let (input, parameter_type_variant) = match parameter_type_designator {
-        VariableParameterRecordType::AttachedPart => { attached_part(input)? }
+    let parameter_type = VariableParameterRecordType::from(parameter_type_designator);
+    let (input, variable_parameter) = match parameter_type {
         VariableParameterRecordType::ArticulatedPart => { articulated_part(input)? }
-        _ => { attached_part(input)? } // TODO impl other VariableParameterRecordType; now defaults to Unspecified AttachedPart
+        VariableParameterRecordType::AttachedPart => { attached_part(input)? }
+        VariableParameterRecordType::Separation => { separation(input)? }
+        VariableParameterRecordType::EntityType => { entity_type_variable_parameter(input)? }
+        VariableParameterRecordType::EntityAssociation => { entity_association(input)? }
+        VariableParameterRecordType::Unspecified(_) => {
+            let (input, bytes) = take(15usize)(input)?;
+            (input, VariableParameter::Unspecified(parameter_type_designator, <[u8; 15]>::try_from(bytes).unwrap()))
+        } // TODO sensible error
     };
-    // // FIXME attached parts has an 64-bit EntityType record, articulated part a 32-bit float value + 32-bit padding
-    // let (input, articulation_parameter_value) = be_f32(input)?;
-    // let (input, _pad_out) = take(4usize)(input)?;
 
-    Ok((input, VariableParameter {
-        parameter_type_designator,
-        changed_attached_indicator,
-        articulation_attachment_id,
-        parameter: parameter_type_variant,
-    }))
+    Ok((input, variable_parameter))
 }
 
-fn attached_part(input: &[u8]) -> IResult<&[u8], ParameterVariant> {
-    let (input, attached_part) = be_u32(input)?;
-    let (input, entity_type) = entity_type(input)?;
-    Ok((input, ParameterVariant::Attached(AttachedPart {
-        parameter_type: AttachedParts::from(attached_part),
-        attached_part_type: entity_type
-    })))
-}
-
-fn articulated_part(input: &[u8]) -> IResult<&[u8], ParameterVariant> {
+fn articulated_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, change_indicator) = be_u8(input)?;
+    let change_indicator = ChangeIndicator::from(change_indicator);
+    let (input, attachment_id) = be_u16(input)?;
     let (input, type_variant) = be_u32(input)?;
     let type_metric : u32 = type_variant & 0x1f;  // 5 least significant bits (0x1f) are the type metric
     let type_class : u32 = type_variant - type_metric;   // rest of the bits (minus type metric value) are the type class
     let (input, value) = be_f32(input)?;
     let (input, _pad_out) = be_u32(input)?;
 
-    Ok((input, ParameterVariant::Articulated(ArticulatedPart {
+    Ok((input, VariableParameter::Articulated(ArticulatedPart {
+        change_indicator,
+        attachment_id,
         type_metric: ArticulatedPartsTypeMetric::from(type_metric),
         type_class: ArticulatedPartsTypeClass::from(type_class),
         parameter_value: value,
     })))
 }
 
+fn attached_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, detached_indicator) = be_u8(input)?;
+    let detached_indicator = AttachedPartDetachedIndicator::from(detached_indicator);
+    let (input, attachment_id) = be_u16(input)?;
+    let (input, attached_part) = be_u32(input)?;
+    let (input, entity_type) = entity_type(input)?;
+    Ok((input, VariableParameter::Attached(AttachedPart {
+        detached_indicator,
+        attachment_id,
+        parameter_type: AttachedParts::from(attached_part),
+        attached_part_type: entity_type
+    })))
+}
+
+fn entity_association(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, change_indicator) = be_u8(input)?;
+    let (input, association_status) = be_u8(input)?;
+    let (input, association_type) = be_u8(input)?;
+    let (input, entity_id) = entity_id(input)?;
+    let (input, own_station_location) = be_u16(input)?;
+    let (input, physical_connection_type) = be_u8(input)?;
+    let (input, group_member_type) = be_u8(input)?;
+    let (input, group_number) = be_u16(input)?;
+
+    Ok((input, VariableParameter::EntityAssociation(EntityAssociationParameter {
+        change_indicator: ChangeIndicator::from(change_indicator),
+        association_status: EntityAssociationAssociationStatus::from(association_status),
+        association_type: EntityAssociationPhysicalAssociationType::from(association_type),
+        entity_id,
+        own_station_location: StationName::from(own_station_location),
+        physical_connection_type: EntityAssociationPhysicalConnectionType::from(physical_connection_type),
+        group_member_type: EntityAssociationGroupMemberType::from(group_member_type),
+        group_number,
+    })))
+}
+
+fn entity_type_variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, change_indicator) = be_u8(input)?;
+    let (input, entity_type) = entity_type(input)?;
+    let (input, _pad_out_16) = be_u16(input)?;
+    let (input, _pad_out_32) = be_u32(input)?;
+
+    Ok((input, VariableParameter::EntityType(EntityTypeParameter {
+        change_indicator: ChangeIndicator::from(change_indicator),
+        entity_type,
+    })))
+}
+
+fn separation(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, reason) = be_u8(input)?;
+    let (input, pre_entity_indicator) = be_u8(input)?;
+    let (input, parent_entity_id) = entity_id(input)?;
+    let (input, _pad_16) = be_u16(input)?;
+    let (input, station_name) = be_u16(input)?;
+    let (input, station_number) = be_u16(input)?;
+
+    Ok((input, VariableParameter::Separation(SeparationParameter {
+        reason: SeparationReasonForSeparation::from(reason),
+        pre_entity_indicator: SeparationPreEntityIndicator::from(pre_entity_indicator),
+        parent_entity_id,
+        station_name: StationName::from(station_name),
+        station_number,
+    })))
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::model::ParameterVariant;
-    use crate::common::entity_state::parser::{articulation_record, entity_marking};
+    use crate::common::entity_state::parser::{variable_parameter, entity_marking};
     use crate::common::parser::location;
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, EntityMarkingCharacterSet, VariableParameterRecordType};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, EntityMarkingCharacterSet};
     use crate::v6::entity_state::parser::entity_capabilities;
+    use crate::VariableParameter;
 
     #[test]
     fn parse_entity_location() {
@@ -319,16 +375,16 @@ mod tests {
                 0x10,0x0b,  // type variant high bits - 4096 - primary gun 1
                 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 0
 
-        let parameter = articulation_record(&input);
+        let parameter = variable_parameter(&input);
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
-        assert_eq!(parameter.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);
-        assert_eq!(parameter.changed_attached_indicator, 0);
-        assert_eq!(parameter.articulation_attachment_id, 0);
-        if let ParameterVariant::Articulated(articulated_part) = parameter.parameter {
+
+        if let VariableParameter::Articulated(articulated_part) = parameter {
+            assert_eq!(articulated_part.change_indicator, ChangeIndicator::from(0u8));
+            assert_eq!(articulated_part.attachment_id, 0);
             assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::PrimaryTurretNumber1);
             assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Azimuth);
-        }
+        } else { assert!(false) }
 
         assert!(input.is_empty());
     }
@@ -343,17 +399,16 @@ mod tests {
                 0x0C,0x01,  // type variant high bits - 3072 - landing gear
                 0x3F,0x80,0x00,0x00,0x00,0x00,0x00,0x00]; // f32 - value '1' and 4 bytes padding
 
-        let parameter = articulation_record(&input);
+        let parameter = variable_parameter(&input);
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
-        assert_eq!(parameter.parameter_type_designator, VariableParameterRecordType::ArticulatedPart);
-        assert_eq!(parameter.changed_attached_indicator, 0);
-        assert_eq!(parameter.articulation_attachment_id, 0);
-        if let ParameterVariant::Articulated(type_variant) = parameter.parameter {
-            assert_eq!(type_variant.type_class, ArticulatedPartsTypeClass::LandingGear);
-            assert_eq!(type_variant.type_metric, ArticulatedPartsTypeMetric::Position);
-            assert_eq!(type_variant.parameter_value, 1f32);
-        }
+        if let VariableParameter::Articulated(articulated_part) = parameter {
+            assert_eq!(articulated_part.change_indicator, ChangeIndicator::from(0u8));
+            assert_eq!(articulated_part.attachment_id, 0);
+            assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::LandingGear);
+            assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Position);
+            assert_eq!(articulated_part.parameter_value, 1f32);
+        } else { assert!(false) }
 
         assert!(input.is_empty());
     }

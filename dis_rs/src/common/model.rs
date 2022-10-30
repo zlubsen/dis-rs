@@ -5,7 +5,7 @@ use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
-use crate::PDU_HEADER_LEN_BYTES;
+use crate::constants::PDU_HEADER_LEN_BYTES;
 
 pub struct Pdu {
     pub header : PduHeader,

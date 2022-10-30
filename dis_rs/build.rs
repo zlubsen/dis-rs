@@ -8,8 +8,6 @@ use quote::__private::{Ident, Literal, TokenStream};
 // TODO refactor a bit and make testable (include some unit tests in the regular code)
 // test generated impls for enums/enumrows (from, into, display)
 // test enumrow_range fields and unspecified values
-// TODO read and generate bitfield enums
-// appearances: 31-43, plus enums 378-411
 
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing the uid, an Optional string
@@ -17,7 +15,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"), None)
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 54] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 63] = [
     (3, Some("ProtocolVersion"), None),   // protocol version
     (4, Some("PduType"), None),           // pdu type
     (5, Some("ProtocolFamily"), None),    // pdu family
@@ -43,7 +41,15 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 54] = [
     // 80-81, // Designator stuff
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    (212, Some("StationName"), None), // IsPartOf-Station Name
+    (282, Some("SeparationReasonForSeparation"), None), // Separation VP-Reason for Separation
+    (283, Some("SeparationPreEntityIndicator"), None), // Separation VP-Pre-Entity Indicator
     (296, Some("DrParametersType"), None), // Dead Reckoning Parameters Type
+    (319, None, None), // Entity Association-Association Status
+    (320, Some("ChangeIndicator"), None), // Entity VP Record-Change Indicator
+    (321, None, None), // Entity Association-Group Member Type
+    (323, None, None), // Entity Association-Physical Association Type
+    (324, None, None), // Entity Association-Physical Connection Type
     (378, None, None), // Appearance
     (379, None, None), // Appearance
     (380, None, None), // Appearance
@@ -78,6 +84,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 54] = [
     (409, None, None), // Appearance
     (410, None, None), // Appearance
     (411, None, None), // Appearance
+    (415, None, None), // Attached Part-Detached Indicator
     (426, None, None), // Cover/Shroud Status
     (802, None, None), // Clothing IR Signature
 ];

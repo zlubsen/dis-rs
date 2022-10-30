@@ -1,9 +1,9 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, ParameterVariant, VariableParameter};
+use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, VariableParameter};
 use crate::common::model::EntityType;
-use crate::{DrEulerAngles, DrOtherParameters, DrWorldOrientationQuaternion, EntityAppearance};
-use crate::enumerations::ForceId;
+use crate::common::entity_state::model::{ArticulatedPart, AttachedPart, DrEulerAngles, DrOtherParameters, DrWorldOrientationQuaternion, EntityAppearance, EntityAssociationParameter, EntityTypeParameter, SeparationParameter};
+use crate::enumerations::{ForceId, DrParametersType, VariableParameterRecordType};
 use crate::v6::entity_state::model::EntityCapabilities;
 
 impl SerializePdu for EntityState {
@@ -54,27 +54,104 @@ impl SerializePdu for EntityState {
 
 impl Serialize for VariableParameter {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.parameter_type_designator.into());
-        buf.put_u8(self.changed_attached_indicator);
-        buf.put_u16(self.articulation_attachment_id);
-        match &self.parameter {
-            ParameterVariant::Attached(attached) => {
-                let parameter_type : u32 = attached.parameter_type.into();
-                buf.put_u32(parameter_type);
-                attached.attached_part_type.serialize(buf);
+        match self {
+            VariableParameter::Articulated(parameter) => {
+                buf.put_u8(VariableParameterRecordType::ArticulatedPart.into());
+                let record_bytes = parameter.serialize(buf);
+                1 + record_bytes
             }
-            ParameterVariant::Articulated(articulated) => {
-                let type_class : u32 = articulated.type_class.into();
-                let type_metric : u32 = articulated.type_metric.into();
-                let on_wire_value = type_class + type_metric;
-                buf.put_u32(on_wire_value);
-                buf.put_f32(articulated.parameter_value);
-                buf.put_u32(0u32); // 4-byte padding
+            VariableParameter::Attached(parameter) => {
+                buf.put_u8(VariableParameterRecordType::AttachedPart.into());
+                let record_bytes = parameter.serialize(buf);
+                1 + record_bytes
+            }
+            VariableParameter::Separation(parameter) => {
+                buf.put_u8(VariableParameterRecordType::Separation.into());
+                let record_bytes = parameter.serialize(buf);
+                1 + record_bytes
+            }
+            VariableParameter::EntityType(parameter) => {
+                buf.put_u8(VariableParameterRecordType::EntityType.into());
+                let record_bytes = parameter.serialize(buf);
+                1 + record_bytes
+            }
+            VariableParameter::EntityAssociation(parameter) => {
+                buf.put_u8(VariableParameterRecordType::EntityAssociation.into());
+                let record_bytes = parameter.serialize(buf);
+                1 + record_bytes
+            }
+            VariableParameter::Unspecified(type_designator, parameter) => {
+                buf.put_u8(*type_designator);
+                for byte in parameter {
+                    buf.put_u8(*byte);
+                }
+                16
             }
         }
-        16
     }
 }
+
+impl Serialize for ArticulatedPart {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.change_indicator.into());
+        buf.put_u16(self.attachment_id);
+        let type_class : u32 = self.type_class.into();
+        let type_metric : u32 = self.type_metric.into();
+        let on_wire_value = type_class + type_metric;
+        buf.put_u32(on_wire_value);
+        buf.put_f32(self.parameter_value);
+        buf.put_u32(0u32); // 32-bit padding
+        15
+    }
+}
+
+impl Serialize for AttachedPart {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.detached_indicator.into());
+        buf.put_u16(self.attachment_id);
+        buf.put_u32(self.parameter_type.into());
+        let entity_type_bytes = self.attached_part_type.serialize(buf);
+        7 + entity_type_bytes
+    }
+}
+
+impl Serialize for SeparationParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.reason.into());
+        buf.put_u8(self.pre_entity_indicator.into());
+        buf.put_u8(0u8);
+        let parent_entity_id_bytes = self.parent_entity_id.serialize(buf);
+        buf.put_u16(0u16);
+        buf.put_u16(self.station_name.into());
+        buf.put_u16(self.station_number);
+        9 + parent_entity_id_bytes
+    }
+}
+
+impl Serialize for EntityTypeParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.change_indicator.into());
+        let entity_type_bytes = self.entity_type.serialize(buf);
+        buf.put_u16(0u16);
+        buf.put_u32(0u32);
+        7 + entity_type_bytes
+    }
+}
+
+impl Serialize for EntityAssociationParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.change_indicator.into());
+        buf.put_u8(self.association_status.into());
+        buf.put_u8(self.association_type.into());
+        let entity_id_bytes = self.entity_id.serialize(buf);
+        buf.put_u16(self.own_station_location.into());
+        buf.put_u8(self.physical_connection_type.into());
+        buf.put_u8(self.group_member_type.into());
+        buf.put_u16(self.group_number);
+        9 + entity_id_bytes
+    }
+}
+
 
 impl Serialize for EntityAppearance {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -126,7 +203,7 @@ impl Serialize for DrOtherParameters {
 
 impl Serialize for DrEulerAngles {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(1u8); // FIXME get value from generated DrParametersType enum
+        buf.put_u8(DrParametersType::LocalEulerAngles_Yaw_Pitch_Roll_.into());
         buf.put_u16(0u16);
         buf.put_f32(self.local_yaw);
         buf.put_f32(self.local_pitch);
@@ -137,7 +214,7 @@ impl Serialize for DrEulerAngles {
 
 impl Serialize for DrWorldOrientationQuaternion {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(2u8); // FIXME get value from generated DrParametersType enum
+        buf.put_u8(DrParametersType::WorldOrientationQuaternion.into());
         buf.put_u16(self.nil);
         buf.put_f32(self.x);
         buf.put_f32(self.y);
@@ -182,11 +259,11 @@ impl Serialize for EntityMarking {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::entity_state::model::{ArticulatedPart, DrParameters, EntityMarking, EntityState, ParameterVariant, VariableParameter};
+    use crate::common::entity_state::model::{ArticulatedPart, DrParameters, EntityMarking, EntityState, VariableParameter};
     use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32};
     use crate::common::Serialize;
     use crate::{DrOtherParameters, EntityAppearance};
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, VariableParameterRecordType};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain};
     use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
 
     #[test]
@@ -205,16 +282,14 @@ mod tests {
 
     #[test]
     fn articulated_part() {
-        let articulated_part = VariableParameter {
-            parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
-            changed_attached_indicator: 0,
-            articulation_attachment_id: 0,
-            parameter: ParameterVariant::Articulated(ArticulatedPart {
-                type_class: ArticulatedPartsTypeClass::LandingGear,
-                type_metric: ArticulatedPartsTypeMetric::Position,
-                parameter_value: 1.0,
-            }),
-        };
+        let articulated_part = VariableParameter::Articulated(ArticulatedPart {
+            change_indicator: ChangeIndicator::from(0u8),
+            attachment_id: 0,
+            type_class: ArticulatedPartsTypeClass::LandingGear,
+            type_metric: ArticulatedPartsTypeMetric::Position,
+            parameter_value: 1.0
+        });
+
         let mut buf = BytesMut::with_capacity(11);
 
         articulated_part.serialize(&mut buf);
@@ -297,46 +372,35 @@ mod tests {
                 marking_string: "EYE 10".to_string()
             })
             .capabilities_flags(false, false, false, false)
-            .add_articulation_parameter(VariableParameter {
-                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
-                changed_attached_indicator: 0,
-                articulation_attachment_id: 0,
-                parameter: ParameterVariant::Articulated(ArticulatedPart {
-                    type_class: ArticulatedPartsTypeClass::LandingGear,
-                    type_metric: ArticulatedPartsTypeMetric::Position,
-                    parameter_value: 1.0,
-                }),
-            })
-            .add_articulation_parameter(VariableParameter {
-                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
-                changed_attached_indicator: 0,
-                articulation_attachment_id: 0,
-                parameter: ParameterVariant::Articulated(ArticulatedPart {
-                    type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
-                    type_metric: ArticulatedPartsTypeMetric::Azimuth,
-                    parameter_value: 0.0,
-                }),
-            })
-            .add_articulation_parameter(VariableParameter {
-                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
-                changed_attached_indicator: 0,
-                articulation_attachment_id: 0,
-                parameter: ParameterVariant::Articulated(ArticulatedPart {
-                    type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
-                    type_metric: ArticulatedPartsTypeMetric::AzimuthRate,
-                    parameter_value: 0.0,
-                }),
-            })
-            .add_articulation_parameter(VariableParameter {
-                parameter_type_designator: VariableParameterRecordType::ArticulatedPart,
-                changed_attached_indicator: 0,
-                articulation_attachment_id: 0,
-                parameter: ParameterVariant::Articulated(ArticulatedPart {
-                    type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
-                    type_metric: ArticulatedPartsTypeMetric::Elevation,
-                    parameter_value: 0.0,
-                }),
-            })
+
+            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+                change_indicator: ChangeIndicator::from(0u8),
+                attachment_id: 0,
+                type_class: ArticulatedPartsTypeClass::LandingGear,
+                type_metric: ArticulatedPartsTypeMetric::Position,
+                parameter_value: 1.0
+            }))
+            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+                change_indicator: ChangeIndicator::from(0u8),
+                attachment_id: 0,
+                type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
+                type_metric: ArticulatedPartsTypeMetric::Azimuth,
+                parameter_value: 0.0
+            }))
+            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+                change_indicator: ChangeIndicator::from(0u8),
+                attachment_id: 0,
+                type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
+                type_metric: ArticulatedPartsTypeMetric::AzimuthRate,
+                parameter_value: 0.0
+            }))
+            .add_articulation_parameter(VariableParameter::Articulated(ArticulatedPart {
+                change_indicator: ChangeIndicator::from(0u8),
+                attachment_id: 0,
+                type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
+                type_metric: ArticulatedPartsTypeMetric::Elevation,
+                parameter_value: 0.0
+            }))
             .build().expect("Should be Ok");
         let pdu = Pdu::finalize_from_parts(header, body, 0);
 

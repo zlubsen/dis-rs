@@ -17,7 +17,7 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::other::builder::OtherBuilder;
     use crate::common::{BodyInfo, Serialize};
-    use crate::common::symbolic_names::PDU_HEADER_LEN_BYTES;
+    use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
     use crate::{Pdu, PduHeader};
 
