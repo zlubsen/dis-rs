@@ -395,7 +395,7 @@ mod tests {
                 type_metric: ArticulatedPartsTypeMetric::Elevation,
                 parameter_value: 0.0
             }))
-            .build();
+            .as_pdu_body();
         let pdu = Pdu::finalize_from_parts(header, body, 0);
 
         let mut buf = BytesMut::with_capacity(208);

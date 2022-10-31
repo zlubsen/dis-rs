@@ -5,3 +5,25 @@ pub struct EntityCapabilities {
     pub recovery : bool,
     pub repair : bool,
 }
+
+impl EntityCapabilities {
+    pub fn ammunition_supply(mut self) -> Self {
+        self.ammunition_supply = true;
+        self
+    }
+
+    pub fn fuel_supply(mut self) -> Self {
+        self.fuel_supply = true;
+        self
+    }
+
+    pub fn recovery(mut self) -> Self {
+        self.recovery = true;
+        self
+    }
+
+    pub fn repair(mut self) -> Self {
+        self.repair = true;
+        self
+    }
+}

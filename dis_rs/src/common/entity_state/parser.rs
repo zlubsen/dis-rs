@@ -37,7 +37,7 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
             (input, Some(params))
         } else { (input, None) };
 
-        let builder = EntityState::new(entity_id_val, force_id_val, entity_type_val)
+        let entity_state = EntityState::new(entity_id_val, force_id_val, entity_type_val)
             .with_alternative_entity_type(alternative_entity_type)
             .with_velocity(entity_linear_velocity)
             .with_location(entity_location)
@@ -46,11 +46,11 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
             .with_dead_reckoning_parameters(dead_reckoning_parameters)
             .with_marking(entity_marking)
             .with_capabilities(entity_capabilities);
-        let builder = if let Some(mut params) = articulation_parameter {
-            builder.with_variable_parameters(&mut params)
-        } else { builder };
+        let entity_state = if let Some(mut params) = articulation_parameter {
+            entity_state.with_variable_parameters(&mut params)
+        } else { entity_state };
 
-        Ok((input, builder.build()))
+        Ok((input, entity_state.as_pdu_body()))
     }
 }
 

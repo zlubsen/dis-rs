@@ -1,7 +1,8 @@
 
 // TODO create (more) ergonomic builder for PduStatus struct
 
-use crate::v7::model::{ActiveInterrogationIndicator, CoupledExtensionIndicator, DetonationTypeIndicator, FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator, PduStatus, RadioAttachedIndicator, TransferredEntityIndicator};
+use crate::v7::model::PduStatus;
+use crate::enumerations::{ActiveInterrogationIndicator, CoupledExtensionIndicator, DetonationTypeIndicator, FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator, RadioAttachedIndicator, TransferredEntityIndicator};
 
 pub fn build_pdu_status_cei_lvc_tei(cei : CoupledExtensionIndicator, lvc : LvcIndicator, tei: TransferredEntityIndicator) -> PduStatus {
     PduStatus {

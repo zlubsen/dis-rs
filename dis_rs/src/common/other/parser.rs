@@ -101,7 +101,11 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
         let (input, body) = take(body_length_bytes)(input)?;
         let body = body.to_vec();
 
-        Ok((input, PduBody::Other(Other::new_with_receiver(body, originating, receiving))))
+        Ok((input, PduBody::Other(
+            Other::new(body)
+                .with_origin(originating)
+                .with_receiver(receiving)
+        )))
     }
 }
 

@@ -39,20 +39,14 @@ impl Other {
         }
     }
 
-    pub fn new_with_origin(bytes: Vec<u8>, origin: Option<EntityId>) -> Self {
-        Other {
-            originating_entity_id: origin,
-            receiving_entity_id: None,
-            body: bytes,
-        }
+    pub fn with_origin(mut self, origin: Option<EntityId>) -> Self {
+        self.originating_entity_id = origin;
+        self
     }
 
-    pub fn new_with_receiver(bytes: Vec<u8>, origin: Option<EntityId>, receiver: Option<EntityId>) -> Self {
-        Other {
-            originating_entity_id: origin,
-            receiving_entity_id: receiver,
-            body: bytes,
-        }
+    pub fn with_receiver(mut self, receiver: Option<EntityId>) -> Self {
+        self.receiving_entity_id = receiver;
+        self
     }
 }
 

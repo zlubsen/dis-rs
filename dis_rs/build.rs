@@ -16,7 +16,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"), None)
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 63] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 71] = [
     (3, Some("ProtocolVersion"), None),   // protocol version
     (4, Some("PduType"), None),           // pdu type
     (5, Some("ProtocolFamily"), None),    // pdu family
@@ -46,6 +46,14 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 63] = [
     (282, Some("SeparationReasonForSeparation"), None), // Separation VP-Reason for Separation
     (283, Some("SeparationPreEntityIndicator"), None), // Separation VP-Pre-Entity Indicator
     (296, Some("DrParametersType"), None), // Dead Reckoning Parameters Type
+    (301, Some("TransferredEntityIndicator"), None), // DIS-PDU Status-Transferred Entity Indicator (TEI)
+    (302, Some("LvcIndicator"), None), // DIS-PDU Status-LVC Indicator (LVC)
+    (303, Some("CoupledExtensionIndicator"), None), // DIS-PDU Status-Coupled Extension Indicator (CEI)
+    (304, Some("FireTypeIndicator"), None), // DIS-PDU Status-Fire Type Indicator (FTI)
+    (305, Some("DetonationTypeIndicator"), None), // DIS-PDU Status-Detonation Type Indicator (DTI)
+    (306, Some("RadioAttachedIndicator"), None), // Radio Attached Indicator
+    (307, Some("IntercomAttachedIndicator"), None), // DIS-PDU Status-Intercom Attached Indicator (IAI)
+    (308, Some("IffSimulationMode"), None), // DIS-PDU Status-IFF Simulation Mode (ISM)
     (319, None, None), // Entity Association-Association Status
     (320, Some("ChangeIndicator"), None), // Entity VP Record-Change Indicator
     (321, None, None), // Entity Association-Group Member Type
@@ -62,7 +70,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 63] = [
     (386, None, None), // Appearance
     (387, None, None), // Appearance
     (388, None, None), // Appearance
-    (389, None, None), // Appearance
+    (389, Some("Active Interrogation Indicator"), None), // DIS-PDU Status-Active Interrogation Indicator (AII)
     (390, None, None), // Appearance
     (391, None, None), // Appearance
     (392, None, None), // Appearance
