@@ -1,19 +1,24 @@
 use nom::IResult;
-use nom::number::complete::{be_f32, be_u16, be_u32};
+use nom::number::complete::{be_f32, be_u32};
 use crate::common::fire::model::Fire;
-use crate::common::model::BurstDescriptor;
-use crate::common::parser::{entity_id, entity_type, event_id, location, vec3_f32};
-use crate::{MunitionDescriptorFuse, MunitionDescriptorWarhead, PduBody};
+use crate::common::parser::{entity_id, event_id, location, vec3_f32};
+use crate::common::model::PduBody;
+use crate::common::parser;
+use crate::enumerations::FireTypeIndicator;
+use crate::PduHeader;
+use crate::v7::model::PduStatus;
 
-pub fn fire_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
+pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
+        let fti = header.pdu_status.unwrap_or(PduStatus::default())
+            .fire_type_indicator.unwrap_or(FireTypeIndicator::Munition);
         let (input, firing_entity_id) = entity_id(input)?;
         let (input, target_entity_id) = entity_id(input)?;
         let (input, munition_id) = entity_id(input)?;
         let (input, event_id) = event_id(input)?;
         let (input, fire_mission_index) = be_u32(input)?;
         let (input, location_in_world) = location(input)?;
-        let (input, burst_descriptor) = burst_descriptor(input)?;//BurstDescriptor,
+        let (input, descriptor) = parser::descriptor_record(fti)(input)?;
         let (input, velocity) = vec3_f32(input)?;
         let (input, range) = be_f32(input)?;
 
@@ -24,40 +29,11 @@ pub fn fire_body() -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
             event_id,
             fire_mission_index,
             location_in_world,
-            burst_descriptor,
+            descriptor,
             velocity,
             range,
         };
 
         Ok((input, PduBody::Fire(body)))
     }
-}
-
-// FIXME move to common::parser, as the struct is also there (and used in other PDUs)
-pub fn burst_descriptor(input: &[u8]) -> IResult<&[u8], BurstDescriptor> {
-    let (input, munition) = entity_type(input)?;
-    let (input, warhead) = warhead(input)?;
-    let (input, fuse) = fuse(input)?;
-    let (input, quantity) = be_u16(input)?;
-    let (input, rate) = be_u16(input)?;
-
-    Ok((input, BurstDescriptor {
-        munition,
-        warhead,
-        fuse,
-        quantity,
-        rate,
-    }))
-}
-
-fn warhead(input: &[u8]) -> IResult<&[u8], MunitionDescriptorWarhead> {
-    let (input, warhead) = be_u16(input)?;
-    let warhead = MunitionDescriptorWarhead::from(warhead);
-    Ok((input, warhead))
-}
-
-fn fuse(input: &[u8]) -> IResult<&[u8], MunitionDescriptorFuse> {
-    let (input, fuse) = be_u16(input)?;
-    let fuse = MunitionDescriptorFuse::from(fuse);
-    Ok((input, fuse))
 }

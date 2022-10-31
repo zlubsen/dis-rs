@@ -11,10 +11,10 @@ use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::{Country, EntityId, EntityKind, EntityType, EventId, Location, Orientation, SimulationAddress, VectorF32};
+use crate::{Country, DescriptorRecord, EntityId, EntityKind, EntityType, EventId, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{PduType, PlatformDomain, ProtocolVersion, ProtocolFamily};
+use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -138,8 +138,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
         // TODO - NOTE only processes supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
             PduType::Other => { other_body(header)(input)? }
-            PduType::EntityState => { entity_state_body(header.protocol_version)(input)? }
-            PduType::Fire => { fire_body()(input)? }
+            PduType::EntityState => { entity_state_body(header)(input)? }
+            PduType::Fire => { fire_body(header)(input)? }
             PduType::Unspecified(_type_number) => { other_body(header)(input)? }
             _ => { other_body(header)(input)? }
             // PduType::Detonation => {}
@@ -351,6 +351,53 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
     }))
 }
 
+pub fn descriptor_record(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
+    move |input: &[u8]| {
+        let (input, entity_type) = entity_type(input)?;
+        match fire_type_indicator {
+            FireTypeIndicator::Munition => {
+                let (input, munition) = munition_descriptor(input)?;
+
+                Ok((input, DescriptorRecord::Munition {
+                    entity_type,
+                    munition,
+                }))
+            }
+            FireTypeIndicator::Expendable | _ => {
+                Ok((input, DescriptorRecord::Expendable {
+                    entity_type
+                }))
+            }
+        }
+    }
+}
+
+pub fn munition_descriptor(input: &[u8]) -> IResult<&[u8], MunitionDescriptor> {
+    let (input, warhead) = warhead(input)?;
+    let (input, fuse) = fuse(input)?;
+    let (input, quantity) = be_u16(input)?;
+    let (input, rate) = be_u16(input)?;
+
+    Ok((input, MunitionDescriptor {
+        warhead,
+        fuse,
+        quantity,
+        rate,
+    }))
+}
+
+fn warhead(input: &[u8]) -> IResult<&[u8], MunitionDescriptorWarhead> {
+    let (input, warhead) = be_u16(input)?;
+    let warhead = MunitionDescriptorWarhead::from(warhead);
+    Ok((input, warhead))
+}
+
+fn fuse(input: &[u8]) -> IResult<&[u8], MunitionDescriptorFuse> {
+    let (input, fuse) = be_u16(input)?;
+    let fuse = MunitionDescriptorFuse::from(fuse);
+    Ok((input, fuse))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::common::model::{EntityType, PduBody};
@@ -358,9 +405,9 @@ mod tests {
     use crate::common::parser::{parse_multiple_header, parse_pdu};
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::{EntityAppearance, VariableParameter};
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolVersion, ProtocolFamily };
-    use crate::enumerations::{AppearancePaintScheme, AppearanceDamage, AppearanceTrailingEffects, AppearanceCanopy, AppearanceEntityorObjectState};
-    use crate::v6::entity_state::model::{EntityCapabilities};
+    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
+    use crate::enumerations::{AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearancePaintScheme, AppearanceTrailingEffects};
+    use crate::v6::entity_state::model::EntityCapabilities;
 
     #[test]
     fn parse_header() {

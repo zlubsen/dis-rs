@@ -789,21 +789,35 @@ impl EntityType {
     }
 }
 
+pub enum DescriptorRecord {
+    Munition { entity_type: EntityType, munition: MunitionDescriptor },
+    Expendable { entity_type: EntityType },
+}
+
+impl DescriptorRecord {
+    pub fn new_munition(entity_type: EntityType, munition: MunitionDescriptor) -> Self {
+        DescriptorRecord::Munition {
+            entity_type,
+            munition
+        }
+    }
+
+    pub fn new_expendable(entity_type: EntityType) -> Self {
+        DescriptorRecord::Expendable {
+            entity_type
+        }
+    }
+}
+
 #[derive(Default)]
-pub struct BurstDescriptor {
-    pub munition : EntityType,
+pub struct MunitionDescriptor {
     pub warhead : MunitionDescriptorWarhead,
     pub fuse : MunitionDescriptorFuse,
     pub quantity : u16,
     pub rate : u16,
 }
 
-impl BurstDescriptor {
-    pub fn with_munition(mut self, munition: EntityType) -> Self {
-        self.munition = munition;
-        self
-    }
-
+impl MunitionDescriptor {
     pub fn with_warhead(mut self, warhead: MunitionDescriptorWarhead) -> Self {
         self.warhead = warhead;
         self

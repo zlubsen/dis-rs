@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::PDU_HEADER_LEN_BYTES;
-use crate::{EntityId, EventId, Location, Orientation, SimulationAddress, VectorF32};
+use crate::{DescriptorRecord, EntityId, EventId, Location, MunitionDescriptor, Orientation, SimulationAddress, VectorF32};
 use crate::enumerations::{ProtocolVersion};
 
 impl Serialize for PduHeader {
@@ -159,6 +159,33 @@ impl Serialize for Orientation {
         buf.put_f32(self.theta);
         buf.put_f32(self.phi);
         12
+    }
+}
+
+impl Serialize for DescriptorRecord {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        match self {
+            DescriptorRecord::Munition { entity_type, munition } => {
+                let entity_bytes = entity_type.serialize(buf);
+                let munition_bytes = munition.serialize(buf);
+                entity_bytes + munition_bytes
+            }
+            DescriptorRecord::Expendable { entity_type } => {
+                let entity_bytes = entity_type.serialize(buf);
+                buf.put_u64(0u64);
+                entity_bytes + 8
+            }
+        }
+    }
+}
+
+impl Serialize for MunitionDescriptor {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u16(self.warhead.into());
+        buf.put_u16(self.fuse.into());
+        buf.put_u16(self.quantity);
+        buf.put_u16(self.rate);
+        8
     }
 }
 

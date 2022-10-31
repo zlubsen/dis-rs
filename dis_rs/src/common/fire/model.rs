@@ -1,8 +1,5 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{BurstDescriptor, EntityId};
-use crate::common::model::EventId;
-use crate::common::model::Location;
-use crate::common::model::VectorF32;
+use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, VectorF32};
 use crate::enumerations::PduType;
 
 pub struct Fire {
@@ -12,7 +9,7 @@ pub struct Fire {
     pub event_id : EventId,
     pub fire_mission_index : u32,
     pub location_in_world : Location,
-    pub burst_descriptor : BurstDescriptor,
+    pub descriptor: DescriptorRecord,
     pub velocity : VectorF32,
     pub range : f32,
 }

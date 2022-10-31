@@ -2,7 +2,7 @@ use nom::bytes::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityAssociationParameter, EntityState, EntityType, EntityTypeParameter, SeparationParameter};
+use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityAssociationParameter, EntityState, EntityType, EntityTypeParameter, PduHeader, SeparationParameter};
 use crate::common::entity_state::model::{ArticulatedPart, DrOtherParameters, DrParameters, EntityMarking, VariableParameter};
 use crate::common::model::PduBody;
 use crate::common::parser;
@@ -10,7 +10,7 @@ use crate::common::parser::{entity_id, entity_type, vec3_f32};
 use crate::enumerations::*;
 use crate::v6::entity_state::parser::entity_capabilities;
 
-pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> {
+pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         let (input, entity_id_val) = entity_id(input)?;
         let (input, force_id_val) = force_id(input)?;
@@ -23,7 +23,7 @@ pub fn entity_state_body(version: ProtocolVersion) -> impl Fn(&[u8]) -> IResult<
         let (input, entity_appearance) = entity_appearance(entity_type_val)(input)?;
         let (input, dead_reckoning_parameters) = dr_parameters(input)?;
         let (input, entity_marking) = entity_marking(input)?;
-        let (input, entity_capabilities) = match version {
+        let (input, entity_capabilities) = match header.protocol_version {
             ProtocolVersion::IEEE1278_12012 => {
                 crate::v7::entity_state::parser::entity_capabilities(entity_type_val)(input)?
             }
