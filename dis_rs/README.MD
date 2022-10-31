@@ -11,56 +11,56 @@ Given a buffer, the lib can return multiple PDUs in multiple DIS versions presen
 Here is an overview of the DIS features supported by dis-lib. 'Read' means reading a PDU from a byte stream. 'Write' means constructing a PDU in a struct and serializing it to a buffer. 
 
 | PDU / function | v6 read | v6 write | v7 read | v7 write |
-| --- | --- | --- | --- | --- |
-| PDU Header | V | V | | | 
-| EntityState PDU | V | V | | |
-| FirePdu |  |  |  |  |
-| DetonationPdu |  |  |  |  |
-| CollisionPdu |  |  |  |  |
-| ServiceRequestPdu |  |  |  |  |
-| ResupplyOfferPdu |  |  |  |  |
-| ResupplyReceivedPdu |  |  |  |  |
-| ResupplyCancelPdu |  |  |  |  |
-| RepairCompletePdu |  |  |  |  |
-| RepairResponsePdu |  |  |  |  |
-| CreateEntityPdu |  |  |  |  |
-| RemoveEntityPdu |  |  |  |  |
-| StartResumePdu |  |  |  |  |
-| StopFreezePdu |  |  |  |  |
-| AcknowledgePdu |  |  |  |  |
-| ActionRequestPdu |  |  |  |  |
-| ActionResponsePdu |  |  |  |  |
-| DataQueryPdu |  |  |  |  |
-| SetDataPdu |  |  |  |  |
-| DataPdu |  |  |  |  |
-| EventReportPdu |  |  |  |  |
-| CommentPdu |  |  |  |  |
-| ElectromagneticEmissionPdu |  |  |  |  |
-| DesignatorPdu |  |  |  |  |
-| TransmitterPdu |  |  |  |  |
-| SignalPdu |  |  |  |  |
-| ReceiverPdu |  |  |  |  |
-| AnnounceObjectPdu |  |  |  |  |
-| DeleteObjectPdu |  |  |  |  |
-| DescribeApplicationPdu |  |  |  |  |
-| DescribeEventPdu |  |  |  |  |
-| DescribeObjectPdu |  |  |  |  |
-| RequestEventPdu |  |  |  |  |
-| RequestObjectPdu |  |  |  |  |
-| TimeSpacePositionIndicatorFIPdu |  |  |  |  |
-| AppearanceFIPdu |  |  |  |  |
-| ArticulatedPartsFIPdu |  |  |  |  |
-| FireFIPdu |  |  |  |  |
-| DetonationFIPdu |  |  |  |  |
-| PointObjectStatePdu |  |  |  |  |
-| LinearObjectStatePdu |  |  |  |  |
-| ArealObjectStatePdu |  |  |  |  |
-| EnvironmentPdu |  |  |  |  |
-| TransferControlRequestPdu |  |  |  |  |
-| TransferControlPdu |  |  |  |  |
-| TransferControlAcknowledgePdu |  |  |  |  |
-| IntercomControlPdu |  |  |  |  |
-| IntercomSignalPdu |  |  |  |  |
-| AggregatePdu |  |  |  |  |
-| 'Other' PDU | V | V | | |
-| Dead Reckoning Algos | | | | |
+| --- |---------|----------|---------|----------|
+| PDU Header | V       | V        | V       | V        | 
+| EntityState PDU | V       | V        | V       | V        |
+| FirePdu | V       | V        | V       | V        |
+| DetonationPdu |         |          |         |          |
+| CollisionPdu |         |          |         |          |
+| ServiceRequestPdu |         |          |         |          |
+| ResupplyOfferPdu |         |          |         |          |
+| ResupplyReceivedPdu |         |          |         |          |
+| ResupplyCancelPdu |         |          |         |          |
+| RepairCompletePdu |         |          |         |          |
+| RepairResponsePdu |         |          |         |          |
+| CreateEntityPdu |         |          |         |          |
+| RemoveEntityPdu |         |          |         |          |
+| StartResumePdu |         |          |         |          |
+| StopFreezePdu |         |          |         |          |
+| AcknowledgePdu |         |          |         |          |
+| ActionRequestPdu |         |          |         |          |
+| ActionResponsePdu |         |          |         |          |
+| DataQueryPdu |         |          |         |          |
+| SetDataPdu |         |          |         |          |
+| DataPdu |         |          |         |          |
+| EventReportPdu |         |          |         |          |
+| CommentPdu |         |          |         |          |
+| ElectromagneticEmissionPdu |         |          |         |          |
+| DesignatorPdu |         |          |         |          |
+| TransmitterPdu |         |          |         |          |
+| SignalPdu |         |          |         |          |
+| ReceiverPdu |         |          |         |          |
+| AnnounceObjectPdu |         |          |         |          |
+| DeleteObjectPdu |         |          |         |          |
+| DescribeApplicationPdu |         |          |         |          |
+| DescribeEventPdu |         |          |         |          |
+| DescribeObjectPdu |         |          |         |          |
+| RequestEventPdu |         |          |         |          |
+| RequestObjectPdu |         |          |         |          |
+| TimeSpacePositionIndicatorFIPdu |         |          |         |          |
+| AppearanceFIPdu |         |          |         |          |
+| ArticulatedPartsFIPdu |         |          |         |          |
+| FireFIPdu |         |          |         |          |
+| DetonationFIPdu |         |          |         |          |
+| PointObjectStatePdu |         |          |         |          |
+| LinearObjectStatePdu |         |          |         |          |
+| ArealObjectStatePdu |         |          |         |          |
+| EnvironmentPdu |         |          |         |          |
+| TransferControlRequestPdu |         |          |         |          |
+| TransferControlPdu |         |          |         |          |
+| TransferControlAcknowledgePdu |         |          |         |          |
+| IntercomControlPdu |         |          |         |          |
+| IntercomSignalPdu |         |          |         |          |
+| AggregatePdu |         |          |         |          |
+| 'Other' PDU | V       | V        |         |          |
+| Dead Reckoning Algos |         |          |         |          |
