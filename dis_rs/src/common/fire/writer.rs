@@ -6,7 +6,7 @@ impl SerializePdu for Fire {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let firing_entity_id_bytes = self.firing_entity_id.serialize(buf);
         let target_entity_id_bytes = self.target_entity_id.serialize(buf);
-        let munition_id_bytes = self.munition_id.serialize(buf);
+        let munition_id_bytes = self.entity_id.serialize(buf);
         let event_id_bytes = self.event_id.serialize(buf);
         buf.put_u32(self.fire_mission_index);
         let location_in_world_bytes = self.location_in_world.serialize(buf);

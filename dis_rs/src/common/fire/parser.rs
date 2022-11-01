@@ -25,7 +25,7 @@ pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody
         let body = Fire {
             firing_entity_id,
             target_entity_id,
-            munition_id,
+            entity_id: munition_id,
             event_id,
             fire_mission_index,
             location_in_world,

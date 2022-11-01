@@ -175,6 +175,13 @@ impl Serialize for DescriptorRecord {
                 buf.put_u64(0u64);
                 entity_bytes + 8
             }
+            DescriptorRecord::Explosion { entity_type, explosive_material, explosive_force } => {
+                let entity_bytes = entity_type.serialize(buf);
+                buf.put_u16((*explosive_material).into());
+                buf.put_u16(0u16);
+                buf.put_f32(*explosive_force);
+                entity_bytes + 8
+            }
         }
     }
 }

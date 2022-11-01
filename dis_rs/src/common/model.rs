@@ -1,8 +1,9 @@
 use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
+use crate::common::detonation::model::Detonation;
 use crate::common::other::model::Other;
-use crate::enumerations::{Country, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
+use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
 use crate::v7::model::PduStatus;
 use crate::constants::PDU_HEADER_LEN_BYTES;
@@ -87,7 +88,7 @@ pub enum PduBody {
     Other(Other),
     EntityState(EntityState),
     Fire(Fire),
-    Detonation,
+    Detonation(Detonation),
     Collision,
     ServiceRequest,
     ResupplyOffer,
@@ -165,7 +166,7 @@ impl BodyInfo for PduBody {
             PduBody::Other(body) => { body.body_length() }
             PduBody::EntityState(body) => { body.body_length() }
             PduBody::Fire(body) => { body.body_length() }
-            PduBody::Detonation => { 0 }
+            PduBody::Detonation(body) => { body.body_length() }
             PduBody::Collision => { 0 }
             PduBody::ServiceRequest => { 0 }
             PduBody::ResupplyOffer => { 0 }
@@ -243,7 +244,7 @@ impl BodyInfo for PduBody {
             PduBody::Other(body) => { body.body_type() }
             PduBody::EntityState(body) => { body.body_type() }
             PduBody::Fire(body) => { body.body_type() }
-            PduBody::Detonation => { PduType::Detonation }
+            PduBody::Detonation(body) => { body.body_type() }
             PduBody::Collision => { PduType::Collision }
             PduBody::ServiceRequest => { PduType::ServiceRequest }
             PduBody::ResupplyOffer => { PduType::ResupplyOffer }
@@ -323,7 +324,7 @@ impl Interaction for PduBody {
             PduBody::Other(body) => { body.originator() }
             PduBody::EntityState(body) => { body.originator() }
             PduBody::Fire(body) => { body.originator() }
-            PduBody::Detonation => { None }
+            PduBody::Detonation(body) => { body.originator() }
             PduBody::Collision => { None }
             PduBody::ServiceRequest => { None }
             PduBody::ResupplyOffer => { None }
@@ -401,7 +402,7 @@ impl Interaction for PduBody {
             PduBody::Other(body) => { body.receiver() }
             PduBody::EntityState(body) => { body.receiver() }
             PduBody::Fire(body) => { body.receiver() }
-            PduBody::Detonation => { None }
+            PduBody::Detonation(body) => { body.receiver() }
             PduBody::Collision => { None }
             PduBody::ServiceRequest => { None }
             PduBody::ResupplyOffer => { None }
@@ -792,6 +793,7 @@ impl EntityType {
 pub enum DescriptorRecord {
     Munition { entity_type: EntityType, munition: MunitionDescriptor },
     Expendable { entity_type: EntityType },
+    Explosion { entity_type: EntityType, explosive_material: ExplosiveMaterialCategories, explosive_force: f32 }
 }
 
 impl DescriptorRecord {
@@ -806,6 +808,23 @@ impl DescriptorRecord {
         DescriptorRecord::Expendable {
             entity_type
         }
+    }
+
+    pub fn new_explosion(entity_type: EntityType, explosive_material: ExplosiveMaterialCategories, explosive_force: f32) -> Self {
+        DescriptorRecord::Explosion {
+            entity_type,
+            explosive_material,
+            explosive_force
+        }
+    }
+}
+
+// TODO is this a suitable default?
+impl Default for DescriptorRecord {
+    fn default() -> Self {
+        DescriptorRecord::new_munition(
+            EntityType::default(),
+            MunitionDescriptor::default())
     }
 }
 

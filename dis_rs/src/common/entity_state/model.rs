@@ -1,10 +1,10 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, VectorF32};
+use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::enumerations::*;
 use crate::PduBody;
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
-const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
 
 // TODO sensible errors for EntityState
 pub enum EntityStateValidationError {
