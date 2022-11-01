@@ -4,7 +4,9 @@ pub(crate) mod parser;
 pub mod entity_state;
 pub mod fire;
 pub mod detonation;
+pub mod collision;
 pub mod other;
+
 pub mod symbolic_names;
 pub mod defaults;
 pub mod errors;

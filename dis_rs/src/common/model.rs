@@ -1,5 +1,6 @@
 use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
+use crate::common::collision::model::Collision;
 use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
 use crate::common::detonation::model::Detonation;
 use crate::common::other::model::Other;
@@ -89,7 +90,7 @@ pub enum PduBody {
     EntityState(EntityState),
     Fire(Fire),
     Detonation(Detonation),
-    Collision,
+    Collision(Collision),
     ServiceRequest,
     ResupplyOffer,
     ResupplyReceived,
@@ -167,7 +168,7 @@ impl BodyInfo for PduBody {
             PduBody::EntityState(body) => { body.body_length() }
             PduBody::Fire(body) => { body.body_length() }
             PduBody::Detonation(body) => { body.body_length() }
-            PduBody::Collision => { 0 }
+            PduBody::Collision(body) => { body.body_length() }
             PduBody::ServiceRequest => { 0 }
             PduBody::ResupplyOffer => { 0 }
             PduBody::ResupplyReceived => { 0 }
@@ -245,7 +246,7 @@ impl BodyInfo for PduBody {
             PduBody::EntityState(body) => { body.body_type() }
             PduBody::Fire(body) => { body.body_type() }
             PduBody::Detonation(body) => { body.body_type() }
-            PduBody::Collision => { PduType::Collision }
+            PduBody::Collision(body) => { body.body_type() }
             PduBody::ServiceRequest => { PduType::ServiceRequest }
             PduBody::ResupplyOffer => { PduType::ResupplyOffer }
             PduBody::ResupplyReceived => { PduType::ResupplyReceived }
@@ -325,7 +326,7 @@ impl Interaction for PduBody {
             PduBody::EntityState(body) => { body.originator() }
             PduBody::Fire(body) => { body.originator() }
             PduBody::Detonation(body) => { body.originator() }
-            PduBody::Collision => { None }
+            PduBody::Collision(body) => { body.originator() }
             PduBody::ServiceRequest => { None }
             PduBody::ResupplyOffer => { None }
             PduBody::ResupplyReceived => { None }
@@ -403,7 +404,7 @@ impl Interaction for PduBody {
             PduBody::EntityState(body) => { body.receiver() }
             PduBody::Fire(body) => { body.receiver() }
             PduBody::Detonation(body) => { body.receiver() }
-            PduBody::Collision => { None }
+            PduBody::Collision(body) => { body.receiver() }
             PduBody::ServiceRequest => { None }
             PduBody::ResupplyOffer => { None }
             PduBody::ResupplyReceived => { None }

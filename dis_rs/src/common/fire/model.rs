@@ -3,6 +3,8 @@ use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, Vector
 use crate::{EntityType, MunitionDescriptor, PduBody};
 use crate::enumerations::PduType;
 
+const FIRE_BODY_LENGTH : u16 = 28;
+
 pub struct Fire {
     pub firing_entity_id : EntityId,
     pub target_entity_id : EntityId,
@@ -72,7 +74,7 @@ impl Fire {
 
 impl BodyInfo for Fire {
     fn body_length(&self) -> u16 {
-        28
+        FIRE_BODY_LENGTH
     }
 
     fn body_type(&self) -> PduType {

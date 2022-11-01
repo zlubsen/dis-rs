@@ -16,7 +16,7 @@ Here is an overview of the DIS features supported by dis-lib. 'Read' means readi
 | EntityState PDU | V       | V        | V       | V        |
 | FirePdu | V       | V        | V       | V        |
 | DetonationPdu | V       | V        | V       | V        |
-| CollisionPdu |         |          |         |          |
+| CollisionPdu | V       | V        | V       | V        |
 | ServiceRequestPdu |         |          |         |          |
 | ResupplyOfferPdu |         |          |         |          |
 | ResupplyReceivedPdu |         |          |         |          |

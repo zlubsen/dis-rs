@@ -12,6 +12,7 @@ use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
+use crate::common::collision::parser::collision_body;
 use crate::common::detonation::parser::detonation_body;
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
@@ -142,9 +143,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::EntityState => { entity_state_body(header)(input)? }
             PduType::Fire => { fire_body(header)(input)? }
             PduType::Detonation => { detonation_body(header)(input)? }
-            PduType::Unspecified(_type_number) => { other_body(header)(input)? }
+            PduType::Collision => { collision_body(input)? }
+            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
             _ => { other_body(header)(input)? }
-            // PduType::Collision => {}
             // PduType::ServiceRequest => {}
             // PduType::ResupplyOffer => {}
             // PduType::ResupplyReceived => {}

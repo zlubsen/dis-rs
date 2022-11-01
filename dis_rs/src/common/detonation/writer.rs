@@ -1,9 +1,9 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::detonation::model::Detonation;
-use crate::common::Serialize;
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
 
-impl Serialize for Detonation {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+impl SerializePdu for Detonation {
+    fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let source_entity_id_bytes = self.source_entity_id.serialize(buf);
         let target_entity_id_bytes = self.target_entity_id.serialize(buf);
         let exploding_entity_id_bytes = self.exploding_entity_id.serialize(buf);

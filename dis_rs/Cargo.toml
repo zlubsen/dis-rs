@@ -23,7 +23,7 @@ default = []
 [dependencies]
 bytes = "1.2.1"
 nom = "7.1.1"
-dis_rs_macros = { version = "0.1.0", path = "../dis_rs_macros" }
+#dis_rs_macros = { version = "0.1.0", path = "../dis_rs_macros" }
 
 [build-dependencies]
 quote = "1.0.21"
