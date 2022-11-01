@@ -35,7 +35,7 @@ impl Serialize for Pdu {
             PduBody::Other(body) => { body.serialize_pdu(version, buf) } // TODO check if buffer capacity is enough for the body of an 'Other' PDU; perhaps make Serialize trait fallible
             PduBody::EntityState(body) => { body.serialize_pdu(version, buf) }
             PduBody::Fire(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::Detonation(body) => { body.serialize(buf) }
+            PduBody::Detonation(body) => { body.serialize(buf) }
             // PduBody::Collision(body) => { body.serialize(buf) }
             // PduBody::ServiceRequest(body) => { body.serialize(buf) }
             // PduBody::ResupplyOffer(body) => { body.serialize(buf) }

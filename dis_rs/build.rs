@@ -16,7 +16,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"), None)
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 72] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 73] = [
     (3, Some("ProtocolVersion"), None),   // protocol version
     (4, Some("PduType"), None),           // pdu type
     (5, Some("ProtocolFamily"), None),    // pdu family
@@ -42,6 +42,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 72] = [
     // 80-81, // Designator stuff
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    (189, None, None), // Collision Type
     (212, Some("StationName"), None), // IsPartOf-Station Name
     (282, Some("SeparationReasonForSeparation"), None), // Separation VP-Reason for Separation
     (283, Some("SeparationPreEntityIndicator"), None), // Separation VP-Pre-Entity Indicator

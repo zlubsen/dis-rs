@@ -38,13 +38,9 @@ impl SerializePdu for EntityState {
             }
         };
 
-        let variable_params_bytes = {
-            let mut num_bytes = 0;
-            for param in &self.variable_parameters {
-                num_bytes += param.serialize(buf);
-            }
-            num_bytes
-        };
+        let variable_params_bytes : u16 = self.variable_parameters.iter()
+            .map(|param| param.serialize(buf))
+            .sum();
 
         entity_id_bytes + force_id_bytes + 1 + entity_type_bytes
             + alt_entity_type_bytes + linear_velocity_bytes + location_bytes

@@ -15,7 +15,7 @@ Here is an overview of the DIS features supported by dis-lib. 'Read' means readi
 | PDU Header | V       | V        | V       | V        | 
 | EntityState PDU | V       | V        | V       | V        |
 | FirePdu | V       | V        | V       | V        |
-| DetonationPdu |         |          |         |          |
+| DetonationPdu | V       | V        | V       | V        |
 | CollisionPdu |         |          |         |          |
 | ServiceRequestPdu |         |          |         |          |
 | ResupplyOfferPdu |         |          |         |          |

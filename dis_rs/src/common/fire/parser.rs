@@ -18,7 +18,7 @@ pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody
         let (input, event_id) = event_id(input)?;
         let (input, fire_mission_index) = be_u32(input)?;
         let (input, location_in_world) = location(input)?;
-        let (input, descriptor) = parser::descriptor_record(fti)(input)?;
+        let (input, descriptor) = parser::descriptor_record_fti(fti)(input)?;
         let (input, velocity) = vec3_f32(input)?;
         let (input, range) = be_f32(input)?;
 

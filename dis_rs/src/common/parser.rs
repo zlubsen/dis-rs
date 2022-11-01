@@ -1,7 +1,7 @@
 use nom::combinator::peek;
 use nom::Err;
 use nom::IResult;
-use nom::number::complete::{be_f32, be_f64, be_u16, be_u32, be_u8};
+use nom::number::complete::{be_f32, be_f64, be_u16, be_u32, be_u64, be_u8};
 use nom::bytes::complete::take;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
@@ -11,7 +11,8 @@ use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::{Country, DescriptorRecord, EntityId, EntityKind, EntityType, EventId, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
+use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
+use crate::common::detonation::parser::detonation_body;
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
@@ -140,9 +141,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Other => { other_body(header)(input)? }
             PduType::EntityState => { entity_state_body(header)(input)? }
             PduType::Fire => { fire_body(header)(input)? }
+            PduType::Detonation => { detonation_body(header)(input)? }
             PduType::Unspecified(_type_number) => { other_body(header)(input)? }
             _ => { other_body(header)(input)? }
-            // PduType::Detonation => {}
             // PduType::Collision => {}
             // PduType::ServiceRequest => {}
             // PduType::ResupplyOffer => {}
@@ -351,7 +352,7 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
     }))
 }
 
-pub fn descriptor_record(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
+pub fn descriptor_record_fti(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
     move |input: &[u8]| {
         let (input, entity_type) = entity_type(input)?;
         match fire_type_indicator {
@@ -363,7 +364,57 @@ pub fn descriptor_record(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8
                     munition,
                 }))
             }
-            FireTypeIndicator::Expendable | _ => {
+            FireTypeIndicator::Expendable => {
+                let (input, _pad_out) = be_u64(input)?;
+
+                Ok((input, DescriptorRecord::Expendable {
+                    entity_type
+                }))
+            }
+            FireTypeIndicator::Unspecified(_) => {
+                // TODO should be an error; parse as Expendable, which has no data, for now
+                let (input, _pad_out) = be_u64(input)?;
+
+                Ok((input, DescriptorRecord::Expendable {
+                    entity_type
+                }))
+            }
+        }
+    }
+}
+
+pub fn descriptor_record_dti(detonation_type_indicator: DetonationTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
+    move |input: &[u8]| {
+        let (input, entity_type) = entity_type(input)?;
+        match detonation_type_indicator {
+            DetonationTypeIndicator::Munition => {
+                let (input, munition) = munition_descriptor(input)?;
+
+                Ok((input, DescriptorRecord::Munition {
+                    entity_type,
+                    munition,
+                }))
+            }
+            DetonationTypeIndicator::Expendable => {
+                let (input, _pad_out) = be_u64(input)?;
+                Ok((input, DescriptorRecord::Expendable {
+                    entity_type
+                }))
+            }
+            DetonationTypeIndicator::NonmunitionExplosion => {
+                let (input, explosive_material) = be_u16(input)?;
+                let explosive_material = ExplosiveMaterialCategories::from(explosive_material);
+                let (input, explosive_force) = be_f32(input)?;
+
+                Ok((input, DescriptorRecord::Explosion {
+                    entity_type,
+                    explosive_material,
+                    explosive_force
+                }))
+            }
+            DetonationTypeIndicator::Unspecified(_) => {
+                // TODO should be an error; parse as Expendable, which has no data, for now
+                let (input, _pad_out) = be_u64(input)?;
                 Ok((input, DescriptorRecord::Expendable {
                     entity_type
                 }))

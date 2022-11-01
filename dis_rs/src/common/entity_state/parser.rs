@@ -32,10 +32,9 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
                 (input, crate::enumerations::EntityCapabilities::from(entity_capabilities))
             }
         };
-        let (input, articulation_parameter) = if variable_parameters_no > 0 {
-            let (input, params) = count(variable_parameter, variable_parameters_no as usize)(input)?;
-            (input, Some(params))
-        } else { (input, None) };
+        let (input, variable_parameters) = if variable_parameters_no > 0 {
+            count(variable_parameter, variable_parameters_no as usize)(input)?
+        } else { (input, vec![]) };
 
         let entity_state = EntityState::new(entity_id_val, force_id_val, entity_type_val)
             .with_alternative_entity_type(alternative_entity_type)
@@ -45,10 +44,8 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             .with_appearance(entity_appearance)
             .with_dead_reckoning_parameters(dead_reckoning_parameters)
             .with_marking(entity_marking)
-            .with_capabilities(entity_capabilities);
-        let entity_state = if let Some(mut params) = articulation_parameter {
-            entity_state.with_variable_parameters(&mut params)
-        } else { entity_state };
+            .with_capabilities(entity_capabilities)
+            .with_variable_parameters(variable_parameters);
 
         Ok((input, entity_state.as_pdu_body()))
     }
