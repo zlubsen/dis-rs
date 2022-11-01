@@ -4,4 +4,3 @@ mod writer;
 pub mod builder;
 
 pub mod entity_state;
-pub mod fire;

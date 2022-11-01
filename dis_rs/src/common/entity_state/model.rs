@@ -105,8 +105,8 @@ impl EntityState {
         self
     }
 
-    pub fn with_variable_parameters(mut self, parameters: &mut Vec<VariableParameter>) -> Self {
-        self.variable_parameters.append(parameters);
+    pub fn with_variable_parameters(mut self, parameters: Vec<VariableParameter>) -> Self {
+        self.variable_parameters = parameters;
         self
     }
 

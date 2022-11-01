@@ -1,5 +1,5 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::{DescriptorRecord, DetonationResult, EntityId, EntityType, EventId, ExplosiveMaterialCategories, Location, MunitionDescriptor, PduType, VariableParameter, VectorF32};
+use crate::{DescriptorRecord, DetonationResult, EntityId, EntityType, EventId, ExplosiveMaterialCategories, Location, MunitionDescriptor, PduBody, PduType, VariableParameter, VectorF32};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 
 const BASE_DETONATION_BODY_LENGTH : u16 = 104;
@@ -18,7 +18,50 @@ pub struct Detonation {
 }
 
 impl Detonation {
-    // TODO `new` and `with_` methods
+    pub fn new() -> Self {
+        Self {
+            source_entity_id: Default::default(),
+            target_entity_id: Default::default(),
+            exploding_entity_id: Default::default(),
+            event_id: Default::default(),
+            velocity: Default::default(),
+            location_in_world_coordinates: Default::default(),
+            descriptor: Default::default(),
+            location_in_entity_coordinates: Default::default(),
+            detonation_result: Default::default(),
+            variable_parameters: vec![]
+        }
+    }
+
+    pub fn with_source_entity_id(mut self, source_entity_id: EntityId) -> Self {
+        self.source_entity_id = source_entity_id;
+        self
+    }
+
+    pub fn with_target_entity_id(mut self, target_entity_id: EntityId) -> Self {
+        self.target_entity_id = target_entity_id;
+        self
+    }
+
+    pub fn with_exploding_entity_id(mut self, exploding_entity_id: EntityId) -> Self {
+        self.exploding_entity_id = exploding_entity_id;
+        self
+    }
+
+    pub fn with_event_id(mut self, event_id: EventId) -> Self {
+        self.event_id = event_id;
+        self
+    }
+
+    pub fn with_velocity(mut self, velocity: VectorF32) -> Self {
+        self.velocity = velocity;
+        self
+    }
+
+    pub fn with_world_location(mut self, location: Location) -> Self {
+        self.location_in_world_coordinates = location;
+        self
+    }
 
     pub fn with_descriptor(mut self, descriptor: DescriptorRecord) -> Self {
         self.descriptor = descriptor;
@@ -41,6 +84,30 @@ impl Detonation {
                                      explosive_force: f32) -> Self {
         self.descriptor = DescriptorRecord::new_explosion(entity_type, explosive_material, explosive_force);
         self
+    }
+
+    pub fn with_entity_location(mut self, location: VectorF32) -> Self {
+        self.location_in_entity_coordinates = location;
+        self
+    }
+
+    pub fn with_detonation_result(mut self, detonation_result: DetonationResult) -> Self {
+        self.detonation_result = detonation_result;
+        self
+    }
+
+    pub fn with_variable_parameter(mut self, parameter: VariableParameter) -> Self {
+        self.variable_parameters.push(parameter);
+        self
+    }
+
+    pub fn with_variable_parameters(mut self, parameters: Vec<VariableParameter>) -> Self {
+        self.variable_parameters = parameters;
+        self
+    }
+
+    pub fn as_pdu_body(self) -> PduBody {
+        PduBody::Detonation(self)
     }
 }
 
