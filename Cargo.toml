@@ -1,2 +1,2 @@
 [workspace]
-members = ["dis_rs", "dis_rs_macros"]
+members = ["dis-rs", "dis_rs_macros"]
