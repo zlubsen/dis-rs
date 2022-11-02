@@ -103,3 +103,5 @@ To serialize a PDU to bytes (DIS wire format), simply call the `serialize()` fun
 The library currently consists of two crates:
 - dis-rs: main library containing PDU definitions and parsers, builders, etc
 - dis-derive: lib containing a derive macro _previously_ used by dis-rs. Now superseded by generating enums based on SISO-REF-010. Likely to be removed or repurposed in the future.
+
+Copyright (C) 2022 Zeeger Lubsen

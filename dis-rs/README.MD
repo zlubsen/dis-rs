@@ -97,3 +97,5 @@ To serialize a PDU to bytes (DIS wire format), simply call the `serialize()` fun
 - A lot of great background material on DIS can be found at OpenDIS: http://open-dis.org and https://github.com/open-dis.
 - Wikipedia: https://en.wikipedia.org/wiki/Distributed_Interactive_Simulation.
 - DIS Data Dictionary (version 6 only): http://faculty.nps.edu/brutzman/vrtp/mil/navy/nps/disEnumerations/JdbeHtmlFiles/pdu/.
+
+Copyright (C) 2022 Zeeger Lubsen
