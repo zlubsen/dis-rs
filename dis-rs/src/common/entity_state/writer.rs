@@ -244,7 +244,7 @@ impl Serialize for EntityMarking {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.marking_character_set.into());
         let num_pad = 11 - self.marking_string.len();
-        let marking = self.marking_string.clone(); // TODO is this clone necessary?
+        let marking = self.marking_string.clone(); // clone necessary because into_bytes consumes self.
 
         buf.put_slice(&marking.into_bytes()[..]);
         (0..num_pad).for_each( |_i| buf.put_u8(0x20) );

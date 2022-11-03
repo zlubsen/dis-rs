@@ -1,10 +1,11 @@
 pub mod model;
 pub(crate) mod parser;
 
-pub mod entity_state;
-pub mod fire;
-pub mod detonation;
 pub mod collision;
+pub mod detonation;
+pub mod entity_state;
+pub mod electromagnetic_emission;
+pub mod fire;
 pub mod other;
 
 pub mod symbolic_names;
