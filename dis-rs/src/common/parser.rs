@@ -14,6 +14,7 @@ use crate::common::other::parser::other_body;
 use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
 use crate::common::collision::parser::collision_body;
 use crate::common::detonation::parser::detonation_body;
+use crate::common::electromagnetic_emission::parser::emission_body;
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
@@ -144,6 +145,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Fire => { fire_body(header)(input)? }
             PduType::Detonation => { detonation_body(header)(input)? }
             PduType::Collision => { collision_body(input)? }
+            PduType::ElectromagneticEmission => { emission_body(header)(input)? }
             PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
             _ => { other_body(header)(input)? }
             // PduType::ServiceRequest => {}
@@ -164,7 +166,6 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::Data => {}
             // PduType::EventReport => {}
             // PduType::Comment => {}
-            // PduType::ElectromagneticEmission => {}
             // PduType::Designator => {}
             // PduType::Transmitter => {}
             // PduType::Signal => {}
