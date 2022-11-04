@@ -58,14 +58,9 @@ impl ElectromagneticEmission {
 impl BodyInfo for ElectromagneticEmission {
     fn body_length(&self) -> u16 {
         EMISSION_BASE_BODY_LENGTH
-            + (EMITTER_SYSTEM_BASE_LENGTH * self.emitter_systems.len() as u16)
-            + (self.emitter_systems.iter()
-            .map(|emitter|
-                 (BEAM_BASE_LENGTH * emitter.beams.len() as u16)
-                    + emitter.beams.iter()
-                    .map(|beam| TRACK_JAM_BASE_LENGTH * beam.track_jam_data.len() as u16 )
-                    .sum::<u16>())
-            .sum::<u16>())
+            + self.emitter_systems.iter()
+            .map(|system| system.system_data_length())
+            .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {
@@ -138,6 +133,13 @@ impl EmitterSystem {
     pub fn with_beam(mut self, beam: Beam) -> Self {
         self.beams.push(beam);
         self
+    }
+
+    pub fn system_data_length(&self) -> u16 {
+        EMITTER_SYSTEM_BASE_LENGTH
+            + self.beams.iter()
+            .map(|beam| beam.beam_data_length() )
+            .sum::<u16>()
     }
 }
 
@@ -217,6 +219,10 @@ impl Beam {
     pub fn with_track_jam(mut self, track_jam_data: TrackJam) -> Self {
         self.track_jam_data.push(track_jam_data);
         self
+    }
+
+    pub fn beam_data_length(&self) -> u16 {
+        BEAM_BASE_LENGTH + (TRACK_JAM_BASE_LENGTH * self.track_jam_data.len() as u16)
     }
 }
 

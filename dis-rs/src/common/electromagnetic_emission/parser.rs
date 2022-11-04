@@ -56,8 +56,7 @@ pub fn beam(input: &[u8]) -> IResult<&[u8], Beam> {
     let (input, function) = be_u8(input)?;
     let (input, no_of_targets) = be_u8(input)?;
     let (input, high_density_track_jam) = be_u8(input)?;
-    let (input, status) = be_u8(input)?; // TODO 1st bit means something, rest is padding
-
+    let (input, status) = be_u8(input)?;
     let (input, jamming_technique) = jamming_technique(input)?;
     let (input, mut track_jams) = count(track_jam, no_of_targets as usize)(input)?;
 
