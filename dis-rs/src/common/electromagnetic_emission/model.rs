@@ -321,6 +321,7 @@ impl BeamData {
 #[derive(Default)]
 pub struct JammingTechnique {
     // TODO uid 284 - new format to extract/generate...
+    // TODO / NOTE in DIS v6 this is a 32-bit uint. For compatibility we could glue these four together, or just let people figure it out themselves
     pub kind: u8,
     pub category: u8,
     pub subcategory: u8,

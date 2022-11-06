@@ -1,13 +1,9 @@
 use bytes::{BufMut, BytesMut};
-use nom::multi::count;
-use nom::number::complete::{be_u16, be_u8};
 use crate::common::electromagnetic_emission::model::{Beam, BeamData, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique, TrackJam};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::electromagnetic_emission::parser::{beam_data, fundamental_parameter_data, jamming_technique, track_jam};
-use crate::common::parser::{entity_id, event_id, vec3_f32};
 
 impl SerializePdu for ElectromagneticEmission {
-    fn serialize_pdu(&self, version: SupportedVersion, buf: &mut BytesMut) -> u16 {
+    fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let entity_bytes = self.emitting_entity_id.serialize(buf);
         let event_bytes = self.event_id.serialize(buf);
         buf.put_u8(self.state_update_indicator.into());
@@ -15,7 +11,7 @@ impl SerializePdu for ElectromagneticEmission {
         buf.put_u16(0u16);
         let systems_bytes = self.emitter_systems.iter()
             .map(|system| system.serialize(buf))
-            .sum();
+            .sum::<u16>();
 
         entity_bytes + event_bytes + 4 + systems_bytes
     }

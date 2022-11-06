@@ -145,9 +145,6 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Fire => { fire_body(header)(input)? }
             PduType::Detonation => { detonation_body(header)(input)? }
             PduType::Collision => { collision_body(input)? }
-            PduType::ElectromagneticEmission => { emission_body(header)(input)? }
-            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
-            _ => { other_body(header)(input)? }
             // PduType::ServiceRequest => {}
             // PduType::ResupplyOffer => {}
             // PduType::ResupplyReceived => {}
@@ -166,6 +163,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::Data => {}
             // PduType::EventReport => {}
             // PduType::Comment => {}
+            PduType::ElectromagneticEmission => { emission_body(header)(input)? }
             // PduType::Designator => {}
             // PduType::Transmitter => {}
             // PduType::Signal => {}
@@ -215,6 +213,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::InformationOperationsAction => {}
             // PduType::InformationOperationsReport => {}
             // PduType::Attribute => {}
+            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
+            _ => { other_body(header)(input)? }
         };
         // TODO handle result of pdu variable
         Ok((input, body))
