@@ -75,10 +75,12 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
     let (input, header) = pdu_header(input)?;
-    if (header.pdu_length as usize - PDU_HEADER_LEN_BYTES) > input.len() {
-        // FIXME signal correct sort of error when the input is too small for the indicated PDU length
-        return nom::error::make_error(input, nom::error::ErrorKind::Eof)
-    }
+
+    // if (header.pdu_length - PDU_HEADER_LEN_BYTES) as usize > input.len() {
+    //     // FIXME signal correct sort of error when the input is too small for the indicated PDU length
+    //     return nom::error::make_error(input, nom::error::ErrorKind::Eof);
+    // }
+
     // parse the body based on the type
     // and produce the final pdu combined with the header
     let (input, body) = pdu_body(&header)(input)?;
