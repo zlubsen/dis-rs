@@ -572,7 +572,7 @@ mod generation {
         let name_ident = format_ident!("{}", name);
         let arms = quote_enum_decl_arms(&e.items, e.size, lookup_xref);
         quote!(
-            #[derive(Copy, Clone, Debug, PartialEq)]
+            #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
             #[allow(non_camel_case_types)]
             pub enum #name_ident {
                 #(#arms),*
@@ -809,7 +809,7 @@ mod generation {
         let name_ident = format_ident!("{}", formatted_name);
         let fields = quote_bitfield_decl_fields(&item.fields, lookup_xref);
         quote!(
-            #[derive(Copy, Clone, Debug, PartialEq)]
+            #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
             pub struct #name_ident {
                 #(#fields),*
             }
