@@ -559,7 +559,7 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,
@@ -583,7 +583,7 @@ impl Default for SimulationAddress {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
     pub entity_id : u16

@@ -267,11 +267,95 @@ fn separation(input: &[u8]) -> IResult<&[u8], VariableParameter> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::parser::{variable_parameter, entity_marking};
-    use crate::common::parser::location;
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, EntityMarkingCharacterSet};
+    use crate::common::entity_state::parser::{variable_parameter, entity_marking, entity_appearance};
+    use crate::common::parser::{location, parse_pdu};
+    use crate::common::entity_state::model::EntityAppearance;
+    use crate::enumerations::{*};
+    use crate::common::model::{EntityType, PduBody};
+    use crate::common::entity_state::model::VariableParameter;
     use crate::v6::entity_state::parser::entity_capabilities;
-    use crate::VariableParameter;
+
+    #[test]
+    fn parse_pdu_entity_state() {
+        let bytes : [u8;208] =
+            [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4, 0x03, 0x84,
+                0x00, 0x0e, 0x01, 0x04, 0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00, 0x01, 0x02, 0x00, 0x99,
+                0x32, 0x04, 0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50, 0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d,
+                0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78, 0xbf, 0x3e, 0xdd, 0xfa, 0x3e, 0x2e, 0x36, 0xdd,
+                0x3f, 0xe6, 0x27, 0xc9, 0x00, 0x40, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x01, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x4d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+
+        let pdu = parse_pdu(&bytes);
+        assert!(pdu.is_ok());
+        let pdu = pdu.unwrap();
+        assert_eq!(pdu.header.pdu_type, PduType::EntityState);
+        assert_eq!(pdu.header.pdu_length, 208u16);
+        if let PduBody::EntityState(pdu) = pdu.body {
+            assert_eq!(pdu.entity_id.simulation_address.site_id, 500u16);
+            assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
+            assert_eq!(pdu.entity_id.entity_id, 14u16);
+            assert_eq!(pdu.force_id, ForceId::Friendly);
+            assert!(!pdu.variable_parameters.is_empty());
+            assert_eq!(pdu.variable_parameters.len(), 4usize);
+            assert_eq!(pdu.entity_type, EntityType {
+                kind: EntityKind::Platform,
+                domain: PlatformDomain::Air,
+                country: Country::Netherlands_NLD_,
+                category: 50,
+                subcategory: 4,
+                specific: 4,
+                extra: 0
+            });
+
+            if let EntityAppearance::AirPlatform(appearance) = pdu.entity_appearance {
+                assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
+                assert_eq!(appearance.propulsion_killed, false);
+                assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
+                assert_eq!(appearance.is_smoke_emanating, false);
+                assert_eq!(appearance.is_engine_emitting_smoke, false);
+                assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
+                assert_eq!(appearance.canopy_troop_door, AppearanceCanopy::SingleCanopySingleTroopDoorOpen);
+                assert_eq!(appearance.landing_lights_on, false);
+                assert_eq!(appearance.navigation_lights_on, false);
+                assert_eq!(appearance.anticollision_lights_on, false);
+                assert_eq!(appearance.is_flaming, false);
+                assert_eq!(appearance.afterburner_on, false);
+                assert_eq!(appearance.is_frozen, false);
+                assert_eq!(appearance.power_plant_on, false);
+                assert_eq!(appearance.state, AppearanceEntityorObjectState::Active);
+            } else {
+                assert!(false)
+            }
+
+            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
+            assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
+            let capabilities : EntityCapabilities = pdu.entity_capabilities.into();
+            if let EntityCapabilities::AirPlatformEntityCapabilities(capabilities) = capabilities {
+                assert_eq!(capabilities.ammunition_supply, false);
+                assert_eq!(capabilities.fuel_supply, false);
+                assert_eq!(capabilities.recovery, false);
+                assert_eq!(capabilities.repair, false);
+            }
+            assert_eq!(pdu.variable_parameters.len(), 4);
+            let parameter_1 = pdu.variable_parameters.get(0).unwrap();
+            if let VariableParameter::Articulated(part) = parameter_1 {
+                assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
+                assert_eq!(part.attachment_id, 0u16);
+                assert_eq!(part.type_metric, ArticulatedPartsTypeMetric::Position);
+                assert_eq!(part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
+                assert_eq!(part.parameter_value, 1f32);
+            } else {
+                assert!(false);
+            }
+        } else { assert!(false) }
+    }
 
     #[test]
     fn parse_entity_location() {
@@ -300,46 +384,49 @@ mod tests {
         assert!(input.is_empty());
     }
 
-    // TODO change test to fit new appearance models
-    // #[test]
-    // fn parse_general_appearance_none() {
-    //     let input : [u8;2] = [0x00,0x00];
-    //
-    //     let res = general_appearance(&input);
-    //     assert!(res.is_ok());
-    //     let (input, appearance) = res.expect("value is Ok");
-    //     assert_eq!(appearance.entity_paint_scheme, EntityPaintScheme::UniformColor);
-    //     assert_eq!(appearance.entity_mobility_kill, EntityMobilityKill::NoMobilityKill);
-    //     assert_eq!(appearance.entity_fire_power, EntityFirePower::NoFirePowerKill);
-    //     assert_eq!(appearance.entity_damage, EntityDamage::NoDamage);
-    //     assert_eq!(appearance.entity_smoke, EntitySmoke::NotSmoking);
-    //     assert_eq!(appearance.entity_trailing_effect, EntityTrailingEffect::None);
-    //     assert_eq!(appearance.entity_hatch_state, EntityHatchState::NotApplicable);
-    //     assert_eq!(appearance.entity_lights, EntityLights::None);
-    //     assert_eq!(appearance.entity_flaming_effect, EntityFlamingEffect::None);
-    //
-    //     assert!(input.is_empty());
-    // }
-    //
-    // #[test]
-    // fn parse_general_appearance_emitting_engine_smoke() {
-    //     let input : [u8;2] = [0x04,0x00];
-    //
-    //     let res = general_appearance(&input);
-    //     assert!(res.is_ok());
-    //     let (input, appearance) = res.expect("value is Ok");
-    //     assert_eq!(appearance.entity_paint_scheme, EntityPaintScheme::UniformColor);
-    //     assert_eq!(appearance.entity_mobility_kill, EntityMobilityKill::NoMobilityKill);
-    //     assert_eq!(appearance.entity_fire_power, EntityFirePower::NoFirePowerKill);
-    //     assert_eq!(appearance.entity_damage, EntityDamage::NoDamage);
-    //     assert_eq!(appearance.entity_smoke, EntitySmoke::EmittingEngineSmoke);
-    //     assert_eq!(appearance.entity_trailing_effect, EntityTrailingEffect::None);
-    //     assert_eq!(appearance.entity_hatch_state, EntityHatchState::NotApplicable);
-    //     assert_eq!(appearance.entity_lights, EntityLights::None);
-    //     assert_eq!(appearance.entity_flaming_effect, EntityFlamingEffect::None);
-    //
-    //     assert!(input.is_empty());
-    // }
+    #[test]
+    fn parse_appearance_none() {
+        let input : [u8;4] = [0x00,0x00,0x00,0x00];
+        let entity_type = EntityType::default().with_kind(EntityKind::Platform).with_domain(PlatformDomain::Air);
+
+        let res = entity_appearance(entity_type)(&input);
+        assert!(res.is_ok());
+        let (input, appearance) = res.expect("value is Ok");
+
+        if let EntityAppearance::AirPlatform(appearance) = appearance {
+            assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
+            assert_eq!(appearance.propulsion_killed, false);
+            assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
+            assert_eq!(appearance.is_smoke_emanating, false);
+            assert_eq!(appearance.is_engine_emitting_smoke, false);
+            assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
+            assert_eq!(appearance.canopy_troop_door , AppearanceCanopy::NotApplicable);
+            assert_eq!(appearance.landing_lights_on, false);
+            assert_eq!(appearance.is_flaming, false);
+        } else {
+            assert!(false);
+        }
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_appearance_emitting_engine_smoke() {
+        let input : [u8;4] = [0x06,0x00,0x00,0x00];
+        let entity_type = EntityType::default().with_kind(EntityKind::Platform).with_domain(PlatformDomain::Air);
+
+        let res = entity_appearance(entity_type)(&input);
+        println!("{res:?}");
+        assert!(res.is_ok());
+        let (input, appearance) = res.expect("value is Ok");
+
+        if let EntityAppearance::AirPlatform(appearance) = appearance {
+            assert_eq!(appearance.is_smoke_emanating, true);
+            assert_eq!(appearance.is_engine_emitting_smoke, true);
+        } else {
+            assert!(false);
+        }
+        assert!(input.is_empty());
+    }
 
     #[test]
     fn parse_entity_capabilities_none() {
