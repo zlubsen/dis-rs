@@ -415,7 +415,6 @@ mod tests {
         let entity_type = EntityType::default().with_kind(EntityKind::Platform).with_domain(PlatformDomain::Air);
 
         let res = entity_appearance(entity_type)(&input);
-        println!("{res:?}");
         assert!(res.is_ok());
         let (input, appearance) = res.expect("value is Ok");
 

@@ -9,6 +9,8 @@ use quote::__private::{Ident, Literal, TokenStream};
 // TODO refactor a bit and make testable (include some unit tests in the regular code)
 // test generated impls for enums/enumrows (from, into, display)
 // test enumrow_range fields and unspecified values
+// TODO uid 284 - extract/generate a lookup for defined JammingTechnique values...
+// TODO uid 30 - extract/generate a lookup for defined EntityType enumerations...
 
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:

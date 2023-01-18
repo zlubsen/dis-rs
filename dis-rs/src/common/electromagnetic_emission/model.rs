@@ -3,7 +3,7 @@ use crate::common::model::{EntityId, EventId};
 use crate::enumerations::{BeamStatusBeamState, EmitterName, EmitterSystemFunction, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, HighDensityTrackJam};
 use crate::{PduBody, PduType, VectorF32};
 
-const EMISSION_BASE_BODY_LENGTH : u16 = 28;
+const EMISSION_BASE_BODY_LENGTH : u16 = 16;
 const EMITTER_SYSTEM_BASE_LENGTH : u16 = 20;
 const BEAM_BASE_LENGTH : u16 = 52;
 const TRACK_JAM_BASE_LENGTH : u16 = 8;
@@ -59,7 +59,7 @@ impl BodyInfo for ElectromagneticEmission {
     fn body_length(&self) -> u16 {
         EMISSION_BASE_BODY_LENGTH
             + self.emitter_systems.iter()
-            .map(|system| system.system_data_length())
+            .map(|system| system.system_data_length_bytes())
             .sum::<u16>()
     }
 
@@ -74,8 +74,7 @@ impl Interaction for ElectromagneticEmission {
     }
 
     fn receiver(&self) -> Option<&EntityId> {
-        // TODO just selects the first track or jam
-        // should probably change trait to be able to return a list
+        // just selects the first track or jam
         if let Some(emitter) = self.emitter_systems.first() {
             if let Some(beam) = emitter.beams.first() {
                 if let Some(tracks) = beam.track_jam_data.first() {
@@ -135,10 +134,10 @@ impl EmitterSystem {
         self
     }
 
-    pub fn system_data_length(&self) -> u16 {
+    pub fn system_data_length_bytes(&self) -> u16 {
         EMITTER_SYSTEM_BASE_LENGTH
             + self.beams.iter()
-            .map(|beam| beam.beam_data_length() )
+            .map(|beam| beam.beam_data_length_bytes() )
             .sum::<u16>()
     }
 }
@@ -221,7 +220,7 @@ impl Beam {
         self
     }
 
-    pub fn beam_data_length(&self) -> u16 {
+    pub fn beam_data_length_bytes(&self) -> u16 {
         BEAM_BASE_LENGTH + (TRACK_JAM_BASE_LENGTH * self.track_jam_data.len() as u16)
     }
 }
@@ -320,8 +319,6 @@ impl BeamData {
 
 #[derive(Default)]
 pub struct JammingTechnique {
-    // TODO uid 284 - new format to extract/generate...
-    // TODO / NOTE in DIS v6 this is a 32-bit uint. For compatibility we could glue these four together, or just let people figure it out themselves
     pub kind: u8,
     pub category: u8,
     pub subcategory: u8,

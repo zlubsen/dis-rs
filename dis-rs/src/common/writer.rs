@@ -105,7 +105,7 @@ impl Serialize for Pdu {
             // PduBody::InformationOperationsAction(body) => { body.serialize_pdu(version, (buf) }
             // PduBody::InformationOperationsReport(body) => { body.serialize_pdu(version, (buf) }
             // PduBody::Attribute(body) => { body.serialize_pdu(version, (buf) }
-            _ => { todo!() }
+            _ => { 0 }
         };
         header_size + body_size
     }

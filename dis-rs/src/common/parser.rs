@@ -138,7 +138,7 @@ fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
 fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {
         // parse the body of the PDU based on the type
-        // TODO - NOTE only processes supported PduTypes; process others as 'Other'
+        // NOTE only processes supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
             PduType::Other => { other_body(header)(input)? }
             PduType::EntityState => { entity_state_body(header)(input)? }
@@ -216,7 +216,6 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
             _ => { other_body(header)(input)? }
         };
-        // TODO handle result of pdu variable
         Ok((input, body))
     }
 }

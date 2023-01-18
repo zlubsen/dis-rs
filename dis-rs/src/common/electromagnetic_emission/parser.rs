@@ -27,7 +27,7 @@ pub fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pd
 }
 
 pub fn emitter_system(input: &[u8]) -> IResult<&[u8], EmitterSystem> {
-    let (input, _system_data_length) = be_u8(input)?; // TODO check available length of input
+    let (input, _system_data_length) = be_u8(input)?;
     let (input, no_of_beams) = be_u8(input)?;
     let (input, _pad_16) = be_u16(input)?;
     let (input, name) = be_u16(input)?;

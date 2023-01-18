@@ -821,7 +821,6 @@ impl DescriptorRecord {
     }
 }
 
-// TODO is this a suitable default?
 impl Default for DescriptorRecord {
     fn default() -> Self {
         DescriptorRecord::new_munition(

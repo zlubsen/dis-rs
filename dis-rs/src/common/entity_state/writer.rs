@@ -32,7 +32,6 @@ impl SerializePdu for EntityState {
                 buf.put_u32(self.entity_capabilities.into());
                 4
             }
-            // TODO should not be possible to construct such a PDU, but need to handle the case
             SupportedVersion::Unsupported => {
                 buf.put_u32(0u32); 4
             }
