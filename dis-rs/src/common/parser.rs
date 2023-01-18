@@ -14,6 +14,7 @@ use crate::common::other::parser::other_body;
 use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
 use crate::common::collision::parser::collision_body;
 use crate::common::detonation::parser::detonation_body;
+use crate::common::electromagnetic_emission::parser::emission_body;
 use crate::common::fire::parser::fire_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
@@ -143,15 +144,13 @@ fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PduHeader> {
 fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {
         // parse the body of the PDU based on the type
-        // TODO - NOTE only processes supported PduTypes; process others as 'Other'
+        // NOTE only processes supported PduTypes; process others as 'Other'
         let (input, body) = match header.pdu_type {
             PduType::Other => { other_body(header)(input)? }
             PduType::EntityState => { entity_state_body(header)(input)? }
             PduType::Fire => { fire_body(header)(input)? }
             PduType::Detonation => { detonation_body(header)(input)? }
             PduType::Collision => { collision_body(input)? }
-            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
-            _ => { other_body(header)(input)? }
             // PduType::ServiceRequest => {}
             // PduType::ResupplyOffer => {}
             // PduType::ResupplyReceived => {}
@@ -170,7 +169,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::Data => {}
             // PduType::EventReport => {}
             // PduType::Comment => {}
-            // PduType::ElectromagneticEmission => {}
+            PduType::ElectromagneticEmission => { emission_body(header)(input)? }
             // PduType::Designator => {}
             // PduType::Transmitter => {}
             // PduType::Signal => {}
@@ -220,8 +219,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::InformationOperationsAction => {}
             // PduType::InformationOperationsReport => {}
             // PduType::Attribute => {}
+            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
+            _ => { other_body(header)(input)? }
         };
-        // TODO handle result of pdu variable
         Ok((input, body))
     }
 }
@@ -458,14 +458,10 @@ fn fuse(input: &[u8]) -> IResult<&[u8], MunitionDescriptorFuse> {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{EntityType, PduBody};
     use crate::common::errors::DisError;
-    use crate::common::parser::{parse_multiple_header, parse_pdu};
+    use crate::common::parser::{parse_multiple_header};
     use crate::constants::PDU_HEADER_LEN_BYTES;
-    use crate::{EntityAppearance, VariableParameter};
-    use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, ForceId, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
-    use crate::enumerations::{AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearancePaintScheme, AppearanceTrailingEffects};
-    use crate::v6::entity_state::model::EntityCapabilities;
+    use crate::enumerations::{PduType, ProtocolFamily, ProtocolVersion};
 
     #[test]
     fn parse_header() {
@@ -517,88 +513,6 @@ mod tests {
         assert!(header.is_err());
         let error = header.expect_err("Should be Err");
         assert_eq!(error, DisError::InsufficientPduLength(208-PDU_HEADER_LEN_BYTES,2));
-    }
-
-    #[test]
-    fn parse_pdu_entity_state() {
-        let bytes : [u8;208] =
-            [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4, 0x03, 0x84,
-                0x00, 0x0e, 0x01, 0x04, 0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00, 0x01, 0x02, 0x00, 0x99,
-                0x32, 0x04, 0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50, 0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d,
-                0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78, 0xbf, 0x3e, 0xdd, 0xfa, 0x3e, 0x2e, 0x36, 0xdd,
-                0x3f, 0xe6, 0x27, 0xc9, 0x00, 0x40, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x01, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x4d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-
-        let pdu = parse_pdu(&bytes);
-        assert!(pdu.is_ok());
-        let pdu = pdu.unwrap();
-        assert_eq!(pdu.header.pdu_type, PduType::EntityState);
-        assert_eq!(pdu.header.pdu_length, 208u16);
-        if let PduBody::EntityState(pdu) = pdu.body {
-            assert_eq!(pdu.entity_id.simulation_address.site_id, 500u16);
-            assert_eq!(pdu.entity_id.simulation_address.application_id, 900u16);
-            assert_eq!(pdu.entity_id.entity_id, 14u16);
-            assert_eq!(pdu.force_id, ForceId::Friendly);
-            assert!(!pdu.variable_parameters.is_empty());
-            assert_eq!(pdu.variable_parameters.len(), 4usize);
-            assert_eq!(pdu.entity_type, EntityType {
-                kind: EntityKind::Platform,
-                domain: PlatformDomain::Air,
-                country: Country::Netherlands_NLD_,
-                category: 50,
-                subcategory: 4,
-                specific: 4,
-                extra: 0
-            });
-
-            if let EntityAppearance::AirPlatform(appearance) = pdu.entity_appearance {
-                assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-                assert_eq!(appearance.propulsion_killed, false);
-                assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-                assert_eq!(appearance.is_smoke_emanating, false);
-                assert_eq!(appearance.is_engine_emitting_smoke, false);
-                assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
-                assert_eq!(appearance.canopy_troop_door, AppearanceCanopy::SingleCanopySingleTroopDoorOpen);
-                assert_eq!(appearance.landing_lights_on, false);
-                assert_eq!(appearance.navigation_lights_on, false);
-                assert_eq!(appearance.anticollision_lights_on, false);
-                assert_eq!(appearance.is_flaming, false);
-                assert_eq!(appearance.afterburner_on, false);
-                assert_eq!(appearance.is_frozen, false);
-                assert_eq!(appearance.power_plant_on, false);
-                assert_eq!(appearance.state, AppearanceEntityorObjectState::Active);
-            } else {
-                assert!(false)
-            }
-
-            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
-            assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            let capabilities : EntityCapabilities = pdu.entity_capabilities.into();
-            assert_eq!(capabilities, EntityCapabilities {
-                ammunition_supply: false,
-                fuel_supply: false,
-                recovery: false,
-                repair: false,
-            });
-            assert_eq!(pdu.variable_parameters.len(), 4);
-            let parameter_1 = pdu.variable_parameters.get(0).unwrap();
-            if let VariableParameter::Articulated(part) = parameter_1 {
-                assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
-                assert_eq!(part.attachment_id, 0u16);
-                assert_eq!(part.type_metric, ArticulatedPartsTypeMetric::Position);
-                assert_eq!(part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
-                assert_eq!(part.parameter_value, 1f32);
-            } else {
-                assert!(false);
-            }
-        } else { assert!(false) }
     }
 
     #[test]

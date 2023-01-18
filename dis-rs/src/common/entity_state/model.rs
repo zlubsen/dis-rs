@@ -135,6 +135,7 @@ impl Interaction for EntityState {
     }
 }
 
+#[derive(Debug)]
 pub enum EntityAppearance {
     LandPlatform(LandPlatformAppearance),
     AirPlatform(AirPlatformAppearance),

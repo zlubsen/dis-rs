@@ -1,5 +1,5 @@
 use std::{env, fs};
-use std::ops::RangeInclusive;
+use std::ops::{RangeInclusive};
 use std::path::Path;
 
 use quick_xml::Reader;
@@ -9,95 +9,111 @@ use quote::__private::{Ident, Literal, TokenStream};
 // TODO refactor a bit and make testable (include some unit tests in the regular code)
 // test generated impls for enums/enumrows (from, into, display)
 // test enumrow_range fields and unspecified values
+// TODO uid 284 - extract/generate a lookup for defined JammingTechnique values...
+// TODO uid 30 - extract/generate a lookup for defined EntityType enumerations...
 
 /// Array containing all the uids of enumerations that should be generated.
-/// Each entry is a tuple containing the uid, an Optional string
-/// literal to override the name of the resulting enum, and an Optional data size (in bits).
+/// Each entry is a tuple containing:
+/// - the uid,
+/// - an Optional string literal to override the name of the resulting enum,
+/// - an Optional data size (in bits),
+/// - a bool flag to indicate that the value of an enum item must be appended to the name.
+///
 /// For example, the 'DISPDUType' enum (having uid 4) has an override
 /// to 'PduType', which is nicer in code. The entry thus is (4, Some("PduType"), None)
-/// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5, but needs to be aligned with a 32-bit field.
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>); 73] = [
-    (3, Some("ProtocolVersion"), None),   // protocol version
-    (4, Some("PduType"), None),           // pdu type
-    (5, Some("ProtocolFamily"), None),    // pdu family
-    (6, Some("ForceId"), None), // Force Id
-    (7, None, None), // Entity Kind
-    (8, None, None), // Domain
+///
+/// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5,
+/// but needs to be aligned with a 32-bit field.
+///
+/// Finally, the 'Emitter Name' enum has variants that result in empty names (`""`) or duplicate names.
+/// The bool flag will append `"_value"` to the name of the variant to make it unique
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 79] = [
+    (3, Some("ProtocolVersion"), None, false),   // protocol version
+    (4, Some("PduType"), None, false),           // pdu type
+    (5, Some("ProtocolFamily"), None, false),    // pdu family
+    (6, Some("ForceId"), None, false), // Force Id
+    (7, None, None, false), // Entity Kind
+    (8, None, None, false), // Domain
     // 9-28 // (Sub-)Categories
-    (29, None, None), // Country
+    (29, None, None, false), // Country
     // 30 // Entity Types records
-    (44, None, None), // Dead Reckoning Algorithm
-    (45, None, None), // entity marking char set
+    (44, None, None, false), // Dead Reckoning Algorithm
+    (45, None, None, false), // entity marking char set
     // 46-54 do not exist
-    (55, None, None), // Entity Capabilities (together with bitfields 450-462)
-    (56, None, None), // Variable Parameter Record Type
-    (57, None, None), // Attached Parts
-    (58, None, Some(32)), // Articulated Parts-Type Metric
-    (59, None, None), // Articulated Parts-Type Class
-    (60, None, None), // Munition Descriptor-Warhead
-    (61, None, None), // Munition Descriptor-Fuse
-    (62, None, None), // Detonation result
+    (55, None, None, false), // Entity Capabilities (together with bitfields 450-462)
+    (56, None, None, false), // Variable Parameter Record Type
+    (57, None, None, false), // Attached Parts
+    (58, None, Some(32), false), // Articulated Parts-Type Metric
+    (59, None, None, false), // Articulated Parts-Type Class
+    (60, None, None, false), // Munition Descriptor-Warhead
+    (61, None, None, true), // Munition Descriptor-Fuse
+    (62, None, None, false), // Detonation result
     // 63-75, // All kinds of stuff for lesser priority PDUs
-    // 76-79, // Emitter stuff
+    (75, None, None, true), // Emitter Name
+    (76, None, None, true), // Emitter System Function
+    (77, None, None, false), // Electromagnetic Emission-State Update Indicator
+    (78, None, None, false), // Electromagnetic Emission-Beam Function
+    (79, None, None, false), // High Density Track/Jam
     // 80-81, // Designator stuff
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
-    (189, None, None), // Collision Type
-    (212, Some("StationName"), None), // IsPartOf-Station Name
-    (282, Some("SeparationReasonForSeparation"), None), // Separation VP-Reason for Separation
-    (283, Some("SeparationPreEntityIndicator"), None), // Separation VP-Pre-Entity Indicator
-    (296, Some("DrParametersType"), None), // Dead Reckoning Parameters Type
-    (301, Some("TransferredEntityIndicator"), None), // DIS-PDU Status-Transferred Entity Indicator (TEI)
-    (302, Some("LvcIndicator"), None), // DIS-PDU Status-LVC Indicator (LVC)
-    (303, Some("CoupledExtensionIndicator"), None), // DIS-PDU Status-Coupled Extension Indicator (CEI)
-    (304, Some("FireTypeIndicator"), None), // DIS-PDU Status-Fire Type Indicator (FTI)
-    (305, Some("DetonationTypeIndicator"), None), // DIS-PDU Status-Detonation Type Indicator (DTI)
-    (306, Some("RadioAttachedIndicator"), None), // Radio Attached Indicator
-    (307, Some("IntercomAttachedIndicator"), None), // DIS-PDU Status-Intercom Attached Indicator (IAI)
-    (308, Some("IffSimulationMode"), None), // DIS-PDU Status-IFF Simulation Mode (ISM)
-    (310, None, None), // Explosive Material Categories
-    (319, None, None), // Entity Association-Association Status
-    (320, Some("ChangeIndicator"), None), // Entity VP Record-Change Indicator
-    (321, None, None), // Entity Association-Group Member Type
-    (323, None, None), // Entity Association-Physical Association Type
-    (324, None, None), // Entity Association-Physical Connection Type
-    (378, None, None), // Appearance
-    (379, None, None), // Appearance
-    (380, None, None), // Appearance
-    (381, None, None), // Appearance
-    (382, None, None), // Appearance
-    (383, None, None), // Appearance
-    (384, None, None), // Appearance
-    (385, None, None), // Appearance
-    (386, None, None), // Appearance
-    (387, None, None), // Appearance
-    (388, None, None), // Appearance
-    (389, Some("Active Interrogation Indicator"), None), // DIS-PDU Status-Active Interrogation Indicator (AII)
-    (390, None, None), // Appearance
-    (391, None, None), // Appearance
-    (392, None, None), // Appearance
-    (393, None, None), // Appearance
-    (394, None, None), // Appearance
-    (395, None, None), // Appearance
-    (396, None, None), // Appearance
-    (397, None, None), // Appearance
-    (398, None, None), // Appearance
-    (399, None, None), // Appearance
-    (400, None, None), // Appearance
-    (401, None, None), // Appearance
-    (402, None, None), // Appearance
-    (403, None, None), // Appearance
-    (404, None, None), // Appearance
-    (405, None, None), // Appearance
-    (406, None, None), // Appearance
-    (407, None, None), // Appearance
-    (408, None, None), // Appearance
-    (409, None, None), // Appearance
-    (410, None, None), // Appearance
-    (411, None, None), // Appearance
-    (415, None, None), // Attached Part-Detached Indicator
-    (426, None, None), // Cover/Shroud Status
-    (802, None, None), // Clothing IR Signature
+    (189, None, None, false), // Collision Type
+    (212, Some("StationName"), None, false), // IsPartOf-Station Name
+    (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
+    (283, Some("SeparationPreEntityIndicator"), None, false), // Separation VP-Pre-Entity Indicator
+    (296, Some("DrParametersType"), None, false), // Dead Reckoning Parameters Type
+    (301, Some("TransferredEntityIndicator"), None, false), // DIS-PDU Status-Transferred Entity Indicator (TEI)
+    (302, Some("LvcIndicator"), None, false), // DIS-PDU Status-LVC Indicator (LVC)
+    (303, Some("CoupledExtensionIndicator"), None, false), // DIS-PDU Status-Coupled Extension Indicator (CEI)
+    (304, Some("FireTypeIndicator"), None, false), // DIS-PDU Status-Fire Type Indicator (FTI)
+    (305, Some("DetonationTypeIndicator"), None, false), // DIS-PDU Status-Detonation Type Indicator (DTI)
+    (306, Some("RadioAttachedIndicator"), None, false), // Radio Attached Indicator
+    (307, Some("IntercomAttachedIndicator"), None, false), // DIS-PDU Status-Intercom Attached Indicator (IAI)
+    (308, Some("IffSimulationMode"), None, false), // DIS-PDU Status-IFF Simulation Mode (ISM)
+    (310, None, None, false), // Explosive Material Categories
+    (318, None, None, false), // Beam Status-Beam State
+    (319, None, None, false), // Entity Association-Association Status
+    (320, Some("ChangeIndicator"), None, false), // Entity VP Record-Change Indicator
+    (321, None, None, false), // Entity Association-Group Member Type
+    (323, None, None, false), // Entity Association-Physical Association Type
+    (324, None, None, false), // Entity Association-Physical Connection Type
+    (378, None, None, false), // Appearance
+    (379, None, None, false), // Appearance
+    (380, None, None, false), // Appearance
+    (381, None, None, false), // Appearance
+    (382, None, None, false), // Appearance
+    (383, None, None, false), // Appearance
+    (384, None, None, false), // Appearance
+    (385, None, None, false), // Appearance
+    (386, None, None, false), // Appearance
+    (387, None, None, false), // Appearance
+    (388, None, None, false), // Appearance
+    (389, Some("Active Interrogation Indicator"), None, false), // DIS-PDU Status-Active Interrogation Indicator (AII)
+    (390, None, None, false), // Appearance
+    (391, None, None, false), // Appearance
+    (392, None, None, false), // Appearance
+    (393, None, None, false), // Appearance
+    (394, None, None, false), // Appearance
+    (395, None, None, false), // Appearance
+    (396, None, None, false), // Appearance
+    (397, None, None, false), // Appearance
+    (398, None, None, false), // Appearance
+    (399, None, None, false), // Appearance
+    (400, None, None, false), // Appearance
+    (401, None, None, false), // Appearance
+    (402, None, None, false), // Appearance
+    (403, None, None, false), // Appearance
+    (404, None, None, false), // Appearance
+    (405, None, None, false), // Appearance
+    (406, None, None, false), // Appearance
+    (407, None, None, false), // Appearance
+    (408, None, None, false), // Appearance
+    (409, None, None, false), // Appearance
+    (410, None, None, false), // Appearance
+    (411, None, None, false), // Appearance
+    (415, None, None, false), // Attached Part-Detached Indicator
+    (426, None, None, false), // Cover/Shroud Status
+    (802, None, None, false), // Clothing IR Signature
 ];
 
 const BITFIELD_UIDS : [RangeInclusive<usize>; 2] = [
@@ -141,6 +157,7 @@ pub struct Enum {
     pub name: String,
     pub size: usize,
     pub items: Vec<EnumItem>,
+    pub postfix_items: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -154,12 +171,14 @@ pub enum EnumItem {
 pub struct BasicEnumItem {
     pub description: String,
     pub value: usize,
+    pub deprecated: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct RangeEnumItem {
     pub description: String,
-    pub range: RangeInclusive<usize>
+    pub range: RangeInclusive<usize>,
+    pub deprecated: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +186,7 @@ pub struct CrossRefEnumItem {
     pub description: String,
     pub value: usize,
     pub xref: usize,
+    pub deprecated: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -205,7 +225,7 @@ fn main() {
     ).unwrap();
 }
 
-fn format_name(value: &str, uid: usize) -> String {
+fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
     // Remove / replace the following characters
     let intermediate = value
         .replace(' ', "")
@@ -214,31 +234,31 @@ fn format_name(value: &str, uid: usize) -> String {
         .replace('.', "_")
         .replace(',', "_")
         .replace("'", "")
-        .replace('#', "");
+        .replace('#', "")
+        .replace("&quot;", "")
+        .replace(';', "")
+        .replace('(', "_")
+        .replace(')', "_");
 
     // Prefix values starting with a digit with '_'
-    let intermediate = if intermediate.chars().next().unwrap().is_digit(10) {
-        format!("_{}_{}", intermediate, uid)
-    } else { intermediate };
+    // .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.
+    let starts_with_digit = intermediate.chars().next().unwrap_or('x').is_digit(10);
+    let is_empty = intermediate.is_empty();
 
-    // // Remove text sections between parenthesis
-    // let open_parenthesis = intermediate.find("(");
-    // let close_parenthesis = intermediate.find(")");
-    // let intermediate = if let (Some(open_idx), Some(close_idx)) = (open_parenthesis, close_parenthesis) {
-    //     intermediate
-    //         .chars()
-    //         .take(open_idx)
-    //         .chain(intermediate.chars().skip(close_idx+1))
-    //         .collect()
-    // } else {
-    //     intermediate
-    // };
+    let prefix = String::from(starts_with_digit.then(||"_").unwrap_or(""));
+    let name = is_empty.then(|| String::from("Unnamed")).unwrap_or(intermediate);
+    let postfix = needs_postfix.then(|| format!("_{}", uid)).unwrap_or(String::new());
+    let intermediate = [prefix, name, postfix].join("");
 
     // When there are multiple parenthesis sections, replace them with '_' (such as Countries)
+    let intermediate = intermediate
+        .replace("__", "_");
+
     intermediate
-        .replace('(', "_")
-        .replace(')', "_")
-        .replace("__", "_")
+}
+
+fn format_name(value: &str, uid: usize) -> String {
+    format_name_postfix(value, uid, false)
 }
 
 fn format_field_name(name: &str) -> String {
@@ -273,6 +293,7 @@ mod extraction {
     const ENUM_ROW_ATTR_VALUE_MAX : QName = QName(b"value_max");
     const ENUM_ROW_ATTR_DESC : QName = QName(b"description");
     const ENUM_ROW_ATTR_XREF : QName = QName(b"xref");
+    const ENUM_ROW_ATTR_DEPR : QName = QName(b"deprecated");
     const BITFIELD_ELEMENT : QName = QName(b"bitfield");
     const BITFIELD_ROW_ELEMENT : QName = QName(b"bitfieldrow");
     const BITFIELD_ROW_ATTR_NAME : QName = QName(b"name");
@@ -375,6 +396,7 @@ mod extraction {
         }
         let name_override = should_generate.unwrap().1;
         let size_override = should_generate.unwrap().2;
+        let postfix_items = should_generate.unwrap().3;
 
         let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
             if let Some(name) = name_override {
@@ -397,7 +419,8 @@ mod extraction {
                 uid,
                 name,
                 size,
-                items: vec![]
+                items: vec![],
+                postfix_items
             })
         } else {
             // something is wrong with the attributes of the element, skip it.
@@ -415,19 +438,24 @@ mod extraction {
         let xref = if let Ok(Some(attr_xref)) = element.try_get_attribute(ENUM_ROW_ATTR_XREF) {
             Some(usize::from_str(&reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
         } else { None };
+        let deprecated = if let Ok(Some(_attr_depr)) = element.try_get_attribute(ENUM_ROW_ATTR_DEPR) {
+            true
+        } else { false };
 
         match (value, description, xref) {
             (Some(value), Some(description), Some(xref)) => {
                 Ok(EnumItem::CrossRef(CrossRefEnumItem {
                     description,
                     value,
-                    xref
+                    xref,
+                    deprecated
                 }))
             }
             (Some(value), Some(description), None) => {
                 Ok(EnumItem::Basic(BasicEnumItem {
                     description,
                     value,
+                    deprecated
                 }))
             }
             _ => {
@@ -447,11 +475,15 @@ mod extraction {
         let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
             Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
         } else { None };
+        let deprecated = if let Ok(Some(_attr_depr)) = element.try_get_attribute(ENUM_ROW_ATTR_DEPR) {
+            true
+        } else { false };
 
         if let (Some(value_min), Some(value_max), Some(description)) = (value_min, value_max, description) {
             Ok(EnumItem::Range(RangeEnumItem {
                 description,
                 range: RangeInclusive::new(value_min, value_max),
+                deprecated
             }))
         } else {
             // something is wrong with the attributes of the element, skip it.
@@ -520,7 +552,7 @@ mod extraction {
 
 mod generation {
     use quote::{format_ident, quote};
-    use crate::{Bitfield, BitfieldItem, Enum, EnumItem, format_field_name, format_name, GenerationItem, Ident, Literal, TokenStream};
+    use crate::{Bitfield, BitfieldItem, Enum, EnumItem, format_field_name, format_name, format_name_postfix, GenerationItem, Ident, Literal, TokenStream};
 
     pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
         let mut generated_items = vec![];
@@ -570,7 +602,7 @@ mod generation {
     where F: Fn(usize)->Option<&'a GenerationItem> {
         let name = format_name(e.name.as_str(), e.uid);
         let name_ident = format_ident!("{}", name);
-        let arms = quote_enum_decl_arms(&e.items, e.size, lookup_xref);
+        let arms = quote_enum_decl_arms(&e.items, e.size, e.postfix_items, lookup_xref);
         quote!(
             #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
             #[allow(non_camel_case_types)]
@@ -580,7 +612,7 @@ mod generation {
         )
     }
 
-    fn quote_enum_decl_arms<'a, F>(items: &[EnumItem], data_size: usize, lookup_xref: F) -> Vec<TokenStream>
+    fn quote_enum_decl_arms<'a, F>(items: &[EnumItem], data_size: usize, postfix_items: bool, lookup_xref: F) -> Vec<TokenStream>
     where F: Fn(usize)->Option<&'a GenerationItem> {
         let size_type = size_to_type(data_size);
         let size_ident = format_ident!("{}", size_type);
@@ -588,7 +620,7 @@ mod generation {
         let mut arms : Vec<TokenStream> = items.iter().map(|item| {
             match item {
                 EnumItem::Basic(item) => {
-                    let item_name = format_name(item.description.as_str(), item.value);
+                    let item_name = format_name_postfix(item.description.as_str(), item.value, postfix_items);
                     let item_ident = format_ident!("{}", item_name);
                     quote!(
                         #item_ident
@@ -624,7 +656,7 @@ mod generation {
     }
 
     fn quote_enum_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-        let arms = quote_enum_from_arms(name_ident, &e.items, e.size);
+        let arms = quote_enum_from_arms(name_ident, &e.items, e.size, e.postfix_items);
         let discriminant_type = size_to_type(e.size);
         let discriminant_ident = format_ident!("{}", discriminant_type);
         quote!(
@@ -638,11 +670,11 @@ mod generation {
         )
     }
 
-    fn quote_enum_from_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize) -> Vec<TokenStream> {
+    fn quote_enum_from_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize, postfix_items: bool) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
-                    let item_name = format_name(item.description.as_str(), item.value);
+                    let item_name = format_name_postfix(item.description.as_str(), item.value, postfix_items);
                     let item_ident = format_ident!("{}", item_name);
                     let discriminant_literal = discriminant_literal(item.value, data_size);
                     Some(quote!(
@@ -673,7 +705,7 @@ mod generation {
     }
 
     fn quote_enum_into_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-        let arms = quote_enum_into_arms(name_ident, &e.items, e.size);
+        let arms = quote_enum_into_arms(name_ident, &e.items, e.size, e.postfix_items);
         let discriminant_type = size_to_type(e.size);
         let discriminant_ident = format_ident!("{}", discriminant_type);
         quote!(
@@ -687,11 +719,11 @@ mod generation {
         )
     }
 
-    fn quote_enum_into_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize) -> Vec<TokenStream> {
+    fn quote_enum_into_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize, postfix_items: bool) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
-                    let item_name = format_name(item.description.as_str(), item.value);
+                    let item_name = format_name_postfix(item.description.as_str(), item.value, postfix_items);
                     let item_ident = format_ident!("{}", item_name);
                     let discriminant_literal = discriminant_literal(item.value, data_size);
                     Some(quote!(
@@ -709,7 +741,7 @@ mod generation {
                 EnumItem::CrossRef(item) => {
                     let item_name = format_name(item.description.as_str(), item.value);
                     let item_ident = format_ident!("{}", item_name);
-                    let value_ident = format_ident!("{}", "capabilities");
+                    let value_ident = format_ident!("{}", "contained");
                     Some(quote!(
                         #name_ident::#item_ident(#value_ident) => #value_ident.into()
                     ))
@@ -724,7 +756,7 @@ mod generation {
     }
 
     fn quote_enum_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-        let arms = quote_enum_display_arms(&e.items, name_ident);
+        let arms = quote_enum_display_arms(&e.items, name_ident, e.postfix_items);
         quote!(
             impl Display for #name_ident {
                 fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -736,12 +768,12 @@ mod generation {
         )
     }
 
-    fn quote_enum_display_arms(items: &[EnumItem], name_ident: &Ident) -> Vec<TokenStream> {
+    fn quote_enum_display_arms(items: &[EnumItem], name_ident: &Ident, postfix_items: bool) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {
                     let item_description = item.description.as_str();
-                    let item_name = format_name(item_description, item.value);
+                    let item_name = format_name_postfix(item_description, item.value, postfix_items);
                     let item_ident = format_ident!("{}", item_name);
 
                     Some(quote!(
@@ -762,7 +794,7 @@ mod generation {
                     let item_description = item.description.as_str();
                     let item_name = format_name(item_description, item.value);
                     let item_ident = format_ident!("{}", item_name);
-                    let _value_ident = format_ident!("{}", "capability");
+                    let _value_ident = format_ident!("{}", "contained");
 
                     Some(quote!(
                         // TODO Display impls for bitfield structs

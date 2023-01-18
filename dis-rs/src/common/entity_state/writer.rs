@@ -32,7 +32,6 @@ impl SerializePdu for EntityState {
                 buf.put_u32(self.entity_capabilities.into());
                 4
             }
-            // TODO should not be possible to construct such a PDU, but need to handle the case
             SupportedVersion::Unsupported => {
                 buf.put_u32(0u32); 4
             }
@@ -244,7 +243,7 @@ impl Serialize for EntityMarking {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.marking_character_set.into());
         let num_pad = 11 - self.marking_string.len();
-        let marking = self.marking_string.clone(); // TODO is this clone necessary?
+        let marking = self.marking_string.clone(); // clone necessary because into_bytes consumes self.
 
         buf.put_slice(&marking.into_bytes()[..]);
         (0..num_pad).for_each( |_i| buf.put_u8(0x20) );
