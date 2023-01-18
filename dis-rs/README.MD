@@ -37,7 +37,7 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | DataPdu |         |          |         |          |
 | EventReportPdu |         |          |         |          |
 | CommentPdu |         |          |         |          |
-| ElectromagneticEmissionPdu |         |          |         |          |
+| ElectromagneticEmissionPdu | V       | V        | V       | V        |
 | DesignatorPdu |         |          |         |          |
 | TransmitterPdu |         |          |         |          |
 | SignalPdu |         |          |         |          |
