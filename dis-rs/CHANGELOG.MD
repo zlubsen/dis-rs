@@ -1,5 +1,8 @@
 # Changelog for crate DIS-RS
 
+## 0.3.2 - 2023-01-21
+Added export for Electromagnetic Emissions and Other PDUs.
+
 ## 0.3.1 - 2023-01-18
 Updated README.MD and added CHANGELOG.MD (this file).
 
