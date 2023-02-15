@@ -18,7 +18,10 @@ pub use common::errors::*;
 
 pub use common::entity_state::*;
 pub use common::entity_state::model::*;
+pub use common::electromagnetic_emission::*;
+pub use common::electromagnetic_emission::model::*;
 pub use common::other::*;
+pub use common::other::model::*;
 
 /*
 TODO:
