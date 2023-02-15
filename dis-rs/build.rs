@@ -27,7 +27,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 ///
 /// Finally, the 'Emitter Name' enum has variants that result in empty names (`""`) or duplicate names.
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 79] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 82] = [
     (3, Some("ProtocolVersion"), None, false),   // protocol version
     (4, Some("PduType"), None, false),           // pdu type
     (5, Some("ProtocolFamily"), None, false),    // pdu family
@@ -48,7 +48,10 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 79] = [
     (60, None, None, false), // Munition Descriptor-Warhead
     (61, None, None, true), // Munition Descriptor-Fuse
     (62, None, None, false), // Detonation result
-    // 63-75, // All kinds of stuff for lesser priority PDUs
+    // 63-74, // All kinds of stuff for lesser priority PDUs
+    (67, None, None, false), // Stop/Freeze Reason
+    (69, Some("AcknowledgeFlag"), None, false), // Acknowledge-Acknowledge Flag
+    (70, Some("ResponseFlag"), None, false), // Acknowledge-Response Flag
     (75, None, None, true), // Emitter Name
     (76, None, None, true), // Emitter System Function
     (77, None, None, false), // Electromagnetic Emission-State Update Indicator
@@ -116,9 +119,10 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 79] = [
     (802, None, None, false), // Clothing IR Signature
 ];
 
-const BITFIELD_UIDS : [RangeInclusive<usize>; 2] = [
+const BITFIELD_UIDS : [RangeInclusive<usize>; 3] = [
     450..=462, // Capabilities
     31..=43, // Appearances
+    68..=68, // StopFreeze Frozen Behavior
 ];
 
 #[derive(Debug, Clone)]
@@ -218,6 +222,8 @@ fn main() {
 
     // save to file
     let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join("enumerations.rs");
+    // let out_dir = env::var("OUT_DIR").unwrap();
+    // println!("{:?}", out_dir); // output OUT_DIR variable for finding and inspecting the generated file
 
     fs::write(
         &dest_path,

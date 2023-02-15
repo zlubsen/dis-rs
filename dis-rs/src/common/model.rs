@@ -1,5 +1,6 @@
 use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
+use crate::common::acknowledge::model::Acknowledge;
 use crate::common::collision::model::Collision;
 use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
 use crate::common::detonation::model::Detonation;
@@ -7,6 +8,8 @@ use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
 use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
+use crate::common::start_resume::model::StartResume;
+use crate::common::stop_freeze::model::StopFreeze;
 use crate::v7::model::PduStatus;
 use crate::constants::PDU_HEADER_LEN_BYTES;
 
@@ -100,9 +103,9 @@ pub enum PduBody {
     RepairResponse,
     CreateEntity,
     RemoveEntity,
-    StartResume,
-    StopFreeze,
-    Acknowledge,
+    StartResume(StartResume),
+    StopFreeze(StopFreeze),
+    Acknowledge(Acknowledge),
     ActionRequest,
     ActionResponse,
     DataQuery,
@@ -178,9 +181,9 @@ impl BodyInfo for PduBody {
             PduBody::RepairResponse => { 0 }
             PduBody::CreateEntity => { 0 }
             PduBody::RemoveEntity => { 0 }
-            PduBody::StartResume => { 0 }
-            PduBody::StopFreeze => { 0 }
-            PduBody::Acknowledge => { 0 }
+            PduBody::StartResume(body) => { body.body_length() }
+            PduBody::StopFreeze(body) => { body.body_length() }
+            PduBody::Acknowledge(body) => { body.body_length() }
             PduBody::ActionRequest => { 0 }
             PduBody::ActionResponse => { 0 }
             PduBody::DataQuery => { 0 }
@@ -256,9 +259,9 @@ impl BodyInfo for PduBody {
             PduBody::RepairResponse => { PduType::RepairResponse }
             PduBody::CreateEntity => { PduType::CreateEntity }
             PduBody::RemoveEntity => { PduType::RemoveEntity }
-            PduBody::StartResume => { PduType::StartResume }
-            PduBody::StopFreeze => { PduType::StopFreeze }
-            PduBody::Acknowledge => { PduType::Acknowledge }
+            PduBody::StartResume(body) => { body.body_type() }
+            PduBody::StopFreeze(body) => { body.body_type() }
+            PduBody::Acknowledge(body) => { body.body_type() }
             PduBody::ActionRequest => { PduType::ActionRequest }
             PduBody::ActionResponse => { PduType::ActionResponse }
             PduBody::DataQuery => { PduType::DataQuery }
@@ -336,9 +339,9 @@ impl Interaction for PduBody {
             PduBody::RepairResponse => { None }
             PduBody::CreateEntity => { None }
             PduBody::RemoveEntity => { None }
-            PduBody::StartResume => { None }
-            PduBody::StopFreeze => { None }
-            PduBody::Acknowledge => { None }
+            PduBody::StartResume(body) => { body.originator() }
+            PduBody::StopFreeze(body) => { body.originator() }
+            PduBody::Acknowledge(body) => { body.originator() }
             PduBody::ActionRequest => { None }
             PduBody::ActionResponse => { None }
             PduBody::DataQuery => { None }
@@ -414,9 +417,9 @@ impl Interaction for PduBody {
             PduBody::RepairResponse => { None }
             PduBody::CreateEntity => { None }
             PduBody::RemoveEntity => { None }
-            PduBody::StartResume => { None }
-            PduBody::StopFreeze => { None }
-            PduBody::Acknowledge => { None }
+            PduBody::StartResume(body) => { body.receiver() }
+            PduBody::StopFreeze(body) => { body.receiver() }
+            PduBody::Acknowledge(body) => { body.receiver() }
             PduBody::ActionRequest => { None }
             PduBody::ActionResponse => { None }
             PduBody::DataQuery => { None }
@@ -856,5 +859,28 @@ impl MunitionDescriptor {
     pub fn with_rate(mut self, rate: u16) -> Self {
         self.rate = rate;
         self
+    }
+}
+
+pub struct ClockTime {
+    pub hour: i32,
+    pub time_past_hour: u32,
+}
+
+impl Default for ClockTime {
+    fn default() -> Self {
+        Self {
+            hour: 0,
+            time_past_hour: 0,
+        }
+    }
+}
+
+impl ClockTime {
+    pub fn new(hour: i32, time_past_hour: u32) -> Self {
+        Self {
+            hour,
+            time_past_hour,
+        }
     }
 }

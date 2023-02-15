@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::PDU_HEADER_LEN_BYTES;
-use crate::{DescriptorRecord, EntityId, EventId, Location, MunitionDescriptor, Orientation, SimulationAddress, VectorF32};
+use crate::{ClockTime, DescriptorRecord, EntityId, EventId, Location, MunitionDescriptor, Orientation, SimulationAddress, VectorF32};
 use crate::enumerations::{ProtocolVersion};
 
 impl Serialize for PduHeader {
@@ -37,74 +37,74 @@ impl Serialize for Pdu {
             PduBody::Fire(body) => { body.serialize_pdu(version, buf) }
             PduBody::Detonation(body) => { body.serialize_pdu(version, buf) }
             PduBody::Collision(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ServiceRequest(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::RepairComplete(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::RepairResponse(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::CreateEntity(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::RemoveEntity(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::StartResume(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::StopFreeze(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Acknowledge(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ActionRequest(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ActionResponse(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::DataQuery(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::SetData(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Data(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::EventReport(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Comment(body) => { body.serialize_pdu(version, (buf) }
+            // PduBody::ServiceRequest(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::RepairComplete(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::RepairResponse(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::CreateEntity(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::RemoveEntity(body) => { body.serialize_pdu(version, buf) }
+            PduBody::StartResume(body) => { body.serialize_pdu(version, buf) }
+            PduBody::StopFreeze(body) => { body.serialize_pdu(version, buf) }
+            PduBody::Acknowledge(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ActionRequest(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ActionResponse(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::DataQuery(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::SetData(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Data(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::EventReport(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Comment(body) => { body.serialize_pdu(version, buf) }
             PduBody::ElectromagneticEmission(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::Designator(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Transmitter(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Signal(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Receiver(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::IFF(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::UnderwaterAcoustic(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::IntercomControl(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::AggregateState(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::IsGroupOf(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::TransferOwnership(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::IsPartOf(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::MinefieldState(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::MinefieldQuery(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::MinefieldData(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::MinefieldResponseNACK(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::EnvironmentalProcess(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::GriddedData(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::PointObjectState(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::LinearObjectState(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ArealObjectState(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::TSPI(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Appearance(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ArticulatedParts(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::LEFire(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::LEDetonation(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::CreateEntityR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::StartResumeR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::StopFreezeR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ActionRequestR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::ActionResponseR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::DataQueryR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::SetDataR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::DataR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::EventReportR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::CommentR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::RecordR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::SetRecordR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::RecordQueryR(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::CollisionElastic(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::EntityStateUpdate(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::DirectedEnergyFire(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::EntityDamageStatus(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::InformationOperationsAction(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::InformationOperationsReport(body) => { body.serialize_pdu(version, (buf) }
-            // PduBody::Attribute(body) => { body.serialize_pdu(version, (buf) }
+            // PduBody::Designator(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Transmitter(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Signal(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Receiver(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::UnderwaterAcoustic(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::IntercomControl(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::IsGroupOf(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::TransferOwnership(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::IsPartOf(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::MinefieldState(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::MinefieldQuery(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::MinefieldData(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::MinefieldResponseNACK(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::EnvironmentalProcess(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::GriddedData(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::PointObjectState(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::LinearObjectState(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ArealObjectState(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::TSPI(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Appearance(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ArticulatedParts(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::LEFire(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::LEDetonation(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::CreateEntityR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ActionRequestR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::ActionResponseR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::DataQueryR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::SetDataR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::DataR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::EventReportR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::CommentR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::RecordR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::RecordQueryR(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::CollisionElastic(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::EntityStateUpdate(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::DirectedEnergyFire(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::EntityDamageStatus(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::InformationOperationsAction(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::InformationOperationsReport(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::Attribute(body) => { body.serialize_pdu(version, buf) }
             _ => { 0 }
         };
         header_size + body_size
@@ -192,6 +192,14 @@ impl Serialize for MunitionDescriptor {
         buf.put_u16(self.fuse.into());
         buf.put_u16(self.quantity);
         buf.put_u16(self.rate);
+        8
+    }
+}
+
+impl Serialize for ClockTime {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_i32(self.hour);
+        buf.put_u32(self.time_past_hour);
         8
     }
 }

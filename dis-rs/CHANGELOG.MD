@@ -1,5 +1,8 @@
 # Changelog for crate DIS-RS
 
+## 0.4.0 - 2023-02-15
+Added support for StartResume, StopFreeze and Acknowledge PDUs.
+
 ## 0.3.1 - 2023-01-18
 Updated README.MD and added CHANGELOG.MD (this file).
 

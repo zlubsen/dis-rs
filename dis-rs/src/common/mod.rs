@@ -6,6 +6,9 @@ pub mod detonation;
 pub mod entity_state;
 pub mod electromagnetic_emission;
 pub mod fire;
+pub mod start_resume;
+pub mod stop_freeze;
+pub mod acknowledge;
 pub mod other;
 
 pub mod symbolic_names;

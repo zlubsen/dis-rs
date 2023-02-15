@@ -27,9 +27,9 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | RepairResponsePdu |         |          |         |          |
 | CreateEntityPdu |         |          |         |          |
 | RemoveEntityPdu |         |          |         |          |
-| StartResumePdu |         |          |         |          |
-| StopFreezePdu |         |          |         |          |
-| AcknowledgePdu |         |          |         |          |
+| StartResumePdu | V       | V        | V       | V        |
+| StopFreezePdu | V       | V        | V       | V        |
+| AcknowledgePdu | V       | V        | V       | V        |
 | ActionRequestPdu |         |          |         |          |
 | ActionResponsePdu |         |          |         |          |
 | DataQueryPdu |         |          |         |          |

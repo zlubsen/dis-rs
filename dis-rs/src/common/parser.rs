@@ -1,7 +1,7 @@
 use nom::combinator::peek;
 use nom::Err;
 use nom::IResult;
-use nom::number::complete::{be_f32, be_f64, be_u16, be_u32, be_u64, be_u8};
+use nom::number::complete::{be_f32, be_f64, be_i32, be_u16, be_u32, be_u64, be_u8};
 use nom::bytes::complete::take;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
@@ -11,11 +11,14 @@ use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, SimulationAddress, VectorF32};
+use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, ClockTime, SimulationAddress, VectorF32};
+use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::collision::parser::collision_body;
 use crate::common::detonation::parser::detonation_body;
 use crate::common::electromagnetic_emission::parser::emission_body;
 use crate::common::fire::parser::fire_body;
+use crate::common::start_resume::parser::start_resume_body;
+use crate::common::stop_freeze::parser::stop_freeze_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 
@@ -159,9 +162,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::RepairResponse => {}
             // PduType::CreateEntity => {}
             // PduType::RemoveEntity => {}
-            // PduType::StartResume => {}
-            // PduType::StopFreeze => {}
-            // PduType::Acknowledge => {}
+            PduType::StartResume => { start_resume_body(input)? }
+            PduType::StopFreeze => { stop_freeze_body(input)? }
+            PduType::Acknowledge => { acknowledge_body(input)? }
             // PduType::ActionRequest => {}
             // PduType::ActionResponse => {}
             // PduType::DataQuery => {}
@@ -454,6 +457,13 @@ fn fuse(input: &[u8]) -> IResult<&[u8], MunitionDescriptorFuse> {
     let (input, fuse) = be_u16(input)?;
     let fuse = MunitionDescriptorFuse::from(fuse);
     Ok((input, fuse))
+}
+
+pub fn clock_time(input: &[u8]) -> IResult<&[u8], ClockTime> {
+    let (input, hour) = be_i32(input)?;
+    let (input, time_past_hour) = be_u32(input)?;
+    let time = ClockTime::new(hour, time_past_hour);
+    Ok((input, time))
 }
 
 #[cfg(test)]
