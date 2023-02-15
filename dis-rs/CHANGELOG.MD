@@ -1,5 +1,8 @@
 # Changelog for crate DIS-RS
 
+## 0.4.0 - 2023-02-15
+Added support for StartResume, StopFreeze and Acknowledge PDUs.
+
 ## 0.3.2 - 2023-01-21
 Added export for Electromagnetic Emissions and Other PDUs.
 
