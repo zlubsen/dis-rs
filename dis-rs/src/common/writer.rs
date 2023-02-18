@@ -98,8 +98,8 @@ impl Serialize for Pdu {
             // PduBody::RecordR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::RecordQueryR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::CollisionElastic(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::EntityStateUpdate(body) => { body.serialize_pdu(version, buf) }
+            PduBody::CollisionElastic(body) => { body.serialize_pdu(version, buf) }
+            PduBody::EntityStateUpdate(body) => { body.serialize_pdu(version, buf) }
             // PduBody::DirectedEnergyFire(body) => { body.serialize_pdu(version, buf) }
             // PduBody::EntityDamageStatus(body) => { body.serialize_pdu(version, buf) }
             // PduBody::InformationOperationsAction(body) => { body.serialize_pdu(version, buf) }

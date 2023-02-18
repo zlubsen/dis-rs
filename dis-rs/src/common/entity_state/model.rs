@@ -150,12 +150,12 @@ pub enum EntityAppearance {
     Radio(RadioAppearance),
     Expendable(ExpendableAppearance),
     SensorEmitter(SensorEmitterAppearance),
-    Unspecified(u32),
+    Unspecified([u8;4]),
 }
 
 impl Default for EntityAppearance {
     fn default() -> Self {
-        Self::Unspecified(0u32)
+        Self::Unspecified(0u32.to_be_bytes())
     }
 }
 

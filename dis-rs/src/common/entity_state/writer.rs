@@ -164,7 +164,7 @@ impl Serialize for EntityAppearance {
             EntityAppearance::Radio(appearance) => u32::from(*appearance),
             EntityAppearance::Expendable(appearance) => u32::from(*appearance),
             EntityAppearance::SensorEmitter(appearance) => u32::from(*appearance),
-            EntityAppearance::Unspecified(appearance) => u32::from(*appearance),
+            EntityAppearance::Unspecified(appearance) => u32::from_be_bytes(*appearance),
         };
         buf.put_u32(appearance);
         4

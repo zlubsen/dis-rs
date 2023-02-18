@@ -99,13 +99,12 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
 
         let body_length_bytes = header.pdu_length - PDU_HEADER_LEN_BYTES;
         let (input, body) = take(body_length_bytes)(input)?;
-        let body = body.to_vec();
+        let inner_body = body.to_vec();
+        let body = Other::new(inner_body)
+            .with_origin(originating)
+            .with_receiver(receiving);
 
-        Ok((input, PduBody::Other(
-            Other::new(body)
-                .with_origin(originating)
-                .with_receiver(receiving)
-        )))
+        Ok((input, body.as_pdu_body()))
     }
 }
 

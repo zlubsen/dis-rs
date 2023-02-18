@@ -34,6 +34,6 @@ pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody
             range,
         };
 
-        Ok((input, PduBody::Fire(body)))
+        Ok((input, body.as_pdu_body()))
     }
 }

@@ -2,8 +2,10 @@ pub mod model;
 pub(crate) mod parser;
 
 pub mod collision;
+pub mod collision_elastic;
 pub mod detonation;
 pub mod entity_state;
+pub mod entity_state_update;
 pub mod electromagnetic_emission;
 pub mod fire;
 pub mod start_resume;

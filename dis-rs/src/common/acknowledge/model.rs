@@ -1,4 +1,4 @@
-use crate::{EntityId, PduType};
+use crate::{EntityId, PduBody, PduType};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AcknowledgeFlag, ResponseFlag};
 
@@ -46,6 +46,10 @@ impl Acknowledge {
     pub fn with_request_id(mut self, request_id: u32) -> Self {
         self.request_id = request_id;
         self
+    }
+
+    pub fn as_pdu_body(self) -> PduBody {
+        PduBody::Acknowledge(self)
     }
 }
 

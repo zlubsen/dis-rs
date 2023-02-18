@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::other::builder::OtherBuilder;
 use crate::common::model::EntityId;
 use crate::enumerations::PduType;
+use crate::PduBody;
 
 /// A PduBody implementation that contains the body of the PDU as raw bytes, in a vec.
 ///
@@ -27,6 +28,7 @@ impl BodyInfo for Other {
 }
 
 impl Other {
+    // TODO make consistent in using builder lite pattern instead of a full builder
     pub fn builder() -> OtherBuilder {
         OtherBuilder::new()
     }
@@ -47,6 +49,10 @@ impl Other {
     pub fn with_receiver(mut self, receiver: Option<EntityId>) -> Self {
         self.receiving_entity_id = receiver;
         self
+    }
+
+    pub fn as_pdu_body(self) -> PduBody {
+        PduBody::Other(self)
     }
 }
 

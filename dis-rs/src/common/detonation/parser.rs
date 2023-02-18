@@ -38,6 +38,6 @@ pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], P
             .with_detonation_result(DetonationResult::from(detonation_result))
             .with_variable_parameters(articulation_parameters);
 
-        Ok((input, PduBody::Detonation(body)))
+        Ok((input, body.as_pdu_body()))
     }
 }

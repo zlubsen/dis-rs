@@ -36,7 +36,7 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             count(variable_parameter, variable_parameters_no as usize)(input)?
         } else { (input, vec![]) };
 
-        let entity_state = EntityState::new(entity_id_val, force_id_val, entity_type_val)
+        let body = EntityState::new(entity_id_val, force_id_val, entity_type_val)
             .with_alternative_entity_type(alternative_entity_type)
             .with_velocity(entity_linear_velocity)
             .with_location(entity_location)
@@ -47,7 +47,7 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             .with_capabilities(entity_capabilities)
             .with_variable_parameters(variable_parameters);
 
-        Ok((input, entity_state.as_pdu_body()))
+        Ok((input, body.as_pdu_body()))
     }
 }
 
@@ -60,7 +60,7 @@ pub fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&
     move |input: &[u8]| {
         let (input, appearance) = be_u32(input)?;
         let appearance = match (entity_type.kind, entity_type.domain) {
-            (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance),
+            (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
             (EntityKind::Platform, PlatformDomain::Land) => EntityAppearance::LandPlatform(LandPlatformAppearance::from(appearance)),
             (EntityKind::Platform, PlatformDomain::Air) => EntityAppearance::AirPlatform(AirPlatformAppearance::from(appearance)),
             (EntityKind::Platform, PlatformDomain::Surface) => EntityAppearance::SurfacePlatform(SurfacePlatformAppearance::from(appearance)),
@@ -74,7 +74,7 @@ pub fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&
             (EntityKind::Radio, _) => EntityAppearance::Radio(RadioAppearance::from(appearance)),
             (EntityKind::Expendable, _) => EntityAppearance::Expendable(ExpendableAppearance::from(appearance)),
             (EntityKind::SensorEmitter, _) => EntityAppearance::SensorEmitter(SensorEmitterAppearance::from(appearance)),
-            (_, _) => EntityAppearance::Unspecified(appearance)
+            (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes())
         };
 
         Ok((input, appearance))

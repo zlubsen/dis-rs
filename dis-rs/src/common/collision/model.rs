@@ -1,7 +1,7 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, EventId};
 use crate::enumerations::CollisionType;
-use crate::{PduType, VectorF32};
+use crate::{PduBody, PduType, VectorF32};
 
 const COLLISION_BODY_LENGTH : u16 = 60;
 
@@ -61,6 +61,10 @@ impl Collision {
     pub fn with_location(mut self, location: VectorF32) -> Self {
         self.location = location;
         self
+    }
+
+    pub fn as_pdu_body(self) -> PduBody {
+        PduBody::Collision(self)
     }
 }
 

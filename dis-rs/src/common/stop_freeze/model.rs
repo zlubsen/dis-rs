@@ -2,7 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::model::EntityId;
 use crate::common::model::ClockTime;
 use crate::enumerations::{StopFreezeReason, StopFreezeFrozenBehavior};
-use crate::PduType;
+use crate::{PduBody, PduType};
 
 const STOP_FREEZE_BODY_LENGTH : u16 = 28;
 
@@ -59,6 +59,10 @@ impl StopFreeze {
     pub fn with_request_id(mut self, request_id: u32) -> Self {
         self.request_id = request_id;
         self
+    }
+
+    pub fn as_pdu_body(self) -> PduBody {
+        PduBody::StopFreeze(self)
     }
 }
 

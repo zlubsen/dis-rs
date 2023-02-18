@@ -24,5 +24,5 @@ pub fn stop_freeze_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_frozen_behavior(behavior)
         .with_request_id(request_id);
 
-    Ok((input, PduBody::StopFreeze(body)))
+    Ok((input, body.as_pdu_body()))
 }

@@ -14,8 +14,10 @@ use crate::common::other::parser::other_body;
 use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, ClockTime, SimulationAddress, VectorF32};
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::collision::parser::collision_body;
+use crate::common::collision_elastic::parser::collision_elastic_body;
 use crate::common::detonation::parser::detonation_body;
 use crate::common::electromagnetic_emission::parser::emission_body;
+use crate::common::entity_state_update::parser::entity_state_update_body;
 use crate::common::fire::parser::fire_body;
 use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
@@ -215,8 +217,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::RecordR => {}
             // PduType::SetRecordR => {}
             // PduType::RecordQueryR => {}
-            // PduType::CollisionElastic => {}
-            // PduType::EntityStateUpdate => {}
+            PduType::CollisionElastic => { collision_elastic_body(input)? }
+            PduType::EntityStateUpdate => { entity_state_update_body(input)? }
             // PduType::DirectedEnergyFire => {}
             // PduType::EntityDamageStatus => {}
             // PduType::InformationOperationsAction => {}

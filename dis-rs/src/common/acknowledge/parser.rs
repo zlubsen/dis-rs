@@ -22,5 +22,5 @@ pub fn acknowledge_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_response_flag(response_flag)
         .with_request_id(request_id);
 
-    Ok((input, PduBody::Acknowledge(body)))
+    Ok((input, body.as_pdu_body()))
 }

@@ -2,9 +2,11 @@ use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::acknowledge::model::Acknowledge;
 use crate::common::collision::model::Collision;
+use crate::common::collision_elastic::model::CollisionElastic;
 use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
 use crate::common::detonation::model::Detonation;
 use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
+use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
@@ -156,8 +158,8 @@ pub enum PduBody {
     RecordR,
     SetRecordR,
     RecordQueryR,
-    CollisionElastic,
-    EntityStateUpdate,
+    CollisionElastic(CollisionElastic),
+    EntityStateUpdate(EntityStateUpdate),
     DirectedEnergyFire,
     EntityDamageStatus,
     InformationOperationsAction,
@@ -234,8 +236,8 @@ impl BodyInfo for PduBody {
             PduBody::RecordR => { 0 }
             PduBody::SetRecordR => { 0 }
             PduBody::RecordQueryR => { 0 }
-            PduBody::CollisionElastic => { 0 }
-            PduBody::EntityStateUpdate => { 0 }
+            PduBody::CollisionElastic(body) => { body.body_length() }
+            PduBody::EntityStateUpdate(body) => { body.body_length() }
             PduBody::DirectedEnergyFire => { 0 }
             PduBody::EntityDamageStatus => { 0 }
             PduBody::InformationOperationsAction => { 0 }
@@ -312,8 +314,8 @@ impl BodyInfo for PduBody {
             PduBody::RecordR => { PduType::RecordR }
             PduBody::SetRecordR => { PduType::SetRecordR }
             PduBody::RecordQueryR => { PduType::RecordQueryR }
-            PduBody::CollisionElastic => { PduType::CollisionElastic }
-            PduBody::EntityStateUpdate => { PduType::EntityStateUpdate }
+            PduBody::CollisionElastic(body) => { body.body_type() }
+            PduBody::EntityStateUpdate(body) => { body.body_type() }
             PduBody::DirectedEnergyFire => { PduType::DirectedEnergyFire }
             PduBody::EntityDamageStatus => { PduType::EntityDamageStatus }
             PduBody::InformationOperationsAction => { PduType::InformationOperationsAction }
@@ -392,8 +394,8 @@ impl Interaction for PduBody {
             PduBody::RecordR => { None }
             PduBody::SetRecordR => { None }
             PduBody::RecordQueryR => { None }
-            PduBody::CollisionElastic => { None }
-            PduBody::EntityStateUpdate => { None }
+            PduBody::CollisionElastic(body) => { body.originator() }
+            PduBody::EntityStateUpdate(body) => { body.originator() }
             PduBody::DirectedEnergyFire => { None }
             PduBody::EntityDamageStatus => { None }
             PduBody::InformationOperationsAction => { None }
@@ -470,8 +472,8 @@ impl Interaction for PduBody {
             PduBody::RecordR => { None }
             PduBody::SetRecordR => { None }
             PduBody::RecordQueryR => { None }
-            PduBody::CollisionElastic => { None }
-            PduBody::EntityStateUpdate => { None }
+            PduBody::CollisionElastic(body) => { body.receiver() }
+            PduBody::EntityStateUpdate(body) => { body.receiver() }
             PduBody::DirectedEnergyFire => { None }
             PduBody::EntityDamageStatus => { None }
             PduBody::InformationOperationsAction => { None }

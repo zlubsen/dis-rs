@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, ClockTime};
-use crate::PduType;
+use crate::{PduBody, PduType};
 
 const START_RESUME_BODY_LENGTH : u16 = 32;
 
@@ -46,6 +46,10 @@ impl StartResume {
     pub fn with_request_id(mut self, request_id: u32) -> Self {
         self.request_id = request_id;
         self
+    }
+
+    pub fn as_pdu_body(self) -> PduBody {
+        PduBody::StartResume(self)
     }
 }
 
