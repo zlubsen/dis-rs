@@ -22,7 +22,7 @@ pub fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pd
             .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::from(status_update_indicator))
             .with_emitter_systems(&mut emitter_systems);
 
-        Ok((input, body.as_pdu_body()))
+        Ok((input, body.into_pdu_body()))
     }
 }
 
