@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::acknowledge::model::Acknowledge;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
+use crate::common::create_entity::model::CreateEntity;
 use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
 use crate::common::detonation::model::Detonation;
 use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
@@ -10,6 +11,7 @@ use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
+use crate::common::remove_entity::model::RemoveEntity;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::v7::model::PduStatus;
@@ -103,8 +105,8 @@ pub enum PduBody {
     ResupplyCancel,
     RepairComplete,
     RepairResponse,
-    CreateEntity,
-    RemoveEntity,
+    CreateEntity(CreateEntity),
+    RemoveEntity(RemoveEntity),
     StartResume(StartResume),
     StopFreeze(StopFreeze),
     Acknowledge(Acknowledge),
@@ -181,8 +183,8 @@ impl BodyInfo for PduBody {
             PduBody::ResupplyCancel => { 0 }
             PduBody::RepairComplete => { 0 }
             PduBody::RepairResponse => { 0 }
-            PduBody::CreateEntity => { 0 }
-            PduBody::RemoveEntity => { 0 }
+            PduBody::CreateEntity(body) => { body.body_length() }
+            PduBody::RemoveEntity(body) => { body.body_length() }
             PduBody::StartResume(body) => { body.body_length() }
             PduBody::StopFreeze(body) => { body.body_length() }
             PduBody::Acknowledge(body) => { body.body_length() }
@@ -259,8 +261,8 @@ impl BodyInfo for PduBody {
             PduBody::ResupplyCancel => { PduType::ResupplyCancel }
             PduBody::RepairComplete => { PduType::RepairComplete }
             PduBody::RepairResponse => { PduType::RepairResponse }
-            PduBody::CreateEntity => { PduType::CreateEntity }
-            PduBody::RemoveEntity => { PduType::RemoveEntity }
+            PduBody::CreateEntity(body) => { body.body_type() }
+            PduBody::RemoveEntity(body) => { body.body_type() }
             PduBody::StartResume(body) => { body.body_type() }
             PduBody::StopFreeze(body) => { body.body_type() }
             PduBody::Acknowledge(body) => { body.body_type() }
@@ -339,8 +341,8 @@ impl Interaction for PduBody {
             PduBody::ResupplyCancel => { None }
             PduBody::RepairComplete => { None }
             PduBody::RepairResponse => { None }
-            PduBody::CreateEntity => { None }
-            PduBody::RemoveEntity => { None }
+            PduBody::CreateEntity(body) => { body.originator() }
+            PduBody::RemoveEntity(body) => { body.originator() }
             PduBody::StartResume(body) => { body.originator() }
             PduBody::StopFreeze(body) => { body.originator() }
             PduBody::Acknowledge(body) => { body.originator() }
@@ -417,8 +419,8 @@ impl Interaction for PduBody {
             PduBody::ResupplyCancel => { None }
             PduBody::RepairComplete => { None }
             PduBody::RepairResponse => { None }
-            PduBody::CreateEntity => { None }
-            PduBody::RemoveEntity => { None }
+            PduBody::CreateEntity(body) => { body.receiver() }
+            PduBody::RemoveEntity(body) => { body.receiver() }
             PduBody::StartResume(body) => { body.receiver() }
             PduBody::StopFreeze(body) => { body.receiver() }
             PduBody::Acknowledge(body) => { body.receiver() }

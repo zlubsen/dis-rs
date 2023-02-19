@@ -8,6 +8,8 @@ pub mod entity_state;
 pub mod entity_state_update;
 pub mod electromagnetic_emission;
 pub mod fire;
+pub mod create_entity;
+pub mod remove_entity;
 pub mod start_resume;
 pub mod stop_freeze;
 pub mod acknowledge;

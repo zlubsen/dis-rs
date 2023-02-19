@@ -15,10 +15,12 @@ use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, Entity
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::collision::parser::collision_body;
 use crate::common::collision_elastic::parser::collision_elastic_body;
+use crate::common::create_entity::parser::create_entity_body;
 use crate::common::detonation::parser::detonation_body;
 use crate::common::electromagnetic_emission::parser::emission_body;
 use crate::common::entity_state_update::parser::entity_state_update_body;
 use crate::common::fire::parser::fire_body;
+use crate::common::remove_entity::parser::remove_entity_body;
 use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
 use crate::v7::parser::parse_pdu_status;
@@ -162,8 +164,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::ResupplyCancel => {}
             // PduType::RepairComplete => {}
             // PduType::RepairResponse => {}
-            // PduType::CreateEntity => {}
-            // PduType::RemoveEntity => {}
+            PduType::CreateEntity => { create_entity_body(input)? }
+            PduType::RemoveEntity => { remove_entity_body(input)? }
             PduType::StartResume => { start_resume_body(input)? }
             PduType::StopFreeze => { stop_freeze_body(input)? }
             PduType::Acknowledge => { acknowledge_body(input)? }
