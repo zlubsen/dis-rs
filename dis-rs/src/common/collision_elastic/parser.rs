@@ -37,5 +37,5 @@ pub fn collision_elastic_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_unit_surface_normal(unit_surface_normal)
         .with_coefficient_of_restitution(coefficient_of_restitution);
 
-    Ok((input, body.as_pdu_body()))
+    Ok((input, body.into_pdu_body()))
 }

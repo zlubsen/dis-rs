@@ -233,13 +233,14 @@ fn main() {
 
 fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
     // Remove / replace the following characters
+    #[allow(clippy::collapsible_str_replace)]
     let intermediate = value
         .replace(' ', "")
         .replace('-', "")
         .replace('/', "")
         .replace('.', "_")
         .replace(',', "_")
-        .replace("'", "")
+        .replace('\'', "")
         .replace('#', "")
         .replace("&quot;", "")
         .replace(';', "")
@@ -248,7 +249,7 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
 
     // Prefix values starting with a digit with '_'
     // .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.
-    let starts_with_digit = intermediate.chars().next().unwrap_or('x').is_digit(10);
+    let starts_with_digit = intermediate.chars().next().unwrap_or('x').is_ascii_digit();
     let is_empty = intermediate.is_empty();
 
     let prefix = String::from(starts_with_digit.then(||"_").unwrap_or(""));
@@ -272,8 +273,8 @@ fn format_field_name(name: &str) -> String {
         .replace(" / ", "_")
         .replace(' ', "_")
         .replace('-',"")
-        .replace("/","_")
-        .replace("#","")
+        .replace('/',"_")
+        .replace('#',"")
         .replace('(', "")
         .replace(')', "")
 }
@@ -444,9 +445,7 @@ mod extraction {
         let xref = if let Ok(Some(attr_xref)) = element.try_get_attribute(ENUM_ROW_ATTR_XREF) {
             Some(usize::from_str(&reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
         } else { None };
-        let deprecated = if let Ok(Some(_attr_depr)) = element.try_get_attribute(ENUM_ROW_ATTR_DEPR) {
-            true
-        } else { false };
+        let deprecated = matches!(element.try_get_attribute(ENUM_ROW_ATTR_DEPR), Ok(Some(_attr_depr)));
 
         match (value, description, xref) {
             (Some(value), Some(description), Some(xref)) => {
@@ -481,9 +480,7 @@ mod extraction {
         let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
             Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
         } else { None };
-        let deprecated = if let Ok(Some(_attr_depr)) = element.try_get_attribute(ENUM_ROW_ATTR_DEPR) {
-            true
-        } else { false };
+        let deprecated = matches!(element.try_get_attribute(ENUM_ROW_ATTR_DEPR), Ok(Some(_attr_depr)));
 
         if let (Some(value_min), Some(value_max), Some(description)) = (value_min, value_max, description) {
             Ok(EnumItem::Range(RangeEnumItem {
@@ -860,7 +857,7 @@ mod generation {
             let field_name = format_field_name(field.name.as_str());
             let field_ident = format_ident!("{}", field_name);
             let type_literal = if let Some(xref_uid) = field.xref {
-                let xref = lookup_xref(xref_uid).expect(format!("{}", xref_uid).as_str());
+                let xref = lookup_xref(xref_uid).unwrap_or_else(|| panic!("{}", xref_uid));
                 format_ident!("{}", format_name(xref.name(), xref.uid()))
             } else { format_ident!("bool") };
             quote!(
@@ -945,9 +942,6 @@ mod generation {
 
     fn quote_bitfield_into_fields<'a, F>(fields: &[BitfieldItem], data_size: usize, lookup_xref: F) -> Vec<TokenStream>
     where F: Fn(usize)->Option<&'a GenerationItem> {
-        let true_value_literal = discriminant_literal(1, data_size);
-        let false_value_literal = discriminant_literal(0, data_size);
-
         let field_size_type = size_to_type(data_size);
         let field_size_ident = format_ident!("{}", field_size_type);
 
@@ -963,7 +957,7 @@ mod generation {
                 )
             } else {
                 quote!(
-                    let #field_ident = if value.#field_ident { #true_value_literal } else { #false_value_literal } << #position_shift_literal;
+                    let #field_ident = #field_size_ident::from( value.#field_ident) << #position_shift_literal;
                 )
             }
         }).collect()

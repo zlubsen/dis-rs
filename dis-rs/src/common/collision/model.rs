@@ -15,6 +15,12 @@ pub struct Collision {
     pub location: VectorF32,
 }
 
+impl Default for Collision {
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl Collision {
     pub fn new() -> Self {
         Self {
@@ -63,7 +69,7 @@ impl Collision {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::Collision(self)
     }
 }

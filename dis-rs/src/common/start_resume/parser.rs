@@ -18,5 +18,5 @@ pub fn start_resume_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_simulation_time(simulation_time)
         .with_request_id(request_id);
 
-    Ok((input, body.as_pdu_body()))
+    Ok((input, body.into_pdu_body()))
 }

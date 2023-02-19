@@ -10,6 +10,12 @@ pub struct CreateEntity {
     pub request_id: u32,
 }
 
+impl Default for CreateEntity {
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl CreateEntity {
     pub fn new() -> Self {
         Self {
@@ -34,7 +40,7 @@ impl CreateEntity {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::CreateEntity(self)
     }
 }

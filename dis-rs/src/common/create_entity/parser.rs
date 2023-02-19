@@ -14,5 +14,5 @@ pub fn create_entity_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_receiving_id(receiving_id)
         .with_request_id(request_id);
 
-    Ok((input, body.as_pdu_body()))
+    Ok((input, body.into_pdu_body()))
 }

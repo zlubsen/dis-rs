@@ -12,6 +12,12 @@ pub struct Acknowledge {
     pub request_id: u32,
 }
 
+impl Default for Acknowledge {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Acknowledge {
     pub fn new() -> Self {
         Self {
@@ -48,7 +54,7 @@ impl Acknowledge {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::Acknowledge(self)
     }
 }

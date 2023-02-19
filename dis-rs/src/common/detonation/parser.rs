@@ -5,11 +5,10 @@ use crate::{DetonationResult, DetonationTypeIndicator, PduBody, PduHeader};
 use crate::common::detonation::model::Detonation;
 use crate::common::entity_state::parser::variable_parameter;
 use crate::common::parser::{descriptor_record_dti, entity_id, event_id, location, vec3_f32};
-use crate::v7::model::PduStatus;
 
 pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
-        let dti = header.pdu_status.unwrap_or(PduStatus::default())
+        let dti = header.pdu_status.unwrap_or_default()
             .detonation_type_indicator.unwrap_or(DetonationTypeIndicator::Munition);
         let (input, source_entity_id) = entity_id(input)?;
         let (input, target_entity_id) = entity_id(input)?;
@@ -38,6 +37,6 @@ pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], P
             .with_detonation_result(DetonationResult::from(detonation_result))
             .with_variable_parameters(articulation_parameters);
 
-        Ok((input, body.as_pdu_body()))
+        Ok((input, body.into_pdu_body()))
     }
 }

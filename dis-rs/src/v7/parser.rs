@@ -54,7 +54,7 @@ pub fn parse_pdu_status_fields(pdu_type: u8, input : u8) -> PduStatus {
         70 => { build_pdu_status_cei_lvc(cei, lvc) }
         71 => { build_pdu_status_cei_lvc(cei, lvc) }
         72 => { build_pdu_status_lvc(lvc) }
-        73..=255 | _ => {
+         _ => { // also covers 73..=255
             PduStatus {
                 transferred_entity_indicator: None,
                 lvc_indicator: None,

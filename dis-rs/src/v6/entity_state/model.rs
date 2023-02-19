@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct EntityCapabilities {
     pub ammunition_supply : bool,
     pub fuel_supply : bool,

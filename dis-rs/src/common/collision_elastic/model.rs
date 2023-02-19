@@ -20,6 +20,12 @@ pub struct CollisionElastic {
     pub coefficient_of_restitution: f32,
 }
 
+impl Default for CollisionElastic {
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl CollisionElastic {
     pub fn new() -> Self {
         Self {
@@ -110,7 +116,7 @@ impl CollisionElastic {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::CollisionElastic(self)
     }
 }

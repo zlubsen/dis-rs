@@ -6,11 +6,10 @@ use crate::common::model::PduBody;
 use crate::common::parser;
 use crate::enumerations::FireTypeIndicator;
 use crate::PduHeader;
-use crate::v7::model::PduStatus;
 
 pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
-        let fti = header.pdu_status.unwrap_or(PduStatus::default())
+        let fti = header.pdu_status.unwrap_or_default()
             .fire_type_indicator.unwrap_or(FireTypeIndicator::Munition);
         let (input, firing_entity_id) = entity_id(input)?;
         let (input, target_entity_id) = entity_id(input)?;
@@ -34,6 +33,6 @@ pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody
             range,
         };
 
-        Ok((input, body.as_pdu_body()))
+        Ok((input, body.into_pdu_body()))
     }
 }

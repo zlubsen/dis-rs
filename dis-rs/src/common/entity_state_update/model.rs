@@ -55,14 +55,14 @@ impl EntityStateUpdate {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::EntityStateUpdate(self)
     }
 }
 
 impl BodyInfo for EntityStateUpdate {
     fn body_length(&self) -> u16 {
-        BASE_ENTITY_STATE_UPDATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (*&self.variable_parameters.len() as u16))
+        BASE_ENTITY_STATE_UPDATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
     }
 
     fn body_type(&self) -> PduType {

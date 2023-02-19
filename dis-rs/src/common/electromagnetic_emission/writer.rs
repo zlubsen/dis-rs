@@ -25,7 +25,7 @@ impl Serialize for EmitterSystem {
         buf.put_u16(0u16);
         buf.put_u16(self.name.into());
         buf.put_u8(self.function.into());
-        buf.put_u8(self.number.into());
+        buf.put_u8(self.number);
         let location_bytes = self.location.serialize(buf);
 
         let beams_bytes = self.beams.iter()
@@ -185,7 +185,7 @@ mod tests {
                         .with_beam(0)
                         .with_emitter(0)
                         .with_entity_id(EntityId::new(500,11111,71))))
-            ).as_pdu_body();
+            ).into_pdu_body();
 
         let header = PduHeader::new_v6(1, body.body_type());
         let pdu = Pdu::finalize_from_parts(header, body, 0);

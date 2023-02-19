@@ -17,6 +17,12 @@ pub struct Detonation {
     pub variable_parameters: Vec<VariableParameter>,
 }
 
+impl Default for Detonation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Detonation {
     pub fn new() -> Self {
         Self {
@@ -106,14 +112,14 @@ impl Detonation {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::Detonation(self)
     }
 }
 
 impl BodyInfo for Detonation {
     fn body_length(&self) -> u16 {
-        BASE_DETONATION_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (*&self.variable_parameters.len() as u16))
+        BASE_DETONATION_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
     }
 
     fn body_type(&self) -> PduType {

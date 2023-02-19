@@ -15,6 +15,12 @@ pub struct StopFreeze {
     pub request_id: u32,
 }
 
+impl Default for StopFreeze {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StopFreeze {
     pub fn new() -> Self {
         Self {
@@ -61,7 +67,7 @@ impl StopFreeze {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::StopFreeze(self)
     }
 }

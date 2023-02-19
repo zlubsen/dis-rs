@@ -15,6 +15,12 @@ pub struct ElectromagneticEmission {
     pub emitter_systems: Vec<EmitterSystem>,
 }
 
+impl Default for ElectromagneticEmission {
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl ElectromagneticEmission {
     pub fn new() -> Self {
         Self {
@@ -50,7 +56,7 @@ impl ElectromagneticEmission {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::ElectromagneticEmission(self)
     }
 }
@@ -91,6 +97,12 @@ pub struct EmitterSystem {
     pub number: u8,
     pub location: VectorF32,
     pub beams: Vec<Beam>,
+}
+
+impl Default for EmitterSystem {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EmitterSystem {

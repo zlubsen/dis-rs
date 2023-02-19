@@ -24,5 +24,5 @@ pub fn collision_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_mass(mass)
         .with_location(location);
 
-    Ok((input, body.as_pdu_body()))
+    Ok((input, body.into_pdu_body()))
 }

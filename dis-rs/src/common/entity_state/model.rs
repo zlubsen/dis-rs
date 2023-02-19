@@ -110,14 +110,14 @@ impl EntityState {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::EntityState(self)
     }
 }
 
 impl BodyInfo for EntityState {
     fn body_length(&self) -> u16 {
-        BASE_ENTITY_STATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (*&self.variable_parameters.len() as u16))
+        BASE_ENTITY_STATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
     }
 
     fn body_type(&self) -> PduType {
@@ -391,22 +391,12 @@ impl EntityAssociationParameter {
     }
 }
 
+#[derive(Default)]
 pub struct DrParameters {
     pub algorithm : DeadReckoningAlgorithm,
     pub other_parameters : DrOtherParameters,
     pub linear_acceleration : VectorF32,
     pub angular_velocity : VectorF32,
-}
-
-impl Default for DrParameters {
-    fn default() -> Self {
-        Self {
-            algorithm: DeadReckoningAlgorithm::default(),
-            other_parameters: DrOtherParameters::default(),
-            linear_acceleration: VectorF32::default(),
-            angular_velocity: VectorF32::default(),
-        }
-    }
 }
 
 impl DrParameters {

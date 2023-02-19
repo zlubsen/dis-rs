@@ -12,6 +12,12 @@ pub struct StartResume {
     pub request_id: u32,
 }
 
+impl Default for StartResume {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StartResume {
     pub fn new() -> Self {
         Self {
@@ -48,7 +54,7 @@ impl StartResume {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::StartResume(self)
     }
 }

@@ -23,6 +23,7 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
         let (input, entity_appearance) = entity_appearance(entity_type_val)(input)?;
         let (input, dead_reckoning_parameters) = dr_parameters(input)?;
         let (input, entity_marking) = entity_marking(input)?;
+        #[allow(clippy::wildcard_in_or_patterns)]
         let (input, entity_capabilities) = match header.protocol_version {
             ProtocolVersion::IEEE1278_12012 => {
                 crate::v7::entity_state::parser::entity_capabilities(entity_type_val)(input)?
@@ -47,7 +48,7 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             .with_capabilities(entity_capabilities)
             .with_variable_parameters(variable_parameters);
 
-        Ok((input, body.as_pdu_body()))
+        Ok((input, body.into_pdu_body()))
     }
 }
 
@@ -115,7 +116,10 @@ pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
             DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
-        DeadReckoningAlgorithm::Other | _ => {
+        DeadReckoningAlgorithm::Other => {
+            dr_other_parameters_none(input)?
+        }
+        _ => {
             dr_other_parameters_none(input)?
         }
     };

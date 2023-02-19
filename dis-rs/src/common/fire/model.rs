@@ -67,7 +67,7 @@ impl Fire {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::Fire(self)
     }
 }

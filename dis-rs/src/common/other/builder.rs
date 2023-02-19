@@ -7,6 +7,12 @@ pub struct OtherBuilder {
     body : Option<Vec<u8>>,
 }
 
+impl Default for OtherBuilder {
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl OtherBuilder {
     pub fn new() -> OtherBuilder {
         OtherBuilder {

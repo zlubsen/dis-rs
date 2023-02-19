@@ -10,6 +10,12 @@ pub struct RemoveEntity {
     pub request_id: u32,
 }
 
+impl Default for RemoveEntity {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RemoveEntity {
     pub fn new() -> Self {
         Self {
@@ -34,7 +40,7 @@ impl RemoveEntity {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::RemoveEntity(self)
     }
 }

@@ -566,7 +566,7 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,
@@ -590,7 +590,7 @@ impl Default for SimulationAddress {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
     pub entity_id : u16
@@ -751,7 +751,7 @@ impl Orientation {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : PlatformDomain,
@@ -866,18 +866,10 @@ impl MunitionDescriptor {
     }
 }
 
+#[derive(Default)]
 pub struct ClockTime {
     pub hour: i32,
     pub time_past_hour: u32,
-}
-
-impl Default for ClockTime {
-    fn default() -> Self {
-        Self {
-            hour: 0,
-            time_past_hour: 0,
-        }
-    }
 }
 
 impl ClockTime {

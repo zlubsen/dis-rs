@@ -26,5 +26,5 @@ pub fn entity_state_update_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_appearance(entity_appearance)
         .with_variable_parameters(variable_parameters);
 
-    Ok((input, body.as_pdu_body()))
+    Ok((input, body.into_pdu_body()))
 }

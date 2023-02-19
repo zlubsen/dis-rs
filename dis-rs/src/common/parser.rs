@@ -110,7 +110,7 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
         tuple((protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length))(input)?;
     let (input, pdu_status, padding) = match u8::from(protocol_version) {
-        legacy_version if legacy_version >= 1 && legacy_version <= 5 => {
+        legacy_version if (1..=5).contains(&legacy_version) => {
             let (input, padding) = be_u16(input)?;
             (input, None, padding as u16)
         }
@@ -328,6 +328,7 @@ fn country(input: &[u8]) -> IResult<&[u8], Country> {
 
 pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
     let (input, elements) = count(be_f32, 3)(input)?;
+    #[allow(clippy::get_first)]
     Ok((input, VectorF32 {
         first_vector_component: *elements.get(0).expect("Value supposed to be parsed successfully"),
         second_vector_component: *elements.get(1).expect("Value supposed to be parsed successfully"),
@@ -337,6 +338,7 @@ pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
 
 pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
     let (input, locations) = count(be_f64, 3)(input)?;
+    #[allow(clippy::get_first)]
     Ok((input, Location {
         x_coordinate: *locations.get(0).expect("Value supposed to be parsed successfully"),
         y_coordinate: *locations.get(1).expect("Value supposed to be parsed successfully"),
@@ -346,6 +348,7 @@ pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
 
 pub fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
     let (input, orientations) = count(be_f32, 3)(input)?;
+    #[allow(clippy::get_first)]
     Ok((input, Orientation {
         psi: *orientations.get(0).expect("Value supposed to be parsed successfully"),
         theta: *orientations.get(1).expect("Value supposed to be parsed successfully"),
