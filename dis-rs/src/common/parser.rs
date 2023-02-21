@@ -13,6 +13,7 @@ use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, ClockTime, SimulationAddress, VectorF32};
 use crate::common::acknowledge::parser::acknowledge_body;
+use crate::common::attribute::parser::attribute_body;
 use crate::common::collision::parser::collision_body;
 use crate::common::collision_elastic::parser::collision_elastic_body;
 use crate::common::create_entity::parser::create_entity_body;
@@ -225,7 +226,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::EntityDamageStatus => {}
             // PduType::InformationOperationsAction => {}
             // PduType::InformationOperationsReport => {}
-            // PduType::Attribute => {}
+            PduType::Attribute => { attribute_body(input)? }
             PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
             _ => { other_body(header)(input)? }
         };
@@ -276,15 +277,17 @@ pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
     }
 }
 
-pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
+pub fn simulation_address(input: &[u8]) -> IResult<&[u8], SimulationAddress> {
     let (input, site_id) = be_u16(input)?;
     let (input, application_id) = be_u16(input)?;
+    Ok((input, SimulationAddress::new(site_id, application_id)))
+}
+
+pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
+    let (input, simulation_address) = simulation_address(input)?;
     let (input, entity_id) = be_u16(input)?;
     Ok((input, EntityId {
-        simulation_address: SimulationAddress {
-            site_id,
-            application_id,
-        },
+        simulation_address,
         entity_id,
     }))
 }

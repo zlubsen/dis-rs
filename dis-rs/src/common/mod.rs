@@ -1,6 +1,7 @@
 pub mod model;
 pub(crate) mod parser;
 
+pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;
 pub mod detonation;

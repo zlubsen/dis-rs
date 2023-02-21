@@ -104,7 +104,7 @@ impl Serialize for Pdu {
             // PduBody::EntityDamageStatus(body) => { body.serialize_pdu(version, buf) }
             // PduBody::InformationOperationsAction(body) => { body.serialize_pdu(version, buf) }
             // PduBody::InformationOperationsReport(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::Attribute(body) => { body.serialize_pdu(version, buf) }
+            PduBody::Attribute(body) => { body.serialize_pdu(version, buf) }
             _ => { 0 }
         };
         header_size + body_size

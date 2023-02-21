@@ -1,6 +1,7 @@
 use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::acknowledge::model::Acknowledge;
+use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
 use crate::common::create_entity::model::CreateEntity;
@@ -166,7 +167,7 @@ pub enum PduBody {
     EntityDamageStatus,
     InformationOperationsAction,
     InformationOperationsReport,
-    Attribute,
+    Attribute(Attribute),
 }
 
 impl BodyInfo for PduBody {
@@ -244,7 +245,7 @@ impl BodyInfo for PduBody {
             PduBody::EntityDamageStatus => { 0 }
             PduBody::InformationOperationsAction => { 0 }
             PduBody::InformationOperationsReport => { 0 }
-            PduBody::Attribute => { 0 }
+            PduBody::Attribute(body) => { body.body_length() }
         }
     }
 
@@ -322,7 +323,7 @@ impl BodyInfo for PduBody {
             PduBody::EntityDamageStatus => { PduType::EntityDamageStatus }
             PduBody::InformationOperationsAction => { PduType::InformationOperationsAction }
             PduBody::InformationOperationsReport => { PduType::InformationOperationsReport }
-            PduBody::Attribute => { PduType::Attribute }
+            PduBody::Attribute(body) => { body.body_type() }
         }
     }
 }
@@ -402,7 +403,7 @@ impl Interaction for PduBody {
             PduBody::EntityDamageStatus => { None }
             PduBody::InformationOperationsAction => { None }
             PduBody::InformationOperationsReport => { None }
-            PduBody::Attribute => { None }
+            PduBody::Attribute(body) => { body.originator() }
         }
     }
 
@@ -480,7 +481,7 @@ impl Interaction for PduBody {
             PduBody::EntityDamageStatus => { None }
             PduBody::InformationOperationsAction => { None }
             PduBody::InformationOperationsReport => { None }
-            PduBody::Attribute => { None }
+            PduBody::Attribute(body) => { body.receiver() }
         }
     }
 }

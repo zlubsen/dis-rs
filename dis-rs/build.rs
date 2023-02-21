@@ -25,9 +25,9 @@ use quote::__private::{Ident, Literal, TokenStream};
 /// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5,
 /// but needs to be aligned with a 32-bit field.
 ///
-/// Finally, the 'Emitter Name' enum has variants that result in empty names (`""`) or duplicate names.
+/// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 82] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 84] = [
     (3, Some("ProtocolVersion"), None, false),   // protocol version
     (4, Some("PduType"), None, false),           // pdu type
     (5, Some("ProtocolFamily"), None, false),    // pdu family
@@ -49,6 +49,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 82] = [
     (61, None, None, true), // Munition Descriptor-Fuse
     (62, None, None, false), // Detonation result
     // 63-74, // All kinds of stuff for lesser priority PDUs
+    (66, Some("VariableRecordType"), None, true), // Variable Record Types
     (67, None, None, false), // Stop/Freeze Reason
     (69, Some("AcknowledgeFlag"), None, false), // Acknowledge-Acknowledge Flag
     (70, Some("ResponseFlag"), None, false), // Acknowledge-Response Flag
@@ -64,6 +65,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 82] = [
     (212, Some("StationName"), None, false), // IsPartOf-Station Name
     (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
     (283, Some("SeparationPreEntityIndicator"), None, false), // Separation VP-Pre-Entity Indicator
+    (295, Some("AttributeActionCode"), None, false), // Attribute Action Code
     (296, Some("DrParametersType"), None, false), // Dead Reckoning Parameters Type
     (301, Some("TransferredEntityIndicator"), None, false), // DIS-PDU Status-Transferred Entity Indicator (TEI)
     (302, Some("LvcIndicator"), None, false), // DIS-PDU Status-LVC Indicator (LVC)
@@ -243,6 +245,7 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace('\'', "")
         .replace('#', "")
         .replace("&quot;", "")
+        .replace("&amp;", "")
         .replace(';', "")
         .replace('(', "_")
         .replace(')', "_");
