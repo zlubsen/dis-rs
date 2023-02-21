@@ -5,6 +5,7 @@ pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;
 pub mod detonation;
+pub mod designator;
 pub mod entity_state;
 pub mod entity_state_update;
 pub mod electromagnetic_emission;

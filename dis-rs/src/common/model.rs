@@ -6,6 +6,7 @@ use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
 use crate::common::create_entity::model::CreateEntity;
 use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
+use crate::common::designator::model::Designator;
 use crate::common::detonation::model::Detonation;
 use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
 use crate::common::entity_state_update::model::EntityStateUpdate;
@@ -119,7 +120,7 @@ pub enum PduBody {
     EventReport,
     Comment,
     ElectromagneticEmission(ElectromagneticEmission),
-    Designator,
+    Designator(Designator),
     Transmitter,
     Signal,
     Receiver,
@@ -197,7 +198,7 @@ impl BodyInfo for PduBody {
             PduBody::EventReport => { 0 }
             PduBody::Comment => { 0 }
             PduBody::ElectromagneticEmission(body) => { body.body_length() }
-            PduBody::Designator => { 0 }
+            PduBody::Designator(body) => { body.body_length() }
             PduBody::Transmitter => { 0 }
             PduBody::Signal => { 0 }
             PduBody::Receiver => { 0 }
@@ -275,7 +276,7 @@ impl BodyInfo for PduBody {
             PduBody::EventReport => { PduType::EventReport }
             PduBody::Comment => { PduType::Comment }
             PduBody::ElectromagneticEmission(body) => { body.body_type() }
-            PduBody::Designator => { PduType::Designator }
+            PduBody::Designator(body) => { body.body_type() }
             PduBody::Transmitter => { PduType::Transmitter }
             PduBody::Signal => { PduType::Signal }
             PduBody::Receiver => { PduType::Receiver }
@@ -355,7 +356,7 @@ impl Interaction for PduBody {
             PduBody::EventReport => { None }
             PduBody::Comment => { None }
             PduBody::ElectromagneticEmission(body) => { body.originator() }
-            PduBody::Designator => { None }
+            PduBody::Designator(body) => { body.originator() }
             PduBody::Transmitter => { None }
             PduBody::Signal => { None }
             PduBody::Receiver => { None }
@@ -433,7 +434,7 @@ impl Interaction for PduBody {
             PduBody::EventReport => { None }
             PduBody::Comment => { None }
             PduBody::ElectromagneticEmission(body) => { body.receiver() }
-            PduBody::Designator => { None }
+            PduBody::Designator(body) => { body.receiver() }
             PduBody::Transmitter => { None }
             PduBody::Signal => { None }
             PduBody::Receiver => { None }
