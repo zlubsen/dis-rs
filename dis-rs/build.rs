@@ -27,7 +27,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 86] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 90] = [
     (3, Some("ProtocolVersion"), None, false),   // protocol version
     (4, Some("PduType"), None, false),           // pdu type
     (5, Some("ProtocolFamily"), None, false),    // pdu family
@@ -62,8 +62,12 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 86] = [
     (81, Some("DesignatorCode"), None, false), // Designator Code
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    (177, None, None, false), // Signal User Protocol Identification Number
+    (178, Some("SignalTdlType"), None, true), // Signal TDL Type
     (189, None, None, false), // Collision Type
     (212, Some("StationName"), None, false), // IsPartOf-Station Name
+    (270, None, Some(16), false), // Signal Encoding Class
+    (271, None, Some(16), true), // Signal Encoding Type
     (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
     (283, Some("SeparationPreEntityIndicator"), None, false), // Separation VP-Pre-Entity Indicator
     (295, Some("AttributeActionCode"), None, false), // Attribute Action Code

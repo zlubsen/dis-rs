@@ -1,3 +1,5 @@
+extern crate core;
+
 mod common;
 mod v6;
 mod v7;

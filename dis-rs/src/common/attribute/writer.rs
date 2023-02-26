@@ -37,16 +37,17 @@ impl Serialize for AttributeRecord {
         const EIGHT_OCTETS : u16 = 8;
         const NO_REMAINDER : u16 = 0;
         let fields_bytes = BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS + self.specific_fields.len() as u16;
-        let num_of_padding_bytes = fields_bytes % EIGHT_OCTETS;
-        let record_bytes = fields_bytes + num_of_padding_bytes;
-        assert_eq!(record_bytes % EIGHT_OCTETS, NO_REMAINDER,
-                   "The length for the attribute record is not aligned to 8 octets. Record length is {record_bytes} octets.");
+        let remaining_bytes = fields_bytes % EIGHT_OCTETS;
+        let padding_bytes = EIGHT_OCTETS - remaining_bytes;
+        let padded_record_bytes = fields_bytes + padding_bytes;
+        assert_eq!(padded_record_bytes % EIGHT_OCTETS, NO_REMAINDER,
+                   "The length for the attribute record is not aligned to 8 octets. Record length is {padded_record_bytes} octets.");
 
         buf.put_u32(self.record_type.into());
-        buf.put_u16(record_bytes);
+        buf.put_u16(padded_record_bytes);
         buf.put(&*self.specific_fields);
-        buf.put_bytes(0u8, num_of_padding_bytes.into());
+        buf.put_bytes(0u8, remaining_bytes.into());
 
-        record_bytes
+        padded_record_bytes
     }
 }

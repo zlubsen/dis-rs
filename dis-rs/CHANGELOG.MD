@@ -1,7 +1,7 @@
 # Changelog for crate DIS-RS
 
 ## 0.4.0 - 2023-02-18
-Added support for StartResume, StopFreeze, Acknowledge, CollisionElastic, EntityStateUpdate PDUs.
+Added support for StartResume, StopFreeze, Acknowledge, CollisionElastic, EntityStateUpdate, Attribute, Designator, Signal PDUs.
 
 ## 0.3.2 - 2023-01-21
 Added export for Electromagnetic Emissions and Other PDUs.
