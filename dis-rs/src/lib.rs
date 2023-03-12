@@ -31,7 +31,7 @@ V Revise writing pdu's based on version
 V Finish model of entity_state PDU (with v6 and v7 capabilities)
 V Add entity appearance v7 to entity state
 V Parse v7 entity_state PDU
-- Finalize way to handle builders (how to build for different protocol versions, various fields with different layout)
+V Finalize way to handle builders (how to build for different protocol versions, various fields with different layout)
 - Common function for calculating body length based on header data (pdu_length - header_length); now at several places
 - Incorporate Symbolic names from the standard (v7 - table 25)
 - Dead-reckoning algorithms

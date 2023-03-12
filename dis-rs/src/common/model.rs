@@ -17,6 +17,7 @@ use crate::common::remove_entity::model::RemoveEntity;
 use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
+use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::PDU_HEADER_LEN_BYTES;
 
@@ -122,7 +123,7 @@ pub enum PduBody {
     Comment,
     ElectromagneticEmission(ElectromagneticEmission),
     Designator(Designator),
-    Transmitter,
+    Transmitter(Transmitter),
     Signal(Signal),
     Receiver,
     IFF,
@@ -200,7 +201,7 @@ impl BodyInfo for PduBody {
             PduBody::Comment => { 0 }
             PduBody::ElectromagneticEmission(body) => { body.body_length() }
             PduBody::Designator(body) => { body.body_length() }
-            PduBody::Transmitter => { 0 }
+            PduBody::Transmitter(body) => { body.body_length() }
             PduBody::Signal(body) => { body.body_length() }
             PduBody::Receiver => { 0 }
             PduBody::IFF => { 0 }
@@ -278,7 +279,7 @@ impl BodyInfo for PduBody {
             PduBody::Comment => { PduType::Comment }
             PduBody::ElectromagneticEmission(body) => { body.body_type() }
             PduBody::Designator(body) => { body.body_type() }
-            PduBody::Transmitter => { PduType::Transmitter }
+            PduBody::Transmitter(body) => { body.body_type() }
             PduBody::Signal(body) => { body.body_type() }
             PduBody::Receiver => { PduType::Receiver }
             PduBody::IFF => { PduType::IFF }
@@ -358,7 +359,7 @@ impl Interaction for PduBody {
             PduBody::Comment => { None }
             PduBody::ElectromagneticEmission(body) => { body.originator() }
             PduBody::Designator(body) => { body.originator() }
-            PduBody::Transmitter => { None }
+            PduBody::Transmitter(body) => { body.originator() }
             PduBody::Signal(body) => { body.originator() }
             PduBody::Receiver => { None }
             PduBody::IFF => { None }
@@ -436,7 +437,7 @@ impl Interaction for PduBody {
             PduBody::Comment => { None }
             PduBody::ElectromagneticEmission(body) => { body.receiver() }
             PduBody::Designator(body) => { body.receiver() }
-            PduBody::Transmitter => { None }
+            PduBody::Transmitter(body) => { body.receiver() }
             PduBody::Signal(body) => { body.receiver() }
             PduBody::Receiver => { None }
             PduBody::IFF => { None }

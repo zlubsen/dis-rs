@@ -27,7 +27,7 @@ use quote::__private::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 90] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 105] = [
     (3, Some("ProtocolVersion"), None, false),   // protocol version
     (4, Some("PduType"), None, false),           // pdu type
     (5, Some("ProtocolFamily"), None, false),    // pdu family
@@ -62,6 +62,20 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 90] = [
     (81, Some("DesignatorCode"), None, false), // Designator Code
     // 82-84, 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    (155, None, None, false), // Transmitter Major Modulation
+    (156, None, None, false), // Transmitter-Detail-Amplitude Modulation
+    (157, Some("TransmitterDetailAmplitudeAngleModulation"), None, false), // Transmitter-Detail-Amplitude and Angle Modulation
+    (158, Some("TransmitterDetailAngleModulation"), None, false), // Transmitter-Detail-Angle modulation
+    (159, None, None, false), // Transmitter-Detail-Combination Modulation
+    (160, None, None, false), // Transmitter-Detail-Pulse Modulation
+    (161, None, None, false), // Transmitter-Detail-Unmodulated Modulation
+    (162, None, None, false), // Transmitter-Detail-Carrier Phase Shift Modulation
+    (163, None, None, false), // Transmitter-Modulation Type System
+    (164, None, None, false), // Transmitter Transmit State
+    (165, None, None, false), // Transmitter Input Source
+    (166, None, None, false), // Transmitter Crypto System
+    (167, None, None, false), // Transmitter Antenna Pattern Type
+    (168, None, None, false), // Transmitter Antenna Pattern Reference System
     (177, None, None, false), // Signal User Protocol Identification Number
     (178, Some("SignalTdlType"), None, true), // Signal TDL Type
     (189, None, None, false), // Collision Type
@@ -123,6 +137,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 90] = [
     (411, None, None, false), // Appearance
     (415, None, None, false), // Attached Part-Detached Indicator
     (426, None, None, false), // Cover/Shroud Status
+    (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
     (802, None, None, false), // Clothing IR Signature
 ];
 
