@@ -97,7 +97,7 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
             PduType::Unspecified(_) => { (input, None, None) }
         };
 
-        let body_length_bytes = header.pdu_length - PDU_HEADER_LEN_BYTES;
+        let body_length_bytes = header.pdu_length.saturating_sub(PDU_HEADER_LEN_BYTES);
         let (input, body) = take(body_length_bytes)(input)?;
         let inner_body = body.to_vec();
         let body = Other::new(inner_body)
