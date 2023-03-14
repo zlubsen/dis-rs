@@ -1,11 +1,11 @@
 use crate::common::model::{EntityId, Location};
-use crate::enumerations::{VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterDetailAmplitudeModulation, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAngleModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailUnmodulatedModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterAntennaPatternReferenceSystem};
+use crate::enumerations::{VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem};
 use crate::{EntityType, Orientation, PduBody, PduType, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 
 const BASE_TRANSMITTER_BODY_LENGTH: u16 = 104;
-const NO_OCTETS : u16 = 0;
-const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
+pub const NO_OCTETS : u16 = 0;
+pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
 const BASE_VTP_RECORD_LENGTH: u16 = 6;
 
 pub struct Transmitter {
@@ -50,19 +50,100 @@ impl Transmitter {
             power: 0.0,
             modulation_type: Default::default(),
             crypto_system: Default::default(),
-            crypto_key_id: (),
+            crypto_key_id: Default::default(),
             modulation_parameters: None,
             antenna_pattern: None,
             variable_transmitter_parameters: vec![],
         }
     }
 
-    // TODO create builder methods
+    pub fn with_radio_reference_id(mut self, radio_reference_id: EntityId) -> Self {
+        self.radio_reference_id = radio_reference_id;
+        self
+    }
 
-    // pub fn with_origination_id(mut self, originating_id: EntityId) -> Self {
-    //     self.originating_id = originating_id;
-    //     self
-    // }
+    pub fn with_radio_number(mut self, radio_number: u16) -> Self {
+        self.radio_number = radio_number;
+        self
+    }
+
+    pub fn with_radio_type(mut self, radio_type: EntityType) -> Self {
+        self.radio_type = radio_type;
+        self
+    }
+
+    pub fn with_transmit_state(mut self, transmit_state: TransmitterTransmitState) -> Self {
+        self.transmit_state = transmit_state;
+        self
+    }
+
+    pub fn with_input_source(mut self, input_source: TransmitterInputSource) -> Self {
+        self.input_source = input_source;
+        self
+    }
+
+    pub fn with_antenna_location(mut self, antenna_location: Location) -> Self {
+        self.antenna_location = antenna_location;
+        self
+    }
+
+    pub fn with_relative_antenna_location(mut self, relative_antenna_location: VectorF32) -> Self {
+        self.relative_antenna_location = relative_antenna_location;
+        self
+    }
+
+    pub fn with_antenna_pattern_type(mut self, antenna_pattern_type: TransmitterAntennaPatternType) -> Self {
+        self.antenna_pattern_type = antenna_pattern_type;
+        self
+    }
+
+    pub fn with_frequency(mut self, frequency: u64) -> Self {
+        self.frequency = frequency;
+        self
+    }
+
+    pub fn with_transmit_frequency_bandwidth(mut self, transmit_frequency_bandwidth: f32) -> Self {
+        self.transmit_frequency_bandwidth = transmit_frequency_bandwidth;
+        self
+    }
+    pub fn with_power(mut self, power: f32) -> Self {
+        self.power = power;
+        self
+    }
+
+    pub fn with_modulation_type(mut self, modulation_type: ModulationType) -> Self {
+        self.modulation_type = modulation_type;
+        self
+    }
+
+    pub fn with_crypto_system(mut self, crypto_system: TransmitterCryptoSystem) -> Self {
+        self.crypto_system = crypto_system;
+        self
+    }
+
+    pub fn with_crypto_key_id(mut self, crypto_key_id: CryptoKeyId) -> Self {
+        self.crypto_key_id = crypto_key_id;
+        self
+    }
+    pub fn with_modulation_parameters(mut self, modulation_parameters: Vec<u8>) -> Self {
+        self.modulation_parameters = Some(modulation_parameters);
+        self
+    }
+
+    pub fn with_antenna_pattern(mut self, antenna_pattern: BeamAntennaPattern) -> Self {
+        self.antenna_pattern = Some(antenna_pattern);
+        self
+    }
+
+    pub fn with_variable_transmitter_parameters(mut self, variable_transmitter_parameters: Vec<VariableTransmitterParameter>) -> Self {
+        self.variable_transmitter_parameters = variable_transmitter_parameters;
+        self
+    }
+
+    pub fn with_variable_transmitter_parameter(mut self, variable_transmitter_parameter: VariableTransmitterParameter) -> Self {
+        self.variable_transmitter_parameters.push(variable_transmitter_parameter);
+        self
+    }
 
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Transmitter(self)
@@ -72,10 +153,10 @@ impl Transmitter {
 impl BodyInfo for Transmitter {
     fn body_length(&self) -> u16 {
         BASE_TRANSMITTER_BODY_LENGTH +
-            self.modulation_parameters.map_or(NO_OCTETS, |params|params.len() as u16) +
-            self.antenna_pattern.map_or(NO_OCTETS, |_| BEAM_ANTENNA_PATTERN_OCTETS) +
+            self.modulation_parameters.as_ref().map_or(NO_OCTETS, |params|params.len() as u16) +
+            self.antenna_pattern.as_ref().map_or(NO_OCTETS, |_| BEAM_ANTENNA_PATTERN_OCTETS) +
             self.variable_transmitter_parameters.iter().map(|vtp|
-                vtp.length_padded()
+                vtp.length_padded() as u16
             ).sum::<u16>()
     }
 
@@ -97,7 +178,6 @@ impl Interaction for Transmitter {
 pub struct ModulationType {
     pub spread_spectrum: SpreadSpectrum,
     pub major_modulation: TransmitterMajorModulation,
-    // pub detail: TransmitterDetailModulation,
     pub radio_system: TransmitterModulationTypeSystem
 }
 
@@ -180,6 +260,15 @@ impl SpreadSpectrum {
 pub struct CryptoKeyId {
     pub pseudo_crypto_key: u16,
     pub crypto_mode: CryptoMode,
+}
+
+impl Default for CryptoKeyId {
+    fn default() -> Self {
+        Self {
+            pseudo_crypto_key: Default::default(),
+            crypto_mode: CryptoMode::Baseband,
+        }
+    }
 }
 
 pub enum CryptoMode {
@@ -272,6 +361,12 @@ pub struct VariableTransmitterParameter {
     pub fields: Vec<u8>,
 }
 
+impl Default for VariableTransmitterParameter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VariableTransmitterParameter {
     pub fn new() -> Self {
         Self {
@@ -293,7 +388,7 @@ impl VariableTransmitterParameter {
     pub fn length_padded(&self) -> usize {
         const EIGHT_OCTETS : usize = 8;
         const NO_REMAINDER : usize = 0;
-        let data_remaining_bytes = (BASE_VTP_RECORD_LENGTH + self.fields.len()) % EIGHT_OCTETS;
+        let data_remaining_bytes = (BASE_VTP_RECORD_LENGTH as usize + self.fields.len()) % EIGHT_OCTETS;
         let padding_bytes = EIGHT_OCTETS - data_remaining_bytes;
         let padded_data_bytes = self.fields.len() + padding_bytes;
         assert_eq!(padded_data_bytes % EIGHT_OCTETS, NO_REMAINDER,

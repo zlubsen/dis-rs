@@ -3,46 +3,78 @@ use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use crate::common::model::PduBody;
-use crate::common::parser::{entity_id, entity_type, location, vec3_f32};
+use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
 use crate::common::transmitter::model::{BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
 use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState};
-use crate::{TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem};
+use crate::{PduHeader, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
 
-pub fn transmitter_body(input: &[u8]) -> IResult<&[u8], PduBody> {
-    let (input, radio_reference_id) = entity_id(input)?;
-    let (input, radio_number) = be_u16(input)?;
-    let (input, radio_type) = entity_type(input)?;
-    let (input, transmit_state) = be_u8(input)?;
-    let transmit_state = TransmitterTransmitState::from(transmit_state);
-    let (input, input_source) = be_u8(input)?;
-    let input_source = TransmitterInputSource::from(input_source);
-    let (input, number_of_vtp) = be_u16(input)?;
-    let (input, antenna_location) = location(input)?;
-    let (input, relative_antenna_location) = vec3_f32(input)?;
-    let (input, antenna_pattern_type) = be_u16(input)?;
-    let antenna_pattern_type = TransmitterAntennaPatternType::from(antenna_pattern_type);
-    let (input, antenna_pattern_length) = be_u16(input)?;
-    let (input, frequency) = be_u64(input)?;
-    let (input, transmit_frequency_bandwidth) = be_f32(input)?;
-    let (input, power) = be_f32(input)?;
-    let (input, modulation_type) = modulation_type(input)?;
-    let (input, crypto_system) = be_u16(input)?;
-    let crypto_system = TransmitterCryptoSystem::from(crypto_system);
-    let (input, crypto_key_id) = crypto_key_id(input)?;
-    let (input, length_of_modulation_parameters) = be_u8(input)?;
-    let (input, modulation_parameters) = if length_of_modulation_parameters > 0 {
-        let params = take(length_of_modulation_parameters)(input)?;
-        Some(params)
-    } else { (input, None) };
-    let (input, antenna_pattern) = if antenna_pattern_length > 0 {
-        // TODO
-        BeamAntennaPattern::new()
-    } else { (input, None) };
-    let (input, vt_params) =
-        count(variable_transmitter_parameter, number_of_vtp)(input)?;
+pub fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+    move |input: &[u8]| {
+        let (input, radio_reference_id) = entity_id(input)?;
+        let (input, radio_number) = be_u16(input)?;
+        let (input, radio_type) = entity_type(input)?;
+        let (input, transmit_state) = be_u8(input)?;
+        let transmit_state = TransmitterTransmitState::from(transmit_state);
+        let (input, input_source) = be_u8(input)?;
+        let input_source = TransmitterInputSource::from(input_source);
+        #[allow(clippy::wildcard_in_or_patterns)]
+        let (input, number_of_vtp) = match header.protocol_version {
+            ProtocolVersion::IEEE1278_12012 => { be_u16(input)? }
+            ProtocolVersion::IEEE1278_1A1998 | _ => { (input, 0u16) }
+        };
+        let (input, antenna_location) = location(input)?;
+        let (input, relative_antenna_location) = vec3_f32(input)?;
+        let (input, antenna_pattern_type) = be_u16(input)?;
+        let antenna_pattern_type = TransmitterAntennaPatternType::from(antenna_pattern_type);
+        let (input, antenna_pattern_length) = be_u16(input)?;
+        let (input, frequency) = be_u64(input)?;
+        let (input, transmit_frequency_bandwidth) = be_f32(input)?;
+        let (input, power) = be_f32(input)?;
+        let (input, modulation_type) = modulation_type(input)?;
+        let (input, crypto_system) = be_u16(input)?;
+        let crypto_system = TransmitterCryptoSystem::from(crypto_system);
+        let (input, crypto_key_id) = crypto_key_id(input)?;
+        let (input, length_of_modulation_parameters) = be_u8(input)?;
+        let (input, _padding) = be_u8(input)?;
+        let (input, _padding) = be_u16(input)?;
 
-    let body = Transmitter::new()
-        // TODO finish
+        let (input, modulation_parameters) = if length_of_modulation_parameters > 0 {
+            let (input, params) = take(length_of_modulation_parameters)(input)?;
+            (input, Some(params))
+        } else { (input, None) };
+        let (input, antenna_pattern) = if antenna_pattern_length > 0 {
+            let (input, pattern) = beam_antenna_pattern(input)?;
+            (input, Some(pattern))
+        } else { (input, None) };
+
+        let (input, vt_params) =
+            count(variable_transmitter_parameter, number_of_vtp.into())(input)?;
+
+        let body = Transmitter::new()
+            .with_radio_reference_id(radio_reference_id)
+            .with_radio_number(radio_number)
+            .with_radio_type(radio_type)
+            .with_transmit_state(transmit_state)
+            .with_input_source(input_source)
+            .with_antenna_location(antenna_location)
+            .with_relative_antenna_location(relative_antenna_location)
+            .with_antenna_pattern_type(antenna_pattern_type)
+            .with_frequency(frequency)
+            .with_transmit_frequency_bandwidth(transmit_frequency_bandwidth)
+            .with_power(power)
+            .with_modulation_type(modulation_type)
+            .with_crypto_system(crypto_system)
+            .with_crypto_key_id(crypto_key_id)
+            .with_variable_transmitter_parameters(vt_params);
+        let body = if let Some(antenna_pattern) = antenna_pattern {
+            body.with_antenna_pattern(antenna_pattern)
+        } else { body };
+        let body = if let Some(modulation_parameters) = modulation_parameters {
+            body.with_modulation_parameters(modulation_parameters.to_vec())
+        } else { body };
+
+        Ok((input, body.into_pdu_body()))
+    }
 }
 
 fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
@@ -83,9 +115,9 @@ fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
 
 fn spread_spectrum(input: &[u8]) -> IResult<&[u8], SpreadSpectrum> {
     let (input, spread_spectrum_values) = be_u16(input)?;
-    let frequency_hopping = (spread_spectrum_values >> 15) & 0x0001;
-    let pseudo_noise = (spread_spectrum_values >> 14) & 0x0001;
-    let time_hopping = (spread_spectrum_values >> 13) & 0x0001;
+    let frequency_hopping = ((spread_spectrum_values >> 15) & 0x0001) != 0;
+    let pseudo_noise = ((spread_spectrum_values >> 14) & 0x0001) != 0;
+    let time_hopping = ((spread_spectrum_values >> 13) & 0x0001) != 0;
 
     Ok((input, SpreadSpectrum::new_with_values(frequency_hopping, pseudo_noise, time_hopping)))
 }
@@ -93,7 +125,7 @@ fn spread_spectrum(input: &[u8]) -> IResult<&[u8], SpreadSpectrum> {
 fn crypto_key_id(input: &[u8]) -> IResult<&[u8], CryptoKeyId> {
     let (input, value) = be_u16(input)?;
     let pseudo_crypto_key = value >> 1;
-    let crypto_mode = (value & 0x0001) as bool;
+    let crypto_mode = (value & 0x0001) != 0;
     let crypto_mode = CryptoMode::from(crypto_mode);
 
     Ok((input, CryptoKeyId {
@@ -102,6 +134,36 @@ fn crypto_key_id(input: &[u8]) -> IResult<&[u8], CryptoKeyId> {
     }))
 }
 
+fn beam_antenna_pattern(input: &[u8]) -> IResult<&[u8], BeamAntennaPattern> {
+    let (input, beam_direction) = orientation(input)?;
+    let (input, azimuth_beamwidth) = be_f32(input)?;
+    let (input, elevation_beamwidth) = be_f32(input)?;
+    let (input, reference_system) = be_u8(input)?;
+    let reference_system = TransmitterAntennaPatternReferenceSystem::from(reference_system);
+    let (input, _padding) = be_u8(input)?;
+    let (input, _padding) = be_u16(input)?;
+    let (input, e_z) = be_f32(input)?;
+    let (input, e_x) = be_f32(input)?;
+    let (input, phase) = be_f32(input)?;
+    let (input, _padding) = be_u32(input)?;
+
+    Ok((input, BeamAntennaPattern::new()
+        .with_beam_direction(beam_direction)
+        .with_azimuth_beamwidth(azimuth_beamwidth)
+        .with_elevation_beamwidth(elevation_beamwidth)
+        .with_reference_system(reference_system)
+        .with_e_z(e_z)
+        .with_e_x(e_x)
+        .with_phase(phase)))
+}
+
 fn variable_transmitter_parameter(input: &[u8]) -> IResult<&[u8], VariableTransmitterParameter> {
-    // TODO
+    let (input, record_type) = be_u32(input)?;
+    let record_type = VariableRecordType::from(record_type);
+    let (input, record_length) = be_u16(input)?;
+    let (input, specific_fields) = take(record_length)(input)?;
+
+    Ok((input, VariableTransmitterParameter::new()
+        .with_record_type(record_type)
+        .with_fields(specific_fields.to_vec())))
 }

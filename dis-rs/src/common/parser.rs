@@ -26,6 +26,7 @@ use crate::common::remove_entity::parser::remove_entity_body;
 use crate::common::signal::parser::signal_body;
 use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
+use crate::common::transmitter::parser::transmitter_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 
@@ -181,7 +182,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::Comment => {}
             PduType::ElectromagneticEmission => { emission_body(header)(input)? }
             PduType::Designator => { designator_body(input)? }
-            // PduType::Transmitter => {}
+            PduType::Transmitter => { transmitter_body(header)(input)? }
             PduType::Signal => { signal_body(input)? }
             // PduType::Receiver => {}
             // PduType::IFF => {}
