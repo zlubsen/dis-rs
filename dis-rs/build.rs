@@ -3,7 +3,7 @@ use std::ops::{RangeInclusive};
 use std::path::Path;
 
 use quick_xml::Reader;
-use quote::__private::{Ident, Literal, TokenStream};
+use proc_macro2::{Ident, Literal, TokenStream};
 
 // TODO formatting of generated code file (apply rustfmt)
 // TODO refactor a bit and make testable (include some unit tests in the regular code)
