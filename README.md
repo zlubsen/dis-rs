@@ -39,9 +39,9 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | CommentPdu |         |          |         |          |
 | ElectromagneticEmissionPdu | V       | V        | V       | V        |
 | DesignatorPdu | V       | V        | V       | V        |
-| TransmitterPdu |         |          |         |          |
+| TransmitterPdu | V       | V        | V       | V        |
 | SignalPdu | V       | V        | V       | V        |
-| ReceiverPdu |         |          |         |          |
+| ReceiverPdu | V       | V        | V       | V        |
 | AnnounceObjectPdu |         |          |         |          |
 | DeleteObjectPdu |         |          |         |          |
 | DescribeApplicationPdu |         |          |         |          |
