@@ -27,10 +27,10 @@ use quote::__private::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 105] = [
-    (3, Some("ProtocolVersion"), None, false),   // protocol version
-    (4, Some("PduType"), None, false),           // pdu type
-    (5, Some("ProtocolFamily"), None, false),    // pdu family
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 106] = [
+    (3, Some("ProtocolVersion"), None, false),   // Protocol Version
+    (4, Some("PduType"), None, false),           // PDU Type
+    (5, Some("ProtocolFamily"), None, false),    // PDU Family
     (6, Some("ForceId"), None, false), // Force Id
     (7, None, None, false), // Entity Kind
     (8, None, None, false), // Domain
@@ -38,7 +38,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 105] = [
     (29, None, None, false), // Country
     // 30 // Entity Types records
     (44, None, None, false), // Dead Reckoning Algorithm
-    (45, None, None, false), // entity marking char set
+    (45, None, None, false), // Entity Marking Character Set
     // 46-54 do not exist
     (55, None, None, false), // Entity Capabilities (together with bitfields 450-462)
     (56, None, None, false), // Variable Parameter Record Type
@@ -78,6 +78,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 105] = [
     (168, None, None, false), // Transmitter Antenna Pattern Reference System
     (177, None, None, false), // Signal User Protocol Identification Number
     (178, Some("SignalTdlType"), None, true), // Signal TDL Type
+    (179, Some("ReceiverState"), None, false), // Receiver Receiver State
     (189, None, None, false), // Collision Type
     (212, Some("StationName"), None, false), // IsPartOf-Station Name
     (270, None, Some(16), false), // Signal Encoding Class

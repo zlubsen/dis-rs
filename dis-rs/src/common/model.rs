@@ -13,6 +13,7 @@ use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::other::model::Other;
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
+use crate::common::receiver::model::Receiver;
 use crate::common::remove_entity::model::RemoveEntity;
 use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
@@ -125,7 +126,7 @@ pub enum PduBody {
     Designator(Designator),
     Transmitter(Transmitter),
     Signal(Signal),
-    Receiver,
+    Receiver(Receiver),
     IFF,
     UnderwaterAcoustic,
     SupplementalEmissionEntityState,
@@ -203,7 +204,7 @@ impl BodyInfo for PduBody {
             PduBody::Designator(body) => { body.body_length() }
             PduBody::Transmitter(body) => { body.body_length() }
             PduBody::Signal(body) => { body.body_length() }
-            PduBody::Receiver => { 0 }
+            PduBody::Receiver(body) => { body.body_length() }
             PduBody::IFF => { 0 }
             PduBody::UnderwaterAcoustic => { 0 }
             PduBody::SupplementalEmissionEntityState => { 0 }
@@ -281,7 +282,7 @@ impl BodyInfo for PduBody {
             PduBody::Designator(body) => { body.body_type() }
             PduBody::Transmitter(body) => { body.body_type() }
             PduBody::Signal(body) => { body.body_type() }
-            PduBody::Receiver => { PduType::Receiver }
+            PduBody::Receiver(body) => { body.body_type() }
             PduBody::IFF => { PduType::IFF }
             PduBody::UnderwaterAcoustic => { PduType::UnderwaterAcoustic }
             PduBody::SupplementalEmissionEntityState => { PduType::SupplementalEmissionEntityState }
@@ -361,7 +362,7 @@ impl Interaction for PduBody {
             PduBody::Designator(body) => { body.originator() }
             PduBody::Transmitter(body) => { body.originator() }
             PduBody::Signal(body) => { body.originator() }
-            PduBody::Receiver => { None }
+            PduBody::Receiver(body) => { body.originator() }
             PduBody::IFF => { None }
             PduBody::UnderwaterAcoustic => { None }
             PduBody::SupplementalEmissionEntityState => { None }
@@ -439,7 +440,7 @@ impl Interaction for PduBody {
             PduBody::Designator(body) => { body.receiver() }
             PduBody::Transmitter(body) => { body.receiver() }
             PduBody::Signal(body) => { body.receiver() }
-            PduBody::Receiver => { None }
+            PduBody::Receiver(body) => { body.receiver() }
             PduBody::IFF => { None }
             PduBody::UnderwaterAcoustic => { None }
             PduBody::SupplementalEmissionEntityState => { None }

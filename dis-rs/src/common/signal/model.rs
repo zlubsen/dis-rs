@@ -3,7 +3,7 @@ use crate::enumerations::{SignalTdlType, SignalEncodingType, SignalEncodingClass
 use crate::{PduBody, PduType};
 use crate::common::{BodyInfo, Interaction};
 
-pub const BASE_SIGNAL_BODY_LENGTH : u16 = 32;
+pub const BASE_SIGNAL_BODY_LENGTH : u16 = 20;
 
 pub struct Signal {
     pub radio_reference_id: EntityId,

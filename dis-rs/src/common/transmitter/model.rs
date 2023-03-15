@@ -3,7 +3,7 @@ use crate::enumerations::{VariableRecordType, TransmitterTransmitState, Transmit
 use crate::{EntityType, Orientation, PduBody, PduType, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 
-const BASE_TRANSMITTER_BODY_LENGTH: u16 = 104;
+const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
 pub const NO_OCTETS : u16 = 0;
 pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
 const BASE_VTP_RECORD_LENGTH: u16 = 6;

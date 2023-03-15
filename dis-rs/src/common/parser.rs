@@ -22,6 +22,7 @@ use crate::common::detonation::parser::detonation_body;
 use crate::common::electromagnetic_emission::parser::emission_body;
 use crate::common::entity_state_update::parser::entity_state_update_body;
 use crate::common::fire::parser::fire_body;
+use crate::common::receiver::parser::receiver_body;
 use crate::common::remove_entity::parser::remove_entity_body;
 use crate::common::signal::parser::signal_body;
 use crate::common::start_resume::parser::start_resume_body;
@@ -184,7 +185,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Designator => { designator_body(input)? }
             PduType::Transmitter => { transmitter_body(header)(input)? }
             PduType::Signal => { signal_body(input)? }
-            // PduType::Receiver => {}
+            PduType::Receiver => { receiver_body(input)? }
             // PduType::IFF => {}
             // PduType::UnderwaterAcoustic => {}
             // PduType::SupplementalEmissionEntityState => {}
