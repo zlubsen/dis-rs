@@ -21,7 +21,6 @@ pub mod transmitter;
 pub mod receiver;
 
 pub mod symbolic_names;
-pub mod defaults;
 pub mod errors;
 mod writer;
 

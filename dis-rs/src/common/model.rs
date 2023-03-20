@@ -5,7 +5,6 @@ use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
 use crate::common::create_entity::model::CreateEntity;
-use crate::common::defaults::{DEFAULT_APPLICATION_ID, DEFAULT_ENTITY_ID, DEFAULT_EVENT_ID, DEFAULT_SITE_ID};
 use crate::common::designator::model::Designator;
 use crate::common::detonation::model::Detonation;
 use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
@@ -21,6 +20,7 @@ use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::PDU_HEADER_LEN_BYTES;
+use crate::{NO_APPLIC, NO_ENTITY, NO_SITE};
 
 pub struct Pdu {
     pub header : PduHeader,
@@ -589,8 +589,8 @@ impl SimulationAddress {
 impl Default for SimulationAddress {
     fn default() -> Self {
         Self {
-            site_id: DEFAULT_SITE_ID,
-            application_id: DEFAULT_APPLICATION_ID
+            site_id: NO_SITE,
+            application_id: NO_APPLIC
         }
     }
 }
@@ -605,7 +605,7 @@ impl Default for EntityId {
     fn default() -> Self {
         Self {
             simulation_address: SimulationAddress::default(),
-            entity_id: DEFAULT_ENTITY_ID
+            entity_id: NO_ENTITY
         }
     }
 }
@@ -655,7 +655,7 @@ impl Default for EventId {
     fn default() -> Self {
         Self {
             simulation_address: SimulationAddress::default(),
-            event_id: DEFAULT_EVENT_ID
+            event_id: NO_ENTITY
         }
     }
 }
