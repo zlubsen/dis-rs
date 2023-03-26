@@ -1,12 +1,12 @@
 use crate::common::model::{EntityId, Location};
 use crate::enumerations::{VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem};
-use crate::{EntityType, Orientation, PduBody, PduType, VectorF32};
+use crate::{EntityType, length_padded_to_num_bytes, Orientation, PduBody, PduType, VectorF32};
 use crate::common::{BodyInfo, Interaction};
+use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 
 const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
-pub const NO_OCTETS : u16 = 0;
 pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
-const BASE_VTP_RECORD_LENGTH: u16 = 6;
+pub const BASE_VTP_RECORD_LENGTH: u16 = 6;
 
 pub struct Transmitter {
     pub radio_reference_id: EntityId,
@@ -153,10 +153,12 @@ impl Transmitter {
 impl BodyInfo for Transmitter {
     fn body_length(&self) -> u16 {
         BASE_TRANSMITTER_BODY_LENGTH +
-            self.modulation_parameters.as_ref().map_or(NO_OCTETS, |params|params.len() as u16) +
-            self.antenna_pattern.as_ref().map_or(NO_OCTETS, |_| BEAM_ANTENNA_PATTERN_OCTETS) +
+            self.modulation_parameters.as_ref().map_or(ZERO_OCTETS as u16, |params|params.len() as u16) +
+            self.antenna_pattern.as_ref().map_or(ZERO_OCTETS as u16, |_| BEAM_ANTENNA_PATTERN_OCTETS) +
             self.variable_transmitter_parameters.iter().map(|vtp|
-                vtp.length_padded() as u16
+                length_padded_to_num_bytes(
+                    BASE_VTP_RECORD_LENGTH as usize + vtp.fields.len(),
+                    EIGHT_OCTETS).record_length_bytes as u16
             ).sum::<u16>()
     }
 
@@ -383,17 +385,5 @@ impl VariableTransmitterParameter {
     pub fn with_fields(mut self, fields: Vec<u8>) -> Self {
         self.fields = fields;
         self
-    }
-
-    pub fn length_padded(&self) -> usize {
-        const EIGHT_OCTETS : usize = 8;
-        const NO_REMAINDER : usize = 0;
-        let data_remaining_bytes = (BASE_VTP_RECORD_LENGTH as usize + self.fields.len()) % EIGHT_OCTETS;
-        let padding_bytes = EIGHT_OCTETS - data_remaining_bytes;
-        let padded_data_bytes = self.fields.len() + padding_bytes;
-        assert_eq!(padded_data_bytes % EIGHT_OCTETS, NO_REMAINDER,
-                   "The length for the Variable Transmitter Parameter record is not aligned to 8 octets. Fields length is {} octets.", self.fields.len());
-
-        padded_data_bytes
     }
 }

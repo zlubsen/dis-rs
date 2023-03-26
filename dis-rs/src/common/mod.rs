@@ -2,17 +2,24 @@ pub mod model;
 pub(crate) mod parser;
 
 pub mod acknowledge;
+pub mod action_request;
+// pub mod action_response;
 pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;
+// pub mod comment;
+// pub mod data;
+// pub mod data_query;
 pub mod designator;
 pub mod detonation;
+pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod entity_state_update;
-pub mod electromagnetic_emission;
+// pub mod event_report;
 pub mod fire;
 pub mod create_entity;
 pub mod remove_entity;
+// pub mod set_data;
 pub mod start_resume;
 pub mod stop_freeze;
 pub mod other;
@@ -20,7 +27,6 @@ pub mod signal;
 pub mod transmitter;
 pub mod receiver;
 
-pub mod symbolic_names;
 pub mod errors;
 mod writer;
 

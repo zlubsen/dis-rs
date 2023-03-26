@@ -1,6 +1,7 @@
 use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::acknowledge::model::Acknowledge;
+use crate::common::action_request::model::ActionRequest;
 use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
@@ -19,8 +20,9 @@ use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
-use crate::constants::PDU_HEADER_LEN_BYTES;
-use crate::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::constants::{NO_REMAINDER, PDU_HEADER_LEN_BYTES};
+use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::VariableRecordType;
 
 pub struct Pdu {
     pub header : PduHeader,
@@ -115,7 +117,7 @@ pub enum PduBody {
     StartResume(StartResume),
     StopFreeze(StopFreeze),
     Acknowledge(Acknowledge),
-    ActionRequest,
+    ActionRequest(ActionRequest),
     ActionResponse,
     DataQuery,
     SetData,
@@ -193,7 +195,7 @@ impl BodyInfo for PduBody {
             PduBody::StartResume(body) => { body.body_length() }
             PduBody::StopFreeze(body) => { body.body_length() }
             PduBody::Acknowledge(body) => { body.body_length() }
-            PduBody::ActionRequest => { 0 }
+            PduBody::ActionRequest(body) => { body.body_length() }
             PduBody::ActionResponse => { 0 }
             PduBody::DataQuery => { 0 }
             PduBody::SetData => { 0 }
@@ -271,7 +273,7 @@ impl BodyInfo for PduBody {
             PduBody::StartResume(body) => { body.body_type() }
             PduBody::StopFreeze(body) => { body.body_type() }
             PduBody::Acknowledge(body) => { body.body_type() }
-            PduBody::ActionRequest => { PduType::ActionRequest }
+            PduBody::ActionRequest(body) => { body.body_type() }
             PduBody::ActionResponse => { PduType::ActionResponse }
             PduBody::DataQuery => { PduType::DataQuery }
             PduBody::SetData => { PduType::SetData }
@@ -351,7 +353,7 @@ impl Interaction for PduBody {
             PduBody::StartResume(body) => { body.originator() }
             PduBody::StopFreeze(body) => { body.originator() }
             PduBody::Acknowledge(body) => { body.originator() }
-            PduBody::ActionRequest => { None }
+            PduBody::ActionRequest(body) => { body.originator() }
             PduBody::ActionResponse => { None }
             PduBody::DataQuery => { None }
             PduBody::SetData => { None }
@@ -429,7 +431,7 @@ impl Interaction for PduBody {
             PduBody::StartResume(body) => { body.receiver() }
             PduBody::StopFreeze(body) => { body.receiver() }
             PduBody::Acknowledge(body) => { body.receiver() }
-            PduBody::ActionRequest => { None }
+            PduBody::ActionRequest(body) => { body.receiver() }
             PduBody::ActionResponse => { None }
             PduBody::DataQuery => { None }
             PduBody::SetData => { None }
@@ -884,4 +886,55 @@ impl ClockTime {
             time_past_hour,
         }
     }
+}
+
+pub struct DatumSpecification {
+    pub fixed_datum_records: Vec<FixedDatum>,
+    pub variable_datum_records: Vec<VariableDatum>,
+}
+
+pub struct FixedDatum {
+    pub datum_id: VariableRecordType,
+    pub datum_value: u32,
+}
+
+pub struct VariableDatum {
+    pub datum_id: VariableRecordType,
+    pub datum_value: Vec<u8>,
+}
+
+/// Struct to hold the length in bytes of parts of a padded record.
+/// `data_length_bytes` + `padding_length_bytes` = `record_length_bytes`.
+pub struct PaddedRecordLengths {
+    pub data_length_bytes: usize,
+    pub padding_length_bytes: usize,
+    pub record_length_bytes: usize,
+}
+
+impl PaddedRecordLengths {
+    pub fn new(data_length_bytes: usize,
+               padding_length_bytes: usize,
+               record_length_bytes: usize) -> Self {
+        Self {
+            data_length_bytes,
+            padding_length_bytes,
+            record_length_bytes
+        }
+    }
+}
+
+/// Calculates the length of a data record when padded to `pad_to_num_bytes` octets,
+/// given that the length of the data in the record is `data_length_bytes`.
+/// The function returns a tuple consisting of the length of the data, the lenght of the padding, and the total (padded) length of the record.
+///
+/// For example, a piece of data of 12 bytes that needs to be aligned to 16 bytes will have a
+/// data length of 12 bytes, a padding of 4 bytes and a final length of 12 + 4 bytes. The function will return 16 in this case.
+pub fn length_padded_to_num_bytes(data_length_bytes: usize, pad_to_num_bytes: usize) -> PaddedRecordLengths {
+    let data_remaining_bytes = data_length_bytes % pad_to_num_bytes;
+    let padding_bytes = pad_to_num_bytes - data_remaining_bytes;
+    let padded_data_bytes = data_length_bytes + padding_bytes;
+    assert_eq!(padded_data_bytes % pad_to_num_bytes, NO_REMAINDER,
+               "The length for the data record is not aligned to {} octets. Data length is {} octets.", pad_to_num_bytes, data_length_bytes);
+
+    PaddedRecordLengths::new(data_length_bytes, padding_bytes, padded_data_bytes)
 }

@@ -1,6 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::signal::model::{EncodingScheme, Signal};
+use crate::constants::FOUR_OCTETS;
+use crate::length_padded_to_num_bytes;
 
 impl SerializePdu for Signal {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -12,10 +14,12 @@ impl SerializePdu for Signal {
         buf.put_u16(self.data.len() as u16);
         buf.put_u16(self.samples);
         buf.put(&self.data[..]);
-        let padded_data_length = self.data_length_padded();
-        buf.put_bytes(0u8, padded_data_length - self.data.len());
+        let padded_record_lengths = length_padded_to_num_bytes(
+            self.data.len(),
+            FOUR_OCTETS);
+        buf.put_bytes(0u8, padded_record_lengths.padding_length_bytes);
 
-        radio_ref_id_bytes + 2 + encoding_scheme_bytes + 10 + padded_data_length as u16
+        radio_ref_id_bytes + 2 + encoding_scheme_bytes + 10 + padded_record_lengths.record_length_bytes as u16
     }
 }
 

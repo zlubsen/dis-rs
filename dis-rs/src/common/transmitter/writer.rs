@@ -1,7 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::transmitter::model::{BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, NO_OCTETS, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
-use crate::TransmitterMajorModulation;
+use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
+use crate::{length_padded_to_num_bytes, TransmitterMajorModulation};
+use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 
 impl SerializePdu for Transmitter {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -17,7 +18,7 @@ impl SerializePdu for Transmitter {
         if self.antenna_pattern.is_some() {
             buf.put_u16(BEAM_ANTENNA_PATTERN_OCTETS);
         } else {
-            buf.put_u16(NO_OCTETS);
+            buf.put_u16(ZERO_OCTETS as u16);
         }
         buf.put_u64(self.frequency);
         buf.put_f32(self.transmit_frequency_bandwidth);
@@ -27,7 +28,7 @@ impl SerializePdu for Transmitter {
         self.crypto_key_id.serialize(buf);
         if let Some(modulation_parameters) = &self.modulation_parameters {
             buf.put_u8(modulation_parameters.len() as u8);
-        } else { buf.put_u8(NO_OCTETS as u8) }
+        } else { buf.put_u8(ZERO_OCTETS as u8) }
         buf.put_u8(0u8);
         buf.put_u16(0u16);
 
@@ -42,7 +43,7 @@ impl SerializePdu for Transmitter {
         let antenna_pattern_bytes = if let Some(antenna_pattern) = &self.antenna_pattern {
             antenna_pattern.serialize(buf);
             BEAM_ANTENNA_PATTERN_OCTETS
-        } else { NO_OCTETS };
+        } else { ZERO_OCTETS as u16 };
 
         let vtp_bytes = self.variable_transmitter_parameters.iter()
             .map(|vtp| vtp.serialize(buf))
@@ -147,12 +148,13 @@ impl Serialize for BeamAntennaPattern {
 impl Serialize for VariableTransmitterParameter {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u32(self.record_type.into());
-        let record_padded_length = self.length_padded();
-        buf.put_u16(record_padded_length as u16);
+        let record_padded_lengths = length_padded_to_num_bytes(
+            BASE_VTP_RECORD_LENGTH as usize + self.fields.len(),
+            EIGHT_OCTETS);
+        buf.put_u16(record_padded_lengths.record_length_bytes as u16);
         buf.put(&*self.fields);
-        let padding_bytes = record_padded_length - self.fields.len();
-        buf.put_bytes(0u8, padding_bytes);
+        buf.put_bytes(0u8, record_padded_lengths.padding_length_bytes);
 
-        6 + record_padded_length as u16
+        6 + record_padded_lengths.record_length_bytes as u16
     }
 }

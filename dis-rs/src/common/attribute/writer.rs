@@ -1,6 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::attribute::model::{Attribute, AttributeRecord, AttributeRecordSet, BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use crate::constants::EIGHT_OCTETS;
+use crate::length_padded_to_num_bytes;
 
 impl SerializePdu for Attribute {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -34,20 +36,16 @@ impl Serialize for AttributeRecordSet {
 
 impl Serialize for AttributeRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        const EIGHT_OCTETS : u16 = 8;
-        const NO_REMAINDER : u16 = 0;
-        let fields_bytes = BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS + self.specific_fields.len() as u16;
-        let remaining_bytes = fields_bytes % EIGHT_OCTETS;
-        let padding_bytes = EIGHT_OCTETS - remaining_bytes;
-        let padded_record_bytes = fields_bytes + padding_bytes;
-        assert_eq!(padded_record_bytes % EIGHT_OCTETS, NO_REMAINDER,
-                   "The length for the attribute record is not aligned to 8 octets. Record length is {padded_record_bytes} octets.");
+        let padded_record_lengths = length_padded_to_num_bytes(
+            BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS as usize + self.specific_fields.len(),
+            EIGHT_OCTETS);
+        let record_length_bytes = padded_record_lengths.record_length_bytes as u16;
 
         buf.put_u32(self.record_type.into());
-        buf.put_u16(padded_record_bytes);
+        buf.put_u16(record_length_bytes);
         buf.put(&*self.specific_fields);
-        buf.put_bytes(0u8, remaining_bytes.into());
+        buf.put_bytes(0u8, padded_record_lengths.padding_length_bytes);
 
-        padded_record_bytes
+        record_length_bytes
     }
 }

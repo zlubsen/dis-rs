@@ -1,7 +1,8 @@
 use crate::common::model::EntityId;
 use crate::enumerations::{SignalTdlType, SignalEncodingType, SignalEncodingClass, SignalUserProtocolIdentificationNumber};
-use crate::{PduBody, PduType};
+use crate::{length_padded_to_num_bytes, PduBody, PduType};
 use crate::common::{BodyInfo, Interaction};
+use crate::constants::FOUR_OCTETS;
 
 pub const BASE_SIGNAL_BODY_LENGTH : u16 = 20;
 
@@ -69,18 +70,6 @@ impl Signal {
         self
     }
 
-    pub fn data_length_padded(&self) -> usize {
-        const FOUR_OCTETS : usize = 4;
-        const NO_REMAINDER : usize = 0;
-        let data_remaining_bytes = self.data.len() % FOUR_OCTETS;
-        let padding_bytes = FOUR_OCTETS - data_remaining_bytes;
-        let padded_data_bytes = self.data.len() + padding_bytes;
-        assert_eq!(padded_data_bytes % FOUR_OCTETS, NO_REMAINDER,
-                   "The length for the Signal data record is not aligned to 4 octets. Data length is {} octets.", self.data.len());
-
-        padded_data_bytes
-    }
-
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Signal(self)
     }
@@ -88,7 +77,10 @@ impl Signal {
 
 impl BodyInfo for Signal {
     fn body_length(&self) -> u16 {
-        BASE_SIGNAL_BODY_LENGTH + self.data_length_padded() as u16
+        BASE_SIGNAL_BODY_LENGTH + length_padded_to_num_bytes(
+            self.data.len(),
+            FOUR_OCTETS)
+            .record_length_bytes as u16
     }
 
     fn body_type(&self) -> PduType {
