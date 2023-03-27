@@ -69,6 +69,7 @@ fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingSch
         }
         SignalEncodingClass::Unspecified(value) => {
             // 2-bit value can only contain values 0-3 decimal, so SignalEncodingClass::Unspecified should never be possible.
+            // TODO convert panic to an error
             panic!("Impossible (unspecified) value for SignalEncodingClass: {value}");
         }
     }

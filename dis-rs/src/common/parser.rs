@@ -7,11 +7,10 @@ use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::common::entity_state::parser::entity_state_body;
-use crate::common::model::{Pdu, PduBody, PduHeader};
-use crate::constants::PDU_HEADER_LEN_BYTES;
+use crate::constants::{EIGHT_OCTETS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::{Country, DescriptorRecord, DetonationTypeIndicator, EntityId, EntityKind, EntityType, EventId, ExplosiveMaterialCategories, FireTypeIndicator, Location, MunitionDescriptor, MunitionDescriptorFuse, MunitionDescriptorWarhead, Orientation, ClockTime, SimulationAddress, VectorF32};
+use crate::common::model::{Pdu, PduBody, PduHeader, DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Orientation, ClockTime, SimulationAddress, VectorF32, DatumSpecification, VariableDatum, FixedDatum};
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::attribute::parser::attribute_body;
 use crate::common::collision::parser::collision_body;
@@ -29,7 +28,8 @@ use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
 use crate::common::transmitter::parser::transmitter_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
+use crate::enumerations::{Country, ExplosiveMaterialCategories, EntityKind, DetonationTypeIndicator, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
+use crate::length_padded_to_num_bytes;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -478,6 +478,46 @@ pub fn clock_time(input: &[u8]) -> IResult<&[u8], ClockTime> {
     let (input, time_past_hour) = be_u32(input)?;
     let time = ClockTime::new(hour, time_past_hour);
     Ok((input, time))
+}
+
+pub fn datum_specification(input: &[u8]) -> IResult<&[u8], DatumSpecification> {
+    let (input, num_fixed_datums) = be_u32(input)?;
+    let (input, num_variable_datums) = be_u32(input)?;
+
+    let (input, fixed_datums) = count(fixed_datum, num_fixed_datums as usize)(input)?;
+    let (input, variable_datums) = count(variable_datum, num_variable_datums as usize)(input)?;
+
+    let datums = DatumSpecification::new(fixed_datums, variable_datums);
+
+    Ok((input, datums))
+}
+
+pub fn fixed_datum(input: &[u8]) -> IResult<&[u8], FixedDatum> {
+    let (input, datum_id) = be_u32(input)?;
+    let (input, datum_value) = be_u32(input)?;
+
+    let datum_id = VariableRecordType::from(datum_id);
+    let datum = FixedDatum::new(datum_id, datum_value);
+
+    Ok((input, datum))
+}
+
+pub fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
+    let (input, datum_id) = be_u32(input)?;
+    let datum_id = VariableRecordType::from(datum_id);
+    let (input, datum_length_bits) = be_u32(input)?;
+
+    let datum_length_bytes = (datum_length_bits % 8u32) as usize;
+    let padded_record = length_padded_to_num_bytes(
+        EIGHT_OCTETS + datum_length_bytes,
+        EIGHT_OCTETS);
+
+    let (input, datum_value) = take(padded_record.data_length_bytes)(input)?;
+    let (input, _datum_padding) = take(padded_record.padding_length_bytes)(input)?;
+
+    let variable_datum = VariableDatum::new(datum_id, datum_value.to_vec());
+
+    Ok((input, variable_datum))
 }
 
 #[cfg(test)]

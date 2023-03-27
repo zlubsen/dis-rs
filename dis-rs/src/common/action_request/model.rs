@@ -51,15 +51,15 @@ impl ActionRequest {
         self
     }
 
-    // pub fn with_action_id(mut self, action_id: ActionId) -> Self {
-    //     self.action_id = action_id;
-    //     self
-    // }
-    //
-    // pub fn with_action_id(mut self, action_id: ActionId) -> Self {
-    //     self.action_id = action_id;
-    //     self
-    // }
+    pub fn with_fixed_datums(mut self, fixed_datum_records: Vec<FixedDatum>) -> Self {
+        self.fixed_datum_records = fixed_datum_records;
+        self
+    }
+
+    pub fn with_variable_datums(mut self, variable_datum_records: Vec<VariableDatum>) -> Self {
+        self.variable_datum_records = variable_datum_records;
+        self
+    }
 
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ActionRequest(self)

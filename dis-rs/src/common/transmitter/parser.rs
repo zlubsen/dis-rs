@@ -4,7 +4,7 @@ use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
-use crate::common::transmitter::model::{BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
+use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
 use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState};
 use crate::{PduHeader, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
 
@@ -161,7 +161,8 @@ fn variable_transmitter_parameter(input: &[u8]) -> IResult<&[u8], VariableTransm
     let (input, record_type) = be_u32(input)?;
     let record_type = VariableRecordType::from(record_type);
     let (input, record_length) = be_u16(input)?;
-    let (input, specific_fields) = take(record_length)(input)?;
+    let fields_length_bytes = record_length - BASE_VTP_RECORD_LENGTH;
+    let (input, specific_fields) = take(fields_length_bytes)(input)?;
 
     Ok((input, VariableTransmitterParameter::new()
         .with_record_type(record_type)

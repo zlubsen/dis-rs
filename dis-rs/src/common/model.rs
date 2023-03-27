@@ -893,14 +893,41 @@ pub struct DatumSpecification {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
+impl DatumSpecification {
+    pub fn new(fixed_datum_records: Vec<FixedDatum>, variable_datum_records: Vec<VariableDatum>) -> Self {
+        Self {
+            fixed_datum_records,
+            variable_datum_records
+        }
+    }
+}
+
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: u32,
 }
 
+impl FixedDatum {
+    pub fn new(datum_id: VariableRecordType, datum_value: u32) -> Self {
+        Self {
+            datum_id,
+            datum_value
+        }
+    }
+}
+
 pub struct VariableDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: Vec<u8>,
+}
+
+impl VariableDatum {
+    pub fn new(datum_id: VariableRecordType, datum_value: Vec<u8>) -> Self {
+        Self {
+            datum_id,
+            datum_value
+        }
+    }
 }
 
 /// Struct to hold the length in bytes of parts of a padded record.

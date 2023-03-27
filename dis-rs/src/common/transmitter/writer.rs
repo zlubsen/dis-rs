@@ -147,14 +147,16 @@ impl Serialize for BeamAntennaPattern {
 
 impl Serialize for VariableTransmitterParameter {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u32(self.record_type.into());
         let record_padded_lengths = length_padded_to_num_bytes(
             BASE_VTP_RECORD_LENGTH as usize + self.fields.len(),
             EIGHT_OCTETS);
-        buf.put_u16(record_padded_lengths.record_length_bytes as u16);
+        let record_length_bytes = record_padded_lengths.record_length_bytes as u16;
+
+        buf.put_u32(self.record_type.into());
+        buf.put_u16(record_length_bytes);
         buf.put(&*self.fields);
         buf.put_bytes(0u8, record_padded_lengths.padding_length_bytes);
 
-        6 + record_padded_lengths.record_length_bytes as u16
+        record_length_bytes
     }
 }

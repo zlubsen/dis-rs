@@ -3,4 +3,5 @@ pub const VARIABLE_PARAMETER_RECORD_LENGTH : u16 = 16;
 pub const NO_REMAINDER: usize = 0;
 pub const ZERO_OCTETS: usize = 0;
 pub const FOUR_OCTETS: usize = 4;
-pub const EIGHT_OCTETS: usize = 4;
+pub const SIX_OCTETS: usize = 6;
+pub const EIGHT_OCTETS: usize = 8;
