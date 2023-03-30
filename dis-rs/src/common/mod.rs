@@ -3,7 +3,7 @@ pub(crate) mod parser;
 
 pub mod acknowledge;
 pub mod action_request;
-// pub mod action_response;
+pub mod action_response;
 pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;

@@ -2,6 +2,7 @@ use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::acknowledge::model::Acknowledge;
 use crate::common::action_request::model::ActionRequest;
+use crate::common::action_response::model::ActionResponse;
 use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
@@ -118,7 +119,7 @@ pub enum PduBody {
     StopFreeze(StopFreeze),
     Acknowledge(Acknowledge),
     ActionRequest(ActionRequest),
-    ActionResponse,
+    ActionResponse(ActionResponse),
     DataQuery,
     SetData,
     Data,
@@ -196,7 +197,7 @@ impl BodyInfo for PduBody {
             PduBody::StopFreeze(body) => { body.body_length() }
             PduBody::Acknowledge(body) => { body.body_length() }
             PduBody::ActionRequest(body) => { body.body_length() }
-            PduBody::ActionResponse => { 0 }
+            PduBody::ActionResponse(body) => { body.body_length() }
             PduBody::DataQuery => { 0 }
             PduBody::SetData => { 0 }
             PduBody::Data => { 0 }
@@ -274,7 +275,7 @@ impl BodyInfo for PduBody {
             PduBody::StopFreeze(body) => { body.body_type() }
             PduBody::Acknowledge(body) => { body.body_type() }
             PduBody::ActionRequest(body) => { body.body_type() }
-            PduBody::ActionResponse => { PduType::ActionResponse }
+            PduBody::ActionResponse(body) => { body.body_type() }
             PduBody::DataQuery => { PduType::DataQuery }
             PduBody::SetData => { PduType::SetData }
             PduBody::Data => { PduType::Data }
@@ -354,7 +355,7 @@ impl Interaction for PduBody {
             PduBody::StopFreeze(body) => { body.originator() }
             PduBody::Acknowledge(body) => { body.originator() }
             PduBody::ActionRequest(body) => { body.originator() }
-            PduBody::ActionResponse => { None }
+            PduBody::ActionResponse(body) => { body.originator() }
             PduBody::DataQuery => { None }
             PduBody::SetData => { None }
             PduBody::Data => { None }
@@ -432,7 +433,7 @@ impl Interaction for PduBody {
             PduBody::StopFreeze(body) => { body.receiver() }
             PduBody::Acknowledge(body) => { body.receiver() }
             PduBody::ActionRequest(body) => { body.receiver() }
-            PduBody::ActionResponse => { None }
+            PduBody::ActionResponse(body) => { body.receiver() }
             PduBody::DataQuery => { None }
             PduBody::SetData => { None }
             PduBody::Data => { None }
@@ -901,6 +902,9 @@ impl DatumSpecification {
         }
     }
 }
+
+pub const FIXED_DATUM_LENGTH: u16 = 8;
+pub const BASE_VARIABLE_DATUM_LENGTH: u16 = 8;
 
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,

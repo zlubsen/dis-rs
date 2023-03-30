@@ -7,11 +7,13 @@ use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::common::entity_state::parser::entity_state_body;
-use crate::constants::{EIGHT_OCTETS, PDU_HEADER_LEN_BYTES};
+use crate::constants::{EIGHT_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::common::model::{Pdu, PduBody, PduHeader, DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Orientation, ClockTime, SimulationAddress, VectorF32, DatumSpecification, VariableDatum, FixedDatum};
 use crate::common::acknowledge::parser::acknowledge_body;
+use crate::common::action_request::parser::action_request_body;
+use crate::common::action_response::parser::action_response_body;
 use crate::common::attribute::parser::attribute_body;
 use crate::common::collision::parser::collision_body;
 use crate::common::collision_elastic::parser::collision_elastic_body;
@@ -174,8 +176,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::StartResume => { start_resume_body(input)? }
             PduType::StopFreeze => { stop_freeze_body(input)? }
             PduType::Acknowledge => { acknowledge_body(input)? }
-            // PduType::ActionRequest => {}
-            // PduType::ActionResponse => {}
+            PduType::ActionRequest => { action_request_body(input)? }
+            PduType::ActionResponse => { action_response_body(input)? }
             // PduType::DataQuery => {}
             // PduType::SetData => {}
             // PduType::Data => {}
@@ -507,7 +509,7 @@ pub fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
     let datum_id = VariableRecordType::from(datum_id);
     let (input, datum_length_bits) = be_u32(input)?;
 
-    let datum_length_bytes = (datum_length_bits % 8u32) as usize;
+    let datum_length_bytes = datum_length_bits as usize % ONE_BYTE_IN_BITS;
     let padded_record = length_padded_to_num_bytes(
         EIGHT_OCTETS + datum_length_bytes,
         EIGHT_OCTETS);

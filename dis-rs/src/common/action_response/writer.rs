@@ -1,13 +1,13 @@
 use bytes::{BufMut, BytesMut};
-use crate::common::action_request::model::ActionRequest;
+use crate::common::action_response::model::ActionResponse;
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 
-impl SerializePdu for ActionRequest {
+impl SerializePdu for ActionResponse {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let originating_bytes = self.originating_id.serialize(buf);
         let receiving_bytes = self.receiving_id.serialize(buf);
         buf.put_u32(self.request_id);
-        buf.put_u32(self.action_id.into());
+        buf.put_u32(self.request_status.into());
         buf.put_u32(self.fixed_datum_records.len() as u32);
         buf.put_u32(self.variable_datum_records.len() as u32);
         let fixed_datum_bytes = self.fixed_datum_records.iter()

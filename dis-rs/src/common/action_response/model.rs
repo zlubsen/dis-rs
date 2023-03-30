@@ -1,33 +1,33 @@
 use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
-use crate::enumerations::{ActionId, PduType};
+use crate::enumerations::{PduType, RequestStatus};
 use crate::common::model::{BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num_bytes};
 use crate::constants::EIGHT_OCTETS;
 
-pub const BASE_ACTION_REQUEST_BODY_LENGTH: u16 = 28;
+pub const BASE_ACTION_RESPONSE_BODY_LENGTH: u16 = 28;
 
-pub struct ActionRequest {
+pub struct ActionResponse {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
     pub request_id: u32,
-    pub action_id: ActionId,
+    pub request_status: RequestStatus,
     pub fixed_datum_records: Vec<FixedDatum>,
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl Default for ActionRequest {
+impl Default for ActionResponse {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ActionRequest {
+impl ActionResponse {
     pub fn new() -> Self {
         Self {
             originating_id: Default::default(),
             receiving_id: Default::default(),
             request_id: 0,
-            action_id: Default::default(),
+            request_status: Default::default(),
             fixed_datum_records: vec![],
             variable_datum_records: vec![],
         }
@@ -48,8 +48,8 @@ impl ActionRequest {
         self
     }
 
-    pub fn with_action_id(mut self, action_id: ActionId) -> Self {
-        self.action_id = action_id;
+    pub fn with_request_status(mut self, request_status: RequestStatus) -> Self {
+        self.request_status = request_status;
         self
     }
 
@@ -64,13 +64,13 @@ impl ActionRequest {
     }
 
     pub fn into_pdu_body(self) -> PduBody {
-        PduBody::ActionRequest(self)
+        PduBody::ActionResponse(self)
     }
 }
 
-impl BodyInfo for ActionRequest {
+impl BodyInfo for ActionResponse {
     fn body_length(&self) -> u16 {
-        BASE_ACTION_REQUEST_BODY_LENGTH +
+        BASE_ACTION_RESPONSE_BODY_LENGTH +
             (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16) +
             (self.variable_datum_records.iter().map(|datum| {
                 let padded_record = length_padded_to_num_bytes(
@@ -85,7 +85,7 @@ impl BodyInfo for ActionRequest {
     }
 }
 
-impl Interaction for ActionRequest {
+impl Interaction for ActionResponse {
     fn originator(&self) -> Option<&EntityId> {
         Some(&self.originating_id)
     }

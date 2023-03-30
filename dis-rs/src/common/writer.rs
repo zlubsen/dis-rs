@@ -1,9 +1,10 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::constants::PDU_HEADER_LEN_BYTES;
-use crate::{ClockTime, DescriptorRecord, EntityId, EventId, Location, MunitionDescriptor, Orientation, SimulationAddress, VectorF32};
+use crate::constants::{EIGHT_OCTETS, PDU_HEADER_LEN_BYTES};
+use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32};
 use crate::enumerations::{ProtocolVersion};
+use crate::length_padded_to_num_bytes;
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -48,7 +49,7 @@ impl Serialize for Pdu {
             PduBody::StartResume(body) => { body.serialize_pdu(version, buf) }
             PduBody::StopFreeze(body) => { body.serialize_pdu(version, buf) }
             PduBody::Acknowledge(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ActionRequest(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ActionRequest(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ActionResponse(body) => { body.serialize_pdu(version, buf) }
             // PduBody::DataQuery(body) => { body.serialize_pdu(version, buf) }
             // PduBody::SetData(body) => { body.serialize_pdu(version, buf) }
@@ -201,6 +202,30 @@ impl Serialize for ClockTime {
         buf.put_i32(self.hour);
         buf.put_u32(self.time_past_hour);
         8
+    }
+}
+
+impl Serialize for FixedDatum {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.datum_id.into());
+        buf.put_u32(self.datum_value);
+
+        8
+    }
+}
+
+impl Serialize for VariableDatum {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.datum_id.into());
+        let padded_record = length_padded_to_num_bytes(
+            EIGHT_OCTETS + self.datum_value.len(),
+            EIGHT_OCTETS);
+        let data_length_with_padding = padded_record.record_length_bytes as u16;
+        buf.put_u32(data_length_with_padding.into());
+        buf.put_slice(self.datum_value.as_slice());
+        buf.put_bytes(0, padded_record.padding_length_bytes);
+
+        8 + data_length_with_padding
     }
 }
 
