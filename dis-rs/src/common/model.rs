@@ -7,12 +7,12 @@ use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
 use crate::common::create_entity::model::CreateEntity;
+use crate::common::data_query::model::DataQuery;
 use crate::common::designator::model::Designator;
 use crate::common::detonation::model::Detonation;
 use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
 use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::other::model::Other;
-use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion};
 use crate::common::fire::model::Fire;
 use crate::common::receiver::model::Receiver;
 use crate::common::remove_entity::model::RemoveEntity;
@@ -20,10 +20,10 @@ use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
+use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::v7::model::PduStatus;
 use crate::constants::{NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
-use crate::VariableRecordType;
 
 pub struct Pdu {
     pub header : PduHeader,
@@ -120,7 +120,7 @@ pub enum PduBody {
     Acknowledge(Acknowledge),
     ActionRequest(ActionRequest),
     ActionResponse(ActionResponse),
-    DataQuery,
+    DataQuery(DataQuery),
     SetData,
     Data,
     EventReport,
@@ -198,7 +198,7 @@ impl BodyInfo for PduBody {
             PduBody::Acknowledge(body) => { body.body_length() }
             PduBody::ActionRequest(body) => { body.body_length() }
             PduBody::ActionResponse(body) => { body.body_length() }
-            PduBody::DataQuery => { 0 }
+            PduBody::DataQuery(body) => { body.body_length() }
             PduBody::SetData => { 0 }
             PduBody::Data => { 0 }
             PduBody::EventReport => { 0 }
@@ -276,7 +276,7 @@ impl BodyInfo for PduBody {
             PduBody::Acknowledge(body) => { body.body_type() }
             PduBody::ActionRequest(body) => { body.body_type() }
             PduBody::ActionResponse(body) => { body.body_type() }
-            PduBody::DataQuery => { PduType::DataQuery }
+            PduBody::DataQuery(body) => { body.body_type() }
             PduBody::SetData => { PduType::SetData }
             PduBody::Data => { PduType::Data }
             PduBody::EventReport => { PduType::EventReport }
@@ -356,7 +356,7 @@ impl Interaction for PduBody {
             PduBody::Acknowledge(body) => { body.originator() }
             PduBody::ActionRequest(body) => { body.originator() }
             PduBody::ActionResponse(body) => { body.originator() }
-            PduBody::DataQuery => { None }
+            PduBody::DataQuery(body) => { body.originator() }
             PduBody::SetData => { None }
             PduBody::Data => { None }
             PduBody::EventReport => { None }
@@ -434,7 +434,7 @@ impl Interaction for PduBody {
             PduBody::Acknowledge(body) => { body.receiver() }
             PduBody::ActionRequest(body) => { body.receiver() }
             PduBody::ActionResponse(body) => { body.receiver() }
-            PduBody::DataQuery => { None }
+            PduBody::DataQuery(body) => { body.receiver() }
             PduBody::SetData => { None }
             PduBody::Data => { None }
             PduBody::EventReport => { None }

@@ -30,9 +30,9 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | StartResumePdu | V       | V        | V       | V        |
 | StopFreezePdu | V       | V        | V       | V        |
 | AcknowledgePdu | V       | V        | V       | V        |
-| ActionRequestPdu |         |          |         |          |
-| ActionResponsePdu |         |          |         |          |
-| DataQueryPdu |         |          |         |          |
+| ActionRequestPdu | V       | V        | V       | V        |
+| ActionResponsePdu | V       | V        | V       | V        |
+| DataQueryPdu | V       | V        | V       | V        |
 | SetDataPdu |         |          |         |          |
 | DataPdu |         |          |         |          |
 | EventReportPdu |         |          |         |          |
