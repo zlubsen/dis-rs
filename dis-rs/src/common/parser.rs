@@ -18,14 +18,17 @@ use crate::common::attribute::parser::attribute_body;
 use crate::common::collision::parser::collision_body;
 use crate::common::collision_elastic::parser::collision_elastic_body;
 use crate::common::create_entity::parser::create_entity_body;
+use crate::common::data::parser::data_body;
 use crate::common::data_query::parser::data_query_body;
 use crate::common::designator::parser::designator_body;
 use crate::common::detonation::parser::detonation_body;
 use crate::common::electromagnetic_emission::parser::emission_body;
 use crate::common::entity_state_update::parser::entity_state_update_body;
+use crate::common::event_report::parser::event_report_body;
 use crate::common::fire::parser::fire_body;
 use crate::common::receiver::parser::receiver_body;
 use crate::common::remove_entity::parser::remove_entity_body;
+use crate::common::set_data::parser::set_data_body;
 use crate::common::signal::parser::signal_body;
 use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
@@ -180,9 +183,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::ActionRequest => { action_request_body(input)? }
             PduType::ActionResponse => { action_response_body(input)? }
             PduType::DataQuery => { data_query_body(input)? }
-            // PduType::SetData => {}
-            // PduType::Data => {}
-            // PduType::EventReport => {}
+            PduType::SetData => { set_data_body(input)? }
+            PduType::Data => { data_body(input)? }
+            PduType::EventReport => { event_report_body(input)? }
             // PduType::Comment => {}
             PduType::ElectromagneticEmission => { emission_body(header)(input)? }
             PduType::Designator => { designator_body(input)? }

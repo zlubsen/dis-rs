@@ -1,7 +1,7 @@
 # Changelog for crate DIS-RS
 
 ## 0.5.0 - 2023-04-xx
-Added support for ActionRequest, ActionResponse, DataQuery, ... PDUs.
+Added support for ActionRequest, ActionResponse, DataQuery, SetData, Data, EventReport PDUs.
 
 ## 0.4.0 - 2023-02-18
 Added support for StartResume, StopFreeze, Acknowledge, CollisionElastic, EntityStateUpdate, Attribute, Designator, Signal, Transmitter, Receiver PDUs.

@@ -33,9 +33,9 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | ActionRequestPdu | V       | V        | V       | V        |
 | ActionResponsePdu | V       | V        | V       | V        |
 | DataQueryPdu | V       | V        | V       | V        |
-| SetDataPdu |         |          |         |          |
-| DataPdu |         |          |         |          |
-| EventReportPdu |         |          |         |          |
+| SetDataPdu | V       | V        | V       | V        |
+| DataPdu | V       | V        | V       | V        |
+| EventReportPdu | V       | V        | V       | V        |
 | CommentPdu |         |          |         |          |
 | ElectromagneticEmissionPdu | V       | V        | V       | V        |
 | DesignatorPdu | V       | V        | V       | V        |

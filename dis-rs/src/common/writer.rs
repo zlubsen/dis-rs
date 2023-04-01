@@ -52,9 +52,9 @@ impl Serialize for Pdu {
             PduBody::ActionRequest(body) => { body.serialize_pdu(version, buf) }
             PduBody::ActionResponse(body) => { body.serialize_pdu(version, buf) }
             PduBody::DataQuery(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::SetData(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::Data(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::EventReport(body) => { body.serialize_pdu(version, buf) }
+            PduBody::SetData(body) => { body.serialize_pdu(version, buf) }
+            PduBody::Data(body) => { body.serialize_pdu(version, buf) }
+            PduBody::EventReport(body) => { body.serialize_pdu(version, buf) }
             // PduBody::Comment(body) => { body.serialize_pdu(version, buf) }
             PduBody::ElectromagneticEmission(body) => { body.serialize_pdu(version, buf) }
             PduBody::Designator(body) => { body.serialize_pdu(version, buf) }

@@ -7,15 +7,18 @@ use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
 use crate::common::create_entity::model::CreateEntity;
+use crate::common::data::model::Data;
 use crate::common::data_query::model::DataQuery;
 use crate::common::designator::model::Designator;
 use crate::common::detonation::model::Detonation;
 use crate::common::electromagnetic_emission::model::ElectromagneticEmission;
 use crate::common::entity_state_update::model::EntityStateUpdate;
+use crate::common::event_report::model::EventReport;
 use crate::common::other::model::Other;
 use crate::common::fire::model::Fire;
 use crate::common::receiver::model::Receiver;
 use crate::common::remove_entity::model::RemoveEntity;
+use crate::common::set_data::model::SetData;
 use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
@@ -121,9 +124,9 @@ pub enum PduBody {
     ActionRequest(ActionRequest),
     ActionResponse(ActionResponse),
     DataQuery(DataQuery),
-    SetData,
-    Data,
-    EventReport,
+    SetData(SetData),
+    Data(Data),
+    EventReport(EventReport),
     Comment,
     ElectromagneticEmission(ElectromagneticEmission),
     Designator(Designator),
@@ -199,9 +202,9 @@ impl BodyInfo for PduBody {
             PduBody::ActionRequest(body) => { body.body_length() }
             PduBody::ActionResponse(body) => { body.body_length() }
             PduBody::DataQuery(body) => { body.body_length() }
-            PduBody::SetData => { 0 }
-            PduBody::Data => { 0 }
-            PduBody::EventReport => { 0 }
+            PduBody::SetData(body) => { body.body_length() }
+            PduBody::Data(body) => { body.body_length() }
+            PduBody::EventReport(body) => { body.body_length() }
             PduBody::Comment => { 0 }
             PduBody::ElectromagneticEmission(body) => { body.body_length() }
             PduBody::Designator(body) => { body.body_length() }
@@ -277,9 +280,9 @@ impl BodyInfo for PduBody {
             PduBody::ActionRequest(body) => { body.body_type() }
             PduBody::ActionResponse(body) => { body.body_type() }
             PduBody::DataQuery(body) => { body.body_type() }
-            PduBody::SetData => { PduType::SetData }
-            PduBody::Data => { PduType::Data }
-            PduBody::EventReport => { PduType::EventReport }
+            PduBody::SetData(body) => { body.body_type() }
+            PduBody::Data(body) => { body.body_type() }
+            PduBody::EventReport(body) => { body.body_type() }
             PduBody::Comment => { PduType::Comment }
             PduBody::ElectromagneticEmission(body) => { body.body_type() }
             PduBody::Designator(body) => { body.body_type() }
@@ -357,9 +360,9 @@ impl Interaction for PduBody {
             PduBody::ActionRequest(body) => { body.originator() }
             PduBody::ActionResponse(body) => { body.originator() }
             PduBody::DataQuery(body) => { body.originator() }
-            PduBody::SetData => { None }
-            PduBody::Data => { None }
-            PduBody::EventReport => { None }
+            PduBody::SetData(body) => { body.originator() }
+            PduBody::Data(body) => { body.originator() }
+            PduBody::EventReport(body) => { body.originator() }
             PduBody::Comment => { None }
             PduBody::ElectromagneticEmission(body) => { body.originator() }
             PduBody::Designator(body) => { body.originator() }
@@ -435,9 +438,9 @@ impl Interaction for PduBody {
             PduBody::ActionRequest(body) => { body.receiver() }
             PduBody::ActionResponse(body) => { body.receiver() }
             PduBody::DataQuery(body) => { body.receiver() }
-            PduBody::SetData => { None }
-            PduBody::Data => { None }
-            PduBody::EventReport => { None }
+            PduBody::SetData(body) => { body.receiver() }
+            PduBody::Data(body) => { body.receiver() }
+            PduBody::EventReport(body) => { body.receiver() }
             PduBody::Comment => { None }
             PduBody::ElectromagneticEmission(body) => { body.receiver() }
             PduBody::Designator(body) => { body.receiver() }
