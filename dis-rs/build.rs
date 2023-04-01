@@ -55,7 +55,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 109] = [
     (70, Some("ResponseFlag"), None, false), // Acknowledge-Response Flag
     (71, Some("ActionId"), None, false), // Action Request-Action ID
     (72, Some("RequestStatus"), None, false), // Action Request-Request Status
-    (72, Some("EventType"), None, false), // Event Report-Event Type
+    (73, Some("EventType"), None, false), // Event Report-Event Type
     (75, None, None, true), // Emitter Name
     (76, None, None, true), // Emitter System Function
     (77, None, None, false), // Electromagnetic Emission-State Update Indicator

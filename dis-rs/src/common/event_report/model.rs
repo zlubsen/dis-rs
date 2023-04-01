@@ -9,7 +9,7 @@ pub const BASE_EVENT_REPORT_BODY_LENGTH: u16 = 28;
 pub struct EventReport {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
-    pub event_type: EventType
+    pub event_type: EventType,
     pub fixed_datum_records: Vec<FixedDatum>,
     pub variable_datum_records: Vec<VariableDatum>,
 }
@@ -57,7 +57,7 @@ impl EventReport {
     }
 
     pub fn into_pdu_body(self) -> PduBody {
-        PduBody::SetData(self)
+        PduBody::EventReport(self)
     }
 }
 

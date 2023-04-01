@@ -16,7 +16,7 @@ pub fn event_report_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let body = EventReport::new()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
-        .with_request_id(request_id)
+        .with_event_type(event_type)
         .with_fixed_datums(datums.fixed_datum_records)
         .with_variable_datums(datums.variable_datum_records);
 
