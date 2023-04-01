@@ -7,7 +7,7 @@ pub mod action_response;
 pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;
-// pub mod comment;
+pub mod comment;
 pub mod data;
 pub mod data_query;
 pub mod designator;

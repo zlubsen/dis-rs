@@ -6,6 +6,7 @@ use crate::common::action_response::model::ActionResponse;
 use crate::common::attribute::model::Attribute;
 use crate::common::collision::model::Collision;
 use crate::common::collision_elastic::model::CollisionElastic;
+use crate::common::comment::model::Comment;
 use crate::common::create_entity::model::CreateEntity;
 use crate::common::data::model::Data;
 use crate::common::data_query::model::DataQuery;
@@ -127,7 +128,7 @@ pub enum PduBody {
     SetData(SetData),
     Data(Data),
     EventReport(EventReport),
-    Comment,
+    Comment(Comment),
     ElectromagneticEmission(ElectromagneticEmission),
     Designator(Designator),
     Transmitter(Transmitter),
@@ -205,7 +206,7 @@ impl BodyInfo for PduBody {
             PduBody::SetData(body) => { body.body_length() }
             PduBody::Data(body) => { body.body_length() }
             PduBody::EventReport(body) => { body.body_length() }
-            PduBody::Comment => { 0 }
+            PduBody::Comment(body) => { body.body_length() }
             PduBody::ElectromagneticEmission(body) => { body.body_length() }
             PduBody::Designator(body) => { body.body_length() }
             PduBody::Transmitter(body) => { body.body_length() }
@@ -283,7 +284,7 @@ impl BodyInfo for PduBody {
             PduBody::SetData(body) => { body.body_type() }
             PduBody::Data(body) => { body.body_type() }
             PduBody::EventReport(body) => { body.body_type() }
-            PduBody::Comment => { PduType::Comment }
+            PduBody::Comment(body) => { body.body_type() }
             PduBody::ElectromagneticEmission(body) => { body.body_type() }
             PduBody::Designator(body) => { body.body_type() }
             PduBody::Transmitter(body) => { body.body_type() }
@@ -363,7 +364,7 @@ impl Interaction for PduBody {
             PduBody::SetData(body) => { body.originator() }
             PduBody::Data(body) => { body.originator() }
             PduBody::EventReport(body) => { body.originator() }
-            PduBody::Comment => { None }
+            PduBody::Comment(body) => { body.originator() }
             PduBody::ElectromagneticEmission(body) => { body.originator() }
             PduBody::Designator(body) => { body.originator() }
             PduBody::Transmitter(body) => { body.originator() }
@@ -441,7 +442,7 @@ impl Interaction for PduBody {
             PduBody::SetData(body) => { body.receiver() }
             PduBody::Data(body) => { body.receiver() }
             PduBody::EventReport(body) => { body.receiver() }
-            PduBody::Comment => { None }
+            PduBody::Comment(body) => { body.receiver() }
             PduBody::ElectromagneticEmission(body) => { body.receiver() }
             PduBody::Designator(body) => { body.receiver() }
             PduBody::Transmitter(body) => { body.receiver() }

@@ -55,7 +55,7 @@ impl Serialize for Pdu {
             PduBody::SetData(body) => { body.serialize_pdu(version, buf) }
             PduBody::Data(body) => { body.serialize_pdu(version, buf) }
             PduBody::EventReport(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::Comment(body) => { body.serialize_pdu(version, buf) }
+            PduBody::Comment(body) => { body.serialize_pdu(version, buf) }
             PduBody::ElectromagneticEmission(body) => { body.serialize_pdu(version, buf) }
             PduBody::Designator(body) => { body.serialize_pdu(version, buf) }
             PduBody::Transmitter(body) => { body.serialize_pdu(version, buf) }

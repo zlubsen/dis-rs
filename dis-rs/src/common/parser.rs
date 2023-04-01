@@ -17,6 +17,7 @@ use crate::common::action_response::parser::action_response_body;
 use crate::common::attribute::parser::attribute_body;
 use crate::common::collision::parser::collision_body;
 use crate::common::collision_elastic::parser::collision_elastic_body;
+use crate::common::comment::parser::comment_body;
 use crate::common::create_entity::parser::create_entity_body;
 use crate::common::data::parser::data_body;
 use crate::common::data_query::parser::data_query_body;
@@ -186,7 +187,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::SetData => { set_data_body(input)? }
             PduType::Data => { data_body(input)? }
             PduType::EventReport => { event_report_body(input)? }
-            // PduType::Comment => {}
+            PduType::Comment => { comment_body(input)? }
             PduType::ElectromagneticEmission => { emission_body(header)(input)? }
             PduType::Designator => { designator_body(input)? }
             PduType::Transmitter => { transmitter_body(header)(input)? }
