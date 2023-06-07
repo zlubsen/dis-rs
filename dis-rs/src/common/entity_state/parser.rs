@@ -2,9 +2,8 @@ use nom::bytes::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::{AttachedPart, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance, EntityAssociationParameter, EntityState, EntityType, EntityTypeParameter, PduHeader, SeparationParameter};
-use crate::common::entity_state::model::{ArticulatedPart, DrOtherParameters, DrParameters, EntityMarking, VariableParameter};
-use crate::common::model::PduBody;
+use crate::common::entity_state::model::{EntityState, DrOtherParameters, DrParameters, EntityMarking, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance};
+use crate::common::model::{EntityType, PduBody, PduHeader};
 use crate::common::parser;
 use crate::common::parser::{entity_id, entity_type, vec3_f32};
 use crate::enumerations::*;
@@ -34,7 +33,7 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             }
         };
         let (input, variable_parameters) = if variable_parameters_no > 0 {
-            count(variable_parameter, variable_parameters_no as usize)(input)?
+            count(parser::variable_parameter, variable_parameters_no as usize)(input)?
         } else { (input, vec![]) };
 
         let body = EntityState::new(entity_id_val, force_id_val, entity_type_val)
@@ -167,116 +166,14 @@ pub fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherPar
     })))
 }
 
-pub fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
-    let (input, parameter_type_designator) = be_u8(input)?;
-    let parameter_type = VariableParameterRecordType::from(parameter_type_designator);
-    let (input, variable_parameter) = match parameter_type {
-        VariableParameterRecordType::ArticulatedPart => { articulated_part(input)? }
-        VariableParameterRecordType::AttachedPart => { attached_part(input)? }
-        VariableParameterRecordType::Separation => { separation(input)? }
-        VariableParameterRecordType::EntityType => { entity_type_variable_parameter(input)? }
-        VariableParameterRecordType::EntityAssociation => { entity_association(input)? }
-        VariableParameterRecordType::Unspecified(_) => {
-            let (input, bytes) = take(15usize)(input)?;
-            (input, VariableParameter::Unspecified(parameter_type_designator, <[u8; 15]>::try_from(bytes).unwrap()))
-        } // TODO sensible error
-    };
-
-    Ok((input, variable_parameter))
-}
-
-fn articulated_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
-    let (input, change_indicator) = be_u8(input)?;
-    let change_indicator = ChangeIndicator::from(change_indicator);
-    let (input, attachment_id) = be_u16(input)?;
-    let (input, type_variant) = be_u32(input)?;
-    let type_metric : u32 = type_variant & 0x1f;  // 5 least significant bits (0x1f) are the type metric
-    let type_class : u32 = type_variant - type_metric;   // rest of the bits (minus type metric value) are the type class
-    let (input, value) = be_f32(input)?;
-    let (input, _pad_out) = be_u32(input)?;
-
-    Ok((input, VariableParameter::Articulated(ArticulatedPart {
-        change_indicator,
-        attachment_id,
-        type_metric: ArticulatedPartsTypeMetric::from(type_metric),
-        type_class: ArticulatedPartsTypeClass::from(type_class),
-        parameter_value: value,
-    })))
-}
-
-fn attached_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
-    let (input, detached_indicator) = be_u8(input)?;
-    let detached_indicator = AttachedPartDetachedIndicator::from(detached_indicator);
-    let (input, attachment_id) = be_u16(input)?;
-    let (input, attached_part) = be_u32(input)?;
-    let (input, entity_type) = entity_type(input)?;
-    Ok((input, VariableParameter::Attached(AttachedPart {
-        detached_indicator,
-        attachment_id,
-        parameter_type: AttachedParts::from(attached_part),
-        attached_part_type: entity_type
-    })))
-}
-
-fn entity_association(input: &[u8]) -> IResult<&[u8], VariableParameter> {
-    let (input, change_indicator) = be_u8(input)?;
-    let (input, association_status) = be_u8(input)?;
-    let (input, association_type) = be_u8(input)?;
-    let (input, entity_id) = entity_id(input)?;
-    let (input, own_station_location) = be_u16(input)?;
-    let (input, physical_connection_type) = be_u8(input)?;
-    let (input, group_member_type) = be_u8(input)?;
-    let (input, group_number) = be_u16(input)?;
-
-    Ok((input, VariableParameter::EntityAssociation(EntityAssociationParameter {
-        change_indicator: ChangeIndicator::from(change_indicator),
-        association_status: EntityAssociationAssociationStatus::from(association_status),
-        association_type: EntityAssociationPhysicalAssociationType::from(association_type),
-        entity_id,
-        own_station_location: StationName::from(own_station_location),
-        physical_connection_type: EntityAssociationPhysicalConnectionType::from(physical_connection_type),
-        group_member_type: EntityAssociationGroupMemberType::from(group_member_type),
-        group_number,
-    })))
-}
-
-fn entity_type_variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
-    let (input, change_indicator) = be_u8(input)?;
-    let (input, entity_type) = entity_type(input)?;
-    let (input, _pad_out_16) = be_u16(input)?;
-    let (input, _pad_out_32) = be_u32(input)?;
-
-    Ok((input, VariableParameter::EntityType(EntityTypeParameter {
-        change_indicator: ChangeIndicator::from(change_indicator),
-        entity_type,
-    })))
-}
-
-fn separation(input: &[u8]) -> IResult<&[u8], VariableParameter> {
-    let (input, reason) = be_u8(input)?;
-    let (input, pre_entity_indicator) = be_u8(input)?;
-    let (input, parent_entity_id) = entity_id(input)?;
-    let (input, _pad_16) = be_u16(input)?;
-    let (input, station_name) = be_u16(input)?;
-    let (input, station_number) = be_u16(input)?;
-
-    Ok((input, VariableParameter::Separation(SeparationParameter {
-        reason: SeparationReasonForSeparation::from(reason),
-        pre_entity_indicator: SeparationPreEntityIndicator::from(pre_entity_indicator),
-        parent_entity_id,
-        station_name: StationName::from(station_name),
-        station_number,
-    })))
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::parser::{variable_parameter, entity_marking, entity_appearance};
-    use crate::common::parser::{location, parse_pdu};
+    use crate::common::entity_state::parser::{entity_appearance, entity_marking};
+    use crate::common::parser::{location, parse_pdu, variable_parameter};
     use crate::common::entity_state::model::EntityAppearance;
     use crate::enumerations::{*};
     use crate::common::model::{EntityType, PduBody};
-    use crate::common::entity_state::model::VariableParameter;
+    use crate::common::model::VariableParameter;
     use crate::v6::entity_state::parser::entity_capabilities;
 
     #[test]

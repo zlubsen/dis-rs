@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, EventId};
-use crate::enumerations::{BeamStatusBeamState, EmitterName, EmitterSystemFunction, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, HighDensityTrackJam};
+use crate::common::model::{BeamData, EntityId, EventId};
+use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
 use crate::{PduBody, PduType, VectorF32};
 
 const EMISSION_BASE_BODY_LENGTH : u16 = 16;
@@ -279,52 +279,6 @@ impl FundamentalParameterData {
 
     pub fn with_pulse_width(mut self, pulse_width: f32) -> Self {
         self.pulse_width = pulse_width;
-        self
-    }
-}
-
-#[derive(Default)]
-pub struct BeamData {
-    pub azimuth_center: f32,
-    pub azimuth_sweep: f32,
-    pub elevation_center: f32,
-    pub elevation_sweep: f32,
-    pub sweep_sync: f32,
-}
-
-impl BeamData {
-    pub fn new() -> Self {
-        Self {
-            azimuth_center: 0.0,
-            azimuth_sweep: 0.0,
-            elevation_center: 0.0,
-            elevation_sweep: 0.0,
-            sweep_sync: 0.0
-        }
-    }
-
-    pub fn with_azimuth_center(mut self, azimuth_center: f32) -> Self {
-        self.azimuth_center = azimuth_center;
-        self
-    }
-
-    pub fn with_azimuth_sweep(mut self, azimuth_sweep: f32) -> Self {
-        self.azimuth_sweep = azimuth_sweep;
-        self
-    }
-
-    pub fn with_elevation_center(mut self, elevation_center: f32) -> Self {
-        self.elevation_center = elevation_center;
-        self
-    }
-
-    pub fn with_elevation_sweep(mut self, elevation_sweep: f32) -> Self {
-        self.elevation_sweep = elevation_sweep;
-        self
-    }
-
-    pub fn with_sweep_sync(mut self, sweep_sync: f32) -> Self {
-        self.sweep_sync = sweep_sync;
         self
     }
 }

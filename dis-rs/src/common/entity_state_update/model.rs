@@ -1,6 +1,8 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
-use crate::{EntityAppearance, EntityId, Location, Orientation, PduBody, PduType, VariableParameter, VectorF32};
+use crate::common::model::{EntityId, Location, Orientation, PduBody, VariableParameter, VectorF32};
+use crate::common::entity_state::model::{EntityAppearance};
+use crate::enumerations::PduType;
 
 const BASE_ENTITY_STATE_UPDATE_BODY_LENGTH : u16 = 60;
 

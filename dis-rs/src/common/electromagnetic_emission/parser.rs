@@ -1,9 +1,10 @@
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u8};
-use crate::common::model::{PduBody, PduHeader};
-use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionStateUpdateIndicator, ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-use crate::common::electromagnetic_emission::model::{Beam, BeamData, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique, TrackJam};
+use crate::common::model::{BeamData, PduBody, PduHeader};
+use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
+use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique, TrackJam};
+use crate::common::parser;
 use crate::common::parser::{entity_id, event_id, vec3_f32};
 
 pub fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
@@ -52,7 +53,7 @@ pub fn beam(input: &[u8]) -> IResult<&[u8], Beam> {
     let (input, number) = be_u8(input)?;
     let (input, parameter_index) = be_u16(input)?;
     let (input, fundamental_parameter_data) = fundamental_parameter_data(input)?;
-    let (input, beam_data) = beam_data(input)?;
+    let (input, beam_data) = parser::beam_data(input)?;
     let (input, function) = be_u8(input)?;
     let (input, no_of_targets) = be_u8(input)?;
     let (input, high_density_track_jam) = be_u8(input)?;
@@ -87,23 +88,6 @@ pub fn fundamental_parameter_data(input: &[u8]) -> IResult<&[u8], FundamentalPar
         .with_effective_power(effective_power)
         .with_pulse_repetition_frequency(pulse_repetition_frequency)
         .with_pulse_width(pulse_width);
-
-    Ok((input, data))
-}
-
-pub fn beam_data(input: &[u8]) -> IResult<&[u8], BeamData> {
-    let (input, azimuth_center) = be_f32(input)?;
-    let (input, azimuth_sweep) = be_f32(input)?;
-    let (input, elevation_center) = be_f32(input)?;
-    let (input, elevation_sweep) = be_f32(input)?;
-    let (input, sweep_sync) = be_f32(input)?;
-
-    let data = BeamData::new()
-        .with_azimuth_center(azimuth_center)
-        .with_azimuth_sweep(azimuth_sweep)
-        .with_elevation_center(elevation_center)
-        .with_elevation_sweep(elevation_sweep)
-        .with_sweep_sync(sweep_sync);
 
     Ok((input, data))
 }

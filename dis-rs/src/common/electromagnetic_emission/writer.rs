@@ -1,6 +1,7 @@
 use bytes::{BufMut, BytesMut};
-use crate::common::electromagnetic_emission::model::{Beam, BeamData, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique, TrackJam};
+use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique, TrackJam};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use crate::common::model::BeamData;
 
 impl SerializePdu for ElectromagneticEmission {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -70,18 +71,6 @@ impl Serialize for FundamentalParameterData {
     }
 }
 
-impl Serialize for BeamData {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_f32(self.azimuth_center);
-        buf.put_f32(self.azimuth_sweep);
-        buf.put_f32(self.elevation_center);
-        buf.put_f32(self.elevation_sweep);
-        buf.put_f32(self.sweep_sync);
-
-        20
-    }
-}
-
 impl Serialize for JammingTechnique {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.kind);
@@ -106,9 +95,10 @@ impl Serialize for TrackJam {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::electromagnetic_emission::model::{Beam, BeamData, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
+    use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
     use crate::{ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction, EntityId, EventId, HighDensityTrackJam, Pdu, PduHeader, SimulationAddress, VectorF32};
     use crate::common::{BodyInfo, Serialize};
+    use crate::common::model::BeamData;
 
     #[test]
     fn write_pdu_emission_with_tracks() {

@@ -27,7 +27,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 109] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 112] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -63,7 +63,10 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 109] = [
     (79, None, None, false), // High Density Track/Jam
     (80, None, None, false), // Designator System Name
     (81, Some("DesignatorCode"), None, false), // Designator Code
-    // 82-84, 87, 96-98 // IFF stuff
+    (82, Some("IffSystemType"), None, false), // IFF-System Type
+    (83, Some("IffSystemName"), None, false), // IFF-System Name
+    (84, Some("IffSystemMode"), None, false), // IFF-System Mode
+    // 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
     (155, None, None, false), // Transmitter Major Modulation
     (156, None, None, false), // Transmitter-Detail-Amplitude Modulation

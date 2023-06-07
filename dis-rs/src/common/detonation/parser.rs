@@ -3,7 +3,7 @@ use nom::multi::count;
 use nom::number::complete::{be_u16, be_u8};
 use crate::{DetonationResult, DetonationTypeIndicator, PduBody, PduHeader};
 use crate::common::detonation::model::Detonation;
-use crate::common::entity_state::parser::variable_parameter;
+use crate::common::parser::variable_parameter;
 use crate::common::parser::{descriptor_record_dti, entity_id, event_id, location, vec3_f32};
 
 pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {

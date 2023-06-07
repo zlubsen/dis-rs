@@ -1,3 +1,4 @@
+use crate::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::common::entity_state::model::EntityState;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::acknowledge::model::Acknowledge;
@@ -972,4 +973,248 @@ pub fn length_padded_to_num_bytes(data_length_bytes: usize, pad_to_num_bytes: us
                "The length for the data record is not aligned to {} octets. Data length is {} octets.", pad_to_num_bytes, data_length_bytes);
 
     PaddedRecordLengths::new(data_length_bytes, padding_bytes, padded_data_bytes)
+}
+
+#[derive(Debug)]
+pub enum VariableParameter {
+    Articulated(ArticulatedPart),
+    Attached(AttachedPart),
+    Separation(SeparationParameter),
+    EntityType(EntityTypeParameter),
+    EntityAssociation(EntityAssociationParameter),
+    Unspecified(u8, [u8;15]),
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub struct ArticulatedPart {
+    pub change_indicator: ChangeIndicator,
+    pub attachment_id: u16,
+    pub type_metric: ArticulatedPartsTypeMetric,
+    pub type_class: ArticulatedPartsTypeClass,
+    pub parameter_value: f32,
+}
+
+impl ArticulatedPart {
+    pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
+        self.change_indicator = change_indicator;
+        self
+    }
+
+    pub fn with_attachment_id(mut self, attachment_id: u16) -> Self {
+        self.attachment_id = attachment_id;
+        self
+    }
+
+    pub fn with_type_metric(mut self, type_metric: ArticulatedPartsTypeMetric) -> Self {
+        self.type_metric = type_metric;
+        self
+    }
+
+    pub fn with_type_class(mut self, type_class: ArticulatedPartsTypeClass) -> Self {
+        self.type_class = type_class;
+        self
+    }
+
+    pub fn with_parameter_value(mut self, parameter_value: f32) -> Self {
+        self.parameter_value = parameter_value;
+        self
+    }
+
+    pub fn to_variable_parameter(self) -> VariableParameter {
+        VariableParameter::Articulated(self)
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub struct AttachedPart {
+    pub detached_indicator: AttachedPartDetachedIndicator,
+    pub attachment_id: u16,
+    pub parameter_type: AttachedParts,
+    pub attached_part_type: EntityType,
+}
+
+impl AttachedPart {
+    pub fn with_detached_indicator(mut self, detached_indicator: AttachedPartDetachedIndicator) -> Self {
+        self.detached_indicator = detached_indicator;
+        self
+    }
+
+    pub fn with_attachment_id(mut self, attachment_id: u16) -> Self {
+        self.attachment_id = attachment_id;
+        self
+    }
+
+    pub fn with_parameter_type(mut self, parameter_type: AttachedParts) -> Self {
+        self.parameter_type = parameter_type;
+        self
+    }
+
+    pub fn with_attached_part_type(mut self, attached_part_type: EntityType) -> Self {
+        self.attached_part_type = attached_part_type;
+        self
+    }
+
+    pub fn to_variable_parameter(self) -> VariableParameter {
+        VariableParameter::Attached(self)
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub struct SeparationParameter {
+    pub reason: SeparationReasonForSeparation,
+    pub pre_entity_indicator: SeparationPreEntityIndicator,
+    pub parent_entity_id: EntityId,
+    pub station_name: StationName,
+    pub station_number: u16,
+}
+
+impl SeparationParameter {
+    pub fn with_reason(mut self, reason: SeparationReasonForSeparation) -> Self {
+        self.reason = reason;
+        self
+    }
+
+    pub fn with_pre_entity_indicator(mut self, pre_entity_indicator: SeparationPreEntityIndicator) -> Self {
+        self.pre_entity_indicator = pre_entity_indicator;
+        self
+    }
+
+    pub fn with_parent_entity_id(mut self, parent_entity_id: EntityId) -> Self {
+        self.parent_entity_id = parent_entity_id;
+        self
+    }
+
+    pub fn with_station_name(mut self, station_name: StationName) -> Self {
+        self.station_name = station_name;
+        self
+    }
+
+    pub fn with_station_number(mut self, station_number: u16) -> Self {
+        self.station_number = station_number;
+        self
+    }
+
+    pub fn to_variable_parameter(self) -> VariableParameter {
+        VariableParameter::Separation(self)
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub struct EntityTypeParameter {
+    pub change_indicator: ChangeIndicator,
+    pub entity_type: EntityType,
+}
+
+impl EntityTypeParameter {
+    pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
+        self.change_indicator = change_indicator;
+        self
+    }
+
+    pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
+        self.entity_type = entity_type;
+        self
+    }
+
+    pub fn to_variable_parameter(self) -> VariableParameter {
+        VariableParameter::EntityType(self)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct EntityAssociationParameter {
+    pub change_indicator: ChangeIndicator,
+    pub association_status: EntityAssociationAssociationStatus,
+    pub association_type: EntityAssociationPhysicalAssociationType,
+    pub entity_id: EntityId,
+    pub own_station_location: StationName,
+    pub physical_connection_type: EntityAssociationPhysicalConnectionType,
+    pub group_member_type: EntityAssociationGroupMemberType,
+    pub group_number: u16,
+}
+
+impl EntityAssociationParameter {
+    pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
+        self.change_indicator = change_indicator;
+        self
+    }
+
+    pub fn with_association_status(mut self, association_status: EntityAssociationAssociationStatus) -> Self {
+        self.association_status = association_status;
+        self
+    }
+
+    pub fn with_association_type(mut self, association_type: EntityAssociationPhysicalAssociationType) -> Self {
+        self.association_type = association_type;
+        self
+    }
+
+    pub fn with_entity_id(mut self, entity_id: EntityId) -> Self {
+        self.entity_id = entity_id;
+        self
+    }
+
+    pub fn with_own_station_location(mut self, own_station_location: StationName) -> Self {
+        self.own_station_location = own_station_location;
+        self
+    }
+
+    pub fn with_physical_connection_type(mut self, physical_connection_type: EntityAssociationPhysicalConnectionType) -> Self {
+        self.physical_connection_type = physical_connection_type;
+        self
+    }
+
+    pub fn with_group_member_type(mut self, group_member_type: EntityAssociationGroupMemberType) -> Self {
+        self.group_member_type = group_member_type;
+        self
+    }
+
+    pub fn with_group_number(mut self, group_number: u16) -> Self {
+        self.group_number = group_number;
+        self
+    }
+
+    pub fn to_variable_parameter(self) -> VariableParameter {
+        VariableParameter::EntityAssociation(self)
+    }
+}
+
+#[derive(Default)]
+pub struct BeamData {
+    pub azimuth_center: f32,
+    pub azimuth_sweep: f32,
+    pub elevation_center: f32,
+    pub elevation_sweep: f32,
+    pub sweep_sync: f32,
+}
+
+impl BeamData {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_azimuth_center(mut self, azimuth_center: f32) -> Self {
+        self.azimuth_center = azimuth_center;
+        self
+    }
+
+    pub fn with_azimuth_sweep(mut self, azimuth_sweep: f32) -> Self {
+        self.azimuth_sweep = azimuth_sweep;
+        self
+    }
+
+    pub fn with_elevation_center(mut self, elevation_center: f32) -> Self {
+        self.elevation_center = elevation_center;
+        self
+    }
+
+    pub fn with_elevation_sweep(mut self, elevation_sweep: f32) -> Self {
+        self.elevation_sweep = elevation_sweep;
+        self
+    }
+
+    pub fn with_sweep_sync(mut self, sweep_sync: f32) -> Self {
+        self.sweep_sync = sweep_sync;
+        self
+    }
 }

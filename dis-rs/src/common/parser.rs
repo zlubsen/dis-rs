@@ -10,7 +10,7 @@ use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::common::model::{Pdu, PduBody, PduHeader, DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Orientation, ClockTime, SimulationAddress, VectorF32, DatumSpecification, VariableDatum, FixedDatum};
+use crate::common::model::{ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32};
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::action_request::parser::action_request_body;
 use crate::common::action_response::parser::action_response_body;
@@ -35,8 +35,8 @@ use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
 use crate::common::transmitter::parser::transmitter_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{Country, ExplosiveMaterialCategories, EntityKind, DetonationTypeIndicator, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
-use crate::length_padded_to_num_bytes;
+use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
+use crate::{ArticulatedPart, ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPart, AttachedPartDetachedIndicator, AttachedParts, BeamData, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationParameter, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameter, VariableParameterRecordType};
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -530,7 +530,7 @@ pub fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
 #[cfg(test)]
 mod tests {
     use crate::common::errors::DisError;
-    use crate::common::parser::{parse_multiple_header};
+    use crate::common::parser::parse_multiple_header;
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType, ProtocolFamily, ProtocolVersion};
 
@@ -621,4 +621,123 @@ mod tests {
         let error = headers.expect_err("Should be Err");
         assert_eq!(error, DisError::InsufficientHeaderLength(11));
     }
+}
+
+pub fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, parameter_type_designator) = be_u8(input)?;
+    let parameter_type = VariableParameterRecordType::from(parameter_type_designator);
+    let (input, variable_parameter) = match parameter_type {
+        VariableParameterRecordType::ArticulatedPart => { articulated_part(input)? }
+        VariableParameterRecordType::AttachedPart => { attached_part(input)? }
+        VariableParameterRecordType::Separation => { separation(input)? }
+        VariableParameterRecordType::EntityType => { entity_type_variable_parameter(input)? }
+        VariableParameterRecordType::EntityAssociation => { entity_association(input)? }
+        VariableParameterRecordType::Unspecified(_) => {
+            let (input, bytes) = take(15usize)(input)?;
+            (input, VariableParameter::Unspecified(parameter_type_designator, <[u8; 15]>::try_from(bytes).unwrap()))
+        } // TODO sensible error
+    };
+
+    Ok((input, variable_parameter))
+}
+
+fn articulated_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, change_indicator) = be_u8(input)?;
+    let change_indicator = ChangeIndicator::from(change_indicator);
+    let (input, attachment_id) = be_u16(input)?;
+    let (input, type_variant) = be_u32(input)?;
+    let type_metric : u32 = type_variant & 0x1f;  // 5 least significant bits (0x1f) are the type metric
+    let type_class : u32 = type_variant - type_metric;   // rest of the bits (minus type metric value) are the type class
+    let (input, value) = be_f32(input)?;
+    let (input, _pad_out) = be_u32(input)?;
+
+    Ok((input, VariableParameter::Articulated(ArticulatedPart {
+        change_indicator,
+        attachment_id,
+        type_metric: ArticulatedPartsTypeMetric::from(type_metric),
+        type_class: ArticulatedPartsTypeClass::from(type_class),
+        parameter_value: value,
+    })))
+}
+
+fn attached_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, detached_indicator) = be_u8(input)?;
+    let detached_indicator = AttachedPartDetachedIndicator::from(detached_indicator);
+    let (input, attachment_id) = be_u16(input)?;
+    let (input, attached_part) = be_u32(input)?;
+    let (input, entity_type) = entity_type(input)?;
+    Ok((input, VariableParameter::Attached(AttachedPart {
+        detached_indicator,
+        attachment_id,
+        parameter_type: AttachedParts::from(attached_part),
+        attached_part_type: entity_type
+    })))
+}
+
+fn entity_association(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, change_indicator) = be_u8(input)?;
+    let (input, association_status) = be_u8(input)?;
+    let (input, association_type) = be_u8(input)?;
+    let (input, entity_id) = entity_id(input)?;
+    let (input, own_station_location) = be_u16(input)?;
+    let (input, physical_connection_type) = be_u8(input)?;
+    let (input, group_member_type) = be_u8(input)?;
+    let (input, group_number) = be_u16(input)?;
+
+    Ok((input, VariableParameter::EntityAssociation(EntityAssociationParameter {
+        change_indicator: ChangeIndicator::from(change_indicator),
+        association_status: EntityAssociationAssociationStatus::from(association_status),
+        association_type: EntityAssociationPhysicalAssociationType::from(association_type),
+        entity_id,
+        own_station_location: StationName::from(own_station_location),
+        physical_connection_type: EntityAssociationPhysicalConnectionType::from(physical_connection_type),
+        group_member_type: EntityAssociationGroupMemberType::from(group_member_type),
+        group_number,
+    })))
+}
+
+fn entity_type_variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, change_indicator) = be_u8(input)?;
+    let (input, entity_type) = entity_type(input)?;
+    let (input, _pad_out_16) = be_u16(input)?;
+    let (input, _pad_out_32) = be_u32(input)?;
+
+    Ok((input, VariableParameter::EntityType(EntityTypeParameter {
+        change_indicator: ChangeIndicator::from(change_indicator),
+        entity_type,
+    })))
+}
+
+fn separation(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+    let (input, reason) = be_u8(input)?;
+    let (input, pre_entity_indicator) = be_u8(input)?;
+    let (input, parent_entity_id) = entity_id(input)?;
+    let (input, _pad_16) = be_u16(input)?;
+    let (input, station_name) = be_u16(input)?;
+    let (input, station_number) = be_u16(input)?;
+
+    Ok((input, VariableParameter::Separation(SeparationParameter {
+        reason: SeparationReasonForSeparation::from(reason),
+        pre_entity_indicator: SeparationPreEntityIndicator::from(pre_entity_indicator),
+        parent_entity_id,
+        station_name: StationName::from(station_name),
+        station_number,
+    })))
+}
+
+pub fn beam_data(input: &[u8]) -> IResult<&[u8], BeamData> {
+    let (input, azimuth_center) = be_f32(input)?;
+    let (input, azimuth_sweep) = be_f32(input)?;
+    let (input, elevation_center) = be_f32(input)?;
+    let (input, elevation_sweep) = be_f32(input)?;
+    let (input, sweep_sync) = be_f32(input)?;
+
+    let data = BeamData::new()
+        .with_azimuth_center(azimuth_center)
+        .with_azimuth_sweep(azimuth_sweep)
+        .with_elevation_center(elevation_center)
+        .with_elevation_sweep(elevation_sweep)
+        .with_sweep_sync(sweep_sync);
+
+    Ok((input, data))
 }

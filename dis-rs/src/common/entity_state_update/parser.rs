@@ -2,9 +2,9 @@ use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::be_u8;
 use crate::{EntityKind, EntityType, PduBody};
-use crate::common::entity_state::parser::{entity_appearance, variable_parameter};
+use crate::common::entity_state::parser::entity_appearance;
 use crate::common::entity_state_update::model::EntityStateUpdate;
-use crate::common::parser::{entity_id, location, orientation, vec3_f32};
+use crate::common::parser::{entity_id, location, orientation, variable_parameter, vec3_f32};
 
 pub fn entity_state_update_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id_val) = entity_id(input)?;

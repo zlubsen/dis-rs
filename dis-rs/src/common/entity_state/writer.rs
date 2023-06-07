@@ -1,9 +1,9 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState, VariableParameter};
-use crate::common::model::EntityType;
-use crate::common::entity_state::model::{ArticulatedPart, AttachedPart, DrEulerAngles, DrOtherParameters, DrWorldOrientationQuaternion, EntityAppearance, EntityAssociationParameter, EntityTypeParameter, SeparationParameter};
-use crate::enumerations::{ForceId, DrParametersType, VariableParameterRecordType};
+use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState};
+use crate::common::model::{EntityType};
+use crate::common::entity_state::model::{DrEulerAngles, DrOtherParameters, DrWorldOrientationQuaternion, EntityAppearance};
+use crate::enumerations::{DrParametersType, ForceId};
 use crate::v6::entity_state::model::EntityCapabilities;
 
 impl SerializePdu for EntityState {
@@ -46,107 +46,6 @@ impl SerializePdu for EntityState {
             + orientation_bytes + appearance_bytes + dr_params_bytes + capabilities_bytes + 40 + marking_bytes + 4 + variable_params_bytes
     }
 }
-
-impl Serialize for VariableParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        match self {
-            VariableParameter::Articulated(parameter) => {
-                buf.put_u8(VariableParameterRecordType::ArticulatedPart.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::Attached(parameter) => {
-                buf.put_u8(VariableParameterRecordType::AttachedPart.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::Separation(parameter) => {
-                buf.put_u8(VariableParameterRecordType::Separation.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::EntityType(parameter) => {
-                buf.put_u8(VariableParameterRecordType::EntityType.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::EntityAssociation(parameter) => {
-                buf.put_u8(VariableParameterRecordType::EntityAssociation.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::Unspecified(type_designator, parameter) => {
-                buf.put_u8(*type_designator);
-                for byte in parameter {
-                    buf.put_u8(*byte);
-                }
-                16
-            }
-        }
-    }
-}
-
-impl Serialize for ArticulatedPart {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.change_indicator.into());
-        buf.put_u16(self.attachment_id);
-        let type_class : u32 = self.type_class.into();
-        let type_metric : u32 = self.type_metric.into();
-        let on_wire_value = type_class + type_metric;
-        buf.put_u32(on_wire_value);
-        buf.put_f32(self.parameter_value);
-        buf.put_u32(0u32); // 32-bit padding
-        15
-    }
-}
-
-impl Serialize for AttachedPart {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.detached_indicator.into());
-        buf.put_u16(self.attachment_id);
-        buf.put_u32(self.parameter_type.into());
-        let entity_type_bytes = self.attached_part_type.serialize(buf);
-        7 + entity_type_bytes
-    }
-}
-
-impl Serialize for SeparationParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.reason.into());
-        buf.put_u8(self.pre_entity_indicator.into());
-        buf.put_u8(0u8);
-        let parent_entity_id_bytes = self.parent_entity_id.serialize(buf);
-        buf.put_u16(0u16);
-        buf.put_u16(self.station_name.into());
-        buf.put_u16(self.station_number);
-        9 + parent_entity_id_bytes
-    }
-}
-
-impl Serialize for EntityTypeParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.change_indicator.into());
-        let entity_type_bytes = self.entity_type.serialize(buf);
-        buf.put_u16(0u16);
-        buf.put_u32(0u32);
-        7 + entity_type_bytes
-    }
-}
-
-impl Serialize for EntityAssociationParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.change_indicator.into());
-        buf.put_u8(self.association_status.into());
-        buf.put_u8(self.association_type.into());
-        let entity_id_bytes = self.entity_id.serialize(buf);
-        buf.put_u16(self.own_station_location.into());
-        buf.put_u8(self.physical_connection_type.into());
-        buf.put_u8(self.group_member_type.into());
-        buf.put_u16(self.group_number);
-        9 + entity_id_bytes
-    }
-}
-
 
 impl Serialize for EntityAppearance {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -254,8 +153,8 @@ impl Serialize for EntityMarking {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::entity_state::model::{ArticulatedPart, DrParameters, EntityMarking, EntityState, VariableParameter};
-    use crate::common::model::{EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32};
+    use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState};
+    use crate::common::model::{ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VariableParameter, VectorF32};
     use crate::common::Serialize;
     use crate::{DrOtherParameters, EntityAppearance};
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain};
