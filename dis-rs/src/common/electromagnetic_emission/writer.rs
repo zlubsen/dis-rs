@@ -1,7 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique, TrackJam};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::model::BeamData;
 
 impl SerializePdu for ElectromagneticEmission {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
