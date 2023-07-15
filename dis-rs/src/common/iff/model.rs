@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::model::BeamData;
 use crate::common::model::{EntityId, EventId, VectorF32};
 use crate::enumerations::{PduType, IffSystemType, IffSystemMode, IffSystemName};
+use crate::{Mode5MessageFormatsStatus, SimulationAddress};
 
 pub const FUNDAMENTAL_OPERATIONAL_DATA_LENGTH: u16 = 16;
 
@@ -210,11 +211,20 @@ pub struct IffLayer2 {
 }
 
 pub struct IffFundamentalParameterData {
-    // TODO
+    pub erp: f32,
+    pub frequency: f32,
+    pub pgrf: f32,
+    pub pulse_width: f32,
+    pub burst_length: f32,
+    pub applicable_modes: IffApplicableModes,
+    pub system_specific_data: SystemSpecificData,
 }
 
 pub struct IffLayer3 {
-    // TODO
+    pub layer_header: LayerHeader,
+    pub reporting_simulation: SimulationAddress,
+    pub mode_5_interrogator_basic_data: Mode5InterrogatorBasicData,
+    pub iff_data_records: Vec<IffDataSpecification>,
 }
 
 pub struct IffLayer4 {
@@ -229,4 +239,32 @@ pub struct LayerHeader {
     pub layer_number: u8,
     pub layer_specific_information: u8,
     pub length: u16,
+}
+
+// TODO placeholder for 24-bits
+pub struct SystemSpecificData {
+    pub part_1: u8,
+    pub part_2: u8,
+    pub part_3: u8,
+}
+
+pub struct Mode5InterrogatorBasicData {
+    pub mode_5_interrogator_status: Mode5InterrogatorStatus,
+    pub mode_5_message_formats_present: Mode5MessageFormats,
+    pub interrogated_entity_id: EntityId,
+}
+
+pub struct Mode5InterrogatorStatus {
+    pub iff_mission: Mode5MessageFormatsStatus,
+
+}
+
+impl Mode5InterrogatorStatus {
+    pub fn aap(&self)  {
+        let aap:u8 = self.iff_mission.into();
+    }
+}
+
+pub struct IffDataSpecification {
+
 }

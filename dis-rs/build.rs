@@ -27,7 +27,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 112] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 114] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -108,10 +108,12 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 112] = [
     (321, None, None, false), // Entity Association-Group Member Type
     (323, None, None, false), // Entity Association-Physical Association Type
     (324, None, None, false), // Entity Association-Physical Connection Type
-    (378, None, None, false), // Appearance
-    (379, None, None, false), // Appearance
-    (380, None, None, false), // Appearance
-    (381, None, None, false), // Appearance
+    (339, Some("IffApplicableModes"), None, false), // IFF Applicable Modes
+    (346, Some("Mode5IffMission"), None, false), // IFF Mission
+    (378, None, None, false), // Appearance-Paint Scheme
+    (379, None, None, false), // Appearance-Damage
+    (380, None, None, false), // Mode 5 Message Formats Status
+    (381, None, None, false), // Appearance-Trailing Effects
     (382, None, None, false), // Appearance
     (383, None, None, false), // Appearance
     (384, None, None, false), // Appearance
