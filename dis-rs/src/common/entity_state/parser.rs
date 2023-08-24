@@ -92,7 +92,7 @@ pub fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let mut marking = String::from_utf8_lossy(&buf[..]).into_owned();
-    marking.truncate(marking.trim_end().trim_end_matches(|c| !c.is_alphanumeric()).len());
+    marking.truncate(marking.trim_end().trim_end_matches(|c : char | !c.is_alphanumeric()).len());
 
     Ok((input, EntityMarking{
         marking_character_set: EntityMarkingCharacterSet::from(character_set),
@@ -381,6 +381,19 @@ mod tests {
     #[test]
     fn parse_marking_ascii() {
         let bytes: [u8; 12] = [0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20];
+
+        let marking = entity_marking(&bytes);
+        assert!(marking.is_ok());
+        let (input, marking) = marking.unwrap();
+        assert_eq!(marking.marking_character_set, EntityMarkingCharacterSet::ASCII);
+        assert_eq!(marking.marking_string, "EYE 10");
+
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn parse_marking_trailing_control_chars() {
+        let bytes: [u8; 12] = [0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00];
 
         let marking = entity_marking(&bytes);
         assert!(marking.is_ok());
