@@ -82,14 +82,17 @@ pub fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&
     }
 }
 
-// TODO review if this is an efficient way to read the string and trim trailing whitespace
+/// Parses the marking portion of an EntityState PDU into an EntityMarking struct.
+/// It will convert the parsed bytes (always 11 bytes are present in the PDU) to UTF-8, and
+/// strip trailing whitespace and any trailing non-alphanumeric characters. In case the marking is less
+/// than 11 characters, the trailing bytes are typically 0x00 in the PDU, which in UTF-8 is a control character.
 pub fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     let mut buf : [u8;11] = [0;11];
     let (input, character_set) = be_u8(input)?;
     let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let mut marking = String::from_utf8_lossy(&buf[..]).into_owned();
-    marking.truncate(marking.trim_end().len());
+    marking.truncate(marking.trim_end().trim_end_matches(|c| !c.is_alphanumeric()).len());
 
     Ok((input, EntityMarking{
         marking_character_set: EntityMarkingCharacterSet::from(character_set),
