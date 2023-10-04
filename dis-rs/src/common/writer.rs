@@ -19,7 +19,7 @@ impl Serialize for PduHeader {
                 if let Some(status) = self.pdu_status {
                     status.serialize(buf);
                     buf.put_u8(0u8);
-                }
+                } else { buf.put_u16(0u16) }
             }
             _ => { buf.put_u16(0u16) }
         }
@@ -235,7 +235,8 @@ mod tests {
     use crate::common::Serialize;
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
-    use crate::PduHeader;
+    use crate::{LvcIndicator, PduHeader};
+    use crate::v7::model::PduStatus;
 
     #[test]
     fn serialize_header() {
@@ -247,6 +248,33 @@ mod tests {
         header.serialize(&mut buf);
 
         let expected : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x00, 0x00];
+        assert_eq!(buf.as_ref(), expected.as_ref());
+    }
+
+    #[test]
+    fn serialize_header_v7_no_status() {
+        let header = PduHeader::new_v7(1, PduType::EntityState)
+            .with_time_stamp(10)
+            .with_length(0);
+        let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
+
+        header.serialize(&mut buf);
+
+        let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x00, 0x00];
+        assert_eq!(buf.as_ref(), expected.as_ref());
+    }
+
+    #[test]
+    fn serialize_header_v7_with_status() {
+        let header = PduHeader::new_v7(1, PduType::EntityState)
+            .with_time_stamp(10)
+            .with_length(0)
+            .with_pdu_status(PduStatus::default().with_lvc_indicator(LvcIndicator::Live));
+        let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
+
+        header.serialize(&mut buf);
+
+        let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x02, 0x00];
         assert_eq!(buf.as_ref(), expected.as_ref());
     }
 }
