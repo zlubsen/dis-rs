@@ -2,22 +2,23 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::model::BeamData;
 use crate::common::model::{EntityId, EventId, VectorF32};
 use crate::enumerations::{PduType, IffSystemType, IffSystemMode, IffSystemName};
-use crate::{Mode5MessageFormatsStatus, SimulationAddress};
+use crate::{IffApplicableModes, Mode5IffMission, Mode5MessageFormatsStatus, SimulationAddress, VariableRecordType};
 
 pub const FUNDAMENTAL_OPERATIONAL_DATA_LENGTH: u16 = 16;
 
-pub struct Iff {
+pub struct Iff {                                                    // 7.6.5.1 - page 394
     pub emitting_entity_id: EntityId,
     pub event_id: EventId,
     pub relative_antenna_location: VectorF32,
     pub system_id: SystemId,
-    pub system_designator: u8,
-    pub system_specific_data: u8, // TODO 8-bit record defined by system type
-    pub fundamental_operational_data: FundamentalOperationalData,
-    pub layer_2: Option<IffLayer2>, // TODO
-    pub layer_3: Option<IffLayer3>, // TODO
-    pub layer_4: Option<IffLayer4>, // TODO
-    pub layer_5: Option<IffLayer5>, // TODO
+    pub system_designator: u8,                                      // [See item d2) in 5.7.6.1.] - page 143
+    pub system_specific_data: u8, // TODO 8-bit record defined by system type - See Clause B.5. - page 627
+    pub fundamental_operational_data: FundamentalOperationalData,   // see 6.2.39 - page 292.
+    // Layer 1 up to here
+    pub layer_2: Option<IffLayer2>, // TODO - Basic Emissions Data
+    pub layer_3: Option<IffLayer3>, // TODO - Mode 5 Functional Data
+    pub layer_4: Option<IffLayer4>, // TODO - Mode S Functional Data
+    pub layer_5: Option<IffLayer5>, // TODO - Data Communications
 }
 
 impl Default for Iff {
@@ -207,7 +208,7 @@ pub struct IffLayer2 {
     pub beam_data: BeamData,
     pub operational_parameter_1: u8,
     pub operational_parameter_2: u8,
-    pub iff_fundamental_parameters: Vec<IffFundamentalParameterData>,
+    pub iff_fundamental_parameters: Vec<IffFundamentalParameterData>, // see 6.2.44 - page 300
 }
 
 pub struct IffFundamentalParameterData {
@@ -223,12 +224,17 @@ pub struct IffFundamentalParameterData {
 pub struct IffLayer3 {
     pub layer_header: LayerHeader,
     pub reporting_simulation: SimulationAddress,
-    pub mode_5_interrogator_basic_data: Mode5InterrogatorBasicData,
-    pub iff_data_records: Vec<IffDataSpecification>,
+    pub mode_5_basic_data: Mode5BasicData,
+    pub iff_data_records: Vec<IffDataSpecification>,                // see 6.2.43 - page 299
+}
+
+pub enum Mode5BasicData {
+    Interrogator(Mode5InterrogatorBasicData),                       // 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
+    Transponder(Mode5TransponderBasicData),                         // 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
 }
 
 pub struct IffLayer4 {
-    // TODO
+    // TODO 7.6.5.5 Layer 4 Mode S formats
 }
 
 pub struct IffLayer5 {
@@ -241,30 +247,87 @@ pub struct LayerHeader {
     pub length: u16,
 }
 
-// TODO placeholder for 24-bits
+// TODO placeholder for 24-bits - See Annex B.
 pub struct SystemSpecificData {
     pub part_1: u8,
     pub part_2: u8,
     pub part_3: u8,
 }
 
+// see B.2.26 - page 591
 pub struct Mode5InterrogatorBasicData {
-    pub mode_5_interrogator_status: Mode5InterrogatorStatus,
-    pub mode_5_message_formats_present: Mode5MessageFormats,
+    pub mode_5_interrogator_status: Mode5InterrogatorStatus,        // B.2.27 Mode 5 Interrogator Status record - page 592
+    pub mode_5_message_formats_present: Mode5MessageFormats,        // B.2.28 Mode 5 Message Formats record - page 592
     pub interrogated_entity_id: EntityId,
 }
 
+// see B.2.29 - page 593
+pub struct Mode5TransponderBasicData {
+
+}
+
 pub struct Mode5InterrogatorStatus {
-    pub iff_mission: Mode5MessageFormatsStatus,
-
+    pub iff_mission: Mode5IffMission,
+    pub mode_5_message_formats_status: Mode5MessageFormatsStatus,
+    pub on_off_status: Mode5OnOffStatus,
+    pub damage_status: Mode5DamageStatus,
+    pub malfunction_status: Mode5MalfunctionStatus,
 }
 
-impl Mode5InterrogatorStatus {
-    pub fn aap(&self)  {
-        let aap:u8 = self.iff_mission.into();
-    }
+pub enum Mode5OnOffStatus {
+    On,
+    Off,
 }
 
+pub enum Mode5DamageStatus {
+    NoDamage,       // 0
+    Damaged,        // 1
+}
+
+pub enum Mode5MalfunctionStatus {
+    NoMalfunction,  // 0
+    Malfunction,    // 1
+}
+
+pub struct Mode5MessageFormats {
+    pub message_format_0: bool, // 0 - Not Present, 1 - Present
+    pub message_format_1: bool,
+    pub message_format_2: bool,
+    pub message_format_3: bool,
+    pub message_format_4: bool,
+    pub message_format_5: bool,
+    pub message_format_6: bool,
+    pub message_format_7: bool,
+    pub message_format_8: bool,
+    pub message_format_9: bool,
+    pub message_format_10: bool,
+    pub message_format_11: bool,
+    pub message_format_12: bool,
+    pub message_format_13: bool,
+    pub message_format_14: bool,
+    pub message_format_15: bool,
+    pub message_format_16: bool,
+    pub message_format_17: bool,
+    pub message_format_18: bool,
+    pub message_format_19: bool,
+    pub message_format_20: bool,
+    pub message_format_21: bool,
+    pub message_format_22: bool,
+    pub message_format_23: bool,
+    pub message_format_24: bool,
+    pub message_format_25: bool,
+    pub message_format_26: bool,
+    pub message_format_27: bool,
+    pub message_format_28: bool,
+    pub message_format_29: bool,
+    pub message_format_30: bool,
+    pub message_format_31: bool,
+}
 pub struct IffDataSpecification {
+    pub iff_data_records: Vec<IffDataRecord>,
+}
 
+pub struct IffDataRecord {
+    pub record_type: VariableRecordType,   // UID 66
+    pub record_specific_fields: Vec<u8>,
 }
