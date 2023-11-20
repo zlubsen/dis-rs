@@ -1,2 +1,3 @@
 [workspace]
 members = ["dis-rs", "dis_rs_macros"]
+resolver = "2"
