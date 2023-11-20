@@ -27,7 +27,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 114] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 122] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -110,6 +110,14 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 114] = [
     (324, None, None, false), // Entity Association-Physical Connection Type
     (339, Some("IffApplicableModes"), None, false), // IFF Applicable Modes
     (346, Some("Mode5IffMission"), None, false), // IFF Mission
+    (347, Some("ModeSTransmitState"), Some(8), false), // Mode S Interrogator Status Transmit State
+    (354, None, None, false), // Mode S Squitter Type
+    (355, None, None, false), // Mode S Squitter Record Source
+    (356, None, None, false), // Aircraft Present Domain
+    (357, None, None, false), // Aircraft Identification Type
+    (358, None, None, true), // Capability Report
+    (361, Some("Mode5SAltitudeResolution"), None, false), // Mode 5/S Altitude Resolution
+    (369, None, None, false), // Data Category
     (378, None, None, false), // Appearance-Paint Scheme
     (379, None, None, false), // Appearance-Damage
     (380, None, None, false), // Mode 5 Message Formats Status
