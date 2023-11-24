@@ -1179,6 +1179,7 @@ impl EntityAssociationParameter {
     }
 }
 
+/// 6.2.11 Beam Data record
 #[derive(Default)]
 pub struct BeamData {
     pub azimuth_center: f32,
