@@ -879,6 +879,7 @@ impl MunitionDescriptor {
     }
 }
 
+/// 6.2.14 Clock Time record
 #[derive(Default)]
 pub struct ClockTime {
     pub hour: i32,

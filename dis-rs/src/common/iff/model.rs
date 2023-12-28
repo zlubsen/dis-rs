@@ -1,8 +1,8 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAddress};
 use crate::constants::{FOUR_OCTETS, SIX_OCTETS};
-use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5SAltitudeResolution, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, VariableRecordType};
-use crate::length_padded_to_num_bytes;
+use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5LocationErrors, Mode5LevelSelection, Mode5SAltitudeResolution, Mode5Reply, Mode5PlatformType, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, Level2SquitterStatus, VariableRecordType};
+use crate::{length_padded_to_num_bytes};
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
 pub const FUNDAMENTAL_OPERATIONAL_DATA_LENGTH: u16 = 16;
@@ -17,9 +17,9 @@ pub struct Iff {
     pub event_id: EventId,
     pub relative_antenna_location: VectorF32,
     pub system_id: SystemId,
-    pub system_designator: u8,                                      // [See item d2) in 5.7.6.1.] - page 143
-    pub system_specific_data: u8, // TODO 8-bit record defined by system type - See Clause B.5. - page 627
-    pub fundamental_operational_data: FundamentalOperationalData,   // see 6.2.39 - page 292.
+    pub system_designator: u8,                                      // See item d2) in 5.7.6.1.
+    pub system_specific_data: u8,   // 8-bit record defined by system type - See B.5
+    pub fundamental_operational_data: FundamentalOperationalData,   // see 6.2.39
     // Layer 1 up to here
     pub layer_2: Option<IffLayer2>, // 7.6.5.3 Layer 2 emissions data
     pub layer_3: Option<IffLayer3>, // Mode 5 Functional Data
@@ -84,24 +84,148 @@ impl Interaction for Iff {
     }
 }
 
-pub struct SystemId {
-    pub system_type: IffSystemType,
-    pub system_name: IffSystemName,
-    pub system_mode: IffSystemMode,
-    pub change_options: ChangeOptionsRecord,
+/// 7.6.5.3 Layer 2 emissions data
+///
+/// The Secondary Operational Data record (6.2.76) has been flattened in the IffLayer2 struct, as it only
+/// contains two 8-bit records.
+pub struct IffLayer2 {
+    pub layer_header: LayerHeader,
+    pub beam_data: BeamData,
+    pub operational_parameter_1: u8,
+    pub operational_parameter_2: u8,
+    pub iff_fundamental_parameters: Vec<IffFundamentalParameterData>,
 }
 
-impl Default for SystemId {
+impl Default for IffLayer2 {
     fn default() -> Self {
-        SystemId {
-            system_type: Default::default(),
-            system_name: Default::default(),
-            system_mode: Default::default(),
-            change_options: ChangeOptionsRecord::default(),
+        Self {
+            layer_header: LayerHeader { layer_number: 2, ..Default::default() },
+            beam_data: Default::default(),
+            operational_parameter_1: 0,
+            operational_parameter_2: 0,
+            iff_fundamental_parameters: vec![],
         }
     }
 }
 
+impl IffLayer2 {
+    fn data_length(&self) -> u16 {
+        const LAYER_2_BASE_DATA_LENGTH_OCTETS: u16 = 28;
+        const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
+        LAYER_2_BASE_DATA_LENGTH_OCTETS
+            + (self.iff_fundamental_parameters.len() as u16 * IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS)
+    }
+}
+
+/// 7.6.5.4 Layer 3 Mode 5 formats
+/// 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
+/// 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
+pub struct IffLayer3 {
+    pub layer_header: LayerHeader,
+    pub reporting_simulation: SimulationAddress,
+    pub mode_5_basic_data: Mode5BasicData,
+    pub iff_data_specification: IffDataSpecification,                // see 6.2.43 - page 299
+}
+
+impl Default for IffLayer3 {
+    fn default() -> Self {
+        Self {
+            layer_header: LayerHeader { layer_number: 3, ..Default::default() },
+            reporting_simulation: SimulationAddress::default(),
+            mode_5_basic_data: Mode5BasicData::default(),
+            iff_data_specification: IffDataSpecification::default(),
+        }
+    }
+}
+
+impl IffLayer3 {
+    pub fn data_length(&self) -> u16 {
+        const LAYER_3_BASE_DATA_LENGTH_OCTETS: u16 = 26;
+        LAYER_3_BASE_DATA_LENGTH_OCTETS + self.iff_data_specification.data_length()
+    }
+}
+
+/// Custom defined enum to model having either an
+/// Interrogator or a Transponder in an IFF Layer 3 Mode 5 PDU
+pub enum Mode5BasicData {
+    Interrogator(Mode5InterrogatorBasicData),                       // 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
+    Transponder(Mode5TransponderBasicData),                         // 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
+}
+
+impl Default for Mode5BasicData {
+    fn default() -> Self {
+        Self::Interrogator(Mode5InterrogatorBasicData::default())
+    }
+}
+
+/// 7.6.5.5 Layer 4 Mode S formats
+pub struct IffLayer4 {
+    pub layer_header: LayerHeader,
+    pub reporting_simulation: SimulationAddress,
+    pub mode_s_basic_data: ModeSBasicData,
+    pub iff_data_records: IffDataSpecification,                // see 6.2.43 - page 299
+}
+
+impl Default for IffLayer4 {
+    fn default() -> Self {
+        Self {
+            layer_header: LayerHeader { layer_number: 4, ..Default::default() },
+            reporting_simulation: Default::default(),
+            mode_s_basic_data: Default::default(),
+            iff_data_records: IffDataSpecification::default(),
+        }
+    }
+}
+
+impl IffLayer4 {
+    pub fn data_length(&self) -> u16 {
+        const LAYER_4_BASE_DATA_LENGTH_OCTETS: u16 = 34;
+        LAYER_4_BASE_DATA_LENGTH_OCTETS + self.iff_data_records.data_length()
+    }
+}
+
+/// Custom defined enum to model having either an
+/// Interrogator or a Transponder in an IFF Layer 4 Mode S PDU
+pub enum ModeSBasicData {
+    Interrogator(ModeSInterrogatorBasicData),                       // 7.6.5.5.2 Layer 4 Mode S Interrogator Format
+    Transponder(ModeSTransponderBasicData),                         // 7.6.5.5.3 Layer 4 Mode S Transponder Format
+}
+
+impl Default for ModeSBasicData {
+    fn default() -> Self {
+        Self::Interrogator(ModeSInterrogatorBasicData::default())
+    }
+}
+
+/// 7.6.5.6 Layer 5 data communications
+pub struct IffLayer5 {
+    pub layer_header: LayerHeader,
+    pub reporting_simulation: SimulationAddress,
+    pub applicable_layers: InformationLayers,
+    pub data_category: DataCategory,
+    pub data_records: IffDataSpecification,
+}
+
+impl Default for IffLayer5 {
+    fn default() -> Self {
+        Self {
+            layer_header: LayerHeader { layer_number: 5, ..Default::default() },
+            reporting_simulation: Default::default(),
+            applicable_layers: Default::default(),
+            data_category: Default::default(),
+            data_records: Default::default(),
+        }
+    }
+}
+
+impl IffLayer5 {
+    pub fn data_length(&self) -> u16 {
+        const LAYER_5_BASE_DATA_LENGTH_OCTETS: u16 = 14;
+        LAYER_5_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
+    }
+}
+
+/// 6.2.13 Change/Options record
 pub struct ChangeOptionsRecord {
     pub change_indicator: bool,
     pub system_specific_field_1: bool,
@@ -159,40 +283,50 @@ impl Default for FundamentalOperationalData {
     }
 }
 
+/// Custom defined enum to model the capability of a parameter in the
+/// `FundamentalOperationalData` record.
+#[derive(Default)]
 pub enum ParameterCapable {
+    #[default]
     Capable,
     NotCapable,
 }
 
-impl Default for ParameterCapable {
-    fn default() -> Self {
-        ParameterCapable::Capable
-    }
+/// Custom defined enum to model the capability of a parameter in the
+/// `FundamentalOperationalData` record.
+#[derive(Default)]
+pub enum OperationalStatus {
+    #[default]
+    Operational,
+    SystemFailed,
 }
 
-impl Default for SystemStatus {
-    fn default() -> Self {
-        SystemStatus {
-            system_on_off_status: false,
-            parameter_1_capable: ParameterCapable::default(),
-            parameter_2_capable: ParameterCapable::default(),
-            parameter_3_capable: ParameterCapable::default(),
-            parameter_4_capable: ParameterCapable::default(),
-            parameter_5_capable: ParameterCapable::default(),
-            parameter_6_capable: ParameterCapable::default(),
-            operational_status: ParameterCapable::default(),
-        }
-    }
-}
-
+/// Custom defined enum to model the presence or applicability of an IFF layer
+/// as used in IFF Layer 1.
+#[derive(Default)]
 pub enum LayersPresenceApplicability {
-    NotPresentApplicable,
-    PresentApplicable,
+    #[default]
+    NotPresentApplicable,   // 0
+    PresentApplicable,      // 1
 }
 
-impl Default for LayersPresenceApplicability {
-    fn default() -> Self {
-        LayersPresenceApplicability::NotPresentApplicable
+/// 6.2.43 IFF Data Specification record
+#[derive(Default)]
+pub struct IffDataRecord {
+    pub record_type: VariableRecordType,   // UID 66
+    pub record_specific_fields: Vec<u8>,
+}
+
+impl IffDataRecord {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn data_length(&self) -> u16 {
+        length_padded_to_num_bytes(
+            SIX_OCTETS + self.record_specific_fields.len(),
+            FOUR_OCTETS)
+            .record_length_bytes as u16
     }
 }
 
@@ -200,6 +334,20 @@ impl Default for LayersPresenceApplicability {
 #[derive(Default)]
 pub struct IffDataSpecification {
     pub iff_data_records: Vec<IffDataRecord>,
+}
+
+impl IffDataSpecification {
+    pub fn new() -> Self {
+        Self {
+            iff_data_records: vec![],
+        }
+    }
+
+    pub fn data_length(&self) -> u16 {
+        const NUMBER_OF_DATA_RECORDS_OCTETS: u16 = 2;
+        let iff_data_records_data_length: u16 = self.iff_data_records.iter().map(|record|record.data_length()).sum();
+        NUMBER_OF_DATA_RECORDS_OCTETS + iff_data_records_data_length
+    }
 }
 
 /// 6.2.45 Information Layers record
@@ -227,40 +375,8 @@ impl Default for InformationLayers {
     }
 }
 
-/// 7.6.5.3 Layer 2 emissions data
-///
-/// The Secondary Operational Data record (6.2.76) has been flattened in the IffLayer2 struct, as it only
-/// contains two 8-bit records.
-pub struct IffLayer2 {
-    pub layer_header: LayerHeader,
-    pub beam_data: BeamData,
-    pub operational_parameter_1: u8,
-    pub operational_parameter_2: u8,
-    pub iff_fundamental_parameters: Vec<IffFundamentalParameterData>,
-}
-
-impl Default for IffLayer2 {
-    fn default() -> Self {
-        Self {
-            layer_header: LayerHeader { layer_number: 2, ..Default::default() },
-            beam_data: Default::default(),
-            operational_parameter_1: 0,
-            operational_parameter_2: 0,
-            iff_fundamental_parameters: vec![],
-        }
-    }
-}
-
-impl IffLayer2 {
-    fn data_length(&self) -> u16 {
-        const LAYER_2_BASE_DATA_LENGTH_OCTETS: u16 = 28;
-        const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
-        LAYER_2_BASE_DATA_LENGTH_OCTETS
-            + (self.iff_fundamental_parameters.len() as u16 * IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS)
-    }
-}
-
 /// 6.2.44 IFF Fundamental Parameter Data Record
+#[derive(Default)]
 pub struct IffFundamentalParameterData {
     pub erp: f32,
     pub frequency: f32,
@@ -269,96 +385,6 @@ pub struct IffFundamentalParameterData {
     pub burst_length: f32,
     pub applicable_modes: IffApplicableModes,
     pub system_specific_data: SystemSpecificData,
-}
-
-impl Default for IffFundamentalParameterData {
-    fn default() -> Self {
-        Self {
-            erp: 0.0,
-            frequency: 0.0,
-            pgrf: 0.0,
-            pulse_width: 0.0,
-            burst_length: 0.0,
-            applicable_modes: IffApplicableModes::default(),
-            system_specific_data: SystemSpecificData::default(),
-        }
-    }
-}
-
-/// 7.6.5.4 Layer 3 Mode 5 formats
-/// 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
-/// 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
-pub struct IffLayer3 {
-    pub layer_header: LayerHeader,
-    pub reporting_simulation: SimulationAddress,
-    pub mode_5_basic_data: Mode5BasicData,
-    pub iff_data_specification: IffDataSpecification,                // see 6.2.43 - page 299
-}
-
-impl Default for IffLayer3 {
-    fn default() -> Self {
-        Self {
-            layer_header: LayerHeader { layer_number: 3, ..Default::default() },
-            reporting_simulation: SimulationAddress::default(),
-            mode_5_basic_data: Mode5BasicData::default(),
-            iff_data_specification: IffDataSpecification::default(),
-        }
-    }
-}
-
-impl IffLayer3 {
-    pub fn data_length(&self) -> u16 {
-        const LAYER_3_BASE_DATA_LENGTH_OCTETS: u16 = 26;
-        LAYER_3_BASE_DATA_LENGTH_OCTETS + self.iff_data_specification.data_length()
-    }
-}
-
-pub enum Mode5BasicData {
-    Interrogator(Mode5InterrogatorBasicData),                       // 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
-    Transponder(Mode5TransponderBasicData),                         // 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
-}
-
-impl Default for Mode5BasicData {
-    fn default() -> Self {
-        Self::Interrogator(Mode5InterrogatorBasicData::default())
-    }
-}
-
-/// 7.6.5.5 Layer 4 Mode S formats
-pub struct IffLayer4 {
-    pub layer_header: LayerHeader,
-    pub reporting_simulation: SimulationAddress,
-    pub mode_s_basic_data: ModeSBasicData,
-    pub iff_data_records: IffDataSpecification,                // see 6.2.43 - page 299
-}
-
-impl Default for IffLayer4 {
-    fn default() -> Self {
-        Self {
-            layer_header: LayerHeader { layer_number: 4, ..Default::default() },
-            reporting_simulation: Default::default(),
-            mode_s_basic_data: Default::default(),
-            iff_data_records: IffDataSpecification::default(),
-        }
-    }
-}
-
-impl IffLayer4 {
-    pub fn data_length(&self) -> u16 {
-        const LAYER_4_BASE_DATA_LENGTH_OCTETS: u16 = 34;
-        LAYER_4_BASE_DATA_LENGTH_OCTETS + self.iff_data_records.data_length()
-    }
-}
-
-pub enum ModeSBasicData {
-    Interrogator(ModeSInterrogatorBasicData),                       // 7.6.5.5.2 Layer 4 Mode S Interrogator Format
-    Transponder(ModeSTransponderBasicData),                         // 7.6.5.5.3 Layer 4 Mode S Transponder Format
-}
-
-impl Default for ModeSBasicData {
-    fn default() -> Self {
-        Self::Interrogator(ModeSInterrogatorBasicData::default())
-    }
 }
 
 /// 6.2.51 Layer Header
@@ -377,12 +403,44 @@ pub struct SystemSpecificData {
     pub part_3: u8,
 }
 
+/// 6.2.87 System Identifier record
+#[derive(Default)]
+pub struct SystemId {
+    pub system_type: IffSystemType,
+    pub system_name: IffSystemName,
+    pub system_mode: IffSystemMode,
+    pub change_options: ChangeOptionsRecord,
+}
+
+/// B.2.6 DAP Source record
+/// Downlink of Aircraft Parameters
+#[derive(Default)]
+pub struct DapSource {
+    pub indicated_air_speed: DapValue,
+    pub mach_number: DapValue,
+    pub ground_speed: DapValue,
+    pub magnetic_heading: DapValue,
+    pub track_angle_rate: DapValue,
+    pub true_track_angle: DapValue,
+    pub true_airspeed: DapValue,
+    pub vertical_rate: DapValue,
+}
+
+/// Custom defined enum to model values in the DAP Source record
+#[derive(Default)]
+pub enum DapValue {
+    #[default]
+    ComputeLocally,         // 0
+    DataRecordAvailable,    // 1
+}
+
 /// B.2.9 Enhanced Mode 1 Code record
+#[derive(Default)]
 pub struct EnhancedMode1Code {
-    pub code_element_1_D: u16,
-    pub code_element_2_C: u16,
-    pub code_element_3_B: u16,
-    pub code_element_4_A: u16,
+    pub code_element_1_d: u16,
+    pub code_element_2_c: u16,
+    pub code_element_3_b: u16,
+    pub code_element_4_a: u16,
     pub on_off_status: OnOffStatus,
     pub damage_status: DamageStatus,
     pub malfunction_status: MalfunctionStatus,
@@ -404,40 +462,6 @@ pub struct Mode5InterrogatorStatus {
     pub on_off_status: OnOffStatus,
     pub damage_status: DamageStatus,
     pub malfunction_status: MalfunctionStatus,
-}
-
-/// B.2.29 Mode 5 Transponder Basic Data record
-#[derive(Default)]
-pub struct Mode5TransponderBasicData {
-    pub status: Mode5TransponderStatus,
-    pub pin: u16,
-    pub mode_5_message_formats_present: Mode5MessageFormats,        // B.2.28 Mode 5 Message Formats record
-    pub enhanced_mode_1: EnhancedMode1Code,                         // B.2.9 Enhanced Mode 1 Code record
-    pub national_origin: u16,                                       // 16-bit undefined enumeration
-    pub supplemental_data: u8, // TODO                              // B.2.31 Mode 5 Transponder SD record
-    pub navigation_source: NavigationSource,                        // UID 359
-    pub figure_of_merit: u8,                                        // 8-bit uint between 0 and 31 decimal
-}
-
-#[derive(Default)]
-pub enum OnOffStatus {
-    #[default]
-    On,
-    Off,
-}
-
-#[derive(Default)]
-pub enum DamageStatus {
-    #[default]
-    NoDamage,       // 0
-    Damaged,        // 1
-}
-
-#[derive(Default)]
-pub enum MalfunctionStatus {
-    #[default]
-    NoMalfunction,  // 0
-    Malfunction,    // 1
 }
 
 /// B.2.28 Mode 5 Message Formats record
@@ -477,66 +501,99 @@ pub struct Mode5MessageFormats {
     pub message_format_31: IffPresence,
 }
 
+/// B.2.29 Mode 5 Transponder Basic Data record
+#[derive(Default)]
+pub struct Mode5TransponderBasicData {
+    pub status: Mode5TransponderStatus,
+    pub pin: u16,
+    pub mode_5_message_formats_present: Mode5MessageFormats,        // B.2.28 Mode 5 Message Formats record
+    pub enhanced_mode_1: EnhancedMode1Code,                         // B.2.9 Enhanced Mode 1 Code record
+    pub national_origin: u16,                                       // 16-bit undefined enumeration
+    pub supplemental_data: Mode5TransponderSupplementalData,        // B.2.31 Mode 5 Transponder SD record
+    pub navigation_source: NavigationSource,                        // UID 359
+    pub figure_of_merit: u8,                                        // 8-bit uint between 0 and 31 decimal
+}
+
+/// Custom defined enum to model a system being On or Off.
+#[derive(Default)]
+pub enum OnOffStatus {
+    #[default]
+    Off,            // 0
+    On,             // 1
+}
+
+/// Custom defined enum to model a system being Not Damaged or Damaged.
+#[derive(Default)]
+pub enum DamageStatus {
+    #[default]
+    NoDamage,       // 0
+    Damaged,        // 1
+}
+
+/// Custom defined enum to model a system being Not Malfunctioning or Malfunctioning.
+#[derive(Default)]
+pub enum MalfunctionStatus {
+    #[default]
+    NoMalfunction,  // 0
+    Malfunction,    // 1
+}
+
+/// Custom defined enum to model a system being Not Enabled or Enabled.
+#[derive(Default)]
+pub enum EnabledStatus {
+    #[default]
+    NotEnabled,     // 0
+    Enabled,        // 1
+}
+
+/// Custom defined enum to model the source of
+/// Mode 5 latitude, longitude, and altitude information.
+#[derive(Default)]
+pub enum LatLonAltSource {
+    #[default]
+    ComputeLocally,                         // 0
+    TransponderLocationDataRecordPresent,   // 1
+}
+
+/// B.2.31 Mode 5 Transponder Supplemental Data (SD) record
+#[derive(Default)]
+pub struct Mode5TransponderSupplementalData {
+    pub squitter_on_off_status: SquitterStatus,
+    pub level_2_squitter_status: Level2SquitterStatus,
+    pub iff_mission: Mode5IffMission,
+}
 
 /// B.2.32 Mode 5 Transponder Status record
 #[derive(Default)]
 pub struct Mode5TransponderStatus {
-    // TODO
+    pub mode_5_reply: Mode5Reply,
+    pub line_test: EnabledStatus,
+    pub antenna_selection: AntennaSelection,
+    pub crypto_control: IffPresence,
+    pub lat_lon_alt_source: LatLonAltSource,
+    pub location_errors: Mode5LocationErrors,
+    pub platform_type: Mode5PlatformType,
+    pub mode_5_level_selection: Mode5LevelSelection,
+    pub on_off_status: OnOffStatus,
+    pub damage_status: DamageStatus,
+    pub malfunction_status: MalfunctionStatus,
 }
 
-/// B.2.52 System Status record
-pub struct SystemStatus {
-    pub system_on_off_status: bool,
-    pub parameter_1_capable: ParameterCapable,
-    pub parameter_2_capable: ParameterCapable,
-    pub parameter_3_capable: ParameterCapable,
-    pub parameter_4_capable: ParameterCapable,
-    pub parameter_5_capable: ParameterCapable,
-    pub parameter_6_capable: ParameterCapable,
-    pub operational_status: ParameterCapable,
-}
-
-impl IffDataSpecification {
-    pub fn new() -> Self {
-        Self {
-            iff_data_records: vec![],
-        }
-    }
-
-    pub fn data_length(&self) -> u16 {
-        const NUMBER_OF_DATA_RECORDS_OCTETS: u16 = 2;
-        let iff_data_records_data_length: u16 = self.iff_data_records.iter().map(|record|record.data_length()).sum();
-        NUMBER_OF_DATA_RECORDS_OCTETS + iff_data_records_data_length
-    }
-}
-
-/// 6.2.43 IFF Data Specification record
+/// B.2.36 Mode S Altitude record
 #[derive(Default)]
-pub struct IffDataRecord {
-    pub record_type: VariableRecordType,   // UID 66
-    pub record_specific_fields: Vec<u8>,
+pub struct ModeSAltitude {
+    pub altitude: u16,
+    pub resolution: Mode5SAltitudeResolution,
 }
 
-impl IffDataRecord {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn data_length(&self) -> u16 {
-        length_padded_to_num_bytes(
-            SIX_OCTETS + self.record_specific_fields.len(),
-            FOUR_OCTETS)
-            .record_length_bytes as u16
-    }
-}
-
-// B.2.37
+/// B.2.37 Mode S Interrogator Basic Data record
 #[derive(Default)]
 pub struct ModeSInterrogatorBasicData {
     pub mode_s_interrogator_status: ModeSInterrogatorStatus,
     pub mode_s_levels_present: ModeSLevelsPresent,
 }
 
+/// B.2.39 Mode S Interrogator Status record
 #[derive(Default)]
 pub struct ModeSInterrogatorStatus {
     pub on_off_status: OnOffStatus,
@@ -545,6 +602,7 @@ pub struct ModeSInterrogatorStatus {
     pub malfunction_status: MalfunctionStatus,
 }
 
+/// B.2.40 Mode S Levels Present record
 #[derive(Default)]
 pub struct ModeSLevelsPresent {
     pub level_1: IffPresence,
@@ -554,6 +612,7 @@ pub struct ModeSLevelsPresent {
     pub level_4: IffPresence,
 }
 
+/// Custom defined enum to model the presence of an element in an IFF system
 #[derive(Default)]
 pub enum IffPresence {
     #[default]
@@ -561,7 +620,7 @@ pub enum IffPresence {
     Present,    // 1
 }
 
-// B.2.41
+/// B.2.41 Mode S Transponder Basic Data record
 pub struct ModeSTransponderBasicData {
     pub status: ModeSTransponderStatus,
     pub levels_present: ModeSLevelsPresent,
@@ -574,34 +633,7 @@ pub struct ModeSTransponderBasicData {
     pub capability_record: CapabilityReport,
 }
 
-// B.2.6
-// Downlink of Aircraft Parameters
-#[derive(Default)]
-pub struct DapSource {
-    pub indicated_air_speed: DapValue,
-    pub mach_number: DapValue,
-    pub ground_speed: DapValue,
-    pub magnetic_heading: DapValue,
-    pub track_angle_rate: DapValue,
-    pub true_track_angle: DapValue,
-    pub true_airspeed: DapValue,
-    pub vertical_rate: DapValue,
-}
-
-#[derive(Default)]
-pub struct ModeSAltitude {
-    pub altitude: u16,
-    pub resolution: Mode5SAltitudeResolution,
-}
-
-#[derive(Default)]
-pub enum DapValue {
-    #[default]
-    ComputeLocally,         // 0
-    DataRecordAvailable,    // 1
-}
-
-// B.2.42
+/// B.2.42 Mode S Transponder Status record
 #[derive(Default)]
 pub struct ModeSTransponderStatus {
     pub squitter_status: SquitterStatus,
@@ -617,6 +649,7 @@ pub struct ModeSTransponderStatus {
     pub malfunction_status: MalfunctionStatus,
 }
 
+/// Custom defined enum to model the SquitterStatus
 #[derive(Default)]
 pub enum SquitterStatus {
     #[default]
@@ -624,29 +657,15 @@ pub enum SquitterStatus {
     On,     // 1
 }
 
-pub struct IffLayer5 {
-    pub layer_header: LayerHeader,
-    pub reporting_simulation: SimulationAddress,
-    pub applicable_layers: InformationLayers,
-    pub data_category: DataCategory,
-    pub data_records: IffDataSpecification,
-}
-
-impl Default for IffLayer5 {
-    fn default() -> Self {
-        Self {
-            layer_header: LayerHeader { layer_number: 5, ..Default::default() },
-            reporting_simulation: Default::default(),
-            applicable_layers: Default::default(),
-            data_category: Default::default(),
-            data_records: Default::default(),
-        }
-    }
-}
-
-impl IffLayer5 {
-    pub fn data_length(&self) -> u16 {
-        const LAYER_5_BASE_DATA_LENGTH_OCTETS: u16 = 14;
-        LAYER_5_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
-    }
+/// B.2.52 System Status record
+#[derive(Default)]
+pub struct SystemStatus {
+    pub system_on_off_status: OnOffStatus,
+    pub parameter_1_capable: ParameterCapable,
+    pub parameter_2_capable: ParameterCapable,
+    pub parameter_3_capable: ParameterCapable,
+    pub parameter_4_capable: ParameterCapable,
+    pub parameter_5_capable: ParameterCapable,
+    pub parameter_6_capable: ParameterCapable,
+    pub operational_status: OperationalStatus,
 }

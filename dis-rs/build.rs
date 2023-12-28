@@ -27,7 +27,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 123] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 128] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -111,6 +111,9 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 123] = [
     (339, Some("IffApplicableModes"), None, false), // IFF Applicable Modes
     (346, Some("Mode5IffMission"), None, false), // IFF Mission
     (347, Some("ModeSTransmitState"), Some(8), false), // Mode S Interrogator Status Transmit State
+    (350, None, None, false), // Mode 5 Reply
+    (351, None, None, false), // Antenna Selection
+    (353, None, None, false), // Mode S Squitter Type
     (354, None, None, false), // Mode S Squitter Type
     (355, None, None, false), // Mode S Squitter Record Source
     (356, None, None, false), // Aircraft Present Domain
@@ -153,7 +156,9 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 123] = [
     (409, None, None, false), // Appearance
     (410, None, None, false), // Appearance
     (411, None, None, false), // Appearance
+    (412, None, None, false), // Mode 5 Level Selection
     (415, None, None, false), // Attached Part-Detached Indicator
+    (423, None, None, false), // Mode 5 Location Errors
     (426, None, None, false), // Cover/Shroud Status
     (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
     (802, None, None, false), // Clothing IR Signature
