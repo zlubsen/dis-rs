@@ -3,7 +3,7 @@ use nom::number::complete::{be_u16, be_u8};
 use crate::common::iff::model::{ChangeOptionsRecord, FundamentalOperationalData, Iff, InformationLayers, LayersPresenceApplicability, ParameterCapable, SystemId, SystemStatus};
 use crate::common::parser::{entity_id, event_id, vec3_f32};
 use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE};
-use crate::{IffSystemMode, IffSystemName, IffSystemType, Location, PduBody};
+use crate::{IffSystemMode, IffSystemName, IffSystemType, PduBody};
 
 pub fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id) = entity_id(input)?;
@@ -12,9 +12,18 @@ pub fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, system_id) = system_id(input)?;
     let (input, system_designator) = be_u8(input)?;
     let (input, system_specific_data) = be_u8(input)?;
-    let (input, fundamental_data) = fundamental_data(input)?;
+    let (input, fundamental_data) = fundamental_operational_data(input)?;
 
-    Ok((input, // Iff::default().with...
+    Ok((input, Iff::builder()
+        .with_emitting_entity_id(entity_id)
+        .with_event_id(event_id)
+        .with_relative_antenna_location(antenna_location)
+        .with_system_id(system_id)
+        .with_system_designator(system_designator)
+        .with_system_specific_data(system_specific_data)
+        .with_fundamental_operational_data(fundamental_data)
+        .build()
+        .into_pdu_body()
     ))
 }
 

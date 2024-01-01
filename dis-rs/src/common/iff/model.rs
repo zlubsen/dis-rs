@@ -30,7 +30,19 @@ pub struct Iff {
 
 impl Default for Iff {
     fn default() -> Self {
-        Self::new()
+        Self {
+            emitting_entity_id: Default::default(),
+            event_id: Default::default(),
+            relative_antenna_location: Default::default(),
+            system_id: Default::default(),
+            system_designator: 0,
+            system_specific_data: 0,
+            fundamental_operational_data: Default::default(),
+            layer_2: None,
+            layer_3: None,
+            layer_4: None,
+            layer_5: None,
+        }
     }
 }
 
@@ -490,10 +502,10 @@ pub struct Mode5MessageFormats {
     pub message_format_7: IffPresence,
     pub message_format_8: IffPresence,
     pub message_format_9: IffPresence,
+    pub message_format_10: IffPresence,
     pub message_format_11: IffPresence,
     pub message_format_12: IffPresence,
     pub message_format_13: IffPresence,
-    pub message_format_10: IffPresence,
     pub message_format_14: IffPresence,
     pub message_format_15: IffPresence,
     pub message_format_16: IffPresence,
@@ -634,6 +646,7 @@ pub enum IffPresence {
 }
 
 /// B.2.41 Mode S Transponder Basic Data record
+#[derive(Default)]
 pub struct ModeSTransponderBasicData {
     pub status: ModeSTransponderStatus,
     pub levels_present: ModeSLevelsPresent,

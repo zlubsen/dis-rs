@@ -214,7 +214,7 @@ impl BodyInfo for PduBody {
             PduBody::Transmitter(body) => { body.body_length() }
             PduBody::Signal(body) => { body.body_length() }
             PduBody::Receiver(body) => { body.body_length() }
-            PduBody::IFF => { 0 }
+            PduBody::IFF(body) => { body.body_length() }
             PduBody::UnderwaterAcoustic => { 0 }
             PduBody::SupplementalEmissionEntityState => { 0 }
             PduBody::IntercomSignal => { 0 }
@@ -292,7 +292,7 @@ impl BodyInfo for PduBody {
             PduBody::Transmitter(body) => { body.body_type() }
             PduBody::Signal(body) => { body.body_type() }
             PduBody::Receiver(body) => { body.body_type() }
-            PduBody::IFF => { PduType::IFF }
+            PduBody::IFF(body) => { body.body_type() }
             PduBody::UnderwaterAcoustic => { PduType::UnderwaterAcoustic }
             PduBody::SupplementalEmissionEntityState => { PduType::SupplementalEmissionEntityState }
             PduBody::IntercomSignal => { PduType::IntercomSignal }
@@ -372,7 +372,7 @@ impl Interaction for PduBody {
             PduBody::Transmitter(body) => { body.originator() }
             PduBody::Signal(body) => { body.originator() }
             PduBody::Receiver(body) => { body.originator() }
-            PduBody::IFF => { None }
+            PduBody::IFF(body) => { body.originator() }
             PduBody::UnderwaterAcoustic => { None }
             PduBody::SupplementalEmissionEntityState => { None }
             PduBody::IntercomSignal => { None }
@@ -450,7 +450,7 @@ impl Interaction for PduBody {
             PduBody::Transmitter(body) => { body.receiver() }
             PduBody::Signal(body) => { body.receiver() }
             PduBody::Receiver(body) => { body.receiver() }
-            PduBody::IFF => { None }
+            PduBody::IFF(body) => { body.receiver() }
             PduBody::UnderwaterAcoustic => { None }
             PduBody::SupplementalEmissionEntityState => { None }
             PduBody::IntercomSignal => { None }

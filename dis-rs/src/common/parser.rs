@@ -37,6 +37,7 @@ use crate::common::transmitter::parser::transmitter_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::{ArticulatedPart, ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPart, AttachedPartDetachedIndicator, AttachedParts, BeamData, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationParameter, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameter, VariableParameterRecordType};
+use crate::common::iff::parser::iff_body;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -193,7 +194,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Transmitter => { transmitter_body(header)(input)? }
             PduType::Signal => { signal_body(input)? }
             PduType::Receiver => { receiver_body(input)? }
-            // PduType::IFF => {}
+            PduType::IFF => { iff_body(input)? }
             // PduType::UnderwaterAcoustic => {}
             // PduType::SupplementalEmissionEntityState => {}
             // PduType::IntercomSignal => {}

@@ -1,6 +1,6 @@
-use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, ModeSAltitude, ModeSBasicData, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
+use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::common::model::EntityId;
-use crate::{AircraftIdentificationType, AircraftPresentDomain, BeamData, CapabilityReport, DataCategory, EventId, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, ModeSSquitterRecordSource, ModeSSquitterType, SimulationAddress, VariableRecordType, VectorF32};
+use crate::{AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, BeamData, CapabilityReport, DataCategory, EventId, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors, Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution, ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, SimulationAddress, VariableRecordType, VectorF32};
 
 pub struct IffBuilder(Iff);
 
@@ -654,23 +654,463 @@ impl EnhancedMode1CodeBuilder{
     }
 }
 
-// Mode5InterrogatorBasicData
+pub struct Mode5InterrogatorBasicDataBuilder(Mode5InterrogatorBasicData);
 
-// Mode5InterrogatorStatus
+impl Mode5InterrogatorBasicDataBuilder {
+    pub fn new() -> Self {
+        Self(Mode5InterrogatorBasicData::default())
+    }
 
-// Mode5MessageFormats
+    pub fn with_status(mut self, v: Mode5InterrogatorStatus) -> Self {
+        self.0.status = v;
+        self
+    }
 
-// Mode5TransponderBasicData
+    pub fn with_mode_5_message_formats_present(mut self, v: Mode5MessageFormats) -> Self {
+        self.0.mode_5_message_formats_present = v;
+        self
+    }
 
-// Mode5TransponderSupplementalData
+    pub fn with_interrogated_entity_id(mut self, v: EntityId) -> Self {
+        self.0.interrogated_entity_id = v;
+        self
+    }
 
-// Mode5TransponderStatus
+    pub fn build(self) -> Mode5InterrogatorBasicData {
+        self.0
+    }
+}
 
-// ModeSAltitude
+pub struct Mode5InterrogatorStatusBuilder(Mode5InterrogatorStatus);
 
-// ModeSInterrogatorBasicData
+impl Mode5InterrogatorStatusBuilder {
+    pub fn new() -> Self {
+        Self(Mode5InterrogatorStatus::default())
+    }
 
-// ModeSInterrogatorStatus
+    pub fn with_iff_mission(mut self, v: Mode5IffMission) -> Self {
+        self.0.iff_mission = v;
+        self
+    }
+
+    pub fn with_mode_5_message_formats_status(mut self, v: Mode5MessageFormatsStatus) -> Self {
+        self.0.mode_5_message_formats_status = v;
+        self
+    }
+
+    pub fn with_on_off_status(mut self, v: OnOffStatus) -> Self {
+        self.0.on_off_status = v;
+        self
+    }
+
+    pub fn with_damage_status(mut self, v: DamageStatus) -> Self {
+        self.0.damage_status = v;
+        self
+    }
+
+    pub fn with_malfunction_status(mut self, v: MalfunctionStatus) -> Self {
+        self.0.malfunction_status = v;
+        self
+    }
+
+    pub fn build(self) -> Mode5InterrogatorStatus {
+        self.0
+    }
+}
+
+pub struct Mode5MessageFormatsBuilder(Mode5MessageFormats);
+
+impl Mode5MessageFormatsBuilder {
+    pub fn new() -> Self {
+        Self(Mode5MessageFormats::default())
+    }
+
+    pub fn with_message_format_0(mut self, v: IffPresence) -> Self {
+        self.0.message_format_0 = v;
+        self
+    }
+
+    pub fn with_message_format_1(mut self, v: IffPresence) -> Self {
+        self.0.message_format_1 = v;
+        self
+    }
+
+    pub fn with_message_format_2(mut self, v: IffPresence) -> Self {
+        self.0.message_format_2 = v;
+        self
+    }
+
+    pub fn with_message_format_3(mut self, v: IffPresence) -> Self {
+        self.0.message_format_3 = v;
+        self
+    }
+
+    pub fn with_message_format_4(mut self, v: IffPresence) -> Self {
+        self.0.message_format_4 = v;
+        self
+    }
+
+    pub fn with_message_format_5(mut self, v: IffPresence) -> Self {
+        self.0.message_format_5 = v;
+        self
+    }
+
+    pub fn with_message_format_6(mut self, v: IffPresence) -> Self {
+        self.0.message_format_6 = v;
+        self
+    }
+
+    pub fn with_message_format_7(mut self, v: IffPresence) -> Self {
+        self.0.message_format_7 = v;
+        self
+    }
+
+    pub fn with_message_format_8(mut self, v: IffPresence) -> Self {
+        self.0.message_format_8 = v;
+        self
+    }
+
+    pub fn with_message_format_9(mut self, v: IffPresence) -> Self {
+        self.0.message_format_9 = v;
+        self
+    }
+
+    pub fn with_message_format_10(mut self, v: IffPresence) -> Self {
+        self.0.message_format_10 = v;
+        self
+    }
+
+    pub fn with_message_format_11(mut self, v: IffPresence) -> Self {
+        self.0.message_format_11 = v;
+        self
+    }
+
+    pub fn with_message_format_12(mut self, v: IffPresence) -> Self {
+        self.0.message_format_12 = v;
+        self
+    }
+
+    pub fn with_message_format_13(mut self, v: IffPresence) -> Self {
+        self.0.message_format_13 = v;
+        self
+    }
+
+    pub fn with_message_format_14(mut self, v: IffPresence) -> Self {
+        self.0.message_format_14 = v;
+        self
+    }
+
+    pub fn with_message_format_15(mut self, v: IffPresence) -> Self {
+        self.0.message_format_15 = v;
+        self
+    }
+
+    pub fn with_message_format_16(mut self, v: IffPresence) -> Self {
+        self.0.message_format_16 = v;
+        self
+    }
+
+    pub fn with_message_format_17(mut self, v: IffPresence) -> Self {
+        self.0.message_format_17 = v;
+        self
+    }
+
+    pub fn with_message_format_18(mut self, v: IffPresence) -> Self {
+        self.0.message_format_18 = v;
+        self
+    }
+
+    pub fn with_message_format_19(mut self, v: IffPresence) -> Self {
+        self.0.message_format_19 = v;
+        self
+    }
+
+    pub fn with_message_format_20(mut self, v: IffPresence) -> Self {
+        self.0.message_format_20 = v;
+        self
+    }
+
+    pub fn with_message_format_21(mut self, v: IffPresence) -> Self {
+        self.0.message_format_21 = v;
+        self
+    }
+
+    pub fn with_message_format_22(mut self, v: IffPresence) -> Self {
+        self.0.message_format_22 = v;
+        self
+    }
+
+    pub fn with_message_format_23(mut self, v: IffPresence) -> Self {
+        self.0.message_format_23 = v;
+        self
+    }
+
+    pub fn with_message_format_24(mut self, v: IffPresence) -> Self {
+        self.0.message_format_24 = v;
+        self
+    }
+
+    pub fn with_message_format_25(mut self, v: IffPresence) -> Self {
+        self.0.message_format_25 = v;
+        self
+    }
+
+    pub fn with_message_format_26(mut self, v: IffPresence) -> Self {
+        self.0.message_format_26 = v;
+        self
+    }
+
+    pub fn with_message_format_27(mut self, v: IffPresence) -> Self {
+        self.0.message_format_27 = v;
+        self
+    }
+
+    pub fn with_message_format_28(mut self, v: IffPresence) -> Self {
+        self.0.message_format_28 = v;
+        self
+    }
+
+    pub fn with_message_format_29(mut self, v: IffPresence) -> Self {
+        self.0.message_format_29 = v;
+        self
+    }
+
+    pub fn with_message_format_30(mut self, v: IffPresence) -> Self {
+        self.0.message_format_30 = v;
+        self
+    }
+
+    pub fn with_message_format_31(mut self, v: IffPresence) -> Self {
+        self.0.message_format_31 = v;
+        self
+    }
+
+    pub fn build(self) -> Mode5MessageFormats {
+        self.0
+    }
+}
+
+pub struct Mode5TransponderBasicDataBuilder(Mode5TransponderBasicData);
+
+impl Mode5TransponderBasicDataBuilder {
+    pub fn new() -> Self {
+        Self(Mode5TransponderBasicData::default())
+    }
+
+    pub fn with_status(mut self, v: Mode5TransponderStatus) -> Self {
+        self.0.status = v;
+        self
+    }
+
+    pub fn with_pin(mut self, v: u16) -> Self {
+        self.0.pin = v;
+        self
+    }
+
+    pub fn with_mode_5_message_formats_present(mut self, v: Mode5MessageFormats) -> Self {
+        self.0.mode_5_message_formats_present = v;
+        self
+    }
+
+    pub fn with_enhanced_mode_1(mut self, v: EnhancedMode1Code) -> Self {
+        self.0.enhanced_mode_1 = v;
+        self
+    }
+
+    pub fn with_national_origin(mut self, v: u16) -> Self {
+        self.0.national_origin = v;
+        self
+    }
+
+    pub fn with_supplemental_data(mut self, v: Mode5TransponderSupplementalData) -> Self {
+        self.0.supplemental_data = v;
+        self
+    }
+
+    pub fn with_navigation_source(mut self, v: NavigationSource) -> Self {
+        self.0.navigation_source = v;
+        self
+    }
+
+    pub fn with_figure_of_merit(mut self, v: u8) -> Self {
+        self.0.figure_of_merit = v;
+        self
+    }
+
+    pub fn build(self) -> Mode5TransponderBasicData {
+        self.0
+    }
+}
+
+pub struct Mode5TransponderSupplementalDataBuilder(Mode5TransponderSupplementalData);
+
+impl Mode5TransponderSupplementalDataBuilder {
+    pub fn new() -> Self {
+        Self(Mode5TransponderSupplementalData::default())
+    }
+
+    pub fn with_squitter_on_off_status(mut self, v: SquitterStatus) -> Self {
+        self.0.squitter_on_off_status = v;
+        self
+    }
+
+    pub fn with_level_2_squitter_status(mut self, v: Level2SquitterStatus) -> Self {
+        self.0.level_2_squitter_status = v;
+        self
+    }
+
+    pub fn with_iff_mission(mut self, v: Mode5IffMission) -> Self {
+        self.0.iff_mission = v;
+        self
+    }
+
+    pub fn build(self) -> Mode5TransponderSupplementalData {
+        self.0
+    }
+}
+
+pub struct Mode5TransponderStatusBuilder(Mode5TransponderStatus);
+
+impl Mode5TransponderStatusBuilder {
+    pub fn new() -> Self {
+        Self(Mode5TransponderStatus::default())
+    }
+
+    pub fn with_mode_5_reply(mut self, v: Mode5Reply) -> Self {
+        self.0.mode_5_reply = v;
+        self
+    }
+
+    pub fn with_line_test(mut self, v: EnabledStatus) -> Self {
+        self.0.line_test = v;
+        self
+    }
+
+    pub fn with_antenna_selection(mut self, v: AntennaSelection) -> Self {
+        self.0.antenna_selection = v;
+        self
+    }
+
+    pub fn with_crypto_control(mut self, v: IffPresence) -> Self {
+        self.0.crypto_control = v;
+        self
+    }
+
+    pub fn with_lat_lon_alt_source(mut self, v: LatLonAltSource) -> Self {
+        self.0.lat_lon_alt_source = v;
+        self
+    }
+
+    pub fn with_location_errors(mut self, v: Mode5LocationErrors) -> Self {
+        self.0.location_errors = v;
+        self
+    }
+
+    pub fn with_platform_type(mut self, v: Mode5PlatformType) -> Self {
+        self.0.platform_type = v;
+        self
+    }
+
+    pub fn with_mode_5_level_selection(mut self, v: Mode5LevelSelection) -> Self {
+        self.0.mode_5_level_selection = v;
+        self
+    }
+
+    pub fn with_on_off_status(mut self, v: OnOffStatus) -> Self {
+        self.0.on_off_status = v;
+        self
+    }
+
+    pub fn with_damage_status(mut self, v: DamageStatus) -> Self {
+        self.0.damage_status = v;
+        self
+    }
+
+    pub fn with_malfunction_status(mut self, v: MalfunctionStatus) -> Self {
+        self.0.malfunction_status = v;
+        self
+    }
+
+    pub fn build(self) -> Mode5TransponderStatus {
+        self.0
+    }
+}
+
+pub struct ModeSAltitudeBuilder(ModeSAltitude);
+
+impl ModeSAltitudeBuilder {
+    pub fn new() -> Self {
+        Self(ModeSAltitude::default())
+    }
+
+    pub fn with_altitude(mut self, v: u16) -> Self {
+        self.0.altitude = v;
+        self
+    }
+
+    pub fn with_resolution(mut self, v: Mode5SAltitudeResolution) -> Self {
+        self.0.resolution = v;
+        self
+    }
+
+    pub fn build(self) -> ModeSAltitude {
+        self.0
+    }
+}
+
+pub struct ModeSInterrogatorBasicDataBuilder(ModeSInterrogatorBasicData);
+
+impl ModeSInterrogatorBasicDataBuilder {
+    pub fn new() -> Self {
+        Self(ModeSInterrogatorBasicData::default())
+    }
+
+    pub fn with_mode_s_interrogator_status(mut self, v: ModeSInterrogatorStatus) -> Self {
+        self.0.mode_s_interrogator_status = v;
+        self
+    }
+
+    pub fn with_mode_s_levels_present(mut self, v: ModeSLevelsPresent) -> Self {
+        self.0.mode_s_levels_present = v;
+        self
+    }
+
+    pub fn build(self) -> ModeSInterrogatorBasicData {
+        self.0
+    }
+}
+
+pub struct ModeSInterrogatorStatusBuilder(ModeSInterrogatorStatus);
+
+impl ModeSInterrogatorStatusBuilder {
+    pub fn new() -> Self {
+        Self(ModeSInterrogatorStatus::default())
+    }
+
+    pub fn with_on_off_status(mut self, v: OnOffStatus) -> Self {
+        self.0.on_off_status = v;
+        self
+    }
+
+    pub fn with_transmit_state(mut self, v: ModeSTransmitState) -> Self {
+        self.0.transmit_state = v;
+        self
+    }
+
+    pub fn with_damage_status(mut self, v: DamageStatus) -> Self {
+        self.0.damage_status = v;
+        self
+    }
+
+    pub fn with_malfunction_status(mut self, v: MalfunctionStatus) -> Self {
+        self.0.malfunction_status = v;
+        self
+    }
+
+    pub fn build(self) -> ModeSInterrogatorStatus {
+        self.0
+    }
+}
 
 pub struct ModeSLevelsPresentBuilder(ModeSLevelsPresent);
 
