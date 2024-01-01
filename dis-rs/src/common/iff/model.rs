@@ -2,7 +2,8 @@ use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAddress};
 use crate::constants::{FOUR_OCTETS, SIX_OCTETS};
 use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5LocationErrors, Mode5LevelSelection, Mode5SAltitudeResolution, Mode5Reply, Mode5PlatformType, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, Level2SquitterStatus, VariableRecordType};
-use crate::{length_padded_to_num_bytes};
+use crate::{length_padded_to_num_bytes, PduBody};
+use crate::common::iff::builder::IffBuilder;
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
 pub const FUNDAMENTAL_OPERATIONAL_DATA_LENGTH: u16 = 16;
@@ -34,20 +35,12 @@ impl Default for Iff {
 }
 
 impl Iff {
-    pub fn new() -> Self {
-        Self {
-            emitting_entity_id: Default::default(),
-            event_id: Default::default(),
-            relative_antenna_location: Default::default(),
-            system_id: SystemId::default(),
-            system_designator: 0,
-            system_specific_data: 0,
-            fundamental_operational_data: FundamentalOperationalData::default(),
-            layer_2: None,
-            layer_3: None,
-            layer_4: None,
-            layer_5: None,
-        }
+    pub fn builder() -> IffBuilder {
+        IffBuilder::new()
+    }
+
+    pub fn into_pdu_body(self) -> PduBody {
+        PduBody::IFF(self)
     }
 }
 
@@ -158,6 +151,16 @@ impl Default for Mode5BasicData {
     }
 }
 
+impl Mode5BasicData {
+    pub fn new_interrogator(basic_data: Mode5InterrogatorBasicData) -> Self {
+        Self::Interrogator(basic_data)
+    }
+
+    pub fn new_transponder(basic_data: Mode5TransponderBasicData) -> Self {
+        Self::Transponder(basic_data)
+    }
+}
+
 /// 7.6.5.5 Layer 4 Mode S formats
 pub struct IffLayer4 {
     pub layer_header: LayerHeader,
@@ -194,6 +197,16 @@ pub enum ModeSBasicData {
 impl Default for ModeSBasicData {
     fn default() -> Self {
         Self::Interrogator(ModeSInterrogatorBasicData::default())
+    }
+}
+
+impl ModeSBasicData {
+    pub fn new_interrogator(basic_data: ModeSInterrogatorBasicData) -> Self {
+        Self::Interrogator(basic_data)
+    }
+
+    pub fn new_transponder(basic_data: ModeSTransponderBasicData) -> Self {
+        Self::Transponder(basic_data)
     }
 }
 
@@ -630,7 +643,7 @@ pub struct ModeSTransponderBasicData {
     pub aircraft_identification_type: AircraftIdentificationType,
     pub dap_source: DapSource,                  // B.2.6
     pub altitude: ModeSAltitude,                // B.2.36
-    pub capability_record: CapabilityReport,
+    pub capability_report: CapabilityReport,
 }
 
 /// B.2.42 Mode S Transponder Status record

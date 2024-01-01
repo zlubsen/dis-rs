@@ -596,7 +596,7 @@ impl Serialize for ModeSTransponderBasicData {
         buf.put_u8(self.aircraft_identification_type.into());
         self.dap_source.serialize(buf);
         self.altitude.serialize(buf);
-        buf.put_u8(self.capability_record.into());
+        buf.put_u8(self.capability_report.into());
 
         24
     }

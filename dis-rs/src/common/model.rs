@@ -18,6 +18,7 @@ use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::event_report::model::EventReport;
 use crate::common::other::model::Other;
 use crate::common::fire::model::Fire;
+use crate::common::iff::model::Iff;
 use crate::common::receiver::model::Receiver;
 use crate::common::remove_entity::model::RemoveEntity;
 use crate::common::set_data::model::SetData;
@@ -135,7 +136,7 @@ pub enum PduBody {
     Transmitter(Transmitter),
     Signal(Signal),
     Receiver(Receiver),
-    IFF,
+    IFF(Iff),
     UnderwaterAcoustic,
     SupplementalEmissionEntityState,
     IntercomSignal,
