@@ -134,7 +134,7 @@ impl IffLayer3Builder {
     }
 
     pub fn with_iff_data_specification(mut self, v: IffDataSpecification) -> Self {
-        self.0.iff_data_specification = v;
+        self.0.data_records = v;
         self
     }
 
@@ -166,7 +166,7 @@ impl IffLayer4Builder {
     }
 
     pub fn with_iff_data_specification(mut self, v: IffDataSpecification) -> Self {
-        self.0.iff_data_records = v;
+        self.0.data_records = v;
         self
     }
 
@@ -202,7 +202,7 @@ impl IffLayer5Builder {
         self
     }
 
-    pub fn with_data_records(mut self, v: IffDataSpecification) -> Self {
+    pub fn with_iff_data_specification(mut self, v: IffDataSpecification) -> Self {
         self.0.data_records = v;
         self
     }
@@ -338,12 +338,7 @@ impl IffDataRecordBuilder {
         self
     }
 
-    pub fn with_record_specific_field(mut self, v: u8) -> Self {
-        self.0.record_specific_fields.push(v);
-        self
-    }
-
-    pub fn with_record_specific_fields(mut self, v: Vec<u8>) -> Self {
+    pub fn with_record_specific_field(mut self, v: Vec<u8>) -> Self {
         self.0.record_specific_fields = v;
         self
     }

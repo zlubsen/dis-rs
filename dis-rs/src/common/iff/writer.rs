@@ -43,7 +43,10 @@ impl Serialize for IffLayer2 {
         buf.put_u8(self.operational_parameter_1);
         buf.put_u8(self.operational_parameter_2);
         buf.put_u16(self.iff_fundamental_parameters.len() as u16);
-        let params_bytes: u16 = self.iff_fundamental_parameters.iter().map(|param| param.serialize(buf)).sum();
+        let params_bytes: u16 = self.iff_fundamental_parameters
+            .iter()
+            .map(|param| param.serialize(buf))
+            .sum();
 
         layer_header_bytes + beam_data_bytes + 4 + params_bytes
     }
@@ -58,7 +61,7 @@ impl Serialize for IffLayer3 {
             Mode5BasicData::Transponder(data) => { data.serialize(buf) }
         };
         buf.put_u16(0u16);
-        let iff_data_specification_bytes = self.iff_data_specification.serialize(buf);
+        let iff_data_specification_bytes = self.data_records.serialize(buf);
 
         layer_header_bytes + reporting_simulation_bytes + basic_data_bytes + 2 + iff_data_specification_bytes
     }
@@ -73,7 +76,7 @@ impl Serialize for IffLayer4 {
             ModeSBasicData::Transponder(data) => { data.serialize(buf) }
         };
         buf.put_u16(0u16);
-        let iff_data_records_bytes = self.iff_data_records.serialize(buf);
+        let iff_data_records_bytes = self.data_records.serialize(buf);
 
         layer_header_bytes + reporting_simulation_bytes + basic_data_bytes + 2 + iff_data_records_bytes
     }
@@ -215,9 +218,9 @@ impl Serialize for IffFundamentalParameterData {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_f32(self.erp);
         buf.put_f32(self.frequency);
-        buf.put_f32(self.frequency);
-        buf.put_f32(self.frequency);
-        buf.put_f32(self.frequency);
+        buf.put_f32(self.pgrf);
+        buf.put_f32(self.pulse_width);
+        buf.put_f32(self.burst_length);
         buf.put_u8(self.applicable_modes.into());
         let system_specific_data_bytes = self.system_specific_data.serialize(buf);
 

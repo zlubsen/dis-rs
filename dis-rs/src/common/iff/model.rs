@@ -3,10 +3,11 @@ use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAdd
 use crate::constants::{FOUR_OCTETS, SIX_OCTETS};
 use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5LocationErrors, Mode5LevelSelection, Mode5SAltitudeResolution, Mode5Reply, Mode5PlatformType, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, Level2SquitterStatus, VariableRecordType};
 use crate::{length_padded_to_num_bytes, PduBody};
-use crate::common::iff::builder::IffBuilder;
+use crate::common::iff::builder::{ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder, FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder, IffDataSpecificationBuilder, IffFundamentalParameterDataBuilder, IffLayer2Builder, IffLayer3Builder, IffLayer4Builder, IffLayer5Builder, InformationLayersBuilder, LayerHeaderBuilder, Mode5InterrogatorBasicDataBuilder, Mode5InterrogatorStatusBuilder, Mode5MessageFormatsBuilder, Mode5TransponderBasicDataBuilder, Mode5TransponderStatusBuilder, Mode5TransponderSupplementalDataBuilder, ModeSAltitudeBuilder, ModeSInterrogatorBasicDataBuilder, ModeSInterrogatorStatusBuilder, ModeSLevelsPresentBuilder, ModeSTransponderBasicDataBuilder, ModeSTransponderStatusBuilder, SystemIdBuilder, SystemSpecificDataBuilder, SystemStatusBuilder};
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
 pub const FUNDAMENTAL_OPERATIONAL_DATA_LENGTH: u16 = 16;
+pub const BASE_IFF_DATA_RECORD_LENGTH_OCTETS: u16 = 6;
 
 /// 7.6.5 Identification Friend or Foe (IFF) PDU
 ///
@@ -114,6 +115,10 @@ impl Default for IffLayer2 {
 }
 
 impl IffLayer2 {
+    pub fn builder() -> IffLayer2Builder {
+        IffLayer2Builder::new()
+    }
+
     fn data_length(&self) -> u16 {
         const LAYER_2_BASE_DATA_LENGTH_OCTETS: u16 = 28;
         const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
@@ -129,7 +134,7 @@ pub struct IffLayer3 {
     pub layer_header: LayerHeader,
     pub reporting_simulation: SimulationAddress,
     pub mode_5_basic_data: Mode5BasicData,
-    pub iff_data_specification: IffDataSpecification,                // see 6.2.43 - page 299
+    pub data_records: IffDataSpecification,                // see 6.2.43 - page 299
 }
 
 impl Default for IffLayer3 {
@@ -138,15 +143,19 @@ impl Default for IffLayer3 {
             layer_header: LayerHeader { layer_number: 3, ..Default::default() },
             reporting_simulation: SimulationAddress::default(),
             mode_5_basic_data: Mode5BasicData::default(),
-            iff_data_specification: IffDataSpecification::default(),
+            data_records: IffDataSpecification::default(),
         }
     }
 }
 
 impl IffLayer3 {
+    pub fn builder() -> IffLayer3Builder {
+        IffLayer3Builder::new()
+    }
+
     pub fn data_length(&self) -> u16 {
         const LAYER_3_BASE_DATA_LENGTH_OCTETS: u16 = 26;
-        LAYER_3_BASE_DATA_LENGTH_OCTETS + self.iff_data_specification.data_length()
+        LAYER_3_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 }
 
@@ -178,7 +187,7 @@ pub struct IffLayer4 {
     pub layer_header: LayerHeader,
     pub reporting_simulation: SimulationAddress,
     pub mode_s_basic_data: ModeSBasicData,
-    pub iff_data_records: IffDataSpecification,                // see 6.2.43 - page 299
+    pub data_records: IffDataSpecification,                // see 6.2.43 - page 299
 }
 
 impl Default for IffLayer4 {
@@ -187,15 +196,19 @@ impl Default for IffLayer4 {
             layer_header: LayerHeader { layer_number: 4, ..Default::default() },
             reporting_simulation: Default::default(),
             mode_s_basic_data: Default::default(),
-            iff_data_records: IffDataSpecification::default(),
+            data_records: IffDataSpecification::default(),
         }
     }
 }
 
 impl IffLayer4 {
+    pub fn builder() -> IffLayer4Builder {
+        IffLayer4Builder::new()
+    }
+
     pub fn data_length(&self) -> u16 {
         const LAYER_4_BASE_DATA_LENGTH_OCTETS: u16 = 34;
-        LAYER_4_BASE_DATA_LENGTH_OCTETS + self.iff_data_records.data_length()
+        LAYER_4_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 }
 
@@ -244,6 +257,10 @@ impl Default for IffLayer5 {
 }
 
 impl IffLayer5 {
+    pub fn builder() -> IffLayer5Builder {
+        IffLayer5Builder::new()
+    }
+
     pub fn data_length(&self) -> u16 {
         const LAYER_5_BASE_DATA_LENGTH_OCTETS: u16 = 14;
         LAYER_5_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
@@ -274,6 +291,12 @@ impl Default for ChangeOptionsRecord {
             interactive_capable: false,
             test_mode: false,
         }
+    }
+}
+
+impl ChangeOptionsRecord {
+    pub fn builder() -> ChangeOptionsRecordBuilder {
+        ChangeOptionsRecordBuilder::new()
     }
 }
 
@@ -308,6 +331,12 @@ impl Default for FundamentalOperationalData {
     }
 }
 
+impl FundamentalOperationalData {
+    pub fn builder() -> FundamentalOperationalDataBuilder {
+        FundamentalOperationalDataBuilder::new()
+    }
+}
+
 /// Custom defined enum to model the capability of a parameter in the
 /// `FundamentalOperationalData` record.
 #[derive(Default)]
@@ -328,7 +357,7 @@ pub enum OperationalStatus {
 
 /// Custom defined enum to model the presence or applicability of an IFF layer
 /// as used in IFF Layer 1.
-#[derive(Default)]
+#[derive(Default, PartialEq)]
 pub enum LayersPresenceApplicability {
     #[default]
     NotPresentApplicable,   // 0
@@ -345,6 +374,10 @@ pub struct IffDataRecord {
 impl IffDataRecord {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn builder() -> IffDataRecordBuilder {
+        IffDataRecordBuilder::new()
     }
 
     pub fn data_length(&self) -> u16 {
@@ -366,6 +399,10 @@ impl IffDataSpecification {
         Self {
             iff_data_records: vec![],
         }
+    }
+
+    pub fn builder() -> IffDataSpecificationBuilder {
+        IffDataSpecificationBuilder::new()
     }
 
     pub fn data_length(&self) -> u16 {
@@ -400,6 +437,12 @@ impl Default for InformationLayers {
     }
 }
 
+impl InformationLayers {
+    pub fn builder() -> InformationLayersBuilder {
+        InformationLayersBuilder::new()
+    }
+}
+
 /// 6.2.44 IFF Fundamental Parameter Data Record
 #[derive(Default)]
 pub struct IffFundamentalParameterData {
@@ -412,12 +455,28 @@ pub struct IffFundamentalParameterData {
     pub system_specific_data: SystemSpecificData,
 }
 
+impl IffFundamentalParameterData {
+    pub fn builder() -> IffFundamentalParameterDataBuilder {
+        IffFundamentalParameterDataBuilder::new()
+    }
+}
+
 /// 6.2.51 Layer Header
 #[derive(Default)]
 pub struct LayerHeader {
     pub layer_number: u8,
     pub layer_specific_information: u8,
     pub length: u16,
+}
+
+impl LayerHeader {
+    pub fn new() -> Self {
+        LayerHeader::default()
+    }
+
+    pub fn builder() -> LayerHeaderBuilder {
+        LayerHeaderBuilder::new()
+    }
 }
 
 // TODO placeholder for 24-bits - See Annex B.
@@ -428,6 +487,16 @@ pub struct SystemSpecificData {
     pub part_3: u8,
 }
 
+impl SystemSpecificData {
+    pub fn new() -> Self {
+        SystemSpecificData::default()
+    }
+
+    pub fn builder() -> SystemSpecificDataBuilder {
+        SystemSpecificDataBuilder::new()
+    }
+}
+
 /// 6.2.87 System Identifier record
 #[derive(Default)]
 pub struct SystemId {
@@ -435,6 +504,16 @@ pub struct SystemId {
     pub system_name: IffSystemName,
     pub system_mode: IffSystemMode,
     pub change_options: ChangeOptionsRecord,
+}
+
+impl SystemId {
+    pub fn new() -> Self {
+        SystemId::default()
+    }
+
+    pub fn builder() -> SystemIdBuilder {
+        SystemIdBuilder::new()
+    }
 }
 
 /// B.2.6 DAP Source record
@@ -449,6 +528,16 @@ pub struct DapSource {
     pub true_track_angle: DapValue,
     pub true_airspeed: DapValue,
     pub vertical_rate: DapValue,
+}
+
+impl DapSource {
+    pub fn new() -> Self {
+        DapSource::default()
+    }
+
+    pub fn builder() -> DapSourceBuilder {
+        DapSourceBuilder::new()
+    }
 }
 
 /// Custom defined enum to model values in the DAP Source record
@@ -471,12 +560,32 @@ pub struct EnhancedMode1Code {
     pub malfunction_status: MalfunctionStatus,
 }
 
+impl EnhancedMode1Code {
+    pub fn new() -> Self {
+        EnhancedMode1Code::default()
+    }
+
+    pub fn builder() -> EnhancedMode1CodeBuilder {
+        EnhancedMode1CodeBuilder::new()
+    }
+}
+
 /// B.2.26 Mode 5 Interrogator Basic Data record
 #[derive(Default)]
 pub struct Mode5InterrogatorBasicData {
     pub status: Mode5InterrogatorStatus,                            // B.2.27 Mode 5 Interrogator Status record - page 592
     pub mode_5_message_formats_present: Mode5MessageFormats,        // B.2.28 Mode 5 Message Formats record - page 592
     pub interrogated_entity_id: EntityId,
+}
+
+impl Mode5InterrogatorBasicData {
+    pub fn new() -> Self {
+        Mode5InterrogatorBasicData::default()
+    }
+
+    pub fn builder() -> Mode5InterrogatorBasicDataBuilder {
+        Mode5InterrogatorBasicDataBuilder::new()
+    }
 }
 
 /// B.2.27 Mode 5 Interrogator Status record
@@ -487,6 +596,16 @@ pub struct Mode5InterrogatorStatus {
     pub on_off_status: OnOffStatus,
     pub damage_status: DamageStatus,
     pub malfunction_status: MalfunctionStatus,
+}
+
+impl Mode5InterrogatorStatus {
+    pub fn new() -> Self {
+        Mode5InterrogatorStatus::default()
+    }
+
+    pub fn builder() -> Mode5InterrogatorStatusBuilder {
+        Mode5InterrogatorStatusBuilder::new()
+    }
 }
 
 /// B.2.28 Mode 5 Message Formats record
@@ -526,6 +645,16 @@ pub struct Mode5MessageFormats {
     pub message_format_31: IffPresence,
 }
 
+impl Mode5MessageFormats {
+    pub fn new() -> Self {
+        Mode5MessageFormats::default()
+    }
+
+    pub fn builder() -> Mode5MessageFormatsBuilder {
+        Mode5MessageFormatsBuilder::new()
+    }
+}
+
 /// B.2.29 Mode 5 Transponder Basic Data record
 #[derive(Default)]
 pub struct Mode5TransponderBasicData {
@@ -537,6 +666,16 @@ pub struct Mode5TransponderBasicData {
     pub supplemental_data: Mode5TransponderSupplementalData,        // B.2.31 Mode 5 Transponder SD record
     pub navigation_source: NavigationSource,                        // UID 359
     pub figure_of_merit: u8,                                        // 8-bit uint between 0 and 31 decimal
+}
+
+impl Mode5TransponderBasicData {
+    pub fn new() -> Self {
+        Mode5TransponderBasicData::default()
+    }
+
+    pub fn builder() -> Mode5TransponderBasicDataBuilder {
+        Mode5TransponderBasicDataBuilder::new()
+    }
 }
 
 /// Custom defined enum to model a system being On or Off.
@@ -588,6 +727,16 @@ pub struct Mode5TransponderSupplementalData {
     pub iff_mission: Mode5IffMission,
 }
 
+impl Mode5TransponderSupplementalData {
+    pub fn new() -> Self {
+        Mode5TransponderSupplementalData::default()
+    }
+
+    pub fn builder() -> Mode5TransponderSupplementalDataBuilder {
+        Mode5TransponderSupplementalDataBuilder::new()
+    }
+}
+
 /// B.2.32 Mode 5 Transponder Status record
 #[derive(Default)]
 pub struct Mode5TransponderStatus {
@@ -604,6 +753,16 @@ pub struct Mode5TransponderStatus {
     pub malfunction_status: MalfunctionStatus,
 }
 
+impl Mode5TransponderStatus {
+    pub fn new() -> Self {
+        Mode5TransponderStatus::default()
+    }
+
+    pub fn builder() -> Mode5TransponderStatusBuilder {
+        Mode5TransponderStatusBuilder::new()
+    }
+}
+
 /// B.2.36 Mode S Altitude record
 #[derive(Default)]
 pub struct ModeSAltitude {
@@ -611,11 +770,31 @@ pub struct ModeSAltitude {
     pub resolution: Mode5SAltitudeResolution,
 }
 
+impl ModeSAltitude {
+    pub fn new() -> Self {
+        ModeSAltitude::default()
+    }
+
+    pub fn builder() -> ModeSAltitudeBuilder {
+        ModeSAltitudeBuilder::new()
+    }
+}
+
 /// B.2.37 Mode S Interrogator Basic Data record
 #[derive(Default)]
 pub struct ModeSInterrogatorBasicData {
     pub mode_s_interrogator_status: ModeSInterrogatorStatus,
     pub mode_s_levels_present: ModeSLevelsPresent,
+}
+
+impl ModeSInterrogatorBasicData {
+    pub fn new() -> Self {
+        ModeSInterrogatorBasicData::default()
+    }
+
+    pub fn builder() -> ModeSInterrogatorBasicDataBuilder {
+        ModeSInterrogatorBasicDataBuilder::new()
+    }
 }
 
 /// B.2.39 Mode S Interrogator Status record
@@ -627,6 +806,16 @@ pub struct ModeSInterrogatorStatus {
     pub malfunction_status: MalfunctionStatus,
 }
 
+impl ModeSInterrogatorStatus {
+    pub fn new() -> Self {
+        ModeSInterrogatorStatus::default()
+    }
+
+    pub fn builder() -> ModeSInterrogatorStatusBuilder {
+        ModeSInterrogatorStatusBuilder::new()
+    }
+}
+
 /// B.2.40 Mode S Levels Present record
 #[derive(Default)]
 pub struct ModeSLevelsPresent {
@@ -635,6 +824,16 @@ pub struct ModeSLevelsPresent {
     pub level_2_ehs: IffPresence,
     pub level_3: IffPresence,
     pub level_4: IffPresence,
+}
+
+impl ModeSLevelsPresent {
+    pub fn new() -> Self {
+        ModeSLevelsPresent::default()
+    }
+
+    pub fn builder() -> ModeSLevelsPresentBuilder {
+        ModeSLevelsPresentBuilder::new()
+    }
 }
 
 /// Custom defined enum to model the presence of an element in an IFF system
@@ -659,6 +858,16 @@ pub struct ModeSTransponderBasicData {
     pub capability_report: CapabilityReport,
 }
 
+impl ModeSTransponderBasicData {
+    pub fn new() -> Self {
+        ModeSTransponderBasicData::default()
+    }
+
+    pub fn builder() -> ModeSTransponderBasicDataBuilder {
+        ModeSTransponderBasicDataBuilder::new()
+    }
+}
+
 /// B.2.42 Mode S Transponder Status record
 #[derive(Default)]
 pub struct ModeSTransponderStatus {
@@ -673,6 +882,16 @@ pub struct ModeSTransponderStatus {
     pub on_off_status: OnOffStatus,
     pub damage_status: DamageStatus,
     pub malfunction_status: MalfunctionStatus,
+}
+
+impl ModeSTransponderStatus {
+    pub fn new() -> Self {
+        ModeSTransponderStatus::default()
+    }
+
+    pub fn builder() -> ModeSTransponderStatusBuilder {
+        ModeSTransponderStatusBuilder::new()
+    }
 }
 
 /// Custom defined enum to model the SquitterStatus
@@ -694,4 +913,14 @@ pub struct SystemStatus {
     pub parameter_5_capable: ParameterCapable,
     pub parameter_6_capable: ParameterCapable,
     pub operational_status: OperationalStatus,
+}
+
+impl SystemStatus {
+    pub fn new() -> Self {
+        SystemStatus::default()
+    }
+
+    pub fn builder() -> SystemStatusBuilder {
+        SystemStatusBuilder::new()
+    }
 }
