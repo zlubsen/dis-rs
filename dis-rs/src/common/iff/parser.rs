@@ -1,9 +1,8 @@
-use std::os::macos::raw::stat;
 use nom::bytes::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::common::iff::model::{BASE_IFF_DATA_RECORD_LENGTH_OCTETS, ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
+use crate::common::iff::model::{BASE_IFF_DATA_RECORD_LENGTH_OCTETS, ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::common::parser::{beam_data, entity_id, event_id, simulation_address, vec3_f32};
 use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE};
 use crate::{AntennaSelection, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors, Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution, NavigationSource, PduBody, VariableRecordType};
@@ -23,33 +22,31 @@ pub fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_relative_antenna_location(antenna_location)
         .with_system_id(system_id)
         .with_system_designator(system_designator)
-        .with_system_specific_data(system_specific_data)
-        .with_fundamental_operational_data(fundamental_data);
+        .with_system_specific_data(system_specific_data);
 
     let (input, builder) =
         if fundamental_data.information_layers.layer_2 == LayersPresenceApplicability::PresentApplicable {
             let (input, layer_2) = iff_layer_2(input)?;
-            builder.with_layer_2(layer_2);
-            (input, builder)
+            (input, builder.with_layer_2(layer_2))
         } else { (input, builder) };
     let (input, builder) =
         if fundamental_data.information_layers.layer_3 == LayersPresenceApplicability::PresentApplicable {
             let (input, layer_3) = iff_layer_3(input)?;
-            builder.with_layer_3(layer_3);
-            (input, builder)
+            (input, builder.with_layer_3(layer_3))
         } else { (input, builder) };
     let (input, builder) =
         if fundamental_data.information_layers.layer_4 == LayersPresenceApplicability::PresentApplicable {
             let (input, layer_4) = iff_layer_4(input)?;
-            builder.with_layer_4(layer_4);
-            (input, builder)
+            (input, builder.with_layer_4(layer_4))
         } else { (input, builder) };
     let (input, builder) =
         if fundamental_data.information_layers.layer_5 == LayersPresenceApplicability::PresentApplicable {
             let (input, layer_5) = iff_layer_5(input)?;
-            builder.with_layer_5(layer_5);
-            (input, builder)
+            (input, builder.with_layer_5(layer_5))
         } else { (input, builder) };
+
+    let builder = builder
+        .with_fundamental_operational_data(fundamental_data);
 
     Ok((input, builder
         .build()
@@ -401,6 +398,11 @@ fn system_status(input: &[u8]) -> IResult<&[u8], SystemStatus> {
     ))
 }
 
+fn mode_5_basic_data(input: &[u8]) -> IResult<&[u8], Mode5BasicData> {
+    // determine whether to parse an interrogator or a transponder
+    todo!()
+}
+
 fn mode_5_interrogator_basic_data(input: &[u8]) -> IResult<&[u8], Mode5InterrogatorBasicData> {
     let (input, status) = mode_5_interrogator_status(input)?;
     let (input, _padding) = be_u8(input)?;
@@ -610,6 +612,11 @@ fn mode_s_altitude(input: &[u8]) -> IResult<&[u8], ModeSAltitude> {
         .with_resolution(resolution)
         .build()
     ))
+}
+
+fn mode_s_basic_data(input: &[u8]) -> IResult<&[u8], ModeSBasicData> {
+    // determine whether to parse an interrogator or a transponder
+    todo!()
 }
 
 fn mode_s_interrogator_basic_data(input: &[u8]) -> IResult<&[u8], ModeSInterrogatorBasicData> {
