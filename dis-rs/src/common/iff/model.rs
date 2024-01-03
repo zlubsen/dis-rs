@@ -6,7 +6,6 @@ use crate::{length_padded_to_num_bytes, PduBody};
 use crate::common::iff::builder::{ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder, FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder, IffDataSpecificationBuilder, IffFundamentalParameterDataBuilder, IffLayer2Builder, IffLayer3Builder, IffLayer4Builder, IffLayer5Builder, InformationLayersBuilder, LayerHeaderBuilder, Mode5InterrogatorBasicDataBuilder, Mode5InterrogatorStatusBuilder, Mode5MessageFormatsBuilder, Mode5TransponderBasicDataBuilder, Mode5TransponderStatusBuilder, Mode5TransponderSupplementalDataBuilder, ModeSAltitudeBuilder, ModeSInterrogatorBasicDataBuilder, ModeSInterrogatorStatusBuilder, ModeSLevelsPresentBuilder, ModeSTransponderBasicDataBuilder, ModeSTransponderStatusBuilder, SystemIdBuilder, SystemSpecificDataBuilder, SystemStatusBuilder};
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
-pub const FUNDAMENTAL_OPERATIONAL_DATA_LENGTH: u16 = 16;
 pub const BASE_IFF_DATA_RECORD_LENGTH_OCTETS: u16 = 6;
 
 /// 7.6.5 Identification Friend or Foe (IFF) PDU

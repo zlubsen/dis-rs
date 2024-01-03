@@ -529,10 +529,11 @@ impl Serialize for ModeSAltitude {
 
 impl Serialize for ModeSInterrogatorBasicData {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        const PAD_168_BITS_IN_OCTETS: usize = 21;
         let _status_bytes = self.mode_s_interrogator_status.serialize(buf);
         buf.put_u8(0u8);
         let _levels_present_bytes = self.mode_s_levels_present.serialize(buf);
-        buf.put_bytes(0u8, 21);
+        buf.put_bytes(0u8, PAD_168_BITS_IN_OCTETS);
 
         24
     }
@@ -558,11 +559,11 @@ impl Serialize for ModeSInterrogatorStatus {
 
 impl Serialize for ModeSLevelsPresent {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let level_1: u8 = (u32::from(&self.level_1) as u8) << 6;
-        let level_2_els: u8 = (u32::from(&self.level_2_els) as u8) << 5;
-        let level_2_ehs: u8 = (u32::from(&self.level_2_ehs) as u8) << 4;
-        let level_3: u8 = (u32::from(&self.level_3) as u8) << 3;
-        let level_4: u8 = (u32::from(&self.level_4) as u8) << 2;
+        let level_1: u8 = u8::from(&self.level_1) << 6;
+        let level_2_els: u8 = u8::from(&self.level_2_els) << 5;
+        let level_2_ehs: u8 = u8::from(&self.level_2_ehs) << 4;
+        let level_3: u8 = u8::from(&self.level_3) << 3;
+        let level_4: u8 = u8::from(&self.level_4) << 2;
 
         buf.put_u8(
             level_1 |
@@ -577,6 +578,15 @@ impl Serialize for ModeSLevelsPresent {
 }
 
 impl From<&IffPresence> for u32 {
+    fn from(value: &IffPresence) -> Self {
+        match value {
+            IffPresence::NotPresent => { 0 }
+            IffPresence::Present => { 1 }
+        }
+    }
+}
+
+impl From<&IffPresence> for u8 {
     fn from(value: &IffPresence) -> Self {
         match value {
             IffPresence::NotPresent => { 0 }
@@ -622,9 +632,9 @@ impl Serialize for ModeSTransponderStatus {
         let squitter_status: u8 = u8::from(&self.squitter_status) << 7;
         let squitter_type: u8 = u8::from(self.squitter_type) << 4;
         let squitter_record_source: u8 = u8::from(self.squitter_record_source) << 3;
-        let airborne_pos_ri: u8 = (u32::from(&self.airborne_position_report_indicator) as u8) << 2;
-        let airborne_vel_ri: u8 = (u32::from(&self.airborne_velocity_report_indicator) as u8) << 1;
-        let surface_pos_ri: u8 = u32::from(&self.surface_position_report_indicator) as u8;
+        let airborne_pos_ri: u8 = u8::from(&self.airborne_position_report_indicator) << 2;
+        let airborne_vel_ri: u8 = u8::from(&self.airborne_velocity_report_indicator) << 1;
+        let surface_pos_ri: u8 = u8::from(&self.surface_position_report_indicator);
         buf.put_u8(
             squitter_status |
                 squitter_type |
@@ -634,8 +644,8 @@ impl Serialize for ModeSTransponderStatus {
                 surface_pos_ri
         );
 
-        let ident_ri: u8 = (u32::from(&self.identification_report_indicator) as u8) << 7;
-        let event_driven_ri: u8 = (u32::from(&self.event_driven_report_indicator) as u8) << 6;
+        let ident_ri: u8 = u8::from(&self.identification_report_indicator) << 7;
+        let event_driven_ri: u8 = u8::from(&self.event_driven_report_indicator) << 6;
         let on_off_status: u8 = u8::from(&self.on_off_status) << 2;
         let damage_status: u8 = u8::from(&self.damage_status) << 1;
         let malfunction_status: u8 = u8::from(&self.malfunction_status);
