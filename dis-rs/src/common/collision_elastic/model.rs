@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 
 const COLLISION_ELASTIC_BODY_LENGTH : u16 = 88;
 
+#[derive(Debug, PartialEq)]
 pub struct CollisionElastic {
     pub issuing_entity_id: EntityId,
     pub colliding_entity_id: EntityId,

@@ -6,6 +6,7 @@ use crate::{PduBody, PduType};
 
 const STOP_FREEZE_BODY_LENGTH : u16 = 28;
 
+#[derive(Debug, PartialEq)]
 pub struct StopFreeze {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

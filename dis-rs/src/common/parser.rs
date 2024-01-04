@@ -42,7 +42,7 @@ use crate::common::iff::parser::iff_body;
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
         Ok((_, pdus)) => { Ok(pdus) }
-        Err(_) => { Err(DisError::ParseError) } // TODO not very descriptive / error means we can not match any PDUs
+        Err(err) => { Err(DisError::ParseError(err.to_string())) } // TODO not very descriptive / error means we can not match any PDUs
     }
 }
 
@@ -50,7 +50,7 @@ pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     match pdu(input) {
         Ok((_, pdu)) => { Ok(pdu) }
-        Err(_) => { Err(DisError::ParseError) } // TODO not very descriptive / error means we can not match any PDUs
+        Err(err) => { Err(DisError::ParseError(err.to_string())) } // TODO not very descriptive / error means we can not match any PDUs
     }
 }
 
@@ -59,12 +59,12 @@ pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     match many1(pdu_header_skip_body)(input) {
         Ok((_, headers)) => { Ok(headers) }
         Err(parse_error) => {
-            if let Err::Error(error) = parse_error {
+            if let Err::Error(ref error) = parse_error {
                 if error.code == Eof {
                     return Err(DisError::InsufficientHeaderLength(input.len() as u16));
                 }
             }
-            Err(DisError::ParseError)
+            Err(DisError::ParseError(parse_error.to_string()))
         }
     }
 }
@@ -78,17 +78,17 @@ pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
             if let Err(Err::Error(error)) = skipped {
                 return if error.code == Eof {
                     Err(DisError::InsufficientPduLength(header.pdu_length - PDU_HEADER_LEN_BYTES, input.len() as u16))
-                } else { Err(DisError::ParseError) }
+                } else { Err(DisError::ParseError("ParseError while parsing a pdu header and skipping body.".to_string())) }
             }
             Ok(header)
         }
         Err(parse_error) => {
-            if let Err::Error(error) = parse_error {
+            if let Err::Error(ref error) = parse_error {
                 if error.code == Eof {
                     return Err(DisError::InsufficientHeaderLength(input.len() as u16));
                 }
             }
-            Err(DisError::ParseError)
+            Err(DisError::ParseError(parse_error.to_string()))
         }
     }
 }
@@ -251,7 +251,7 @@ pub fn parse_peek_protocol_version(input: &[u8]) -> Result<ProtocolVersion,DisEr
     let parse_result = peek_protocol_version(input);
     match parse_result {
         Ok((_, protocol_version)) => Ok(ProtocolVersion::from(protocol_version)),
-        Err(_err) => Err(DisError::ParseError),
+        Err(err) => Err(DisError::ParseError(err.to_string())),
     }
 }
 

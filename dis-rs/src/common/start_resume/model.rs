@@ -4,6 +4,7 @@ use crate::{PduBody, PduType};
 
 const START_RESUME_BODY_LENGTH : u16 = 32;
 
+#[derive(Debug, PartialEq)]
 pub struct StartResume {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

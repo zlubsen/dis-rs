@@ -153,10 +153,9 @@ impl Serialize for EntityMarking {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState};
+    use crate::common::entity_state::model::{DrOtherParameters, DrParameters, EntityAppearance, EntityMarking, EntityState};
     use crate::common::model::{ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VariableParameter, VectorF32};
     use crate::common::Serialize;
-    use crate::{DrOtherParameters, EntityAppearance};
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain};
     use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
 

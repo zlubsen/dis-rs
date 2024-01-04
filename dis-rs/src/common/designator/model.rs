@@ -4,6 +4,7 @@ use crate::enumerations::{DesignatorSystemName, DesignatorCode, DeadReckoningAlg
 
 pub const DESIGNATOR_BODY_LENGTH : u16 = 76;
 
+#[derive(Debug, PartialEq)]
 pub struct Designator {
     pub designating_entity_id: EntityId,
     pub system_name: DesignatorSystemName,

@@ -31,6 +31,7 @@ use crate::v7::model::PduStatus;
 use crate::constants::{NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
 
+#[derive(Debug, PartialEq)]
 pub struct Pdu {
     pub header : PduHeader,
     pub body : PduBody,
@@ -57,7 +58,7 @@ impl Interaction for Pdu {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduHeader {
     pub protocol_version : ProtocolVersion,
     pub exercise_id : u8,
@@ -107,6 +108,7 @@ impl PduHeader {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum PduBody {
     Other(Other),
     EntityState(EntityState),
@@ -638,7 +640,7 @@ impl EntityId {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EventId {
     pub simulation_address : SimulationAddress,
     pub event_id : u16
@@ -669,7 +671,7 @@ impl Default for EventId {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
@@ -701,7 +703,7 @@ impl VectorF32 {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
@@ -733,7 +735,7 @@ impl Location {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
@@ -813,6 +815,7 @@ impl EntityType {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum DescriptorRecord {
     Munition { entity_type: EntityType, munition: MunitionDescriptor },
     Expendable { entity_type: EntityType },
@@ -850,7 +853,7 @@ impl Default for DescriptorRecord {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct MunitionDescriptor {
     pub warhead : MunitionDescriptorWarhead,
     pub fuse : MunitionDescriptorFuse,
@@ -881,7 +884,7 @@ impl MunitionDescriptor {
 }
 
 /// 6.2.14 Clock Time record
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct ClockTime {
     pub hour: i32,
     pub time_past_hour: u32,
@@ -913,6 +916,7 @@ impl DatumSpecification {
 pub const FIXED_DATUM_LENGTH: u16 = 8;
 pub const BASE_VARIABLE_DATUM_LENGTH: u16 = 8;
 
+#[derive(Debug, PartialEq)]
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: u32,
@@ -927,6 +931,7 @@ impl FixedDatum {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct VariableDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: Vec<u8>,
@@ -977,7 +982,7 @@ pub fn length_padded_to_num_bytes(data_length_bytes: usize, pad_to_num_bytes: us
     PaddedRecordLengths::new(data_length_bytes, padding_bytes, padded_data_bytes)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum VariableParameter {
     Articulated(ArticulatedPart),
     Attached(AttachedPart),
@@ -987,7 +992,7 @@ pub enum VariableParameter {
     Unspecified(u8, [u8;15]),
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct ArticulatedPart {
     pub change_indicator: ChangeIndicator,
     pub attachment_id: u16,
@@ -1027,7 +1032,7 @@ impl ArticulatedPart {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct AttachedPart {
     pub detached_indicator: AttachedPartDetachedIndicator,
     pub attachment_id: u16,
@@ -1061,7 +1066,7 @@ impl AttachedPart {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SeparationParameter {
     pub reason: SeparationReasonForSeparation,
     pub pre_entity_indicator: SeparationPreEntityIndicator,
@@ -1101,7 +1106,7 @@ impl SeparationParameter {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityTypeParameter {
     pub change_indicator: ChangeIndicator,
     pub entity_type: EntityType,
@@ -1123,7 +1128,7 @@ impl EntityTypeParameter {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityAssociationParameter {
     pub change_indicator: ChangeIndicator,
     pub association_status: EntityAssociationAssociationStatus,
@@ -1182,7 +1187,7 @@ impl EntityAssociationParameter {
 }
 
 /// 6.2.11 Beam Data record
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct BeamData {
     pub azimuth_center: f32,
     pub azimuth_sweep: f32,

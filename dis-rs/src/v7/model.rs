@@ -1,6 +1,6 @@
 use crate::enumerations::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduStatus {
     pub transferred_entity_indicator: Option<TransferredEntityIndicator>,
     pub lvc_indicator : Option<LvcIndicator>,

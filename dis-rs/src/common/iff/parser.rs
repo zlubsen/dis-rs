@@ -8,13 +8,23 @@ use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYT
 use crate::{AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, DisError, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors, Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution, ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduBody, VariableRecordType};
 
 pub fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+    println!("input len before: {}", input.len());
+    println!("{} (0)", input.len());
     let (input, entity_id) = entity_id(input)?;
+    println!("{} (6)", input.len());
     let (input, event_id) = event_id(input)?;
+    println!("{} (6)", input.len());
     let (input, antenna_location) = vec3_f32(input)?;
+    println!("{} (12)", input.len());
     let (input, system_id) = system_id(input)?;
+    println!("{} (6)", input.len());
     let (input, system_designator) = be_u8(input)?;
+    println!("{} (1)", input.len());
     let (input, system_specific_data) = be_u8(input)?;
+    println!("{} (1)", input.len());
     let (input, fundamental_data) = fundamental_operational_data(input)?;
+    println!("{} (16)", input.len());
+    println!("input len after: {}", input.len());
 
     let builder = Iff::builder();
 

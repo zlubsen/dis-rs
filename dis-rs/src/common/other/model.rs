@@ -11,6 +11,7 @@ use crate::PduBody;
 /// or at least can be attributed to a sending entity (such as EntityState PDU), based on the PduType.
 ///
 /// This struct is used to provide access to the received data in not (yet) supported PDUs.
+#[derive(Debug, PartialEq)]
 pub struct Other {
     pub originating_entity_id : Option<EntityId>,
     pub receiving_entity_id : Option<EntityId>,

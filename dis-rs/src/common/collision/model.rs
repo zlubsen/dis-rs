@@ -5,6 +5,7 @@ use crate::{PduBody, PduType, VectorF32};
 
 const COLLISION_BODY_LENGTH : u16 = 60;
 
+#[derive(Debug, PartialEq)]
 pub struct Collision {
     pub issuing_entity_id: EntityId,
     pub colliding_entity_id: EntityId,

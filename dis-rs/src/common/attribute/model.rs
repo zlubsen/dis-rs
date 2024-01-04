@@ -7,6 +7,7 @@ pub const BASE_ATTRIBUTE_BODY_LENGTH: u16 = 20;
 pub const BASE_ATTRIBUTE_RECORD_SET_LENGTH : u16 = 8;
 pub const BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS: u16 = 6;
 
+#[derive(Debug, PartialEq)]
 pub struct Attribute {
     pub originating_simulation_address : SimulationAddress,
     pub record_pdu_type: PduType,
@@ -100,6 +101,7 @@ impl Interaction for Attribute {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct AttributeRecordSet {
     pub entity_id: EntityId,
     pub attribute_records: Vec<AttributeRecord>,
@@ -135,6 +137,7 @@ impl AttributeRecordSet {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct AttributeRecord {
     pub record_type: VariableRecordType,
     pub specific_fields: Vec<u8>,

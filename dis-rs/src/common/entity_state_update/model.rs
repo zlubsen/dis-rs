@@ -6,11 +6,12 @@ use crate::enumerations::PduType;
 
 const BASE_ENTITY_STATE_UPDATE_BODY_LENGTH : u16 = 60;
 
+#[derive(Debug, PartialEq)]
 pub struct EntityStateUpdate {
-    pub entity_id : EntityId, // struct
-    pub entity_linear_velocity : VectorF32, // struct
-    pub entity_location : Location, // struct
-    pub entity_orientation : Orientation, // struct
+    pub entity_id : EntityId,
+    pub entity_linear_velocity : VectorF32,
+    pub entity_location : Location,
+    pub entity_orientation : Orientation,
     pub entity_appearance: EntityAppearance,
     pub variable_parameters: Vec<VariableParameter>,
 }

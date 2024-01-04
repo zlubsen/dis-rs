@@ -5,6 +5,7 @@ use crate::constants::EIGHT_OCTETS;
 
 pub const BASE_SET_DATA_BODY_LENGTH: u16 = 28;
 
+#[derive(Debug, PartialEq)]
 pub struct SetData {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

@@ -4,6 +4,7 @@ use crate::enumerations::ReceiverState;
 
 const RECEIVER_BODY_LENGTH: u16 = 24;
 
+#[derive(Debug, PartialEq)]
 pub struct Receiver {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,

@@ -6,6 +6,7 @@ use crate::{PduBody, PduType};
 
 pub const BASE_DATA_QUERY_BODY_LENGTH: u16 = 28;
 
+#[derive(Debug, PartialEq)]
 pub struct DataQuery {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

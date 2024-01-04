@@ -4,6 +4,7 @@ use crate::enumerations::{AcknowledgeFlag, ResponseFlag};
 
 const ACKNOWLEDGE_BODY_LENGTH : u16 = 20;
 
+#[derive(Debug, PartialEq)]
 pub struct Acknowledge {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

@@ -4,6 +4,7 @@ use crate::{PduBody, PduType};
 
 const REMOVE_ENTITY_BODY_LENGTH : u16 = 16;
 
+#[derive(Debug, PartialEq)]
 pub struct RemoveEntity {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

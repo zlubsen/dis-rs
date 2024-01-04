@@ -8,6 +8,7 @@ const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
 pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
 pub const BASE_VTP_RECORD_LENGTH: u16 = 6;
 
+#[derive(Debug, PartialEq)]
 pub struct Transmitter {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,
@@ -177,6 +178,7 @@ impl Interaction for Transmitter {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ModulationType {
     pub spread_spectrum: SpreadSpectrum,
     pub major_modulation: TransmitterMajorModulation,
@@ -214,6 +216,7 @@ impl ModulationType {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct SpreadSpectrum {
     pub frequency_hopping: bool,
     pub pseudo_noise: bool,
@@ -259,6 +262,7 @@ impl SpreadSpectrum {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CryptoKeyId {
     pub pseudo_crypto_key: u16,
     pub crypto_mode: CryptoMode,
@@ -273,6 +277,7 @@ impl Default for CryptoKeyId {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum CryptoMode {
     Baseband,
     Diphase,
@@ -293,6 +298,7 @@ impl From<bool> for CryptoMode {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct BeamAntennaPattern {
     pub beam_direction: Orientation,
     pub azimuth_beamwidth: f32,
@@ -358,6 +364,7 @@ impl BeamAntennaPattern {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct VariableTransmitterParameter {
     pub record_type: VariableRecordType,
     pub fields: Vec<u8>,

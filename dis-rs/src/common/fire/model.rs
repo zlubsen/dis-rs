@@ -5,6 +5,7 @@ use crate::enumerations::PduType;
 
 const FIRE_BODY_LENGTH : u16 = 28;
 
+#[derive(Debug, PartialEq)]
 pub struct Fire {
     pub firing_entity_id : EntityId,
     pub target_entity_id : EntityId,
