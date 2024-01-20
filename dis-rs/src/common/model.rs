@@ -26,7 +26,7 @@ use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::v7::model::PduStatus;
-use crate::constants::{NO_REMAINDER, PDU_HEADER_LEN_BYTES};
+use crate::constants::{LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
 
 pub struct Pdu {
@@ -875,6 +875,69 @@ impl MunitionDescriptor {
     pub fn with_rate(mut self, rate: u16) -> Self {
         self.rate = rate;
         self
+    }
+}
+
+/// Custom type to model timestamps, just wrapping a `u32` value. By default
+/// the `PduHeader` uses this type. Users can decide to convert the raw value
+/// to a `DisTimeStamp`, which models the Absolute and Relative interpretations of the value as defined by the standard.
+///
+/// The standard defines the value to be a number of DIS time units since the top of the hour.
+/// There are 2^31 - 1 time units in an hour.
+/// This results in each time unit representing exactly 3600/(2^31) seconds (approximately 1.67638063 μs).
+///
+/// This raw timestamp could also be interpreted as a Unix timestamp, or something else
+/// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
+pub struct TimeStamp {
+    pub raw_timestamp: u32,
+}
+
+impl From<DisTimeStamp> for TimeStamp {
+    fn from(value: DisTimeStamp) -> Self {
+        let raw_timestamp = match value {
+            DisTimeStamp::Absolute { nanoseconds_past_the_hour } => {
+                let units = (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32;
+                let units = (units << 1) & LEAST_SIGNIFICANT_BIT;
+                units
+            }
+            DisTimeStamp::Relative { nanoseconds_past_the_hour } => {
+                let units = (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32;
+                let units = units << 1;
+                units
+            }
+        };
+
+        Self { raw_timestamp }
+    }
+}
+
+/// A timestamp type that models the timestamp mechanism as described in the
+/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets a u32 value
+/// as an Absolute or a Relative timestamp based on the Least Significant Bit.
+/// The remaining (upper) bits represent the units of time passed since the
+/// beginning of the current hour in the selected time reference.
+pub enum DisTimeStamp {
+    Absolute { nanoseconds_past_the_hour: u32 },
+    Relative { nanoseconds_past_the_hour: u32 },
+}
+
+impl From<u32> for DisTimeStamp {
+    fn from(value: u32) -> Self {
+        let absolute_bit = (value & LEAST_SIGNIFICANT_BIT) == LEAST_SIGNIFICANT_BIT;
+        let units_past_the_hour = value >> 1;
+        let nanoseconds_past_the_hour = (units_past_the_hour as f32 * NANOSECONDS_PER_TIME_UNIT) as u32;
+
+        if absolute_bit {
+            Self::Absolute { nanoseconds_past_the_hour }
+        } else {
+            Self::Relative { nanoseconds_past_the_hour }
+        }
+    }
+}
+
+impl From<TimeStamp> for DisTimeStamp {
+    fn from(value: TimeStamp) -> Self {
+        DisTimeStamp::from(value.raw_timestamp)
     }
 }
 
