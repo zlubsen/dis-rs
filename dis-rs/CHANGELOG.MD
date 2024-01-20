@@ -1,5 +1,11 @@
 # Changelog for crate DIS-RS
 
+## 0.5.2 - 2023-10-04
+Fixed issues #1 and #2. Public export of Serialize trait, and malformed v7 PDU Header related to the PDU Status field.
+
+## 0.5.1 - 2023-08-24
+Sanitize EntityMarking values parsed from the PDU.
+
 ## 0.5.0 - 2023-04-01
 Added support for ActionRequest, ActionResponse, DataQuery, SetData, Data, EventReport, Comment PDUs.
 

@@ -3,8 +3,8 @@ use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{EIGHT_OCTETS, PDU_HEADER_LEN_BYTES};
 use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32};
-use crate::enumerations::ProtocolVersion;
-use crate::{ArticulatedPart, AttachedPart, BeamData, EntityAssociationParameter, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, VariableParameter, VariableParameterRecordType};
+use crate::enumerations::{ProtocolVersion};
+use crate::length_padded_to_num_bytes;
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -19,7 +19,7 @@ impl Serialize for PduHeader {
                 if let Some(status) = self.pdu_status {
                     status.serialize(buf);
                     buf.put_u8(0u8);
-                }
+                } else { buf.put_u16(0u16) }
             }
             _ => { buf.put_u16(0u16) }
         }
@@ -61,7 +61,7 @@ impl Serialize for Pdu {
             PduBody::Transmitter(body) => { body.serialize_pdu(version, buf) }
             PduBody::Signal(body) => { body.serialize_pdu(version, buf) }
             PduBody::Receiver(body) => { body.serialize_pdu(version, buf) }
-            PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
+            // PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
             // PduBody::UnderwaterAcoustic(body) => { body.serialize_pdu(version, buf) }
             // PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, buf) }
@@ -234,8 +234,9 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::Serialize;
     use crate::constants::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::PduType;
-    use crate::PduHeader;
+    use crate::enumerations::{PduType};
+    use crate::{LvcIndicator, PduHeader};
+    use crate::v7::model::PduStatus;
 
     #[test]
     fn serialize_header() {
@@ -249,116 +250,31 @@ mod tests {
         let expected : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x00, 0x00];
         assert_eq!(buf.as_ref(), expected.as_ref());
     }
-}
 
-impl Serialize for VariableParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        match self {
-            VariableParameter::Articulated(parameter) => {
-                buf.put_u8(VariableParameterRecordType::ArticulatedPart.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::Attached(parameter) => {
-                buf.put_u8(VariableParameterRecordType::AttachedPart.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::Separation(parameter) => {
-                buf.put_u8(VariableParameterRecordType::Separation.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::EntityType(parameter) => {
-                buf.put_u8(VariableParameterRecordType::EntityType.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::EntityAssociation(parameter) => {
-                buf.put_u8(VariableParameterRecordType::EntityAssociation.into());
-                let record_bytes = parameter.serialize(buf);
-                1 + record_bytes
-            }
-            VariableParameter::Unspecified(type_designator, parameter) => {
-                buf.put_u8(*type_designator);
-                for byte in parameter {
-                    buf.put_u8(*byte);
-                }
-                16
-            }
-        }
+    #[test]
+    fn serialize_header_v7_no_status() {
+        let header = PduHeader::new_v7(1, PduType::EntityState)
+            .with_time_stamp(10)
+            .with_length(0);
+        let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
+
+        header.serialize(&mut buf);
+
+        let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x00, 0x00];
+        assert_eq!(buf.as_ref(), expected.as_ref());
     }
-}
 
-impl Serialize for ArticulatedPart {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.change_indicator.into());
-        buf.put_u16(self.attachment_id);
-        let type_class : u32 = self.type_class.into();
-        let type_metric : u32 = self.type_metric.into();
-        let on_wire_value = type_class + type_metric;
-        buf.put_u32(on_wire_value);
-        buf.put_f32(self.parameter_value);
-        buf.put_u32(0u32); // 32-bit padding
-        15
-    }
-}
+    #[test]
+    fn serialize_header_v7_with_status() {
+        let header = PduHeader::new_v7(1, PduType::EntityState)
+            .with_time_stamp(10)
+            .with_length(0)
+            .with_pdu_status(PduStatus::default().with_lvc_indicator(LvcIndicator::Live));
+        let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
-impl Serialize for AttachedPart {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.detached_indicator.into());
-        buf.put_u16(self.attachment_id);
-        buf.put_u32(self.parameter_type.into());
-        let entity_type_bytes = self.attached_part_type.serialize(buf);
-        7 + entity_type_bytes
-    }
-}
+        header.serialize(&mut buf);
 
-impl Serialize for SeparationParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.reason.into());
-        buf.put_u8(self.pre_entity_indicator.into());
-        buf.put_u8(0u8);
-        let parent_entity_id_bytes = self.parent_entity_id.serialize(buf);
-        buf.put_u16(0u16);
-        buf.put_u16(self.station_name.into());
-        buf.put_u16(self.station_number);
-        9 + parent_entity_id_bytes
-    }
-}
-
-impl Serialize for EntityTypeParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.change_indicator.into());
-        let entity_type_bytes = self.entity_type.serialize(buf);
-        buf.put_u16(0u16);
-        buf.put_u32(0u32);
-        7 + entity_type_bytes
-    }
-}
-
-impl Serialize for EntityAssociationParameter {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(self.change_indicator.into());
-        buf.put_u8(self.association_status.into());
-        buf.put_u8(self.association_type.into());
-        let entity_id_bytes = self.entity_id.serialize(buf);
-        buf.put_u16(self.own_station_location.into());
-        buf.put_u8(self.physical_connection_type.into());
-        buf.put_u8(self.group_member_type.into());
-        buf.put_u16(self.group_number);
-        9 + entity_id_bytes
-    }
-}
-
-impl Serialize for BeamData {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_f32(self.azimuth_center);
-        buf.put_f32(self.azimuth_sweep);
-        buf.put_f32(self.elevation_center);
-        buf.put_f32(self.elevation_sweep);
-        buf.put_f32(self.sweep_sync);
-
-        20
+        let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x02, 0x00];
+        assert_eq!(buf.as_ref(), expected.as_ref());
     }
 }

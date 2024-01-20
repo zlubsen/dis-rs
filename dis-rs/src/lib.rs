@@ -14,6 +14,7 @@ pub use enumerations::*;
 pub use common::parse;
 pub use common::parse_v6 as parse_v6_pdus;
 pub use common::parse_v7 as parse_v7_pdus;
+pub use common::Serialize;
 
 // TODO review required exports for the API that the lib exposes
 pub use fixed_parameters::*;
