@@ -8,23 +8,13 @@ use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYT
 use crate::{AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, DisError, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors, Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution, ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduBody, VariableRecordType};
 
 pub fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
-    println!("input len before: {}", input.len());
-    println!("{} (0)", input.len());
     let (input, entity_id) = entity_id(input)?;
-    println!("{} (6)", input.len());
     let (input, event_id) = event_id(input)?;
-    println!("{} (6)", input.len());
     let (input, antenna_location) = vec3_f32(input)?;
-    println!("{} (12)", input.len());
     let (input, system_id) = system_id(input)?;
-    println!("{} (6)", input.len());
     let (input, system_designator) = be_u8(input)?;
-    println!("{} (1)", input.len());
     let (input, system_specific_data) = be_u8(input)?;
-    println!("{} (1)", input.len());
     let (input, fundamental_data) = fundamental_operational_data(input)?;
-    println!("{} (16)", input.len());
-    println!("input len after: {}", input.len());
 
     let builder = Iff::builder();
 
@@ -236,17 +226,17 @@ fn information_layers(input: &[u8]) -> IResult<&[u8], InformationLayers> {
 
     let builder = InformationLayers::builder()
         .with_layer_1(LayersPresenceApplicability::from(
-            record & BIT_1_IN_BYTE >> 6))
+            (record & BIT_1_IN_BYTE) >> 6))
         .with_layer_2(LayersPresenceApplicability::from(
-            record & BIT_2_IN_BYTE >> 5))
+            (record & BIT_2_IN_BYTE) >> 5))
         .with_layer_3(LayersPresenceApplicability::from(
-            record & BIT_3_IN_BYTE >> 4))
+            (record & BIT_3_IN_BYTE) >> 4))
         .with_layer_4(LayersPresenceApplicability::from(
-            record & BIT_4_IN_BYTE >> 3))
+            (record & BIT_4_IN_BYTE) >> 3))
         .with_layer_5(LayersPresenceApplicability::from(
-            record & BIT_5_IN_BYTE >> 2))
+            (record & BIT_5_IN_BYTE) >> 2))
         .with_layer_6(LayersPresenceApplicability::from(
-            record & BIT_6_IN_BYTE >> 1))
+            (record & BIT_6_IN_BYTE) >> 1))
         .with_layer_7(LayersPresenceApplicability::from(
             record & BIT_7_IN_BYTE));
 

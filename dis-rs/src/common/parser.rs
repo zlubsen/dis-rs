@@ -7,7 +7,7 @@ use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::common::entity_state::parser::entity_state_body;
-use crate::constants::{EIGHT_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
+use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
 use crate::common::model::{ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32};
@@ -642,13 +642,14 @@ pub fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     Ok((input, variable_parameter))
 }
 
+/// I.2.2 Articulated parts
 fn articulated_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, change_indicator) = be_u8(input)?;
     let change_indicator = ChangeIndicator::from(change_indicator);
     let (input, attachment_id) = be_u16(input)?;
-    let (input, type_variant) = be_u32(input)?;
-    let type_metric : u32 = type_variant & 0x1f;  // 5 least significant bits (0x1f) are the type metric
-    let type_class : u32 = type_variant - type_metric;   // rest of the bits (minus type metric value) are the type class
+    let (input, parameter_type) = be_u32(input)?;                    // Parameter Type = Type Class + Type Metric
+    let type_metric : u32 = parameter_type & FIVE_LEAST_SIGNIFICANT_BITS;   // 5 least significant bits are the Type Metric
+    let type_class : u32 = parameter_type - type_metric;                    // Rest of the bits (Param Type minus Type Metric) are the Type Class
     let (input, value) = be_f32(input)?;
     let (input, _pad_out) = be_u32(input)?;
 
@@ -667,6 +668,7 @@ fn attached_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, attachment_id) = be_u16(input)?;
     let (input, attached_part) = be_u32(input)?;
     let (input, entity_type) = entity_type(input)?;
+
     Ok((input, VariableParameter::Attached(AttachedPart {
         detached_indicator,
         attachment_id,

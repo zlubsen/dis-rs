@@ -12,6 +12,7 @@ pub const FOUR_OCTETS: usize = 4;
 pub const SIX_OCTETS: usize = 6;
 pub const EIGHT_OCTETS: usize = 8;
 pub const LEAST_SIGNIFICANT_BIT : u32 = 0x001;
+pub const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;
 pub const NANOSECONDS_PER_HOUR: u32 = 3600 * 1e6 as u32;
 pub const TIME_UNITS_PER_HOUR: u32 = 2^31 - 1;
 pub const NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / TIME_UNITS_PER_HOUR as f32;
@@ -24,5 +25,7 @@ pub const BIT_4_IN_BYTE: u8 = 0x08;
 pub const BIT_5_IN_BYTE: u8 = 0x04;
 pub const BIT_6_IN_BYTE: u8 = 0x02;
 pub const BIT_7_IN_BYTE: u8 = 0x01;
+pub const BITS_2_3_IN_BYTE: u8 = 0x30;
+pub const BITS_5_6_IN_BYTE: u8 = 0x06;
 
 

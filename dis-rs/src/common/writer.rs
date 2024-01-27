@@ -2,9 +2,8 @@ use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{EIGHT_OCTETS, PDU_HEADER_LEN_BYTES};
-use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32};
-use crate::enumerations::{ProtocolVersion};
-use crate::length_padded_to_num_bytes;
+use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32, ArticulatedPart, AttachedPart, BeamData, EntityAssociationParameter, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, VariableParameter};
+use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -61,7 +60,7 @@ impl Serialize for Pdu {
             PduBody::Transmitter(body) => { body.serialize_pdu(version, buf) }
             PduBody::Signal(body) => { body.serialize_pdu(version, buf) }
             PduBody::Receiver(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
+            PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
             // PduBody::UnderwaterAcoustic(body) => { body.serialize_pdu(version, buf) }
             // PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, buf) }
@@ -226,6 +225,115 @@ impl Serialize for VariableDatum {
         buf.put_bytes(0, padded_record.padding_length_bytes);
 
         8 + data_length_with_padding
+    }
+}
+
+impl Serialize for VariableParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        match self {
+            VariableParameter::Articulated(inner) => {
+                buf.put_u8(VariableParameterRecordType::ArticulatedPart.into());
+                1 + inner.serialize(buf)
+            }
+            VariableParameter::Attached(inner) => {
+                buf.put_u8(VariableParameterRecordType::AttachedPart.into());
+                1 + inner.serialize(buf)
+            }
+            VariableParameter::Separation(inner) => {
+                buf.put_u8(VariableParameterRecordType::Separation.into());
+                1 + inner.serialize(buf)
+            }
+            VariableParameter::EntityType(inner) => {
+                buf.put_u8(VariableParameterRecordType::EntityType.into());
+                1 + inner.serialize(buf)
+            }
+            VariableParameter::EntityAssociation(inner) => {
+                buf.put_u8(VariableParameterRecordType::EntityAssociation.into());
+                1 + inner.serialize(buf)
+            }
+            VariableParameter::Unspecified(parameter_type, value) => {
+                buf.put_u8(*parameter_type);
+                buf.put(&value[..]);
+                16
+            }
+        }
+    }
+}
+
+impl Serialize for ArticulatedPart {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.change_indicator.into());
+        buf.put_u16(self.attachment_id.into());
+        let type_class: u32 = self.type_class.into();
+        let type_metric: u32 = self.type_metric.into();
+        buf.put_u32(type_class + type_metric);
+        buf.put_f32(self.parameter_value);
+        buf.put_u32(0u32);
+
+        15
+    }
+}
+
+impl Serialize for AttachedPart {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.detached_indicator.into());
+        buf.put_u16(self.attachment_id);
+        buf.put_u32(self.parameter_type.into());
+        self.attached_part_type.serialize(buf);
+
+        15
+    }
+}
+
+impl Serialize for SeparationParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.reason.into());
+        buf.put_u8(self.pre_entity_indicator.into());
+        buf.put_u8(0u8);
+        self.parent_entity_id.serialize(buf);
+        buf.put_u16(0u16);
+        buf.put_u16(self.station_name.into());
+        buf.put_u16(self.station_number);
+
+        15
+    }
+}
+
+impl Serialize for EntityTypeParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.change_indicator.into());
+        self.entity_type.serialize(buf);
+        buf.put_u16(0u16);
+        buf.put_u32(0u32);
+
+        15
+    }
+}
+
+impl Serialize for EntityAssociationParameter {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u8(self.change_indicator.into());
+        buf.put_u8(self.association_status.into());
+        buf.put_u8(self.association_type.into());
+        self.entity_id.serialize(buf);
+        buf.put_u16(self.own_station_location.into());
+        buf.put_u8(self.physical_connection_type.into());
+        buf.put_u8(self.group_member_type.into());
+        buf.put_u16(self.group_number);
+
+        15
+    }
+}
+
+impl Serialize for BeamData {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_f32(self.azimuth_center);
+        buf.put_f32(self.azimuth_sweep);
+        buf.put_f32(self.elevation_center);
+        buf.put_f32(self.elevation_sweep);
+        buf.put_f32(self.sweep_sync);
+
+        20
     }
 }
 

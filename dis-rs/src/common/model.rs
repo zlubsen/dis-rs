@@ -946,7 +946,6 @@ impl From<TimeStamp> for DisTimeStamp {
     }
 }
 
-#[derive(Default)]
 /// 6.2.14 Clock Time record
 #[derive(Default, Debug, PartialEq)]
 pub struct ClockTime {

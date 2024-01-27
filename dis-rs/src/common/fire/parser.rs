@@ -2,10 +2,9 @@ use nom::IResult;
 use nom::number::complete::{be_f32, be_u32};
 use crate::common::fire::model::Fire;
 use crate::common::parser::{entity_id, event_id, location, vec3_f32};
-use crate::common::model::PduBody;
+use crate::common::model::{PduHeader, PduBody};
 use crate::common::parser;
 use crate::enumerations::FireTypeIndicator;
-use crate::PduHeader;
 
 pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {

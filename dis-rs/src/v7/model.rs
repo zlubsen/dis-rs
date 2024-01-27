@@ -1,4 +1,4 @@
-use crate::enumerations::*;
+use crate::enumerations::{TransferredEntityIndicator, LvcIndicator, CoupledExtensionIndicator, FireTypeIndicator, DetonationTypeIndicator, RadioAttachedIndicator, IntercomAttachedIndicator, IffSimulationMode, ActiveInterrogationIndicator};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduStatus {
