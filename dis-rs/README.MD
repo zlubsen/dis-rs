@@ -12,60 +12,61 @@ The library supports both versions 6 and 7 of the standard.
 
 Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means reading a PDU from a byte stream. 'Write' means constructing a PDU in a struct and serializing it to a buffer. 
 
-| PDU / function | v6 read | v6 write | v7 read | v7 write |
-| --- |---------|----------|---------|----------|
-| PDU Header | V       | V        | V       | V        | 
-| EntityState | V       | V        | V       | V        |
-| Fire | V       | V        | V       | V        |
-| Detonation | V       | V        | V       | V        |
-| Collision | V       | V        | V       | V        |
-| ServiceRequestPdu |         |          |         |          |
-| ResupplyOfferPdu |         |          |         |          |
-| ResupplyReceivedPdu |         |          |         |          |
-| ResupplyCancelPdu |         |          |         |          |
-| RepairCompletePdu |         |          |         |          |
-| RepairResponsePdu |         |          |         |          |
-| CreateEntityPdu |         |          |         |          |
-| RemoveEntityPdu |         |          |         |          |
-| StartResumePdu | V       | V        | V       | V        |
-| StopFreezePdu | V       | V        | V       | V        |
-| AcknowledgePdu | V       | V        | V       | V        |
-| ActionRequestPdu | V       | V        | V       | V        |
-| ActionResponsePdu | V       | V        | V       | V        |
-| DataQueryPdu | V       | V        | V       | V        |
-| SetDataPdu | V       | V        | V       | V        |
-| DataPdu | V       | V        | V       | V        |
-| EventReportPdu | V       | V        | V       | V        |
-| CommentPdu | V       | V        | V       | V        |
-| ElectromagneticEmissionPdu | V       | V        | V       | V        |
-| DesignatorPdu | V       | V        | V       | V        |
-| TransmitterPdu | V       | V        | V       | V        |
-| SignalPdu | V       | V        | V       | V        |
-| ReceiverPdu | V       | V        | V       | V        |
-| AnnounceObjectPdu |         |          |         |          |
-| DeleteObjectPdu |         |          |         |          |
-| DescribeApplicationPdu |         |          |         |          |
-| DescribeEventPdu |         |          |         |          |
-| DescribeObjectPdu |         |          |         |          |
-| RequestEventPdu |         |          |         |          |
-| RequestObjectPdu |         |          |         |          |
+| PDU / function                  | v6 read | v6 write | v7 read | v7 write |
+|---------------------------------|---------|----------|---------|----------|
+| PDU Header                      | V       | V        | V       | V        | 
+| EntityState                     | V       | V        | V       | V        |
+| Fire                            | V       | V        | V       | V        |
+| Detonation                      | V       | V        | V       | V        |
+| Collision                       | V       | V        | V       | V        |
+| ServiceRequestPdu               |         |          |         |          |
+| ResupplyOfferPdu                |         |          |         |          |
+| ResupplyReceivedPdu             |         |          |         |          |
+| ResupplyCancelPdu               |         |          |         |          |
+| RepairCompletePdu               |         |          |         |          |
+| RepairResponsePdu               |         |          |         |          |
+| CreateEntityPdu                 |         |          |         |          |
+| RemoveEntityPdu                 |         |          |         |          |
+| StartResumePdu                  | V       | V        | V       | V        |
+| StopFreezePdu                   | V       | V        | V       | V        |
+| AcknowledgePdu                  | V       | V        | V       | V        |
+| ActionRequestPdu                | V       | V        | V       | V        |
+| ActionResponsePdu               | V       | V        | V       | V        |
+| DataQueryPdu                    | V       | V        | V       | V        |
+| SetDataPdu                      | V       | V        | V       | V        |
+| DataPdu                         | V       | V        | V       | V        |
+| EventReportPdu                  | V       | V        | V       | V        |
+| CommentPdu                      | V       | V        | V       | V        |
+| ElectromagneticEmissionPdu      | V       | V        | V       | V        |
+| DesignatorPdu                   | V       | V        | V       | V        |
+| TransmitterPdu                  | V       | V        | V       | V        |
+| SignalPdu                       | V       | V        | V       | V        |
+| ReceiverPdu                     | V       | V        | V       | V        |
+| IFF                             | V       | V        | V       | V        |
+| AnnounceObjectPdu               |         |          |         |          |
+| DeleteObjectPdu                 |         |          |         |          |
+| DescribeApplicationPdu          |         |          |         |          |
+| DescribeEventPdu                |         |          |         |          |
+| DescribeObjectPdu               |         |          |         |          |
+| RequestEventPdu                 |         |          |         |          |
+| RequestObjectPdu                |         |          |         |          |
 | TimeSpacePositionIndicatorFIPdu |         |          |         |          |
-| AppearanceFIPdu |         |          |         |          |
-| ArticulatedPartsFIPdu |         |          |         |          |
-| FireFIPdu |         |          |         |          |
-| DetonationFIPdu |         |          |         |          |
-| PointObjectStatePdu |         |          |         |          |
-| LinearObjectStatePdu |         |          |         |          |
-| ArealObjectStatePdu |         |          |         |          |
-| EnvironmentPdu |         |          |         |          |
-| TransferControlRequestPdu |         |          |         |          |
-| TransferControlPdu |         |          |         |          |
-| TransferControlAcknowledgePdu |         |          |         |          |
-| IntercomControlPdu |         |          |         |          |
-| IntercomSignalPdu |         |          |         |          |
-| AggregatePdu |         |          |         |          |
-| 'Other' PDU | V       | V        | V       | V        |
-| Dead Reckoning Algos |         |          |         |          |
+| AppearanceFIPdu                 |         |          |         |          |
+| ArticulatedPartsFIPdu           |         |          |         |          |
+| FireFIPdu                       |         |          |         |          |
+| DetonationFIPdu                 |         |          |         |          |
+| PointObjectStatePdu             |         |          |         |          |
+| LinearObjectStatePdu            |         |          |         |          |
+| ArealObjectStatePdu             |         |          |         |          |
+| EnvironmentPdu                  |         |          |         |          |
+| TransferControlRequestPdu       |         |          |         |          |
+| TransferControlPdu              |         |          |         |          |
+| TransferControlAcknowledgePdu   |         |          |         |          |
+| IntercomControlPdu              |         |          |         |          |
+| IntercomSignalPdu               |         |          |         |          |
+| AggregatePdu                    |         |          |         |          |
+| 'Other' PDU                     | V       | V        | V       | V        |
+| Dead Reckoning Algos            |         |          |         |          |
 
 ### Enumerations
 dis-rs uses the SISO-REF-010 reference to map the wire level encoding to actual names of enumerations and values in code.

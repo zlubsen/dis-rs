@@ -42,6 +42,7 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | TransmitterPdu | V       | V        | V       | V        |
 | SignalPdu | V       | V        | V       | V        |
 | ReceiverPdu | V       | V        | V       | V        |
+| IFF                             | V       | V        | V       | V        |
 | AnnounceObjectPdu |         |          |         |          |
 | DeleteObjectPdu |         |          |         |          |
 | DescribeApplicationPdu |         |          |         |          |

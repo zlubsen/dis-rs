@@ -1,5 +1,10 @@
 # Changelog for crate DIS-RS
 
+## 0.6.0 - 2024-01-27
+Added IFF PDU.
+
+Timestamps are now modeled according to the standard instead of just an u32 field. Use by means of casting a ```TimeStamp``` (which just wraps a u32 for compatibility) to a ```DisTimeStamp```.
+
 ## 0.5.2 - 2023-10-04
 Fixed issues #1 and #2. Public export of Serialize trait, and malformed v7 PDU Header related to the PDU Status field.
 
