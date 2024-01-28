@@ -82,7 +82,7 @@ impl BodyInfo for ActionResponse {
     }
 
     fn body_type(&self) -> PduType {
-        PduType::ActionRequest
+        PduType::ActionResponse
     }
 }
 
