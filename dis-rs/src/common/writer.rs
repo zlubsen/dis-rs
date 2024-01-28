@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn serialize_header() {
         let header = PduHeader::new_v6(1, PduType::EntityState)
-            .with_time_stamp(10)
+            .with_time_stamp(10u32)
             .with_length(0);
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn serialize_header_v7_no_status() {
         let header = PduHeader::new_v7(1, PduType::EntityState)
-            .with_time_stamp(10)
+            .with_time_stamp(10u32)
             .with_length(0);
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
@@ -375,7 +375,7 @@ mod tests {
     #[test]
     fn serialize_header_v7_with_status() {
         let header = PduHeader::new_v7(1, PduType::EntityState)
-            .with_time_stamp(10)
+            .with_time_stamp(10u32)
             .with_length(0)
             .with_pdu_status(PduStatus::default().with_lvc_indicator(LvcIndicator::Live));
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);

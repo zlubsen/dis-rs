@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn parse_other_body() {
         let header = PduHeader::new_v6(1, PduType::Other)
-            .with_time_stamp(0)
+            .with_time_stamp(0u32)
             .with_length(10u16);
         let input : [u8;10] = [0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
@@ -144,7 +144,7 @@ mod tests {
         // EntityStatePdu has only an originating EntityId
         let header = PduHeader::new_v6(1, PduType::EntityState)
             .with_length(6u16)
-            .with_time_stamp(0);
+            .with_time_stamp(0u32);
         let input : [u8;6] = [0x00,0x10,0x00,0x0A,0x00,0x01];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {
@@ -162,7 +162,7 @@ mod tests {
         // FirePdu has both originating (Firing) and receiving (Target) EntityIds
         let header = PduHeader::new_v6(1, PduType::Fire)
             .with_length(12u16)
-            .with_time_stamp(0);
+            .with_time_stamp(0u32);
         let input : [u8;12] = [0x00,0x10,0x00,0x0A,0x00,0x01,0x00,0x20,0x00,0x0B,0x00,0x08];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {

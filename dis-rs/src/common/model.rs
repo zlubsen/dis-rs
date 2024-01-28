@@ -38,10 +38,12 @@ pub struct Pdu {
 }
 
 impl Pdu {
-    pub fn finalize_from_parts(header: PduHeader, body: PduBody, time_stamp: u32) -> Self {
+    pub fn finalize_from_parts(header: PduHeader, body: PduBody, time_stamp: impl Into<TimeStamp>) -> Self {
+        let time_stamp: TimeStamp = time_stamp.into();
         Self {
             header: header
-                .with_time_stamp(time_stamp)
+                .with_pdu_type(body.body_type())
+                .with_time_stamp(time_stamp.raw_timestamp)
                 .with_length(body.body_length() as u16),
             body,
         }
@@ -71,7 +73,8 @@ pub struct PduHeader {
 }
 
 impl PduHeader {
-    pub fn new(protocol_version: ProtocolVersion, exercise_id: u8, pdu_type: PduType, protocol_family: ProtocolFamily) -> Self {
+    pub fn new(protocol_version: ProtocolVersion, exercise_id: u8, pdu_type: PduType) -> Self {
+        let protocol_family = pdu_type.into();
         Self {
             protocol_version,
             exercise_id,
@@ -85,14 +88,21 @@ impl PduHeader {
     }
 
     pub fn new_v6(exercise_id: u8, pdu_type: PduType) -> Self {
-        PduHeader::new(ProtocolVersion::IEEE1278_1A1998, exercise_id, pdu_type, pdu_type.into())
+        PduHeader::new(ProtocolVersion::IEEE1278_1A1998, exercise_id, pdu_type)
     }
 
     pub fn new_v7(exercise_id: u8, pdu_type: PduType) -> Self {
-        PduHeader::new(ProtocolVersion::IEEE1278_12012, exercise_id, pdu_type, pdu_type.into())
+        PduHeader::new(ProtocolVersion::IEEE1278_12012, exercise_id, pdu_type)
     }
 
-    pub fn with_time_stamp(mut self, time_stamp: u32) -> Self {
+    pub fn with_pdu_type(mut self, pdu_type: PduType) -> Self {
+        self.protocol_family = pdu_type.into();
+        self.pdu_type = pdu_type;
+        self
+    }
+
+    pub fn with_time_stamp(mut self, time_stamp: impl Into<u32>) -> Self {
+        let time_stamp: u32 = time_stamp.into();
         self.time_stamp = time_stamp;
         self
     }
@@ -893,21 +903,38 @@ impl MunitionDescriptor {
 ///
 /// This raw timestamp could also be interpreted as a Unix timestamp, or something else
 /// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
+#[derive(Default)]
 pub struct TimeStamp {
     pub raw_timestamp: u32,
+}
+
+impl TimeStamp {
+    pub fn new(raw_timestamp: u32) -> Self {
+        Self { raw_timestamp }
+    }
+}
+
+impl From<u32> for TimeStamp {
+    fn from(value: u32) -> Self {
+        Self { raw_timestamp: value }
+    }
+}
+
+impl From<TimeStamp> for u32 {
+    fn from(value: TimeStamp) -> Self {
+        value.raw_timestamp
+    }
 }
 
 impl From<DisTimeStamp> for TimeStamp {
     fn from(value: DisTimeStamp) -> Self {
         let raw_timestamp = match value {
-            DisTimeStamp::Absolute { nanoseconds_past_the_hour } => {
-                let units = (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32;
-                let units = (units << 1) & LEAST_SIGNIFICANT_BIT;
+            DisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _ } => {
+                let units = (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT;
                 units
             }
-            DisTimeStamp::Relative { nanoseconds_past_the_hour } => {
-                let units = (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32;
-                let units = units << 1;
+            DisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _ } => {
+                let units = units_past_the_hour << 1;
                 units
             }
         };
@@ -921,9 +948,41 @@ impl From<DisTimeStamp> for TimeStamp {
 /// as an Absolute or a Relative timestamp based on the Least Significant Bit.
 /// The remaining (upper) bits represent the units of time passed since the
 /// beginning of the current hour in the selected time reference.
+/// The `DisTimeStamp` stores both the units past the hour, as well as a conversion to
+/// nanoseconds past the hour.
 pub enum DisTimeStamp {
-    Absolute { nanoseconds_past_the_hour: u32 },
-    Relative { nanoseconds_past_the_hour: u32 },
+    Absolute { units_past_the_hour: u32, nanoseconds_past_the_hour: u32 },
+    Relative { units_past_the_hour: u32, nanoseconds_past_the_hour: u32 },
+}
+
+impl DisTimeStamp {
+    pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
+        let nanoseconds_past_the_hour = seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour = nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        Self::Absolute {
+            units_past_the_hour,
+            nanoseconds_past_the_hour
+        }
+    }
+
+    pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
+        let nanoseconds_past_the_hour = seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour = nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        Self::Relative {
+            units_past_the_hour,
+            nanoseconds_past_the_hour
+        }
+    }
+}
+
+/// Helper function to convert seconds to nanoseconds
+fn seconds_to_nanoseconds(seconds: u32) -> u32 {
+    seconds * 1_000_000
+}
+
+/// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
+fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
+    (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
 }
 
 impl From<u32> for DisTimeStamp {
@@ -933,9 +992,9 @@ impl From<u32> for DisTimeStamp {
         let nanoseconds_past_the_hour = (units_past_the_hour as f32 * NANOSECONDS_PER_TIME_UNIT) as u32;
 
         if absolute_bit {
-            Self::Absolute { nanoseconds_past_the_hour }
+            Self::Absolute { units_past_the_hour, nanoseconds_past_the_hour }
         } else {
-            Self::Relative { nanoseconds_past_the_hour }
+            Self::Relative { units_past_the_hour, nanoseconds_past_the_hour }
         }
     }
 }
