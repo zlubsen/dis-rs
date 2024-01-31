@@ -1,6 +1,7 @@
 use std::{env, fs};
 use std::ops::{RangeInclusive};
 use std::path::Path;
+use std::process::Command;
 
 use quick_xml::Reader;
 use proc_macro2::{Ident, Literal, TokenStream};
@@ -260,20 +261,29 @@ fn main() {
     ).unwrap();
     reader.trim_text(true);
 
-    // extract enums and bitfields from the source file
+    // Extract enums and bitfields from the source file
     let generation_items = extraction::extract(&mut reader);
-    // generate all code for enums
+    // Generate all code for enums
     let generated = generation::generate(&generation_items);
 
-    // save to file
+    // Save to file
     let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join("enumerations.rs");
-    // let out_dir = env::var("OUT_DIR").unwrap();
-    // println!("{:?}", out_dir); // output OUT_DIR variable for finding and inspecting the generated file
-
     fs::write(
         &dest_path,
         generated.to_string()
     ).unwrap();
+
+    // Format the file using rustfmt.
+    // This expects rustfmt to be installed.
+    let cmd = format!("rustfmt{}", env::consts::EXE_SUFFIX);
+    let output = Command::new(cmd)
+        .arg(&dest_path.clone().into_os_string())
+        .output()
+        .expect("Failed to run rustfmt");
+    if !output.status.success() {
+        let error = String::from_utf8_lossy(&output.stderr);
+        println!("Error: {:?}", error);
+    }
 }
 
 fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
