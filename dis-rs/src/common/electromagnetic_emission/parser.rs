@@ -124,8 +124,7 @@ pub fn track_jam(input: &[u8]) -> IResult<&[u8], TrackJam> {
 mod tests {
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{*};
-    use crate::common::model::PduBody;
-    use crate::EntityId;
+    use crate::common::model::{PduBody, EntityId};
 
     #[test]
     fn parse_pdu_emission_basic() {

@@ -15,12 +15,13 @@ pub fn acknowledge_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let acknowledge_flag = AcknowledgeFlag::from(acknowledge_flag);
     let response_flag = ResponseFlag::from(response_flag);
 
-    let body = Acknowledge::new()
+    let body = Acknowledge::builder()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
         .with_acknowledge_flag(acknowledge_flag)
         .with_response_flag(response_flag)
-        .with_request_id(request_id);
+        .with_request_id(request_id)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

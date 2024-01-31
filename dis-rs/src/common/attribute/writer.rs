@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::attribute::model::{Attribute, AttributeRecord, AttributeRecordSet, BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::EIGHT_OCTETS;
-use crate::length_padded_to_num_bytes;
+use crate::common::model::length_padded_to_num_bytes;
 
 impl SerializePdu for Attribute {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

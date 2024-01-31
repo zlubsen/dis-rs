@@ -1,8 +1,7 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAddress};
+use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAddress, length_padded_to_num_bytes, PduBody};
 use crate::constants::{FOUR_OCTETS, SIX_OCTETS};
 use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5LocationErrors, Mode5LevelSelection, Mode5SAltitudeResolution, Mode5Reply, Mode5PlatformType, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, Level2SquitterStatus, VariableRecordType};
-use crate::{length_padded_to_num_bytes, PduBody};
 use crate::common::iff::builder::{ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder, FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder, IffDataSpecificationBuilder, IffFundamentalParameterDataBuilder, IffLayer2Builder, IffLayer3Builder, IffLayer4Builder, IffLayer5Builder, InformationLayersBuilder, LayerHeaderBuilder, Mode5InterrogatorBasicDataBuilder, Mode5InterrogatorStatusBuilder, Mode5MessageFormatsBuilder, Mode5TransponderBasicDataBuilder, Mode5TransponderStatusBuilder, Mode5TransponderSupplementalDataBuilder, ModeSAltitudeBuilder, ModeSInterrogatorBasicDataBuilder, ModeSInterrogatorStatusBuilder, ModeSLevelsPresentBuilder, ModeSTransponderBasicDataBuilder, ModeSTransponderStatusBuilder, SystemIdBuilder, SystemSpecificDataBuilder, SystemStatusBuilder};
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
@@ -50,6 +49,10 @@ impl Default for Iff {
 impl Iff {
     pub fn builder() -> IffBuilder {
         IffBuilder::new()
+    }
+
+    pub fn into_builder(body: Iff) -> IffBuilder {
+        IffBuilder::new_from_body(body)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

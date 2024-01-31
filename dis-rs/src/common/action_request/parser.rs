@@ -13,13 +13,14 @@ pub fn action_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let action_id = ActionId::from(action_id);
     let (input, datums) = datum_specification(input)?;
 
-    let body = ActionRequest::new()
+    let body = ActionRequest::builder()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
         .with_request_id(request_id)
         .with_action_id(action_id)
         .with_fixed_datums(datums.fixed_datum_records)
-        .with_variable_datums(datums.variable_datum_records);
+        .with_variable_datums(datums.variable_datum_records)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

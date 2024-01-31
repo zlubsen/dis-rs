@@ -1,8 +1,9 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use crate::common::model::length_padded_to_num_bytes;
 use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS};
-use crate::{DisError, length_padded_to_num_bytes};
+use crate::{DisError};
 
 impl SerializePdu for Iff {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

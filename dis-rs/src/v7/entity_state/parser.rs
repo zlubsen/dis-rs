@@ -2,7 +2,7 @@ use nom::IResult;
 use nom::number::complete::be_u32;
 use crate::enumerations::{EntityKind, EntityCapabilities, PlatformDomain};
 use crate::enumerations::{LandPlatformCapabilities, AirPlatformCapabilities, SurfacePlatformCapabilities, SubsurfacePlatformCapabilities, SpacePlatformCapabilities, MunitionCapabilities, LifeFormsCapabilities, EnvironmentalCapabilities, CulturalFeatureCapabilities, SupplyCapabilities, RadioCapabilities, ExpendableCapabilities, SensorEmitterCapabilities};
-use crate::{EntityType};
+use crate::common::model::EntityType;
 
 pub fn entity_capabilities(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityCapabilities> {
     move | input: &[u8] | {

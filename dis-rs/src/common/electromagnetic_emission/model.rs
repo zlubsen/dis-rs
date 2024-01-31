@@ -1,7 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{BeamData, EntityId, EventId};
-use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-use crate::{PduBody, PduType, VectorF32};
+use crate::common::model::{BeamData, EntityId, EventId, PduBody, VectorF32};
+use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam, PduType};
 
 const EMISSION_BASE_BODY_LENGTH : u16 = 16;
 const EMITTER_SYSTEM_BASE_LENGTH : u16 = 20;

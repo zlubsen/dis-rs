@@ -1,6 +1,7 @@
 pub mod model;
 pub mod parser;
 pub mod writer;
+pub mod builder;
 
 #[cfg(test)]
 mod tests {
@@ -16,11 +17,12 @@ mod tests {
     fn action_response_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::ActionResponse);
 
-        let body = ActionResponse::default()
+        let body = ActionResponse::builder()
             .with_origination_id(EntityId::new(10,10,10))
             .with_receiving_id(EntityId::new(20,20,20))
             .with_request_id(5)
             .with_request_status(RequestStatus::Complete)
+            .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
         let pdu_length = original_pdu.header.pdu_length;

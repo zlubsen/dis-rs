@@ -19,7 +19,7 @@ mod tests {
     use crate::common::{BodyInfo, Serialize};
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType};
-    use crate::{Pdu, PduHeader};
+    use crate::common::model::{Pdu, PduHeader};
 
     #[test]
     fn serialize_other_pdu() {

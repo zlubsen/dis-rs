@@ -1,4 +1,5 @@
-use crate::{EntityId, Location, PduBody, PduType, VectorF32};
+use crate::common::model::{EntityId, Location, PduBody, VectorF32};
+use crate::enumerations::PduType;
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{DesignatorSystemName, DesignatorCode, DeadReckoningAlgorithm};
 

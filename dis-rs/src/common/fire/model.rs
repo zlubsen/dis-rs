@@ -1,6 +1,5 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, VectorF32};
-use crate::{EntityType, MunitionDescriptor, PduBody};
+use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, VectorF32, EntityType, MunitionDescriptor, PduBody};
 use crate::enumerations::PduType;
 
 const FIRE_BODY_LENGTH : u16 = 28;

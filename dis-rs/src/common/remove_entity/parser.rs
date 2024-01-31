@@ -2,7 +2,7 @@ use nom::IResult;
 use nom::number::complete::be_u32;
 use crate::common::parser::entity_id;
 use crate::common::remove_entity::model::RemoveEntity;
-use crate::PduBody;
+use crate::common::model::PduBody;
 
 pub fn remove_entity_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

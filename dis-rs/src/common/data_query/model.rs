@@ -1,8 +1,7 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::EntityId;
+use crate::common::model::{EntityId, PduBody};
 use crate::constants::FOUR_OCTETS;
-use crate::enumerations::VariableRecordType;
-use crate::{PduBody, PduType};
+use crate::enumerations::{PduType, VariableRecordType};
 
 pub const BASE_DATA_QUERY_BODY_LENGTH: u16 = 28;
 

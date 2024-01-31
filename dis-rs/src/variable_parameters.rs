@@ -1,4 +1,5 @@
-use crate::{EntityId, NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::common::model::EntityId;
 
 #[allow(non_snake_case)]
 pub struct VariableParameters {

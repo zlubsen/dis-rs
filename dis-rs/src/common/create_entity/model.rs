@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::EntityId;
-use crate::{PduBody, PduType};
+use crate::common::model::{EntityId, PduBody};
+use crate::enumerations::PduType;
 
 const CREATE_ENTITY_BODY_LENGTH : u16 = 16;
 

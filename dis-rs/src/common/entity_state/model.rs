@@ -1,8 +1,7 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, EntityType, Location, Orientation, VariableParameter, VectorF32};
+use crate::common::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableParameter, VectorF32};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
-use crate::enumerations::*;
-use crate::PduBody;
+use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm};
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
 
@@ -40,7 +39,7 @@ impl EntityState {
             entity_orientation: Orientation::default(),
             entity_appearance: EntityAppearance::default(),
             dead_reckoning_parameters: DrParameters::default(),
-            entity_marking: EntityMarking::default(), // TODO: EntityMarking::default_for_entity_type(&entity_type), // based on enumerations file
+            entity_marking: EntityMarking::default(),
             entity_capabilities: EntityCapabilities::default(),
             variable_parameters: vec![]
         }
@@ -185,7 +184,7 @@ impl Default for EntityMarking {
     fn default() -> Self {
         Self {
             marking_character_set: EntityMarkingCharacterSet::default(),
-            marking_string: String::from("default"),
+            marking_string: String::from("Default"),
         }
     }
 }

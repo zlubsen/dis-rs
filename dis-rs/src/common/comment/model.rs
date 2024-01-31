@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, VariableDatum};
-use crate::{BASE_VARIABLE_DATUM_LENGTH, length_padded_to_num_bytes, PduBody, PduType};
+use crate::common::model::{EntityId, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, length_padded_to_num_bytes, PduBody};
+use crate::enumerations::PduType;
 use crate::constants::EIGHT_OCTETS;
 
 pub const BASE_COMMENT_BODY_LENGTH: u16 = 20;

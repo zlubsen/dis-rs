@@ -1,6 +1,5 @@
-use crate::common::model::{EntityId, Location};
-use crate::enumerations::{VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem};
-use crate::{EntityType, length_padded_to_num_bytes, Orientation, PduBody, PduType, VectorF32};
+use crate::common::model::{EntityId, Location, EntityType, length_padded_to_num_bytes, Orientation, PduBody, VectorF32};
+use crate::enumerations::{PduType, VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 

@@ -1,6 +1,5 @@
-use crate::common::model::EntityId;
-use crate::enumerations::{SignalTdlType, SignalEncodingType, SignalEncodingClass, SignalUserProtocolIdentificationNumber};
-use crate::{length_padded_to_num_bytes, PduBody, PduType};
+use crate::enumerations::{SignalTdlType, SignalEncodingType, SignalEncodingClass, SignalUserProtocolIdentificationNumber, PduType};
+use crate::common::model::{EntityId, length_padded_to_num_bytes, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 

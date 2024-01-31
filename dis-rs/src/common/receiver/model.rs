@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::{EntityId, PduBody, PduType};
-use crate::enumerations::ReceiverState;
+use crate::common::model::{EntityId, PduBody};
+use crate::enumerations::{PduType, ReceiverState};
 
 const RECEIVER_BODY_LENGTH: u16 = 24;
 

@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, ClockTime};
-use crate::{PduBody, PduType};
+use crate::common::model::{EntityId, ClockTime, PduBody};
+use crate::enumerations::PduType;
 
 const START_RESUME_BODY_LENGTH : u16 = 32;
 

@@ -2,11 +2,10 @@ use nom::bytes::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
-use crate::common::model::PduBody;
+use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
 use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
-use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState};
-use crate::{PduHeader, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
+use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
 
 pub fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {

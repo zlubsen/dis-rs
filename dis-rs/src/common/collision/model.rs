@@ -1,7 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, EventId};
-use crate::enumerations::CollisionType;
-use crate::{PduBody, PduType, VectorF32};
+use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
+use crate::enumerations::{CollisionType, PduType};
 
 const COLLISION_BODY_LENGTH : u16 = 60;
 

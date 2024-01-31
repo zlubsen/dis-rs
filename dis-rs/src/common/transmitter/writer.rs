@@ -1,7 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
-use crate::{length_padded_to_num_bytes, TransmitterMajorModulation};
+use crate::common::model::length_padded_to_num_bytes;
+use crate::enumerations::TransmitterMajorModulation;
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 
 impl SerializePdu for Transmitter {

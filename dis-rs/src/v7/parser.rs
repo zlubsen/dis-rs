@@ -105,5 +105,3 @@ fn status_aii(pdu_status_field : u8) -> ActiveInterrogationIndicator {
     let aii = pdu_status_field & BIT_2_IN_BYTE;
     ActiveInterrogationIndicator::from(aii)
 }
-
-// TODO parse test for PduStatus field

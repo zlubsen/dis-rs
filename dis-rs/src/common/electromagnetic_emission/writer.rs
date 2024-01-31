@@ -95,9 +95,9 @@ impl Serialize for TrackJam {
 mod tests {
     use bytes::BytesMut;
     use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
-    use crate::{ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction, EntityId, EventId, HighDensityTrackJam, Pdu, PduHeader, SimulationAddress, VectorF32};
+    use crate::enumerations::{ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
     use crate::common::{BodyInfo, Serialize};
-    use crate::common::model::BeamData;
+    use crate::common::model::{BeamData, EntityId, EventId, Pdu, PduHeader, SimulationAddress, VectorF32};
 
     #[test]
     fn write_pdu_emission_with_tracks() {

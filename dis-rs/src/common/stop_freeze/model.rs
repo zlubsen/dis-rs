@@ -1,8 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::EntityId;
-use crate::common::model::ClockTime;
-use crate::enumerations::{StopFreezeReason, StopFreezeFrozenBehavior};
-use crate::{PduBody, PduType};
+use crate::common::model::{ClockTime, EntityId, PduBody};
+use crate::enumerations::{StopFreezeReason, StopFreezeFrozenBehavior, PduType};
 
 const STOP_FREEZE_BODY_LENGTH : u16 = 28;
 

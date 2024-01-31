@@ -10,7 +10,7 @@ use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::common::model::{ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32};
+use crate::common::model::{BeamData, ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, EntityAssociationParameter, VariableParameter, ArticulatedPart, AttachedPart};
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::action_request::parser::action_request_body;
 use crate::common::action_response::parser::action_response_body;
@@ -36,7 +36,7 @@ use crate::common::stop_freeze::parser::stop_freeze_body;
 use crate::common::transmitter::parser::transmitter_body;
 use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
-use crate::{ArticulatedPart, ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPart, AttachedPartDetachedIndicator, AttachedParts, BeamData, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationParameter, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameter, VariableParameterRecordType};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {

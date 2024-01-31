@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, FixedDatum, VariableDatum};
-use crate::{BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num_bytes, PduBody, PduType};
+use crate::common::model::{EntityId, FixedDatum, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num_bytes, PduBody};
+use crate::enumerations::PduType;
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::EventType;
 

@@ -342,8 +342,8 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::Serialize;
     use crate::constants::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType};
-    use crate::{LvcIndicator, PduHeader};
+    use crate::enumerations::{PduType, LvcIndicator};
+    use crate::common::model::PduHeader;
     use crate::v7::model::PduStatus;
 
     #[test]

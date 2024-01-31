@@ -6,7 +6,7 @@ use crate::common::parser::entity_id;
 use crate::common::model::{EntityId, PduBody, PduHeader};
 use crate::common::other::model::Other;
 use crate::constants::PDU_HEADER_LEN_BYTES;
-use crate::PduType;
+use crate::enumerations::PduType;
 
 pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {
@@ -120,10 +120,9 @@ fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, 
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{PduBody};
+    use crate::common::model::{PduBody, PduHeader};
     use crate::common::other::parser::other_body;
     use crate::enumerations::{PduType};
-    use crate::PduHeader;
 
     #[test]
     fn parse_other_body() {

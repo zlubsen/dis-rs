@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
-use crate::{DescriptorRecord, DetonationResult, EntityId, EntityType, EventId, ExplosiveMaterialCategories, Location, MunitionDescriptor, PduBody, PduType, VectorF32};
-use crate::common::model::VariableParameter;
+use crate::enumerations::{DetonationResult, ExplosiveMaterialCategories, PduType};
+use crate::common::model::{DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, PduBody, VectorF32, VariableParameter};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 
 const BASE_DETONATION_BODY_LENGTH : u16 = 104;

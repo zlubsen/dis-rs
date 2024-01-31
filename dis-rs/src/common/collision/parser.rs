@@ -2,7 +2,8 @@ use nom::IResult;
 use nom::number::complete::{be_f32, be_u8};
 use crate::common::collision::model::Collision;
 use crate::common::parser::{entity_id, event_id, vec3_f32};
-use crate::{CollisionType, PduBody};
+use crate::enumerations::CollisionType;
+use crate::common::model::PduBody;
 
 pub fn collision_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, issuing_entity_id) = entity_id(input)?;

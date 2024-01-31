@@ -4,7 +4,7 @@ use nom::number::complete::be_u32;
 use crate::common::data_query::model::DataQuery;
 use crate::common::parser::entity_id;
 use crate::common::model::PduBody;
-use crate::VariableRecordType;
+use crate::enumerations::VariableRecordType;
 
 pub fn data_query_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

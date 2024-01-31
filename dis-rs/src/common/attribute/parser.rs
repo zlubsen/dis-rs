@@ -4,7 +4,8 @@ use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use crate::common::parser::{entity_id, pdu_type, protocol_version, simulation_address};
 use crate::common::attribute::model::{Attribute, AttributeRecord, AttributeRecordSet, BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS};
-use crate::{AttributeActionCode, PduBody, VariableRecordType};
+use crate::enumerations::{AttributeActionCode, VariableRecordType};
+use crate::common::model::PduBody;
 
 pub fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, origination_simulation_address) = simulation_address(input)?;
@@ -21,13 +22,14 @@ pub fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, attribute_record_sets) =
         count(attribute_record_set, number_of_record_sets.into())(input)?;
 
-    let body = Attribute::new()
+    let body = Attribute::builder()
         .with_originating_simulation_address(origination_simulation_address)
         .with_record_pdu_type(record_pdu_type)
         .with_record_protocol_version(record_protocol_version)
         .with_master_attribute_record_type(master_attribute_record_type)
         .with_action_code(action_code)
-        .with_attribute_record_sets(attribute_record_sets);
+        .with_attribute_record_sets(attribute_record_sets)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

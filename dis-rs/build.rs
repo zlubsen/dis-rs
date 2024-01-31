@@ -6,13 +6,6 @@ use std::process::Command;
 use quick_xml::Reader;
 use proc_macro2::{Ident, Literal, TokenStream};
 
-// TODO formatting of generated code file (apply rustfmt)
-// TODO refactor a bit and make testable (include some unit tests in the regular code)
-// test generated impls for enums/enumrows (from, into, display)
-// test enumrow_range fields and unspecified values
-// TODO uid 284 - extract/generate a lookup for defined JammingTechnique values...
-// TODO uid 30 - extract/generate a lookup for defined EntityType enumerations...
-
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:
 /// - the uid,
@@ -650,10 +643,15 @@ mod generation {
         let default_impl = quote_enum_default_impl(&name_ident);
         quote!(
             #decl
+
             #from_impl
+
             #into_impl
+
             #display_impl
+
             #default_impl
+
         )
     }
 
@@ -889,7 +887,9 @@ mod generation {
         // TODO let display = quote_bitfield_display_impl(item); // display values of fields or bitstring
         quote!(
             #decl
+
             #from
+
             #into
         )
     }
