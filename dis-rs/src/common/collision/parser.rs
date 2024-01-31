@@ -16,14 +16,15 @@ pub fn collision_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, mass) = be_f32(input)?;
     let (input, location) = vec3_f32(input)?;
 
-    let body = Collision::new()
+    let body = Collision::builder()
         .with_issuing_entity_id(issuing_entity_id)
         .with_colliding_entity_id(colliding_entity_id)
         .with_event_id(event_id)
         .with_collision_type(collision_type)
         .with_velocity(velocity)
         .with_mass(mass)
-        .with_location(location);
+        .with_location(location)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

@@ -9,10 +9,11 @@ pub fn create_entity_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;
 
-    let body = CreateEntity::new()
+    let body = CreateEntity::builder()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
-        .with_request_id(request_id);
+        .with_request_id(request_id)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

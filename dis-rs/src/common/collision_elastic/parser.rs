@@ -21,7 +21,7 @@ pub fn collision_elastic_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, unit_surface_normal) = vec3_f32(input)?;
     let (input, coefficient_of_restitution) = be_f32(input)?;
 
-    let body = CollisionElastic::new()
+    let body = CollisionElastic::builder()
         .with_issuing_entity_id(issuing_entity_id)
         .with_colliding_entity_id(colliding_entity_id)
         .with_event_id(event_id)
@@ -35,7 +35,8 @@ pub fn collision_elastic_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_intermediate_result_yz(intermediate_result_yz)
         .with_intermediate_result_zz(intermediate_result_zz)
         .with_unit_surface_normal(unit_surface_normal)
-        .with_coefficient_of_restitution(coefficient_of_restitution);
+        .with_coefficient_of_restitution(coefficient_of_restitution)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }
