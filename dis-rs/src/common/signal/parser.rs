@@ -16,7 +16,7 @@ pub fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
     let (input, data_length_in_bits) = be_u16(input)?;
     let (input, samples) = be_u16(input)?;
-    let (input, data) = nom::bytes::complete::take(data_length_in_bits / ONE_BYTE_IN_BITS)(input)?;
+    let (input, data) = nom::bytes::complete::take(data_length_in_bits / ONE_BYTE_IN_BITS as u16)(input)?;
 
     let encoding_scheme = parse_encoding_scheme(encoding_scheme, data);
 
@@ -67,10 +67,10 @@ fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingSch
                 duration_milli_secs: u32::from_be_bytes(duration_bytes),
             }
         }
-        SignalEncodingClass::Unspecified(value) => {
-            // 2-bit value can only contain values 0-3 decimal, so SignalEncodingClass::Unspecified should never be possible.
+        SignalEncodingClass::Unspecified(_value) => {
+            // 2-bit _value can only contain values 0-3 decimal, so SignalEncodingClass::Unspecified should never be possible.
             // TODO convert panic to an error
-            panic!("Impossible (unspecified) value for SignalEncodingClass: {value}");
+            panic!("Impossible (unspecified) _value for SignalEncodingClass: {_value}");
         }
     }
 }
