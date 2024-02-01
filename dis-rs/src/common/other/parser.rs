@@ -104,7 +104,7 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
             .with_origin(originating)
             .with_receiver(receiving);
 
-        Ok((input, body.as_pdu_body()))
+        Ok((input, body.into_pdu_body()))
     }
 }
 

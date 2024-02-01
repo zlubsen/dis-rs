@@ -50,7 +50,7 @@ impl Other {
         self
     }
 
-    pub fn as_pdu_body(self) -> PduBody {
+    pub fn into_pdu_body(self) -> PduBody {
         PduBody::Other(self)
     }
 }

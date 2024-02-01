@@ -12,7 +12,7 @@ pub const BASE_IFF_DATA_RECORD_LENGTH_OCTETS: u16 = 6;
 /// 7.6.5.1 General
 ///
 /// 7.6.5.2 Layer 1 basic system data
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Iff {
     pub emitting_entity_id: EntityId,
     pub event_id: EventId,
@@ -28,31 +28,13 @@ pub struct Iff {
     pub layer_5: Option<IffLayer5>, // Data Communications
 }
 
-impl Default for Iff {
-    fn default() -> Self {
-        Self {
-            emitting_entity_id: Default::default(),
-            event_id: Default::default(),
-            relative_antenna_location: Default::default(),
-            system_id: Default::default(),
-            system_designator: 0,
-            system_specific_data: 0,
-            fundamental_operational_data: Default::default(),
-            layer_2: None,
-            layer_3: None,
-            layer_4: None,
-            layer_5: None,
-        }
-    }
-}
-
 impl Iff {
     pub fn builder() -> IffBuilder {
         IffBuilder::new()
     }
 
-    pub fn into_builder(body: Iff) -> IffBuilder {
-        IffBuilder::new_from_body(body)
+    pub fn into_builder(self) -> IffBuilder {
+        IffBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

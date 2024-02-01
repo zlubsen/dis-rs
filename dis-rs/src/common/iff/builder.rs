@@ -13,6 +13,10 @@ impl IffBuilder {
         IffBuilder(body)
     }
 
+    pub fn build(self) -> Iff {
+        self.0
+    }
+
     pub fn with_emitting_entity_id(mut self, v: EntityId) -> Self {
         self.0.emitting_entity_id = v;
         self
@@ -66,10 +70,6 @@ impl IffBuilder {
     pub fn with_layer_5(mut self, v: IffLayer5) -> Self {
         self.0.layer_5 = Some(v);
         self
-    }
-
-    pub fn build(self) -> Iff {
-        self.0
     }
 }
 
