@@ -3,6 +3,7 @@ use nom::number::complete::{be_u16, be_u32};
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::common::signal::model::{EncodingScheme, Signal};
+use crate::constants::ONE_BYTE_IN_BITS;
 use crate::enumerations::{SignalEncodingClass, SignalEncodingType, SignalTdlType, SignalUserProtocolIdentificationNumber};
 
 pub fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
@@ -13,9 +14,9 @@ pub fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let tdl_type = SignalTdlType::from(tdl_type);
     let (input, sample_rate) = be_u32(input)?;
 
-    let (input, data_length) = be_u16(input)?;
+    let (input, data_length_in_bits) = be_u16(input)?;
     let (input, samples) = be_u16(input)?;
-    let (input, data) = nom::bytes::complete::take(data_length)(input)?;
+    let (input, data) = nom::bytes::complete::take(data_length_in_bits / ONE_BYTE_IN_BITS)(input)?;
 
     let encoding_scheme = parse_encoding_scheme(encoding_scheme, data);
 
