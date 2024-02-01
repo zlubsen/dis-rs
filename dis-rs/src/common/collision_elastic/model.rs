@@ -28,8 +28,8 @@ impl CollisionElastic {
         CollisionElasticBuilder::new()
     }
 
-    pub fn into_builder(body: CollisionElastic) -> CollisionElasticBuilder {
-        CollisionElasticBuilder::new_from_body(body)
+    pub fn into_builder(self) -> CollisionElasticBuilder {
+        CollisionElasticBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

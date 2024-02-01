@@ -18,8 +18,8 @@ impl Comment {
         CommentBuilder::new()
     }
 
-    pub fn into_builder(body: Comment) -> CommentBuilder {
-        CommentBuilder::new_from_body(body)
+    pub fn into_builder(self) -> CommentBuilder {
+        CommentBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

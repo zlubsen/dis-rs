@@ -22,8 +22,8 @@ impl ActionRequest {
         ActionRequestBuilder::new()
     }
 
-    pub fn into_builder(body: ActionRequest) -> ActionRequestBuilder {
-        ActionRequestBuilder::new_from_body(body)
+    pub fn into_builder(self) -> ActionRequestBuilder {
+        ActionRequestBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

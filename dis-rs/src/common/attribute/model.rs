@@ -22,8 +22,8 @@ impl Attribute {
         AttributeBuilder::new()
     }
 
-    pub fn into_builder(body: Attribute) -> AttributeBuilder {
-        AttributeBuilder::new_from_body(body)
+    pub fn into_builder(self) -> AttributeBuilder {
+        AttributeBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

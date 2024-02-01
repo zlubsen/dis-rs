@@ -19,13 +19,14 @@ pub fn data_query_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, variable_datum_ids) = count(be_u32, num_of_variable_datums as usize)(input)?;
     let variable_datum_ids = variable_datum_ids.iter().map(|id| VariableRecordType::from(*id)).collect();
 
-    let body = DataQuery::new()
+    let body = DataQuery::builder()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
         .with_request_id(request_id)
         .with_time_interval(time_interval)
         .with_fixed_datums(fixed_datum_ids)
-        .with_variable_datums(variable_datum_ids);
+        .with_variable_datums(variable_datum_ids)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

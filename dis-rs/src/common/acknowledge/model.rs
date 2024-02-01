@@ -20,8 +20,8 @@ impl Acknowledge {
         AcknowledgeBuilder::new()
     }
 
-    pub fn into_builder(body: Acknowledge) -> AcknowledgeBuilder {
-        AcknowledgeBuilder::new_from_body(body)
+    pub fn into_builder(self) -> AcknowledgeBuilder {
+        AcknowledgeBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

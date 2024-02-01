@@ -17,8 +17,8 @@ impl CreateEntity {
         CreateEntityBuilder::new()
     }
 
-    pub fn into_builder(body: CreateEntity) -> CreateEntityBuilder {
-        CreateEntityBuilder::new_from_body(body)
+    pub fn into_builder(self) -> CreateEntityBuilder {
+        CreateEntityBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

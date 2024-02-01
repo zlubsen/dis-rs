@@ -22,17 +22,18 @@ pub fn designator_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, _padding_16) = be_u16(input)?;
     let (input, linear_acceleration) = vec3_f32(input)?;
 
-    let body = Designator::new()
+    let body = Designator::builder()
         .with_designating_entity_id(designating_entity_id)
         .with_system_name(system_name)
-        .with_designating_entity_id(designated_entity_id)
+        .with_designated_entity_id(designated_entity_id)
         .with_code(code)
         .with_power(power)
         .with_wavelength(wavelength)
         .with_spot_wrt_designated_entity(spot_wrt_designated_entity)
         .with_spot_location(spot_location)
         .with_dead_reckoning_algorithm(dead_reckoning_algorithm)
-        .with_linear_acceleration(linear_acceleration);
+        .with_linear_acceleration(linear_acceleration)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

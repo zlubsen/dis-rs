@@ -21,8 +21,8 @@ impl Collision {
         CollisionBuilder::new()
     }
 
-    pub fn into_builder(body: Collision) -> CollisionBuilder {
-        CollisionBuilder::new_from_body(body)
+    pub fn into_builder(self) -> CollisionBuilder {
+        CollisionBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

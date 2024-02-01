@@ -22,8 +22,8 @@ impl ActionResponse {
         ActionResponseBuilder::new()
     }
 
-    pub fn into_builder(body: ActionResponse) -> ActionResponseBuilder {
-        ActionResponseBuilder::new_from_body(body)
+    pub fn into_builder(self) -> ActionResponseBuilder {
+        ActionResponseBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

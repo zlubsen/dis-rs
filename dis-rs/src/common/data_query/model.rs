@@ -1,11 +1,12 @@
 use crate::common::{BodyInfo, Interaction};
+use crate::common::data_query::builder::DataQueryBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{PduType, VariableRecordType};
 
 pub const BASE_DATA_QUERY_BODY_LENGTH: u16 = 28;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct DataQuery {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -15,52 +16,13 @@ pub struct DataQuery {
     pub variable_datum_records: Vec<VariableRecordType>,
 }
 
-impl Default for DataQuery {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl DataQuery {
-    pub fn new() -> Self {
-        Self {
-            originating_id: Default::default(),
-            receiving_id: Default::default(),
-            request_id: 0,
-            time_interval: 0,
-            fixed_datum_records: vec![],
-            variable_datum_records: vec![],
-        }
+    pub fn builder() -> DataQueryBuilder {
+        DataQueryBuilder::new()
     }
 
-    pub fn with_origination_id(mut self, originating_id: EntityId) -> Self {
-        self.originating_id = originating_id;
-        self
-    }
-
-    pub fn with_receiving_id(mut self, receiving_id: EntityId) -> Self {
-        self.receiving_id = receiving_id;
-        self
-    }
-
-    pub fn with_request_id(mut self, request_id: u32) -> Self {
-        self.request_id = request_id;
-        self
-    }
-
-    pub fn with_time_interval(mut self, time_interval: u32) -> Self {
-        self.time_interval = time_interval;
-        self
-    }
-
-    pub fn with_fixed_datums(mut self, fixed_datum_records: Vec<VariableRecordType>) -> Self {
-        self.fixed_datum_records = fixed_datum_records;
-        self
-    }
-
-    pub fn with_variable_datums(mut self, variable_datum_records: Vec<VariableRecordType>) -> Self {
-        self.variable_datum_records = variable_datum_records;
-        self
+    pub fn into_builder(self) -> DataQueryBuilder {
+        DataQueryBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

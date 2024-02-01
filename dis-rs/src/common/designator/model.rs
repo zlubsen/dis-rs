@@ -1,11 +1,12 @@
 use crate::common::model::{EntityId, Location, PduBody, VectorF32};
 use crate::enumerations::PduType;
 use crate::common::{BodyInfo, Interaction};
+use crate::common::designator::builder::DesignatorBuilder;
 use crate::enumerations::{DesignatorSystemName, DesignatorCode, DeadReckoningAlgorithm};
 
 pub const DESIGNATOR_BODY_LENGTH : u16 = 76;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Designator {
     pub designating_entity_id: EntityId,
     pub system_name: DesignatorSystemName,
@@ -19,76 +20,13 @@ pub struct Designator {
     pub linear_acceleration: VectorF32,
 }
 
-impl Default for Designator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Designator {
-    pub fn new() -> Self {
-        Self {
-            designating_entity_id: Default::default(),
-            system_name: Default::default(),
-            designated_entity_id: Default::default(),
-            code: Default::default(),
-            power: 0.0,
-            wavelength: 0.0,
-            spot_wrt_designated_entity: Default::default(),
-            spot_location: Default::default(),
-            dead_reckoning_algorithm: Default::default(),
-            linear_acceleration: Default::default(),
-        }
+    pub fn builder() -> DesignatorBuilder {
+        DesignatorBuilder::new()
     }
 
-    pub fn with_designating_entity_id(mut self, designating_entity_id: EntityId) -> Self {
-        self.designating_entity_id = designating_entity_id;
-        self
-    }
-
-    pub fn with_system_name(mut self, system_name: DesignatorSystemName) -> Self {
-        self.system_name = system_name;
-        self
-    }
-
-    pub fn with_designated_entity_id(mut self, designated_entity_id: EntityId) -> Self {
-        self.designated_entity_id = designated_entity_id;
-        self
-    }
-
-    pub fn with_code(mut self, code: DesignatorCode) -> Self {
-        self.code = code;
-        self
-    }
-
-    pub fn with_power(mut self, power: f32) -> Self {
-        self.power = power;
-        self
-    }
-
-    pub fn with_wavelength(mut self, wavelength: f32) -> Self {
-        self.wavelength = wavelength;
-        self
-    }
-
-    pub fn with_spot_wrt_designated_entity(mut self, spot_wrt_designated_entity: VectorF32) -> Self {
-        self.spot_wrt_designated_entity = spot_wrt_designated_entity;
-        self
-    }
-
-    pub fn with_spot_location(mut self, spot_location: Location) -> Self {
-        self.spot_location = spot_location;
-        self
-    }
-
-    pub fn with_dead_reckoning_algorithm(mut self, dead_reckoning_algorithm: DeadReckoningAlgorithm) -> Self {
-        self.dead_reckoning_algorithm = dead_reckoning_algorithm;
-        self
-    }
-
-    pub fn with_linear_acceleration(mut self, linear_acceleration: VectorF32) -> Self {
-        self.linear_acceleration = linear_acceleration;
-        self
+    pub fn into_builder(self) -> DesignatorBuilder {
+        DesignatorBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

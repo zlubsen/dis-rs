@@ -26,7 +26,7 @@ pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], P
             count(variable_parameter, variable_parameters_no as usize)(input)?
         } else { (input, vec![]) };
 
-        let body = Detonation::new()
+        let body = Detonation::builder()
             .with_source_entity_id(source_entity_id)
             .with_target_entity_id(target_entity_id)
             .with_exploding_entity_id(exploding_entity_id)
@@ -36,7 +36,8 @@ pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], P
             .with_descriptor(descriptor)
             .with_entity_location(entity_location)
             .with_detonation_result(DetonationResult::from(detonation_result))
-            .with_variable_parameters(articulation_parameters);
+            .with_variable_parameters(articulation_parameters)
+            .build();
 
         Ok((input, body.into_pdu_body()))
     }
