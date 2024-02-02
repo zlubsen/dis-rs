@@ -1,6 +1,7 @@
 use dis_rs::acknowledge::model::Acknowledge;
-use dis_rs::enumerations::PduType;
+use dis_rs::enumerations::{PduType};
 use dis_rs::model::{EntityId, Pdu, PduHeader, TimeStamp};
+
 
 fn main() {
     println!("A simple user application that uses the dis-rs library.");

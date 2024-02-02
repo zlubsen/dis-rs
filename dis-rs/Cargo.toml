@@ -1,7 +1,7 @@
 [package]
 name = "dis-rs"
 version = "0.6.0-beta-2"
-authors = ["Zeeger <zeeger@lubsen.eu>"]
+authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 An implementation of the Distributed Interactive Simulation protocol in Rust.
 
