@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn collision_elastic_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::CollisionElastic);
 
         let body = CollisionElastic::builder()
             .with_mass(88.4f32)

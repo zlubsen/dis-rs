@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn designator_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::Designator);
 
         let body = Designator::builder()
             .with_designating_entity_id(EntityId::new(1, 1, 1))

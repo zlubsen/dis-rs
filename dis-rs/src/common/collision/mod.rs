@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn collision_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::Collision);
 
         let body = Collision::builder()
             .with_issuing_entity_id(EntityId::new(10, 10, 10))

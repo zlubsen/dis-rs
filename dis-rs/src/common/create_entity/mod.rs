@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn create_entity_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::CreateEntity);
 
         let body = CreateEntity::builder()
             .with_origination_id(EntityId::new(10, 10, 10))

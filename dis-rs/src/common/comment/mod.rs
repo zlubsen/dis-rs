@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn comment_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::Comment);
 
         let body = Comment::builder()
             .with_origination_id(EntityId::new(1,2,3))

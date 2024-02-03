@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn detonation_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::Detonation);
 
         let body = Detonation::builder()
             .build()

@@ -3,10 +3,11 @@ use crate::common::model::{EntityId, FixedDatum, VariableDatum, BASE_VARIABLE_DA
 use crate::enumerations::PduType;
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::EventType;
+use crate::event_report::builder::EventReportBuilder;
 
 pub const BASE_EVENT_REPORT_BODY_LENGTH: u16 = 28;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct EventReport {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -15,46 +16,13 @@ pub struct EventReport {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl Default for EventReport {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl EventReport {
-    pub fn new() -> Self {
-        Self {
-            originating_id: Default::default(),
-            receiving_id: Default::default(),
-            event_type: Default::default(),
-            fixed_datum_records: vec![],
-            variable_datum_records: vec![],
-        }
+    pub fn builder() -> EventReportBuilder {
+        EventReportBuilder::new()
     }
 
-    pub fn with_origination_id(mut self, originating_id: EntityId) -> Self {
-        self.originating_id = originating_id;
-        self
-    }
-
-    pub fn with_receiving_id(mut self, receiving_id: EntityId) -> Self {
-        self.receiving_id = receiving_id;
-        self
-    }
-
-    pub fn with_event_type(mut self, event_type: EventType) -> Self {
-        self.event_type = event_type;
-        self
-    }
-
-    pub fn with_fixed_datums(mut self, fixed_datum_records: Vec<FixedDatum>) -> Self {
-        self.fixed_datum_records = fixed_datum_records;
-        self
-    }
-
-    pub fn with_variable_datums(mut self, variable_datum_records: Vec<VariableDatum>) -> Self {
-        self.variable_datum_records = variable_datum_records;
-        self
+    pub fn into_builder(self) -> EventReportBuilder {
+        EventReportBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn data_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v6(1, PduType::Data);
 
         let body = Data::builder()
             .with_origination_id(EntityId::new(10,10,10))

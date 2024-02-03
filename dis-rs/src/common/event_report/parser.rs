@@ -13,12 +13,13 @@ pub fn event_report_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, _padding) = be_u32(input)?;
     let (input, datums) = datum_specification(input)?;
 
-    let body = EventReport::new()
+    let body = EventReport::builder()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
         .with_event_type(event_type)
         .with_fixed_datums(datums.fixed_datum_records)
-        .with_variable_datums(datums.variable_datum_records);
+        .with_variable_datums(datums.variable_datum_records)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }
