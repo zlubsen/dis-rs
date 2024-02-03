@@ -1,6 +1,7 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableParameter, VectorF32};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
+use crate::entity_state::builder::EntityStateBuilder;
 use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm};
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
@@ -11,7 +12,7 @@ pub enum EntityStateValidationError {
     SomeFieldNotOkError,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct EntityState {
     pub entity_id : EntityId, // struct
     pub force_id : ForceId, // enum
@@ -28,87 +29,12 @@ pub struct EntityState {
 }
 
 impl EntityState {
-    pub fn new(entity_id: EntityId, force_id: ForceId, entity_type: EntityType) -> Self {
-        Self {
-            entity_id,
-            force_id,
-            entity_type,
-            alternative_entity_type: EntityType::default(),
-            entity_linear_velocity: VectorF32::default(),
-            entity_location: Location::default(),
-            entity_orientation: Orientation::default(),
-            entity_appearance: EntityAppearance::default(),
-            dead_reckoning_parameters: DrParameters::default(),
-            entity_marking: EntityMarking::default(),
-            entity_capabilities: EntityCapabilities::default(),
-            variable_parameters: vec![]
-        }
+    pub fn builder() -> EntityStateBuilder {
+        EntityStateBuilder::new()
     }
 
-    pub fn with_alternative_entity_type(mut self, entity_type: EntityType) -> Self {
-        self.alternative_entity_type = entity_type;
-        self
-    }
-
-    pub fn with_velocity(mut self, velocity: VectorF32) -> Self {
-        self.entity_linear_velocity = velocity;
-        self
-    }
-
-    pub fn with_location(mut self, location: Location) -> Self {
-        self.entity_location = location;
-        self
-    }
-
-    pub fn with_orientation(mut self, orientation: Orientation) -> Self {
-        self.entity_orientation = orientation;
-        self
-    }
-
-    pub fn with_appearance(mut self, appearance: EntityAppearance) -> Self {
-        self.entity_appearance = appearance;
-        self
-    }
-
-    pub fn with_dead_reckoning_parameters(mut self, parameters: DrParameters) -> Self {
-        self.dead_reckoning_parameters = parameters;
-        self
-    }
-
-    pub fn with_marking(mut self, marking: EntityMarking) -> Self {
-        self.entity_marking = marking;
-        self
-    }
-
-    pub fn with_capabilities(mut self, capabilities: EntityCapabilities) -> Self {
-        self.entity_capabilities = capabilities;
-        self
-    }
-
-    pub fn with_capabilities_flags(mut self,
-                                   ammunition_supply : bool,
-                                   fuel_supply : bool,
-                                   recovery : bool,
-                                   repair : bool) -> Self {
-        use crate::v6::entity_state::model::EntityCapabilities as CapabilitiesV6;
-        let v6_capabilities = CapabilitiesV6 {
-            ammunition_supply,
-            fuel_supply,
-            recovery,
-            repair,
-        };
-        self.entity_capabilities = EntityCapabilities::from(v6_capabilities);
-        self
-    }
-
-    pub fn with_variable_parameter(mut self, parameter: VariableParameter) -> Self {
-        self.variable_parameters.push(parameter);
-        self
-    }
-
-    pub fn with_variable_parameters(mut self, parameters: Vec<VariableParameter>) -> Self {
-        self.variable_parameters = parameters;
-        self
+    pub fn into_builder(self) -> EntityStateBuilder {
+        EntityStateBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

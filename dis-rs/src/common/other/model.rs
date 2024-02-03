@@ -10,7 +10,7 @@ use crate::enumerations::PduType;
 /// or at least can be attributed to a sending entity (such as EntityState PDU), based on the PduType.
 ///
 /// This struct is used to provide access to the received data in not (yet) supported PDUs.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Other {
     pub originating_entity_id : Option<EntityId>,
     pub receiving_entity_id : Option<EntityId>,
@@ -32,22 +32,8 @@ impl Other {
         OtherBuilder::new()
     }
 
-    pub fn new(bytes: Vec<u8>) -> Self {
-        Other {
-            originating_entity_id: None,
-            receiving_entity_id: None,
-            body: bytes,
-        }
-    }
-
-    pub fn with_origin(mut self, origin: Option<EntityId>) -> Self {
-        self.originating_entity_id = origin;
-        self
-    }
-
-    pub fn with_receiver(mut self, receiver: Option<EntityId>) -> Self {
-        self.receiving_entity_id = receiver;
-        self
+    pub fn into_builder(self) -> OtherBuilder {
+        OtherBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

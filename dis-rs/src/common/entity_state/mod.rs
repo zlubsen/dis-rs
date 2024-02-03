@@ -1,6 +1,7 @@
 pub mod parser;
 pub mod model;
 pub mod writer;
+pub mod builder;
 mod compatibility;
 
 #[cfg(test)]
@@ -16,10 +17,13 @@ mod tests {
     fn entity_state_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::EntityState);
 
-        let body = EntityState::new(EntityId {
+        let body = EntityState::builder()
+            .with_entity_id(EntityId {
             simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
             entity_id: 14
-        }, ForceId::Friendly, EntityType {
+        })
+            .with_force_id(ForceId::Friendly)
+            .with_entity_type(EntityType {
             kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
         })
             .with_alternative_entity_type(EntityType {
@@ -80,7 +84,6 @@ mod tests {
                 marking_string: "EYE 10".to_string()
             })
             .with_capabilities_flags(false, false, false, false)
-
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
                 change_indicator: ChangeIndicator::from(0u8),
                 attachment_id: 0,
@@ -109,6 +112,7 @@ mod tests {
                 type_metric: ArticulatedPartsTypeMetric::Elevation,
                 parameter_value: 4.0
             }))
+            .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, 0);
         let pdu_length = original_pdu.header.pdu_length;

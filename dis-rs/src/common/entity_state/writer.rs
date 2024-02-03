@@ -154,7 +154,7 @@ impl Serialize for EntityMarking {
 mod tests {
     use bytes::BytesMut;
     use crate::common::entity_state::model::{DrOtherParameters, DrParameters, EntityAppearance, EntityMarking, EntityState};
-    use crate::common::model::{ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader, SimulationAddress, VariableParameter, VectorF32};
+    use crate::common::model::{ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader, VariableParameter, VectorF32};
     use crate::common::Serialize;
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain};
     use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
@@ -196,10 +196,10 @@ mod tests {
     fn entity_state_pdu() {
         let header = PduHeader::new_v6(1, PduType::EntityState);
 
-        let body = EntityState::new(EntityId {
-                simulation_address: SimulationAddress {site_id: 500, application_id: 900 },
-                entity_id: 14
-            }, ForceId::Friendly, EntityType {
+        let body = EntityState::builder()
+            .with_entity_id(EntityId::new(500, 900, 14))
+            .with_force_id(ForceId::Friendly)
+            .with_entity_type(EntityType {
                 kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .with_alternative_entity_type(EntityType {
@@ -288,6 +288,7 @@ mod tests {
                 type_metric: ArticulatedPartsTypeMetric::Elevation,
                 parameter_value: 4.0
             }))
+            .build()
             .into_pdu_body();
         let pdu = Pdu::finalize_from_parts(header, body, 0);
 

@@ -1,5 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{BeamData, EntityId, EventId, PduBody, VectorF32};
+use crate::electromagnetic_emission::builder::ElectromagneticEmissionBuilder;
 use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam, PduType};
 
 const EMISSION_BASE_BODY_LENGTH : u16 = 16;
@@ -7,7 +8,7 @@ const EMITTER_SYSTEM_BASE_LENGTH : u16 = 20;
 const BEAM_BASE_LENGTH : u16 = 52;
 const TRACK_JAM_BASE_LENGTH : u16 = 8;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct ElectromagneticEmission {
     pub emitting_entity_id: EntityId,
     pub event_id: EventId,
@@ -15,45 +16,13 @@ pub struct ElectromagneticEmission {
     pub emitter_systems: Vec<EmitterSystem>,
 }
 
-impl Default for ElectromagneticEmission {
-     fn default() -> Self {
-         Self::new()
-     }
-}
-
 impl ElectromagneticEmission {
-    pub fn new() -> Self {
-        Self {
-            emitting_entity_id: Default::default(),
-            event_id: Default::default(),
-            state_update_indicator: ElectromagneticEmissionStateUpdateIndicator::default(),
-            emitter_systems: vec![]
-        }
+    pub fn builder() -> ElectromagneticEmissionBuilder {
+        ElectromagneticEmissionBuilder::new()
     }
 
-    pub fn with_emitting_entity_id(mut self, entity_id: EntityId) -> Self {
-        self.emitting_entity_id = entity_id;
-        self
-    }
-
-    pub fn with_event_id(mut self, event_id: EventId) -> Self {
-        self.event_id = event_id;
-        self
-    }
-
-    pub fn with_state_update_indicator(mut self, state_update_indicator: ElectromagneticEmissionStateUpdateIndicator) -> Self {
-        self.state_update_indicator = state_update_indicator;
-        self
-    }
-
-    pub fn with_emitter_systems(mut self, systems: &mut Vec<EmitterSystem>) -> Self {
-        self.emitter_systems.append(systems);
-        self
-    }
-
-    pub fn with_emitter_system(mut self, system: EmitterSystem) -> Self {
-        self.emitter_systems.push(system);
-        self
+    pub fn into_builder(self) -> ElectromagneticEmissionBuilder {
+        ElectromagneticEmissionBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

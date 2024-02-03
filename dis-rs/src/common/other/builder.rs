@@ -1,56 +1,33 @@
-use crate::common::model::{Pdu, PduBody};
-use crate::common::model::PduHeader;
 use crate::common::other::model::Other;
+use crate::model::EntityId;
 
-pub struct OtherBuilder {
-    header : Option<PduHeader>,
-    body : Option<Vec<u8>>,
-}
-
-impl Default for OtherBuilder {
-     fn default() -> Self {
-         Self::new()
-     }
-}
+pub struct OtherBuilder(Other);
 
 impl OtherBuilder {
-    pub fn new() -> OtherBuilder {
-        OtherBuilder {
-            header: None,
-            body: None
-        }
+    pub fn new() -> Self {
+        OtherBuilder(Other::default())
     }
 
-    pub fn header(mut self, header: PduHeader) -> Self {
-        self.header = Some(header);
+    pub fn new_from_body(body: Other) -> Self {
+        OtherBuilder(body)
+    }
+
+    pub fn build(self) -> Other {
+        self.0
+    }
+
+    pub fn with_origin(mut self, origin: Option<EntityId>) -> Self {
+        self.0.originating_entity_id = origin;
         self
     }
 
-    pub fn body(mut self, bytes : Vec<u8>) -> Self {
-        self.body = Some(bytes);
+    pub fn with_receiver(mut self, receiver: Option<EntityId>) -> Self {
+        self.0.receiving_entity_id = receiver;
         self
     }
 
-    pub fn validate(&self) -> bool {
-        self.header.is_some() && self.body.is_some()
-    }
-
-    pub fn build(self) -> Result<PduBody, ()> {
-        if self.validate() {
-            return Err(())
-        }
-
-        Ok(PduBody::Other(Other{ originating_entity_id: None, receiving_entity_id: None, body: self.body.expect("should be set")}))
-    }
-
-    pub fn build_with_header(self, header: PduHeader) -> Result<Pdu, ()> {
-        if self.validate() {
-            return Err(())
-        }
-
-        Ok(Pdu {
-            header,
-            body: PduBody::Other(Other{ originating_entity_id: None, receiving_entity_id: None, body: self.body.expect("should be set")}),
-        })
+    pub fn with_body(mut self, body: Vec<u8>) -> Self {
+        self.0.body = body;
+        self
     }
 }

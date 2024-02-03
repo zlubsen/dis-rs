@@ -17,11 +17,12 @@ pub fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pd
 
         let (input, mut emitter_systems) = count(emitter_system, no_of_systems as usize)(input)?;
 
-        let body = ElectromagneticEmission::new()
+        let body = ElectromagneticEmission::builder()
             .with_emitting_entity_id(emitting_entity_id)
             .with_event_id(event_id)
             .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::from(status_update_indicator))
-            .with_emitter_systems(&mut emitter_systems);
+            .with_emitter_systems(&mut emitter_systems)
+            .build();
 
         Ok((input, body.into_pdu_body()))
     }

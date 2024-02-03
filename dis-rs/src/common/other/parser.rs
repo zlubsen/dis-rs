@@ -100,9 +100,11 @@ pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBod
         let body_length_bytes = header.pdu_length.saturating_sub(PDU_HEADER_LEN_BYTES);
         let (input, body) = take(body_length_bytes)(input)?;
         let inner_body = body.to_vec();
-        let body = Other::new(inner_body)
+        let body = Other::builder()
+            .with_body(inner_body)
             .with_origin(originating)
-            .with_receiver(receiving);
+            .with_receiver(receiving)
+            .build();
 
         Ok((input, body.into_pdu_body()))
     }

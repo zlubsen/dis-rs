@@ -36,7 +36,10 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             count(parser::variable_parameter, variable_parameters_no as usize)(input)?
         } else { (input, vec![]) };
 
-        let body = EntityState::new(entity_id_val, force_id_val, entity_type_val)
+        let body = EntityState::builder()
+            .with_entity_id(entity_id_val)
+            .with_force_id(force_id_val)
+            .with_entity_type(entity_type_val)
             .with_alternative_entity_type(alternative_entity_type)
             .with_velocity(entity_linear_velocity)
             .with_location(entity_location)
@@ -45,7 +48,8 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             .with_dead_reckoning_parameters(dead_reckoning_parameters)
             .with_marking(entity_marking)
             .with_capabilities(entity_capabilities)
-            .with_variable_parameters(variable_parameters);
+            .with_variable_parameters(variable_parameters)
+            .build();
 
         Ok((input, body.into_pdu_body()))
     }

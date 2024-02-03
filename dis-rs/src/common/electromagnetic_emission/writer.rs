@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn write_pdu_emission_with_tracks() {
-        let body = ElectromagneticEmission::new()
+        let body = ElectromagneticEmission::builder()
             .with_emitting_entity_id(
                 EntityId::new(500, 11111, 62))
             .with_event_id(
@@ -174,7 +174,9 @@ mod tests {
                         .with_beam(0)
                         .with_emitter(0)
                         .with_entity_id(EntityId::new(500,11111,71))))
-            ).into_pdu_body();
+            )
+            .build()
+            .into_pdu_body();
 
         let header = PduHeader::new_v6(1, body.body_type());
         let pdu = Pdu::finalize_from_parts(header, body, 0);
