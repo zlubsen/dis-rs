@@ -49,7 +49,7 @@ pub fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let (input, vt_params) =
             count(variable_transmitter_parameter, number_of_vtp.into())(input)?;
 
-        let body = Transmitter::new()
+        let body = Transmitter::builder()
             .with_radio_reference_id(radio_reference_id)
             .with_radio_number(radio_number)
             .with_radio_type(radio_type)
@@ -71,6 +71,7 @@ pub fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let body = if let Some(modulation_parameters) = modulation_parameters {
             body.with_modulation_parameters(modulation_parameters.to_vec())
         } else { body };
+        let body = body.build();
 
         Ok((input, body.into_pdu_body()))
     }
