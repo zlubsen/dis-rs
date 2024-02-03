@@ -6,7 +6,7 @@ Constructing PDUs is done via builder pattern constructors.
 
 Given a buffer with data from the network, the library can return multiple PDUs in multiple DIS versions present in the buffer.
 
-The library supports both versions 6 and 7 of the standard.
+The library supports both versions 6 and 7 of the standard. As a rule of thumb, the lib is modeled mostly towards supporting v7 (in terms of how the data is modelled), and provides compatibility with how thing were in v6 mostly transparent for the user (i.e., an incoming v6 PDU is parsed and then stored in a v7 model and put back on the wire based on the version specified in the header).
 
 ## Features
 
@@ -77,20 +77,22 @@ The code for these enums is generated using a build script from the published SI
 ## Usage
 
 ### Constructing PDUs
-PDUs are constructed using idiomatic `new()` or `default()` functions on the structs for `PduHeader` or `PduBody`s.
-Some `PduBody` variants require the `new()` constructors to have arguments.
-Further fields are set using `.with_field_name()` functions.
+PDUs are constructed using a `default()` or `builder()` associated functions on the structs for `PduHeader` or `PduBody`s. 
+Using `SomePdu::builder()` constructs a Builder for the PDU.
+The Builders start with the default values for PDU fields, and you have to set fields using `.with_field_name()` functions.
+The `build()` function turns the Builder into the typed body of the PDU you are building (e.g., `Signal`). 
+There are no internal validation or checks whether you construct a PDU with valid combinations of fields.
 
-The main data structure is a `Pdu`, which consists of a `header` and a `body`. The body is a variant of `PduBody`, an enum that wraps a specific struct for that PDU type in a variant.
-The specific body structs, e.g. an `EntityState`, can be wrapped / converted to a `PduBody` by call the `to_pdu_body()` function on the struct.
-Further, the body can be merged with a `PduHeader` using the associated function `finalize_from_parts(header, body, timestamp)` of `Pdu`. This will give you a complete PDU.
+The main data structure is a `Pdu`, which consists of a `PduHeader` and a `PduBody`. The body is a variant of `PduBody`, an enum that wraps a specific struct for that PDU type in a variant (such as `Pdu::Signal(Signal)`).
+The specific body structs, e.g. an `EntityState`, can be wrapped / converted to a `PduBody` by call the `into_pdu_body()` function on the struct.
+Further, the body can be merged with a `PduHeader` using the associated function `Pdu::finalize_from_parts(header, body, timestamp)`. This will give you a complete PDU.
 
 ### Parsing
-The library exposes three functions to parse data into PDUs from a buffer: `parse()`, `parse_v6()` and `parse_v7()`.
+The library exposes three functions to parse binary data (the DIS wire format) into PDUs from a buffer: `parse()`, `parse_v6_pdus()` and `parse_v7_pdus()`.
 Each function works the same, where the general `parse()` function returns all valid PDUs from the buffer and the others filter out v6 or v7 version PDUs.
 
 ### Serializing
-To serialize a PDU to bytes (DIS wire format), simply call the `serialize()` function on a `Pdu`, providing the buffer as argument.
+To serialize a PDU to bytes (the DIS wire format), simply call the `serialize()` function on a `Pdu`, providing the buffer as argument.
 
 ## Resources
 
@@ -99,4 +101,4 @@ To serialize a PDU to bytes (DIS wire format), simply call the `serialize()` fun
 - Wikipedia: https://en.wikipedia.org/wiki/Distributed_Interactive_Simulation.
 - DIS Data Dictionary (version 6 only): http://faculty.nps.edu/brutzman/vrtp/mil/navy/nps/disEnumerations/JdbeHtmlFiles/pdu/.
 
-Copyright (C) 2022 Zeeger Lubsen
+Copyright (C) 2024 Zeeger Lubsen
