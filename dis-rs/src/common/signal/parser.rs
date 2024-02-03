@@ -20,20 +20,21 @@ pub fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
     let encoding_scheme = parse_encoding_scheme(encoding_scheme, data);
 
-    let body = Signal::new()
+    let body = Signal::builder()
         .with_radio_reference_id(radio_reference_id)
         .with_radio_number(radio_number)
         .with_encoding_scheme(encoding_scheme)
         .with_tdl_type(tdl_type)
         .with_sample_rate(sample_rate)
         .with_samples(samples)
-        .with_data(data.to_vec());
+        .with_data(data.to_vec())
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }
 
 fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingScheme {
-    let encoding_class = (encoding_scheme_bytes & 0xC000) >> 14;
+    let encoding_class = encoding_scheme_bytes >> 14;
     let low_bits = encoding_scheme_bytes & 0x3FFF;
     let encoding_class = SignalEncodingClass::from(encoding_class);
 

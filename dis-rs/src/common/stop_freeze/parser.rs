@@ -17,13 +17,14 @@ pub fn stop_freeze_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let reason = StopFreezeReason::from(reason);
     let behavior = StopFreezeFrozenBehavior::from(behavior);
 
-    let body = StopFreeze::new()
+    let body = StopFreeze::builder()
         .with_origination_id(originating_id)
         .with_receiving_id(receiving_id)
         .with_real_world_time(real_world_time)
         .with_reason(reason)
         .with_frozen_behavior(behavior)
-        .with_request_id(request_id);
+        .with_request_id(request_id)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }

@@ -29,12 +29,12 @@ impl Serialize for EncodingScheme {
             EncodingScheme::EncodedAudio { encoding_class, encoding_type } => {
                 let class_bits = u16::from(*encoding_class) << 14;
                 let type_bits = u16::from(*encoding_type);
-                buf.put_u16(class_bits & type_bits);
+                buf.put_u16(class_bits | type_bits);
                 2
             }
             EncodingScheme::RawBinaryData { encoding_class, nr_of_messages } => {
                 let class_bits = u16::from(*encoding_class) << 14;
-                buf.put_u16(class_bits & *nr_of_messages);
+                buf.put_u16(class_bits | *nr_of_messages);
                 2
             }
             EncodingScheme::ApplicationSpecificData { encoding_class, .. } => {

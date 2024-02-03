@@ -900,7 +900,7 @@ mod generation {
         let name_ident = format_ident!("{}", formatted_name);
         let fields = quote_bitfield_decl_fields(&item.fields, lookup_xref);
         quote!(
-            #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+            #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
             pub struct #name_ident {
                 #(#fields),*
             }
