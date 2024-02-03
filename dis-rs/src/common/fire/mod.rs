@@ -6,17 +6,20 @@ pub mod builder;
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::enumerations::{EntityKind, PduType};
+    use crate::enumerations::{EntityKind, FireTypeIndicator, PduType};
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::common::Serialize;
     use crate::common::model::{DisTimeStamp};
     use crate::fire::model::Fire;
     use crate::model::{DescriptorRecord, EntityType, VectorF32};
+    use crate::v7::model::PduStatus;
 
     #[test]
     fn fire_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+        let header = PduHeader::new_v7(1, PduType::Acknowledge)
+            .with_pdu_status(PduStatus::default()
+                .with_fire_type_indicator(FireTypeIndicator::Expendable));
 
         let body = Fire::builder()
             .with_descriptor(DescriptorRecord::new_expendable(EntityType::default().with_kind(EntityKind::Expendable)))

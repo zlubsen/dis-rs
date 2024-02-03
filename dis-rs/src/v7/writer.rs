@@ -32,6 +32,8 @@ impl Serialize for PduStatus {
             u8::from(aii) << 5
         } else {0u8};
 
+        // FIXME only OR the values that are possible for a given PDU type, like in the parser.
+        // There are (~) 7 valid variants, based on the PduType.
         let status_field_byte = tei | lvc | cei | fti | dti | rai | iai | ism | aii;
         buf.put_u8(status_field_byte);
         1

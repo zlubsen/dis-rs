@@ -13,12 +13,13 @@ fn test_pdu() {
     let pdu = Pdu {
         header: PduHeader::new_v7(1, PduType::Signal),
         body: PduBody::Signal(
-            Signal::default()
+            Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
                     encoding_class: SignalEncodingClass::Encodedaudio,
                     encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
                 })
-                .with_data(data.clone()),
+                .with_data(data.clone())
+                .build(),
         ),
     };
     let mut buf = BytesMut::new();
@@ -28,7 +29,7 @@ fn test_pdu() {
     assert_eq!(pdus.len(), 1);
 
 
-    let s = if let dis_rs::model::PduBody::Signal(s) = &pdus.get(0).unwrap().body {
+    let s = if let PduBody::Signal(s) = &pdus.get(0).unwrap().body {
         Some(s)
     } else {
         None

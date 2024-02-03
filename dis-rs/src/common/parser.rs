@@ -387,6 +387,7 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
 pub fn descriptor_record_fti(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
     move |input: &[u8]| {
         let (input, entity_type) = entity_type(input)?;
+
         match fire_type_indicator {
             FireTypeIndicator::Munition => {
                 let (input, munition) = munition_descriptor(input)?;
