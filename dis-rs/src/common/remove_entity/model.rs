@@ -1,44 +1,24 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
 use crate::enumerations::PduType;
+use crate::remove_entity::builder::RemoveEntityBuilder;
 
 const REMOVE_ENTITY_BODY_LENGTH : u16 = 16;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct RemoveEntity {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
     pub request_id: u32,
 }
 
-impl Default for RemoveEntity {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RemoveEntity {
-    pub fn new() -> Self {
-        Self {
-            originating_id: Default::default(),
-            receiving_id: Default::default(),
-            request_id: 0,
-        }
+    pub fn builder() -> RemoveEntityBuilder {
+        RemoveEntityBuilder::new()
     }
 
-    pub fn with_origination_id(mut self, originating_id: EntityId) -> Self {
-        self.originating_id = originating_id;
-        self
-    }
-
-    pub fn with_receiving_id(mut self, receiving_id: EntityId) -> Self {
-        self.receiving_id = receiving_id;
-        self
-    }
-
-    pub fn with_request_id(mut self, request_id: u32) -> Self {
-        self.request_id = request_id;
-        self
+    pub fn into_builder(self) -> RemoveEntityBuilder {
+        RemoveEntityBuilder::new_from_body(self)
     }
 
     pub fn into_pdu_body(self) -> PduBody {

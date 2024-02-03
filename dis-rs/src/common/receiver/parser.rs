@@ -15,13 +15,14 @@ pub fn receiver_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, transmitter_radio_reference_id) = entity_id(input)?;
     let (input, transmitter_radio_number) = be_u16(input)?;
 
-    let body = Receiver::new()
+    let body = Receiver::builder()
         .with_radio_reference_id(radio_reference_id)
         .with_radio_number(radio_number)
         .with_receiver_state(receiver_state)
         .with_received_power(received_power)
         .with_transmitter_radio_reference_id(transmitter_radio_reference_id)
-        .with_transmitter_radio_number(transmitter_radio_number);
+        .with_transmitter_radio_number(transmitter_radio_number)
+        .build();
 
     Ok((input, body.into_pdu_body()))
 }
