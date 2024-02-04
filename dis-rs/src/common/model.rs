@@ -1096,7 +1096,11 @@ impl PaddedRecordLengths {
 /// data length of 12 bytes, a padding of 4 bytes and a final length of 12 + 4 bytes. The function will return 16 in this case.
 pub fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedRecordLengths {
     let data_remaining = data_length % pad_to_num;
-    let padding_num = pad_to_num - data_remaining;
+    let padding_num = if data_remaining == 0 {
+        0usize
+    } else {
+        pad_to_num - data_remaining
+    };
     let record_length = data_length + padding_num;
     assert_eq!(record_length % pad_to_num, NO_REMAINDER,
                "The length for the data record is not aligned to {} octets. Data length is {} octets.", pad_to_num, data_length);

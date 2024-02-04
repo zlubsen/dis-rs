@@ -17,9 +17,14 @@ pub fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let (input, input_source) = be_u8(input)?;
         let input_source = TransmitterInputSource::from(input_source);
         #[allow(clippy::wildcard_in_or_patterns)]
-        let (input, number_of_vtp) = match header.protocol_version {
-            ProtocolVersion::IEEE1278_12012 => { be_u16(input)? }
-            ProtocolVersion::IEEE1278_1A1998 | _ => { (input, 0u16) }
+        let (input, number_of_vtp) = {
+            let (input, number_of_vtp) = be_u16(input)?;
+            match header.protocol_version {
+                ProtocolVersion::IEEE1278_12012 => { (input, number_of_vtp) }
+                ProtocolVersion::IEEE1278_1A1998 | _ => {
+                    (input, 0u16)  // set to zeroed padding to prevent parsing of not present Variable Transmitter Parameters
+                }
+            }
         };
         let (input, antenna_location) = location(input)?;
         let (input, relative_antenna_location) = vec3_f32(input)?;
