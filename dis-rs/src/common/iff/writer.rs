@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::model::length_padded_to_num_bytes;
+use crate::common::model::length_padded_to_num;
 use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS};
 use crate::{DisError};
 
@@ -176,15 +176,15 @@ impl From<&LayersPresenceApplicability> for u8 {
 
 impl Serialize for IffDataRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let padded_record_lengths = length_padded_to_num_bytes(
+        let padded_record_lengths = length_padded_to_num(
             SIX_OCTETS + self.record_specific_fields.len(),
             FOUR_OCTETS);
-        let record_length_bytes = padded_record_lengths.record_length_bytes as u16;
+        let record_length_bytes = padded_record_lengths.record_length as u16;
 
         buf.put_u32(self.record_type.into());
         buf.put_u16(record_length_bytes);
         buf.put(&*self.record_specific_fields);
-        buf.put_bytes(0u8, padded_record_lengths.padding_length_bytes);
+        buf.put_bytes(0u8, padded_record_lengths.padding_length);
 
         record_length_bytes
     }

@@ -2,7 +2,7 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::common::action_response::builder::ActionResponseBuilder;
 use crate::enumerations::{PduType, RequestStatus};
-use crate::common::model::{BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num_bytes};
+use crate::common::model::{BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num};
 use crate::constants::EIGHT_OCTETS;
 
 pub const BASE_ACTION_RESPONSE_BODY_LENGTH: u16 = 28;
@@ -36,10 +36,10 @@ impl BodyInfo for ActionResponse {
         BASE_ACTION_RESPONSE_BODY_LENGTH +
             (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16) +
             (self.variable_datum_records.iter().map(|datum| {
-                let padded_record = length_padded_to_num_bytes(
+                let padded_record = length_padded_to_num(
                     BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
                     EIGHT_OCTETS);
-                padded_record.record_length_bytes as u16
+                padded_record.record_length as u16
             } ).sum::<u16>())
     }
 

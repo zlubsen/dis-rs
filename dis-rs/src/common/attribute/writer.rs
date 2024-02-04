@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::attribute::model::{Attribute, AttributeRecord, AttributeRecordSet, BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::EIGHT_OCTETS;
-use crate::common::model::length_padded_to_num_bytes;
+use crate::common::model::length_padded_to_num;
 
 impl SerializePdu for Attribute {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -36,15 +36,15 @@ impl Serialize for AttributeRecordSet {
 
 impl Serialize for AttributeRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let padded_record_lengths = length_padded_to_num_bytes(
+        let padded_record_lengths = length_padded_to_num(
             BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS as usize + self.specific_fields.len(),
             EIGHT_OCTETS);
-        let record_length_bytes = padded_record_lengths.record_length_bytes as u16;
+        let record_length_bytes = padded_record_lengths.record_length as u16;
 
         buf.put_u32(self.record_type.into());
         buf.put_u16(record_length_bytes);
         buf.put(&*self.specific_fields);
-        buf.put_bytes(0u8, padded_record_lengths.padding_length_bytes);
+        buf.put_bytes(0u8, padded_record_lengths.padding_length);
 
         record_length_bytes
     }

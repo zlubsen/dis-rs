@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::data::builder::DataBuilder;
-use crate::common::model::{EntityId, FixedDatum, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num_bytes, PduBody};
+use crate::common::model::{EntityId, FixedDatum, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num, PduBody};
 use crate::enumerations::PduType;
 use crate::constants::EIGHT_OCTETS;
 
@@ -34,10 +34,10 @@ impl BodyInfo for Data {
         BASE_DATA_BODY_LENGTH +
             (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16) +
             (self.variable_datum_records.iter().map(|datum| {
-                let padded_record = length_padded_to_num_bytes(
+                let padded_record = length_padded_to_num(
                     BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
                     EIGHT_OCTETS);
-                padded_record.record_length_bytes as u16
+                padded_record.record_length as u16
             } ).sum::<u16>())
     }
 

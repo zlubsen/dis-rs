@@ -1,4 +1,4 @@
-use crate::common::model::{EntityId, Location, EntityType, length_padded_to_num_bytes, Orientation, PduBody, VectorF32};
+use crate::common::model::{EntityId, Location, EntityType, length_padded_to_num, Orientation, PduBody, VectorF32};
 use crate::enumerations::{PduType, VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
@@ -49,9 +49,9 @@ impl BodyInfo for Transmitter {
             self.modulation_parameters.as_ref().map_or(ZERO_OCTETS as u16, |params|params.len() as u16) +
             self.antenna_pattern.as_ref().map_or(ZERO_OCTETS as u16, |_| BEAM_ANTENNA_PATTERN_OCTETS) +
             self.variable_transmitter_parameters.iter().map(|vtp|
-                length_padded_to_num_bytes(
+                length_padded_to_num(
                     BASE_VTP_RECORD_LENGTH as usize + vtp.fields.len(),
-                    EIGHT_OCTETS).record_length_bytes as u16
+                    EIGHT_OCTETS).record_length as u16
             ).sum::<u16>()
     }
 

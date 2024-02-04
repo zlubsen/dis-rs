@@ -1,8 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::constants::{EIGHT_OCTETS, PDU_HEADER_LEN_BYTES};
-use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32, ArticulatedPart, AttachedPart, BeamData, EntityAssociationParameter, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, VariableParameter};
+use crate::constants::{PDU_HEADER_LEN_BYTES};
+use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32, ArticulatedPart, AttachedPart, BeamData, EntityAssociationParameter, EntityTypeParameter, length_padded_to_num, SeparationParameter, VariableParameter};
 use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
 
 impl Serialize for PduHeader {
@@ -215,16 +215,21 @@ impl Serialize for FixedDatum {
 
 impl Serialize for VariableDatum {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u32(self.datum_id.into());
-        let padded_record = length_padded_to_num_bytes(
-            EIGHT_OCTETS + self.datum_value.len(),
-            EIGHT_OCTETS);
-        let data_length_with_padding = padded_record.record_length_bytes as u16;
-        buf.put_u32(data_length_with_padding.into());
-        buf.put_slice(self.datum_value.as_slice());
-        buf.put_bytes(0, padded_record.padding_length_bytes);
+        const SIXTY_FOUR_BITS: usize = 64;
+        let data_length_bits: usize = self.datum_value.len() * 8;
+        let padded_record_bits = length_padded_to_num(
+            data_length_bits,
+            SIXTY_FOUR_BITS);
+        let record_length_bits = padded_record_bits.record_length as u16;
+        let record_length_bytes = record_length_bits / 8;
+        let padding_length_bytes = padded_record_bits.padding_length * 8;
 
-        8 + data_length_with_padding
+        buf.put_u32(self.datum_id.into());
+        buf.put_u32(data_length_bits as u32);
+        buf.put_slice(self.datum_value.as_slice());
+        buf.put_bytes(0, padding_length_bytes);
+
+        8 + (record_length_bytes)
     }
 }
 

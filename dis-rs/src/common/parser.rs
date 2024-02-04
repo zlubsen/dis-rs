@@ -10,7 +10,7 @@ use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::common::model::{BeamData, ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32, EntityTypeParameter, length_padded_to_num_bytes, SeparationParameter, EntityAssociationParameter, VariableParameter, ArticulatedPart, AttachedPart};
+use crate::common::model::{BeamData, ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32, EntityTypeParameter, length_padded_to_num, SeparationParameter, EntityAssociationParameter, VariableParameter, ArticulatedPart, AttachedPart};
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::action_request::parser::action_request_body;
 use crate::common::action_response::parser::action_response_body;
@@ -516,13 +516,16 @@ pub fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
     let datum_id = VariableRecordType::from(datum_id);
     let (input, datum_length_bits) = be_u32(input)?;
 
-    let datum_length_bytes = datum_length_bits as usize % ONE_BYTE_IN_BITS;
-    let padded_record = length_padded_to_num_bytes(
-        EIGHT_OCTETS + datum_length_bytes,
+    // NOTE: The standard defines the data length and padding in bits.
+    // However, we assume that one only puts in values that consists of whole bytes.
+    // (As why would one put 11 bits in a datum, which then ends up in a Vec<u8>)
+    let datum_length_bytes = datum_length_bits as usize / ONE_BYTE_IN_BITS;
+    let padded_record = length_padded_to_num(
+        datum_length_bytes,
         EIGHT_OCTETS);
 
-    let (input, datum_value) = take(padded_record.data_length_bytes)(input)?;
-    let (input, _datum_padding) = take(padded_record.padding_length_bytes)(input)?;
+    let (input, datum_value) = take(padded_record.data_length)(input)?;
+    let (input, _datum_padding) = take(padded_record.padding_length)(input)?;
 
     let variable_datum = VariableDatum::new(datum_id, datum_value.to_vec());
 

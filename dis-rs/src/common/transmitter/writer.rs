@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
-use crate::common::model::length_padded_to_num_bytes;
+use crate::common::model::length_padded_to_num;
 use crate::enumerations::TransmitterMajorModulation;
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 
@@ -148,15 +148,15 @@ impl Serialize for BeamAntennaPattern {
 
 impl Serialize for VariableTransmitterParameter {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let record_padded_lengths = length_padded_to_num_bytes(
+        let record_padded_lengths = length_padded_to_num(
             BASE_VTP_RECORD_LENGTH as usize + self.fields.len(),
             EIGHT_OCTETS);
-        let record_length_bytes = record_padded_lengths.record_length_bytes as u16;
+        let record_length_bytes = record_padded_lengths.record_length as u16;
 
         buf.put_u32(self.record_type.into());
         buf.put_u16(record_length_bytes);
         buf.put(&*self.fields);
-        buf.put_bytes(0u8, record_padded_lengths.padding_length_bytes);
+        buf.put_bytes(0u8, record_padded_lengths.padding_length);
 
         record_length_bytes
     }

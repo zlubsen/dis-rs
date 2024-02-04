@@ -1,5 +1,5 @@
 use crate::enumerations::{SignalTdlType, SignalEncodingType, SignalEncodingClass, SignalUserProtocolIdentificationNumber, PduType};
-use crate::common::model::{EntityId, length_padded_to_num_bytes, PduBody};
+use crate::common::model::{EntityId, length_padded_to_num, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::signal::builder::SignalBuilder;
@@ -33,10 +33,10 @@ impl Signal {
 
 impl BodyInfo for Signal {
     fn body_length(&self) -> u16 {
-        BASE_SIGNAL_BODY_LENGTH + length_padded_to_num_bytes(
+        BASE_SIGNAL_BODY_LENGTH + length_padded_to_num(
             self.data.len(),
             FOUR_OCTETS)
-            .record_length_bytes as u16
+            .record_length as u16
     }
 
     fn body_type(&self) -> PduType {
