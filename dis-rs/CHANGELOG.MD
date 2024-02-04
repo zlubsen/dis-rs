@@ -1,5 +1,13 @@
 # Changelog for crate DIS-RS
 
+## 0.6.0 - 2024-02-04
+Refactored all PDUs to have more clean builders (in code / API).
+
+Added Internal Consistency Tests for all PDUs (create a PDU, write to buffer, parse back in, compare).
+
+## 0.6.0-beta-2 - 2024-02-02
+Fix for Signal PDU processing (data length in bits vs bytes).
+
 ## 0.6.0-beta - 2024-02-01
 Added IFF PDU.
 
