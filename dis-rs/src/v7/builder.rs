@@ -1,6 +1,3 @@
-
-// TODO create (more) ergonomic builder for PduStatus struct
-
 use crate::v7::model::PduStatus;
 use crate::enumerations::{ActiveInterrogationIndicator, CoupledExtensionIndicator, DetonationTypeIndicator, FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator, RadioAttachedIndicator, TransferredEntityIndicator};
 

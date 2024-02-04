@@ -67,41 +67,41 @@ fn status_tei(pdu_status_field : u8) -> TransferredEntityIndicator {
 }
 
 fn status_lvc(pdu_status_field : u8) -> LvcIndicator {
-    let lvc = pdu_status_field & BITS_5_6_IN_BYTE;
+    let lvc = (pdu_status_field & BITS_5_6_IN_BYTE) >> 1;
     LvcIndicator::from(lvc)
 }
 
 fn status_cei(pdu_status_field : u8) -> CoupledExtensionIndicator {
-    let cei = pdu_status_field & BIT_4_IN_BYTE;
+    let cei = (pdu_status_field & BIT_4_IN_BYTE) >> 3;
     CoupledExtensionIndicator::from(cei)
 }
 
 fn status_fti(pdu_status_field : u8) -> FireTypeIndicator {
-    let fti = pdu_status_field & BIT_3_IN_BYTE;
+    let fti = (pdu_status_field & BIT_3_IN_BYTE) >> 4;
     FireTypeIndicator::from(fti)
 }
 
 fn status_dti(pdu_status_field : u8) -> DetonationTypeIndicator {
-    let dti = pdu_status_field & BITS_2_3_IN_BYTE;
+    let dti = (pdu_status_field & BITS_2_3_IN_BYTE) >> 4;
     DetonationTypeIndicator::from(dti)
 }
 
 fn status_rai(pdu_status_field : u8) -> RadioAttachedIndicator {
-    let rai = pdu_status_field & BITS_2_3_IN_BYTE;
+    let rai = (pdu_status_field & BITS_2_3_IN_BYTE) >> 4;
     RadioAttachedIndicator::from(rai)
 }
 
 fn status_iai(pdu_status_field : u8) -> IntercomAttachedIndicator {
-    let iai = pdu_status_field & BITS_2_3_IN_BYTE;
+    let iai = (pdu_status_field & BITS_2_3_IN_BYTE) >> 4;
     IntercomAttachedIndicator::from(iai)
 }
 
 fn status_ism(pdu_status_field : u8) -> IffSimulationMode {
-    let ism = pdu_status_field & BIT_3_IN_BYTE;
+    let ism = (pdu_status_field & BIT_3_IN_BYTE) >> 4;
     IffSimulationMode::from(ism)
 }
 
 fn status_aii(pdu_status_field : u8) -> ActiveInterrogationIndicator {
-    let aii = pdu_status_field & BIT_2_IN_BYTE;
+    let aii = (pdu_status_field & BIT_2_IN_BYTE) >> 5;
     ActiveInterrogationIndicator::from(aii)
 }

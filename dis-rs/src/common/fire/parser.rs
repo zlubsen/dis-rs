@@ -8,6 +8,10 @@ use crate::enumerations::FireTypeIndicator;
 
 pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
+        // The FireTypeIndicator determines how to parse the DescriptorRecord.
+        // Defaulting to `FireTypeIndicator::Munition` handles compatibility for v6,
+        // where there is no PduStatus record with FireTypeIndicator field.
+        // V6 only defines the DescriptorRecord::Munition variant.
         let fti = header.pdu_status.unwrap_or_default()
             .fire_type_indicator.unwrap_or(FireTypeIndicator::Munition);
         let (input, firing_entity_id) = entity_id(input)?;
