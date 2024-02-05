@@ -6,7 +6,7 @@ use crate::signal::builder::SignalBuilder;
 
 pub const BASE_SIGNAL_BODY_LENGTH : u16 = 20;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Signal {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,
@@ -54,7 +54,7 @@ impl Interaction for Signal {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum EncodingScheme {
     EncodedAudio { encoding_class: SignalEncodingClass, encoding_type: SignalEncodingType },
     RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u16 },
