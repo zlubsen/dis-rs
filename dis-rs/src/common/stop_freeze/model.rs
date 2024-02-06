@@ -5,7 +5,7 @@ use crate::stop_freeze::builder::StopFreezeBuilder;
 
 const STOP_FREEZE_BODY_LENGTH : u16 = 28;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StopFreeze {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

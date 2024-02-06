@@ -5,7 +5,7 @@ use crate::start_resume::builder::StartResumeBuilder;
 
 const START_RESUME_BODY_LENGTH : u16 = 32;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StartResume {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

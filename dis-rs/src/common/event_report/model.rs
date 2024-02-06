@@ -7,7 +7,7 @@ use crate::event_report::builder::EventReportBuilder;
 
 pub const BASE_EVENT_REPORT_BODY_LENGTH: u16 = 28;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct EventReport {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

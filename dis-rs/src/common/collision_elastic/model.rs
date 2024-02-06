@@ -5,7 +5,7 @@ use crate::common::collision_elastic::builder::CollisionElasticBuilder;
 
 const COLLISION_ELASTIC_BODY_LENGTH : u16 = 88;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct CollisionElastic {
     pub issuing_entity_id: EntityId,
     pub colliding_entity_id: EntityId,
