@@ -37,3 +37,40 @@ fn test_pdu() {
 
     assert_eq!(s.unwrap().data,data);
 }
+
+#[test]
+fn test_two_pdus() {
+    let data = vec![1, 2, 3, 4];
+    let pdu = Pdu {
+        header: PduHeader::new_v7(1, PduType::Signal),
+        body: PduBody::Signal(
+            Signal::builder()
+                .with_encoding_scheme(EncodingScheme::EncodedAudio {
+                    encoding_class: SignalEncodingClass::Encodedaudio,
+                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
+                })
+                .with_data(data.clone())
+                .build(),
+        ),
+    };
+    let mut buf_a = BytesMut::new();
+    let _ = pdu.serialize(&mut buf_a);
+
+    let mut buf_b = BytesMut::new();
+    let _ = pdu.serialize(&mut buf_b);
+
+    let buf = [buf_a, buf_b].concat();
+
+    let pdus = dis_rs::parse(buf.as_bytes()).unwrap();
+    
+    assert_eq!(pdus.len(), 2);
+
+
+    let s = if let PduBody::Signal(s) = &pdus.get(1).unwrap().body {
+        Some(s)
+    } else {
+        None
+    };
+
+    assert_eq!(s.unwrap().data,data);
+}
