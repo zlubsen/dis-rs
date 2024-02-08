@@ -37,7 +37,7 @@ impl Serialize for Pdu {
             PduBody::Fire(body) => { body.serialize_pdu(version, buf) }
             PduBody::Detonation(body) => { body.serialize_pdu(version, buf) }
             PduBody::Collision(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ServiceRequest(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ServiceRequest(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, buf) }

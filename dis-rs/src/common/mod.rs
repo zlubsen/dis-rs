@@ -20,6 +20,7 @@ pub mod fire;
 pub mod iff;
 pub mod create_entity;
 pub mod remove_entity;
+pub mod service_request;
 pub mod set_data;
 pub mod start_resume;
 pub mod stop_freeze;

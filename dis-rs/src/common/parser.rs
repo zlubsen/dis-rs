@@ -38,6 +38,7 @@ use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
+use crate::service_request::parser::service_request_body;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -171,7 +172,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Fire => { fire_body(header)(input)? }
             PduType::Detonation => { detonation_body(header)(input)? }
             PduType::Collision => { collision_body(input)? }
-            // PduType::ServiceRequest => {}
+            PduType::ServiceRequest => { service_request_body(input)? }
             // PduType::ResupplyOffer => {}
             // PduType::ResupplyReceived => {}
             // PduType::ResupplyCancel => {}

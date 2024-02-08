@@ -30,6 +30,7 @@ use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::service_request::model::ServiceRequest;
 
 #[derive(Debug, PartialEq)]
 pub struct Pdu {
@@ -125,7 +126,7 @@ pub enum PduBody {
     Fire(Fire),
     Detonation(Detonation),
     Collision(Collision),
-    ServiceRequest,
+    ServiceRequest(ServiceRequest),
     ResupplyOffer,
     ResupplyReceived,
     ResupplyCancel,
@@ -203,7 +204,7 @@ impl BodyInfo for PduBody {
             PduBody::Fire(body) => { body.body_length() }
             PduBody::Detonation(body) => { body.body_length() }
             PduBody::Collision(body) => { body.body_length() }
-            PduBody::ServiceRequest => { 0 }
+            PduBody::ServiceRequest(body) => { body.body_length() }
             PduBody::ResupplyOffer => { 0 }
             PduBody::ResupplyReceived => { 0 }
             PduBody::ResupplyCancel => { 0 }
@@ -281,7 +282,7 @@ impl BodyInfo for PduBody {
             PduBody::Fire(body) => { body.body_type() }
             PduBody::Detonation(body) => { body.body_type() }
             PduBody::Collision(body) => { body.body_type() }
-            PduBody::ServiceRequest => { PduType::ServiceRequest }
+            PduBody::ServiceRequest(body) => { body.body_type() }
             PduBody::ResupplyOffer => { PduType::ResupplyOffer }
             PduBody::ResupplyReceived => { PduType::ResupplyReceived }
             PduBody::ResupplyCancel => { PduType::ResupplyCancel }
@@ -361,7 +362,7 @@ impl Interaction for PduBody {
             PduBody::Fire(body) => { body.originator() }
             PduBody::Detonation(body) => { body.originator() }
             PduBody::Collision(body) => { body.originator() }
-            PduBody::ServiceRequest => { None }
+            PduBody::ServiceRequest(body) => { body.originator() }
             PduBody::ResupplyOffer => { None }
             PduBody::ResupplyReceived => { None }
             PduBody::ResupplyCancel => { None }
@@ -439,7 +440,7 @@ impl Interaction for PduBody {
             PduBody::Fire(body) => { body.receiver() }
             PduBody::Detonation(body) => { body.receiver() }
             PduBody::Collision(body) => { body.receiver() }
-            PduBody::ServiceRequest => { None }
+            PduBody::ServiceRequest(body) => { body.receiver() }
             PduBody::ResupplyOffer => { None }
             PduBody::ResupplyReceived => { None }
             PduBody::ResupplyCancel => { None }

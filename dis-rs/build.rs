@@ -21,7 +21,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 128] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 129] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -42,6 +42,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 128] = [
     (60, None, None, false), // Munition Descriptor-Warhead
     (61, None, None, true), // Munition Descriptor-Fuse
     (62, None, None, false), // Detonation result
+    (63, None, None, false), // Service Type Requested
     // 63-74, // All kinds of stuff for lesser priority PDUs
     (66, Some("VariableRecordType"), None, true), // Variable Record Types
     (67, None, None, false), // Stop/Freeze Reason
