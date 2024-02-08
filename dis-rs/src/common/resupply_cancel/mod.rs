@@ -6,25 +6,20 @@ pub mod builder;
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::enumerations::{EntityKind, PduType, ServiceRequestServiceTypeRequested};
-    use crate::common::model::{EntityId, Pdu, PduHeader, SupplyQuantity};
+    use crate::enumerations::{PduType};
+    use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::common::Serialize;
     use crate::common::model::DisTimeStamp;
-    use crate::model::EntityType;
-    use crate::service_request::model::ServiceRequest;
+    use crate::resupply_cancel::model::ResupplyCancel;
 
     #[test]
-    fn service_request_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::ServiceRequest);
+    fn resupply_cancel_internal_consistency() {
+        let header = PduHeader::new_v6(1, PduType::ResupplyCancel);
 
-        let body = ServiceRequest::builder()
+        let body = ResupplyCancel::builder()
             .with_requesting_id(EntityId::new(1, 1, 2))
             .with_servicing_id(EntityId::new(9, 1, 1))
-            .with_service_type_requested(ServiceRequestServiceTypeRequested::AerialRefuelingHighFidelity)
-            .with_supply(SupplyQuantity::default()
-                .with_supply_type(EntityType::default().with_kind(EntityKind::Supply))
-                .with_quantity(678.0))
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));

@@ -6,22 +6,21 @@ pub mod builder;
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::enumerations::{EntityKind, PduType, ServiceRequestServiceTypeRequested};
+    use crate::enumerations::{EntityKind, PduType};
     use crate::common::model::{EntityId, Pdu, PduHeader, SupplyQuantity};
     use crate::common::parser::parse_pdu;
     use crate::common::Serialize;
     use crate::common::model::DisTimeStamp;
     use crate::model::EntityType;
-    use crate::service_request::model::ServiceRequest;
+    use crate::resupply_offer::model::ResupplyOffer;
 
     #[test]
-    fn service_request_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::ServiceRequest);
+    fn resupply_offer_internal_consistency() {
+        let header = PduHeader::new_v6(1, PduType::ResupplyOffer);
 
-        let body = ServiceRequest::builder()
+        let body = ResupplyOffer::builder()
             .with_requesting_id(EntityId::new(1, 1, 2))
             .with_servicing_id(EntityId::new(9, 1, 1))
-            .with_service_type_requested(ServiceRequestServiceTypeRequested::AerialRefuelingHighFidelity)
             .with_supply(SupplyQuantity::default()
                 .with_supply_type(EntityType::default().with_kind(EntityKind::Supply))
                 .with_quantity(678.0))

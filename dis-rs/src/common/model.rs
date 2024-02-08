@@ -30,6 +30,9 @@ use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::resupply_cancel::model::ResupplyCancel;
+use crate::resupply_offer::model::ResupplyOffer;
+use crate::resupply_received::model::ResupplyReceived;
 use crate::service_request::model::ServiceRequest;
 
 #[derive(Debug, PartialEq)]
@@ -127,9 +130,9 @@ pub enum PduBody {
     Detonation(Detonation),
     Collision(Collision),
     ServiceRequest(ServiceRequest),
-    ResupplyOffer,
-    ResupplyReceived,
-    ResupplyCancel,
+    ResupplyOffer(ResupplyOffer),
+    ResupplyReceived(ResupplyReceived),
+    ResupplyCancel(ResupplyCancel),
     RepairComplete,
     RepairResponse,
     CreateEntity(CreateEntity),
@@ -205,9 +208,9 @@ impl BodyInfo for PduBody {
             PduBody::Detonation(body) => { body.body_length() }
             PduBody::Collision(body) => { body.body_length() }
             PduBody::ServiceRequest(body) => { body.body_length() }
-            PduBody::ResupplyOffer => { 0 }
-            PduBody::ResupplyReceived => { 0 }
-            PduBody::ResupplyCancel => { 0 }
+            PduBody::ResupplyOffer(body) => { body.body_length() }
+            PduBody::ResupplyReceived(body) => { body.body_length() }
+            PduBody::ResupplyCancel(body) => { body.body_length() }
             PduBody::RepairComplete => { 0 }
             PduBody::RepairResponse => { 0 }
             PduBody::CreateEntity(body) => { body.body_length() }
@@ -283,9 +286,9 @@ impl BodyInfo for PduBody {
             PduBody::Detonation(body) => { body.body_type() }
             PduBody::Collision(body) => { body.body_type() }
             PduBody::ServiceRequest(body) => { body.body_type() }
-            PduBody::ResupplyOffer => { PduType::ResupplyOffer }
-            PduBody::ResupplyReceived => { PduType::ResupplyReceived }
-            PduBody::ResupplyCancel => { PduType::ResupplyCancel }
+            PduBody::ResupplyOffer(body) => { body.body_type() }
+            PduBody::ResupplyReceived(body) => { body.body_type() }
+            PduBody::ResupplyCancel(body) => { body.body_type() }
             PduBody::RepairComplete => { PduType::RepairComplete }
             PduBody::RepairResponse => { PduType::RepairResponse }
             PduBody::CreateEntity(body) => { body.body_type() }
@@ -363,9 +366,9 @@ impl Interaction for PduBody {
             PduBody::Detonation(body) => { body.originator() }
             PduBody::Collision(body) => { body.originator() }
             PduBody::ServiceRequest(body) => { body.originator() }
-            PduBody::ResupplyOffer => { None }
-            PduBody::ResupplyReceived => { None }
-            PduBody::ResupplyCancel => { None }
+            PduBody::ResupplyOffer(body) => { body.originator() }
+            PduBody::ResupplyReceived(body) => { body.originator() }
+            PduBody::ResupplyCancel(body) => { body.originator() }
             PduBody::RepairComplete => { None }
             PduBody::RepairResponse => { None }
             PduBody::CreateEntity(body) => { body.originator() }
@@ -441,9 +444,9 @@ impl Interaction for PduBody {
             PduBody::Detonation(body) => { body.receiver() }
             PduBody::Collision(body) => { body.receiver() }
             PduBody::ServiceRequest(body) => { body.receiver() }
-            PduBody::ResupplyOffer => { None }
-            PduBody::ResupplyReceived => { None }
-            PduBody::ResupplyCancel => { None }
+            PduBody::ResupplyOffer(body) => { body.receiver() }
+            PduBody::ResupplyReceived(body) => { body.receiver() }
+            PduBody::ResupplyCancel(body) => { body.receiver() }
             PduBody::RepairComplete => { None }
             PduBody::RepairResponse => { None }
             PduBody::CreateEntity(body) => { body.receiver() }
@@ -1350,6 +1353,26 @@ impl BeamData {
 
     pub fn with_sweep_sync(mut self, sweep_sync: f32) -> Self {
         self.sweep_sync = sweep_sync;
+        self
+    }
+}
+
+pub const SUPPLY_QUANTITY_RECORD_LENGTH: u16 = 12;
+
+#[derive(Debug, Default, PartialEq)]
+pub struct SupplyQuantity {
+    pub supply_type: EntityType,
+    pub quantity: f32,
+}
+
+impl SupplyQuantity {
+    pub fn with_supply_type(mut self, supply_type: EntityType) -> Self {
+        self.supply_type = supply_type;
+        self
+    }
+
+    pub fn with_quantity(mut self, quantity: f32) -> Self {
+        self.quantity = quantity;
         self
     }
 }

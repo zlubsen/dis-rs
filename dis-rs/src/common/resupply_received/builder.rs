@@ -1,20 +1,19 @@
-use crate::common::service_request::model::ServiceRequest;
 use crate::common::model::EntityId;
-use crate::enumerations::ServiceRequestServiceTypeRequested;
 use crate::common::model::SupplyQuantity;
+use crate::resupply_received::model::ResupplyReceived;
 
-pub struct ServiceRequestBuilder(ServiceRequest);
+pub struct ResupplyReceivedBuilder(ResupplyReceived);
 
-impl ServiceRequestBuilder {
+impl ResupplyReceivedBuilder {
     pub fn new() -> Self {
-        ServiceRequestBuilder(ServiceRequest::default())
+        ResupplyReceivedBuilder(ResupplyReceived::default())
     }
 
-    pub fn new_from_body(body: ServiceRequest) -> Self {
-        ServiceRequestBuilder(body)
+    pub fn new_from_body(body: ResupplyReceived) -> Self {
+        ResupplyReceivedBuilder(body)
     }
 
-    pub fn build(self) -> ServiceRequest {
+    pub fn build(self) -> ResupplyReceived {
         self.0
     }
 
@@ -25,11 +24,6 @@ impl ServiceRequestBuilder {
 
     pub fn with_servicing_id(mut self, servicing_id: EntityId) -> Self {
         self.0.servicing_id = servicing_id;
-        self
-    }
-
-    pub fn with_service_type_requested(mut self, service_type_requested: ServiceRequestServiceTypeRequested) -> Self {
-        self.0.service_type_requested = service_type_requested;
         self
     }
 

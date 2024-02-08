@@ -1,9 +1,10 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::constants::{PDU_HEADER_LEN_BYTES};
-use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32, ArticulatedPart, AttachedPart, BeamData, EntityAssociationParameter, EntityTypeParameter, length_padded_to_num, SeparationParameter, VariableParameter};
+use crate::constants::PDU_HEADER_LEN_BYTES;
+use crate::common::model::{ArticulatedPart, AttachedPart, BeamData, ClockTime, DescriptorRecord, EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, FixedDatum, length_padded_to_num, Location, MunitionDescriptor, Orientation, SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32};
 use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
+use crate::model::SupplyQuantity;
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -38,9 +39,9 @@ impl Serialize for Pdu {
             PduBody::Detonation(body) => { body.serialize_pdu(version, buf) }
             PduBody::Collision(body) => { body.serialize_pdu(version, buf) }
             PduBody::ServiceRequest(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, buf) }
             // PduBody::RepairComplete(body) => { body.serialize_pdu(version, buf) }
             // PduBody::RepairResponse(body) => { body.serialize_pdu(version, buf) }
             PduBody::CreateEntity(body) => { body.serialize_pdu(version, buf) }
@@ -347,7 +348,7 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::Serialize;
     use crate::constants::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, LvcIndicator};
+    use crate::enumerations::{LvcIndicator, PduType};
     use crate::common::model::PduHeader;
     use crate::v7::model::PduStatus;
 
@@ -389,5 +390,14 @@ mod tests {
 
         let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x02, 0x00];
         assert_eq!(buf.as_ref(), expected.as_ref());
+    }
+}
+
+impl Serialize for SupplyQuantity {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        let type_bytes = self.supply_type.serialize(buf);
+        buf.put_f32(self.quantity);
+
+        type_bytes + 4
     }
 }

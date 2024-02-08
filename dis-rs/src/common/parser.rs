@@ -10,7 +10,7 @@ use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
 use crate::common::other::parser::other_body;
-use crate::common::model::{BeamData, ClockTime, DatumSpecification, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SimulationAddress, VariableDatum, VectorF32, EntityTypeParameter, length_padded_to_num, SeparationParameter, EntityAssociationParameter, VariableParameter, ArticulatedPart, AttachedPart};
+use crate::common::model::{ArticulatedPart, AttachedPart, BeamData, ClockTime, DatumSpecification, DescriptorRecord, EntityAssociationParameter, EntityId, EntityType, EntityTypeParameter, EventId, FixedDatum, length_padded_to_num, Location, MunitionDescriptor, Orientation, Pdu, PduBody, PduHeader, SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32};
 use crate::common::acknowledge::parser::acknowledge_body;
 use crate::common::action_request::parser::action_request_body;
 use crate::common::action_response::parser::action_response_body;
@@ -38,6 +38,10 @@ use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
+use crate::model::SupplyQuantity;
+use crate::resupply_cancel::parser::resupply_cancel_body;
+use crate::resupply_offer::parser::resupply_offer_body;
+use crate::resupply_received::parser::resupply_received_body;
 use crate::service_request::parser::service_request_body;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
@@ -173,9 +177,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Detonation => { detonation_body(header)(input)? }
             PduType::Collision => { collision_body(input)? }
             PduType::ServiceRequest => { service_request_body(input)? }
-            // PduType::ResupplyOffer => {}
-            // PduType::ResupplyReceived => {}
-            // PduType::ResupplyCancel => {}
+            PduType::ResupplyOffer => { resupply_offer_body(input)? }
+            PduType::ResupplyReceived => { resupply_received_body(input)? }
+            PduType::ResupplyCancel => { resupply_cancel_body(input)? }
             // PduType::RepairComplete => {}
             // PduType::RepairResponse => {}
             PduType::CreateEntity => { create_entity_body(input)? }
@@ -748,4 +752,13 @@ pub fn beam_data(input: &[u8]) -> IResult<&[u8], BeamData> {
         .with_sweep_sync(sweep_sync);
 
     Ok((input, data))
+}
+
+pub fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
+    let (input, supply_type) = entity_type(input)?;
+    let (input, quantity) = be_f32(input)?;
+
+    Ok((input, SupplyQuantity::default()
+        .with_supply_type(supply_type)
+        .with_quantity(quantity)))
 }
