@@ -5,7 +5,7 @@ use crate::fire::builder::FireBuilder;
 
 const FIRE_BODY_LENGTH : u16 = 28;
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Fire {
     pub firing_entity_id : EntityId,
     pub target_entity_id : EntityId,

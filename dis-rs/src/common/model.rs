@@ -118,7 +118,7 @@ impl PduHeader {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum PduBody {
     Other(Other),
     EntityState(EntityState),
@@ -681,7 +681,7 @@ impl Default for EventId {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
@@ -713,7 +713,7 @@ impl VectorF32 {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
@@ -745,7 +745,7 @@ impl Location {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
@@ -825,7 +825,7 @@ impl EntityType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DescriptorRecord {
     Munition { entity_type: EntityType, munition: MunitionDescriptor },
     Expendable { entity_type: EntityType },
@@ -863,7 +863,7 @@ impl Default for DescriptorRecord {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct MunitionDescriptor {
     pub warhead : MunitionDescriptorWarhead,
     pub fuse : MunitionDescriptorFuse,
@@ -1006,7 +1006,7 @@ impl From<TimeStamp> for DisTimeStamp {
 }
 
 /// 6.2.14 Clock Time record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct ClockTime {
     pub hour: i32,
     pub time_past_hour: u32,
@@ -1038,7 +1038,7 @@ impl DatumSpecification {
 pub const FIXED_DATUM_LENGTH: u16 = 8;
 pub const BASE_VARIABLE_DATUM_LENGTH: u16 = 8;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: u32,
@@ -1053,7 +1053,7 @@ impl FixedDatum {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VariableDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: Vec<u8>,
@@ -1108,7 +1108,7 @@ pub fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedReco
     PaddedRecordLengths::new(data_length, padding_num, record_length)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VariableParameter {
     Articulated(ArticulatedPart),
     Attached(AttachedPart),
@@ -1313,7 +1313,7 @@ impl EntityAssociationParameter {
 }
 
 /// 6.2.11 Beam Data record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct BeamData {
     pub azimuth_center: f32,
     pub azimuth_sweep: f32,

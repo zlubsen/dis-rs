@@ -12,7 +12,7 @@ pub enum EntityStateValidationError {
     SomeFieldNotOkError,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct EntityState {
     pub entity_id : EntityId, // struct
     pub force_id : ForceId, // enum
@@ -62,7 +62,7 @@ impl Interaction for EntityState {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum EntityAppearance {
     LandPlatform(LandPlatformAppearance),
     AirPlatform(AirPlatformAppearance),
@@ -86,7 +86,7 @@ impl Default for EntityAppearance {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EntityMarking {
     pub marking_character_set : EntityMarkingCharacterSet,
     pub marking_string : String, // 11 byte String
@@ -115,7 +115,7 @@ impl Default for EntityMarking {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrParameters {
     pub algorithm : DeadReckoningAlgorithm,
     pub other_parameters : DrOtherParameters,
@@ -145,7 +145,7 @@ impl DrParameters {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DrOtherParameters {
     None([u8; 15]),
     LocalEulerAngles(DrEulerAngles),
@@ -158,7 +158,7 @@ impl Default for DrOtherParameters {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrEulerAngles {
     pub local_yaw : f32,
     pub local_pitch : f32,
@@ -182,7 +182,7 @@ impl DrEulerAngles {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrWorldOrientationQuaternion {
     pub nil : u16,
     pub x: f32,
