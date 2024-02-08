@@ -30,6 +30,8 @@ use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::repair_complete::model::RepairComplete;
+use crate::repair_response::model::RepairResponse;
 use crate::resupply_cancel::model::ResupplyCancel;
 use crate::resupply_offer::model::ResupplyOffer;
 use crate::resupply_received::model::ResupplyReceived;
@@ -133,8 +135,8 @@ pub enum PduBody {
     ResupplyOffer(ResupplyOffer),
     ResupplyReceived(ResupplyReceived),
     ResupplyCancel(ResupplyCancel),
-    RepairComplete,
-    RepairResponse,
+    RepairComplete(RepairComplete),
+    RepairResponse(RepairResponse),
     CreateEntity(CreateEntity),
     RemoveEntity(RemoveEntity),
     StartResume(StartResume),
@@ -211,8 +213,8 @@ impl BodyInfo for PduBody {
             PduBody::ResupplyOffer(body) => { body.body_length() }
             PduBody::ResupplyReceived(body) => { body.body_length() }
             PduBody::ResupplyCancel(body) => { body.body_length() }
-            PduBody::RepairComplete => { 0 }
-            PduBody::RepairResponse => { 0 }
+            PduBody::RepairComplete(body) => { body.body_length() }
+            PduBody::RepairResponse(body) => { body.body_length() }
             PduBody::CreateEntity(body) => { body.body_length() }
             PduBody::RemoveEntity(body) => { body.body_length() }
             PduBody::StartResume(body) => { body.body_length() }
@@ -289,8 +291,8 @@ impl BodyInfo for PduBody {
             PduBody::ResupplyOffer(body) => { body.body_type() }
             PduBody::ResupplyReceived(body) => { body.body_type() }
             PduBody::ResupplyCancel(body) => { body.body_type() }
-            PduBody::RepairComplete => { PduType::RepairComplete }
-            PduBody::RepairResponse => { PduType::RepairResponse }
+            PduBody::RepairComplete(body) => { body.body_type() }
+            PduBody::RepairResponse(body) => { body.body_type() }
             PduBody::CreateEntity(body) => { body.body_type() }
             PduBody::RemoveEntity(body) => { body.body_type() }
             PduBody::StartResume(body) => { body.body_type() }
@@ -369,8 +371,8 @@ impl Interaction for PduBody {
             PduBody::ResupplyOffer(body) => { body.originator() }
             PduBody::ResupplyReceived(body) => { body.originator() }
             PduBody::ResupplyCancel(body) => { body.originator() }
-            PduBody::RepairComplete => { None }
-            PduBody::RepairResponse => { None }
+            PduBody::RepairComplete(body) => { body.originator() }
+            PduBody::RepairResponse(body) => { body.originator() }
             PduBody::CreateEntity(body) => { body.originator() }
             PduBody::RemoveEntity(body) => { body.originator() }
             PduBody::StartResume(body) => { body.originator() }
@@ -447,8 +449,8 @@ impl Interaction for PduBody {
             PduBody::ResupplyOffer(body) => { body.receiver() }
             PduBody::ResupplyReceived(body) => { body.receiver() }
             PduBody::ResupplyCancel(body) => { body.receiver() }
-            PduBody::RepairComplete => { None }
-            PduBody::RepairResponse => { None }
+            PduBody::RepairComplete(body) => { body.receiver() }
+            PduBody::RepairResponse(body) => { body.receiver() }
             PduBody::CreateEntity(body) => { body.receiver() }
             PduBody::RemoveEntity(body) => { body.receiver() }
             PduBody::StartResume(body) => { body.receiver() }

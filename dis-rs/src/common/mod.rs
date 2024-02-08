@@ -20,6 +20,8 @@ pub mod fire;
 pub mod iff;
 pub mod create_entity;
 pub mod remove_entity;
+pub mod repair_response;
+pub mod repair_complete;
 pub mod resupply_cancel;
 pub mod resupply_offer;
 pub mod resupply_received;

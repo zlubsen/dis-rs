@@ -43,8 +43,8 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 131] = [
     (61, None, None, true), // Munition Descriptor-Fuse
     (62, None, None, false), // Detonation result
     (63, None, None, false), // Service Type Requested
-    (64, None, None, false), // Service Type Requested
-    (65, None, None, false), // Service Type Requested
+    (64, None, None, true), // Repair Complete-Repair
+    (65, None, None, false), // Repair Complete-Repair Result
     (66, Some("VariableRecordType"), None, true), // Variable Record Types
     (67, None, None, false), // Stop/Freeze Reason
     (69, Some("AcknowledgeFlag"), None, false), // Acknowledge-Acknowledge Flag

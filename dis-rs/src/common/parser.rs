@@ -39,6 +39,8 @@ use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, Explosiv
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
 use crate::model::SupplyQuantity;
+use crate::repair_complete::parser::repair_complete_body;
+use crate::repair_response::parser::repair_response_body;
 use crate::resupply_cancel::parser::resupply_cancel_body;
 use crate::resupply_offer::parser::resupply_offer_body;
 use crate::resupply_received::parser::resupply_received_body;
@@ -180,8 +182,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::ResupplyOffer => { resupply_offer_body(input)? }
             PduType::ResupplyReceived => { resupply_received_body(input)? }
             PduType::ResupplyCancel => { resupply_cancel_body(input)? }
-            // PduType::RepairComplete => {}
-            // PduType::RepairResponse => {}
+            PduType::RepairComplete => { repair_complete_body(input)? }
+            PduType::RepairResponse => { repair_response_body(input)? }
             PduType::CreateEntity => { create_entity_body(input)? }
             PduType::RemoveEntity => { remove_entity_body(input)? }
             PduType::StartResume => { start_resume_body(input)? }
