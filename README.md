@@ -19,14 +19,14 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | Fire                            | V       | V        | V       | V        |
 | Detonation                      | V       | V        | V       | V        |
 | Collision                       | V       | V        | V       | V        |
-| ServiceRequestPdu               |         |          |         |          |
-| ResupplyOfferPdu                |         |          |         |          |
-| ResupplyReceivedPdu             |         |          |         |          |
-| ResupplyCancelPdu               |         |          |         |          |
-| RepairCompletePdu               |         |          |         |          |
-| RepairResponsePdu               |         |          |         |          |
-| CreateEntityPdu                 |         |          |         |          |
-| RemoveEntityPdu                 |         |          |         |          |
+| ServiceRequestPdu               | V       | V        | V       | V        |
+| ResupplyOfferPdu                | V       | V        | V       | V        |
+| ResupplyReceivedPdu             | V       | V        | V       | V        |
+| ResupplyCancelPdu               | V       | V        | V       | V        |
+| RepairCompletePdu               | V       | V        | V       | V        |
+| RepairResponsePdu               | V       | V        | V       | V        |
+| CreateEntityPdu                 | V       | V        | V       | V        |
+| RemoveEntityPdu                 | V       | V        | V       | V        |
 | StartResumePdu                  | V       | V        | V       | V        |
 | StopFreezePdu                   | V       | V        | V       | V        |
 | AcknowledgePdu                  | V       | V        | V       | V        |

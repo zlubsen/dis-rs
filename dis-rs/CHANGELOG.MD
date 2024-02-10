@@ -1,5 +1,10 @@
 # Changelog for crate DIS-RS
 
+## 0.7.0 - 2024-xx-yy
+Added Logistics PDUs
+
+Added Simulation Management with Reliability PDUs
+
 ## 0.6.0 - 2024-02-04
 Refactored all PDUs to have more clean builders (in code / API).
 
