@@ -2,6 +2,7 @@ pub mod model;
 pub(crate) mod parser;
 
 pub mod acknowledge;
+pub mod acknowledge_r;
 pub mod action_request;
 pub mod action_response;
 pub mod attribute;
@@ -30,7 +31,9 @@ pub mod resupply_received;
 pub mod service_request;
 pub mod set_data;
 pub mod start_resume;
+pub mod start_resume_r;
 pub mod stop_freeze;
+pub mod stop_freeze_r;
 pub mod other;
 pub mod signal;
 pub mod transmitter;

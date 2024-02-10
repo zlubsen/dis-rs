@@ -6,6 +6,7 @@ use nom::bytes::complete::take;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
+use crate::acknowledge_r::parser::acknowledge_r_body;
 use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
@@ -47,6 +48,8 @@ use crate::resupply_cancel::parser::resupply_cancel_body;
 use crate::resupply_offer::parser::resupply_offer_body;
 use crate::resupply_received::parser::resupply_received_body;
 use crate::service_request::parser::service_request_body;
+use crate::start_resume_r::parser::start_resume_r_body;
+use crate::stop_freeze_r::parser::stop_freeze_r_body;
 
 pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -228,9 +231,9 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::LEDetonation => {}
             PduType::CreateEntityR => { create_entity_r_body(input)? }
             PduType::RemoveEntityR => { remove_entity_r_body(input)? }
-            // PduType::StartResumeR => {}
-            // PduType::StopFreezeR => {}
-            // PduType::AcknowledgeR => {}
+            PduType::StartResumeR => { start_resume_r_body(input)? }
+            PduType::StopFreezeR => { stop_freeze_r_body(input)? }
+            PduType::AcknowledgeR => { acknowledge_r_body(input)? }
             // PduType::ActionRequestR => {}
             // PduType::ActionResponseR => {}
             // PduType::DataQueryR => {}

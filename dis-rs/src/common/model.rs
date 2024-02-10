@@ -1,3 +1,4 @@
+use crate::acknowledge_r::model::AcknowledgeR;
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::common::entity_state::model::EntityState;
@@ -38,6 +39,8 @@ use crate::resupply_cancel::model::ResupplyCancel;
 use crate::resupply_offer::model::ResupplyOffer;
 use crate::resupply_received::model::ResupplyReceived;
 use crate::service_request::model::ServiceRequest;
+use crate::start_resume_r::model::StartResumeR;
+use crate::stop_freeze_r::model::StopFreezeR;
 
 #[derive(Debug, PartialEq)]
 pub struct Pdu {
@@ -181,9 +184,9 @@ pub enum PduBody {
     LEDetonation,
     CreateEntityR(CreateEntityR),
     RemoveEntityR(RemoveEntityR),
-    StartResumeR,
-    StopFreezeR,
-    AcknowledgeR,
+    StartResumeR(StartResumeR),
+    StopFreezeR(StopFreezeR),
+    AcknowledgeR(AcknowledgeR),
     ActionRequestR,
     ActionResponseR,
     DataQueryR,
@@ -259,9 +262,9 @@ impl BodyInfo for PduBody {
             PduBody::LEDetonation => { 0 }
             PduBody::CreateEntityR(body) => { body.body_length() }
             PduBody::RemoveEntityR(body) => { body.body_length() }
-            PduBody::StartResumeR => { 0 }
-            PduBody::StopFreezeR => { 0 }
-            PduBody::AcknowledgeR => { 0 }
+            PduBody::StartResumeR(body) => { body.body_length() }
+            PduBody::StopFreezeR(body) => { body.body_length() }
+            PduBody::AcknowledgeR(body) => { body.body_length() }
             PduBody::ActionRequestR => { 0 }
             PduBody::ActionResponseR => { 0 }
             PduBody::DataQueryR => { 0 }
@@ -337,9 +340,9 @@ impl BodyInfo for PduBody {
             PduBody::LEDetonation => { PduType::LEDetonation }
             PduBody::CreateEntityR(body) => { body.body_type() }
             PduBody::RemoveEntityR(body) => { body.body_type() }
-            PduBody::StartResumeR => { PduType::StartResumeR }
-            PduBody::StopFreezeR => { PduType::StopFreezeR }
-            PduBody::AcknowledgeR => { PduType::AcknowledgeR }
+            PduBody::StartResumeR(body) => { body.body_type() }
+            PduBody::StopFreezeR(body) => { body.body_type() }
+            PduBody::AcknowledgeR(body) => { body.body_type() }
             PduBody::ActionRequestR => { PduType::ActionRequestR }
             PduBody::ActionResponseR => { PduType::ActionResponseR }
             PduBody::DataQueryR => { PduType::DataQueryR }
@@ -417,9 +420,9 @@ impl Interaction for PduBody {
             PduBody::LEDetonation => { None }
             PduBody::CreateEntityR(body) => { body.originator() }
             PduBody::RemoveEntityR(body) => { body.originator() }
-            PduBody::StartResumeR => { None }
-            PduBody::StopFreezeR => { None }
-            PduBody::AcknowledgeR => { None }
+            PduBody::StartResumeR(body) => { body.originator() }
+            PduBody::StopFreezeR(body) => { body.originator() }
+            PduBody::AcknowledgeR(body) => { body.originator() }
             PduBody::ActionRequestR => { None }
             PduBody::ActionResponseR => { None }
             PduBody::DataQueryR => { None }
@@ -495,9 +498,9 @@ impl Interaction for PduBody {
             PduBody::LEDetonation => { None }
             PduBody::CreateEntityR(body) => { body.receiver() }
             PduBody::RemoveEntityR(body) => { body.receiver() }
-            PduBody::StartResumeR => { None }
-            PduBody::StopFreezeR => { None }
-            PduBody::AcknowledgeR => { None }
+            PduBody::StartResumeR(body) => { body.receiver() }
+            PduBody::StopFreezeR(body) => { body.receiver() }
+            PduBody::AcknowledgeR(body) => { body.receiver() }
             PduBody::ActionRequestR => { None }
             PduBody::ActionResponseR => { None }
             PduBody::DataQueryR => { None }

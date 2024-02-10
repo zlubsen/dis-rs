@@ -86,9 +86,9 @@ impl Serialize for Pdu {
             // PduBody::LEDetonation(body) => { body.serialize_pdu(version, buf) }
             PduBody::CreateEntityR(body) => { body.serialize_pdu(version, buf) }
             PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ActionRequestR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ActionResponseR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::DataQueryR(body) => { body.serialize_pdu(version, buf) }
