@@ -38,7 +38,9 @@ use crate::v7::parser::parse_pdu_status;
 use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
+use crate::create_entity_r::parser::create_entity_r_body;
 use crate::model::SupplyQuantity;
+use crate::remove_entity_r::parser::remove_entity_r_body;
 use crate::repair_complete::parser::repair_complete_body;
 use crate::repair_response::parser::repair_response_body;
 use crate::resupply_cancel::parser::resupply_cancel_body;
@@ -224,8 +226,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::ArticulatedParts => {}
             // PduType::LEFire => {}
             // PduType::LEDetonation => {}
-            // PduType::CreateEntityR => {}
-            // PduType::RemoveEntityR => {}
+            PduType::CreateEntityR => { create_entity_r_body(input)? }
+            PduType::RemoveEntityR => { remove_entity_r_body(input)? }
             // PduType::StartResumeR => {}
             // PduType::StopFreezeR => {}
             // PduType::AcknowledgeR => {}

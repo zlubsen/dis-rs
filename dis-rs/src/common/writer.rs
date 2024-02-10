@@ -84,8 +84,8 @@ impl Serialize for Pdu {
             // PduBody::ArticulatedParts(body) => { body.serialize_pdu(version, buf) }
             // PduBody::LEFire(body) => { body.serialize_pdu(version, buf) }
             // PduBody::LEDetonation(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::CreateEntityR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::CreateEntityR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }

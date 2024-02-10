@@ -29,7 +29,9 @@ use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
+use crate::create_entity_r::model::CreateEntityR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::remove_entity_r::model::RemoveEntityR;
 use crate::repair_complete::model::RepairComplete;
 use crate::repair_response::model::RepairResponse;
 use crate::resupply_cancel::model::ResupplyCancel;
@@ -177,8 +179,8 @@ pub enum PduBody {
     ArticulatedParts,
     LEFire,
     LEDetonation,
-    CreateEntityR,
-    RemoveEntityR,
+    CreateEntityR(CreateEntityR),
+    RemoveEntityR(RemoveEntityR),
     StartResumeR,
     StopFreezeR,
     AcknowledgeR,
@@ -255,8 +257,8 @@ impl BodyInfo for PduBody {
             PduBody::ArticulatedParts => { 0 }
             PduBody::LEFire => { 0 }
             PduBody::LEDetonation => { 0 }
-            PduBody::CreateEntityR => { 0 }
-            PduBody::RemoveEntityR => { 0 }
+            PduBody::CreateEntityR(body) => { body.body_length() }
+            PduBody::RemoveEntityR(body) => { body.body_length() }
             PduBody::StartResumeR => { 0 }
             PduBody::StopFreezeR => { 0 }
             PduBody::AcknowledgeR => { 0 }
@@ -333,8 +335,8 @@ impl BodyInfo for PduBody {
             PduBody::ArticulatedParts => { PduType::ArticulatedParts }
             PduBody::LEFire => { PduType::LEFire }
             PduBody::LEDetonation => { PduType::LEDetonation }
-            PduBody::CreateEntityR => { PduType::CreateEntityR }
-            PduBody::RemoveEntityR => { PduType::RemoveEntityR }
+            PduBody::CreateEntityR(body) => { body.body_type() }
+            PduBody::RemoveEntityR(body) => { body.body_type() }
             PduBody::StartResumeR => { PduType::StartResumeR }
             PduBody::StopFreezeR => { PduType::StopFreezeR }
             PduBody::AcknowledgeR => { PduType::AcknowledgeR }
@@ -413,8 +415,8 @@ impl Interaction for PduBody {
             PduBody::ArticulatedParts => { None }
             PduBody::LEFire => { None }
             PduBody::LEDetonation => { None }
-            PduBody::CreateEntityR => { None }
-            PduBody::RemoveEntityR => { None }
+            PduBody::CreateEntityR(body) => { body.originator() }
+            PduBody::RemoveEntityR(body) => { body.originator() }
             PduBody::StartResumeR => { None }
             PduBody::StopFreezeR => { None }
             PduBody::AcknowledgeR => { None }
@@ -491,8 +493,8 @@ impl Interaction for PduBody {
             PduBody::ArticulatedParts => { None }
             PduBody::LEFire => { None }
             PduBody::LEDetonation => { None }
-            PduBody::CreateEntityR => { None }
-            PduBody::RemoveEntityR => { None }
+            PduBody::CreateEntityR(body) => { body.receiver() }
+            PduBody::RemoveEntityR(body) => { body.receiver() }
             PduBody::StartResumeR => { None }
             PduBody::StopFreezeR => { None }
             PduBody::AcknowledgeR => { None }
