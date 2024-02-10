@@ -6,7 +6,7 @@ pub mod builder;
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::acknowledge::model::Acknowledge;
+    use crate::acknowledge_r::model::AcknowledgeR;
     use crate::enumerations::{PduType, AcknowledgeFlag, ResponseFlag};
     use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
@@ -14,15 +14,15 @@ mod tests {
     use crate::common::model::{DisTimeStamp};
 
     #[test]
-    fn acknowledge_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::Acknowledge);
+    fn acknowledge_r_internal_consistency() {
+        let header = PduHeader::new_v6(1, PduType::AcknowledgeR);
 
-        let body = Acknowledge::builder()
+        let body = AcknowledgeR::builder()
             .with_origination_id(EntityId::new(10,10,10))
             .with_receiving_id(EntityId::new(20,20,20))
             .with_request_id(5)
-            .with_acknowledge_flag(AcknowledgeFlag::CreateEntity)
-            .with_response_flag(ResponseFlag::Other)
+            .with_acknowledge_flag(AcknowledgeFlag::StartResume)
+            .with_response_flag(ResponseFlag::Abletocomply)
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
