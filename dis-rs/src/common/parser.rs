@@ -7,6 +7,7 @@ use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::acknowledge_r::parser::acknowledge_r_body;
+use crate::action_request_r::parser::action_request_r_body;
 use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
@@ -234,7 +235,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::StartResumeR => { start_resume_r_body(input)? }
             PduType::StopFreezeR => { stop_freeze_r_body(input)? }
             PduType::AcknowledgeR => { acknowledge_r_body(input)? }
-            // PduType::ActionRequestR => {}
+            PduType::ActionRequestR => { action_request_r_body(input)? }
             // PduType::ActionResponseR => {}
             // PduType::DataQueryR => {}
             // PduType::SetDataR => {}

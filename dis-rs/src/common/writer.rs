@@ -89,7 +89,7 @@ impl Serialize for Pdu {
             PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
             PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
             PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ActionRequestR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ActionRequestR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::ActionResponseR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::DataQueryR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::SetDataR(body) => { body.serialize_pdu(version, buf) }

@@ -4,6 +4,7 @@ pub(crate) mod parser;
 pub mod acknowledge;
 pub mod acknowledge_r;
 pub mod action_request;
+pub mod action_request_r;
 pub mod action_response;
 pub mod attribute;
 pub mod collision;

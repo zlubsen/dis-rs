@@ -1,4 +1,5 @@
 use crate::acknowledge_r::model::AcknowledgeR;
+use crate::action_request_r::model::ActionRequestR;
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::common::entity_state::model::EntityState;
@@ -187,7 +188,7 @@ pub enum PduBody {
     StartResumeR(StartResumeR),
     StopFreezeR(StopFreezeR),
     AcknowledgeR(AcknowledgeR),
-    ActionRequestR,
+    ActionRequestR(ActionRequestR),
     ActionResponseR,
     DataQueryR,
     SetDataR,
@@ -265,7 +266,7 @@ impl BodyInfo for PduBody {
             PduBody::StartResumeR(body) => { body.body_length() }
             PduBody::StopFreezeR(body) => { body.body_length() }
             PduBody::AcknowledgeR(body) => { body.body_length() }
-            PduBody::ActionRequestR => { 0 }
+            PduBody::ActionRequestR(body) => { body.body_length() }
             PduBody::ActionResponseR => { 0 }
             PduBody::DataQueryR => { 0 }
             PduBody::SetDataR => { 0 }
@@ -343,7 +344,7 @@ impl BodyInfo for PduBody {
             PduBody::StartResumeR(body) => { body.body_type() }
             PduBody::StopFreezeR(body) => { body.body_type() }
             PduBody::AcknowledgeR(body) => { body.body_type() }
-            PduBody::ActionRequestR => { PduType::ActionRequestR }
+            PduBody::ActionRequestR(body) => { body.body_type() }
             PduBody::ActionResponseR => { PduType::ActionResponseR }
             PduBody::DataQueryR => { PduType::DataQueryR }
             PduBody::SetDataR => { PduType::SetDataR }
@@ -423,7 +424,7 @@ impl Interaction for PduBody {
             PduBody::StartResumeR(body) => { body.originator() }
             PduBody::StopFreezeR(body) => { body.originator() }
             PduBody::AcknowledgeR(body) => { body.originator() }
-            PduBody::ActionRequestR => { None }
+            PduBody::ActionRequestR(body) => { body.originator() }
             PduBody::ActionResponseR => { None }
             PduBody::DataQueryR => { None }
             PduBody::SetDataR => { None }
@@ -501,7 +502,7 @@ impl Interaction for PduBody {
             PduBody::StartResumeR(body) => { body.receiver() }
             PduBody::StopFreezeR(body) => { body.receiver() }
             PduBody::AcknowledgeR(body) => { body.receiver() }
-            PduBody::ActionRequestR => { None }
+            PduBody::ActionRequestR(body) => { body.receiver() }
             PduBody::ActionResponseR => { None }
             PduBody::DataQueryR => { None }
             PduBody::SetDataR => { None }
