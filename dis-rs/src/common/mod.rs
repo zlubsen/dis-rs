@@ -21,6 +21,7 @@ pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod entity_state_update;
 pub mod event_report;
+pub mod event_report_r;
 pub mod fire;
 pub mod iff;
 pub mod create_entity;

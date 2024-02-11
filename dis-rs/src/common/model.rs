@@ -35,6 +35,7 @@ use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TI
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
+use crate::event_report_r::model::EventReportR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
 use crate::remove_entity_r::model::RemoveEntityR;
 use crate::repair_complete::model::RepairComplete;
@@ -197,7 +198,7 @@ pub enum PduBody {
     DataQueryR(DataQueryR),
     SetDataR(SetDataR),
     DataR(DataR),
-    EventReportR,
+    EventReportR(EventReportR),
     CommentR,
     RecordR,
     SetRecordR,
@@ -275,7 +276,7 @@ impl BodyInfo for PduBody {
             PduBody::DataQueryR(body) => { body.body_length() }
             PduBody::SetDataR(body) => { body.body_length() }
             PduBody::DataR(body) => { body.body_length() }
-            PduBody::EventReportR => { 0 }
+            PduBody::EventReportR(body) => { body.body_length() }
             PduBody::CommentR => { 0 }
             PduBody::RecordR => { 0 }
             PduBody::SetRecordR => { 0 }
@@ -353,7 +354,7 @@ impl BodyInfo for PduBody {
             PduBody::DataQueryR(body) => { body.body_type() }
             PduBody::SetDataR(body) => { body.body_type() }
             PduBody::DataR(body) => { body.body_type() }
-            PduBody::EventReportR => { PduType::EventReportR }
+            PduBody::EventReportR(body) => { body.body_type() }
             PduBody::CommentR => { PduType::CommentR }
             PduBody::RecordR => { PduType::RecordR }
             PduBody::SetRecordR => { PduType::SetRecordR }
@@ -433,7 +434,7 @@ impl Interaction for PduBody {
             PduBody::DataQueryR(body) => { body.originator() }
             PduBody::SetDataR(body) => { body.originator() }
             PduBody::DataR(body) => { body.originator() }
-            PduBody::EventReportR => { None }
+            PduBody::EventReportR(body) => { body.originator() }
             PduBody::CommentR => { None }
             PduBody::RecordR => { None }
             PduBody::SetRecordR => { None }
@@ -511,7 +512,7 @@ impl Interaction for PduBody {
             PduBody::DataQueryR(body) => { body.receiver() }
             PduBody::SetDataR(body) => { body.receiver() }
             PduBody::DataR(body) => { body.receiver() }
-            PduBody::EventReportR => { None }
+            PduBody::EventReportR(body) => { body.receiver() }
             PduBody::CommentR => { None }
             PduBody::RecordR => { None }
             PduBody::SetRecordR => { None }

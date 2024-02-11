@@ -94,7 +94,7 @@ impl Serialize for Pdu {
             PduBody::DataQueryR(body) => { body.serialize_pdu(version, buf) }
             PduBody::SetDataR(body) => { body.serialize_pdu(version, buf) }
             PduBody::DataR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::EventReportR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::EventReportR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::CommentR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::RecordR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
