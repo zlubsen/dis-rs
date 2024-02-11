@@ -6,6 +6,7 @@ pub mod acknowledge_r;
 pub mod action_request;
 pub mod action_request_r;
 pub mod action_response;
+pub mod action_response_r;
 pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;
