@@ -8,6 +8,7 @@ use nom::multi::{count, many1};
 use nom::sequence::tuple;
 use crate::acknowledge_r::parser::acknowledge_r_body;
 use crate::action_request_r::parser::action_request_r_body;
+use crate::action_response_r::parser::action_response_r_body;
 use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
@@ -41,6 +42,7 @@ use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, Explosiv
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
 use crate::create_entity_r::parser::create_entity_r_body;
+use crate::data_query_r::parser::data_query_r_body;
 use crate::model::SupplyQuantity;
 use crate::remove_entity_r::parser::remove_entity_r_body;
 use crate::repair_complete::parser::repair_complete_body;
@@ -236,8 +238,8 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::StopFreezeR => { stop_freeze_r_body(input)? }
             PduType::AcknowledgeR => { acknowledge_r_body(input)? }
             PduType::ActionRequestR => { action_request_r_body(input)? }
-            // PduType::ActionResponseR => {}
-            // PduType::DataQueryR => {}
+            PduType::ActionResponseR => { action_response_r_body(input)? }
+            PduType::DataQueryR => { data_query_r_body(input)? }
             // PduType::SetDataR => {}
             // PduType::DataR => {}
             // PduType::EventReportR => {}

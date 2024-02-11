@@ -33,6 +33,7 @@ use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::create_entity_r::model::CreateEntityR;
+use crate::data_query_r::model::DataQueryR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
 use crate::remove_entity_r::model::RemoveEntityR;
 use crate::repair_complete::model::RepairComplete;
@@ -191,7 +192,7 @@ pub enum PduBody {
     AcknowledgeR(AcknowledgeR),
     ActionRequestR(ActionRequestR),
     ActionResponseR(ActionResponseR),
-    DataQueryR,
+    DataQueryR(DataQueryR),
     SetDataR,
     DataR,
     EventReportR,
@@ -269,7 +270,7 @@ impl BodyInfo for PduBody {
             PduBody::AcknowledgeR(body) => { body.body_length() }
             PduBody::ActionRequestR(body) => { body.body_length() }
             PduBody::ActionResponseR(body) => { body.body_length() }
-            PduBody::DataQueryR => { 0 }
+            PduBody::DataQueryR(body) => { body.body_length() }
             PduBody::SetDataR => { 0 }
             PduBody::DataR => { 0 }
             PduBody::EventReportR => { 0 }
@@ -347,7 +348,7 @@ impl BodyInfo for PduBody {
             PduBody::AcknowledgeR(body) => { body.body_type() }
             PduBody::ActionRequestR(body) => { body.body_type() }
             PduBody::ActionResponseR(body) => { body.body_type() }
-            PduBody::DataQueryR => { PduType::DataQueryR }
+            PduBody::DataQueryR(body) => { body.body_type() }
             PduBody::SetDataR => { PduType::SetDataR }
             PduBody::DataR => { PduType::DataR }
             PduBody::EventReportR => { PduType::EventReportR }
@@ -427,7 +428,7 @@ impl Interaction for PduBody {
             PduBody::AcknowledgeR(body) => { body.originator() }
             PduBody::ActionRequestR(body) => { body.originator() }
             PduBody::ActionResponseR(body) => { body.originator() }
-            PduBody::DataQueryR => { None }
+            PduBody::DataQueryR(body) => { body.originator() }
             PduBody::SetDataR => { None }
             PduBody::DataR => { None }
             PduBody::EventReportR => { None }
@@ -505,7 +506,7 @@ impl Interaction for PduBody {
             PduBody::AcknowledgeR(body) => { body.receiver() }
             PduBody::ActionRequestR(body) => { body.receiver() }
             PduBody::ActionResponseR(body) => { body.receiver() }
-            PduBody::DataQueryR => { None }
+            PduBody::DataQueryR(body) => { body.receiver() }
             PduBody::SetDataR => { None }
             PduBody::DataR => { None }
             PduBody::EventReportR => { None }
