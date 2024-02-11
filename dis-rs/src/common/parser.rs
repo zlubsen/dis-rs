@@ -43,6 +43,7 @@ use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric,
 use crate::common::iff::parser::iff_body;
 use crate::create_entity_r::parser::create_entity_r_body;
 use crate::data_query_r::parser::data_query_r_body;
+use crate::data_r::parser::data_r_body;
 use crate::model::SupplyQuantity;
 use crate::remove_entity_r::parser::remove_entity_r_body;
 use crate::repair_complete::parser::repair_complete_body;
@@ -242,7 +243,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::ActionResponseR => { action_response_r_body(input)? }
             PduType::DataQueryR => { data_query_r_body(input)? }
             PduType::SetDataR => { set_data_r_body(input)? }
-            // PduType::DataR => {}
+            PduType::DataR => { data_r_body(input)? }
             // PduType::EventReportR => {}
             // PduType::CommentR => {}
             // PduType::RecordR => {}
