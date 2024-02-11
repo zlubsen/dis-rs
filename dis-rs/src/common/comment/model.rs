@@ -4,7 +4,7 @@ use crate::common::model::{EntityId, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, 
 use crate::enumerations::PduType;
 use crate::constants::EIGHT_OCTETS;
 
-pub const BASE_COMMENT_BODY_LENGTH: u16 = 20;
+const BASE_COMMENT_BODY_LENGTH: u16 = 20;
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Comment {
