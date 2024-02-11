@@ -33,6 +33,7 @@ pub mod resupply_offer;
 pub mod resupply_received;
 pub mod service_request;
 pub mod set_data;
+pub mod set_data_r;
 pub mod start_resume;
 pub mod start_resume_r;
 pub mod stop_freeze;

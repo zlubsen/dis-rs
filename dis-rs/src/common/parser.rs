@@ -51,6 +51,7 @@ use crate::resupply_cancel::parser::resupply_cancel_body;
 use crate::resupply_offer::parser::resupply_offer_body;
 use crate::resupply_received::parser::resupply_received_body;
 use crate::service_request::parser::service_request_body;
+use crate::set_data_r::parser::set_data_r_body;
 use crate::start_resume_r::parser::start_resume_r_body;
 use crate::stop_freeze_r::parser::stop_freeze_r_body;
 
@@ -240,7 +241,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::ActionRequestR => { action_request_r_body(input)? }
             PduType::ActionResponseR => { action_response_r_body(input)? }
             PduType::DataQueryR => { data_query_r_body(input)? }
-            // PduType::SetDataR => {}
+            PduType::SetDataR => { set_data_r_body(input)? }
             // PduType::DataR => {}
             // PduType::EventReportR => {}
             // PduType::CommentR => {}
