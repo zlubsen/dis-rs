@@ -1,6 +1,7 @@
 use crate::acknowledge_r::model::AcknowledgeR;
 use crate::action_request_r::model::ActionRequestR;
 use crate::action_response_r::model::ActionResponseR;
+use crate::comment_r::model::CommentR;
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::common::entity_state::model::EntityState;
@@ -199,7 +200,7 @@ pub enum PduBody {
     SetDataR(SetDataR),
     DataR(DataR),
     EventReportR(EventReportR),
-    CommentR,
+    CommentR(CommentR),
     RecordR,
     SetRecordR,
     RecordQueryR,
@@ -277,7 +278,7 @@ impl BodyInfo for PduBody {
             PduBody::SetDataR(body) => { body.body_length() }
             PduBody::DataR(body) => { body.body_length() }
             PduBody::EventReportR(body) => { body.body_length() }
-            PduBody::CommentR => { 0 }
+            PduBody::CommentR(body) => { body.body_length() }
             PduBody::RecordR => { 0 }
             PduBody::SetRecordR => { 0 }
             PduBody::RecordQueryR => { 0 }
@@ -355,7 +356,7 @@ impl BodyInfo for PduBody {
             PduBody::SetDataR(body) => { body.body_type() }
             PduBody::DataR(body) => { body.body_type() }
             PduBody::EventReportR(body) => { body.body_type() }
-            PduBody::CommentR => { PduType::CommentR }
+            PduBody::CommentR(body) => { body.body_type() }
             PduBody::RecordR => { PduType::RecordR }
             PduBody::SetRecordR => { PduType::SetRecordR }
             PduBody::RecordQueryR => { PduType::RecordQueryR }
@@ -435,7 +436,7 @@ impl Interaction for PduBody {
             PduBody::SetDataR(body) => { body.originator() }
             PduBody::DataR(body) => { body.originator() }
             PduBody::EventReportR(body) => { body.originator() }
-            PduBody::CommentR => { None }
+            PduBody::CommentR(body) => { body.originator() }
             PduBody::RecordR => { None }
             PduBody::SetRecordR => { None }
             PduBody::RecordQueryR => { None }
@@ -513,7 +514,7 @@ impl Interaction for PduBody {
             PduBody::SetDataR(body) => { body.receiver() }
             PduBody::DataR(body) => { body.receiver() }
             PduBody::EventReportR(body) => { body.receiver() }
-            PduBody::CommentR => { None }
+            PduBody::CommentR(body) => { body.receiver() }
             PduBody::RecordR => { None }
             PduBody::SetRecordR => { None }
             PduBody::RecordQueryR => { None }

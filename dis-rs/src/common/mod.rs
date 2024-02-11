@@ -11,6 +11,7 @@ pub mod attribute;
 pub mod collision;
 pub mod collision_elastic;
 pub mod comment;
+pub mod comment_r;
 pub mod data;
 pub mod data_r;
 pub mod data_query;

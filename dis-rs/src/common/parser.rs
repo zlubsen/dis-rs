@@ -9,6 +9,7 @@ use nom::sequence::tuple;
 use crate::acknowledge_r::parser::acknowledge_r_body;
 use crate::action_request_r::parser::action_request_r_body;
 use crate::action_response_r::parser::action_response_r_body;
+use crate::comment_r::parser::comment_r_body;
 use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::errors::DisError;
@@ -246,7 +247,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::SetDataR => { set_data_r_body(input)? }
             PduType::DataR => { data_r_body(input)? }
             PduType::EventReportR => { event_report_r_body(input)? }
-            // PduType::CommentR => {}
+            PduType::CommentR => { comment_r_body(input)? }
             // PduType::RecordR => {}
             // PduType::SetRecordR => {}
             // PduType::RecordQueryR => {}
