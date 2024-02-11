@@ -7,6 +7,9 @@ use crate::constants::EIGHT_OCTETS;
 
 pub const BASE_ACTION_REQUEST_R_BODY_LENGTH: u16 = 36;
 
+/// 5.12.4.7 Action Request-R PDU
+///
+/// 7.11.7 Action Request-R PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct ActionRequestR {
     pub originating_id: EntityId,
