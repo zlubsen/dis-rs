@@ -6,6 +6,9 @@ use crate::constants::EIGHT_OCTETS;
 
 pub const BASE_DATA_BODY_LENGTH: u16 = 28;
 
+/// 5.6.5.11 Data PDU
+///
+/// 7.5.11 Data PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct Data {
     pub originating_id: EntityId,

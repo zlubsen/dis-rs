@@ -5,6 +5,9 @@ use crate::enumerations::{CollisionType, PduType};
 
 const COLLISION_BODY_LENGTH : u16 = 60;
 
+/// 5.3.3 Collision PDU
+///
+/// 7.2.3 Collision PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct Collision {
     pub issuing_entity_id: EntityId,

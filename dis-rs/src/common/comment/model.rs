@@ -6,6 +6,9 @@ use crate::constants::EIGHT_OCTETS;
 
 const BASE_COMMENT_BODY_LENGTH: u16 = 20;
 
+/// 5.6.5.13 Comment PDU
+///
+/// 7.5.13 Comment PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct Comment {
     pub originating_id: EntityId,
