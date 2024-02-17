@@ -38,6 +38,7 @@ use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
 use crate::event_report_r::model::EventReportR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::record_r::model::RecordR;
 use crate::remove_entity_r::model::RemoveEntityR;
 use crate::repair_complete::model::RepairComplete;
 use crate::repair_response::model::RepairResponse;
@@ -201,7 +202,7 @@ pub enum PduBody {
     DataR(DataR),
     EventReportR(EventReportR),
     CommentR(CommentR),
-    RecordR,
+    RecordR(RecordR),
     SetRecordR,
     RecordQueryR,
     CollisionElastic(CollisionElastic),
@@ -279,7 +280,7 @@ impl BodyInfo for PduBody {
             PduBody::DataR(body) => { body.body_length() }
             PduBody::EventReportR(body) => { body.body_length() }
             PduBody::CommentR(body) => { body.body_length() }
-            PduBody::RecordR => { 0 }
+            PduBody::RecordR(body) => { body.body_length() }
             PduBody::SetRecordR => { 0 }
             PduBody::RecordQueryR => { 0 }
             PduBody::CollisionElastic(body) => { body.body_length() }
@@ -357,7 +358,7 @@ impl BodyInfo for PduBody {
             PduBody::DataR(body) => { body.body_type() }
             PduBody::EventReportR(body) => { body.body_type() }
             PduBody::CommentR(body) => { body.body_type() }
-            PduBody::RecordR => { PduType::RecordR }
+            PduBody::RecordR(body) => { body.body_type() }
             PduBody::SetRecordR => { PduType::SetRecordR }
             PduBody::RecordQueryR => { PduType::RecordQueryR }
             PduBody::CollisionElastic(body) => { body.body_type() }
@@ -437,7 +438,7 @@ impl Interaction for PduBody {
             PduBody::DataR(body) => { body.originator() }
             PduBody::EventReportR(body) => { body.originator() }
             PduBody::CommentR(body) => { body.originator() }
-            PduBody::RecordR => { None }
+            PduBody::RecordR(body) => { body.originator() }
             PduBody::SetRecordR => { None }
             PduBody::RecordQueryR => { None }
             PduBody::CollisionElastic(body) => { body.originator() }
@@ -515,7 +516,7 @@ impl Interaction for PduBody {
             PduBody::DataR(body) => { body.receiver() }
             PduBody::EventReportR(body) => { body.receiver() }
             PduBody::CommentR(body) => { body.receiver() }
-            PduBody::RecordR => { None }
+            PduBody::RecordR(body) => { body.receiver() }
             PduBody::SetRecordR => { None }
             PduBody::RecordQueryR => { None }
             PduBody::CollisionElastic(body) => { body.receiver() }
@@ -1088,6 +1089,7 @@ impl VariableDatum {
 
 /// Struct to hold the length (in bits or bytes) of parts of a padded record.
 /// Such that `data_length` + `padding_length` = `record_length`.
+#[derive(Debug)]
 pub struct PaddedRecordLengths {
     pub data_length: usize,
     pub padding_length: usize,

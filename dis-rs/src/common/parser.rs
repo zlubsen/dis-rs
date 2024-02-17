@@ -47,6 +47,7 @@ use crate::data_query_r::parser::data_query_r_body;
 use crate::data_r::parser::data_r_body;
 use crate::event_report_r::parser::event_report_r_body;
 use crate::model::SupplyQuantity;
+use crate::record_r::parser::record_r_body;
 use crate::remove_entity_r::parser::remove_entity_r_body;
 use crate::repair_complete::parser::repair_complete_body;
 use crate::repair_response::parser::repair_response_body;
@@ -248,7 +249,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::DataR => { data_r_body(input)? }
             PduType::EventReportR => { event_report_r_body(input)? }
             PduType::CommentR => { comment_r_body(input)? }
-            // PduType::RecordR => {}
+            PduType::RecordR => { record_r_body(input)? }
             // PduType::SetRecordR => {}
             // PduType::RecordQueryR => {}
             PduType::CollisionElastic => { collision_elastic_body(input)? }
