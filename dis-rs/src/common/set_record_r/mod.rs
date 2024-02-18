@@ -6,23 +6,22 @@ pub mod builder;
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::enumerations::{EventType, PduType, RequiredReliabilityService, VariableRecordType};
-    use crate::common::model::{EntityId, Pdu, PduHeader, RecordSet, RecordSpecification};
+    use crate::enumerations::{PduType, RequiredReliabilityService, VariableRecordType};
+    use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::common::Serialize;
-    use crate::common::model::DisTimeStamp;
-    use crate::record_r::model::RecordR;
+    use crate::common::model::{DisTimeStamp};
+    use crate::model::{RecordSet, RecordSpecification};
+    use crate::set_record_r::model::SetRecordR;
 
     #[test]
-    fn record_r_internal_consistency() {
+    fn set_record_r_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::RecordR);
-        let body = RecordR::builder()
+        let body = SetRecordR::builder()
             .with_origination_id(EntityId::new(10,10,10))
             .with_receiving_id(EntityId::new(20,20,20))
             .with_request_id(15)
-            .with_required_reliability_service(RequiredReliabilityService::Unacknowledged)
-            .with_event_type(EventType::Detect)
-            .with_response_serial_number(2132)
+            .with_required_reliability_service(RequiredReliabilityService::Acknowledged)
             .with_record_specification(RecordSpecification::default()
                 .with_record_set(
                     RecordSet::default().with_record_id(VariableRecordType::AirSpeed_240054)

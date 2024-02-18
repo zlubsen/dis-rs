@@ -47,6 +47,7 @@ use crate::resupply_offer::model::ResupplyOffer;
 use crate::resupply_received::model::ResupplyReceived;
 use crate::service_request::model::ServiceRequest;
 use crate::set_data_r::model::SetDataR;
+use crate::set_record_r::model::SetRecordR;
 use crate::start_resume_r::model::StartResumeR;
 use crate::stop_freeze_r::model::StopFreezeR;
 
@@ -203,7 +204,7 @@ pub enum PduBody {
     EventReportR(EventReportR),
     CommentR(CommentR),
     RecordR(RecordR),
-    SetRecordR,
+    SetRecordR(SetRecordR),
     RecordQueryR,
     CollisionElastic(CollisionElastic),
     EntityStateUpdate(EntityStateUpdate),
@@ -281,7 +282,7 @@ impl BodyInfo for PduBody {
             PduBody::EventReportR(body) => { body.body_length() }
             PduBody::CommentR(body) => { body.body_length() }
             PduBody::RecordR(body) => { body.body_length() }
-            PduBody::SetRecordR => { 0 }
+            PduBody::SetRecordR(body) => { body.body_length() }
             PduBody::RecordQueryR => { 0 }
             PduBody::CollisionElastic(body) => { body.body_length() }
             PduBody::EntityStateUpdate(body) => { body.body_length() }
@@ -359,7 +360,7 @@ impl BodyInfo for PduBody {
             PduBody::EventReportR(body) => { body.body_type() }
             PduBody::CommentR(body) => { body.body_type() }
             PduBody::RecordR(body) => { body.body_type() }
-            PduBody::SetRecordR => { PduType::SetRecordR }
+            PduBody::SetRecordR(body) => { body.body_type() }
             PduBody::RecordQueryR => { PduType::RecordQueryR }
             PduBody::CollisionElastic(body) => { body.body_type() }
             PduBody::EntityStateUpdate(body) => { body.body_type() }
@@ -439,7 +440,7 @@ impl Interaction for PduBody {
             PduBody::EventReportR(body) => { body.originator() }
             PduBody::CommentR(body) => { body.originator() }
             PduBody::RecordR(body) => { body.originator() }
-            PduBody::SetRecordR => { None }
+            PduBody::SetRecordR(body) => { body.originator() }
             PduBody::RecordQueryR => { None }
             PduBody::CollisionElastic(body) => { body.originator() }
             PduBody::EntityStateUpdate(body) => { body.originator() }
@@ -517,7 +518,7 @@ impl Interaction for PduBody {
             PduBody::EventReportR(body) => { body.receiver() }
             PduBody::CommentR(body) => { body.receiver() }
             PduBody::RecordR(body) => { body.receiver() }
-            PduBody::SetRecordR => { None }
+            PduBody::SetRecordR(body) => { body.receiver() }
             PduBody::RecordQueryR => { None }
             PduBody::CollisionElastic(body) => { body.receiver() }
             PduBody::EntityStateUpdate(body) => { body.receiver() }
@@ -1389,6 +1390,66 @@ impl SupplyQuantity {
 
     pub fn with_quantity(mut self, quantity: f32) -> Self {
         self.quantity = quantity;
+        self
+    }
+}
+
+pub const BASE_RECORD_SPEC_RECORD_LENGTH: u16 = 16;
+
+/// 6.2.73 Record Specification record
+#[derive(Debug, Default, PartialEq)]
+pub struct RecordSpecification {
+    pub record_sets: Vec<RecordSet>,
+}
+
+impl RecordSpecification {
+    pub fn with_record_set(mut self, record: RecordSet) -> Self {
+        self.record_sets.push(record);
+        self
+    }
+
+    pub fn with_record_sets(mut self, records: Vec<RecordSet>) -> Self {
+        self.record_sets = records;
+        self
+    }
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub struct RecordSet {
+    pub record_id: VariableRecordType,
+    pub record_serial_number: u32,
+    pub record_length_bytes: u16,
+    pub records: Vec<Vec<u8>>,
+}
+
+impl RecordSet {
+    pub fn with_record_id(mut self, record_id: VariableRecordType) -> Self {
+        self.record_id = record_id;
+        self
+    }
+
+    pub fn with_record_serial_number(mut self, record_serial_number: u32) -> Self {
+        self.record_serial_number = record_serial_number;
+        self
+    }
+
+    /// Adds `record` to be the Record Values in this RecordSet.
+    /// It is specified in the DIS standard that all Record Values in a RecordSet are of the same length.
+    /// It is up to the caller of the function to ensure only Record Values of same length are added,
+    /// the length of the last added value is assumed for all previously added.
+    pub fn with_record(mut self, record: Vec<u8>) -> Self {
+        self.record_length_bytes = record.len() as u16;
+        self.records.push(record);
+        self
+    }
+
+    /// Sets `records` to be the records in this RecordSet.
+    /// It is specified in the DIS standard that all Record Values in a RecordSet are of the same length (i.e., the inner `Vec`).
+    pub fn with_records(mut self, records: Vec<Vec<u8>>) -> Self {
+        self.record_length_bytes = if let Some(record) = records.first() {
+            record.len()
+        } else { 0 } as u16;
+        self.records = records;
         self
     }
 }

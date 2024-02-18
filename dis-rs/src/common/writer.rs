@@ -1,10 +1,10 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::constants::PDU_HEADER_LEN_BYTES;
+use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::model::{ArticulatedPart, AttachedPart, BeamData, ClockTime, DescriptorRecord, EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, FixedDatum, length_padded_to_num, Location, MunitionDescriptor, Orientation, SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32};
 use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
-use crate::model::SupplyQuantity;
+use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -97,7 +97,7 @@ impl Serialize for Pdu {
             PduBody::EventReportR(body) => { body.serialize_pdu(version, buf) }
             PduBody::CommentR(body) => { body.serialize_pdu(version, buf) }
             PduBody::RecordR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
             // PduBody::RecordQueryR(body) => { body.serialize_pdu(version, buf) }
             PduBody::CollisionElastic(body) => { body.serialize_pdu(version, buf) }
             PduBody::EntityStateUpdate(body) => { body.serialize_pdu(version, buf) }
@@ -399,5 +399,34 @@ impl Serialize for SupplyQuantity {
         buf.put_f32(self.quantity);
 
         type_bytes + 4
+    }
+}
+
+impl Serialize for RecordSpecification {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.record_sets.len() as u32);
+        let record_sets_bytes : u16 = self.record_sets.iter()
+            .map(|record_set| record_set.serialize(buf) )
+            .sum();
+
+        FOUR_OCTETS as u16 + record_sets_bytes
+    }
+}
+
+impl Serialize for RecordSet {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.record_id.into());
+        buf.put_u32(self.record_serial_number);
+        buf.put_u32(0u32);
+
+        buf.put_u16(self.record_length_bytes * ONE_BYTE_IN_BITS as u16); // record length in bits
+        buf.put_u16(self.records.len() as u16); // record count
+        let records_bytes = self.records.iter()
+            .map(|record| { buf.put(record.as_slice()); record.len() })
+            .sum::<usize>() as u16;
+        let padded_record = length_padded_to_num(records_bytes as usize, EIGHT_OCTETS);
+        buf.put_bytes(0u8, padded_record.padding_length);
+
+        16 + records_bytes + padded_record.padding_length as u16
     }
 }

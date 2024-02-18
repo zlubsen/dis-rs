@@ -46,7 +46,7 @@ use crate::create_entity_r::parser::create_entity_r_body;
 use crate::data_query_r::parser::data_query_r_body;
 use crate::data_r::parser::data_r_body;
 use crate::event_report_r::parser::event_report_r_body;
-use crate::model::SupplyQuantity;
+use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
 use crate::record_r::parser::record_r_body;
 use crate::remove_entity_r::parser::remove_entity_r_body;
 use crate::repair_complete::parser::repair_complete_body;
@@ -56,6 +56,7 @@ use crate::resupply_offer::parser::resupply_offer_body;
 use crate::resupply_received::parser::resupply_received_body;
 use crate::service_request::parser::service_request_body;
 use crate::set_data_r::parser::set_data_r_body;
+use crate::set_record_r::parser::set_record_r_body;
 use crate::start_resume_r::parser::start_resume_r_body;
 use crate::stop_freeze_r::parser::stop_freeze_r_body;
 
@@ -250,7 +251,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::EventReportR => { event_report_r_body(input)? }
             PduType::CommentR => { comment_r_body(input)? }
             PduType::RecordR => { record_r_body(input)? }
-            // PduType::SetRecordR => {}
+            PduType::SetRecordR => { set_record_r_body(input)? }
             // PduType::RecordQueryR => {}
             PduType::CollisionElastic => { collision_elastic_body(input)? }
             PduType::EntityStateUpdate => { entity_state_update_body(input)? }
@@ -776,4 +777,48 @@ pub fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
     Ok((input, SupplyQuantity::default()
         .with_supply_type(supply_type)
         .with_quantity(quantity)))
+}
+
+/// Parses the RecordSpecification record (6.2.73)
+pub fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecification> {
+    let (input, number_of_records) = be_u32(input)?;
+    let (input, record_sets) = count(record_set, number_of_records as usize)(input)?;
+
+    Ok((input, RecordSpecification::default().with_record_sets(record_sets)))
+}
+
+/// Parses a Record Set as part of a RecordSpecification record (6.2.73).
+///
+/// Parsing will always consider record values to be byte-aligned.
+/// Record length is defined in bits, but this function always rounds up to the next full byte.
+/// This is compensated for in the padding.
+pub fn record_set(input: &[u8]) -> IResult<&[u8], RecordSet> {
+    let (input, record_id) = be_u32(input)?;
+    let record_id = VariableRecordType::from(record_id);
+    let (input, serial_number) = be_u32(input)?;
+    let (input, _padding) = be_u32(input)?;
+    let (input, record_length_bits) = be_u16(input)?;
+    let record_length_bytes = ceil_bits_to_bytes(record_length_bits);
+    let (input, record_count) = be_u16(input)?;
+    let (input, record_values) : (&[u8], Vec<&[u8]>) =
+        count(take(record_length_bytes), record_count as usize)(input)?;
+    let record_values = record_values.iter()
+        .map(|values| values.to_vec() )
+        .collect();
+    let padded_record_length = length_padded_to_num(
+        (record_length_bytes * record_count) as usize,
+        EIGHT_OCTETS);
+    let (input, _padding) = take(padded_record_length.padding_length)(input)?;
+
+    Ok((input, RecordSet::default()
+        .with_record_id(record_id)
+        .with_record_serial_number(serial_number)
+        .with_records(record_values)))
+}
+
+/// Round upward a given number of bits to the next amount of full bytes
+///
+/// E.g., 7 bits become 1 byte (8 bits), 12 bits become 2 bytes (16 bits)
+fn ceil_bits_to_bytes(bits: u16) -> u16 {
+    bits.div_ceil(ONE_BYTE_IN_BITS as u16)
 }

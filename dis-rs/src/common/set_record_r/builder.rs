@@ -1,19 +1,20 @@
-use crate::enumerations::{EventType, RequiredReliabilityService};
-use crate::common::model::{EntityId, RecordSpecification};
-use crate::record_r::model::RecordR;
+use crate::enumerations::RequiredReliabilityService;
+use crate::common::model::EntityId;
+use crate::model::RecordSpecification;
+use crate::set_record_r::model::SetRecordR;
 
-pub struct RecordRBuilder(RecordR);
+pub struct SetRecordRBuilder(SetRecordR);
 
-impl RecordRBuilder {
+impl SetRecordRBuilder {
     pub fn new() -> Self {
-        RecordRBuilder(RecordR::default())
+        SetRecordRBuilder(SetRecordR::default())
     }
 
-    pub fn new_from_body(body: RecordR) -> Self {
-        RecordRBuilder(body)
+    pub fn new_from_body(body: SetRecordR) -> Self {
+        SetRecordRBuilder(body)
     }
 
-    pub fn build(self) -> RecordR {
+    pub fn build(self) -> SetRecordR {
         self.0
     }
 
@@ -34,16 +35,6 @@ impl RecordRBuilder {
 
     pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
         self.0.required_reliability_service = required_reliability_service;
-        self
-    }
-
-    pub fn with_event_type(mut self, event_type: EventType) -> Self {
-        self.0.event_type = event_type;
-        self
-    }
-
-    pub fn with_response_serial_number(mut self, response_serial_number: u32) -> Self {
-        self.0.response_serial_number = response_serial_number;
         self
     }
 
