@@ -38,6 +38,7 @@ use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
 use crate::event_report_r::model::EventReportR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::record_query_r::model::RecordQueryR;
 use crate::record_r::model::RecordR;
 use crate::remove_entity_r::model::RemoveEntityR;
 use crate::repair_complete::model::RepairComplete;
@@ -205,7 +206,7 @@ pub enum PduBody {
     CommentR(CommentR),
     RecordR(RecordR),
     SetRecordR(SetRecordR),
-    RecordQueryR,
+    RecordQueryR(RecordQueryR),
     CollisionElastic(CollisionElastic),
     EntityStateUpdate(EntityStateUpdate),
     DirectedEnergyFire,
@@ -283,7 +284,7 @@ impl BodyInfo for PduBody {
             PduBody::CommentR(body) => { body.body_length() }
             PduBody::RecordR(body) => { body.body_length() }
             PduBody::SetRecordR(body) => { body.body_length() }
-            PduBody::RecordQueryR => { 0 }
+            PduBody::RecordQueryR(body) => { body.body_length() }
             PduBody::CollisionElastic(body) => { body.body_length() }
             PduBody::EntityStateUpdate(body) => { body.body_length() }
             PduBody::DirectedEnergyFire => { 0 }
@@ -361,7 +362,7 @@ impl BodyInfo for PduBody {
             PduBody::CommentR(body) => { body.body_type() }
             PduBody::RecordR(body) => { body.body_type() }
             PduBody::SetRecordR(body) => { body.body_type() }
-            PduBody::RecordQueryR => { PduType::RecordQueryR }
+            PduBody::RecordQueryR(body) => { body.body_type() }
             PduBody::CollisionElastic(body) => { body.body_type() }
             PduBody::EntityStateUpdate(body) => { body.body_type() }
             PduBody::DirectedEnergyFire => { PduType::DirectedEnergyFire }
@@ -441,7 +442,7 @@ impl Interaction for PduBody {
             PduBody::CommentR(body) => { body.originator() }
             PduBody::RecordR(body) => { body.originator() }
             PduBody::SetRecordR(body) => { body.originator() }
-            PduBody::RecordQueryR => { None }
+            PduBody::RecordQueryR(body) => { body.originator() }
             PduBody::CollisionElastic(body) => { body.originator() }
             PduBody::EntityStateUpdate(body) => { body.originator() }
             PduBody::DirectedEnergyFire => { None }
@@ -519,7 +520,7 @@ impl Interaction for PduBody {
             PduBody::CommentR(body) => { body.receiver() }
             PduBody::RecordR(body) => { body.receiver() }
             PduBody::SetRecordR(body) => { body.receiver() }
-            PduBody::RecordQueryR => { None }
+            PduBody::RecordQueryR(body) => { body.receiver() }
             PduBody::CollisionElastic(body) => { body.receiver() }
             PduBody::EntityStateUpdate(body) => { body.receiver() }
             PduBody::DirectedEnergyFire => { None }
@@ -923,7 +924,7 @@ impl MunitionDescriptor {
 ///
 /// This raw timestamp could also be interpreted as a Unix timestamp, or something else
 /// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 pub struct TimeStamp {
     pub raw_timestamp: u32,
 }

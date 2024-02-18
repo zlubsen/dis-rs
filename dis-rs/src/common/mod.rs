@@ -27,6 +27,7 @@ pub mod fire;
 pub mod iff;
 pub mod create_entity;
 pub mod create_entity_r;
+pub mod record_query_r;
 pub mod record_r;
 pub mod remove_entity;
 pub mod remove_entity_r;
