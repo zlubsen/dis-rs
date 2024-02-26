@@ -60,6 +60,7 @@ pub enum EncodingScheme {
     RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u16 },
     ApplicationSpecificData { encoding_class: SignalEncodingClass, user_protocol_id: SignalUserProtocolIdentificationNumber },
     DatabaseIndex { encoding_class: SignalEncodingClass, index: u32, offset_milli_secs: u32, duration_milli_secs: u32 },
+    Unspecified { encoding_class: SignalEncodingClass },
 }
 
 impl Default for EncodingScheme {

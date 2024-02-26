@@ -68,10 +68,10 @@ fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingSch
                 duration_milli_secs: u32::from_be_bytes(duration_bytes),
             }
         }
-        SignalEncodingClass::Unspecified(_value) => {
+        SignalEncodingClass::Unspecified(_) => {
             // 2-bit _value can only contain values 0-3 decimal, so SignalEncodingClass::Unspecified should never be possible.
-            // TODO convert panic to an error
-            panic!("Impossible (unspecified) _value for SignalEncodingClass: {_value}");
+            // For completeness sake and possible debugging the contained value is returned as EncodingScheme::Unspecified
+            EncodingScheme::Unspecified { encoding_class }
         }
     }
 }

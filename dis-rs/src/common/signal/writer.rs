@@ -47,6 +47,11 @@ impl Serialize for EncodingScheme {
                 buf.put_u16(class_bits);
                 2
             }
+            EncodingScheme::Unspecified { encoding_class } => {
+                let class_bits = u16::from(*encoding_class) << 14;
+                buf.put_u16(class_bits);
+                2
+            }
         }
     }
 }
