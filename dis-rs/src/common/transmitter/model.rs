@@ -108,6 +108,7 @@ impl ModulationType {
     }
 }
 
+/// Table 90 — Spread spectrum field definition (6.2.59 Modulation Type record)
 #[derive(Debug, PartialEq)]
 pub struct SpreadSpectrum {
     pub frequency_hopping: bool,
@@ -154,6 +155,7 @@ impl SpreadSpectrum {
     }
 }
 
+/// Table 175 — Crypto Key ID record (7.7.2 Transmitter PDU)
 #[derive(Debug, PartialEq)]
 pub struct CryptoKeyId {
     pub pseudo_crypto_key: u16,
@@ -190,6 +192,7 @@ impl From<bool> for CryptoMode {
     }
 }
 
+/// 6.2.8.2 Beam Antenna Pattern record
 #[derive(Debug, PartialEq)]
 pub struct BeamAntennaPattern {
     pub beam_direction: Orientation,
@@ -256,6 +259,7 @@ impl BeamAntennaPattern {
     }
 }
 
+/// 6.2.95 Variable Transmitter Parameters record
 #[derive(Debug, PartialEq)]
 pub struct VariableTransmitterParameter {
     pub record_type: VariableRecordType,

@@ -60,6 +60,7 @@ impl Interaction for Attribute {
     }
 }
 
+/// 5.3.6.3
 #[derive(Debug, PartialEq)]
 pub struct AttributeRecordSet {
     pub entity_id: EntityId,

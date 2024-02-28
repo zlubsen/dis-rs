@@ -6,6 +6,9 @@ use crate::data_r::builder::DataRBuilder;
 
 pub const BASE_DATA_R_BODY_LENGTH: u16 = 28;
 
+/// 5.12.4.11 Data-R PDU
+///
+/// 7.11.11 Data-R PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct DataR {
     pub originating_id: EntityId,

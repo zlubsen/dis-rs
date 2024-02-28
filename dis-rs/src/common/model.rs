@@ -81,6 +81,7 @@ impl Interaction for Pdu {
     }
 }
 
+/// 6.2.66 PDU Header record
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduHeader {
     pub protocol_version : ProtocolVersion,
@@ -613,6 +614,7 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
+/// 6.2.80 Simulation Address record
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SimulationAddress {
     pub site_id : u16,
@@ -637,6 +639,7 @@ impl Default for SimulationAddress {
     }
 }
 
+/// 6.2.28 Entity Identifier record
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
@@ -702,6 +705,8 @@ impl Default for EventId {
     }
 }
 
+/// 6.2.96 Vector record
+/// 6.2.7 Angular Velocity Vector record
 #[derive(Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
@@ -734,6 +739,8 @@ impl VectorF32 {
     }
 }
 
+// TODO rename Location to World Coordinate
+/// 6.2.98 World Coordinates record
 #[derive(Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
@@ -766,6 +773,8 @@ impl Location {
     }
 }
 
+// TODO rename Orientation to EulerAngle
+/// 6.2.32 Euler Angles record
 #[derive(Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
@@ -798,6 +807,7 @@ impl Orientation {
     }
 }
 
+/// 6.2.30 Entity Type record
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityType {
     pub kind : EntityKind,
@@ -1130,6 +1140,7 @@ pub fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedReco
     PaddedRecordLengths::new(data_length, padding_num, record_length)
 }
 
+/// 6.2.94 Variable Parameter record
 #[derive(Debug, PartialEq)]
 pub enum VariableParameter {
     Articulated(ArticulatedPart),
@@ -1140,6 +1151,7 @@ pub enum VariableParameter {
     Unspecified(u8, [u8; FIFTEEN_OCTETS]),
 }
 
+/// 6.2.94.2 Articulated Part VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct ArticulatedPart {
     pub change_indicator: ChangeIndicator,
@@ -1180,6 +1192,7 @@ impl ArticulatedPart {
     }
 }
 
+/// 6.2.94.3 Attached Part VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct AttachedPart {
     pub detached_indicator: AttachedPartDetachedIndicator,
@@ -1214,6 +1227,7 @@ impl AttachedPart {
     }
 }
 
+/// 6.2.94.6 Separation VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SeparationParameter {
     pub reason: SeparationReasonForSeparation,
@@ -1254,6 +1268,7 @@ impl SeparationParameter {
     }
 }
 
+/// 6.2.94.5 Entity Type VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityTypeParameter {
     pub change_indicator: ChangeIndicator,
@@ -1276,6 +1291,7 @@ impl EntityTypeParameter {
     }
 }
 
+/// 6.2.94.4 Entity Association VP Record
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityAssociationParameter {
     pub change_indicator: ChangeIndicator,

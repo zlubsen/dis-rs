@@ -12,6 +12,9 @@ pub enum EntityStateValidationError {
     SomeFieldNotOkError,
 }
 
+/// 5.3.2 Entity State PDU
+///
+/// 7.2.2 Entity State PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct EntityState {
     pub entity_id : EntityId, // struct
@@ -62,6 +65,7 @@ impl Interaction for EntityState {
     }
 }
 
+/// 6.2.26 Entity Appearance record
 #[derive(Debug, PartialEq)]
 pub enum EntityAppearance {
     LandPlatform(LandPlatformAppearance),
@@ -86,6 +90,7 @@ impl Default for EntityAppearance {
     }
 }
 
+/// 6.2.29 Entity Marking record
 #[derive(Debug, PartialEq)]
 pub struct EntityMarking {
     pub marking_character_set : EntityMarkingCharacterSet,
@@ -115,6 +120,7 @@ impl Default for EntityMarking {
     }
 }
 
+/// Custom defined record to group Dead Reckoning Parameters
 #[derive(Default, Debug, PartialEq)]
 pub struct DrParameters {
     pub algorithm : DeadReckoningAlgorithm,
@@ -145,6 +151,7 @@ impl DrParameters {
     }
 }
 
+/// E.8 Use of the Other Parameters field in Dead Reckoning Parameters
 #[derive(Debug, PartialEq)]
 pub enum DrOtherParameters {
     None([u8; 15]),
