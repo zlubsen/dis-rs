@@ -5,6 +5,9 @@ use crate::start_resume::builder::StartResumeBuilder;
 
 const START_RESUME_BODY_LENGTH : u16 = 32;
 
+/// 5.6.5.4 Start/Resume PDU
+///
+/// 7.5.4 Start/Resume PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct StartResume {
     pub originating_id: EntityId,

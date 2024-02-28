@@ -165,6 +165,7 @@ impl Default for DrOtherParameters {
     }
 }
 
+/// Identical to Table 58—Euler Angles record / 6.2.32 Euler Angles record (which is modeled as `VectorF32`)
 #[derive(Default, Debug, PartialEq)]
 pub struct DrEulerAngles {
     pub local_yaw : f32,
@@ -189,6 +190,7 @@ impl DrEulerAngles {
     }
 }
 
+/// Table E.3—World Orientation Quaternion Dead Reckoning Parameters (E.8.2.3 Rotating DRM entities)
 #[derive(Default, Debug, PartialEq)]
 pub struct DrWorldOrientationQuaternion {
     pub nil : u16,

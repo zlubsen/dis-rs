@@ -5,6 +5,9 @@ use crate::remove_entity::builder::RemoveEntityBuilder;
 
 const REMOVE_ENTITY_BODY_LENGTH : u16 = 16;
 
+/// 5.6.5.3 Remove Entity PDU
+///
+/// 7.5.3 Remove Entity PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct RemoveEntity {
     pub originating_id: EntityId,

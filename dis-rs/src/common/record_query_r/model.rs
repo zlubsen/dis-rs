@@ -56,6 +56,7 @@ impl Interaction for RecordQueryR {
     }
 }
 
+/// 6.2.72 Record Query Specification record
 #[derive(Debug, Default, PartialEq)]
 pub struct RecordQuerySpecification {
     pub record_ids: Vec<VariableRecordType>,

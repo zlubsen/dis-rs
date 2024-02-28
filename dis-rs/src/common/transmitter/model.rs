@@ -8,6 +8,9 @@ const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
 pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
 pub const BASE_VTP_RECORD_LENGTH: u16 = 6;
 
+/// 5.8.3 Transmitter PDU
+///
+/// 7.7.2 Transmitter PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct Transmitter {
     pub radio_reference_id: EntityId,
@@ -70,6 +73,7 @@ impl Interaction for Transmitter {
     }
 }
 
+/// 6.2.59 Modulation Type record
 #[derive(Debug, PartialEq)]
 pub struct ModulationType {
     pub spread_spectrum: SpreadSpectrum,

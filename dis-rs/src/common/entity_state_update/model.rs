@@ -7,6 +7,9 @@ use crate::enumerations::PduType;
 
 const BASE_ENTITY_STATE_UPDATE_BODY_LENGTH : u16 = 60;
 
+/// 5.3.5 Entity State Update PDU
+///
+/// 7.2.5 Entity State Update PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct EntityStateUpdate {
     pub entity_id : EntityId,

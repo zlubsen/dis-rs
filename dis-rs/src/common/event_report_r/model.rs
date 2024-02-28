@@ -7,6 +7,9 @@ use crate::event_report_r::builder::EventReportRBuilder;
 
 pub const BASE_EVENT_REPORT_R_BODY_LENGTH: u16 = 28;
 
+/// 5.12.4.12 Event Report-R PDU
+///
+/// 7.11.12 Event Report-R PDU
 #[derive(Debug, Default, PartialEq)]
 pub struct EventReportR {
     pub originating_id: EntityId,

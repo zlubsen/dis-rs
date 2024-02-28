@@ -1,5 +1,8 @@
 use crate::enumerations::{TransferredEntityIndicator, LvcIndicator, CoupledExtensionIndicator, FireTypeIndicator, DetonationTypeIndicator, RadioAttachedIndicator, IntercomAttachedIndicator, IffSimulationMode, ActiveInterrogationIndicator};
 
+/// 5.2.7 PDU status record
+///
+/// 6.2.67 PDU Status record
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduStatus {
     pub transferred_entity_indicator: Option<TransferredEntityIndicator>,

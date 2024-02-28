@@ -856,10 +856,14 @@ impl EntityType {
     }
 }
 
+/// 6.2.19 Descriptor records
 #[derive(Debug, PartialEq)]
 pub enum DescriptorRecord {
+    /// 6.2.19.2 Munition Descriptor record
     Munition { entity_type: EntityType, munition: MunitionDescriptor },
+    /// 6.2.19.4 Expendable Descriptor record
     Expendable { entity_type: EntityType },
+    /// 6.2.19.3 Explosion Descriptor record
     Explosion { entity_type: EntityType, explosive_material: ExplosiveMaterialCategories, explosive_force: f32 }
 }
 
@@ -894,6 +898,7 @@ impl Default for DescriptorRecord {
     }
 }
 
+/// 6.2.19.2 Munition Descriptor record
 #[derive(Default, Debug, PartialEq)]
 pub struct MunitionDescriptor {
     pub warhead : MunitionDescriptorWarhead,
@@ -1052,6 +1057,7 @@ impl ClockTime {
     }
 }
 
+/// 6.2.18 Datum Specification record
 pub struct DatumSpecification {
     pub fixed_datum_records: Vec<FixedDatum>,
     pub variable_datum_records: Vec<VariableDatum>,
@@ -1069,6 +1075,7 @@ impl DatumSpecification {
 pub const FIXED_DATUM_LENGTH: u16 = 8;
 pub const BASE_VARIABLE_DATUM_LENGTH: u16 = 8;
 
+/// 6.2.37 Fixed Datum record
 #[derive(Debug, PartialEq)]
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,
@@ -1084,6 +1091,7 @@ impl FixedDatum {
     }
 }
 
+/// 6.2.93 Variable Datum record
 #[derive(Debug, PartialEq)]
 pub struct VariableDatum {
     pub datum_id: VariableRecordType,
@@ -1393,6 +1401,7 @@ impl BeamData {
 
 pub const SUPPLY_QUANTITY_RECORD_LENGTH: u16 = 12;
 
+/// 6.2.86 Supply Quantity record
 #[derive(Debug, Default, PartialEq)]
 pub struct SupplyQuantity {
     pub supply_type: EntityType,
@@ -1431,6 +1440,7 @@ impl RecordSpecification {
     }
 }
 
+/// Part of 6.2.73 Record Specification record
 #[derive(Debug, Default, PartialEq)]
 pub struct RecordSet {
     pub record_id: VariableRecordType,
