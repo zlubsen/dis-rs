@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::enumerations::RepairResponseRepairResult;
 use crate::repair_response::model::RepairResponse;
 
-pub fn repair_response_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn repair_response_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, receiving_id) = entity_id(input)?;
     let (input, repairing_id) = entity_id(input)?;
     let (input, repair_result) = be_u8(input)?;

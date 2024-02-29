@@ -7,7 +7,7 @@ use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmissi
 use crate::common::parser;
 use crate::common::parser::{entity_id, event_id, vec3_f32};
 
-pub fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input| {
         let (input, emitting_entity_id) = entity_id(input)?;
         let (input, event_id) = event_id(input)?;
@@ -28,7 +28,7 @@ pub fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], Pd
     }
 }
 
-pub fn emitter_system(input: &[u8]) -> IResult<&[u8], EmitterSystem> {
+pub(crate) fn emitter_system(input: &[u8]) -> IResult<&[u8], EmitterSystem> {
     let (input, _system_data_length) = be_u8(input)?;
     let (input, no_of_beams) = be_u8(input)?;
     let (input, _pad_16) = be_u16(input)?;
@@ -49,7 +49,7 @@ pub fn emitter_system(input: &[u8]) -> IResult<&[u8], EmitterSystem> {
     Ok((input, system))
 }
 
-pub fn beam(input: &[u8]) -> IResult<&[u8], Beam> {
+pub(crate) fn beam(input: &[u8]) -> IResult<&[u8], Beam> {
     let (input, _data_length) = be_u8(input)?;
     let (input, number) = be_u8(input)?;
     let (input, parameter_index) = be_u16(input)?;
@@ -76,7 +76,7 @@ pub fn beam(input: &[u8]) -> IResult<&[u8], Beam> {
     Ok((input, beam))
 }
 
-pub fn fundamental_parameter_data(input: &[u8]) -> IResult<&[u8], FundamentalParameterData> {
+pub(crate) fn fundamental_parameter_data(input: &[u8]) -> IResult<&[u8], FundamentalParameterData> {
     let (input, frequency) = be_f32(input)?;
     let (input, frequency_range) = be_f32(input)?;
     let (input, effective_power) = be_f32(input)?;
@@ -93,7 +93,7 @@ pub fn fundamental_parameter_data(input: &[u8]) -> IResult<&[u8], FundamentalPar
     Ok((input, data))
 }
 
-pub fn jamming_technique(input: &[u8]) -> IResult<&[u8], JammingTechnique> {
+pub(crate) fn jamming_technique(input: &[u8]) -> IResult<&[u8], JammingTechnique> {
     let (input, kind) = be_u8(input)?;
     let (input, category) = be_u8(input)?;
     let (input, subcategory) = be_u8(input)?;
@@ -108,7 +108,7 @@ pub fn jamming_technique(input: &[u8]) -> IResult<&[u8], JammingTechnique> {
     Ok((input, technique))
 }
 
-pub fn track_jam(input: &[u8]) -> IResult<&[u8], TrackJam> {
+pub(crate) fn track_jam(input: &[u8]) -> IResult<&[u8], TrackJam> {
     let (input, entity_id) = entity_id(input)?;
     let (input, emitter_number) = be_u8(input)?;
     let (input, beam_number) = be_u8(input)?;

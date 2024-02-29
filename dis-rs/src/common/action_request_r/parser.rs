@@ -5,7 +5,7 @@ use crate::common::parser::{datum_specification, entity_id};
 use crate::enumerations::{ActionId, RequiredReliabilityService};
 use crate::common::model::PduBody;
 
-pub fn action_request_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn action_request_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, required_reliability_service) = be_u8(input)?;

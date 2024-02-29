@@ -7,7 +7,7 @@ use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_
 use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
 use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
 
-pub fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         let (input, radio_reference_id) = entity_id(input)?;
         let (input, radio_number) = be_u16(input)?;

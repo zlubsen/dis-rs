@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::data_r::model::DataR;
 use crate::enumerations::RequiredReliabilityService;
 
-pub fn data_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn data_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;

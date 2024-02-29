@@ -9,7 +9,7 @@ use crate::common::parser::{beam_data, entity_id, event_id, simulation_address, 
 use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, EIGHT_OCTETS};
 use crate::enumerations::{AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors, Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution, ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, VariableRecordType};
 
-pub fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id) = entity_id(input)?;
     let (input, event_id) = event_id(input)?;
     let (input, antenna_location) = vec3_f32(input)?;

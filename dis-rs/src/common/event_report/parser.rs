@@ -5,7 +5,7 @@ use crate::enumerations::EventType;
 use crate::common::event_report::model::EventReport;
 use crate::common::model::PduBody;
 
-pub fn event_report_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn event_report_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, event_type) = be_u32(input)?;

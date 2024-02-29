@@ -5,7 +5,7 @@ use crate::enumerations::{ActionId};
 use crate::common::action_request::model::ActionRequest;
 use crate::common::model::PduBody;
 
-pub fn action_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn action_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;

@@ -5,7 +5,7 @@ use crate::common::parser::{entity_id, supply_quantity};
 use crate::common::model::PduBody;
 use crate::resupply_received::model::ResupplyReceived;
 
-pub fn resupply_received_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn resupply_received_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, requesting_id) = entity_id(input)?;
     let (input, servicing_id) = entity_id(input)?;
     let (input, nr_of_supplies) = be_u8(input)?;

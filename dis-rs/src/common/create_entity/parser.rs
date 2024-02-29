@@ -4,7 +4,7 @@ use crate::common::parser::entity_id;
 use crate::common::create_entity::model::CreateEntity;
 use crate::common::model::PduBody;
 
-pub fn create_entity_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn create_entity_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;

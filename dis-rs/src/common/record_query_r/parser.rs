@@ -7,7 +7,7 @@ use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService, Var
 use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
 
-pub fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;
@@ -33,7 +33,7 @@ pub fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     Ok((input, body.into_pdu_body()))
 }
 
-pub fn record_query_specification(input: &[u8]) -> IResult<&[u8], RecordQuerySpecification> {
+pub(crate) fn record_query_specification(input: &[u8]) -> IResult<&[u8], RecordQuerySpecification> {
     let (input, record_count) = be_u32(input)?;
     let (input, records) = count(be_u32, record_count as usize)(input)?;
     let records = records.iter().map(|record| VariableRecordType::from(*record)).collect();

@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::enumerations::{RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze_r::model::StopFreezeR;
 
-pub fn stop_freeze_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn stop_freeze_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, real_world_time) = clock_time(input)?;

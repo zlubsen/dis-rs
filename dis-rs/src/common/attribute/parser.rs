@@ -7,7 +7,7 @@ use crate::common::attribute::model::{Attribute, AttributeRecord, AttributeRecor
 use crate::enumerations::{AttributeActionCode, VariableRecordType};
 use crate::common::model::PduBody;
 
-pub fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, origination_simulation_address) = simulation_address(input)?;
     let (input, _padding) = be_u32(input)?;
     let (input, _padding) = be_u16(input)?;
@@ -34,7 +34,7 @@ pub fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     Ok((input, body.into_pdu_body()))
 }
 
-pub fn attribute_record_set(input: &[u8]) -> IResult<&[u8], AttributeRecordSet> {
+pub(crate) fn attribute_record_set(input: &[u8]) -> IResult<&[u8], AttributeRecordSet> {
     let (input, entity_id) = entity_id(input)?;
     let (input, number_of_records) = be_u16(input)?;
     let (input, attribute_records) = count(attribute_record, number_of_records.into())(input)?;
@@ -44,7 +44,7 @@ pub fn attribute_record_set(input: &[u8]) -> IResult<&[u8], AttributeRecordSet> 
         .with_attribute_records(attribute_records)))
 }
 
-pub fn attribute_record(input: &[u8]) -> IResult<&[u8], AttributeRecord> {
+pub(crate) fn attribute_record(input: &[u8]) -> IResult<&[u8], AttributeRecord> {
     let (input, record_type) = be_u32(input)?;
     let record_type = VariableRecordType::from(record_type);
     let (input, record_length_octets) = be_u16(input)?;

@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::enumerations::{DesignatorSystemName, DesignatorCode, DeadReckoningAlgorithm};
 use crate::common::designator::model::Designator;
 
-pub fn designator_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn designator_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, designating_entity_id) = entity_id(input)?;
     let (input, system_name) = be_u16(input)?;
     let system_name = DesignatorSystemName::from(system_name);

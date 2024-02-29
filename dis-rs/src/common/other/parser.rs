@@ -8,7 +8,7 @@ use crate::common::other::model::Other;
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::enumerations::PduType;
 
-pub fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move | input: &[u8] | {
         // Based on the PDU type, peek at the originating and receiving EntityIds.
         let (input, originating, receiving) = match header.pdu_type {

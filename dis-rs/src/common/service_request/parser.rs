@@ -6,7 +6,7 @@ use crate::common::parser::{entity_id, supply_quantity};
 use crate::common::model::PduBody;
 use crate::enumerations::ServiceRequestServiceTypeRequested;
 
-pub fn service_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn service_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, requesting_id) = entity_id(input)?;
     let (input, servicing_id) = entity_id(input)?;
     let (input, service_type_requested) = be_u8(input)?;

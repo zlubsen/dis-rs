@@ -61,7 +61,7 @@ use crate::set_record_r::parser::set_record_r_body;
 use crate::start_resume_r::parser::start_resume_r_body;
 use crate::stop_freeze_r::parser::stop_freeze_r_body;
 
-pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
+pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
         Ok((_, pdus)) => { Ok(pdus) }
         Err(err) => { Err(DisError::ParseError(err.to_string())) } // TODO not very descriptive / error means we can not match any PDUs
@@ -69,7 +69,7 @@ pub fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 }
 
 #[allow(dead_code)]
-pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
+pub(crate) fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
     match pdu(input) {
         Ok((_, pdu)) => { Ok(pdu) }
         Err(err) => { Err(DisError::ParseError(err.to_string())) } // TODO not very descriptive / error means we can not match any PDUs
@@ -77,7 +77,7 @@ pub fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
 }
 
 #[allow(dead_code)]
-pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
+pub(crate) fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
     match many1(pdu_header_skip_body)(input) {
         Ok((_, headers)) => { Ok(headers) }
         Err(parse_error) => {
@@ -93,7 +93,7 @@ pub fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
 
 /// Parse the input for a PDU header, and skip the rest of the pdu body in the input
 #[allow(dead_code)]
-pub fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
+pub(crate) fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     match pdu_header(input) {
         Ok((input, header)) => {
             let skipped = skip_body(header.pdu_length)(input); // Discard the body
@@ -269,7 +269,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
 }
 
 #[allow(dead_code)]
-pub fn parse_peek_protocol_version(input: &[u8]) -> Result<ProtocolVersion,DisError> {
+pub(crate) fn parse_peek_protocol_version(input: &[u8]) -> Result<ProtocolVersion,DisError> {
     let parse_result = peek_protocol_version(input);
     match parse_result {
         Ok((_, protocol_version)) => Ok(ProtocolVersion::from(protocol_version)),
@@ -285,39 +285,39 @@ fn peek_protocol_version(input: &[u8]) -> IResult<&[u8], u8> {
     Ok((input, protocol_version))
 }
 
-pub fn protocol_version(input: &[u8]) -> IResult<&[u8], ProtocolVersion> {
+pub(crate) fn protocol_version(input: &[u8]) -> IResult<&[u8], ProtocolVersion> {
     let (input, protocol_version) = be_u8(input)?;
     let protocol_version = ProtocolVersion::from(protocol_version);
     Ok((input, protocol_version))
 }
 
-pub fn pdu_type(input: &[u8]) -> IResult<&[u8], PduType> {
+pub(crate) fn pdu_type(input: &[u8]) -> IResult<&[u8], PduType> {
     let (input, pdu_type) = be_u8(input)?;
     let pdu_type = PduType::from(pdu_type);
     Ok((input, pdu_type))
 }
 
-pub fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
+pub(crate) fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
     let (input, protocol_family) = be_u8(input)?;
     let protocol_family = ProtocolFamily::from(protocol_family);
     Ok((input, protocol_family))
 }
 
 #[allow(dead_code)]
-pub fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
+pub(crate) fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
     let bytes_to_skip = total_bytes - PDU_HEADER_LEN_BYTES;
     move |input| {
         take(bytes_to_skip)(input)
     }
 }
 
-pub fn simulation_address(input: &[u8]) -> IResult<&[u8], SimulationAddress> {
+pub(crate) fn simulation_address(input: &[u8]) -> IResult<&[u8], SimulationAddress> {
     let (input, site_id) = be_u16(input)?;
     let (input, application_id) = be_u16(input)?;
     Ok((input, SimulationAddress::new(site_id, application_id)))
 }
 
-pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
+pub(crate) fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
     let (input, simulation_address) = simulation_address(input)?;
     let (input, entity_id) = be_u16(input)?;
     Ok((input, EntityId {
@@ -326,7 +326,7 @@ pub fn entity_id(input: &[u8]) -> IResult<&[u8], EntityId> {
     }))
 }
 
-pub fn entity_type(input: &[u8]) -> IResult<&[u8], EntityType> {
+pub(crate) fn entity_type(input: &[u8]) -> IResult<&[u8], EntityType> {
     let (input, kind) = kind(input)?;
     let (input, domain) = domain(input)?;
     let (input, country) = country(input)?;
@@ -363,7 +363,7 @@ fn country(input: &[u8]) -> IResult<&[u8], Country> {
     Ok((input, country))
 }
 
-pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
+pub(crate) fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
     let (input, elements) = count(be_f32, 3)(input)?;
     #[allow(clippy::get_first)]
     Ok((input, VectorF32 {
@@ -373,7 +373,7 @@ pub fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
     }))
 }
 
-pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
+pub(crate) fn location(input: &[u8]) -> IResult<&[u8], Location> {
     let (input, locations) = count(be_f64, 3)(input)?;
     #[allow(clippy::get_first)]
     Ok((input, Location {
@@ -383,7 +383,7 @@ pub fn location(input: &[u8]) -> IResult<&[u8], Location> {
     }))
 }
 
-pub fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
+pub(crate) fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
     let (input, orientations) = count(be_f32, 3)(input)?;
     #[allow(clippy::get_first)]
     Ok((input, Orientation {
@@ -393,7 +393,7 @@ pub fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
     }))
 }
 
-pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
+pub(crate) fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
     let (input, site_id) = be_u16(input)?;
     let (input, application_id) = be_u16(input)?;
     let (input, event_id) = be_u16(input)?;
@@ -406,7 +406,7 @@ pub fn event_id(input: &[u8]) -> IResult<&[u8], EventId> {
     }))
 }
 
-pub fn descriptor_record_fti(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
+pub(crate) fn descriptor_record_fti(fire_type_indicator: FireTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
     move |input: &[u8]| {
         let (input, entity_type) = entity_type(input)?;
 
@@ -438,7 +438,7 @@ pub fn descriptor_record_fti(fire_type_indicator: FireTypeIndicator) -> impl Fn(
     }
 }
 
-pub fn descriptor_record_dti(detonation_type_indicator: DetonationTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
+pub(crate) fn descriptor_record_dti(detonation_type_indicator: DetonationTypeIndicator) -> impl Fn(&[u8]) -> IResult<&[u8], DescriptorRecord> {
     move |input: &[u8]| {
         let (input, entity_type) = entity_type(input)?;
         match detonation_type_indicator {
@@ -478,7 +478,7 @@ pub fn descriptor_record_dti(detonation_type_indicator: DetonationTypeIndicator)
     }
 }
 
-pub fn munition_descriptor(input: &[u8]) -> IResult<&[u8], MunitionDescriptor> {
+pub(crate) fn munition_descriptor(input: &[u8]) -> IResult<&[u8], MunitionDescriptor> {
     let (input, warhead) = warhead(input)?;
     let (input, fuse) = fuse(input)?;
     let (input, quantity) = be_u16(input)?;
@@ -504,14 +504,14 @@ fn fuse(input: &[u8]) -> IResult<&[u8], MunitionDescriptorFuse> {
     Ok((input, fuse))
 }
 
-pub fn clock_time(input: &[u8]) -> IResult<&[u8], ClockTime> {
+pub(crate) fn clock_time(input: &[u8]) -> IResult<&[u8], ClockTime> {
     let (input, hour) = be_i32(input)?;
     let (input, time_past_hour) = be_u32(input)?;
     let time = ClockTime::new(hour, time_past_hour);
     Ok((input, time))
 }
 
-pub fn datum_specification(input: &[u8]) -> IResult<&[u8], DatumSpecification> {
+pub(crate) fn datum_specification(input: &[u8]) -> IResult<&[u8], DatumSpecification> {
     let (input, num_fixed_datums) = be_u32(input)?;
     let (input, num_variable_datums) = be_u32(input)?;
 
@@ -523,7 +523,7 @@ pub fn datum_specification(input: &[u8]) -> IResult<&[u8], DatumSpecification> {
     Ok((input, datums))
 }
 
-pub fn fixed_datum(input: &[u8]) -> IResult<&[u8], FixedDatum> {
+pub(crate) fn fixed_datum(input: &[u8]) -> IResult<&[u8], FixedDatum> {
     let (input, datum_id) = be_u32(input)?;
     let (input, datum_value) = be_u32(input)?;
 
@@ -533,7 +533,7 @@ pub fn fixed_datum(input: &[u8]) -> IResult<&[u8], FixedDatum> {
     Ok((input, datum))
 }
 
-pub fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
+pub(crate) fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
     let (input, datum_id) = be_u32(input)?;
     let datum_id = VariableRecordType::from(datum_id);
     let (input, datum_length_bits) = be_u32(input)?;
@@ -554,103 +554,7 @@ pub fn variable_datum(input: &[u8]) -> IResult<&[u8], VariableDatum> {
     Ok((input, variable_datum))
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::common::errors::DisError;
-    use crate::common::parser::parse_multiple_header;
-    use crate::constants::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, ProtocolFamily, ProtocolVersion};
-
-    #[test]
-    fn parse_header() {
-        let bytes : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
-
-        let header = crate::common::parser::parse_header(&bytes);
-        assert!(header.is_ok());
-        let header = header.unwrap();
-        assert_eq!(header.protocol_version, ProtocolVersion::IEEE1278_1A1998);
-        assert_eq!(header.exercise_id, 1);
-        assert_eq!(header.pdu_type, PduType::EntityState);
-        assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
-        assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
-    }
-
-    #[test]
-    fn parse_header_too_short() {
-        let bytes : [u8;10] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x60];
-
-        let header = crate::common::parser::parse_header(&bytes);
-        assert!(header.is_err());
-        let error = header.expect_err("Should be Err");
-        assert_eq!(error, DisError::InsufficientHeaderLength(10));
-    }
-
-    #[test]
-    fn parse_header_unspecified_version() {
-        let bytes : [u8;12] = [0x1F, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
-
-        let header = crate::common::parser::parse_header(&bytes);
-        assert!(header.is_ok());
-        let header = header.unwrap();
-        assert_eq!(header.protocol_version, ProtocolVersion::Unspecified(31));
-        assert_eq!(header.exercise_id, 1);
-        assert_eq!(header.pdu_type, PduType::EntityState);
-        assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
-        assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
-    }
-
-    #[test]
-    fn parse_header_body_too_short() {
-        // PDU with header that states that the total length is 208 bytes, but only contains a 2 bytes body;
-        let bytes: [u8; 14] =
-            [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4];
-
-        let header = crate::common::parser::parse_header(&bytes);
-        assert!(header.is_err());
-        let error = header.expect_err("Should be Err");
-        assert_eq!(error, DisError::InsufficientPduLength(208-PDU_HEADER_LEN_BYTES,2));
-    }
-
-    #[test]
-    fn parse_multiple_headers() {
-        let bytes : [u8;24] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00
-            ,0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
-
-        let headers = parse_multiple_header(&bytes);
-        assert!(headers.is_ok());
-        let headers = headers.unwrap();
-        assert_eq!(headers.len(), 2);
-    }
-
-    #[test]
-    fn parse_multiple_headers_1st_too_short() {
-        let bytes : [u8;23] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00
-            ,0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
-        // two pdus, headers with 0-byte body's; first header is one-byte short
-
-        let headers = parse_multiple_header(&bytes);
-        assert!(headers.is_ok());
-        let headers = headers.unwrap();
-        assert_eq!(headers.len(), 1);
-        let header = headers.get(0).unwrap();
-        assert_ne!(header.padding, 0);  // padding is not zero, because first byte of the next headers is there
-    }
-
-    #[test]
-    fn parse_multiple_headers_too_short() {
-        let bytes : [u8;11] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x60, 0x00];
-        // buffer is too short for one pdu, let alone multiple.
-
-        let headers = parse_multiple_header(&bytes);
-        assert!(headers.is_err());
-        let error = headers.expect_err("Should be Err");
-        assert_eq!(error, DisError::InsufficientHeaderLength(11));
-    }
-}
-
-pub fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
+pub(crate) fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, parameter_type_designator) = be_u8(input)?;
     let parameter_type = VariableParameterRecordType::from(parameter_type_designator);
     let (input, variable_parameter) = match parameter_type {
@@ -754,7 +658,7 @@ fn separation(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     })))
 }
 
-pub fn beam_data(input: &[u8]) -> IResult<&[u8], BeamData> {
+pub(crate) fn beam_data(input: &[u8]) -> IResult<&[u8], BeamData> {
     let (input, azimuth_center) = be_f32(input)?;
     let (input, azimuth_sweep) = be_f32(input)?;
     let (input, elevation_center) = be_f32(input)?;
@@ -771,7 +675,7 @@ pub fn beam_data(input: &[u8]) -> IResult<&[u8], BeamData> {
     Ok((input, data))
 }
 
-pub fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
+pub(crate) fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
     let (input, supply_type) = entity_type(input)?;
     let (input, quantity) = be_f32(input)?;
 
@@ -781,7 +685,7 @@ pub fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
 }
 
 /// Parses the RecordSpecification record (6.2.73)
-pub fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecification> {
+pub(crate) fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecification> {
     let (input, number_of_records) = be_u32(input)?;
     let (input, record_sets) = count(record_set, number_of_records as usize)(input)?;
 
@@ -793,7 +697,7 @@ pub fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecification>
 /// Parsing will always consider record values to be byte-aligned.
 /// Record length is defined in bits, but this function always rounds up to the next full byte.
 /// This is compensated for in the padding.
-pub fn record_set(input: &[u8]) -> IResult<&[u8], RecordSet> {
+pub(crate) fn record_set(input: &[u8]) -> IResult<&[u8], RecordSet> {
     let (input, record_id) = be_u32(input)?;
     let record_id = VariableRecordType::from(record_id);
     let (input, serial_number) = be_u32(input)?;
@@ -822,4 +726,100 @@ pub fn record_set(input: &[u8]) -> IResult<&[u8], RecordSet> {
 /// E.g., 7 bits become 1 byte (8 bits), 12 bits become 2 bytes (16 bits)
 fn ceil_bits_to_bytes(bits: u16) -> u16 {
     bits.div_ceil(ONE_BYTE_IN_BITS as u16)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::common::errors::DisError;
+    use crate::common::parser::parse_multiple_header;
+    use crate::constants::PDU_HEADER_LEN_BYTES;
+    use crate::enumerations::{PduType, ProtocolFamily, ProtocolVersion};
+
+    #[test]
+    fn parse_header() {
+        let bytes : [u8;12] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
+
+        let header = crate::common::parser::parse_header(&bytes);
+        assert!(header.is_ok());
+        let header = header.unwrap();
+        assert_eq!(header.protocol_version, ProtocolVersion::IEEE1278_1A1998);
+        assert_eq!(header.exercise_id, 1);
+        assert_eq!(header.pdu_type, PduType::EntityState);
+        assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
+        assert_eq!(header.time_stamp, 1323973472);
+        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
+    }
+
+    #[test]
+    fn parse_header_too_short() {
+        let bytes : [u8;10] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x60];
+
+        let header = crate::common::parser::parse_header(&bytes);
+        assert!(header.is_err());
+        let error = header.expect_err("Should be Err");
+        assert_eq!(error, DisError::InsufficientHeaderLength(10));
+    }
+
+    #[test]
+    fn parse_header_unspecified_version() {
+        let bytes : [u8;12] = [0x1F, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
+
+        let header = crate::common::parser::parse_header(&bytes);
+        assert!(header.is_ok());
+        let header = header.unwrap();
+        assert_eq!(header.protocol_version, ProtocolVersion::Unspecified(31));
+        assert_eq!(header.exercise_id, 1);
+        assert_eq!(header.pdu_type, PduType::EntityState);
+        assert_eq!(header.protocol_family, ProtocolFamily::EntityInformationInteraction);
+        assert_eq!(header.time_stamp, 1323973472);
+        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
+    }
+
+    #[test]
+    fn parse_header_body_too_short() {
+        // PDU with header that states that the total length is 208 bytes, but only contains a 2 bytes body;
+        let bytes: [u8; 14] =
+            [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4];
+
+        let header = crate::common::parser::parse_header(&bytes);
+        assert!(header.is_err());
+        let error = header.expect_err("Should be Err");
+        assert_eq!(error, DisError::InsufficientPduLength(208-PDU_HEADER_LEN_BYTES,2));
+    }
+
+    #[test]
+    fn parse_multiple_headers() {
+        let bytes : [u8;24] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00
+            ,0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
+
+        let headers = parse_multiple_header(&bytes);
+        assert!(headers.is_ok());
+        let headers = headers.unwrap();
+        assert_eq!(headers.len(), 2);
+    }
+
+    #[test]
+    fn parse_multiple_headers_1st_too_short() {
+        let bytes : [u8;23] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00
+            ,0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
+        // two pdus, headers with 0-byte body's; first header is one-byte short
+
+        let headers = parse_multiple_header(&bytes);
+        assert!(headers.is_ok());
+        let headers = headers.unwrap();
+        assert_eq!(headers.len(), 1);
+        let header = headers.get(0).unwrap();
+        assert_ne!(header.padding, 0);  // padding is not zero, because first byte of the next headers is there
+    }
+
+    #[test]
+    fn parse_multiple_headers_too_short() {
+        let bytes : [u8;11] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x60, 0x00];
+        // buffer is too short for one pdu, let alone multiple.
+
+        let headers = parse_multiple_header(&bytes);
+        assert!(headers.is_err());
+        let error = headers.expect_err("Should be Err");
+        assert_eq!(error, DisError::InsufficientHeaderLength(11));
+    }
 }

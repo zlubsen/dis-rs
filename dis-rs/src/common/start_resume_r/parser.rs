@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::enumerations::RequiredReliabilityService;
 use crate::start_resume_r::model::StartResumeR;
 
-pub fn start_resume_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn start_resume_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, real_world_time) = clock_time(input)?;

@@ -1134,7 +1134,7 @@ impl PaddedRecordLengths {
 ///
 /// For example, a piece of data of 12 bytes that needs to be aligned to 16 bytes will have a
 /// data length of 12 bytes, a padding of 4 bytes and a final length of 12 + 4 bytes. The function will return 16 in this case.
-pub fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedRecordLengths {
+pub(crate) fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedRecordLengths {
     let data_remaining = data_length % pad_to_num;
     let padding_num = if data_remaining == 0 {
         0usize

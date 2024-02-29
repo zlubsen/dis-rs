@@ -6,7 +6,7 @@ use crate::common::signal::model::{EncodingScheme, Signal};
 use crate::constants::ONE_BYTE_IN_BITS;
 use crate::enumerations::{SignalEncodingClass, SignalEncodingType, SignalTdlType, SignalUserProtocolIdentificationNumber};
 
-pub fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, radio_reference_id) = entity_id(input)?;
     let (input, radio_number) = be_u16(input)?;
     let (input, encoding_scheme) = be_u16(input)?;

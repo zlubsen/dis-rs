@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::enumerations::RepairCompleteRepair;
 use crate::repair_complete::model::RepairComplete;
 
-pub fn repair_complete_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn repair_complete_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, receiving_id) = entity_id(input)?;
     let (input, repairing_id) = entity_id(input)?;
     let (input, repair) = be_u16(input)?;

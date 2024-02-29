@@ -6,7 +6,7 @@ use crate::common::model::PduBody;
 use crate::data_query_r::model::DataQueryR;
 use crate::enumerations::{RequiredReliabilityService, VariableRecordType};
 
-pub fn data_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn data_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, required_reliability_service) = be_u8(input)?;

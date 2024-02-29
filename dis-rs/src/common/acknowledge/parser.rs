@@ -5,7 +5,7 @@ use crate::common::parser::entity_id;
 use crate::common::model::PduBody;
 use crate::enumerations::{AcknowledgeFlag, ResponseFlag};
 
-pub fn acknowledge_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn acknowledge_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, acknowledge_flag) = be_u16(input)?;

@@ -6,7 +6,7 @@ use crate::common::model::{PduHeader, PduBody};
 use crate::common::parser;
 use crate::enumerations::FireTypeIndicator;
 
-pub fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         // The FireTypeIndicator determines how to parse the DescriptorRecord.
         // Defaulting to `FireTypeIndicator::Munition` handles compatibility for v6,

@@ -5,7 +5,7 @@ use nom::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
 use crate::v6::entity_state::model::EntityCapabilities;
 
-pub fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
+pub(crate) fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
     let (input,
         (ammunition_supply,
             fuel_supply,

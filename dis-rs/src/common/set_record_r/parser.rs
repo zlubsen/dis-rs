@@ -5,7 +5,7 @@ use crate::common::parser::{entity_id, record_specification};
 use crate::enumerations::RequiredReliabilityService;
 use crate::set_record_r::model::SetRecordR;
 
-pub fn set_record_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn set_record_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;
