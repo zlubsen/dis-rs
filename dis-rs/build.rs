@@ -6,6 +6,8 @@ use std::process::Command;
 use quick_xml::Reader;
 use proc_macro2::{Ident, Literal, TokenStream};
 
+const SISO_REF_FILE : &str = "./enumerations/SISO-REF-010.xml";
+
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:
 /// - the uid,
@@ -21,7 +23,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 133] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 134] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -160,6 +162,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 133] = [
     (426, None, None, false), // Cover/Shroud Status
     (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
     (802, None, None, false), // Clothing IR Signature
+    (889, None, None, false), // Damage Area
 ];
 
 const BITFIELD_UIDS : [RangeInclusive<usize>; 3] = [
@@ -254,12 +257,13 @@ pub struct BitfieldItem {
 
 fn main() {
     let mut reader = Reader::from_file(
-        Path::new("./enumerations/SISO-REF-010.xml")
+        Path::new(SISO_REF_FILE)
     ).unwrap();
     reader.trim_text(true);
 
     // Extract enums and bitfields from the source file
     let generation_items = extraction::extract(&mut reader);
+
     // Generate all code for enums
     let generated = generation::generate(&generation_items);
 
@@ -298,7 +302,8 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace("&amp;", "")
         .replace(';', "")
         .replace('(', "_")
-        .replace(')', "_");
+        .replace(')', "_")
+        .replace('=', "_");
 
     // Prefix values starting with a digit with '_'
     // .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.
@@ -330,6 +335,7 @@ fn format_field_name(name: &str) -> String {
         .replace('#',"")
         .replace('(', "")
         .replace(')', "")
+        .replace('=', "_")
 }
 
 mod extraction {
