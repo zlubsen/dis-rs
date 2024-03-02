@@ -46,6 +46,7 @@ use crate::repair_response::model::RepairResponse;
 use crate::resupply_cancel::model::ResupplyCancel;
 use crate::resupply_offer::model::ResupplyOffer;
 use crate::resupply_received::model::ResupplyReceived;
+use crate::sees::model::SEES;
 use crate::service_request::model::ServiceRequest;
 use crate::set_data_r::model::SetDataR;
 use crate::set_record_r::model::SetRecordR;
@@ -172,7 +173,7 @@ pub enum PduBody {
     Receiver(Receiver),
     IFF(Iff),
     UnderwaterAcoustic,
-    SupplementalEmissionEntityState,
+    SupplementalEmissionEntityState(SEES),
     IntercomSignal,
     IntercomControl,
     AggregateState,
@@ -250,7 +251,7 @@ impl BodyInfo for PduBody {
             PduBody::Receiver(body) => { body.body_length() }
             PduBody::IFF(body) => { body.body_length() }
             PduBody::UnderwaterAcoustic => { 0 }
-            PduBody::SupplementalEmissionEntityState => { 0 }
+            PduBody::SupplementalEmissionEntityState(body) => { body.body_length() }
             PduBody::IntercomSignal => { 0 }
             PduBody::IntercomControl => { 0 }
             PduBody::AggregateState => { 0 }
@@ -328,7 +329,7 @@ impl BodyInfo for PduBody {
             PduBody::Receiver(body) => { body.body_type() }
             PduBody::IFF(body) => { body.body_type() }
             PduBody::UnderwaterAcoustic => { PduType::UnderwaterAcoustic }
-            PduBody::SupplementalEmissionEntityState => { PduType::SupplementalEmissionEntityState }
+            PduBody::SupplementalEmissionEntityState(body) => { body.body_type() }
             PduBody::IntercomSignal => { PduType::IntercomSignal }
             PduBody::IntercomControl => { PduType::IntercomControl }
             PduBody::AggregateState => { PduType::AggregateState }
@@ -408,7 +409,7 @@ impl Interaction for PduBody {
             PduBody::Receiver(body) => { body.originator() }
             PduBody::IFF(body) => { body.originator() }
             PduBody::UnderwaterAcoustic => { None }
-            PduBody::SupplementalEmissionEntityState => { None }
+            PduBody::SupplementalEmissionEntityState(body) => { body.originator() }
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
             PduBody::AggregateState => { None }
@@ -486,7 +487,7 @@ impl Interaction for PduBody {
             PduBody::Receiver(body) => { body.receiver() }
             PduBody::IFF(body) => { body.receiver() }
             PduBody::UnderwaterAcoustic => { None }
-            PduBody::SupplementalEmissionEntityState => { None }
+            PduBody::SupplementalEmissionEntityState(body) => { body.receiver() }
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
             PduBody::AggregateState => { None }

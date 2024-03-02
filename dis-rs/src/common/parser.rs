@@ -55,6 +55,7 @@ use crate::repair_response::parser::repair_response_body;
 use crate::resupply_cancel::parser::resupply_cancel_body;
 use crate::resupply_offer::parser::resupply_offer_body;
 use crate::resupply_received::parser::resupply_received_body;
+use crate::sees::parser::sees_body;
 use crate::service_request::parser::service_request_body;
 use crate::set_data_r::parser::set_data_r_body;
 use crate::set_record_r::parser::set_record_r_body;
@@ -218,7 +219,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Receiver => { receiver_body(input)? }
             PduType::IFF => { iff_body(input)? }
             // PduType::UnderwaterAcoustic => {}
-            // PduType::SupplementalEmissionEntityState => {}
+            PduType::SupplementalEmissionEntityState => { sees_body(input)? }
             // PduType::IntercomSignal => {}
             // PduType::IntercomControl => {}
             // PduType::AggregateState => {}

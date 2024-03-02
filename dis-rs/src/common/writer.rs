@@ -63,7 +63,7 @@ impl Serialize for Pdu {
             PduBody::Receiver(body) => { body.serialize_pdu(version, buf) }
             PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
             // PduBody::UnderwaterAcoustic(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
+            PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomControl(body) => { body.serialize_pdu(version, buf) }
             // PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }

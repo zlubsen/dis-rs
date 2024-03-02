@@ -36,6 +36,7 @@ pub mod repair_complete;
 pub mod resupply_cancel;
 pub mod resupply_offer;
 pub mod resupply_received;
+pub mod sees;
 pub mod service_request;
 pub mod set_data;
 pub mod set_data_r;
