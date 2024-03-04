@@ -38,6 +38,7 @@ use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
 use crate::event_report_r::model::EventReportR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::is_part_of::model::IsPartOf;
 use crate::record_query_r::model::RecordQueryR;
 use crate::record_r::model::RecordR;
 use crate::remove_entity_r::model::RemoveEntityR;
@@ -179,7 +180,7 @@ pub enum PduBody {
     AggregateState,
     IsGroupOf,
     TransferOwnership,
-    IsPartOf,
+    IsPartOf(IsPartOf),
     MinefieldState,
     MinefieldQuery,
     MinefieldData,
@@ -257,7 +258,7 @@ impl BodyInfo for PduBody {
             PduBody::AggregateState => { 0 }
             PduBody::IsGroupOf => { 0 }
             PduBody::TransferOwnership => { 0 }
-            PduBody::IsPartOf => { 0 }
+            PduBody::IsPartOf(body) => { body.body_length() }
             PduBody::MinefieldState => { 0 }
             PduBody::MinefieldQuery => { 0 }
             PduBody::MinefieldData => { 0 }
@@ -335,7 +336,7 @@ impl BodyInfo for PduBody {
             PduBody::AggregateState => { PduType::AggregateState }
             PduBody::IsGroupOf => { PduType::IsGroupOf }
             PduBody::TransferOwnership => { PduType::TransferOwnership }
-            PduBody::IsPartOf => { PduType::IsPartOf }
+            PduBody::IsPartOf(body) => { body.body_type() }
             PduBody::MinefieldState => { PduType::MinefieldState }
             PduBody::MinefieldQuery => { PduType::MinefieldQuery }
             PduBody::MinefieldData => { PduType::MinefieldData }
@@ -415,7 +416,7 @@ impl Interaction for PduBody {
             PduBody::AggregateState => { None }
             PduBody::IsGroupOf => { None }
             PduBody::TransferOwnership => { None }
-            PduBody::IsPartOf => { None }
+            PduBody::IsPartOf(body) => { body.originator() }
             PduBody::MinefieldState => { None }
             PduBody::MinefieldQuery => { None }
             PduBody::MinefieldData => { None }
@@ -493,7 +494,7 @@ impl Interaction for PduBody {
             PduBody::AggregateState => { None }
             PduBody::IsGroupOf => { None }
             PduBody::TransferOwnership => { None }
-            PduBody::IsPartOf => { None }
+            PduBody::IsPartOf(body) => { body.receiver() }
             PduBody::MinefieldState => { None }
             PduBody::MinefieldQuery => { None }
             PduBody::MinefieldData => { None }
@@ -641,6 +642,7 @@ impl Default for SimulationAddress {
 }
 
 /// 6.2.28 Entity Identifier record
+/// 6.2.81 Simulation Identifier record
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
@@ -671,6 +673,13 @@ impl EntityId {
         Self {
             simulation_address,
             entity_id
+        }
+    }
+
+    pub fn new_simulation_identifier(simulation_address: SimulationAddress) -> Self {
+        Self {
+            simulation_address,
+            entity_id: NO_ENTITY,
         }
     }
 }

@@ -69,7 +69,7 @@ impl Serialize for Pdu {
             // PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IsGroupOf(body) => { body.serialize_pdu(version, buf) }
             // PduBody::TransferOwnership(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::IsPartOf(body) => { body.serialize_pdu(version, buf) }
+            PduBody::IsPartOf(body) => { body.serialize_pdu(version, buf) }
             // PduBody::MinefieldState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::MinefieldQuery(body) => { body.serialize_pdu(version, buf) }
             // PduBody::MinefieldData(body) => { body.serialize_pdu(version, buf) }

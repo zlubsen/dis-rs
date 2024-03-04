@@ -39,13 +39,14 @@ use crate::common::start_resume::parser::start_resume_body;
 use crate::common::stop_freeze::parser::stop_freeze_body;
 use crate::common::transmitter::parser::transmitter_body;
 use crate::v7::parser::parse_pdu_status;
-use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
-use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
+use crate::enumerations::{Country, DetonationTypeIndicator, EntityKind, ExplosiveMaterialCategories, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, StationName, VariableRecordType};
+use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, VariableParameterRecordType};
 use crate::common::iff::parser::iff_body;
 use crate::create_entity_r::parser::create_entity_r_body;
 use crate::data_query_r::parser::data_query_r_body;
 use crate::data_r::parser::data_r_body;
 use crate::event_report_r::parser::event_report_r_body;
+use crate::is_part_of::parser::is_part_of_body;
 use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
 use crate::record_query_r::parser::record_query_r_body;
 use crate::record_r::parser::record_r_body;
@@ -225,7 +226,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::AggregateState => {}
             // PduType::IsGroupOf => {}
             // PduType::TransferOwnership => {}
-            // PduType::IsPartOf => {}
+            PduType::IsPartOf => { is_part_of_body(input)? }
             // PduType::MinefieldState => {}
             // PduType::MinefieldQuery => {}
             // PduType::MinefieldData => {}
