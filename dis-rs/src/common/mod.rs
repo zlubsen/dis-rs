@@ -49,6 +49,7 @@ pub mod stop_freeze_r;
 pub mod other;
 pub mod signal;
 pub mod transmitter;
+pub mod transfer_ownership;
 pub mod receiver;
 
 pub mod errors;

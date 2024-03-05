@@ -62,6 +62,7 @@ use crate::set_data_r::parser::set_data_r_body;
 use crate::set_record_r::parser::set_record_r_body;
 use crate::start_resume_r::parser::start_resume_r_body;
 use crate::stop_freeze_r::parser::stop_freeze_r_body;
+use crate::transfer_ownership::parser::transfer_ownership_body;
 
 pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -225,7 +226,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::IntercomControl => {}
             // PduType::AggregateState => {}
             // PduType::IsGroupOf => {}
-            // PduType::TransferOwnership => {}
+            PduType::TransferOwnership => { transfer_ownership_body(input)? }
             PduType::IsPartOf => { is_part_of_body(input)? }
             // PduType::MinefieldState => {}
             // PduType::MinefieldQuery => {}
