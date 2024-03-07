@@ -25,6 +25,7 @@ pub mod event_report;
 pub mod event_report_r;
 pub mod fire;
 pub mod iff;
+pub mod is_group_of;
 pub mod is_part_of;
 pub mod create_entity;
 pub mod create_entity_r;

@@ -38,6 +38,7 @@ use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
 use crate::event_report_r::model::EventReportR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::is_group_of::model::IsGroupOf;
 use crate::is_part_of::model::IsPartOf;
 use crate::record_query_r::model::RecordQueryR;
 use crate::record_r::model::RecordR;
@@ -179,7 +180,7 @@ pub enum PduBody {
     IntercomSignal,
     IntercomControl,
     AggregateState,
-    IsGroupOf,
+    IsGroupOf(IsGroupOf),
     TransferOwnership(TransferOwnership),
     IsPartOf(IsPartOf),
     MinefieldState,
@@ -257,7 +258,7 @@ impl BodyInfo for PduBody {
             PduBody::IntercomSignal => { 0 }
             PduBody::IntercomControl => { 0 }
             PduBody::AggregateState => { 0 }
-            PduBody::IsGroupOf => { 0 }
+            PduBody::IsGroupOf(body) => { body.body_length() }
             PduBody::TransferOwnership(body) => { body.body_length() }
             PduBody::IsPartOf(body) => { body.body_length() }
             PduBody::MinefieldState => { 0 }
@@ -335,7 +336,7 @@ impl BodyInfo for PduBody {
             PduBody::IntercomSignal => { PduType::IntercomSignal }
             PduBody::IntercomControl => { PduType::IntercomControl }
             PduBody::AggregateState => { PduType::AggregateState }
-            PduBody::IsGroupOf => { PduType::IsGroupOf }
+            PduBody::IsGroupOf(body) => { body.body_type() }
             PduBody::TransferOwnership(body) => { body.body_type() }
             PduBody::IsPartOf(body) => { body.body_type() }
             PduBody::MinefieldState => { PduType::MinefieldState }
@@ -415,7 +416,7 @@ impl Interaction for PduBody {
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
             PduBody::AggregateState => { None }
-            PduBody::IsGroupOf => { None }
+            PduBody::IsGroupOf(body) => { body.originator() }
             PduBody::TransferOwnership(body) => { body.originator() }
             PduBody::IsPartOf(body) => { body.originator() }
             PduBody::MinefieldState => { None }
@@ -493,7 +494,7 @@ impl Interaction for PduBody {
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
             PduBody::AggregateState => { None }
-            PduBody::IsGroupOf => { None }
+            PduBody::IsGroupOf(body) => { body.receiver() }
             PduBody::TransferOwnership(body) => { body.receiver() }
             PduBody::IsPartOf(body) => { body.receiver() }
             PduBody::MinefieldState => { None }

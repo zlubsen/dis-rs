@@ -46,6 +46,7 @@ use crate::create_entity_r::parser::create_entity_r_body;
 use crate::data_query_r::parser::data_query_r_body;
 use crate::data_r::parser::data_r_body;
 use crate::event_report_r::parser::event_report_r_body;
+use crate::is_group_of::parser::is_group_of_body;
 use crate::is_part_of::parser::is_part_of_body;
 use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
 use crate::record_query_r::parser::record_query_r_body;
@@ -225,7 +226,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::IntercomSignal => {}
             // PduType::IntercomControl => {}
             // PduType::AggregateState => {}
-            // PduType::IsGroupOf => {}
+            PduType::IsGroupOf => { is_group_of_body(input)? }
             PduType::TransferOwnership => { transfer_ownership_body(input)? }
             PduType::IsPartOf => { is_part_of_body(input)? }
             // PduType::MinefieldState => {}
