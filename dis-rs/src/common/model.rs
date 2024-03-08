@@ -1,3 +1,6 @@
+use std::fmt::Display;
+use std::str::FromStr;
+
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::common::entity_state::model::EntityState;
@@ -30,6 +33,7 @@ use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
 use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::DisError;
 
 #[derive(Debug, PartialEq)]
 pub struct Pdu {
@@ -822,6 +826,152 @@ impl EntityType {
     pub fn with_extra(mut self, extra: u8) -> Self {
         self.extra = extra;
         self
+    }
+}
+
+impl Display for EntityType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}:{}:{}:{}:{}:{}",
+            Into::<u8>::into(self.kind),
+            Into::<u8>::into(self.domain),
+            Into::<u16>::into(self.country),
+            self.category,
+            self.subcategory,
+            self.specific,
+            self.extra
+        )
+    }
+}
+
+impl FromStr for EntityType {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const NUM_DIGITS: usize = 7;
+        let ss = s.split(':').collect::<Vec<&str>>();
+        if ss.len() != NUM_DIGITS {
+            return Err(DisError::ParseError(format!("Digits are not precisely {NUM_DIGITS}")));
+        }
+        Ok(Self {
+            kind: ss
+                .get(0)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
+                .into(),
+            domain: ss
+                .get(1)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
+                .into(),
+            country: ss
+                .get(2)
+                .unwrap()
+                .parse::<u16>()
+                .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
+                .into(),
+            category: ss
+                .get(3)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
+            subcategory: ss
+                .get(4)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?,
+            specific: ss
+                .get(5)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?,
+            extra: ss
+                .get(6)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
+        })
+    }
+}
+
+impl TryFrom<&str> for EntityType {
+    type Error = DisError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        EntityType::from_str(value)
+    }
+}
+
+impl TryFrom<String> for EntityType {
+    type Error = DisError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        TryFrom::<&str>::try_from(&value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
+    const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
+    const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
+    const ENTITY_TYPE: EntityType = EntityType {
+        kind: EntityKind::Other,
+        domain: PlatformDomain::Land,
+        country: Country::Albania_ALB_,
+        category: 3,
+        subcategory: 4,
+        specific: 5,
+        extra: 6
+    };
+
+    #[test]
+    fn entity_type_display() {
+        assert_eq!(ENTITY_TYPE_STR, ENTITY_TYPE.to_string());
+    }
+
+    #[test]
+    fn entity_type_from_str() {
+        assert_eq!(EntityType::from_str(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
+        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID_EXTRA);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_try_from_str() {
+        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
+        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_try_from_string() {
+        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR.to_string()).unwrap(), ENTITY_TYPE);
+        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
     }
 }
 
