@@ -12,7 +12,7 @@ pub const BASE_EVENT_REPORT_BODY_LENGTH: u16 = 28;
 /// 5.9.2.5 Event Report PDU
 ///
 /// 7.5.12 Event Report PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct EventReport {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

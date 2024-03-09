@@ -1,3 +1,6 @@
+use std::fmt::Display;
+use std::str::FromStr;
+
 use crate::acknowledge_r::model::AcknowledgeR;
 use crate::action_request_r::model::ActionRequestR;
 use crate::action_response_r::model::ActionResponseR;
@@ -37,6 +40,7 @@ use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TI
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
+use crate::DisError;
 use crate::event_report_r::model::EventReportR;
 use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
 use crate::is_group_of::model::IsGroupOf;
@@ -145,7 +149,7 @@ impl PduHeader {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum PduBody {
     Other(Other),
     EntityState(EntityState),
@@ -720,7 +724,7 @@ impl Default for EventId {
 
 /// 6.2.96 Vector record
 /// 6.2.7 Angular Velocity Vector record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
@@ -754,7 +758,7 @@ impl VectorF32 {
 
 // TODO rename Location to World Coordinate
 /// 6.2.98 World Coordinates record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
@@ -788,7 +792,7 @@ impl Location {
 
 // TODO rename Orientation to EulerAngle
 /// 6.2.32 Euler Angles record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
@@ -869,6 +873,90 @@ impl EntityType {
     }
 }
 
+impl Display for EntityType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}:{}:{}:{}:{}:{}",
+            Into::<u8>::into(self.kind),
+            Into::<u8>::into(self.domain),
+            Into::<u16>::into(self.country),
+            self.category,
+            self.subcategory,
+            self.specific,
+            self.extra
+        )
+    }
+}
+
+impl FromStr for EntityType {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const NUM_DIGITS: usize = 7;
+        let ss = s.split(':').collect::<Vec<&str>>();
+        if ss.len() != NUM_DIGITS {
+            return Err(DisError::ParseError(format!("Digits are not precisely {NUM_DIGITS}")));
+        }
+        Ok(Self {
+            kind: ss
+                .get(0)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
+                .into(),
+            domain: ss
+                .get(1)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
+                .into(),
+            country: ss
+                .get(2)
+                .unwrap()
+                .parse::<u16>()
+                .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
+                .into(),
+            category: ss
+                .get(3)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
+            subcategory: ss
+                .get(4)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?,
+            specific: ss
+                .get(5)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?,
+            extra: ss
+                .get(6)
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
+        })
+    }
+}
+
+impl TryFrom<&str> for EntityType {
+    type Error = DisError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        EntityType::from_str(value)
+    }
+}
+
+impl TryFrom<String> for EntityType {
+    type Error = DisError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        TryFrom::<&str>::try_from(&value)
+    }
+}
+
 /// 6.2.19 Descriptor records
 #[derive(Debug, PartialEq)]
 pub enum DescriptorRecord {
@@ -912,7 +1000,7 @@ impl Default for DescriptorRecord {
 }
 
 /// 6.2.19.2 Munition Descriptor record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct MunitionDescriptor {
     pub warhead : MunitionDescriptorWarhead,
     pub fuse : MunitionDescriptorFuse,
@@ -1055,7 +1143,7 @@ impl From<TimeStamp> for DisTimeStamp {
 }
 
 /// 6.2.14 Clock Time record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct ClockTime {
     pub hour: i32,
     pub time_past_hour: u32,
@@ -1089,7 +1177,7 @@ pub const FIXED_DATUM_LENGTH: u16 = 8;
 pub const BASE_VARIABLE_DATUM_LENGTH: u16 = 8;
 
 /// 6.2.37 Fixed Datum record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: u32,
@@ -1105,7 +1193,7 @@ impl FixedDatum {
 }
 
 /// 6.2.93 Variable Datum record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VariableDatum {
     pub datum_id: VariableRecordType,
     pub datum_value: Vec<u8>,
@@ -1162,7 +1250,7 @@ pub(crate) fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> Pad
 }
 
 /// 6.2.94 Variable Parameter record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VariableParameter {
     Articulated(ArticulatedPart),
     Attached(AttachedPart),
@@ -1372,7 +1460,7 @@ impl EntityAssociationParameter {
 }
 
 /// 6.2.11 Beam Data record
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct BeamData {
     pub azimuth_center: f32,
     pub azimuth_sweep: f32,
@@ -1415,7 +1503,7 @@ impl BeamData {
 pub const SUPPLY_QUANTITY_RECORD_LENGTH: u16 = 12;
 
 /// 6.2.86 Supply Quantity record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SupplyQuantity {
     pub supply_type: EntityType,
     pub quantity: f32,
@@ -1436,7 +1524,7 @@ impl SupplyQuantity {
 pub const BASE_RECORD_SPEC_RECORD_LENGTH: u16 = 16;
 
 /// 6.2.73 Record Specification record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct RecordSpecification {
     pub record_sets: Vec<RecordSet>,
 }
@@ -1454,7 +1542,7 @@ impl RecordSpecification {
 }
 
 /// Part of 6.2.73 Record Specification record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct RecordSet {
     pub record_id: VariableRecordType,
     pub record_serial_number: u32,
@@ -1491,5 +1579,67 @@ impl RecordSet {
         } else { 0 } as u16;
         self.records = records;
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
+    const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
+    const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
+    const ENTITY_TYPE: EntityType = EntityType {
+        kind: EntityKind::Other,
+        domain: PlatformDomain::Land,
+        country: Country::Albania_ALB_,
+        category: 3,
+        subcategory: 4,
+        specific: 5,
+        extra: 6
+    };
+
+    #[test]
+    fn entity_type_display() {
+        assert_eq!(ENTITY_TYPE_STR, ENTITY_TYPE.to_string());
+    }
+
+    #[test]
+    fn entity_type_from_str() {
+        assert_eq!(EntityType::from_str(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
+        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID_EXTRA);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_try_from_str() {
+        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
+        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_try_from_string() {
+        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR.to_string()).unwrap(), ENTITY_TYPE);
+        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
     }
 }

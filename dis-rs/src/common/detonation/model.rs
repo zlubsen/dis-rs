@@ -6,10 +6,7 @@ use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 
 const BASE_DETONATION_BODY_LENGTH : u16 = 104;
 
-/// 5.4.4 Detonation PDU
-///
-/// 7.3.3 Detonation PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Detonation {
     pub source_entity_id: EntityId,
     pub target_entity_id: EntityId,

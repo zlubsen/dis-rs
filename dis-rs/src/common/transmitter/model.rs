@@ -8,10 +8,7 @@ const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
 pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
 pub const BASE_VTP_RECORD_LENGTH: u16 = 6;
 
-/// 5.8.3 Transmitter PDU
-///
-/// 7.7.2 Transmitter PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Transmitter {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,
@@ -73,8 +70,7 @@ impl Interaction for Transmitter {
     }
 }
 
-/// 6.2.59 Modulation Type record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ModulationType {
     pub spread_spectrum: SpreadSpectrum,
     pub major_modulation: TransmitterMajorModulation,
@@ -112,8 +108,7 @@ impl ModulationType {
     }
 }
 
-/// Table 90 — Spread spectrum field definition (6.2.59 Modulation Type record)
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SpreadSpectrum {
     pub frequency_hopping: bool,
     pub pseudo_noise: bool,
@@ -159,8 +154,7 @@ impl SpreadSpectrum {
     }
 }
 
-/// Table 175 — Crypto Key ID record (7.7.2 Transmitter PDU)
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CryptoKeyId {
     pub pseudo_crypto_key: u16,
     pub crypto_mode: CryptoMode,
@@ -175,7 +169,7 @@ impl Default for CryptoKeyId {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CryptoMode {
     Baseband,
     Diphase,
@@ -196,8 +190,7 @@ impl From<bool> for CryptoMode {
     }
 }
 
-/// 6.2.8.2 Beam Antenna Pattern record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BeamAntennaPattern {
     pub beam_direction: Orientation,
     pub azimuth_beamwidth: f32,
@@ -263,8 +256,7 @@ impl BeamAntennaPattern {
     }
 }
 
-/// 6.2.95 Variable Transmitter Parameters record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VariableTransmitterParameter {
     pub record_type: VariableRecordType,
     pub fields: Vec<u8>,

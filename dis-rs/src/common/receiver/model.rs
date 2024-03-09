@@ -5,10 +5,7 @@ use crate::receiver::builder::ReceiverBuilder;
 
 const RECEIVER_BODY_LENGTH: u16 = 24;
 
-/// 5.8.5 Receiver PDU
-///
-/// 7.7.4 Receiver PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Receiver {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,

@@ -8,7 +8,7 @@ const STOP_FREEZE_BODY_LENGTH : u16 = 28;
 /// 5.6.5.5 Stop/Freeze PDU
 ///
 /// 7.5.5 Stop/Freeze PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StopFreeze {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

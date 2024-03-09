@@ -7,10 +7,7 @@ use crate::constants::EIGHT_OCTETS;
 
 pub const BASE_ACTION_RESPONSE_BODY_LENGTH: u16 = 28;
 
-/// 5.6.5.7 Action Request PDU
-///
-/// 7.5.7 Action Request PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ActionResponse {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

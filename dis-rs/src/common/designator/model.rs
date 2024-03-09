@@ -9,7 +9,7 @@ pub const DESIGNATOR_BODY_LENGTH : u16 = 76;
 /// 5.7.4 Designator PDU
 ///
 /// 7.6.3 Designator PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Designator {
     pub designating_entity_id: EntityId,
     pub system_name: DesignatorSystemName,

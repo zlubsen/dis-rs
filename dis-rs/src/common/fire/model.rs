@@ -8,7 +8,7 @@ const FIRE_BODY_LENGTH : u16 = 28;
 /// 5.4.3 Fire PDU
 ///
 /// 7.3.2 Fire PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Fire {
     pub firing_entity_id : EntityId,
     pub target_entity_id : EntityId,

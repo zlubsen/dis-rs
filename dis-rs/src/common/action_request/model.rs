@@ -10,7 +10,7 @@ pub const BASE_ACTION_REQUEST_BODY_LENGTH: u16 = 28;
 /// 5.6.5.7 Action Request PDU
 ///
 /// 7.5.7 Action Request PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ActionRequest {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
