@@ -23,7 +23,7 @@ const SISO_REF_FILE : &str = "./enumerations/SISO-REF-010.xml";
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 138] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -85,6 +85,12 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 138] = [
     (178, Some("SignalTdlType"), None, true), // Signal TDL Type
     (179, Some("ReceiverState"), None, false), // Receiver Receiver State
     (189, None, None, false), // Collision Type
+    (204, None, None, false), // Aggregate State-Aggregate State
+    (205, None, None, false), // Aggregate State-Formation
+    (206, None, None, false), // Aggregate State-Aggregate Kind
+    // (207, None, None, false), // Aggregate State-Aggregate Types -- not supported
+    (208, None, None, false), // Aggregate State-Subcategory
+    (209, None, None, false), // Aggregate State-Specific
     (210, None, None, false), // IsPartOf-Nature
     (211, None, None, false), // IsPartOf-Position
     (212, Some("StationName"), None, false), // IsPartOf-Station Name

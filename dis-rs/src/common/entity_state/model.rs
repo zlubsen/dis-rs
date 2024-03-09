@@ -114,8 +114,8 @@ impl EntityMarking {
 impl Default for EntityMarking {
     fn default() -> Self {
         Self {
-            marking_character_set: EntityMarkingCharacterSet::default(),
-            marking_string: String::from("Default"),
+            marking_character_set: EntityMarkingCharacterSet::ASCII,
+            marking_string: String::from("Marking"),
         }
     }
 }

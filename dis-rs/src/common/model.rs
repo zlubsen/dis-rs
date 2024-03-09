@@ -1,6 +1,7 @@
 use crate::acknowledge_r::model::AcknowledgeR;
 use crate::action_request_r::model::ActionRequestR;
 use crate::action_response_r::model::ActionResponseR;
+use crate::aggregate_state::model::AggregateState;
 use crate::comment_r::model::CommentR;
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
@@ -179,7 +180,7 @@ pub enum PduBody {
     SupplementalEmissionEntityState(SEES),
     IntercomSignal,
     IntercomControl,
-    AggregateState,
+    AggregateState(AggregateState),
     IsGroupOf(IsGroupOf),
     TransferOwnership(TransferOwnership),
     IsPartOf(IsPartOf),
@@ -257,7 +258,7 @@ impl BodyInfo for PduBody {
             PduBody::SupplementalEmissionEntityState(body) => { body.body_length() }
             PduBody::IntercomSignal => { 0 }
             PduBody::IntercomControl => { 0 }
-            PduBody::AggregateState => { 0 }
+            PduBody::AggregateState(body) => { body.body_length() }
             PduBody::IsGroupOf(body) => { body.body_length() }
             PduBody::TransferOwnership(body) => { body.body_length() }
             PduBody::IsPartOf(body) => { body.body_length() }
@@ -335,7 +336,7 @@ impl BodyInfo for PduBody {
             PduBody::SupplementalEmissionEntityState(body) => { body.body_type() }
             PduBody::IntercomSignal => { PduType::IntercomSignal }
             PduBody::IntercomControl => { PduType::IntercomControl }
-            PduBody::AggregateState => { PduType::AggregateState }
+            PduBody::AggregateState(body) => { body.body_type() }
             PduBody::IsGroupOf(body) => { body.body_type() }
             PduBody::TransferOwnership(body) => { body.body_type() }
             PduBody::IsPartOf(body) => { body.body_type() }
@@ -415,7 +416,7 @@ impl Interaction for PduBody {
             PduBody::SupplementalEmissionEntityState(body) => { body.originator() }
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
-            PduBody::AggregateState => { None }
+            PduBody::AggregateState(body) => { body.originator() }
             PduBody::IsGroupOf(body) => { body.originator() }
             PduBody::TransferOwnership(body) => { body.originator() }
             PduBody::IsPartOf(body) => { body.originator() }
@@ -493,7 +494,7 @@ impl Interaction for PduBody {
             PduBody::SupplementalEmissionEntityState(body) => { body.receiver() }
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
-            PduBody::AggregateState => { None }
+            PduBody::AggregateState(body) => { body.receiver() }
             PduBody::IsGroupOf(body) => { body.receiver() }
             PduBody::TransferOwnership(body) => { body.receiver() }
             PduBody::IsPartOf(body) => { body.receiver() }
