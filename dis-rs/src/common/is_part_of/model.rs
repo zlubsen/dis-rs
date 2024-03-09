@@ -8,7 +8,7 @@ const IS_PART_OF_BODY_LENGTH: u16 = 40;
 /// 5.9.5 IsPartOf PDU
 ///
 /// 7.8.5 IsPartOf PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct IsPartOf {
     pub originating_simulation_id: EntityId,
     pub receiving_entity_id: EntityId,
@@ -52,7 +52,7 @@ impl Interaction for IsPartOf {
 }
 
 /// 6.2.74 Relationship record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Relationship {
     pub nature: IsPartOfNature,
     pub position: IsPartOfPosition,
@@ -71,7 +71,7 @@ impl Relationship {
 }
 
 /// 6.2.62 Named Location Identification record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct NamedLocationId {
     pub station_name: StationName,
     pub station_number: u16,

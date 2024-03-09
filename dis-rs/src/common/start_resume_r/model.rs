@@ -8,7 +8,7 @@ const START_RESUME_R_BODY_LENGTH : u16 = 36;
 /// 5.12.4.4 Start/Resume-R PDU
 ///
 /// 7.11.4 Start/Resume-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StartResumeR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

@@ -1,13 +1,19 @@
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 use crate::aggregate_state::builder::AggregateStateBuilder;
 use crate::common::{BodyInfo, Interaction};
+use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS};
+use crate::DisError;
 use crate::entity_state::model::EntityAppearance;
 use crate::enumerations::{ForceId, PduType, AggregateStateAggregateState, AggregateStateAggregateKind, PlatformDomain, Country, AggregateStateSubcategory, AggregateStateSpecific, AggregateStateFormation, EntityMarkingCharacterSet};
 use crate::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableDatum, VectorF32};
 
+const BASE_AGGREGATE_STATE_BODY_LENGTH: u16 = 124;
+
 /// 5.9.2.2 Aggregate State PDU
 ///
 /// 7.8.2 Aggregate State PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AggregateState {
     pub aggregate_id: EntityId,
     pub force_id: ForceId,
@@ -43,7 +49,16 @@ impl AggregateState {
 
 impl BodyInfo for AggregateState {
     fn body_length(&self) -> u16 {
-
+        todo!();
+        let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
+            + self.aggregates.iter().map(|id| id.record_length() ).sum::<u16>()
+            + self.entities.iter().map(|id| id.record_length() ).sum::<u16>();
+        let remainder = intermediate_length % 4; // padding to 32-bits (4 octets) boundary
+        let intermediate_length = intermediate_length
+            + remainder;
+        intermediate_length
+            + self.silent_aggregate_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + 0
     }
 
     fn body_type(&self) -> PduType {
@@ -62,30 +77,64 @@ impl Interaction for AggregateState {
 }
 
 /// 6.2.4 Aggregate Marking record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AggregateMarking {
     pub marking_character_set : EntityMarkingCharacterSet,
     pub marking_string : String, // 31 byte String
 }
 
 impl AggregateMarking {
-    // TODO - builder, Display, FromStr...
+    pub fn new(marking: String, character_set: EntityMarkingCharacterSet) -> Self {
+        Self {
+            marking_character_set: character_set,
+            marking_string: marking
+        }
+    }
+
+    pub fn new_ascii<S: Into<String>>(marking: S) -> Self {
+        AggregateMarking::new(marking.into(), EntityMarkingCharacterSet::ASCII)
+    }
+
+    pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
+        self.marking_string = marking.into();
+        self
+    }
+}
+
+impl Display for AggregateMarking {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.marking_string.as_str())
+    }
+}
+
+impl FromStr for AggregateMarking {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() <= 31 {
+            Ok(Self {
+                marking_character_set: EntityMarkingCharacterSet::ASCII,
+                marking_string: s.to_string()
+            })
+        } else {
+            Err(DisError::ParseError(format!("String is too long for AggregateMarking. Found {}, max 31 allowed.", s.len())))
+        }
+    }
 }
 
 /// 6.2.5 Aggregate Type record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AggregateType {
     pub aggregate_kind: AggregateStateAggregateKind,
     pub domain: PlatformDomain,
     pub country: Country,
     pub category: u8,
-    pub sub_category: AggregateStateSubcategory,
+    pub subcategory: AggregateStateSubcategory,
     pub specific: AggregateStateSpecific,
     pub extra: u8,
 }
 
 impl AggregateType {
-    // TODO - Display, FromStr
     pub fn with_aggregate_kind(mut self, aggregate_kind: AggregateStateAggregateKind) -> Self {
         self.aggregate_kind = aggregate_kind;
         self
@@ -106,8 +155,8 @@ impl AggregateType {
         self
     }
 
-    pub fn with_sub_category(mut self, sub_category: AggregateStateSubcategory) -> Self {
-        self.sub_category = sub_category;
+    pub fn with_subcategory(mut self, subcategory: AggregateStateSubcategory) -> Self {
+        self.subcategory = subcategory;
         self
     }
 
@@ -120,10 +169,100 @@ impl AggregateType {
         self.extra = extra;
         self
     }
+
+    pub fn record_length(&self) -> u16 {
+        EIGHT_OCTETS as u16
+    }
+}
+
+impl Display for AggregateType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}:{}:{}:{}:{}:{}",
+            u8::from(self.aggregate_kind),
+            u8::from(self.domain),
+            u16::from(self.country),
+            self.category,
+            u8::from(self.subcategory),
+            u8::from(self.specific),
+            self.extra
+        )
+    }
+}
+
+impl FromStr for AggregateType {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const NUM_DIGITS: usize = 7;
+        let ss = s.split(':').collect::<Vec<&str>>();
+        if ss.len() != NUM_DIGITS {
+            return Err(DisError::ParseError(format!("Digits are not precisely {NUM_DIGITS}")));
+        }
+        Ok(Self {
+            aggregate_kind: ss
+                .get(0)
+                .unwrap_or(&"0")
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
+                .into(),
+            domain: ss
+                .get(1)
+                .unwrap_or(&"0")
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
+                .into(),
+            country: ss
+                .get(2)
+                .unwrap_or(&"0")
+                .parse::<u16>()
+                .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
+                .into(),
+            category: ss
+                .get(3)
+                .unwrap_or(&"0")
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
+            subcategory: ss
+                .get(4)
+                .unwrap_or(&"0")
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?
+                .into(),
+            specific: ss
+                .get(5)
+                .unwrap_or(&"0")
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?
+                .into(),
+            extra: ss
+                .get(6)
+                .unwrap_or(&"0")
+                .parse::<u8>()
+                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
+        })
+    }
+}
+
+impl TryFrom<&str> for AggregateType {
+    type Error = DisError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        AggregateType::from_str(value)
+    }
+}
+
+impl TryFrom<String> for AggregateType {
+    type Error = DisError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        TryFrom::<&str>::try_from(&value)
+    }
 }
 
 /// Custom record for `SilentAggregateSystem`
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SilentAggregateSystem {
     pub number_of_aggregates: u16,
     pub aggregate_type: AggregateType,
@@ -139,10 +278,14 @@ impl SilentAggregateSystem {
         self.aggregate_type = aggregate_type;
         self
     }
+
+    pub fn record_length(&self) -> u16 {
+        FOUR_OCTETS as u16 + self.aggregate_type.record_length()
+    }
 }
 
 /// 6.2.79 Silent Entity System record
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SilentEntitySystem {
     pub number_of_entities: u16,
     pub entity_type: EntityType,

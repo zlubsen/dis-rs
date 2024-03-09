@@ -9,7 +9,7 @@ const RESUPPLY_OFFER_BASE_BODY_LENGTH : u16 = 28;
 /// 5.5.6 Resupply Offer PDU
 ///
 /// 7.4.3 Resupply Offer PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ResupplyOffer {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,

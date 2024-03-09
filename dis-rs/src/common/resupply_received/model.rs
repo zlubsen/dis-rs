@@ -9,7 +9,7 @@ const RESUPPLY_RECEIVED_BASE_BODY_LENGTH : u16 = 28;
 /// 5.5.7 Resupply Received PDU
 ///
 /// 7.4.4 Resupply Received PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ResupplyReceived {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,

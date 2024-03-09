@@ -8,7 +8,7 @@ const ACKNOWLEDGE_R_BODY_LENGTH : u16 = 20;
 /// 5.12.4.5 Acknowledge-R PDU
 ///
 /// 7.11.6 Acknowledge-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AcknowledgeR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

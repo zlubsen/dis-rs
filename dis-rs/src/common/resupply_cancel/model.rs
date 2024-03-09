@@ -8,7 +8,7 @@ const RESUPPLY_CANCEL_BASE_BODY_LENGTH : u16 = 24;
 /// 5.5.8 Resupply Cancel PDU
 ///
 /// 7.4.5 Resupply Cancel PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ResupplyCancel {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,

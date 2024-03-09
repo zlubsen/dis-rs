@@ -9,7 +9,7 @@ const BASE_TRANSFER_OWNERSHIP_BODY_LENGTH: u16 = 28;
 /// 5.9.4 Transfer Ownership (TO) PDU
 ///
 /// 7.8.4 Transfer Ownership (TO) PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct TransferOwnership {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

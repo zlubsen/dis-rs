@@ -9,7 +9,7 @@ const BASE_COMMENT_R_BODY_LENGTH: u16 = 20;
 /// 5.12.4.13 Comment-R PDU
 ///
 /// 7.11.13 Comment-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct CommentR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

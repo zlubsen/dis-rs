@@ -9,7 +9,7 @@ pub const BASE_DATA_QUERY_R_BODY_LENGTH: u16 = 32;
 /// 5.12.4.9 Data Query-R PDU
 ///
 /// 7.11.9 Data Query-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct DataQueryR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

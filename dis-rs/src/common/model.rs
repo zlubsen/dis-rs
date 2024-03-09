@@ -36,7 +36,7 @@ use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
-use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
+use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS};
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
@@ -689,6 +689,10 @@ impl EntityId {
             entity_id: NO_ENTITY,
         }
     }
+
+    pub fn record_length(&self) -> u16 {
+        SIX_OCTETS as u16
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -878,9 +882,9 @@ impl Display for EntityType {
         write!(
             f,
             "{}:{}:{}:{}:{}:{}:{}",
-            Into::<u8>::into(self.kind),
-            Into::<u8>::into(self.domain),
-            Into::<u16>::into(self.country),
+            u8::from(self.kind),
+            u8::from(self.domain),
+            u16::from(self.country),
             self.category,
             self.subcategory,
             self.specific,
@@ -901,40 +905,40 @@ impl FromStr for EntityType {
         Ok(Self {
             kind: ss
                 .get(0)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
                 .into(),
             domain: ss
                 .get(1)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
                 .into(),
             country: ss
                 .get(2)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u16>()
                 .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
                 .into(),
             category: ss
                 .get(3)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
             subcategory: ss
                 .get(4)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?,
             specific: ss
                 .get(5)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?,
             extra: ss
                 .get(6)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
         })
@@ -958,7 +962,7 @@ impl TryFrom<String> for EntityType {
 }
 
 /// 6.2.19 Descriptor records
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DescriptorRecord {
     /// 6.2.19.2 Munition Descriptor record
     Munition { entity_type: EntityType, munition: MunitionDescriptor },
@@ -1040,7 +1044,7 @@ impl MunitionDescriptor {
 ///
 /// This raw timestamp could also be interpreted as a Unix timestamp, or something else
 /// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct TimeStamp {
     pub raw_timestamp: u32,
 }

@@ -8,7 +8,7 @@ const SERVICE_REQUEST_BASE_BODY_LENGTH : u16 = 28;
 /// 5.5.5 Service Request PDU
 ///
 /// 7.4.2 Service Request PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ServiceRequest {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,

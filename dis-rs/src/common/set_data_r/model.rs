@@ -9,7 +9,7 @@ pub const BASE_SET_DATA_R_BODY_LENGTH: u16 = 28;
 /// 5.12.4.10 Set Data-R PDU
 ///
 /// 7.11.10 Set Data-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SetDataR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

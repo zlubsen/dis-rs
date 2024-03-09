@@ -8,7 +8,7 @@ const REPAIR_COMPLETE_BASE_BODY_LENGTH : u16 = 16;
 /// 5.5.9 Repair Complete PDU
 ///
 /// 7.4.6 Repair Complete PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct RepairComplete {
     pub receiving_id: EntityId,
     pub repairing_id: EntityId,

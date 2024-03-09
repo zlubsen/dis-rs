@@ -8,7 +8,7 @@ const REMOVE_ENTITY_R_BODY_LENGTH : u16 = 20;
 /// 5.12.4.3 Remove Entity-R PDU
 ///
 /// 7.11.3 Remove Entity-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct RemoveEntityR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

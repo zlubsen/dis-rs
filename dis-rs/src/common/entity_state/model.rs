@@ -1,6 +1,8 @@
+use std::str::FromStr;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableParameter, VectorF32};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
+use crate::DisError;
 use crate::entity_state::builder::EntityStateBuilder;
 use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm};
 
@@ -15,7 +17,7 @@ pub enum EntityStateValidationError {
 /// 5.3.2 Entity State PDU
 ///
 /// 7.2.2 Entity State PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct EntityState {
     pub entity_id : EntityId, // struct
     pub force_id : ForceId, // enum
@@ -66,7 +68,7 @@ impl Interaction for EntityState {
 }
 
 /// 6.2.26 Entity Appearance record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum EntityAppearance {
     LandPlatform(LandPlatformAppearance),
     AirPlatform(AirPlatformAppearance),
@@ -91,7 +93,7 @@ impl Default for EntityAppearance {
 }
 
 /// 6.2.29 Entity Marking record
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EntityMarking {
     pub marking_character_set : EntityMarkingCharacterSet,
     pub marking_string : String, // 11 byte String
@@ -105,8 +107,12 @@ impl EntityMarking {
         }
     }
 
-    pub fn with_marking(mut self, marking: String) -> Self {
-        self.marking_string = marking;
+    pub fn new_ascii<S: Into<String>>(marking: S) -> Self {
+        EntityMarking::new(marking.into(), EntityMarkingCharacterSet::ASCII)
+    }
+
+    pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
+        self.marking_string = marking.into();
         self
     }
 }
@@ -120,8 +126,23 @@ impl Default for EntityMarking {
     }
 }
 
+impl FromStr for EntityMarking {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() <= 11 {
+            Ok(Self {
+                marking_character_set: EntityMarkingCharacterSet::ASCII,
+                marking_string: s.to_string()
+            })
+        } else {
+            Err(DisError::ParseError(format!("String is too long for EntityMarking. Found {}, max 11 allowed.", s.len())))
+        }
+    }
+}
+
 /// Custom defined record to group Dead Reckoning Parameters
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrParameters {
     pub algorithm : DeadReckoningAlgorithm,
     pub other_parameters : DrOtherParameters,
@@ -152,7 +173,7 @@ impl DrParameters {
 }
 
 /// E.8 Use of the Other Parameters field in Dead Reckoning Parameters
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DrOtherParameters {
     None([u8; 15]),
     LocalEulerAngles(DrEulerAngles),
@@ -166,7 +187,7 @@ impl Default for DrOtherParameters {
 }
 
 /// Identical to Table 58—Euler Angles record / 6.2.32 Euler Angles record (which is modeled as `VectorF32`)
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrEulerAngles {
     pub local_yaw : f32,
     pub local_pitch : f32,
@@ -191,7 +212,7 @@ impl DrEulerAngles {
 }
 
 /// Table E.3—World Orientation Quaternion Dead Reckoning Parameters (E.8.2.3 Rotating DRM entities)
-#[derive(Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrWorldOrientationQuaternion {
     pub nil : u16,
     pub x: f32,

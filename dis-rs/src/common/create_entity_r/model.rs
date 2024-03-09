@@ -8,7 +8,7 @@ const CREATE_ENTITY_R_BODY_LENGTH : u16 = 20;
 /// 5.12.4.2 Create Entity-R PDU
 ///
 /// 7.11.2 Create Entity-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct CreateEntityR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

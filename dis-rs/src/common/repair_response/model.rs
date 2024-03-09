@@ -8,7 +8,7 @@ const REPAIR_RESPONSE_BASE_BODY_LENGTH : u16 = 16;
 /// 5.5.10 Repair Response PDU
 ///
 /// 7.4.7 Repair Response PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct RepairResponse {
     pub receiving_id: EntityId,
     pub repairing_id: EntityId,

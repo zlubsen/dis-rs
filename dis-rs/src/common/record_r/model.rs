@@ -10,7 +10,7 @@ pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;
 /// 5.12.4.16 Record-R PDU
 ///
 /// 7.11.16 Record-R PDU
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct RecordR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
