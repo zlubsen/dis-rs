@@ -98,7 +98,7 @@ impl AggregateStateBuilder {
     }
 
     pub fn with_silent_entity_system(mut self, silent_entity_system: SilentEntitySystem) -> Self {
-        self.0.silent_aggregate_systems.push(silent_entity_system);
+        self.0.silent_entity_systems.push(silent_entity_system);
         self
     }
 

@@ -7,7 +7,7 @@ pub mod builder;
 mod tests {
     use bytes::BytesMut;
     use crate::aggregate_state::model::{AggregateMarking, AggregateState, AggregateType};
-    use crate::enumerations::{AggregateStateAggregateKind, AggregateStateAggregateState, ForceId, PduType, PlatformDomain};
+    use crate::enumerations::{AggregateStateAggregateState, ForceId, PduType};
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::common::Serialize;
@@ -15,32 +15,27 @@ mod tests {
     use crate::model::EntityId;
 
     #[test]
-    fn attribute_internal_consistency() {
+    fn aggregate_state_internal_consistency() {
         let header = PduHeader::new_v7(1, PduType::AggregateState);
 
         let body = AggregateState::builder()
             .with_aggregate_id(EntityId::new(10, 10, 10))
             .with_force_id(ForceId::Friendly)
             .with_aggregate_state(AggregateStateAggregateState::Aggregated)
-            .with_aggregate_type(AggregateType::default()
-                .with_domain(PlatformDomain::Air)
-                .with_aggregate_kind(AggregateStateAggregateKind::CommonLocation))
-            .with_aggregate_marking(AggregateMarking::default()"Squadron XYZ");
+            .with_aggregate_type(AggregateType::try_from("1:2:3:4:5:6:7").unwrap())
+            .with_aggregate_marking(AggregateMarking::default().with_marking("Squadron XYZ"))
 
-        pub force_id: ForceId,
-        pub aggregate_state: AggregateStateAggregateState,
-        pub aggregate_type: AggregateType,
-        pub formation: AggregateStateFormation,
-        pub aggregate_marking: AggregateMarking,
-        pub dimensions: VectorF32,
-        pub orientation: Orientation,
-        pub center_of_mass: Location,
-        pub velocity: VectorF32,
-        pub aggregates: Vec<EntityId>,
-        pub entities: Vec<EntityId>,
-        pub silent_aggregate_systems: Vec<SilentAggregateSystem>,
-        pub silent_entity_systems: Vec<SilentEntitySystem>,
-        pub variable_datums: Vec<VariableDatum>,
+        // pub formation: AggregateStateFormation,
+        // pub aggregate_marking: AggregateMarking,
+        // pub dimensions: VectorF32,
+        // pub orientation: Orientation,
+        // pub center_of_mass: Location,
+        // pub velocity: VectorF32,
+        // pub aggregates: Vec<EntityId>,
+        // pub entities: Vec<EntityId>,
+        // pub silent_aggregate_systems: Vec<SilentAggregateSystem>,
+        // pub silent_entity_systems: Vec<SilentEntitySystem>,
+        // pub variable_datums: Vec<VariableDatum>,
 
             .build()
             .into_pdu_body();
