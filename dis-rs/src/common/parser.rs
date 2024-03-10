@@ -9,6 +9,7 @@ use nom::sequence::tuple;
 use crate::acknowledge_r::parser::acknowledge_r_body;
 use crate::action_request_r::parser::action_request_r_body;
 use crate::action_response_r::parser::action_response_r_body;
+use crate::aggregate_state::parser::aggregate_state_body;
 use crate::comment_r::parser::comment_r_body;
 use crate::common::entity_state::parser::entity_state_body;
 use crate::constants::{EIGHT_OCTETS, FIVE_LEAST_SIGNIFICANT_BITS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
@@ -225,7 +226,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::SupplementalEmissionEntityState => { sees_body(input)? }
             // PduType::IntercomSignal => {}
             // PduType::IntercomControl => {}
-            // PduType::AggregateState => {}
+            PduType::AggregateState => { aggregate_state_body(input)? }
             PduType::IsGroupOf => { is_group_of_body(input)? }
             PduType::TransferOwnership => { transfer_ownership_body(input)? }
             PduType::IsPartOf => { is_part_of_body(input)? }
@@ -723,6 +724,16 @@ pub(crate) fn record_set(input: &[u8]) -> IResult<&[u8], RecordSet> {
         .with_record_id(record_id)
         .with_record_serial_number(serial_number)
         .with_records(record_values)))
+}
+
+/// Takes a reference to a buffer and converts the contents into a String,
+/// sanitizing the input on leading/ending whitespace, and
+/// keeping only alphanumeric characters.
+pub(crate) fn sanitize_marking(buf: &[u8]) -> String {
+    let mut marking_string = String::from_utf8_lossy(buf).into_owned();
+    marking_string.truncate(marking_string.trim_end().trim_end_matches(|c : char | !c.is_alphanumeric()).len());
+
+    marking_string
 }
 
 /// Round upward a given number of bits to the next amount of full bytes

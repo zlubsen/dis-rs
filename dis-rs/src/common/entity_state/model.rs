@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableParameter, VectorF32};
-use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
+use crate::constants::{FOUR_OCTETS, TWELVE_OCTETS, VARIABLE_PARAMETER_RECORD_LENGTH};
 use crate::DisError;
 use crate::entity_state::builder::EntityStateBuilder;
 use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm};
@@ -83,12 +83,18 @@ pub enum EntityAppearance {
     Radio(RadioAppearance),
     Expendable(ExpendableAppearance),
     SensorEmitter(SensorEmitterAppearance),
-    Unspecified([u8;4]),
+    Unspecified([u8;FOUR_OCTETS]),
 }
 
 impl Default for EntityAppearance {
     fn default() -> Self {
         Self::Unspecified(0u32.to_be_bytes())
+    }
+}
+
+impl EntityAppearance {
+    pub fn record_length(&self) -> u16 {
+        FOUR_OCTETS as u16
     }
 }
 
@@ -114,6 +120,10 @@ impl EntityMarking {
     pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
         self.marking_string = marking.into();
         self
+    }
+
+    pub fn record_length(&self) -> u16 {
+        TWELVE_OCTETS as u16
     }
 }
 

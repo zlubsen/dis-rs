@@ -5,7 +5,7 @@ use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use crate::common::entity_state::model::{EntityState, DrOtherParameters, DrParameters, EntityMarking, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance};
 use crate::common::model::{EntityType, PduBody, PduHeader};
 use crate::common::parser;
-use crate::common::parser::{entity_id, entity_type, vec3_f32};
+use crate::common::parser::{entity_id, entity_type, sanitize_marking, vec3_f32};
 use crate::enumerations::*;
 use crate::v6::entity_state::parser::entity_capabilities;
 
@@ -91,15 +91,15 @@ pub(crate) fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IR
 /// than 11 characters, the trailing bytes are typically 0x00 in the PDU, which in UTF-8 is a control character.
 pub(crate) fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     let mut buf : [u8;11] = [0;11];
-    let (input, character_set) = be_u8(input)?;
+    let (input, marking_character_set) = be_u8(input)?;
     let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
-    let mut marking = String::from_utf8_lossy(&buf[..]).into_owned();
-    marking.truncate(marking.trim_end().trim_end_matches(|c : char | !c.is_alphanumeric()).len());
+    let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
+    let marking_string = sanitize_marking(&buf[..]);
 
     Ok((input, EntityMarking{
-        marking_character_set: EntityMarkingCharacterSet::from(character_set),
-        marking_string: marking,
+        marking_character_set,
+        marking_string,
     }))
 }
 

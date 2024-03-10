@@ -2,13 +2,13 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use crate::aggregate_state::builder::AggregateStateBuilder;
 use crate::common::{BodyInfo, Interaction};
-use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS};
+use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, THIRTY_TWO_OCTETS, TWO_OCTETS};
 use crate::DisError;
 use crate::entity_state::model::EntityAppearance;
 use crate::enumerations::{ForceId, PduType, AggregateStateAggregateState, AggregateStateAggregateKind, PlatformDomain, Country, AggregateStateSubcategory, AggregateStateSpecific, AggregateStateFormation, EntityMarkingCharacterSet};
-use crate::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableDatum, VectorF32};
+use crate::model::{BASE_VARIABLE_DATUM_LENGTH, EntityId, EntityType, length_padded_to_num, Location, Orientation, PduBody, VariableDatum, VectorF32};
 
-const BASE_AGGREGATE_STATE_BODY_LENGTH: u16 = 124;
+pub(crate) const BASE_AGGREGATE_STATE_BODY_LENGTH: u16 = 124;
 
 /// 5.9.2.2 Aggregate State PDU
 ///
@@ -49,16 +49,23 @@ impl AggregateState {
 
 impl BodyInfo for AggregateState {
     fn body_length(&self) -> u16 {
-        todo!();
         let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
-            + self.aggregates.iter().map(|id| id.record_length() ).sum::<u16>()
-            + self.entities.iter().map(|id| id.record_length() ).sum::<u16>();
-        let remainder = intermediate_length % 4; // padding to 32-bits (4 octets) boundary
-        let intermediate_length = intermediate_length
-            + remainder;
+            + self.aggregates.iter().map(|id| id.record_length() ).sum::<u16>()             // number of aggregate ids
+            + self.entities.iter().map(|id| id.record_length() ).sum::<u16>();              // number of entity ids
+        let remainder = intermediate_length % (FOUR_OCTETS as u16);                             // padding to 32-bits (4 octets) boundary
+        let intermediate_length = intermediate_length + remainder;
         intermediate_length
+            // number of silent aggregate systems
             + self.silent_aggregate_systems.iter().map(|system| system.record_length() ).sum::<u16>()
-            + 0
+            // number of silent entity systems
+            + self.silent_entity_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            // number of variable datum records
+            + (self.variable_datums.iter().map(|datum| {
+                let padded_record = length_padded_to_num(
+                    BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
+                    EIGHT_OCTETS);
+                padded_record.record_length as u16
+            } ).sum::<u16>())
     }
 
     fn body_type(&self) -> PduType {
@@ -98,6 +105,10 @@ impl AggregateMarking {
     pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
         self.marking_string = marking.into();
         self
+    }
+
+    pub fn record_length(&self) -> u16 {
+        THIRTY_TWO_OCTETS as u16
     }
 }
 
@@ -311,6 +322,14 @@ impl SilentEntitySystem {
     pub fn with_appearances(mut self, appearances: Vec<EntityAppearance>) -> Self {
         self.appearances = appearances;
         self
+    }
+
+    pub fn record_length(&self) -> u16 {
+        TWO_OCTETS as u16
+            + self.entity_type.record_length()
+            + self.appearances.iter()
+            .map(|app| app.record_length() )
+            .sum::<u16>()
     }
 }
 

@@ -36,7 +36,7 @@ use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
-use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS};
+use crate::constants::{EIGHT_OCTETS, FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS};
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
 use crate::data_r::model::DataR;
@@ -874,6 +874,10 @@ impl EntityType {
     pub fn with_extra(mut self, extra: u8) -> Self {
         self.extra = extra;
         self
+    }
+
+    pub fn record_length(&self) -> u16 {
+        EIGHT_OCTETS as u16
     }
 }
 
