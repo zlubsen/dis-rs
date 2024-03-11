@@ -781,7 +781,7 @@ impl Orientation {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : PlatformDomain,
