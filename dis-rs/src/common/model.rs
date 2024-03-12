@@ -829,7 +829,7 @@ impl Orientation {
 }
 
 /// 6.2.30 Entity Type record
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : PlatformDomain,
