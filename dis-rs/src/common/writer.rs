@@ -66,7 +66,7 @@ impl Serialize for Pdu {
             PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomControl(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }
+            PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }
             PduBody::IsGroupOf(body) => { body.serialize_pdu(version, buf) }
             PduBody::TransferOwnership(body) => { body.serialize_pdu(version, buf) }
             PduBody::IsPartOf(body) => { body.serialize_pdu(version, buf) }

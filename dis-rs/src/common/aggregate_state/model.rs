@@ -45,15 +45,24 @@ impl AggregateState {
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::AggregateState(self)
     }
+
+}
+
+/// Calculate the intermediate length and padding of an AggregateState PDU.
+///
+/// Returns a tuple consisting of the intermediate length including the padding,
+/// and the length of the padding, in octets.
+pub(crate) fn aggregate_state_intermediate_length_padding(aggregates: &Vec<EntityId>, entities: &Vec<EntityId>) -> (u16, u16) {
+    let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
+        + aggregates.iter().map(|id| id.record_length() ).sum::<u16>() // number of aggregate ids
+        + entities.iter().map(|id| id.record_length() ).sum::<u16>();  // number of entity ids
+    let padding_length = intermediate_length % (FOUR_OCTETS as u16);       // padding to 32-bits (4 octets) boundary
+    (intermediate_length + padding_length, padding_length)
 }
 
 impl BodyInfo for AggregateState {
     fn body_length(&self) -> u16 {
-        let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
-            + self.aggregates.iter().map(|id| id.record_length() ).sum::<u16>()             // number of aggregate ids
-            + self.entities.iter().map(|id| id.record_length() ).sum::<u16>();              // number of entity ids
-        let remainder = intermediate_length % (FOUR_OCTETS as u16);                             // padding to 32-bits (4 octets) boundary
-        let intermediate_length = intermediate_length + remainder;
+        let (intermediate_length, _padding_length) = aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
         intermediate_length
             // number of silent aggregate systems
             + self.silent_aggregate_systems.iter().map(|system| system.record_length() ).sum::<u16>()

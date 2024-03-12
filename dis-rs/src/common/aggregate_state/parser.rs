@@ -2,9 +2,8 @@ use nom::bytes::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
-use crate::aggregate_state::model::{AggregateMarking, AggregateState, AggregateType, BASE_AGGREGATE_STATE_BODY_LENGTH, SilentAggregateSystem, SilentEntitySystem};
+use crate::aggregate_state::model::{aggregate_state_intermediate_length_padding, AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem};
 use crate::common::parser::{entity_id, entity_type, location, orientation, sanitize_marking, variable_datum, vec3_f32};
-use crate::constants::FOUR_OCTETS;
 use crate::entity_state::parser::{entity_appearance, force_id};
 use crate::enumerations::{AggregateStateAggregateKind, AggregateStateAggregateState, AggregateStateFormation, AggregateStateSpecific, AggregateStateSubcategory, Country, EntityMarkingCharacterSet, PlatformDomain};
 use crate::model::PduBody;
@@ -31,10 +30,7 @@ pub(crate) fn aggregate_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, aggregates) = count(entity_id, number_of_aggregates.into())(input)?;
     let (input, entities) = count(entity_id, number_of_entities.into())(input)?;
 
-    let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
-        + aggregates.iter().map(|id| id.record_length() ).sum::<u16>()             // number of aggregate ids
-        + entities.iter().map(|id| id.record_length() ).sum::<u16>();              // number of entity ids
-    let padding_length = intermediate_length % (FOUR_OCTETS as u16);                   // padding to 32-bits (4 octets) boundary
+    let (_intermediate_length, padding_length) = aggregate_state_intermediate_length_padding(&aggregates, &entities);
 
     let (input, _padding) = take(padding_length)(input)?;
 
