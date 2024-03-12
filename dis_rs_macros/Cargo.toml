@@ -6,7 +6,7 @@ description = "Macros for the dis-rs crate"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/zlubsen/dis-rs/dis_lib"
+repository = "https://github.com/zlubsen/dis-rs"
 categories = ["network-programming"]
 keywords = ["simulation", "DIS"]
 
