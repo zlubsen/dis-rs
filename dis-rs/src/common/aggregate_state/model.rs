@@ -143,7 +143,7 @@ impl FromStr for AggregateMarking {
 }
 
 /// 6.2.5 Aggregate Type record
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct AggregateType {
     pub aggregate_kind: AggregateStateAggregateKind,
     pub domain: PlatformDomain,
