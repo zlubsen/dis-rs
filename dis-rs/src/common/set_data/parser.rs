@@ -4,7 +4,7 @@ use crate::common::parser::{datum_specification, entity_id};
 use crate::common::set_data::model::SetData;
 use crate::common::model::PduBody;
 
-pub fn set_data_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn set_data_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;

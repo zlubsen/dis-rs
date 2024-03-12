@@ -6,7 +6,7 @@ use crate::common::signal::model::{EncodingScheme, Signal};
 use crate::constants::ONE_BYTE_IN_BITS;
 use crate::enumerations::{SignalEncodingClass, SignalEncodingType, SignalTdlType, SignalUserProtocolIdentificationNumber};
 
-pub fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, radio_reference_id) = entity_id(input)?;
     let (input, radio_number) = be_u16(input)?;
     let (input, encoding_scheme) = be_u16(input)?;
@@ -68,10 +68,10 @@ fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingSch
                 duration_milli_secs: u32::from_be_bytes(duration_bytes),
             }
         }
-        SignalEncodingClass::Unspecified(_value) => {
+        SignalEncodingClass::Unspecified(_) => {
             // 2-bit _value can only contain values 0-3 decimal, so SignalEncodingClass::Unspecified should never be possible.
-            // TODO convert panic to an error
-            panic!("Impossible (unspecified) _value for SignalEncodingClass: {_value}");
+            // For completeness sake and possible debugging the contained value is returned as EncodingScheme::Unspecified
+            EncodingScheme::Unspecified { encoding_class }
         }
     }
 }

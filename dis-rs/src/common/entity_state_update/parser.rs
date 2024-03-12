@@ -7,7 +7,7 @@ use crate::common::entity_state::parser::entity_appearance;
 use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::parser::{entity_id, location, orientation, variable_parameter, vec3_f32};
 
-pub fn entity_state_update_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn entity_state_update_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id_val) = entity_id(input)?;
     let (input, _padding) = be_u8(input)?;
     let (input, variable_parameters_no) = be_u8(input)?;

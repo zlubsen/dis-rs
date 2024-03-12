@@ -5,11 +5,11 @@ use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use crate::common::entity_state::model::{EntityState, DrOtherParameters, DrParameters, EntityMarking, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance};
 use crate::common::model::{EntityType, PduBody, PduHeader};
 use crate::common::parser;
-use crate::common::parser::{entity_id, entity_type, vec3_f32};
+use crate::common::parser::{entity_id, entity_type, sanitize_marking, vec3_f32};
 use crate::enumerations::*;
 use crate::v6::entity_state::parser::entity_capabilities;
 
-pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         let (input, entity_id_val) = entity_id(input)?;
         let (input, force_id_val) = force_id(input)?;
@@ -55,12 +55,12 @@ pub fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
     }
 }
 
-pub fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
+pub(crate) fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
     let (input, force_id) = be_u8(input)?;
     Ok((input, ForceId::from(force_id)))
 }
 
-pub fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityAppearance> {
+pub(crate) fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityAppearance> {
     move |input: &[u8]| {
         let (input, appearance) = be_u32(input)?;
         let appearance = match (entity_type.kind, entity_type.domain) {
@@ -89,21 +89,21 @@ pub fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&
 /// It will convert the parsed bytes (always 11 bytes are present in the PDU) to UTF-8, and
 /// strip trailing whitespace and any trailing non-alphanumeric characters. In case the marking is less
 /// than 11 characters, the trailing bytes are typically 0x00 in the PDU, which in UTF-8 is a control character.
-pub fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
+pub(crate) fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     let mut buf : [u8;11] = [0;11];
-    let (input, character_set) = be_u8(input)?;
+    let (input, marking_character_set) = be_u8(input)?;
     let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
-    let mut marking = String::from_utf8_lossy(&buf[..]).into_owned();
-    marking.truncate(marking.trim_end().trim_end_matches(|c : char | !c.is_alphanumeric()).len());
+    let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
+    let marking_string = sanitize_marking(&buf[..]);
 
     Ok((input, EntityMarking{
-        marking_character_set: EntityMarkingCharacterSet::from(character_set),
-        marking_string: marking,
+        marking_character_set,
+        marking_string,
     }))
 }
 
-pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
+pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let (input, algorithm) = be_u8(input)?;
     let algorithm = DeadReckoningAlgorithm::from(algorithm);
 
@@ -141,12 +141,12 @@ pub fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     }))
 }
 
-pub fn dr_other_parameters_none(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
+pub(crate) fn dr_other_parameters_none(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
     let (input, params) = take(15usize)(input)?;
     Ok((input, DrOtherParameters::None(params.try_into().unwrap())))
 }
 
-pub fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
+pub(crate) fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
     let (input, _param_type) = be_u8(input)?;
     let (input, _unused) = be_u16(input)?;
     let (input, local_yaw) = be_f32(input)?;
@@ -159,7 +159,7 @@ pub fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherParamete
     })))
 }
 
-pub fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
+pub(crate) fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
     let (input, _param_type) = be_u8(input)?;
     let (input, nil) = be_u16(input)?;
     let (input, x) = be_f32(input)?;

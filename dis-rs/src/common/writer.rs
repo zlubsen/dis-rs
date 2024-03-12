@@ -1,9 +1,10 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::constants::{PDU_HEADER_LEN_BYTES};
-use crate::common::model::{ClockTime, DescriptorRecord, EntityId, EventId, FixedDatum, Location, MunitionDescriptor, Orientation, SimulationAddress, VariableDatum, VectorF32, ArticulatedPart, AttachedPart, BeamData, EntityAssociationParameter, EntityTypeParameter, length_padded_to_num, SeparationParameter, VariableParameter};
+use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
+use crate::common::model::{ArticulatedPart, AttachedPart, BeamData, ClockTime, DescriptorRecord, EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, FixedDatum, length_padded_to_num, Location, MunitionDescriptor, Orientation, SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32};
 use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
+use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
 
 impl Serialize for PduHeader {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -37,12 +38,12 @@ impl Serialize for Pdu {
             PduBody::Fire(body) => { body.serialize_pdu(version, buf) }
             PduBody::Detonation(body) => { body.serialize_pdu(version, buf) }
             PduBody::Collision(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ServiceRequest(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::RepairComplete(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::RepairResponse(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ServiceRequest(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ResupplyOffer(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ResupplyReceived(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ResupplyCancel(body) => { body.serialize_pdu(version, buf) }
+            PduBody::RepairComplete(body) => { body.serialize_pdu(version, buf) }
+            PduBody::RepairResponse(body) => { body.serialize_pdu(version, buf) }
             PduBody::CreateEntity(body) => { body.serialize_pdu(version, buf) }
             PduBody::RemoveEntity(body) => { body.serialize_pdu(version, buf) }
             PduBody::StartResume(body) => { body.serialize_pdu(version, buf) }
@@ -62,13 +63,13 @@ impl Serialize for Pdu {
             PduBody::Receiver(body) => { body.serialize_pdu(version, buf) }
             PduBody::IFF(body) => { body.serialize_pdu(version, buf) }
             // PduBody::UnderwaterAcoustic(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
+            PduBody::SupplementalEmissionEntityState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomSignal(body) => { body.serialize_pdu(version, buf) }
             // PduBody::IntercomControl(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::IsGroupOf(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::TransferOwnership(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::IsPartOf(body) => { body.serialize_pdu(version, buf) }
+            PduBody::AggregateState(body) => { body.serialize_pdu(version, buf) }
+            PduBody::IsGroupOf(body) => { body.serialize_pdu(version, buf) }
+            PduBody::TransferOwnership(body) => { body.serialize_pdu(version, buf) }
+            PduBody::IsPartOf(body) => { body.serialize_pdu(version, buf) }
             // PduBody::MinefieldState(body) => { body.serialize_pdu(version, buf) }
             // PduBody::MinefieldQuery(body) => { body.serialize_pdu(version, buf) }
             // PduBody::MinefieldData(body) => { body.serialize_pdu(version, buf) }
@@ -83,21 +84,21 @@ impl Serialize for Pdu {
             // PduBody::ArticulatedParts(body) => { body.serialize_pdu(version, buf) }
             // PduBody::LEFire(body) => { body.serialize_pdu(version, buf) }
             // PduBody::LEDetonation(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::CreateEntityR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ActionRequestR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::ActionResponseR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::DataQueryR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::SetDataR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::DataR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::EventReportR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::CommentR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::RecordR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
-            // PduBody::RecordQueryR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::CreateEntityR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::RemoveEntityR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::StartResumeR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::StopFreezeR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::AcknowledgeR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ActionRequestR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::ActionResponseR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::DataQueryR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::SetDataR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::DataR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::EventReportR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::CommentR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::RecordR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::SetRecordR(body) => { body.serialize_pdu(version, buf) }
+            PduBody::RecordQueryR(body) => { body.serialize_pdu(version, buf) }
             PduBody::CollisionElastic(body) => { body.serialize_pdu(version, buf) }
             PduBody::EntityStateUpdate(body) => { body.serialize_pdu(version, buf) }
             // PduBody::DirectedEnergyFire(body) => { body.serialize_pdu(version, buf) }
@@ -347,7 +348,7 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::Serialize;
     use crate::constants::PDU_HEADER_LEN_BYTES;
-    use crate::enumerations::{PduType, LvcIndicator};
+    use crate::enumerations::{LvcIndicator, PduType};
     use crate::common::model::PduHeader;
     use crate::v7::model::PduStatus;
 
@@ -389,5 +390,43 @@ mod tests {
 
         let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x02, 0x00];
         assert_eq!(buf.as_ref(), expected.as_ref());
+    }
+}
+
+impl Serialize for SupplyQuantity {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        let type_bytes = self.supply_type.serialize(buf);
+        buf.put_f32(self.quantity);
+
+        type_bytes + 4
+    }
+}
+
+impl Serialize for RecordSpecification {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.record_sets.len() as u32);
+        let record_sets_bytes : u16 = self.record_sets.iter()
+            .map(|record_set| record_set.serialize(buf) )
+            .sum();
+
+        FOUR_OCTETS as u16 + record_sets_bytes
+    }
+}
+
+impl Serialize for RecordSet {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.record_id.into());
+        buf.put_u32(self.record_serial_number);
+        buf.put_u32(0u32);
+
+        buf.put_u16(self.record_length_bytes * ONE_BYTE_IN_BITS as u16); // record length in bits
+        buf.put_u16(self.records.len() as u16); // record count
+        let records_bytes = self.records.iter()
+            .map(|record| { buf.put(record.as_slice()); record.len() })
+            .sum::<usize>() as u16;
+        let padded_record = length_padded_to_num(records_bytes as usize, EIGHT_OCTETS);
+        buf.put_bytes(0u8, padded_record.padding_length);
+
+        16 + records_bytes + padded_record.padding_length as u16
     }
 }

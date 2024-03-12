@@ -1,5 +1,22 @@
 # Changelog for crate DIS-RS
 
+## 0.7.0 - 2024-03-12
+Added Logistics PDUs (ServiceRequest, ResupplyOffer, ResupplyReceived, ResupplyCancel, RepairComplete, RepairResponse)
+
+Added Simulation Management with Reliability PDUs
+
+Added EntityManagement PDUs (IsPartOf, IsGroupOf, TransferOwnership, AggregateState)
+
+Added SEES
+
+Updated Enumerations to SISO-REF-010 v32
+
+Added convenience trait implementations (FromStr, Display, TryFrom, Hash) for records EntityType, AggregateType.
+
+Improved references to the specification in code.
+
+Minor hygiene fixes.
+
 ## 0.6.0 - 2024-02-04
 Refactored all PDUs to have more clean builders (in code / API).
 

@@ -5,7 +5,7 @@ use crate::common::model::PduBody;
 use crate::common::receiver::model::Receiver;
 use crate::enumerations::ReceiverState;
 
-pub fn receiver_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn receiver_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, radio_reference_id) = entity_id(input)?;
     let (input, radio_number) = be_u16(input)?;
     let (input, receiver_state) = be_u16(input)?;

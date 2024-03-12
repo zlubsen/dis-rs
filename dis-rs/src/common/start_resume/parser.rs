@@ -4,7 +4,7 @@ use crate::common::parser::{clock_time, entity_id};
 use crate::common::start_resume::model::StartResume;
 use crate::common::model::PduBody;
 
-pub fn start_resume_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn start_resume_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, real_world_time) = clock_time(input)?;

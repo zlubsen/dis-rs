@@ -6,7 +6,7 @@ use crate::common::parser::entity_id;
 use crate::common::model::PduBody;
 use crate::enumerations::VariableRecordType;
 
-pub fn data_query_body(input: &[u8]) -> IResult<&[u8], PduBody> {
+pub(crate) fn data_query_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;

@@ -5,6 +5,9 @@ use crate::enumerations::PduType;
 
 const CREATE_ENTITY_BODY_LENGTH : u16 = 16;
 
+/// 5.6.5.2 Create Entity PDU
+///
+/// 7.5.2 Create Entity PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CreateEntity {
     pub originating_id: EntityId,

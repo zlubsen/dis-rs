@@ -8,6 +8,9 @@ const EMITTER_SYSTEM_BASE_LENGTH : u16 = 20;
 const BEAM_BASE_LENGTH : u16 = 52;
 const TRACK_JAM_BASE_LENGTH : u16 = 8;
 
+/// 5.7.3 Electromagnetic Emission (EE) PDU
+///
+/// 7.6.2 Electromagnetic Emission (EE) PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ElectromagneticEmission {
     pub emitting_entity_id: EntityId,
@@ -60,6 +63,7 @@ impl Interaction for ElectromagneticEmission {
     }
 }
 
+/// 6.2.23 Emitter System record
 #[derive(Clone, Debug, PartialEq)]
 pub struct EmitterSystem {
     pub name: EmitterName,
@@ -207,6 +211,7 @@ impl Beam {
     }
 }
 
+/// 6.2.22 EE Fundamental Parameter Data record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct FundamentalParameterData {
     pub frequency: f32,
@@ -253,6 +258,7 @@ impl FundamentalParameterData {
     }
 }
 
+/// 6.2.49 Jamming Technique record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct JammingTechnique {
     pub kind: u8,
@@ -292,6 +298,7 @@ impl JammingTechnique {
     }
 }
 
+/// 6.2.90 Track/Jam Data record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct TrackJam {
     pub entity_id: EntityId,

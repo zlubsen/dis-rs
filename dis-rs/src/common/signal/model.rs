@@ -6,6 +6,9 @@ use crate::signal::builder::SignalBuilder;
 
 pub const BASE_SIGNAL_BODY_LENGTH : u16 = 20;
 
+/// 5.8.4 Signal PDU
+///
+/// 7.7.3 Signal PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Signal {
     pub radio_reference_id: EntityId,
@@ -54,12 +57,16 @@ impl Interaction for Signal {
     }
 }
 
+/// Table 177—Encoding Scheme record (7.7.3)
+///
+/// 5.8.4.3.2 Field-specific requirements
 #[derive(Clone, Debug, PartialEq)]
 pub enum EncodingScheme {
     EncodedAudio { encoding_class: SignalEncodingClass, encoding_type: SignalEncodingType },
     RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u16 },
     ApplicationSpecificData { encoding_class: SignalEncodingClass, user_protocol_id: SignalUserProtocolIdentificationNumber },
     DatabaseIndex { encoding_class: SignalEncodingClass, index: u32, offset_milli_secs: u32, duration_milli_secs: u32 },
+    Unspecified { encoding_class: SignalEncodingClass },
 }
 
 impl Default for EncodingScheme {

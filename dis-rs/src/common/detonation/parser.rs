@@ -7,7 +7,7 @@ use crate::common::detonation::model::Detonation;
 use crate::common::parser::variable_parameter;
 use crate::common::parser::{descriptor_record_dti, entity_id, event_id, location, vec3_f32};
 
-pub fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         let dti = header.pdu_status.unwrap_or_default()
             .detonation_type_indicator.unwrap_or(DetonationTypeIndicator::Munition);

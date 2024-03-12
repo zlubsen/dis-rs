@@ -6,6 +6,8 @@ use crate::enumerations::{AcknowledgeFlag, ResponseFlag, PduType};
 const ACKNOWLEDGE_BODY_LENGTH : u16 = 20;
 
 /// 5.6.5.6 Acknowledge PDU
+///
+/// 7.5.6 Acknowledge PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Acknowledge {
     pub originating_id: EntityId,

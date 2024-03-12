@@ -1,6 +1,11 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use crate::acknowledge_r::model::AcknowledgeR;
+use crate::action_request_r::model::ActionRequestR;
+use crate::action_response_r::model::ActionResponseR;
+use crate::aggregate_state::model::AggregateState;
+use crate::comment_r::model::CommentR;
 use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use crate::enumerations::{Country, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolFamily, ProtocolVersion, VariableRecordType};
 use crate::common::entity_state::model::EntityState;
@@ -31,9 +36,30 @@ use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
 use crate::v7::model::PduStatus;
-use crate::constants::{FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES};
-use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::constants::{EIGHT_OCTETS, FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS};
+use crate::create_entity_r::model::CreateEntityR;
+use crate::data_query_r::model::DataQueryR;
+use crate::data_r::model::DataR;
 use crate::DisError;
+use crate::event_report_r::model::EventReportR;
+use crate::fixed_parameters::{NO_APPLIC, NO_ENTITY, NO_SITE};
+use crate::is_group_of::model::IsGroupOf;
+use crate::is_part_of::model::IsPartOf;
+use crate::record_query_r::model::RecordQueryR;
+use crate::record_r::model::RecordR;
+use crate::remove_entity_r::model::RemoveEntityR;
+use crate::repair_complete::model::RepairComplete;
+use crate::repair_response::model::RepairResponse;
+use crate::resupply_cancel::model::ResupplyCancel;
+use crate::resupply_offer::model::ResupplyOffer;
+use crate::resupply_received::model::ResupplyReceived;
+use crate::sees::model::SEES;
+use crate::service_request::model::ServiceRequest;
+use crate::set_data_r::model::SetDataR;
+use crate::set_record_r::model::SetRecordR;
+use crate::start_resume_r::model::StartResumeR;
+use crate::stop_freeze_r::model::StopFreezeR;
+use crate::transfer_ownership::model::TransferOwnership;
 
 #[derive(Debug, PartialEq)]
 pub struct Pdu {
@@ -64,6 +90,7 @@ impl Interaction for Pdu {
     }
 }
 
+/// 6.2.66 PDU Header record
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduHeader {
     pub protocol_version : ProtocolVersion,
@@ -129,12 +156,12 @@ pub enum PduBody {
     Fire(Fire),
     Detonation(Detonation),
     Collision(Collision),
-    ServiceRequest,
-    ResupplyOffer,
-    ResupplyReceived,
-    ResupplyCancel,
-    RepairComplete,
-    RepairResponse,
+    ServiceRequest(ServiceRequest),
+    ResupplyOffer(ResupplyOffer),
+    ResupplyReceived(ResupplyReceived),
+    ResupplyCancel(ResupplyCancel),
+    RepairComplete(RepairComplete),
+    RepairResponse(RepairResponse),
     CreateEntity(CreateEntity),
     RemoveEntity(RemoveEntity),
     StartResume(StartResume),
@@ -154,13 +181,13 @@ pub enum PduBody {
     Receiver(Receiver),
     IFF(Iff),
     UnderwaterAcoustic,
-    SupplementalEmissionEntityState,
+    SupplementalEmissionEntityState(SEES),
     IntercomSignal,
     IntercomControl,
-    AggregateState,
-    IsGroupOf,
-    TransferOwnership,
-    IsPartOf,
+    AggregateState(AggregateState),
+    IsGroupOf(IsGroupOf),
+    TransferOwnership(TransferOwnership),
+    IsPartOf(IsPartOf),
     MinefieldState,
     MinefieldQuery,
     MinefieldData,
@@ -175,21 +202,21 @@ pub enum PduBody {
     ArticulatedParts,
     LEFire,
     LEDetonation,
-    CreateEntityR,
-    RemoveEntityR,
-    StartResumeR,
-    StopFreezeR,
-    AcknowledgeR,
-    ActionRequestR,
-    ActionResponseR,
-    DataQueryR,
-    SetDataR,
-    DataR,
-    EventReportR,
-    CommentR,
-    RecordR,
-    SetRecordR,
-    RecordQueryR,
+    CreateEntityR(CreateEntityR),
+    RemoveEntityR(RemoveEntityR),
+    StartResumeR(StartResumeR),
+    StopFreezeR(StopFreezeR),
+    AcknowledgeR(AcknowledgeR),
+    ActionRequestR(ActionRequestR),
+    ActionResponseR(ActionResponseR),
+    DataQueryR(DataQueryR),
+    SetDataR(SetDataR),
+    DataR(DataR),
+    EventReportR(EventReportR),
+    CommentR(CommentR),
+    RecordR(RecordR),
+    SetRecordR(SetRecordR),
+    RecordQueryR(RecordQueryR),
     CollisionElastic(CollisionElastic),
     EntityStateUpdate(EntityStateUpdate),
     DirectedEnergyFire,
@@ -207,12 +234,12 @@ impl BodyInfo for PduBody {
             PduBody::Fire(body) => { body.body_length() }
             PduBody::Detonation(body) => { body.body_length() }
             PduBody::Collision(body) => { body.body_length() }
-            PduBody::ServiceRequest => { 0 }
-            PduBody::ResupplyOffer => { 0 }
-            PduBody::ResupplyReceived => { 0 }
-            PduBody::ResupplyCancel => { 0 }
-            PduBody::RepairComplete => { 0 }
-            PduBody::RepairResponse => { 0 }
+            PduBody::ServiceRequest(body) => { body.body_length() }
+            PduBody::ResupplyOffer(body) => { body.body_length() }
+            PduBody::ResupplyReceived(body) => { body.body_length() }
+            PduBody::ResupplyCancel(body) => { body.body_length() }
+            PduBody::RepairComplete(body) => { body.body_length() }
+            PduBody::RepairResponse(body) => { body.body_length() }
             PduBody::CreateEntity(body) => { body.body_length() }
             PduBody::RemoveEntity(body) => { body.body_length() }
             PduBody::StartResume(body) => { body.body_length() }
@@ -232,13 +259,13 @@ impl BodyInfo for PduBody {
             PduBody::Receiver(body) => { body.body_length() }
             PduBody::IFF(body) => { body.body_length() }
             PduBody::UnderwaterAcoustic => { 0 }
-            PduBody::SupplementalEmissionEntityState => { 0 }
+            PduBody::SupplementalEmissionEntityState(body) => { body.body_length() }
             PduBody::IntercomSignal => { 0 }
             PduBody::IntercomControl => { 0 }
-            PduBody::AggregateState => { 0 }
-            PduBody::IsGroupOf => { 0 }
-            PduBody::TransferOwnership => { 0 }
-            PduBody::IsPartOf => { 0 }
+            PduBody::AggregateState(body) => { body.body_length() }
+            PduBody::IsGroupOf(body) => { body.body_length() }
+            PduBody::TransferOwnership(body) => { body.body_length() }
+            PduBody::IsPartOf(body) => { body.body_length() }
             PduBody::MinefieldState => { 0 }
             PduBody::MinefieldQuery => { 0 }
             PduBody::MinefieldData => { 0 }
@@ -253,21 +280,21 @@ impl BodyInfo for PduBody {
             PduBody::ArticulatedParts => { 0 }
             PduBody::LEFire => { 0 }
             PduBody::LEDetonation => { 0 }
-            PduBody::CreateEntityR => { 0 }
-            PduBody::RemoveEntityR => { 0 }
-            PduBody::StartResumeR => { 0 }
-            PduBody::StopFreezeR => { 0 }
-            PduBody::AcknowledgeR => { 0 }
-            PduBody::ActionRequestR => { 0 }
-            PduBody::ActionResponseR => { 0 }
-            PduBody::DataQueryR => { 0 }
-            PduBody::SetDataR => { 0 }
-            PduBody::DataR => { 0 }
-            PduBody::EventReportR => { 0 }
-            PduBody::CommentR => { 0 }
-            PduBody::RecordR => { 0 }
-            PduBody::SetRecordR => { 0 }
-            PduBody::RecordQueryR => { 0 }
+            PduBody::CreateEntityR(body) => { body.body_length() }
+            PduBody::RemoveEntityR(body) => { body.body_length() }
+            PduBody::StartResumeR(body) => { body.body_length() }
+            PduBody::StopFreezeR(body) => { body.body_length() }
+            PduBody::AcknowledgeR(body) => { body.body_length() }
+            PduBody::ActionRequestR(body) => { body.body_length() }
+            PduBody::ActionResponseR(body) => { body.body_length() }
+            PduBody::DataQueryR(body) => { body.body_length() }
+            PduBody::SetDataR(body) => { body.body_length() }
+            PduBody::DataR(body) => { body.body_length() }
+            PduBody::EventReportR(body) => { body.body_length() }
+            PduBody::CommentR(body) => { body.body_length() }
+            PduBody::RecordR(body) => { body.body_length() }
+            PduBody::SetRecordR(body) => { body.body_length() }
+            PduBody::RecordQueryR(body) => { body.body_length() }
             PduBody::CollisionElastic(body) => { body.body_length() }
             PduBody::EntityStateUpdate(body) => { body.body_length() }
             PduBody::DirectedEnergyFire => { 0 }
@@ -285,12 +312,12 @@ impl BodyInfo for PduBody {
             PduBody::Fire(body) => { body.body_type() }
             PduBody::Detonation(body) => { body.body_type() }
             PduBody::Collision(body) => { body.body_type() }
-            PduBody::ServiceRequest => { PduType::ServiceRequest }
-            PduBody::ResupplyOffer => { PduType::ResupplyOffer }
-            PduBody::ResupplyReceived => { PduType::ResupplyReceived }
-            PduBody::ResupplyCancel => { PduType::ResupplyCancel }
-            PduBody::RepairComplete => { PduType::RepairComplete }
-            PduBody::RepairResponse => { PduType::RepairResponse }
+            PduBody::ServiceRequest(body) => { body.body_type() }
+            PduBody::ResupplyOffer(body) => { body.body_type() }
+            PduBody::ResupplyReceived(body) => { body.body_type() }
+            PduBody::ResupplyCancel(body) => { body.body_type() }
+            PduBody::RepairComplete(body) => { body.body_type() }
+            PduBody::RepairResponse(body) => { body.body_type() }
             PduBody::CreateEntity(body) => { body.body_type() }
             PduBody::RemoveEntity(body) => { body.body_type() }
             PduBody::StartResume(body) => { body.body_type() }
@@ -310,13 +337,13 @@ impl BodyInfo for PduBody {
             PduBody::Receiver(body) => { body.body_type() }
             PduBody::IFF(body) => { body.body_type() }
             PduBody::UnderwaterAcoustic => { PduType::UnderwaterAcoustic }
-            PduBody::SupplementalEmissionEntityState => { PduType::SupplementalEmissionEntityState }
+            PduBody::SupplementalEmissionEntityState(body) => { body.body_type() }
             PduBody::IntercomSignal => { PduType::IntercomSignal }
             PduBody::IntercomControl => { PduType::IntercomControl }
-            PduBody::AggregateState => { PduType::AggregateState }
-            PduBody::IsGroupOf => { PduType::IsGroupOf }
-            PduBody::TransferOwnership => { PduType::TransferOwnership }
-            PduBody::IsPartOf => { PduType::IsPartOf }
+            PduBody::AggregateState(body) => { body.body_type() }
+            PduBody::IsGroupOf(body) => { body.body_type() }
+            PduBody::TransferOwnership(body) => { body.body_type() }
+            PduBody::IsPartOf(body) => { body.body_type() }
             PduBody::MinefieldState => { PduType::MinefieldState }
             PduBody::MinefieldQuery => { PduType::MinefieldQuery }
             PduBody::MinefieldData => { PduType::MinefieldData }
@@ -331,21 +358,21 @@ impl BodyInfo for PduBody {
             PduBody::ArticulatedParts => { PduType::ArticulatedParts }
             PduBody::LEFire => { PduType::LEFire }
             PduBody::LEDetonation => { PduType::LEDetonation }
-            PduBody::CreateEntityR => { PduType::CreateEntityR }
-            PduBody::RemoveEntityR => { PduType::RemoveEntityR }
-            PduBody::StartResumeR => { PduType::StartResumeR }
-            PduBody::StopFreezeR => { PduType::StopFreezeR }
-            PduBody::AcknowledgeR => { PduType::AcknowledgeR }
-            PduBody::ActionRequestR => { PduType::ActionRequestR }
-            PduBody::ActionResponseR => { PduType::ActionResponseR }
-            PduBody::DataQueryR => { PduType::DataQueryR }
-            PduBody::SetDataR => { PduType::SetDataR }
-            PduBody::DataR => { PduType::DataR }
-            PduBody::EventReportR => { PduType::EventReportR }
-            PduBody::CommentR => { PduType::CommentR }
-            PduBody::RecordR => { PduType::RecordR }
-            PduBody::SetRecordR => { PduType::SetRecordR }
-            PduBody::RecordQueryR => { PduType::RecordQueryR }
+            PduBody::CreateEntityR(body) => { body.body_type() }
+            PduBody::RemoveEntityR(body) => { body.body_type() }
+            PduBody::StartResumeR(body) => { body.body_type() }
+            PduBody::StopFreezeR(body) => { body.body_type() }
+            PduBody::AcknowledgeR(body) => { body.body_type() }
+            PduBody::ActionRequestR(body) => { body.body_type() }
+            PduBody::ActionResponseR(body) => { body.body_type() }
+            PduBody::DataQueryR(body) => { body.body_type() }
+            PduBody::SetDataR(body) => { body.body_type() }
+            PduBody::DataR(body) => { body.body_type() }
+            PduBody::EventReportR(body) => { body.body_type() }
+            PduBody::CommentR(body) => { body.body_type() }
+            PduBody::RecordR(body) => { body.body_type() }
+            PduBody::SetRecordR(body) => { body.body_type() }
+            PduBody::RecordQueryR(body) => { body.body_type() }
             PduBody::CollisionElastic(body) => { body.body_type() }
             PduBody::EntityStateUpdate(body) => { body.body_type() }
             PduBody::DirectedEnergyFire => { PduType::DirectedEnergyFire }
@@ -365,12 +392,12 @@ impl Interaction for PduBody {
             PduBody::Fire(body) => { body.originator() }
             PduBody::Detonation(body) => { body.originator() }
             PduBody::Collision(body) => { body.originator() }
-            PduBody::ServiceRequest => { None }
-            PduBody::ResupplyOffer => { None }
-            PduBody::ResupplyReceived => { None }
-            PduBody::ResupplyCancel => { None }
-            PduBody::RepairComplete => { None }
-            PduBody::RepairResponse => { None }
+            PduBody::ServiceRequest(body) => { body.originator() }
+            PduBody::ResupplyOffer(body) => { body.originator() }
+            PduBody::ResupplyReceived(body) => { body.originator() }
+            PduBody::ResupplyCancel(body) => { body.originator() }
+            PduBody::RepairComplete(body) => { body.originator() }
+            PduBody::RepairResponse(body) => { body.originator() }
             PduBody::CreateEntity(body) => { body.originator() }
             PduBody::RemoveEntity(body) => { body.originator() }
             PduBody::StartResume(body) => { body.originator() }
@@ -390,13 +417,13 @@ impl Interaction for PduBody {
             PduBody::Receiver(body) => { body.originator() }
             PduBody::IFF(body) => { body.originator() }
             PduBody::UnderwaterAcoustic => { None }
-            PduBody::SupplementalEmissionEntityState => { None }
+            PduBody::SupplementalEmissionEntityState(body) => { body.originator() }
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
-            PduBody::AggregateState => { None }
-            PduBody::IsGroupOf => { None }
-            PduBody::TransferOwnership => { None }
-            PduBody::IsPartOf => { None }
+            PduBody::AggregateState(body) => { body.originator() }
+            PduBody::IsGroupOf(body) => { body.originator() }
+            PduBody::TransferOwnership(body) => { body.originator() }
+            PduBody::IsPartOf(body) => { body.originator() }
             PduBody::MinefieldState => { None }
             PduBody::MinefieldQuery => { None }
             PduBody::MinefieldData => { None }
@@ -411,21 +438,21 @@ impl Interaction for PduBody {
             PduBody::ArticulatedParts => { None }
             PduBody::LEFire => { None }
             PduBody::LEDetonation => { None }
-            PduBody::CreateEntityR => { None }
-            PduBody::RemoveEntityR => { None }
-            PduBody::StartResumeR => { None }
-            PduBody::StopFreezeR => { None }
-            PduBody::AcknowledgeR => { None }
-            PduBody::ActionRequestR => { None }
-            PduBody::ActionResponseR => { None }
-            PduBody::DataQueryR => { None }
-            PduBody::SetDataR => { None }
-            PduBody::DataR => { None }
-            PduBody::EventReportR => { None }
-            PduBody::CommentR => { None }
-            PduBody::RecordR => { None }
-            PduBody::SetRecordR => { None }
-            PduBody::RecordQueryR => { None }
+            PduBody::CreateEntityR(body) => { body.originator() }
+            PduBody::RemoveEntityR(body) => { body.originator() }
+            PduBody::StartResumeR(body) => { body.originator() }
+            PduBody::StopFreezeR(body) => { body.originator() }
+            PduBody::AcknowledgeR(body) => { body.originator() }
+            PduBody::ActionRequestR(body) => { body.originator() }
+            PduBody::ActionResponseR(body) => { body.originator() }
+            PduBody::DataQueryR(body) => { body.originator() }
+            PduBody::SetDataR(body) => { body.originator() }
+            PduBody::DataR(body) => { body.originator() }
+            PduBody::EventReportR(body) => { body.originator() }
+            PduBody::CommentR(body) => { body.originator() }
+            PduBody::RecordR(body) => { body.originator() }
+            PduBody::SetRecordR(body) => { body.originator() }
+            PduBody::RecordQueryR(body) => { body.originator() }
             PduBody::CollisionElastic(body) => { body.originator() }
             PduBody::EntityStateUpdate(body) => { body.originator() }
             PduBody::DirectedEnergyFire => { None }
@@ -443,12 +470,12 @@ impl Interaction for PduBody {
             PduBody::Fire(body) => { body.receiver() }
             PduBody::Detonation(body) => { body.receiver() }
             PduBody::Collision(body) => { body.receiver() }
-            PduBody::ServiceRequest => { None }
-            PduBody::ResupplyOffer => { None }
-            PduBody::ResupplyReceived => { None }
-            PduBody::ResupplyCancel => { None }
-            PduBody::RepairComplete => { None }
-            PduBody::RepairResponse => { None }
+            PduBody::ServiceRequest(body) => { body.receiver() }
+            PduBody::ResupplyOffer(body) => { body.receiver() }
+            PduBody::ResupplyReceived(body) => { body.receiver() }
+            PduBody::ResupplyCancel(body) => { body.receiver() }
+            PduBody::RepairComplete(body) => { body.receiver() }
+            PduBody::RepairResponse(body) => { body.receiver() }
             PduBody::CreateEntity(body) => { body.receiver() }
             PduBody::RemoveEntity(body) => { body.receiver() }
             PduBody::StartResume(body) => { body.receiver() }
@@ -468,13 +495,13 @@ impl Interaction for PduBody {
             PduBody::Receiver(body) => { body.receiver() }
             PduBody::IFF(body) => { body.receiver() }
             PduBody::UnderwaterAcoustic => { None }
-            PduBody::SupplementalEmissionEntityState => { None }
+            PduBody::SupplementalEmissionEntityState(body) => { body.receiver() }
             PduBody::IntercomSignal => { None }
             PduBody::IntercomControl => { None }
-            PduBody::AggregateState => { None }
-            PduBody::IsGroupOf => { None }
-            PduBody::TransferOwnership => { None }
-            PduBody::IsPartOf => { None }
+            PduBody::AggregateState(body) => { body.receiver() }
+            PduBody::IsGroupOf(body) => { body.receiver() }
+            PduBody::TransferOwnership(body) => { body.receiver() }
+            PduBody::IsPartOf(body) => { body.receiver() }
             PduBody::MinefieldState => { None }
             PduBody::MinefieldQuery => { None }
             PduBody::MinefieldData => { None }
@@ -489,21 +516,21 @@ impl Interaction for PduBody {
             PduBody::ArticulatedParts => { None }
             PduBody::LEFire => { None }
             PduBody::LEDetonation => { None }
-            PduBody::CreateEntityR => { None }
-            PduBody::RemoveEntityR => { None }
-            PduBody::StartResumeR => { None }
-            PduBody::StopFreezeR => { None }
-            PduBody::AcknowledgeR => { None }
-            PduBody::ActionRequestR => { None }
-            PduBody::ActionResponseR => { None }
-            PduBody::DataQueryR => { None }
-            PduBody::SetDataR => { None }
-            PduBody::DataR => { None }
-            PduBody::EventReportR => { None }
-            PduBody::CommentR => { None }
-            PduBody::RecordR => { None }
-            PduBody::SetRecordR => { None }
-            PduBody::RecordQueryR => { None }
+            PduBody::CreateEntityR(body) => { body.receiver() }
+            PduBody::RemoveEntityR(body) => { body.receiver() }
+            PduBody::StartResumeR(body) => { body.receiver() }
+            PduBody::StopFreezeR(body) => { body.receiver() }
+            PduBody::AcknowledgeR(body) => { body.receiver() }
+            PduBody::ActionRequestR(body) => { body.receiver() }
+            PduBody::ActionResponseR(body) => { body.receiver() }
+            PduBody::DataQueryR(body) => { body.receiver() }
+            PduBody::SetDataR(body) => { body.receiver() }
+            PduBody::DataR(body) => { body.receiver() }
+            PduBody::EventReportR(body) => { body.receiver() }
+            PduBody::CommentR(body) => { body.receiver() }
+            PduBody::RecordR(body) => { body.receiver() }
+            PduBody::SetRecordR(body) => { body.receiver() }
+            PduBody::RecordQueryR(body) => { body.receiver() }
             PduBody::CollisionElastic(body) => { body.receiver() }
             PduBody::EntityStateUpdate(body) => { body.receiver() }
             PduBody::DirectedEnergyFire => { None }
@@ -596,6 +623,7 @@ impl From<PduType> for ProtocolFamily {
     }
 }
 
+/// 6.2.80 Simulation Address record
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct SimulationAddress {
     pub site_id : u16,
@@ -620,6 +648,8 @@ impl Default for SimulationAddress {
     }
 }
 
+/// 6.2.28 Entity Identifier record
+/// 6.2.81 Simulation Identifier record
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
@@ -651,6 +681,17 @@ impl EntityId {
             simulation_address,
             entity_id
         }
+    }
+
+    pub fn new_simulation_identifier(simulation_address: SimulationAddress) -> Self {
+        Self {
+            simulation_address,
+            entity_id: NO_ENTITY,
+        }
+    }
+
+    pub fn record_length(&self) -> u16 {
+        SIX_OCTETS as u16
     }
 }
 
@@ -685,6 +726,8 @@ impl Default for EventId {
     }
 }
 
+/// 6.2.96 Vector record
+/// 6.2.7 Angular Velocity Vector record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
@@ -717,6 +760,8 @@ impl VectorF32 {
     }
 }
 
+// TODO rename Location to World Coordinate
+/// 6.2.98 World Coordinates record
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
@@ -749,6 +794,8 @@ impl Location {
     }
 }
 
+// TODO rename Orientation to EulerAngle
+/// 6.2.32 Euler Angles record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
@@ -781,7 +828,8 @@ impl Orientation {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+/// 6.2.30 Entity Type record
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityType {
     pub kind : EntityKind,
     pub domain : PlatformDomain,
@@ -827,6 +875,10 @@ impl EntityType {
         self.extra = extra;
         self
     }
+
+    pub fn record_length(&self) -> u16 {
+        EIGHT_OCTETS as u16
+    }
 }
 
 impl Display for EntityType {
@@ -834,9 +886,9 @@ impl Display for EntityType {
         write!(
             f,
             "{}:{}:{}:{}:{}:{}:{}",
-            Into::<u8>::into(self.kind),
-            Into::<u8>::into(self.domain),
-            Into::<u16>::into(self.country),
+            u8::from(self.kind),
+            u8::from(self.domain),
+            u16::from(self.country),
             self.category,
             self.subcategory,
             self.specific,
@@ -857,40 +909,40 @@ impl FromStr for EntityType {
         Ok(Self {
             kind: ss
                 .get(0)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
                 .into(),
             domain: ss
                 .get(1)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
                 .into(),
             country: ss
                 .get(2)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u16>()
                 .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
                 .into(),
             category: ss
                 .get(3)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
             subcategory: ss
                 .get(4)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?,
             specific: ss
                 .get(5)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?,
             extra: ss
                 .get(6)
-                .unwrap()
+                .unwrap_or(&"0")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
         })
@@ -913,72 +965,14 @@ impl TryFrom<String> for EntityType {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
-    const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
-    const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
-    const ENTITY_TYPE: EntityType = EntityType {
-        kind: EntityKind::Other,
-        domain: PlatformDomain::Land,
-        country: Country::Albania_ALB_,
-        category: 3,
-        subcategory: 4,
-        specific: 5,
-        extra: 6
-    };
-
-    #[test]
-    fn entity_type_display() {
-        assert_eq!(ENTITY_TYPE_STR, ENTITY_TYPE.to_string());
-    }
-
-    #[test]
-    fn entity_type_from_str() {
-        assert_eq!(EntityType::from_str(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
-        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID);
-        assert!(err.is_err());
-        assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
-        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID_EXTRA);
-        assert!(err.is_err());
-        assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
-    }
-
-    #[test]
-    fn entity_type_try_from_str() {
-        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
-        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID);
-        assert!(err.is_err());
-        assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
-        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA);
-        assert!(err.is_err());
-        assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
-    }
-
-    #[test]
-    fn entity_type_try_from_string() {
-        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR.to_string()).unwrap(), ENTITY_TYPE);
-        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID.to_string());
-        assert!(err.is_err());
-        assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
-        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA.to_string());
-        assert!(err.is_err());
-        assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
-    }
-}
-
+/// 6.2.19 Descriptor records
 #[derive(Clone, Debug, PartialEq)]
 pub enum DescriptorRecord {
+    /// 6.2.19.2 Munition Descriptor record
     Munition { entity_type: EntityType, munition: MunitionDescriptor },
+    /// 6.2.19.4 Expendable Descriptor record
     Expendable { entity_type: EntityType },
+    /// 6.2.19.3 Explosion Descriptor record
     Explosion { entity_type: EntityType, explosive_material: ExplosiveMaterialCategories, explosive_force: f32 }
 }
 
@@ -1013,6 +1007,7 @@ impl Default for DescriptorRecord {
     }
 }
 
+/// 6.2.19.2 Munition Descriptor record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct MunitionDescriptor {
     pub warhead : MunitionDescriptorWarhead,
@@ -1053,7 +1048,7 @@ impl MunitionDescriptor {
 ///
 /// This raw timestamp could also be interpreted as a Unix timestamp, or something else
 /// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
-#[derive(Default)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct TimeStamp {
     pub raw_timestamp: u32,
 }
@@ -1171,6 +1166,7 @@ impl ClockTime {
     }
 }
 
+/// 6.2.18 Datum Specification record
 pub struct DatumSpecification {
     pub fixed_datum_records: Vec<FixedDatum>,
     pub variable_datum_records: Vec<VariableDatum>,
@@ -1188,6 +1184,7 @@ impl DatumSpecification {
 pub const FIXED_DATUM_LENGTH: u16 = 8;
 pub const BASE_VARIABLE_DATUM_LENGTH: u16 = 8;
 
+/// 6.2.37 Fixed Datum record
 #[derive(Clone, Debug, PartialEq)]
 pub struct FixedDatum {
     pub datum_id: VariableRecordType,
@@ -1203,6 +1200,7 @@ impl FixedDatum {
     }
 }
 
+/// 6.2.93 Variable Datum record
 #[derive(Clone, Debug, PartialEq)]
 pub struct VariableDatum {
     pub datum_id: VariableRecordType,
@@ -1220,6 +1218,7 @@ impl VariableDatum {
 
 /// Struct to hold the length (in bits or bytes) of parts of a padded record.
 /// Such that `data_length` + `padding_length` = `record_length`.
+#[derive(Debug)]
 pub struct PaddedRecordLengths {
     pub data_length: usize,
     pub padding_length: usize,
@@ -1244,7 +1243,7 @@ impl PaddedRecordLengths {
 ///
 /// For example, a piece of data of 12 bytes that needs to be aligned to 16 bytes will have a
 /// data length of 12 bytes, a padding of 4 bytes and a final length of 12 + 4 bytes. The function will return 16 in this case.
-pub fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedRecordLengths {
+pub(crate) fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedRecordLengths {
     let data_remaining = data_length % pad_to_num;
     let padding_num = if data_remaining == 0 {
         0usize
@@ -1258,6 +1257,7 @@ pub fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedReco
     PaddedRecordLengths::new(data_length, padding_num, record_length)
 }
 
+/// 6.2.94 Variable Parameter record
 #[derive(Clone, Debug, PartialEq)]
 pub enum VariableParameter {
     Articulated(ArticulatedPart),
@@ -1268,6 +1268,7 @@ pub enum VariableParameter {
     Unspecified(u8, [u8; FIFTEEN_OCTETS]),
 }
 
+/// 6.2.94.2 Articulated Part VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct ArticulatedPart {
     pub change_indicator: ChangeIndicator,
@@ -1308,6 +1309,7 @@ impl ArticulatedPart {
     }
 }
 
+/// 6.2.94.3 Attached Part VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct AttachedPart {
     pub detached_indicator: AttachedPartDetachedIndicator,
@@ -1342,6 +1344,7 @@ impl AttachedPart {
     }
 }
 
+/// 6.2.94.6 Separation VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SeparationParameter {
     pub reason: SeparationReasonForSeparation,
@@ -1382,6 +1385,7 @@ impl SeparationParameter {
     }
 }
 
+/// 6.2.94.5 Entity Type VP record
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityTypeParameter {
     pub change_indicator: ChangeIndicator,
@@ -1404,6 +1408,7 @@ impl EntityTypeParameter {
     }
 }
 
+/// 6.2.94.4 Entity Association VP Record
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityAssociationParameter {
     pub change_indicator: ChangeIndicator,
@@ -1500,5 +1505,149 @@ impl BeamData {
     pub fn with_sweep_sync(mut self, sweep_sync: f32) -> Self {
         self.sweep_sync = sweep_sync;
         self
+    }
+}
+
+pub const SUPPLY_QUANTITY_RECORD_LENGTH: u16 = 12;
+
+/// 6.2.86 Supply Quantity record
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SupplyQuantity {
+    pub supply_type: EntityType,
+    pub quantity: f32,
+}
+
+impl SupplyQuantity {
+    pub fn with_supply_type(mut self, supply_type: EntityType) -> Self {
+        self.supply_type = supply_type;
+        self
+    }
+
+    pub fn with_quantity(mut self, quantity: f32) -> Self {
+        self.quantity = quantity;
+        self
+    }
+}
+
+pub const BASE_RECORD_SPEC_RECORD_LENGTH: u16 = 16;
+
+/// 6.2.73 Record Specification record
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RecordSpecification {
+    pub record_sets: Vec<RecordSet>,
+}
+
+impl RecordSpecification {
+    pub fn with_record_set(mut self, record: RecordSet) -> Self {
+        self.record_sets.push(record);
+        self
+    }
+
+    pub fn with_record_sets(mut self, records: Vec<RecordSet>) -> Self {
+        self.record_sets = records;
+        self
+    }
+}
+
+/// Part of 6.2.73 Record Specification record
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RecordSet {
+    pub record_id: VariableRecordType,
+    pub record_serial_number: u32,
+    pub record_length_bytes: u16,
+    pub records: Vec<Vec<u8>>,
+}
+
+impl RecordSet {
+    pub fn with_record_id(mut self, record_id: VariableRecordType) -> Self {
+        self.record_id = record_id;
+        self
+    }
+
+    pub fn with_record_serial_number(mut self, record_serial_number: u32) -> Self {
+        self.record_serial_number = record_serial_number;
+        self
+    }
+
+    /// Adds `record` to be the Record Values in this RecordSet.
+    /// It is specified in the DIS standard that all Record Values in a RecordSet are of the same length.
+    /// It is up to the caller of the function to ensure only Record Values of same length are added,
+    /// the length of the last added value is assumed for all previously added.
+    pub fn with_record(mut self, record: Vec<u8>) -> Self {
+        self.record_length_bytes = record.len() as u16;
+        self.records.push(record);
+        self
+    }
+
+    /// Sets `records` to be the records in this RecordSet.
+    /// It is specified in the DIS standard that all Record Values in a RecordSet are of the same length (i.e., the inner `Vec`).
+    pub fn with_records(mut self, records: Vec<Vec<u8>>) -> Self {
+        self.record_length_bytes = if let Some(record) = records.first() {
+            record.len()
+        } else { 0 } as u16;
+        self.records = records;
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
+    const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
+    const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
+    const ENTITY_TYPE: EntityType = EntityType {
+        kind: EntityKind::Other,
+        domain: PlatformDomain::Land,
+        country: Country::Albania_ALB_,
+        category: 3,
+        subcategory: 4,
+        specific: 5,
+        extra: 6
+    };
+
+    #[test]
+    fn entity_type_display() {
+        assert_eq!(ENTITY_TYPE_STR, ENTITY_TYPE.to_string());
+    }
+
+    #[test]
+    fn entity_type_from_str() {
+        assert_eq!(EntityType::from_str(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
+        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID_EXTRA);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_try_from_str() {
+        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR).unwrap(), ENTITY_TYPE);
+        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_try_from_string() {
+        assert_eq!(TryInto::<EntityType>::try_into(ENTITY_TYPE_STR.to_string()).unwrap(), ENTITY_TYPE);
+        let err =TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
     }
 }
