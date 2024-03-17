@@ -33,6 +33,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
     // 9-28 // (Sub-)Categories
     (29, None, None, false), // Country
     // 30 // Entity Types records
+    // 31-43 // Bitfields, see `BITFIELD_UIDS`
     (44, None, None, false), // Dead Reckoning Algorithm
     (45, None, None, false), // Entity Marking Character Set
     // 46-54 do not exist
@@ -136,47 +137,54 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
     (379, None, None, false), // Appearance-Damage
     (380, None, None, false), // Mode 5 Message Formats Status
     (381, None, None, false), // Appearance-Trailing Effects
-    (382, None, None, false), // Appearance
-    (383, None, None, false), // Appearance
-    (384, None, None, false), // Appearance
-    (385, None, None, false), // Appearance
-    (386, None, None, false), // Appearance
-    (387, None, None, false), // Appearance
-    (388, None, None, false), // Appearance
+    (382, None, None, false), // Appearance-Hatch
+    (383, None, None, false), // Appearance-Launcher/Operational
+    (384, None, None, false), // Appearance-Camouflage Type
+    (385, None, None, false), // Appearance-Concealed Position
+    (386, None, None, false), // Appearance-Entity or Object State
+    (387, None, None, false), // Appearance-Canopy
+    (388, None, None, false), // Appearance-Subsurface Hatch
     (389, Some("Active Interrogation Indicator"), None, false), // DIS-PDU Status-Active Interrogation Indicator (AII)
-    (390, None, None, false), // Appearance
-    (391, None, None, false), // Appearance
-    (392, None, None, false), // Appearance
-    (393, None, None, false), // Appearance
-    (394, None, None, false), // Appearance
-    (395, None, None, false), // Appearance
-    (396, None, None, false), // Appearance
-    (397, None, None, false), // Appearance
-    (398, None, None, false), // Appearance
-    (399, None, None, false), // Appearance
-    (400, None, None, false), // Appearance
-    (401, None, None, false), // Appearance
-    (402, None, None, false), // Appearance
-    (403, None, None, false), // Appearance
-    (404, None, None, false), // Appearance
-    (405, None, None, false), // Appearance
-    (406, None, None, false), // Appearance
-    (407, None, None, false), // Appearance
-    (408, None, None, false), // Appearance
-    (409, None, None, false), // Appearance
-    (410, None, None, false), // Appearance
-    (411, None, None, false), // Appearance
+    (390, None, None, false), // Appearance-Lifeform Health
+    (391, None, None, false), // Appearance-Life Form Compliance Status
+    (392, None, None, false), // Appearance-Life Form Posture
+    (393, None, None, false), // Appearance-Life Form Weapon/Implement
+    (394, None, None, false), // Appearance-Concealed Movement
+    (395, None, None, false), // Appearance-Environmental Density
+    (396, None, None, false), // Mode 5 Platform Type
+    (397, None, None, false), // Appearance-Anti-Collision Day/Night
+    (398, None, None, false), // Appearance-Navigation/Position Brightness
+    (399, None, None, false), // Appearance-Supply Deployed
+    (400, None, None, false), // Appearance-NVG Mode
+    (401, None, None, false), // Parachute
+    (402, None, None, false), // Flare/Smoke Color
+    (403, None, None, false), // Flare/Smoke Status
+    (404, None, None, false), // Spot Chaff Status
+    (405, None, None, false), // Appearance-Object General-Damage
+    (406, None, None, false), // Appearance-Object General-Predistributed
+    (407, None, None, false), // Appearance-Object Specific-Breach State
+    (408, None, None, false), // Appearance-Object Specific-Chemical Type
+    (409, None, None, false), // Appearance-Linear Object Tank Ditch Breach
+    (410, None, None, false), // Appearance-Linear Object Lane Marker Visible
+    (411, None, None, false), // Appearance-Object General-IED Present
     (412, None, None, false), // Mode 5 Level Selection
     (415, None, None, false), // Attached Part-Detached Indicator
     (423, None, None, false), // Mode 5 Location Errors
     (426, None, None, false), // Cover/Shroud Status
+    // 427 - 448, 478 - 479 // SubCategories (EntityType)
+    // 481 - 482, 505 - 527 // Specifics (EntityType)
     (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
+    // 800 // Link 16 Version
+    // 801 // Aircraft ID Source
     (802, None, None, false), // Clothing IR Signature
+    // 803-887 // Do not exist
     (889, None, None, false), // Damage Area
 ];
 
 const BITFIELD_UIDS : [RangeInclusive<usize>; 3] = [
     450..=462, // Capabilities
+    // 483..=487, // Point Object Appearances
+    // 488..=489, // Linear Object Appearances
     31..=43, // Appearances
     68..=68, // StopFreeze Frozen Behavior
 ];
