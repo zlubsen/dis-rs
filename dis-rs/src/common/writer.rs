@@ -3,6 +3,7 @@ use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::common::model::{ArticulatedPart, AttachedPart, BeamData, ClockTime, DescriptorRecord, EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, FixedDatum, length_padded_to_num, Location, MunitionDescriptor, Orientation, SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32};
+use crate::DisError;
 use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
 use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
 
@@ -28,12 +29,18 @@ impl Serialize for PduHeader {
     }
 }
 
-impl Serialize for Pdu {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+impl Pdu {
+    /// Serializes `self` into the buffer.
+    ///
+    /// Fails when the capacity of the buffer is smaller then the serialized length of the PDU (header + body).
+    pub fn serialize(&self, buf: &mut BytesMut) -> Result<u16, DisError> {
+        if self.pdu_length() as usize > buf.capacity() {
+            return Err(DisError::InsufficientBufferSize(self.pdu_length(), buf.capacity()))
+        }
         let header_size = self.header.serialize(buf);
         let version: SupportedVersion = self.header.protocol_version.into();
         let body_size = match &self.body {
-            PduBody::Other(body) => { body.serialize_pdu(version, buf) } // TODO check if buffer capacity is enough for the body of an 'Other' PDU; perhaps make Serialize trait fallible
+            PduBody::Other(body) => { body.serialize_pdu(version, buf) }
             PduBody::EntityState(body) => { body.serialize_pdu(version, buf) }
             PduBody::Fire(body) => { body.serialize_pdu(version, buf) }
             PduBody::Detonation(body) => { body.serialize_pdu(version, buf) }
@@ -108,7 +115,7 @@ impl Serialize for Pdu {
             PduBody::Attribute(body) => { body.serialize_pdu(version, buf) }
             _ => { 0 }
         };
-        header_size + body_size
+        Ok(header_size + body_size)
     }
 }
 

@@ -78,6 +78,10 @@ impl Pdu {
             body,
         }
     }
+
+    pub fn pdu_length(&self) -> u16 {
+        PDU_HEADER_LEN_BYTES + self.body.body_length()
+    }
 }
 
 impl Interaction for Pdu {

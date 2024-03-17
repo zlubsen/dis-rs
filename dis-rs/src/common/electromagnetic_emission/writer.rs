@@ -96,7 +96,7 @@ mod tests {
     use bytes::BytesMut;
     use crate::common::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
     use crate::enumerations::{ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-    use crate::common::{BodyInfo, Serialize};
+    use crate::common::{BodyInfo};
     use crate::common::model::{BeamData, EntityId, EventId, Pdu, PduHeader, SimulationAddress, VectorF32};
 
     #[test]
@@ -183,7 +183,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(228);
 
-        let len = pdu.serialize(&mut buf);
+        let len = pdu.serialize(&mut buf).unwrap();
         assert_eq!(len, 228);
 
         let expected: [u8; 228] =

@@ -15,7 +15,6 @@ impl SerializePdu for Other {
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::common::{Serialize};
     use crate::enumerations::{PduType};
     use crate::common::model::{Pdu, PduHeader};
     use crate::other::model::Other;
@@ -32,7 +31,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        let wire_size = pdu.serialize(&mut buf);
+        let wire_size = pdu.serialize(&mut buf).unwrap();
         assert_eq!(wire_size, pdu_length);
 
         let expected : [u8;15] = [0x06, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0f, 0x00, 0x00,

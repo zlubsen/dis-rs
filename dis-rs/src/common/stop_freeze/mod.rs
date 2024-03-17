@@ -9,7 +9,6 @@ mod tests {
     use crate::enumerations::{PduType, StopFreezeReason};
     use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
-    use crate::common::Serialize;
     use crate::common::model::{DisTimeStamp};
     use crate::model::ClockTime;
     use crate::stop_freeze::model::StopFreeze;
@@ -31,7 +30,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {

@@ -10,7 +10,6 @@ mod tests {
     use crate::enumerations::{PduType};
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
-    use crate::common::Serialize;
     use crate::common::model::{DisTimeStamp};
 
     #[test]
@@ -25,7 +24,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {

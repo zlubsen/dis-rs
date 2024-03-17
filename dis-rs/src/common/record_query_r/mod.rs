@@ -9,7 +9,6 @@ mod tests {
     use crate::enumerations::{PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType};
     use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
-    use crate::common::Serialize;
     use crate::common::model::DisTimeStamp;
     use crate::model::TimeStamp;
     use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
@@ -33,7 +32,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {

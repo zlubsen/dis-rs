@@ -9,7 +9,6 @@ mod tests {
     use crate::enumerations::{CoupledExtensionIndicator, LvcIndicator, PduType, RadioAttachedIndicator, TransferredEntityIndicator, TransmitterTransmitState, VariableRecordType};
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
-    use crate::common::Serialize;
     use crate::common::model::{DisTimeStamp};
     use crate::model::{Location, VectorF32};
     use crate::transmitter::model::{Transmitter, VariableTransmitterParameter};
@@ -32,7 +31,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {
@@ -69,7 +68,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {

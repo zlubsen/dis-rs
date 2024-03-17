@@ -10,7 +10,6 @@ mod tests {
     use crate::common::iff::model::{FundamentalOperationalData, Iff, IffLayer2, InformationLayers, LayerHeader, LayersPresenceApplicability, SystemId};
     use crate::enumerations::{ActiveInterrogationIndicator, CoupledExtensionIndicator, IffSimulationMode, IffSystemType, LvcIndicator, PduType, TransferredEntityIndicator};
     use crate::common::parser::parse_pdu;
-    use crate::common::Serialize;
     use crate::common::model::{EntityId, EventId, Pdu, PduHeader, SimulationAddress};
     use crate::v7::model::PduStatus;
 
@@ -55,7 +54,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {

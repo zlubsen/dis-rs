@@ -9,7 +9,6 @@ mod tests {
     use crate::enumerations::{ElectromagneticEmissionStateUpdateIndicator, PduType};
     use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
-    use crate::common::Serialize;
     use crate::common::model::{DisTimeStamp};
     use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterSystem};
     use crate::model::{EventId, SimulationAddress};
@@ -30,7 +29,7 @@ mod tests {
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf);
+        original_pdu.serialize(&mut buf).unwrap();
 
         let parsed = parse_pdu(&buf);
         match parsed {

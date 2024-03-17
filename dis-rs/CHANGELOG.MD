@@ -1,5 +1,12 @@
 # Changelog for crate DIS-RS
 
+## 0.8.0 - 2024-xx-yy
+
+Changed the main serialization function for `PDU` to be fallible. It now returns `DisError::InsufficientBufferSize` when 
+the provided buffer does not have enough capacity to serialize the entire PDU. This should prevent the library from panicking during serialization.
+The `Serialize` trait is not changed, `PDU` now no longer implements this trait but provides the function with the changed signature (returning `Result<u16, DisError>`).
+The impls for the `Serialize` and `SerializePdu` traits are not changed and could still panic, but are practically only to be called via `PDU::serialize()`, thus behind the capacity check in that method.
+
 ## 0.7.0 - 2024-03-12
 Added Logistics PDUs (ServiceRequest, ResupplyOffer, ResupplyReceived, ResupplyCancel, RepairComplete, RepairResponse)
 
