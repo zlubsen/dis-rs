@@ -338,16 +338,13 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
     let starts_with_digit = intermediate.chars().next().unwrap_or('x').is_ascii_digit();
     let is_empty = intermediate.is_empty();
 
-    let prefix = String::from(starts_with_digit.then(||"_").unwrap_or(""));
+    let prefix = String::from(if starts_with_digit { "_" } else { "" });
     let name = is_empty.then(|| String::from("Unnamed")).unwrap_or(intermediate);
     let postfix = needs_postfix.then(|| format!("_{}", uid)).unwrap_or(String::new());
     let intermediate = [prefix, name, postfix].join("");
 
     // When there are multiple parenthesis sections, replace them with '_' (such as Countries)
-    let intermediate = intermediate
-        .replace("__", "_");
-
-    intermediate
+    intermediate.replace("__", "_")
 }
 
 fn format_name(value: &str, uid: usize) -> String {
@@ -355,6 +352,7 @@ fn format_name(value: &str, uid: usize) -> String {
 }
 
 fn format_field_name(name: &str) -> String {
+    #[allow(clippy::collapsible_str_replace)]
     name.to_lowercase()
         .replace(" / ", "_")
         .replace(' ', "_")
@@ -482,7 +480,7 @@ mod extraction {
 
     fn extract_enum(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<Enum, ()> {
         let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ELEMENT_ATTR_UID) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_uid.value).unwrap()).unwrap())
         } else { None };
         let should_generate = ENUM_UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
         if should_generate.is_none() {
@@ -505,7 +503,7 @@ mod extraction {
             if let Some(size) = size_override {
                 Some(size)
             } else {
-                Some(usize::from_str(&reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
+                Some(usize::from_str(&reader.decoder().decode(&attr_size.value).unwrap()).unwrap())
             }
         } else { None };
 
@@ -525,13 +523,13 @@ mod extraction {
 
     fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
         let value = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_value.value).unwrap()).unwrap())
         } else { None };
         let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
             Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
         } else { None };
         let xref = if let Ok(Some(attr_xref)) = element.try_get_attribute(ENUM_ROW_ATTR_XREF) {
-            let xref_value = usize::from_str(&reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap();
+            let xref_value = usize::from_str(&reader.decoder().decode(&attr_xref.value).unwrap()).unwrap();
             if SKIP_XREF_UIDS.contains(&xref_value) {
                 None
             } else { Some(xref_value) }
@@ -563,10 +561,10 @@ mod extraction {
 
     fn extract_enum_range_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
         let value_min = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE_MIN) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_value.value).unwrap()).unwrap())
         } else { None };
         let value_max = if let Ok(Some(attr_value)) = element.try_get_attribute(ENUM_ROW_ATTR_VALUE_MAX) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_value.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_value.value).unwrap()).unwrap())
         } else { None };
         let description = if let Ok(Some(attr_desc)) = element.try_get_attribute(ENUM_ROW_ATTR_DESC) {
             Some(String::from_utf8(attr_desc.value.to_vec()).unwrap())
@@ -587,10 +585,10 @@ mod extraction {
 
     fn extract_bitfield(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<Bitfield, ()> {
         let uid = if let Ok(Some(attr_uid)) = element.try_get_attribute(ELEMENT_ATTR_UID) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_uid.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_uid.value).unwrap()).unwrap())
         } else { None };
         if let Some(uid) = uid {
-            if BITFIELD_UIDS.iter().find(|range| range.contains(&uid)).is_none() {
+            if !BITFIELD_UIDS.iter().any(|range| range.contains(&uid)) {
                 // uid is not in the list, skip this bitfield, not to be generated
                 return Err(());
             }
@@ -600,7 +598,7 @@ mod extraction {
             Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
         } else { None };
         let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_size.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_size.value).unwrap()).unwrap())
         } else { None };
 
         if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
@@ -621,13 +619,13 @@ mod extraction {
             Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
         } else { None };
         let position = if let Ok(Some(attr_position)) = element.try_get_attribute(BITFIELD_ROW_ATTR_BIT_POSITION) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_position.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_position.value).unwrap()).unwrap())
         } else { None };
         let length = if let Ok(Some(attr_length)) = element.try_get_attribute(BITFIELD_ROW_ATTR_LENGTH) {
-            usize::from_str(&reader.decoder().decode(&*attr_length.value).unwrap()).unwrap()
+            usize::from_str(&reader.decoder().decode(&attr_length.value).unwrap()).unwrap()
         } else { 1 };
         let xref = if let Ok(Some(attr_xref)) = element.try_get_attribute(BITFIELD_ROW_ATTR_XREF) {
-            Some(usize::from_str(&reader.decoder().decode(&*attr_xref.value).unwrap()).unwrap())
+            Some(usize::from_str(&reader.decoder().decode(&attr_xref.value).unwrap()).unwrap())
         } else { None };
 
         if let (Some(name), Some(bit_position)) = (name, position) {
@@ -657,11 +655,14 @@ mod generation {
 
         for item in items {
             match item {
-                GenerationItem::Enum(e) => generated_items.push(generate_enum(e, &lookup_xref)),
-                GenerationItem::Bitfield(b) => generated_items.push(generate_bitfield(b, &lookup_xref)),
+                GenerationItem::Enum(e) => generated_items.push(generate_enum(e, lookup_xref)),
+                GenerationItem::Bitfield(b) => generated_items.push(generate_bitfield(b, lookup_xref)),
             }
         }
         quote!(
+            #[allow(clippy::identity_op)]
+            #[allow(clippy::write_literal)]
+            #[allow(clippy::match_single_binding)]
             pub mod enumerations {
                 use std::fmt::{Display, Formatter};
 
@@ -818,6 +819,7 @@ mod generation {
         )
     }
 
+    #[allow(clippy::unnecessary_filter_map)]
     fn quote_enum_into_arms(name_ident: &Ident, items: &[EnumItem], data_size: usize, postfix_items: bool) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
@@ -867,6 +869,7 @@ mod generation {
         )
     }
 
+    #[allow(clippy::unnecessary_filter_map)]
     fn quote_enum_display_arms(items: &[EnumItem], name_ident: &Ident, postfix_items: bool) -> Vec<TokenStream> {
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
@@ -876,7 +879,7 @@ mod generation {
                     let item_ident = format_ident!("{}", item_name);
 
                     Some(quote!(
-                        #name_ident::#item_ident => write!(f, "{}", #item_description)
+                        #name_ident::#item_ident => write!(f, #item_description)
                     ))
                 }
                 EnumItem::Range(item) => {

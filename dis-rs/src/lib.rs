@@ -1,5 +1,5 @@
 extern crate core;
-
+#[allow(clippy::new_without_default)]
 mod common;
 mod v6;
 mod v7;

@@ -101,28 +101,28 @@ impl Serialize for ChangeOptionsRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let mut byte = 0u8;
         if self.change_indicator {
-            byte = byte + BIT_0_IN_BYTE;
+            byte += BIT_0_IN_BYTE;
         }
         if self.system_specific_field_1 {
-            byte = byte + BIT_1_IN_BYTE;
+            byte += BIT_1_IN_BYTE;
         }
         if self.system_specific_field_2 {
-            byte = byte + BIT_2_IN_BYTE;
+            byte += BIT_2_IN_BYTE;
         }
         if self.heartbeat_indicator {
-            byte = byte + BIT_3_IN_BYTE;
+            byte += BIT_3_IN_BYTE;
         }
         if self.transponder_interrogator_indicator {
-            byte = byte + BIT_4_IN_BYTE;
+            byte += BIT_4_IN_BYTE;
         }
         if self.simulation_mode {
-            byte = byte + BIT_5_IN_BYTE;
+            byte += BIT_5_IN_BYTE;
         }
         if self.interactive_capable {
-            byte = byte + BIT_6_IN_BYTE;
+            byte += BIT_6_IN_BYTE;
         }
         if self.test_mode {
-            byte = byte + BIT_7_IN_BYTE;
+            byte += BIT_7_IN_BYTE;
         }
         buf.put_u8(byte);
 

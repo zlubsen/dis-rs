@@ -152,11 +152,11 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let (input, pdu_status, padding) = match u8::from(protocol_version) {
         legacy_version if (1..=5).contains(&legacy_version) => {
             let (input, padding) = be_u16(input)?;
-            (input, None, padding as u16)
+            (input, None, padding)
         }
         6 => {
             let (input, padding) = be_u16(input)?;
-            (input, None, padding as u16)
+            (input, None, padding)
         }
         7 => {
             let (input, (status, padding)) = parse_pdu_status(pdu_type)(input)?;

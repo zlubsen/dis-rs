@@ -52,7 +52,7 @@ impl AggregateState {
 ///
 /// Returns a tuple consisting of the intermediate length including the padding,
 /// and the length of the padding, in octets.
-pub(crate) fn aggregate_state_intermediate_length_padding(aggregates: &Vec<EntityId>, entities: &Vec<EntityId>) -> (u16, u16) {
+pub(crate) fn aggregate_state_intermediate_length_padding(aggregates: &[EntityId], entities: &[EntityId]) -> (u16, u16) {
     let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
         + aggregates.iter().map(|id| id.record_length() ).sum::<u16>() // number of aggregate ids
         + entities.iter().map(|id| id.record_length() ).sum::<u16>();  // number of entity ids
@@ -211,6 +211,7 @@ impl Display for AggregateType {
     }
 }
 
+#[allow(clippy::get_first)]
 impl FromStr for AggregateType {
     type Err = DisError;
 

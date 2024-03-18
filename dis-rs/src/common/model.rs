@@ -74,7 +74,7 @@ impl Pdu {
             header: header
                 .with_pdu_type(body.body_type())
                 .with_time_stamp(time_stamp.raw_timestamp)
-                .with_length(body.body_length() as u16),
+                .with_length(body.body_length()),
             body,
         }
     }
@@ -901,6 +901,7 @@ impl Display for EntityType {
     }
 }
 
+#[allow(clippy::get_first)]
 impl FromStr for EntityType {
     type Err = DisError;
 
@@ -1079,12 +1080,10 @@ impl From<DisTimeStamp> for TimeStamp {
     fn from(value: DisTimeStamp) -> Self {
         let raw_timestamp = match value {
             DisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _ } => {
-                let units = (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT;
-                units
+                (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT
             }
             DisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _ } => {
-                let units = units_past_the_hour << 1;
-                units
+                units_past_the_hour << 1
             }
         };
 

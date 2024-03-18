@@ -259,7 +259,7 @@ impl IffLayer5 {
 }
 
 /// 6.2.13 Change/Options record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct ChangeOptionsRecord {
     pub change_indicator: bool,
     pub system_specific_field_1: bool,
@@ -269,21 +269,6 @@ pub struct ChangeOptionsRecord {
     pub simulation_mode: bool,
     pub interactive_capable: bool,
     pub test_mode: bool,
-}
-
-impl Default for ChangeOptionsRecord {
-    fn default() -> Self {
-        ChangeOptionsRecord {
-            change_indicator: false,
-            system_specific_field_1: false,
-            system_specific_field_2: false,
-            heartbeat_indicator: false,
-            transponder_interrogator_indicator: false,
-            simulation_mode: false,
-            interactive_capable: false,
-            test_mode: false,
-        }
-    }
 }
 
 impl ChangeOptionsRecord {
@@ -389,7 +374,7 @@ impl IffDataSpecification {
 }
 
 /// 6.2.45 Information Layers record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct InformationLayers {
     pub layer_1: LayersPresenceApplicability,
     pub layer_2: LayersPresenceApplicability,
@@ -398,20 +383,6 @@ pub struct InformationLayers {
     pub layer_5: LayersPresenceApplicability,
     pub layer_6: LayersPresenceApplicability,
     pub layer_7: LayersPresenceApplicability,
-}
-
-impl Default for InformationLayers {
-    fn default() -> Self {
-        InformationLayers {
-            layer_1: LayersPresenceApplicability::default(),
-            layer_2: LayersPresenceApplicability::default(),
-            layer_3: LayersPresenceApplicability::default(),
-            layer_4: LayersPresenceApplicability::default(),
-            layer_5: LayersPresenceApplicability::default(),
-            layer_6: LayersPresenceApplicability::default(),
-            layer_7: LayersPresenceApplicability::default(),
-        }
-    }
 }
 
 impl InformationLayers {

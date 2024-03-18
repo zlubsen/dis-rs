@@ -276,7 +276,7 @@ impl Serialize for VariableParameter {
 impl Serialize for ArticulatedPart {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.change_indicator.into());
-        buf.put_u16(self.attachment_id.into());
+        buf.put_u16(self.attachment_id);
         let type_class: u32 = self.type_class.into();
         let type_metric: u32 = self.type_metric.into();
         buf.put_u32(type_class + type_metric);
