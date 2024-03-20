@@ -65,6 +65,7 @@ use crate::set_record_r::parser::set_record_r_body;
 use crate::start_resume_r::parser::start_resume_r_body;
 use crate::stop_freeze_r::parser::stop_freeze_r_body;
 use crate::transfer_ownership::parser::transfer_ownership_body;
+use crate::underwater_acoustic::parser::underwater_acoustic_body;
 
 pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     match many1(pdu)(input) {
@@ -222,7 +223,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::Signal => { signal_body(input)? }
             PduType::Receiver => { receiver_body(input)? }
             PduType::IFF => { iff_body(input)? }
-            // PduType::UnderwaterAcoustic => {}
+            PduType::UnderwaterAcoustic => { underwater_acoustic_body(input)? }
             PduType::SupplementalEmissionEntityState => { sees_body(input)? }
             // PduType::IntercomSignal => {}
             // PduType::IntercomControl => {}

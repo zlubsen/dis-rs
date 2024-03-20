@@ -6,19 +6,39 @@ pub mod builder;
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
-    use crate::enumerations::{PduType};
+    use crate::enumerations::{PduType, UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAStateChangeUpdateIndicator};
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::common::model::{DisTimeStamp};
-    use crate::model::{EntityId};
+    use crate::model::{EntityId, EventId, SimulationAddress};
+    use crate::underwater_acoustic::model::{APA, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem, UAFundamentalParameterData, UnderwaterAcoustic};
 
     #[test]
     fn underwater_acoustic_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::UnderwaterAcoustic);
 
         let body = UnderwaterAcoustic::builder()
-            .with_origination_id(EntityId::new(10,10,10))
-
+            .with_emitting_entity_id(EntityId::new(10,10,10))
+            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 38))
+            .with_state_change_update_indicator(UAStateChangeUpdateIndicator::StateUpdate)
+            .with_passive_parameter_index(UAPassiveParameterIndex::Other)
+            .with_propulsion_plant_configuration(PropulsionPlantConfiguration::default()
+                .with_configuration(UAPropulsionPlantConfiguration::Battery)
+                .with_hull_mounted_masker(false))
+            .with_shafts(vec![Shaft::default()
+                .with_current_rpm(150)
+                .with_ordered_rpm(100)
+                .with_rpm_rate_of_change(-25),
+                              Shaft::default()
+                                  .with_current_rpm(50)
+                                  .with_ordered_rpm(100)
+                                  .with_rpm_rate_of_change(25)])
+            .with_apa(APA::default())
+            .with_emitter_system(UAEmitterSystem::default()
+                .with_beam(UABeam::default()
+                    .with_beam_data_length(24)
+                    .with_beam_id_number(1)
+                    .with_fundamental_parameters(UAFundamentalParameterData::default())))
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
