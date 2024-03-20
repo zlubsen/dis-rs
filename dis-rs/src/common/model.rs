@@ -35,7 +35,6 @@ use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
-use crate::v7::model::PduStatus;
 use crate::constants::{EIGHT_OCTETS, FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS};
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
@@ -61,6 +60,8 @@ use crate::start_resume_r::model::StartResumeR;
 use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
+
+pub use crate::v7::model::PduStatus;
 
 #[derive(Debug, PartialEq)]
 pub struct Pdu {

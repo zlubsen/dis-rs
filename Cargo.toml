@@ -1,3 +1,3 @@
 [workspace]
-members = ["dis-rs", "dis_rs_macros", "app-receiver"]
+members = ["dis-rs", "cdis-assemble", "app-receiver"]
 resolver = "2"
