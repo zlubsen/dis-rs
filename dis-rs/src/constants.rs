@@ -13,6 +13,7 @@ pub const SIX_OCTETS: usize = 6;
 pub const EIGHT_OCTETS: usize = 8;
 pub const TWELVE_OCTETS: usize = 12;
 pub const FIFTEEN_OCTETS: usize = 15;
+pub const TWENTY_OCTETS: usize = 20;
 pub const THIRTY_TWO_OCTETS: usize = 32;
 pub const LEAST_SIGNIFICANT_BIT : u32 = 0x001;
 pub const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;

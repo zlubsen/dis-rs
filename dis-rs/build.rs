@@ -23,7 +23,7 @@ const SISO_REF_FILE : &str = "./enumerations/SISO-REF-010.xml";
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 152] = [
     (3, Some("ProtocolVersion"), None, false),   // Protocol Version
     (4, Some("PduType"), None, false),           // PDU Type
     (5, Some("ProtocolFamily"), None, false),    // PDU Family
@@ -68,6 +68,13 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
     (84, Some("IffSystemMode"), None, false), // IFF-System Mode
     // 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
+    (143, None, None, false), // UA-State/Change Update Indicator
+    (144, None, None, false), // UA-Acoustic System Name
+    (145, None, None, false), // UA-Acoustic Emitter System Function
+    (146, None, None, false), // UA-Active Emission Parameter Index
+    (147, None, None, false), // UA-Scan Pattern
+    (148, None, None, false), // UA-Passive Parameter Index
+    (150, None, None, false), // UA-Additional Passive Activity Parameter Index
     (155, None, None, false), // Transmitter Major Modulation
     (156, None, None, false), // Transmitter-Detail-Amplitude Modulation
     (157, Some("TransmitterDetailAmplitudeAngleModulation"), None, false), // Transmitter-Detail-Amplitude and Angle Modulation
@@ -99,6 +106,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
     (224, None, None, true), // Transfer Control-Transfer Type
     (270, None, Some(16), false), // Signal Encoding Class
     (271, None, Some(16), true), // Signal Encoding Type
+    (281, Some("APAStatus"), None, false), // APA Parameter Index-APA Status
     (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
     (283, Some("SeparationPreEntityIndicator"), None, false), // Separation VP-Pre-Entity Indicator
     (295, Some("AttributeActionCode"), None, false), // Attribute Action Code
@@ -119,6 +127,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 143] = [
     (323, None, None, false), // Entity Association-Physical Association Type
     (324, None, None, false), // Entity Association-Physical Connection Type
     (334, None, None, false), // Record Query-R-Event Type
+    (335, Some("UAPropulsionPlantConfiguration"), None, false), // UA Propulsion Plant Configuration-Configuration
     (339, Some("IffApplicableModes"), None, false), // IFF Applicable Modes
     (346, Some("Mode5IffMission"), None, false), // IFF Mission
     (347, Some("ModeSTransmitState"), Some(8), false), // Mode S Interrogator Status Transmit State
@@ -187,6 +196,7 @@ const BITFIELD_UIDS : [RangeInclusive<usize>; 3] = [
     // 488..=489, // Linear Object Appearances
     31..=43, // Appearances
     68..=68, // StopFreeze Frozen Behavior
+    // 149..=149, // UA-Propulsion Plant Configuration -- does not compile as of yet
 ];
 
 /// Some enums cross-reference "record" elements.

@@ -53,6 +53,7 @@ pub mod signal;
 pub mod transmitter;
 pub mod transfer_ownership;
 pub mod receiver;
+pub mod underwater_acoustic;
 
 pub mod errors;
 mod writer;
