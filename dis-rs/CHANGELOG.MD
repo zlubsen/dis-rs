@@ -7,6 +7,8 @@ the provided buffer does not have enough capacity to serialize the entire PDU. T
 The `Serialize` trait is not changed, `PDU` now no longer implements this trait but provides the function with the changed signature (returning `Result<u16, DisError>`).
 The impls for the `Serialize` and `SerializePdu` traits are not changed and could still panic, but are practically only to be called via `PDU::serialize()`, thus behind the capacity check in that method.
 
+Added UnderwaterAcoustics (UA) PDU.
+
 ## 0.7.0 - 2024-03-12
 Added Logistics PDUs (ServiceRequest, ResupplyOffer, ResupplyReceived, ResupplyCancel, RepairComplete, RepairResponse)
 
@@ -14,7 +16,7 @@ Added Simulation Management with Reliability PDUs
 
 Added EntityManagement PDUs (IsPartOf, IsGroupOf, TransferOwnership, AggregateState)
 
-Added SEES
+Added SEES PDU
 
 Updated Enumerations to SISO-REF-010 v32
 

@@ -43,7 +43,7 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | Signal                          | V       |
 | Receiver                        | V       |
 | IFF                             | V       |
-| UnderwaterAcoustic              |         |
+| UnderwaterAcoustic              | V       |
 | SupplementalEmissionEntityState | V       |
 | IntercomSignal                  |         |
 | IntercomControl                 |         |
