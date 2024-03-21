@@ -1107,8 +1107,8 @@ pub enum DisTimeStamp {
 
 impl DisTimeStamp {
     pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour = DisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
         Self::Absolute {
             units_past_the_hour,
             nanoseconds_past_the_hour
@@ -1116,23 +1116,23 @@ impl DisTimeStamp {
     }
 
     pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour = DisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
         Self::Relative {
             units_past_the_hour,
             nanoseconds_past_the_hour
         }
     }
-}
 
-/// Helper function to convert seconds to nanoseconds
-fn seconds_to_nanoseconds(seconds: u32) -> u32 {
-    seconds * 1_000_000
-}
+    /// Helper function to convert seconds to nanoseconds
+    fn seconds_to_nanoseconds(seconds: u32) -> u32 {
+        seconds * 1_000_000
+    }
 
-/// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
-fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
-    (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
+    /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
+    fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
+        (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
+    }
 }
 
 impl From<u32> for DisTimeStamp {

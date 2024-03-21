@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 dis-rs = { path = "../dis-rs" }
+bytes = "1.4.0"
+nom = "7.1.3"

@@ -1,7 +1,17 @@
 /// 10.2.1 UVINT8
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct UVINT8 {
     bit_size: Uvint8BitSize,
     pub value: u8,
+}
+
+impl UVINT8 {
+    pub(crate) fn new(bit_size: Uvint8BitSize, value: u8) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<u8> for UVINT8 {
@@ -18,9 +28,19 @@ impl From<u8> for UVINT8 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Uvint8BitSize {
     Four,
     Eight,
+}
+
+impl Uvint8BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Uvint8BitSize::Four => { 4 }
+            Uvint8BitSize::Eight => { 8 }
+        }
+    }
 }
 
 impl From<u8> for Uvint8BitSize {
@@ -33,9 +53,19 @@ impl From<u8> for Uvint8BitSize {
 }
 
 /// 10.2.2 UVINT16
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct UVINT16 {
     bit_size: Uvint16BitSize,
     pub value: u16,
+}
+
+impl UVINT16 {
+    pub(crate) fn new(bit_size: Uvint16BitSize, value: u16) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<u16> for UVINT16 {
@@ -54,11 +84,23 @@ impl From<u16> for UVINT16 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Uvint16BitSize {
     Eight,
     Eleven,
     Fourteen,
     Sixteen,
+}
+
+impl Uvint16BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Uvint16BitSize::Eight => { 8 }
+            Uvint16BitSize::Eleven => { 11 }
+            Uvint16BitSize::Fourteen => { 14 }
+            Uvint16BitSize::Sixteen => { 16 }
+        }
+    }
 }
 
 impl From<u8> for Uvint16BitSize {
@@ -73,9 +115,19 @@ impl From<u8> for Uvint16BitSize {
 }
 
 /// 10.2.3 UVINT32
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct UVINT32 {
     bit_size: Uvint32BitSize,
     pub value: u32,
+}
+
+impl UVINT32 {
+    pub(crate) fn new(bit_size: Uvint32BitSize, value: u32) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<u32> for UVINT32 {
@@ -94,11 +146,23 @@ impl From<u32> for UVINT32 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Uvint32BitSize {
     Eight,
     Fifteen,
     Eighteen,
     ThirtyTwo,
+}
+
+impl Uvint32BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Uvint32BitSize::Eight => { 8 }
+            Uvint32BitSize::Fifteen => { 15 }
+            Uvint32BitSize::Eighteen => { 18 }
+            Uvint32BitSize::ThirtyTwo => { 32 }
+        }
+    }
 }
 
 impl From<u8> for Uvint32BitSize {
@@ -113,9 +177,19 @@ impl From<u8> for Uvint32BitSize {
 }
 
 /// 10.2.4 SVINT12
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SVINT12 {
     bit_size: Svint12BitSize,
     pub value: i16,
+}
+
+impl SVINT12 {
+    pub(crate) fn new(bit_size: Svint12BitSize, value: i16) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<i16> for SVINT12 {
@@ -135,6 +209,7 @@ impl From<i16> for SVINT12 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Svint12BitSize {
     Three,
     Six,
@@ -142,8 +217,37 @@ pub(crate) enum Svint12BitSize {
     Twelve,
 }
 
-impl From<i16> for Svint12BitSize {
-    fn from(value: i16) -> Self {
+impl Svint12BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Svint12BitSize::Three => { 3 }
+            Svint12BitSize::Six => { 6 }
+            Svint12BitSize::Nine => { 9 }
+            Svint12BitSize::Twelve => { 12 }
+        }
+    }
+
+    pub fn min_value(&self) -> i16 {
+        match self {
+            Svint12BitSize::Three => { -4 }
+            Svint12BitSize::Six => { -32 }
+            Svint12BitSize::Nine => { -256 }
+            Svint12BitSize::Twelve => { -2_048 }
+        }
+    }
+
+    pub fn max_value(&self) -> i16 {
+        match self {
+            Svint12BitSize::Three => { 3 }
+            Svint12BitSize::Six => { 31 }
+            Svint12BitSize::Nine => { 255 }
+            Svint12BitSize::Twelve => { 2_047 }
+        }
+    }
+}
+
+impl From<u8> for Svint12BitSize {
+    fn from(value: u8) -> Self {
         match value {
             0 => Svint12BitSize::Three,
             1 => Svint12BitSize::Six,
@@ -154,9 +258,19 @@ impl From<i16> for Svint12BitSize {
 }
 
 /// 10.2.5 SVINT13
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SVINT13 {
     bit_size: Svint13BitSize,
     pub value: i16,
+}
+
+impl SVINT13 {
+    pub(crate) fn new(bit_size: Svint13BitSize, value: i16) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<i16> for SVINT13 {
@@ -176,6 +290,7 @@ impl From<i16> for SVINT13 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Svint13BitSize {
     Five,
     Seven,
@@ -183,8 +298,37 @@ pub(crate) enum Svint13BitSize {
     Thirteen,
 }
 
-impl From<i16> for Svint13BitSize {
-    fn from(value: i16) -> Self {
+impl Svint13BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Svint13BitSize::Five => { 5 }
+            Svint13BitSize::Seven => { 7 }
+            Svint13BitSize::Ten => { 10 }
+            Svint13BitSize::Thirteen => { 13 }
+        }
+    }
+
+    pub fn min_value(&self) -> i16 {
+        match self {
+            Svint13BitSize::Five => { -16 }
+            Svint13BitSize::Seven => { -64 }
+            Svint13BitSize::Ten => { -512 }
+            Svint13BitSize::Thirteen => { -4_096 }
+        }
+    }
+
+    pub fn max_value(&self) -> i16 {
+        match self {
+            Svint13BitSize::Five => { 15 }
+            Svint13BitSize::Seven => { 63 }
+            Svint13BitSize::Ten => { 511 }
+            Svint13BitSize::Thirteen => { 4_095 }
+        }
+    }
+}
+
+impl From<u8> for Svint13BitSize {
+    fn from(value: u8) -> Self {
         match value {
             0 => Svint13BitSize::Five,
             1 => Svint13BitSize::Seven,
@@ -195,9 +339,19 @@ impl From<i16> for Svint13BitSize {
 }
 
 /// 10.2.6 SVINT14
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SVINT14 {
     bit_size: Svint14BitSize,
     pub value: i16,
+}
+
+impl SVINT14 {
+    pub(crate) fn new(bit_size: Svint14BitSize, value: i16) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<i16> for SVINT14 {
@@ -217,6 +371,7 @@ impl From<i16> for SVINT14 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Svint14BitSize {
     Four,
     Seven,
@@ -224,8 +379,37 @@ pub(crate) enum Svint14BitSize {
     Fourteen,
 }
 
-impl From<i16> for Svint14BitSize {
-    fn from(value: i16) -> Self {
+impl Svint14BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Svint14BitSize::Four => { 4 }
+            Svint14BitSize::Seven => { 7 }
+            Svint14BitSize::Nine => { 9 }
+            Svint14BitSize::Fourteen => { 14 }
+        }
+    }
+
+    pub fn min_value(&self) -> i16 {
+        match self {
+            Svint14BitSize::Four => { -8 }
+            Svint14BitSize::Seven => { -64 }
+            Svint14BitSize::Nine => { -256 }
+            Svint14BitSize::Fourteen => { -8_192 }
+        }
+    }
+
+    pub fn max_value(&self) -> i16 {
+        match self {
+            Svint14BitSize::Four => { 7 }
+            Svint14BitSize::Seven => { 63 }
+            Svint14BitSize::Nine => { 255 }
+            Svint14BitSize::Fourteen => { 8_191 }
+        }
+    }
+}
+
+impl From<u8> for Svint14BitSize {
+    fn from(value: u8) -> Self {
         match value {
             0 => Svint14BitSize::Four,
             1 => Svint14BitSize::Seven,
@@ -236,9 +420,19 @@ impl From<i16> for Svint14BitSize {
 }
 
 /// 10.2.7 SVINT16
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SVINT16 {
     bit_size: Svint16BitSize,
     pub value: i16,
+}
+
+impl SVINT16 {
+    pub(crate) fn new(bit_size: Svint16BitSize, value: i16) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<i16> for SVINT16 {
@@ -247,8 +441,7 @@ impl From<i16> for SVINT16 {
             -128..=127 => Svint16BitSize::Eight,
             -2_048..=2_047 => Svint16BitSize::Twelve,
             -4_096..=4_095 => Svint16BitSize::Thirteen,
-            -32_768..=32_767 => Svint16BitSize::Sixteen,
-            _ => { Svint16BitSize::Sixteen }
+            i16::MIN..=i16::MAX => Svint16BitSize::Sixteen,
         };
 
         Self {
@@ -258,6 +451,7 @@ impl From<i16> for SVINT16 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Svint16BitSize {
     Eight,
     Twelve,
@@ -265,8 +459,37 @@ pub(crate) enum Svint16BitSize {
     Sixteen,
 }
 
-impl From<i16> for Svint16BitSize {
-    fn from(value: i16) -> Self {
+impl Svint16BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Svint16BitSize::Eight => { 8 }
+            Svint16BitSize::Twelve => { 12 }
+            Svint16BitSize::Thirteen => { 13 }
+            Svint16BitSize::Sixteen => { 16 }
+        }
+    }
+
+    pub fn min_value(&self) -> i16 {
+        match self {
+            Svint16BitSize::Eight => { -128 }
+            Svint16BitSize::Twelve => { -2_048 }
+            Svint16BitSize::Thirteen => { -4_096 }
+            Svint16BitSize::Sixteen => { i16::MIN }
+        }
+    }
+
+    pub fn max_value(&self) -> i16 {
+        match self {
+            Svint16BitSize::Eight => { 127 }
+            Svint16BitSize::Twelve => { 2_047 }
+            Svint16BitSize::Thirteen => { 4_095 }
+            Svint16BitSize::Sixteen => { i16::MAX }
+        }
+    }
+}
+
+impl From<u8> for Svint16BitSize {
+    fn from(value: u8) -> Self {
         match value {
             0 => Svint16BitSize::Eight,
             1 => Svint16BitSize::Twelve,
@@ -277,9 +500,19 @@ impl From<i16> for Svint16BitSize {
 }
 
 /// 10.2.8 SVINT24
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SVINT24 {
     bit_size: Svint24BitSize,
     pub value: i32,
+}
+
+impl SVINT24 {
+    pub(crate) fn new(bit_size: Svint24BitSize, value: i32) -> Self {
+        Self {
+            bit_size,
+            value,
+        }
+    }
 }
 
 impl From<i32> for SVINT24 {
@@ -299,6 +532,7 @@ impl From<i32> for SVINT24 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Svint24BitSize {
     Sixteen,
     Nineteen,
@@ -306,8 +540,37 @@ pub(crate) enum Svint24BitSize {
     TwentyFour,
 }
 
-impl From<i32> for Svint24BitSize {
-    fn from(value: i32) -> Self {
+impl Svint24BitSize {
+    pub fn bit_size(&self) -> usize {
+        match self {
+            Svint24BitSize::Sixteen => { 16 }
+            Svint24BitSize::Nineteen => { 19 }
+            Svint24BitSize::TwentyOne => { 21 }
+            Svint24BitSize::TwentyFour => { 24 }
+        }
+    }
+
+    pub fn min_value(&self) -> i32 {
+        match self {
+            Svint24BitSize::Sixteen => { -32_768 }
+            Svint24BitSize::Nineteen => { -262_144 }
+            Svint24BitSize::TwentyOne => { -1_048_576 }
+            Svint24BitSize::TwentyFour => { 8_388_608 }
+        }
+    }
+
+    pub fn max_value(&self) -> i32 {
+        match self {
+            Svint24BitSize::Sixteen => { 32_767 }
+            Svint24BitSize::Nineteen => { 262_143 }
+            Svint24BitSize::TwentyOne => { 1_048_575 }
+            Svint24BitSize::TwentyFour => { 8_388_607 }
+        }
+    }
+}
+
+impl From<u8> for Svint24BitSize {
+    fn from(value: u8) -> Self {
         match value {
             0 => Svint24BitSize::Sixteen,
             1 => Svint24BitSize::Nineteen,
@@ -317,7 +580,7 @@ impl From<i32> for Svint24BitSize {
     }
 }
 
-pub struct Float {
+pub struct CdisFloat {
     value: f32,
     mantissa: u16,
     exponent: i16,

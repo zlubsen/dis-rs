@@ -1,6 +1,7 @@
 pub mod types;
 pub mod records;
 pub mod entity_state;
+pub mod constants;
 
 #[cfg(test)]
 mod tests {

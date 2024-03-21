@@ -12,6 +12,7 @@ include!(concat!(env!("OUT_DIR"), "/enumerations.rs"));
 pub use common::parse;
 pub use common::parse_v6 as parse_v6_pdus;
 pub use common::parse_v7 as parse_v7_pdus;
+pub use v7::parser::parse_pdu_status_fields;
 pub use common::Serialize;
 
 pub use common::*;
