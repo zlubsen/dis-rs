@@ -2,11 +2,12 @@ use dis_rs::enumerations::PduType;
 use dis_rs::model::PduStatus;
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
-use crate::records::model::CDISProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
+use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::UVINT8;
 
-pub struct CDISHeader {
-    pub protocol_version: CDISProtocolVersion,
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct CdisHeader {
+    pub protocol_version: CdisProtocolVersion,
     pub exercise_id: UVINT8,
     pub pdu_type: PduType,
     pub timestamp: TimeStamp,
@@ -15,13 +16,14 @@ pub struct CDISHeader {
 }
 
 #[allow(non_camel_case_types)]
-pub enum CDISProtocolVersion {
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum CdisProtocolVersion {
     StandardDis,
     SISO_023_2023,
     Reserved(u8),
 }
 
-impl From<u8> for CDISProtocolVersion {
+impl From<u8> for CdisProtocolVersion {
     fn from(value: u8) -> Self {
         match value {
             0 => StandardDis,
@@ -31,8 +33,8 @@ impl From<u8> for CDISProtocolVersion {
     }
 }
 
-impl From<CDISProtocolVersion> for u8 {
-    fn from(value: CDISProtocolVersion) -> Self {
+impl From<CdisProtocolVersion> for u8 {
+    fn from(value: CdisProtocolVersion) -> Self {
         match value {
             StandardDis => { 0 }
             SISO_023_2023 => { 1 }
