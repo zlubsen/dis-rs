@@ -3,7 +3,7 @@ use dis_rs::model::PduStatus;
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::UVINT8;
+use crate::types::model::UVINT8;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CdisHeader {

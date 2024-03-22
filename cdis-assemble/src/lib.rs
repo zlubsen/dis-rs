@@ -1,3 +1,5 @@
+use bitvec::prelude::{BitArray, Msb0};
+use crate::constants::MTU_BITS;
 use crate::entity_state::model::{EntityState};
 use crate::records::model::CdisHeader;
 
@@ -6,12 +8,15 @@ pub mod records;
 pub mod entity_state;
 pub mod constants;
 
+
+pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
+
 trait SerializeCdisPdu {
-    fn serialize(&self, buf : &mut BytesMut) -> u16;
+    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;
 }
 
 trait SerializeCdis {
-    fn serialize(&self, buf : &mut BytesMut) -> u16;
+    fn serialize(&self, buf : &mut BitBuffer, cursor:  usize) -> usize;
 }
 
 pub struct CdisPdu {

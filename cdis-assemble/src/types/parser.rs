@@ -77,7 +77,7 @@ pub(crate) fn svint24(input: (&[u8], usize)) -> IResult<(&[u8], usize), SVINT24>
     let bit_size = Svint24BitSize::from(flag_bits);
     let num_bits_to_parse = bit_size.bit_size() - 1;
     let (input, sign_bit) : ((&[u8], usize), bool) = bool(input)?;
-    let (input, field_value) : ((&[u8], usize), i16) = take(num_bits_to_parse)(input)?;
+    let (input, field_value) : ((&[u8], usize), i32) = take(num_bits_to_parse)(input)?;
     let field_value = if sign_bit { bit_size.min_value() } else { 0 } + field_value;
 
     Ok((input, SVINT24::from(field_value)))

@@ -1055,7 +1055,7 @@ impl MunitionDescriptor {
 ///
 /// This raw timestamp could also be interpreted as a Unix timestamp, or something else
 /// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct TimeStamp {
     pub raw_timestamp: u32,
 }
