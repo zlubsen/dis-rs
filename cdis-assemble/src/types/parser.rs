@@ -88,11 +88,20 @@ mod tests {
     use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
     use crate::types::model::{SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
 
+    // #[test]
+    // fn parse_generic_varint_bit_flag_zero() {
+    //     let input = [0b00001000];
+    //     let expected = UVINT8::new(Uvint8BitSize::Four, 1);
+    //     let (input, actual) : ((&[u8], usize), UVINT8) = varint((&input, 0)).unwrap();
+    //
+    //     assert_eq!(expected, actual);
+    // }
+
     #[test]
     fn parse_uvint8_bit_flag_zero() {
         let input = [0b00001000];
         let expected = UVINT8::new(Uvint8BitSize::Four, 1);
-        let (input, actual) = uvint8((&input, 0)).unwrap();
+        let (_input, actual) = uvint8((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -101,7 +110,7 @@ mod tests {
     fn parse_uvint8_bit_flag_one() {
         let input = [0b11000000, 0b10000000];
         let expected = UVINT8::new(Uvint8BitSize::Eight, 129);
-        let (input, actual) = uvint8((&input, 0)).unwrap();
+        let (_input, actual) = uvint8((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -110,7 +119,7 @@ mod tests {
     fn parse_uvint16_bit_flag_zero() {
         let input = [0b00000000, 0b01000000];
         let expected = UVINT16::new(Uvint16BitSize::Eight, 1);
-        let (input, actual) = uvint16((&input, 0)).unwrap();
+        let (_input, actual) = uvint16((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -119,7 +128,7 @@ mod tests {
     fn parse_uvint16_bit_flag_three() {
         let input = [0b11011111, 0b11111111, 0b11000000];
         let expected = UVINT16::new(Uvint16BitSize::Sixteen, 32767);
-        let (input, actual) = uvint16((&input, 0)).unwrap();
+        let (_input, actual) = uvint16((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -128,7 +137,7 @@ mod tests {
     fn parse_uvint32_bit_flag_zero() {
         let input = [0b00000000, 0b01000000];
         let expected = UVINT32::new(Uvint32BitSize::Eight, 1);
-        let (input, actual) = uvint32((&input, 0)).unwrap();
+        let (_input, actual) = uvint32((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -137,7 +146,7 @@ mod tests {
     fn parse_uvint32_bit_flag_three() {
         let input = [0b11100000, 0b00000000, 0b00000000, 0b00000000, 0b01000000];
         let expected = UVINT32::new(Uvint32BitSize::ThirtyTwo, 2_147_483_649);
-        let (input, actual) = uvint32((&input, 0)).unwrap();
+        let (_input, actual) = uvint32((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -146,7 +155,7 @@ mod tests {
     fn parse_svint12_bit_flag_zero_positive() {
         let input = [0b00001000];
         let expected = SVINT12::new(Svint12BitSize::Three, 1);
-        let (input, actual) = svint12((&input, 0)).unwrap();
+        let (_input, actual) = svint12((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -155,7 +164,7 @@ mod tests {
     fn parse_svint12_bit_flag_zero_negative() {
         let input = [0b00100000];
         let expected = SVINT12::new(Svint12BitSize::Three, -4);
-        let (input, actual) = svint12((&input, 0)).unwrap();
+        let (_input, actual) = svint12((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -164,7 +173,7 @@ mod tests {
     fn parse_svint12_bit_flag_three_positive() {
         let input = [0b11010000, 0b00000100];
         let expected = SVINT12::new(Svint12BitSize::Twelve, 1025);
-        let (input, actual) = svint12((&input, 0)).unwrap();
+        let (_input, actual) = svint12((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
@@ -173,7 +182,7 @@ mod tests {
     fn parse_svint12_bit_flag_three_negative() {
         let input = [0b11100000, 0b00000100];
         let expected = SVINT12::new(Svint12BitSize::Twelve, -2047);
-        let (input, actual) = svint12((&input, 0)).unwrap();
+        let (_input, actual) = svint12((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
     }
