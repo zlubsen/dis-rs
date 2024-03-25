@@ -5,7 +5,6 @@ use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, THIRTEEN_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation};
-use crate::types::model::SVINT12;
 use crate::types::parser::{svint12, svint16, uvint16, uvint8};
 
 pub(crate) fn cdis_header(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisHeader> {

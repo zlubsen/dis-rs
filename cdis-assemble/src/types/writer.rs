@@ -1,4 +1,3 @@
-use bitvec::field::BitField;
 use crate::BitBuffer;
 use crate::constants::ONE_BIT;
 use crate::parser_utils::write_value_with_length;

@@ -1,5 +1,4 @@
 use crate::constants::{EIGHT_BITS, FOUR_BITS, TWO_BITS};
-use crate::types::model::Units::{Centimeters, Meters};
 
 /// 10.2.1 UVINT8
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -807,7 +806,7 @@ impl CdisFloat {
     }
 
     pub fn to_value(&self) -> f64 {
-        self.mantissa as f64 * (10^(self.exponent) as f64)
+        self.mantissa as f64 * ((10^(self.exponent)) as f64)
     }
 }
 

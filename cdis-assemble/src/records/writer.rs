@@ -1,5 +1,3 @@
-use bitvec::field::BitField;
-use bitvec::macros::internal::funty::Integral;
 use crate::records::model::{AngularVelocity, EntityCoordinateVector, EntityId, EntityType, LinearVelocity};
 use crate::{BitBuffer, SerializeCdis};
 use crate::constants::{FOUR_BITS, NINE_BITS};

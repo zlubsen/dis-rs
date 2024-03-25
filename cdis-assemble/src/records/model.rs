@@ -116,7 +116,7 @@ pub struct AngularVelocity {
 }
 
 impl AngularVelocity {
-    pub const SCALE: f32 = (2^11 - 1) / (4 * f32::PI);
+    pub const SCALE: f32 = (2^11 - 1) as f32 / (4.0f32 * std::f32::consts::PI);
     pub fn new(x: SVINT12, y: SVINT12, z: SVINT12) -> Self {
         Self {
             x,
@@ -263,7 +263,7 @@ impl CdisEntityMarking {
     }
 
     fn sanitize_marking(six_bit_char_size: bool, marking: String) -> String {
-        // TODO
+        unimplemented!()
         // strip content of `marking` from unsupported characters, as defined in Table 38
     }
 }
