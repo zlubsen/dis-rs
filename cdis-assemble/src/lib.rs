@@ -7,6 +7,7 @@ pub mod types;
 pub mod records;
 pub mod entity_state;
 pub mod constants;
+pub(crate) mod parser_utils;
 
 
 pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;

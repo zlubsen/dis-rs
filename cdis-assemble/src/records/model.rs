@@ -3,8 +3,9 @@ use dis_rs::model::PduStatus;
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::UVINT8;
+use crate::types::model::{SVINT12, SVINT16, UVINT16, UVINT8};
 
+/// 13.1 C-DIS PDU Header
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CdisHeader {
     pub protocol_version: CdisProtocolVersion,
@@ -102,5 +103,167 @@ impl From<u32> for CdisTimeStamp {
 impl From<TimeStamp> for CdisTimeStamp {
     fn from(value: TimeStamp) -> Self {
         CdisTimeStamp::from(value.raw_timestamp)
+    }
+}
+
+/// 11.1 Angular Velocity
+/// Scale = (2^11 - 1) / (4 * pi)
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct AngularVelocity {
+    pub x: SVINT12,
+    pub y: SVINT12,
+    pub z: SVINT12,
+}
+
+impl AngularVelocity {
+    pub const SCALE: f32 = (2^11 - 1) / (4 * f32::PI);
+    pub fn new(x: SVINT12, y: SVINT12, z: SVINT12) -> Self {
+        Self {
+            x,
+            y,
+            z,
+        }
+    }
+}
+
+/// 11.10 Entity Coordinate Vector
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct EntityCoordinateVector {
+    pub x: SVINT16,
+    pub y: SVINT16,
+    pub z: SVINT16,
+}
+
+impl EntityCoordinateVector {
+    pub fn new(x: SVINT16, y: SVINT16, z: SVINT16) -> Self {
+        Self {
+            x,
+            y,
+            z,
+        }
+    }
+}
+
+/// 11.11 Entity Identifier Record
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct EntityId {
+    pub site: UVINT16,
+    pub application: UVINT16,
+    pub entity: UVINT16,
+}
+impl EntityId {
+    pub fn new(site: UVINT16, application: UVINT16, entity: UVINT16) -> Self {
+        Self {
+            site,
+            application,
+            entity,
+        }
+    }
+}
+
+/// 11.12 Entity Type
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct EntityType {
+    pub kind: u8,
+    pub domain: u8,
+    pub country: u16,
+    pub category: UVINT8,
+    pub subcategory: UVINT8,
+    pub specific: UVINT8,
+    pub extra: UVINT8,
+}
+
+impl EntityType {
+    pub fn new(kind: u8, domain: u8, country: u16, category: UVINT8, subcategory: UVINT8, specific: UVINT8, extra: UVINT8) -> Self {
+        Self {
+            kind,
+            domain,
+            country,
+            category,
+            subcategory,
+            specific,
+            extra,
+        }
+    }
+}
+
+/// 11.19 Linear Velocity
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct LinearVelocity {
+    pub x: SVINT16,
+    pub y: SVINT16,
+    pub z: SVINT16,
+}
+
+impl LinearVelocity {
+    pub fn new(x: SVINT16, y: SVINT16, z: SVINT16) -> Self {
+        Self {
+            x,
+            y,
+            z,
+        }
+    }
+}
+
+/// 11.22 Orientation
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Orientation {
+    pub psi: u16,
+    pub theta: u16,
+    pub phi: u16,
+}
+
+impl Orientation {
+    pub fn new(psi: u16, theta: u16, phi: u16) -> Self {
+        Self {
+            psi,
+            theta,
+            phi,
+        }
+    }
+}
+
+/// 11.25 Units
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Units {
+    Centimeters,
+    Meters,
+}
+
+impl From<u8> for Units {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Units::Centimeters,
+            _ => Units::Meters,
+        }
+    }
+}
+
+impl From<Units> for u8 {
+    fn from(value: Units) -> Self {
+        match value {
+            Units::Centimeters => 0,
+            Units::Meters => 1,
+        }
+    }
+}
+
+/// 11.26 Valid Entity State Marking Characters
+pub struct CdisEntityMarking {
+    six_bit_char_size: bool,
+    marking: String,
+}
+
+impl CdisEntityMarking {
+    pub fn new(six_bit_char_size: bool, marking: String) -> Self {
+        Self {
+            six_bit_char_size,
+            marking: Self::sanitize_marking(six_bit_char_size, marking),
+        }
+    }
+
+    fn sanitize_marking(six_bit_char_size: bool, marking: String) -> String {
+        // TODO
+        // strip content of `marking` from unsupported characters, as defined in Table 38
     }
 }

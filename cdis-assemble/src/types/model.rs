@@ -1,119 +1,5 @@
 use crate::constants::{EIGHT_BITS, FOUR_BITS, TWO_BITS};
-
-// pub(crate) trait VarInt {
-//     type Size: BitSize + From<Self::InnerType>;
-//     type InnerType;
-//
-//     fn new(bit_size: Self::Size, value: Self::InnerType) -> Self;
-//     fn bit_size(&self) -> usize;
-//     fn flag_bits_value(&self) -> Self::InnerType;
-//     fn flag_bits_size() -> usize;
-// }
-//
-// pub(crate) trait BitSize {
-//     const FLAG_BITS: usize;
-//
-//     fn bit_size(&self) -> usize;
-// }
-
-// fn test() {
-//     let aap = Uvint8Type {
-//         varint_type: Zero,
-//         value: 5,
-//     };
-// }
-//
-// type Uvint8Type = VarInt<Uvint8Def>;
-//
-// pub struct VarInt<T: TypeDef> {
-//     varint_type: T,
-//     value: T::Output,
-// }
-//
-// impl From<T:Output> for VarInt<T> {
-//     fn from(value: T) -> Self {
-//     }
-// }
-//
-// pub trait TypeDef {
-//     type Output;
-//     fn flag_bits_size() -> usize;
-//     fn sign_bit() -> Option<bool>;
-//     fn bit_size(&self) -> usize;
-//     fn min_value(&self) -> Self::Output;
-//     fn max_value(&self) -> Self::Output;
-// }
-//
-// pub enum Uvint8Def {
-//     Zero,
-//     One,
-// }
-//
-// impl TypeDef for Uvint8Def {
-//     type Output = u8;
-//
-//     fn flag_bits_size() -> usize {
-//         ONE_BIT
-//     }
-//
-//     fn sign_bit() -> Option<bool> {
-//         None
-//     }
-//
-//     fn bit_size(&self) -> usize {
-//         match self {
-//             Uvint8Def::Zero => { 4 }
-//             Uvint8Def::One => { 8 }
-//         }
-//     }
-//
-//     fn min_value(&self) -> Self::Output {
-//         match self {
-//             Uvint8Def::Zero => { 0 }
-//             Uvint8Def::One => { 0 }
-//         }
-//     }
-//
-//     fn max_value(&self) -> Self::Output {
-//         match self {
-//             Uvint8Def::Zero => { 15 }
-//             Uvint8Def::One => { 255 }
-//         }
-//     }
-// }
-//
-// impl From<u8> for Uvint8Def {
-//     fn from(value: u8) -> Self {
-//         match value {
-//             0 => Uvint8Def::Zero,
-//             _ => Uvint8Def::One,
-//         }
-//     }
-// }
-
-// impl VarInt for UVINT8 {
-//     type Size = Uvint8BitSize;
-//     type InnerType = u8;
-//
-//     fn new(bit_size: Self::Size, value: Self::InnerType) -> Self {
-//         Self {
-//             bit_size,
-//             value,
-//         }
-//     }
-//
-//     fn bit_size(&self) -> usize {
-//         self.bit_size.bit_size()
-//     }
-//
-//     fn flag_bits_value(&self) -> Self::InnerType {
-//         self.bit_size.into()
-//     }
-//
-//     fn flag_bits_size() -> usize {
-//         Self::Size::FLAG_BITS
-//     }
-// }
+use crate::types::model::Units::{Centimeters, Meters};
 
 /// 10.2.1 UVINT8
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -127,7 +13,7 @@ impl UVINT8 {
     /// There is no validation on whether the bit size and value match.
     /// As such, this constructor is mainly for testing purposes,
     /// hence it is not part of the public API of the library.
-    pub(crate) fn new(bit_size: Uvint8BitSize, value: u8) -> Self {
+    pub(crate) fn new_scaled(bit_size: Uvint8BitSize, value: u8) -> Self {
         Self {
             bit_size,
             value,
@@ -906,8 +792,136 @@ impl From<Svint24BitSize> for u8 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CdisFloat {
-    value: f32,
-    mantissa: u16,
-    exponent: i16,
+    mantissa: i32,
+    exponent: i8,
 }
+
+impl CdisFloat {
+    pub fn new(mantissa: i32, exponent: i8) -> Self {
+        Self {
+            mantissa,
+            exponent,
+        }
+    }
+
+    pub fn to_value(&self) -> f64 {
+        self.mantissa as f64 * (10^(self.exponent) as f64)
+    }
+}
+
+// pub(crate) trait VarInt {
+//     type Size: BitSize + From<Self::InnerType>;
+//     type InnerType;
+//
+//     fn new(bit_size: Self::Size, value: Self::InnerType) -> Self;
+//     fn bit_size(&self) -> usize;
+//     fn flag_bits_value(&self) -> Self::InnerType;
+//     fn flag_bits_size() -> usize;
+// }
+//
+// pub(crate) trait BitSize {
+//     const FLAG_BITS: usize;
+//
+//     fn bit_size(&self) -> usize;
+// }
+
+// fn test() {
+//     let aap = Uvint8Type {
+//         varint_type: Zero,
+//         value: 5,
+//     };
+// }
+//
+// type Uvint8Type = VarInt<Uvint8Def>;
+//
+// pub struct VarInt<T: TypeDef> {
+//     varint_type: T,
+//     value: T::Output,
+// }
+//
+// impl From<T:Output> for VarInt<T> {
+//     fn from(value: T) -> Self {
+//     }
+// }
+//
+// pub trait TypeDef {
+//     type Output;
+//     fn flag_bits_size() -> usize;
+//     fn sign_bit() -> Option<bool>;
+//     fn bit_size(&self) -> usize;
+//     fn min_value(&self) -> Self::Output;
+//     fn max_value(&self) -> Self::Output;
+// }
+//
+// pub enum Uvint8Def {
+//     Zero,
+//     One,
+// }
+//
+// impl TypeDef for Uvint8Def {
+//     type Output = u8;
+//
+//     fn flag_bits_size() -> usize {
+//         ONE_BIT
+//     }
+//
+//     fn sign_bit() -> Option<bool> {
+//         None
+//     }
+//
+//     fn bit_size(&self) -> usize {
+//         match self {
+//             Uvint8Def::Zero => { 4 }
+//             Uvint8Def::One => { 8 }
+//         }
+//     }
+//
+//     fn min_value(&self) -> Self::Output {
+//         match self {
+//             Uvint8Def::Zero => { 0 }
+//             Uvint8Def::One => { 0 }
+//         }
+//     }
+//
+//     fn max_value(&self) -> Self::Output {
+//         match self {
+//             Uvint8Def::Zero => { 15 }
+//             Uvint8Def::One => { 255 }
+//         }
+//     }
+// }
+//
+// impl From<u8> for Uvint8Def {
+//     fn from(value: u8) -> Self {
+//         match value {
+//             0 => Uvint8Def::Zero,
+//             _ => Uvint8Def::One,
+//         }
+//     }
+// }
+
+// impl VarInt for UVINT8 {
+//     type Size = Uvint8BitSize;
+//     type InnerType = u8;
+//
+//     fn new(bit_size: Self::Size, value: Self::InnerType) -> Self {
+//         Self {
+//             bit_size,
+//             value,
+//         }
+//     }
+//
+//     fn bit_size(&self) -> usize {
+//         self.bit_size.bit_size()
+//     }
+//
+//     fn flag_bits_value(&self) -> Self::InnerType {
+//         self.bit_size.into()
+//     }
+//
+//     fn flag_bits_size() -> usize {
+//         Self::Size::FLAG_BITS
+//     }
+// }
