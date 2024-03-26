@@ -250,16 +250,27 @@ impl From<Units> for u8 {
 
 /// 11.26 Valid Entity State Marking Characters
 pub struct CdisEntityMarking {
-    six_bit_char_size: bool,
-    marking: String,
+    five_bit_char_size: bool,
+    pub marking: String,
 }
 
 impl CdisEntityMarking {
-    pub fn new(six_bit_char_size: bool, marking: String) -> Self {
+    pub fn new(marking: String) -> Self {
         Self {
-            six_bit_char_size,
-            marking: Self::sanitize_marking(six_bit_char_size, marking),
+            five_bit_char_size: Self::can_fit_in_five_bit_chars(&marking),
+            marking,
         }
+    }
+
+    fn can_fit_in_five_bit_chars(marking: &str) -> bool {
+        const LEAST_USED_CHARS_MORSE: [char; 5] = ['J', 'K', 'Q', 'X', 'Z'];
+        let has_only_ascii_alphanumeric = marking.chars()
+            .filter(|char|char != '\0')// filter the NUL control character, as it is allowed
+            .any(|char| !char.is_ascii_alphanumeric());     // only ASCII alphanumeric characters fit in C-DIS 5-bit encoding
+        let contains_least_used_char_morse = marking.chars()
+            .any(|char| LEAST_USED_CHARS_MORSE.contains(&char)); // and it should not contain the five least used characters
+
+        has_only_ascii_alphanumeric & !contains_least_used_char_morse
     }
 
     // strip content of `marking` from unsupported characters, as defined in Table 38
@@ -274,8 +285,8 @@ impl CdisEntityMarking {
 
     fn sanitize_six_bit_chars(marking: String) -> String {
         let marking = marking.chars().filter(|char| char.is_ascii()).map(|char| {
-            u8::from(char)
-        }).filter(|&code| code <= 43u8).collect();
+            u8::from(CdisCharacterSixBit(char))
+        }).collect();
         let marking = String::from_utf8_lossy(marking);
         marking.into_string()
     }
@@ -292,13 +303,13 @@ impl CdisEntityMarking {
     }
 }
 
-pub struct CdisCharactersSixBit(char);
-pub struct CdisCharactersFiveBit;
+pub struct CdisCharacterSixBit(char);
+pub struct CdisCharacterFiveBit(char);
 
-impl From<u8> for CdisCharactersSixBit {
+impl From<u8> for CdisCharacterSixBit {
     fn from(value: u8) -> Self {
         Self(match value {
-            0 => ' ', // TODO is space valid for the NUL character?
+            0 => '\0',
             1 => 'A',
             2 => 'B',
             3 => 'C',
@@ -363,5 +374,156 @@ impl From<u8> for CdisCharactersSixBit {
             62 => '$',
             63 | _ => '*',
         })
+    }
+}
+
+impl From<CdisCharacterSixBit> for u8 {
+    fn from(value: CdisCharacterSixBit) -> Self {
+        match value.0 {
+            '\0' => 0,
+            'A' => 1,
+            'B' => 2,
+            'C' => 3,
+            'D' => 4,
+            'E' => 5,
+            'F' => 6,
+            'G' => 7,
+            'H' => 8,
+            'I' => 9,
+            'J' => 10,
+            'K' => 11,
+            'L' => 12,
+            'M' => 13,
+            'N' => 14,
+            'O' => 15,
+            'P' => 16,
+            'Q' => 17,
+            'R' => 18,
+            'S' => 19,
+            'T' => 20,
+            'U' => 21,
+            'V' => 22,
+            'W' => 23,
+            'X' => 24,
+            'Y' => 25,
+            'Z' => 26,
+            '.' => 27,
+            '?' => 28,
+            '!' => 29,
+            '0' => 30,
+            '1' => 31,
+            '2' => 32,
+            '3' => 33,
+            '4' => 34,
+            '5' => 35,
+            '6' => 36,
+            '7' => 37,
+            '8' => 38,
+            '9' => 39,
+            ' ' => 40,
+            '[' => 41,
+            ']' => 42,
+            '(' => 43,
+            ')' => 44,
+            '{' => 45,
+            '}' => 46,
+            '+' => 47,
+            '-' => 48,
+            '_' => 49,
+            '@' => 50,
+            '&' => 51,
+            '"' => 52,
+            '\'' => 53,
+            ':' => 54,
+            ';' => 55,
+            ',' => 56,
+            '~' => 57,
+            '\\' => 58,
+            '/' => 59,
+            '%' => 60,
+            '#' => 61,
+            '$' => 62,
+            '*' | _ => 63,
+        }
+    }
+}
+
+impl From<u8> for CdisCharacterFiveBit {
+    fn from(value: u8) -> Self {
+        Self(match value {
+            0 => '\0',
+            1 => 'A',
+            2 => 'B',
+            3 => 'C',
+            4 => 'D',
+            5 => 'E',
+            6 => 'F',
+            7 => 'G',
+            8 => 'H',
+            9 => 'I',
+            10 => 'L',
+            11 => 'M',
+            12 => 'N',
+            13 => 'O',
+            14 => 'P',
+            15 => 'R',
+            16 => 'S',
+            17 => 'T',
+            18 => 'U',
+            19 => 'V',
+            20 => 'W',
+            21 => 'Y',
+            22 => '0',
+            23 => '1',
+            24 => '2',
+            25 => '3',
+            26 => '4',
+            27 => '5',
+            28 => '6',
+            29 => '7',
+            30 => '8',
+            31 => '9',
+            _ => '*',
+        })
+    }
+}
+
+impl From<CdisCharacterFiveBit> for u8 {
+    fn from(value: CdisCharacterFiveBit) -> Self {
+        match value.0 {
+            '\0' => 0,
+            'A' => 1,
+            'B' => 2,
+            'C' => 3,
+            'D' => 4,
+            'E' => 5,
+            'F' => 6,
+            'G' => 7,
+            'H' => 8,
+            'I' => 9,
+            'L' => 10,
+            'M' => 11,
+            'N' => 12,
+            'O' => 13,
+            'P' => 14,
+            'R' => 15,
+            'S' => 16,
+            'T' => 17,
+            'U' => 18,
+            'V' => 19,
+            'W' => 20,
+            'X' => 21,
+            '0' => 22,
+            '1' => 23,
+            '2' => 24,
+            '3' => 25,
+            '4' => 26,
+            '5' => 27,
+            '6' => 28,
+            '7' => 29,
+            '8' => 30,
+            '9' => 31,
+            '*' | _ => 63,
+        }
     }
 }
