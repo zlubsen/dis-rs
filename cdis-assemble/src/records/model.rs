@@ -262,8 +262,106 @@ impl CdisEntityMarking {
         }
     }
 
+    // strip content of `marking` from unsupported characters, as defined in Table 38
     fn sanitize_marking(six_bit_char_size: bool, marking: String) -> String {
-        unimplemented!()
-        // strip content of `marking` from unsupported characters, as defined in Table 38
+        let marking = match six_bit_char_size {
+            true => Self::sanitize_six_bit_chars(marking),
+            false => Self::sanitize_five_bit_chars(marking),
+        };
+
+        marking
+    }
+
+    fn sanitize_six_bit_chars(marking: String) -> String {
+        let marking = marking.chars().filter(|char| char.is_ascii()).map(|char| {
+            u8::from(char)
+        }).filter(|&code| code <= 43u8).collect();
+        let marking = String::from_utf8_lossy(marking);
+        marking.into_string()
+    }
+
+    fn sanitize_five_bit_chars(marking: String) -> String {
+        const ASTERISK_ASCII_CODE: u8 = 63;
+        let marking = marking.chars()
+            .filter(|char| char.is_ascii())
+            .map(|char| u8::from(char) )
+            .map(|&code| if code <= 43u8 { code } else { ASTERISK_ASCII_CODE })
+            .collect();
+        let marking = String::from_utf8_lossy(marking);
+        marking.into_string()
+    }
+}
+
+pub struct CdisCharactersSixBit(char);
+pub struct CdisCharactersFiveBit;
+
+impl From<u8> for CdisCharactersSixBit {
+    fn from(value: u8) -> Self {
+        Self(match value {
+            0 => ' ', // TODO is space valid for the NUL character?
+            1 => 'A',
+            2 => 'B',
+            3 => 'C',
+            4 => 'D',
+            5 => 'E',
+            6 => 'F',
+            7 => 'G',
+            8 => 'H',
+            9 => 'I',
+            10 => 'J',
+            11 => 'K',
+            12 => 'L',
+            13 => 'M',
+            14 => 'N',
+            15 => 'O',
+            16 => 'P',
+            17 => 'Q',
+            18 => 'R',
+            19 => 'S',
+            20 => 'T',
+            21 => 'U',
+            22 => 'V',
+            23 => 'W',
+            24 => 'X',
+            25 => 'Y',
+            26 => 'Z',
+            27 => '.',
+            28 => '?',
+            29 => '!',
+            30 => '0',
+            31 => '1',
+            32 => '2',
+            33 => '3',
+            34 => '4',
+            35 => '5',
+            36 => '6',
+            37 => '7',
+            38 => '8',
+            39 => '9',
+            40 => ' ',
+            41 => '[',
+            42 => ']',
+            43 => '(',
+            44 => ')',
+            45 => '{',
+            46 => '}',
+            47 => '+',
+            48 => '-',
+            49 => '_',
+            50 => '@',
+            51 => '&',
+            52 => '"',
+            53 => '\'',
+            54 => ':',
+            55 => ';',
+            56 => ',',
+            57 => '~',
+            58 => '\\',
+            59 => '/',
+            60 => '%',
+            61 => '#',
+            62 => '$',
+            63 | _ => '*',
+        })
     }
 }

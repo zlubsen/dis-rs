@@ -394,6 +394,14 @@ impl SVINT13 {
     pub(crate) const fn flag_bits_size(&self) -> usize {
         Svint13BitSize::FLAG_SIZE
     }
+
+    pub(crate) fn min_value(&self) -> i16 {
+        self.bit_size.min_value()
+    }
+
+    pub(crate) fn max_value(&self) -> i16 {
+        self.bit_size.max_value()
+    }
 }
 
 impl From<i16> for SVINT13 {
@@ -499,6 +507,14 @@ impl SVINT14 {
 
     pub(crate) const fn flag_bits_size(&self) -> usize {
         Svint14BitSize::FLAG_SIZE
+    }
+
+    pub(crate) fn min_value(&self) -> i16 {
+        self.bit_size.min_value()
+    }
+
+    pub(crate) fn max_value(&self) -> i16 {
+        self.bit_size.max_value()
     }
 }
 
@@ -606,6 +622,14 @@ impl SVINT16 {
     pub(crate) const fn flag_bits_size(&self) -> usize {
         Svint16BitSize::FLAG_SIZE
     }
+
+    pub(crate) fn min_value(&self) -> i16 {
+        self.bit_size.min_value()
+    }
+
+    pub(crate) fn max_value(&self) -> i16 {
+        self.bit_size.max_value()
+    }
 }
 
 impl From<i16> for SVINT16 {
@@ -710,6 +734,14 @@ impl SVINT24 {
 
     pub(crate) const fn flag_bits_size(&self) -> usize {
         Svint24BitSize::FLAG_SIZE
+    }
+
+    pub(crate) fn min_value(&self) -> i32 {
+        self.bit_size.min_value()
+    }
+
+    pub(crate) fn max_value(&self) -> i32 {
+        self.bit_size.max_value()
     }
 }
 
