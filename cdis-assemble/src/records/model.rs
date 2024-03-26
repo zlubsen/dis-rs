@@ -249,281 +249,392 @@ impl From<Units> for u8 {
 }
 
 /// 11.26 Valid Entity State Marking Characters
+#[derive(Clone, Debug, PartialEq)]
 pub struct CdisEntityMarking {
-    five_bit_char_size: bool,
+    pub(crate) char_encoding: CdisMarkingCharEncoding,
     pub marking: String,
 }
 
 impl CdisEntityMarking {
     pub fn new(marking: String) -> Self {
+        const MAX_MARKING_LENGTH: usize = 11;
+        let marking = if marking.len() > MAX_MARKING_LENGTH {
+            let mut marking = marking;
+            marking.truncate(MAX_MARKING_LENGTH);
+            marking
+        } else { marking };
+
         Self {
-            five_bit_char_size: Self::can_fit_in_five_bit_chars(&marking),
+            char_encoding: Self::check_char_encoding(&marking),
             marking,
         }
     }
 
-    fn can_fit_in_five_bit_chars(marking: &str) -> bool {
+    fn check_char_encoding(marking: &str) -> CdisMarkingCharEncoding {
         const LEAST_USED_CHARS_MORSE: [char; 5] = ['J', 'K', 'Q', 'X', 'Z'];
         let has_only_ascii_alphanumeric = marking.chars()
-            .filter(|char|char != '\0')// filter the NUL control character, as it is allowed
-            .any(|char| !char.is_ascii_alphanumeric());     // only ASCII alphanumeric characters fit in C-DIS 5-bit encoding
+            .filter(|&char| char != '\0')       // filter the NUL control character, as it is allowed
+            .all(|char| char.is_ascii_alphanumeric());              // only ASCII alphanumeric characters fit in C-DIS 5-bit encoding
         let contains_least_used_char_morse = marking.chars()
             .any(|char| LEAST_USED_CHARS_MORSE.contains(&char)); // and it should not contain the five least used characters
 
-        has_only_ascii_alphanumeric & !contains_least_used_char_morse
-    }
-
-    // strip content of `marking` from unsupported characters, as defined in Table 38
-    fn sanitize_marking(six_bit_char_size: bool, marking: String) -> String {
-        let marking = match six_bit_char_size {
-            true => Self::sanitize_six_bit_chars(marking),
-            false => Self::sanitize_five_bit_chars(marking),
-        };
-
-        marking
-    }
-
-    fn sanitize_six_bit_chars(marking: String) -> String {
-        let marking = marking.chars().filter(|char| char.is_ascii()).map(|char| {
-            u8::from(CdisCharacterSixBit(char))
-        }).collect();
-        let marking = String::from_utf8_lossy(marking);
-        marking.into_string()
-    }
-
-    fn sanitize_five_bit_chars(marking: String) -> String {
-        const ASTERISK_ASCII_CODE: u8 = 63;
-        let marking = marking.chars()
-            .filter(|char| char.is_ascii())
-            .map(|char| u8::from(char) )
-            .map(|&code| if code <= 43u8 { code } else { ASTERISK_ASCII_CODE })
-            .collect();
-        let marking = String::from_utf8_lossy(marking);
-        marking.into_string()
-    }
-}
-
-pub struct CdisCharacterSixBit(char);
-pub struct CdisCharacterFiveBit(char);
-
-impl From<u8> for CdisCharacterSixBit {
-    fn from(value: u8) -> Self {
-        Self(match value {
-            0 => '\0',
-            1 => 'A',
-            2 => 'B',
-            3 => 'C',
-            4 => 'D',
-            5 => 'E',
-            6 => 'F',
-            7 => 'G',
-            8 => 'H',
-            9 => 'I',
-            10 => 'J',
-            11 => 'K',
-            12 => 'L',
-            13 => 'M',
-            14 => 'N',
-            15 => 'O',
-            16 => 'P',
-            17 => 'Q',
-            18 => 'R',
-            19 => 'S',
-            20 => 'T',
-            21 => 'U',
-            22 => 'V',
-            23 => 'W',
-            24 => 'X',
-            25 => 'Y',
-            26 => 'Z',
-            27 => '.',
-            28 => '?',
-            29 => '!',
-            30 => '0',
-            31 => '1',
-            32 => '2',
-            33 => '3',
-            34 => '4',
-            35 => '5',
-            36 => '6',
-            37 => '7',
-            38 => '8',
-            39 => '9',
-            40 => ' ',
-            41 => '[',
-            42 => ']',
-            43 => '(',
-            44 => ')',
-            45 => '{',
-            46 => '}',
-            47 => '+',
-            48 => '-',
-            49 => '_',
-            50 => '@',
-            51 => '&',
-            52 => '"',
-            53 => '\'',
-            54 => ':',
-            55 => ';',
-            56 => ',',
-            57 => '~',
-            58 => '\\',
-            59 => '/',
-            60 => '%',
-            61 => '#',
-            62 => '$',
-            63 | _ => '*',
-        })
-    }
-}
-
-impl From<CdisCharacterSixBit> for u8 {
-    fn from(value: CdisCharacterSixBit) -> Self {
-        match value.0 {
-            '\0' => 0,
-            'A' => 1,
-            'B' => 2,
-            'C' => 3,
-            'D' => 4,
-            'E' => 5,
-            'F' => 6,
-            'G' => 7,
-            'H' => 8,
-            'I' => 9,
-            'J' => 10,
-            'K' => 11,
-            'L' => 12,
-            'M' => 13,
-            'N' => 14,
-            'O' => 15,
-            'P' => 16,
-            'Q' => 17,
-            'R' => 18,
-            'S' => 19,
-            'T' => 20,
-            'U' => 21,
-            'V' => 22,
-            'W' => 23,
-            'X' => 24,
-            'Y' => 25,
-            'Z' => 26,
-            '.' => 27,
-            '?' => 28,
-            '!' => 29,
-            '0' => 30,
-            '1' => 31,
-            '2' => 32,
-            '3' => 33,
-            '4' => 34,
-            '5' => 35,
-            '6' => 36,
-            '7' => 37,
-            '8' => 38,
-            '9' => 39,
-            ' ' => 40,
-            '[' => 41,
-            ']' => 42,
-            '(' => 43,
-            ')' => 44,
-            '{' => 45,
-            '}' => 46,
-            '+' => 47,
-            '-' => 48,
-            '_' => 49,
-            '@' => 50,
-            '&' => 51,
-            '"' => 52,
-            '\'' => 53,
-            ':' => 54,
-            ';' => 55,
-            ',' => 56,
-            '~' => 57,
-            '\\' => 58,
-            '/' => 59,
-            '%' => 60,
-            '#' => 61,
-            '$' => 62,
-            '*' | _ => 63,
+        if has_only_ascii_alphanumeric & !contains_least_used_char_morse {
+            CdisMarkingCharEncoding::FiveBit
+        } else {
+            CdisMarkingCharEncoding::SixBit
         }
     }
 }
 
-impl From<u8> for CdisCharacterFiveBit {
-    fn from(value: u8) -> Self {
-        Self(match value {
-            0 => '\0',
-            1 => 'A',
-            2 => 'B',
-            3 => 'C',
-            4 => 'D',
-            5 => 'E',
-            6 => 'F',
-            7 => 'G',
-            8 => 'H',
-            9 => 'I',
-            10 => 'L',
-            11 => 'M',
-            12 => 'N',
-            13 => 'O',
-            14 => 'P',
-            15 => 'R',
-            16 => 'S',
-            17 => 'T',
-            18 => 'U',
-            19 => 'V',
-            20 => 'W',
-            21 => 'Y',
-            22 => '0',
-            23 => '1',
-            24 => '2',
-            25 => '3',
-            26 => '4',
-            27 => '5',
-            28 => '6',
-            29 => '7',
-            30 => '8',
-            31 => '9',
-            _ => '*',
-        })
+impl From<(&[u8], CdisMarkingCharEncoding)> for CdisEntityMarking {
+    fn from((chars, encoding): (&[u8], CdisMarkingCharEncoding)) -> Self {
+        let mut marking = String::with_capacity(11);
+        chars.iter()
+            .map(|code| encoding.char_from_code(*code) )
+            .for_each(|ch| marking.push(ch) );
+        Self {
+            char_encoding: encoding,
+            marking,
+        }
     }
 }
 
-impl From<CdisCharacterFiveBit> for u8 {
-    fn from(value: CdisCharacterFiveBit) -> Self {
-        match value.0 {
-            '\0' => 0,
-            'A' => 1,
-            'B' => 2,
-            'C' => 3,
-            'D' => 4,
-            'E' => 5,
-            'F' => 6,
-            'G' => 7,
-            'H' => 8,
-            'I' => 9,
-            'L' => 10,
-            'M' => 11,
-            'N' => 12,
-            'O' => 13,
-            'P' => 14,
-            'R' => 15,
-            'S' => 16,
-            'T' => 17,
-            'U' => 18,
-            'V' => 19,
-            'W' => 20,
-            'X' => 21,
-            '0' => 22,
-            '1' => 23,
-            '2' => 24,
-            '3' => 25,
-            '4' => 26,
-            '5' => 27,
-            '6' => 28,
-            '7' => 29,
-            '8' => 30,
-            '9' => 31,
-            '*' | _ => 63,
+impl From<&str> for CdisEntityMarking {
+    fn from(value: &str) -> Self {
+        CdisEntityMarking::new(value.into())
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum CdisMarkingCharEncoding {
+    FiveBit,
+    SixBit,
+}
+
+impl CdisMarkingCharEncoding {
+    pub fn new(char_bit_size: u8) -> Self {
+        if char_bit_size == 0 {
+            Self::FiveBit
+        } else {
+            Self::SixBit
         }
+    }
+
+    pub fn bit_size(&self) -> usize {
+        match self {
+            CdisMarkingCharEncoding::FiveBit => { 5 }
+            CdisMarkingCharEncoding::SixBit => { 6 }
+        }
+    }
+
+    pub fn encoding(&self) -> u8 {
+        match self {
+            CdisMarkingCharEncoding::FiveBit => { 0 }
+            CdisMarkingCharEncoding::SixBit => { 1 }
+        }
+    }
+
+    pub fn char_from_code(&self, code: u8) -> char {
+        match self {
+            CdisMarkingCharEncoding::FiveBit => {
+                match code {
+                    0 => '\0',
+                    1 => 'A',
+                    2 => 'B',
+                    3 => 'C',
+                    4 => 'D',
+                    5 => 'E',
+                    6 => 'F',
+                    7 => 'G',
+                    8 => 'H',
+                    9 => 'I',
+                    10 => 'L',
+                    11 => 'M',
+                    12 => 'N',
+                    13 => 'O',
+                    14 => 'P',
+                    15 => 'R',
+                    16 => 'S',
+                    17 => 'T',
+                    18 => 'U',
+                    19 => 'V',
+                    20 => 'W',
+                    21 => 'Y',
+                    22 => '0',
+                    23 => '1',
+                    24 => '2',
+                    25 => '3',
+                    26 => '4',
+                    27 => '5',
+                    28 => '6',
+                    29 => '7',
+                    30 => '8',
+                    31 => '9',
+                    _ => '*',
+                }
+            }
+            CdisMarkingCharEncoding::SixBit => {
+                match code {
+                    0 => '\0',
+                    1 => 'A',
+                    2 => 'B',
+                    3 => 'C',
+                    4 => 'D',
+                    5 => 'E',
+                    6 => 'F',
+                    7 => 'G',
+                    8 => 'H',
+                    9 => 'I',
+                    10 => 'J',
+                    11 => 'K',
+                    12 => 'L',
+                    13 => 'M',
+                    14 => 'N',
+                    15 => 'O',
+                    16 => 'P',
+                    17 => 'Q',
+                    18 => 'R',
+                    19 => 'S',
+                    20 => 'T',
+                    21 => 'U',
+                    22 => 'V',
+                    23 => 'W',
+                    24 => 'X',
+                    25 => 'Y',
+                    26 => 'Z',
+                    27 => '.',
+                    28 => '?',
+                    29 => '!',
+                    30 => '0',
+                    31 => '1',
+                    32 => '2',
+                    33 => '3',
+                    34 => '4',
+                    35 => '5',
+                    36 => '6',
+                    37 => '7',
+                    38 => '8',
+                    39 => '9',
+                    40 => ' ',
+                    41 => '[',
+                    42 => ']',
+                    43 => '(',
+                    44 => ')',
+                    45 => '{',
+                    46 => '}',
+                    47 => '+',
+                    48 => '-',
+                    49 => '_',
+                    50 => '@',
+                    51 => '&',
+                    52 => '"',
+                    53 => '\'',
+                    54 => ':',
+                    55 => ';',
+                    56 => ',',
+                    57 => '~',
+                    58 => '\\',
+                    59 => '/',
+                    60 => '%',
+                    61 => '#',
+                    62 => '$',
+                    63 | _ => '*',
+                }
+            }
+        }
+    }
+
+    pub fn u8_from_char(&self, c: char) -> u8 {
+        match self {
+            CdisMarkingCharEncoding::FiveBit => {
+                match c {
+                    '\0' => 0,
+                    'A' => 1,
+                    'B' => 2,
+                    'C' => 3,
+                    'D' => 4,
+                    'E' => 5,
+                    'F' => 6,
+                    'G' => 7,
+                    'H' => 8,
+                    'I' => 9,
+                    'L' => 10,
+                    'M' => 11,
+                    'N' => 12,
+                    'O' => 13,
+                    'P' => 14,
+                    'R' => 15,
+                    'S' => 16,
+                    'T' => 17,
+                    'U' => 18,
+                    'V' => 19,
+                    'W' => 20,
+                    'X' => 21,
+                    '0' => 22,
+                    '1' => 23,
+                    '2' => 24,
+                    '3' => 25,
+                    '4' => 26,
+                    '5' => 27,
+                    '6' => 28,
+                    '7' => 29,
+                    '8' => 30,
+                    '9' => 31,
+                    '*' | _ => 63,
+                }
+            }
+            CdisMarkingCharEncoding::SixBit => {
+                match c {
+                    '\0' => 0,
+                    'A' => 1,
+                    'B' => 2,
+                    'C' => 3,
+                    'D' => 4,
+                    'E' => 5,
+                    'F' => 6,
+                    'G' => 7,
+                    'H' => 8,
+                    'I' => 9,
+                    'J' => 10,
+                    'K' => 11,
+                    'L' => 12,
+                    'M' => 13,
+                    'N' => 14,
+                    'O' => 15,
+                    'P' => 16,
+                    'Q' => 17,
+                    'R' => 18,
+                    'S' => 19,
+                    'T' => 20,
+                    'U' => 21,
+                    'V' => 22,
+                    'W' => 23,
+                    'X' => 24,
+                    'Y' => 25,
+                    'Z' => 26,
+                    '.' => 27,
+                    '?' => 28,
+                    '!' => 29,
+                    '0' => 30,
+                    '1' => 31,
+                    '2' => 32,
+                    '3' => 33,
+                    '4' => 34,
+                    '5' => 35,
+                    '6' => 36,
+                    '7' => 37,
+                    '8' => 38,
+                    '9' => 39,
+                    ' ' => 40,
+                    '[' => 41,
+                    ']' => 42,
+                    '(' => 43,
+                    ')' => 44,
+                    '{' => 45,
+                    '}' => 46,
+                    '+' => 47,
+                    '-' => 48,
+                    '_' => 49,
+                    '@' => 50,
+                    '&' => 51,
+                    '"' => 52,
+                    '\'' => 53,
+                    ':' => 54,
+                    ';' => 55,
+                    ',' => 56,
+                    '~' => 57,
+                    '\\' => 58,
+                    '/' => 59,
+                    '%' => 60,
+                    '#' => 61,
+                    '$' => 62,
+                    '*' | _ => 63,
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::records::model::{CdisEntityMarking, CdisMarkingCharEncoding};
+
+    #[test]
+    fn cdis_char_encodings_five_bits() {
+        assert_eq!(0, CdisMarkingCharEncoding::FiveBit.u8_from_char('\0'));
+        assert_eq!(1, CdisMarkingCharEncoding::FiveBit.u8_from_char('A'));
+        assert_eq!(31, CdisMarkingCharEncoding::FiveBit.u8_from_char('9'));
+        assert_eq!(63, CdisMarkingCharEncoding::FiveBit.u8_from_char('*'));
+        assert_eq!(63, CdisMarkingCharEncoding::FiveBit.u8_from_char('a'));
+        assert_eq!(63, CdisMarkingCharEncoding::FiveBit.u8_from_char('['));
+
+        assert_eq!('\0', CdisMarkingCharEncoding::FiveBit.char_from_code(0));
+        assert_eq!('A', CdisMarkingCharEncoding::FiveBit.char_from_code(1));
+        assert_eq!('9', CdisMarkingCharEncoding::FiveBit.char_from_code(31));
+        assert_eq!('*', CdisMarkingCharEncoding::FiveBit.char_from_code(63));
+        assert_eq!('L', CdisMarkingCharEncoding::FiveBit.char_from_code(10));
+    }
+
+    #[test]
+    fn cdis_char_encodings_six_bits() {
+        assert_eq!(0, CdisMarkingCharEncoding::SixBit.u8_from_char('\0'));
+        assert_eq!(1, CdisMarkingCharEncoding::SixBit.u8_from_char('A'));
+        assert_eq!(63, CdisMarkingCharEncoding::SixBit.u8_from_char('a'));
+        assert_eq!(31, CdisMarkingCharEncoding::SixBit.u8_from_char('1'));
+        assert_eq!(62, CdisMarkingCharEncoding::SixBit.u8_from_char('$'));
+        assert_eq!(63, CdisMarkingCharEncoding::SixBit.u8_from_char('*'));
+        assert_eq!(41, CdisMarkingCharEncoding::SixBit.u8_from_char('['));
+
+        assert_eq!('\0', CdisMarkingCharEncoding::SixBit.char_from_code(0));
+        assert_eq!('A', CdisMarkingCharEncoding::SixBit.char_from_code(1));
+        assert_eq!('1', CdisMarkingCharEncoding::SixBit.char_from_code(31));
+        assert_eq!('\\', CdisMarkingCharEncoding::SixBit.char_from_code(58));
+        assert_eq!('*', CdisMarkingCharEncoding::SixBit.char_from_code(63));
+    }
+
+    #[test]
+    fn cdis_marking_from_string_five_bits() {
+        let input = "ABCDE";
+        let actual = CdisEntityMarking::from(input);
+
+        assert_eq!(String::from(input), actual.marking);
+        assert_eq!(CdisMarkingCharEncoding::FiveBit, actual.char_encoding);
+    }
+
+    #[test]
+    fn cdis_marking_from_string_six_bits() {
+        let input = "ABCDEJ";
+        let actual = CdisEntityMarking::from(input);
+
+        assert_eq!(String::from(input), actual.marking);
+        assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
+    }
+
+    #[test]
+    fn cdis_marking_from_string_truncate() {
+        let input = "ABCDEFGHIJKL";
+        let actual = CdisEntityMarking::from(input);
+
+        assert_eq!(11, actual.marking.len());
+        assert_eq!(&String::from(input)[..11], actual.marking.as_str());
+        assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
+    }
+
+    #[test]
+    fn cdis_marking_from_vec_u8_five_bit_codes() {
+        let input: [u8; 5] = [1,2,3,4,5];
+        let actual = CdisEntityMarking::from((&input[..], CdisMarkingCharEncoding::FiveBit));
+
+        assert_eq!(String::from("ABCDE"), actual.marking.as_str());
+        assert_eq!(CdisMarkingCharEncoding::FiveBit, actual.char_encoding);
+    }
+
+    #[test]
+    fn cdis_marking_from_vec_u8_six_bit_codes() {
+        let input: [u8; 5] = [10,11,12,13,14];
+        let actual = CdisEntityMarking::from((&input[..], CdisMarkingCharEncoding::SixBit));
+
+        assert_eq!(String::from("JKLMN"), actual.marking.as_str());
+        assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
     }
 }

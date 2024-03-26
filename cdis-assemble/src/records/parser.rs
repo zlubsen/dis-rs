@@ -1,10 +1,11 @@
 use nom::IResult;
 use nom::bits::complete::take;
+use nom::multi::count;
 use dis_rs::enumerations::PduType;
 use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
-use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, THIRTEEN_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation};
 use crate::types::parser::{svint12, svint16, uvint16, uvint8};
 
 pub(crate) fn cdis_header(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisHeader> {
@@ -98,4 +99,15 @@ pub(crate) fn orientation(input: (&[u8], usize)) -> IResult<(&[u8], usize), Orie
         psi,
         theta,
         phi)))
+}
+
+pub(crate) fn entity_marking(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntityMarking> {
+    let (input, length) : ((&[u8], usize), usize) = take(FOUR_BITS)(input)?;
+    let (input, char_bit_size) : ((&[u8], usize), u8) = take(ONE_BIT)(input)?;
+    let encoding = CdisMarkingCharEncoding::new(char_bit_size);
+    let (input, chars) : ((&[u8], usize), Vec<u8>) = count(take(encoding.bit_size()), length)(input)?;
+
+    let marking = CdisEntityMarking::from((chars.as_slice(), encoding));
+
+    Ok((input, marking))
 }
