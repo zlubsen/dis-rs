@@ -1,9 +1,9 @@
 use dis_rs::enumerations::PduType;
-use dis_rs::model::PduStatus;
+use dis_rs::model::{Location, PduStatus};
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{SVINT12, SVINT16, UVINT16, UVINT8};
+use crate::types::model::{SVINT12, SVINT16, SVINT24, UVINT16, UVINT8};
 
 /// 13.1 C-DIS PDU Header
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -226,15 +226,15 @@ impl Orientation {
 /// 11.25 Units
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Units {
-    Centimeters,
-    Meters,
+    Centimeter,
+    Dekameter,
 }
 
 impl From<u8> for Units {
     fn from(value: u8) -> Self {
         match value {
-            0 => Units::Centimeters,
-            _ => Units::Meters,
+            0 => Units::Centimeter,
+            _ => Units::Dekameter,
         }
     }
 }
@@ -242,8 +242,8 @@ impl From<u8> for Units {
 impl From<Units> for u8 {
     fn from(value: Units) -> Self {
         match value {
-            Units::Centimeters => 0,
-            Units::Meters => 1,
+            Units::Centimeter => 0,
+            Units::Dekameter => 1,
         }
     }
 }
@@ -554,6 +554,61 @@ impl CdisMarkingCharEncoding {
         }
     }
 }
+
+/// 11.27 World Coordinates Record
+#[derive(Clone, Debug, PartialEq)]
+pub struct WorldCoordinates {
+    pub latitude: i32,
+    pub longitude: i32,
+    pub altitude_msl: SVINT24,
+}
+
+impl WorldCoordinates {
+    pub fn new(latitude: i32, longitude: i32, altitude_msl: SVINT24) -> Self {
+        Self {
+            latitude,
+            longitude,
+            altitude_msl,
+        }
+    }
+}
+
+impl From<Location> for WorldCoordinates {
+    fn from(value: Location) -> Self {
+        unimplemented!("ECEF to lat/lon conversion");
+    }
+}
+
+impl From<WorldCoordinates> for Location {
+    fn from(value: WorldCoordinates) -> Self {
+        unimplemented!("lat/lon to ECEF conversion");
+    }
+}
+
+/// 12 Variable Parameter Records
+#[derive(Clone, Debug, PartialEq)]
+pub enum CdisVariableParameter {
+    ArticulatedPart(CdisArticulatedPartVP),
+    AttachedPart(CdisAttachedPartVP),
+    EntitySeparation(CdisEntitySeparationVP),
+    EntityType(CdisEntityTypeVP),
+    EntityAssociation(CdisEntityAssociationVP),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisArticulatedPartVP {} // TODO
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisAttachedPartVP {} // TODO
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisEntitySeparationVP {} // TODO
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisEntityTypeVP {} // TODO
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisEntityAssociationVP {} // TODO
 
 #[cfg(test)]
 mod tests {
