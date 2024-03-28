@@ -5,7 +5,7 @@ use dis_rs::enumerations::PduType;
 use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation, WorldCoordinates};
 use crate::types::parser::{svint12, svint16, uvint16, uvint8};
 
 pub(crate) fn cdis_header(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisHeader> {
@@ -110,4 +110,8 @@ pub(crate) fn entity_marking(input: (&[u8], usize)) -> IResult<(&[u8], usize), C
     let marking = CdisEntityMarking::from((chars.as_slice(), encoding));
 
     Ok((input, marking))
+}
+
+pub(crate) fn world_coordinates(input: (&[u8], usize)) -> IResult<(&[u8], usize), WorldCoordinates> {
+    todo!()
 }

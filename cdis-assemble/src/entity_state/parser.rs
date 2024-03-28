@@ -5,8 +5,9 @@ use nom::IResult;
 use crate::constants::{ONE_BIT, THIRTEEN_BITS};
 use crate::entity_state::model::EntityState;
 use crate::records::model::{EntityId, EntityType, Units};
-use crate::records::parser::entity_type;
+use crate::records::parser::{entity_identification, entity_type, linear_velocity, orientation};
 use crate::types::model::UVINT16;
+use crate::types::parser::uvint8;
 
 const FPF_BIT_FORCE_ID: u16 = 12; // 0x1000;
 const FPF_BIT_VP: u16 = 11; // 0x0800;
@@ -22,20 +23,35 @@ const FPF_BIT_DR_ANG_VELOCITY: u16 = 2; // 0x0004;
 const FPF_BIT_MARKING: u16 = 1; // 0x0002;
 const FPF_BIT_CAPABILITIES: u16 = 0; // 0x0001;
 
-pub(crate) fn entity_state_body(input: (&[u8], usize)) -> IResult<(&[u8], usize), EntityState> {
-    let (input, fields_present) : ((&[u8], usize), u16) = take(THIRTEEN_BITS)(input)?;
-    let (input, units) : ((&[u8], usize), u8) = take(ONE_BIT)(input)?;
+pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityState> {
+    let (input, fields_present) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
+    let (input, units) : (BitInput, u8) = take(ONE_BIT)(input)?;
     let units = Units::from(units);
-    let (input, full_update_flag) : ((&[u8], usize), u8) = take(ONE_BIT)(input)?;
+    let (input, full_update_flag) : (BitInput, u8) = take(ONE_BIT)(input)?;
     let full_update_flag = full_update_flag != 0;
 
-    // let (input, entity_type) = parse_field_when_present(
-    //     full_update_flag, fields_present, FPF_BIT_ENTITY_TYPE,
-    //     entity_type)(input)?;
-    // let (input, entity_type) = if full_update_flag | field_present(fields_present, FPF_BIT_ENTITY_TYPE) {
-    //     let (input, full_update_flag) = entity_type(input)?;
-    //     (input, Some(full_update_flag))
-    // } else { (input, None) };
+    let (input, entity_id) = entity_identification(input)?;
+    let (input, force_id) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_FORCE_ID, uvint8)(input)?;
+    let (input, number_of_var_params) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_VP, uvint8)(input)?;
+
+    let (input, entity_type) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_ENTITY_TYPE, entity_type)(input)?;
+    let (input, alt_entity_type) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_ALT_ENTITY_TYPE, entity_type)(input)?;
+
+    let (input, linear_velocity) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_LIN_VELOCITY, linear_velocity)(input)?;
+    // FIXME: parse world_coordinates
+    let (input, location) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_ENTITY_LOCATION, world_coordinates)(input)?;
+    let (input, orientation) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_ENTITY_ORIENTATION, orientation)(input)?;
+    // FIXME: expose entity_appearance from dis_rs
+    let (input, appearance) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_ENTITY_APPEARANCE, appearance...)(input)?;
+
 
     Ok((input, EntityState {
         units,
@@ -62,14 +78,19 @@ pub(crate) fn entity_state_body(input: (&[u8], usize)) -> IResult<(&[u8], usize)
     }))
 }
 
-pub fn parse_field_when_present<O, T, E: for<'a> ParseError<(&'a [u8], usize),>, F>(
+/// This is a 'conditional parser', which applies the provided parser `f` when either a full update is needed (indicated by the `full_update` flag)
+/// or when `mask` applied (bitwise OR) to the `fields_present` flags yields a none-zero value.
+///
+/// The function returns the output of parser `f` as an `Option`.
+pub fn parse_field_when_present<'a, O, T, F>(
     full_update: bool, fields_present: T, mask: T, f: F
-) -> impl Fn((&[u8], usize)) -> IResult<(&[u8], usize), Option<O>, E>
+) -> impl Fn(BitInput<'a>) -> IResult<BitInput, Option<O>>
     where
+        O: std::fmt::Debug,
         T: Copy + BitAnd + PartialEq + Default,
         <T as BitAnd>::Output: PartialEq<T>,
-        F: Fn((&[u8], usize)) -> IResult<(&[u8], usize), O, E>, {
-    move |input: (&[u8], usize)| {
+        F: Fn(BitInput<'a>) -> IResult<BitInput<'a>, O>, {
+    move |input: BitInput<'a>| {
         if full_update | field_present(fields_present, mask) {
             let result = f(input);
             match result {
@@ -80,33 +101,12 @@ pub fn parse_field_when_present<O, T, E: for<'a> ParseError<(&'a [u8], usize),>,
     }
 }
 
-// fn parse_field_when_present<'a, T, I, Oi, Oo, E, F>(full_update: bool, fields_present: T, mask: T, mut f: F)
-//     -> impl FnMut(ParseInput<'a>) -> IResult<(ParseInput<'a>, Oo), E> where
-//     T: Copy + BitAnd + Shl,
-//     F: Fn(ParseInput<'a>) -> IResult<ParseInput<'a>, Oi, E>,
-//     E: ParseError<ParseInput<'a>>, {
-//     move |input: ParseInput<'a>| {
-//         if full_update | field_present(fields_present, mask) {
-//             let result = f.parse(input).finish();
-//
-//             match result {
-//                 Ok((input, result)) => { Ok(input,Some(result)) }
-//                 Err(err) => { Err(err) }
-//             }
-//         } else { Ok((input, None)) }
-//     }
-// }
+type BitInput<'a> = (&'a[u8], usize);
 
-// fn parse_field_when_present<T, I, O, E>(full_update: bool, fields_present: T, mask: T, dummy: O) -> impl Fn(I) -> Result<(I, Option<O>), E> + 'static {
-//     move |input: I | {
-//         if full_update {
-//             Ok((input, Some(dummy)))
-//         } else { Err(nom::Err::Error(nom::error::ErrorKind::AlphaNumeric)) }
-//     }
-// }
-
-type ParseInput<'a> = (&'a[u8], usize);
-
+/// Helper function to match presents of a bit position in a bitfield.
+///
+/// Returns `true` when `fields_present` OR `mask` yields a non-zero value.
+/// Works with the basic numerical types (u8, u16, u32, i..).
 fn field_present<T>(fields_present: T, mask: T) -> bool
     where T: BitAnd + PartialEq + Default,
           <T as BitAnd>::Output: PartialEq<T>, {
@@ -116,7 +116,7 @@ fn field_present<T>(fields_present: T, mask: T) -> bool
 #[cfg(test)]
 mod tests {
     use crate::entity_state::parser::{field_present, parse_field_when_present};
-    use crate::records::parser::entity_type;
+    use crate::records::parser::{entity_identification};
 
     #[test]
     fn field_present_u8_true() {
@@ -151,14 +151,37 @@ mod tests {
     }
 
     #[test]
-    fn parse_when_present_entity_type() {
+    fn parse_when_present_entity_id() {
         let fields = 0b00000001u8;
         let mask = 0x01u8;
         let input : [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
 
-        let actual = parse_field_when_present(false, fields, mask, entity_type)((&input, 0));
+        // entity_identification is in reality always present, but is an easy example for a test.
+        let actual = parse_field_when_present(
+            false, fields, mask,
+            entity_identification)((&input, 0));
 
         assert!(actual.is_ok());
-        assert!(actual.unwrap().1.is_some())
+        let entity = actual.unwrap().1;
+        assert!(entity.is_some());
+        let entity = entity.unwrap();
+        assert_eq!(1u16, entity.site.value);
+        assert_eq!(1u16, entity.application.value);
+        assert_eq!(1u16, entity.entity.value);
+    }
+
+    #[test]
+    fn parse_when_present_entity_id_not_present() {
+        let fields = 0b00010000u8;
+        let mask = 0x01u8;
+        let input : [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
+
+        // entity_identification is in reality always present, but is an easy example for a test.
+        let actual = parse_field_when_present(
+            false, fields, mask,
+            entity_identification)((&input, 0));
+
+        assert!(actual.is_ok());
+        assert!(actual.unwrap().1.is_none())
     }
 }
