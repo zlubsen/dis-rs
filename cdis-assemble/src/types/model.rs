@@ -1,5 +1,14 @@
 use crate::constants::{EIGHT_BITS, FOUR_BITS, TWO_BITS};
 
+pub(crate) trait VarInt {
+    type BitSize;
+    type InnerType;
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self;
+    fn bit_size(&self) -> usize;
+    fn flag_bits_value(&self) -> Self::InnerType;
+    fn value(&self) -> Self::InnerType;
+}
+
 /// 10.2.1 UVINT8
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct UVINT8 {
@@ -7,24 +16,31 @@ pub struct UVINT8 {
     pub value: u8,
 }
 
-impl UVINT8 {
+impl VarInt for UVINT8 {
+    type BitSize = Uvint8BitSize;
+    type InnerType = u8;
+
     /// Construct a new UVINT8 with the given bit size definition and value.
     /// There is no validation on whether the bit size and value match.
     /// As such, this constructor is mainly for testing purposes,
     /// hence it is not part of the public API of the library.
-    pub(crate) fn new_scaled(bit_size: Uvint8BitSize, value: u8) -> Self {
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> Self::InnerType {
         self.bit_size.into()
+    }
+
+    fn value(&self) -> Self::InnerType {
+        self.value
     }
 }
 

@@ -558,13 +558,13 @@ impl CdisMarkingCharEncoding {
 /// 11.27 World Coordinates Record
 #[derive(Clone, Debug, PartialEq)]
 pub struct WorldCoordinates {
-    pub latitude: i32,
-    pub longitude: i32,
+    pub latitude: f32,
+    pub longitude: f32,
     pub altitude_msl: SVINT24,
 }
 
 impl WorldCoordinates {
-    pub fn new(latitude: i32, longitude: i32, altitude_msl: SVINT24) -> Self {
+    pub fn new(latitude: f32, longitude: f32, altitude_msl: SVINT24) -> Self {
         Self {
             latitude,
             longitude,

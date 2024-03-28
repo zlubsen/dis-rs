@@ -3,6 +3,7 @@ use crate::constants::ONE_BIT;
 use crate::parser_utils::write_value_with_length;
 use crate::SerializeCdis;
 use crate::types::model::{SVINT12, Svint12BitSize, SVINT13, Svint13BitSize, SVINT14, Svint14BitSize, SVINT16, Svint16BitSize, SVINT24, Svint24BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+use crate::types::model::VarInt;
 
 impl SerializeCdis for UVINT8 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
@@ -112,6 +113,7 @@ mod tests {
     use bitvec::prelude::{BitArray};
     use crate::{BitBuffer, SerializeCdis};
     use crate::types::model::{SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT8, Uvint8BitSize};
+    use crate::types::model::VarInt;
 
     const ONE_BYTE: usize = 1;
     const TWO_BYTES: usize = 2;
@@ -121,7 +123,7 @@ mod tests {
     fn serialize_uvint8_bit_flag_zero() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = UVINT8::new_scaled(Uvint8BitSize::Four, 1);
+        let input = UVINT8::new(Uvint8BitSize::Four, 1);
         let expected : [u8; ONE_BYTE] = [0b00001000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -132,7 +134,7 @@ mod tests {
     fn serialize_uvint8_bit_flag_one() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = UVINT8::new_scaled(Uvint8BitSize::Eight, 129);
+        let input = UVINT8::new(Uvint8BitSize::Eight, 129);
         let expected : [u8; TWO_BYTES] = [0b11000000, 0b10000000];
         let _next_cursor = input.serialize(&mut buf, 0);
 

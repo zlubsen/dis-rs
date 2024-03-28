@@ -1,12 +1,14 @@
+use bitvec::macros::internal::funty::Floating;
 use nom::IResult;
 use nom::bits::complete::take;
 use nom::multi::count;
 use dis_rs::enumerations::PduType;
 use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
-use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_BITS, THIRTY_TWO_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation, WorldCoordinates};
-use crate::types::parser::{svint12, svint16, uvint16, uvint8};
+use crate::types::model::SVINT24;
+use crate::types::parser::{svint12, svint16, svint24, uvint16, uvint8};
 
 pub(crate) fn cdis_header(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisHeader> {
     let (input, protocol_version) : ((&[u8], usize), u8) = take(TWO_BITS)(input)?;
@@ -112,6 +114,21 @@ pub(crate) fn entity_marking(input: (&[u8], usize)) -> IResult<(&[u8], usize), C
     Ok((input, marking))
 }
 
+const WORLD_COORDINATES_LAT_SCALE: f32 = (2^30 - 1) as f32 / (f32::PI / 2.0);
+const WORLD_COORDINATES_LON_SCALE: f32 = (2^31 - 1) as f32 / (f32::PI);
+
 pub(crate) fn world_coordinates(input: (&[u8], usize)) -> IResult<(&[u8], usize), WorldCoordinates> {
-    todo!()
+    let (input, lat_sign_bit) : ((&[u8], usize), i32) = take(ONE_BIT)(input)?;
+    let (input, lat_value_bits) : ((&[u8], usize), i32) = take(THIRTY_BITS)(input)?;
+    let latitude = (lat_sign_bit << 31) | lat_value_bits;
+    let latitude = latitude as f32 / WORLD_COORDINATES_LAT_SCALE;
+    let (input, longitude) : ((&[u8], usize), i32) = take(THIRTY_TWO_BITS)(input)?;
+    let longitude = longitude as f32 / WORLD_COORDINATES_LON_SCALE;
+    let (input, altitude_msl) : ((&[u8], usize), SVINT24) = svint24(input)?;
+
+    Ok((input, WorldCoordinates {
+        latitude,
+        longitude,
+        altitude_msl,
+    }))
 }

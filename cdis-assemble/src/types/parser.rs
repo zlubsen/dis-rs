@@ -87,6 +87,7 @@ pub(crate) fn svint24(input: (&[u8], usize)) -> IResult<(&[u8], usize), SVINT24>
 mod tests {
     use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
     use crate::types::model::{SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+    use crate::types::model::VarInt;
 
     // #[test]
     // fn parse_generic_varint_bit_flag_zero() {
@@ -100,7 +101,7 @@ mod tests {
     #[test]
     fn parse_uvint8_bit_flag_zero() {
         let input = [0b00001000];
-        let expected = UVINT8::new_scaled(Uvint8BitSize::Four, 1);
+        let expected = UVINT8::new(Uvint8BitSize::Four, 1u8);
         let (_input, actual) = uvint8((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);
@@ -109,7 +110,7 @@ mod tests {
     #[test]
     fn parse_uvint8_bit_flag_one() {
         let input = [0b11000000, 0b10000000];
-        let expected = UVINT8::new_scaled(Uvint8BitSize::Eight, 129);
+        let expected = UVINT8::new(Uvint8BitSize::Eight, 129);
         let (_input, actual) = uvint8((&input, 0)).unwrap();
 
         assert_eq!(expected, actual);

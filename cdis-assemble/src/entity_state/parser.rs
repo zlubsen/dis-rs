@@ -1,13 +1,13 @@
 use std::ops::BitAnd;
 use nom::bits::complete::take;
-use nom::error::{ErrorKind, ParseError};
 use nom::IResult;
-use crate::constants::{ONE_BIT, THIRTEEN_BITS};
+use dis_rs::enumerations::{DeadReckoningAlgorithm, ForceId};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS};
 use crate::entity_state::model::EntityState;
-use crate::records::model::{EntityId, EntityType, Units};
-use crate::records::parser::{entity_identification, entity_type, linear_velocity, orientation};
-use crate::types::model::UVINT16;
-use crate::types::parser::uvint8;
+use crate::records::model::{EntityId, Units};
+use crate::records::parser::{entity_identification, entity_marking, entity_type, linear_velocity, orientation, world_coordinates};
+use crate::types::model::{UVINT16, VarInt};
+use crate::types::parser::{uvint32, uvint8};
 
 const FPF_BIT_FORCE_ID: u16 = 12; // 0x1000;
 const FPF_BIT_VP: u16 = 11; // 0x0800;
@@ -33,25 +33,56 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
     let (input, entity_id) = entity_identification(input)?;
     let (input, force_id) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_FORCE_ID, uvint8)(input)?;
+    let force_id = varint_to_type::<_, _, ForceId>(force_id);
     let (input, number_of_var_params) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_VP, uvint8)(input)?;
+    let number_of_var_params = varint_to_type::<_, _, usize>(number_of_var_params);
 
-    let (input, entity_type) = parse_field_when_present(
+    let (input, primary_entity_type) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_ENTITY_TYPE, entity_type)(input)?;
-    let (input, alt_entity_type) = parse_field_when_present(
+    let (input, alternate_entity_type) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_ALT_ENTITY_TYPE, entity_type)(input)?;
 
-    let (input, linear_velocity) = parse_field_when_present(
+    let (input, entity_linear_velocity) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_LIN_VELOCITY, linear_velocity)(input)?;
-    // FIXME: parse world_coordinates
-    let (input, location) = parse_field_when_present(
+    let (input, entity_location) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_ENTITY_LOCATION, world_coordinates)(input)?;
-    let (input, orientation) = parse_field_when_present(
+    let (input, entity_orientation) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_ENTITY_ORIENTATION, orientation)(input)?;
-    // FIXME: expose entity_appearance from dis_rs
-    let (input, appearance) = parse_field_when_present(
-        full_update_flag, fields_present, FPF_BIT_ENTITY_APPEARANCE, appearance...)(input)?;
+    // TODO: expose entity_appearance from dis_rs
+    // let (input, entity_appearance) = parse_field_when_present(
+        // full_update_flag, fields_present, FPF_BIT_ENTITY_APPEARANCE, appearance...)(input)?;
 
+    let (input, dr_algorithm) : (BitInput, u8) = take(FOUR_BITS)(input)?;
+    let dr_algorithm = DeadReckoningAlgorithm::from(dr_algorithm);
+
+    // TODO parse 120 bits...
+    let (input, dr_params_other) = if full_update_flag | (fields_present & FPF_BIT_DR_OTHER != 0) {
+        let (input, bytes) = (0u8..15).fold((input, Vec::<u8>::new()), | (input, mut bytes), _ | {
+            // FIXME - to avoid errors on the input, we unwrap_or the result from the take()-parser
+            let (input, byte) : (BitInput, u8) = take(EIGHT_BITS)(input);
+            bytes.push(byte);
+            (input, bytes)
+        } );
+        (input, Some(bytes))
+    } else { (input, None) };
+
+    // parse_field_when_present(
+    // full_update_flag, fields_present, FPF_BIT_DR_OTHER, take(HUNDRED_TWENTY_BITS))(input)?;
+
+    let (input, dr_params_entity_linear_acceleration) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_DR_LIN_ACCELERATION, ...)(input)?;
+    let (input, dr_params_entity_angular_velocity) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_DR_ANG_VELOCITY, ...)(input)?;
+
+    let (input, entity_marking) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_MARKING, entity_marking)(input)?;
+    let (input, capabilities) = parse_field_when_present(
+        full_update_flag, fields_present, FPF_BIT_CAPABILITIES, uvint32)(input)?;
+    // TODO convert u32 to capabilities
+    let capabilities = varint_to_type::<_, _, u32>(capabilities);
+
+    // TODO var params
 
     Ok((input, EntityState {
         units,
@@ -61,19 +92,19 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
             application: UVINT16::from(1),
             entity: UVINT16::from(1),
         },
-        force_id: None,
-        entity_type: None,
-        alternate_entity_type: None,
-        entity_linear_velocity: None,
-        entity_location: None,
-        entity_orientation: None,
+        force_id,
+        entity_type: primary_entity_type,
+        alternate_entity_type,
+        entity_linear_velocity,
+        entity_location,
+        entity_orientation,
         entity_appearance: None,
-        dr_algorithm: Default::default(),
+        dr_algorithm,
         dr_params_other: None,
-        dr_params_entity_linear_acceleration: None,
-        dr_params_entity_angular_velocity: None,
-        entity_marking: None,
-        capabilities: None,
+        dr_params_entity_linear_acceleration,
+        dr_params_entity_angular_velocity,
+        entity_marking,
+        capabilities,
         variable_parameters: None,
     }))
 }
@@ -111,6 +142,15 @@ fn field_present<T>(fields_present: T, mask: T) -> bool
     where T: BitAnd + PartialEq + Default,
           <T as BitAnd>::Output: PartialEq<T>, {
     (fields_present & mask) != Default::default()
+}
+
+fn varint_to_type<V, I, T>(enum_value: Option<V>) -> Option<T>
+where V: VarInt<InnerType = I>,
+      T: From<I> {
+    if let Some(value) = enum_value {
+        let inner = value.value();
+        Some(T::from(inner))
+    } else { None }
 }
 
 #[cfg(test)]

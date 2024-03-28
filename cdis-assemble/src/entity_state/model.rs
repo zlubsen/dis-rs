@@ -1,6 +1,6 @@
-use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance, EntityMarking};
+use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, ForceId};
-use crate::records::model::{AngularVelocity, CdisVariableParameter, EntityId, EntityType, LinearVelocity, Orientation, Units, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{SVINT14, UVINT32};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -19,7 +19,7 @@ pub struct EntityState {
     pub dr_params_other: Option<DrOtherParameters>,
     pub dr_params_entity_linear_acceleration: Option<DrEntityLinearAcceleration>,
     pub dr_params_entity_angular_velocity: Option<AngularVelocity>,
-    pub entity_marking: Option<EntityMarking>,
+    pub entity_marking: Option<CdisEntityMarking>,
     pub capabilities: Option<UVINT32>, // field not explicitly modeled because the interpretation depends on the EntityType, which is not yet known when that field is not present.
     pub variable_parameters: Option<Vec<CdisVariableParameter>>
 }
