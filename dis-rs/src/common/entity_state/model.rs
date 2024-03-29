@@ -4,7 +4,7 @@ use crate::common::model::{EntityId, EntityType, Location, Orientation, PduBody,
 use crate::constants::{FOUR_OCTETS, TWELVE_OCTETS, VARIABLE_PARAMETER_RECORD_LENGTH};
 use crate::DisError;
 use crate::entity_state::builder::EntityStateBuilder;
-use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm};
+use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm, EntityKind, PlatformDomain};
 
 const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
 
@@ -93,6 +93,25 @@ impl Default for EntityAppearance {
 }
 
 impl EntityAppearance {
+    pub fn from_bytes(appearance: u32, entity_type: &EntityType) -> Self {
+        match (entity_type.kind, entity_type.domain) {
+            (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
+            (EntityKind::Platform, PlatformDomain::Land) => EntityAppearance::LandPlatform(LandPlatformAppearance::from(appearance)),
+            (EntityKind::Platform, PlatformDomain::Air) => EntityAppearance::AirPlatform(AirPlatformAppearance::from(appearance)),
+            (EntityKind::Platform, PlatformDomain::Surface) => EntityAppearance::SurfacePlatform(SurfacePlatformAppearance::from(appearance)),
+            (EntityKind::Platform, PlatformDomain::Subsurface) => EntityAppearance::SubsurfacePlatform(SubsurfacePlatformAppearance::from(appearance)),
+            (EntityKind::Platform, PlatformDomain::Space) => EntityAppearance::SpacePlatform(SpacePlatformAppearance::from(appearance)),
+            (EntityKind::Munition, _) => EntityAppearance::Munition(MunitionAppearance::from(appearance)),
+            (EntityKind::Lifeform, _) => EntityAppearance::LifeForms(LifeFormsAppearance::from(appearance)),
+            (EntityKind::Environmental, _) => EntityAppearance::Environmental(EnvironmentalAppearance::from(appearance)),
+            (EntityKind::Culturalfeature, _) => EntityAppearance::CulturalFeature(CulturalFeatureAppearance::from(appearance)),
+            (EntityKind::Supply, _) => EntityAppearance::Supply(SupplyAppearance::from(appearance)),
+            (EntityKind::Radio, _) => EntityAppearance::Radio(RadioAppearance::from(appearance)),
+            (EntityKind::Expendable, _) => EntityAppearance::Expendable(ExpendableAppearance::from(appearance)),
+            (EntityKind::SensorEmitter, _) => EntityAppearance::SensorEmitter(SensorEmitterAppearance::from(appearance)),
+            (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes())
+        }
+    }
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
     }

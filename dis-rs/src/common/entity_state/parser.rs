@@ -63,25 +63,8 @@ pub(crate) fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
 pub(crate) fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityAppearance> {
     move |input: &[u8]| {
         let (input, appearance) = be_u32(input)?;
-        let appearance = match (entity_type.kind, entity_type.domain) {
-            (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
-            (EntityKind::Platform, PlatformDomain::Land) => EntityAppearance::LandPlatform(LandPlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Air) => EntityAppearance::AirPlatform(AirPlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Surface) => EntityAppearance::SurfacePlatform(SurfacePlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Subsurface) => EntityAppearance::SubsurfacePlatform(SubsurfacePlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Space) => EntityAppearance::SpacePlatform(SpacePlatformAppearance::from(appearance)),
-            (EntityKind::Munition, _) => EntityAppearance::Munition(MunitionAppearance::from(appearance)),
-            (EntityKind::Lifeform, _) => EntityAppearance::LifeForms(LifeFormsAppearance::from(appearance)),
-            (EntityKind::Environmental, _) => EntityAppearance::Environmental(EnvironmentalAppearance::from(appearance)),
-            (EntityKind::Culturalfeature, _) => EntityAppearance::CulturalFeature(CulturalFeatureAppearance::from(appearance)),
-            (EntityKind::Supply, _) => EntityAppearance::Supply(SupplyAppearance::from(appearance)),
-            (EntityKind::Radio, _) => EntityAppearance::Radio(RadioAppearance::from(appearance)),
-            (EntityKind::Expendable, _) => EntityAppearance::Expendable(ExpendableAppearance::from(appearance)),
-            (EntityKind::SensorEmitter, _) => EntityAppearance::SensorEmitter(SensorEmitterAppearance::from(appearance)),
-            (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes())
-        };
 
-        Ok((input, appearance))
+        Ok((input, EntityAppearance::from_bytes(appearance, &entity_type)))
     }
 }
 
