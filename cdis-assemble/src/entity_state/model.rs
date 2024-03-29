@@ -1,7 +1,6 @@
-use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, ForceId};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearVelocity, Orientation, Units, WorldCoordinates};
-use crate::types::model::{SVINT14, UVINT32};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+use crate::types::model::UVINT32;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EntityState {
@@ -14,39 +13,41 @@ pub struct EntityState {
     pub entity_linear_velocity: Option<LinearVelocity>,
     pub entity_location: Option<WorldCoordinates>,
     pub entity_orientation: Option<Orientation>,
-    pub entity_appearance: Option<EntityAppearance>,
+    pub entity_appearance: Option<CdisEntityAppearance>,
     pub dr_algorithm: DeadReckoningAlgorithm,
-    pub dr_params_other: Option<DrOtherParameters>,
-    pub dr_params_entity_linear_acceleration: Option<DrEntityLinearAcceleration>,
+    pub dr_params_other: Option<u128>,
+    pub dr_params_entity_linear_acceleration: Option<LinearAcceleration>,
     pub dr_params_entity_angular_velocity: Option<AngularVelocity>,
     pub entity_marking: Option<CdisEntityMarking>,
-    pub capabilities: Option<UVINT32>, // field not explicitly modeled because the interpretation depends on the EntityType, which is not yet known when that field is not present.
+    pub capabilities: Option<CdisEntityCapabilities>,
     pub variable_parameters: Option<Vec<CdisVariableParameter>>
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct EntityStateFieldsPresent {
-    pub entity_appearance: bool,
-    pub dr_params_other: bool,
-    pub dr_params_entity_linear_acceleration: bool,
-    pub dr_params_entity_angular_velocity: bool,
-    pub entity_marking: bool,
-    pub capabilities: bool,
-}
-
+/// The Entity Appearance field is not explicitly modeled because the interpretation of the on-wire value
+/// depends on the EntityType, which is not yet known when that field is not
+/// present in the received C-DIS PDU.
+/// This struct wraps the type in the wire format.
 #[derive(Clone, Debug, PartialEq)]
-pub struct DrEntityLinearAcceleration {
-    pub x: SVINT14,
-    pub y: SVINT14,
-    pub z: SVINT14,
-}
+pub struct CdisEntityAppearance(pub u32);
 
-impl DrEntityLinearAcceleration {
-    pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+/// The Capabilities field is not explicitly modeled because the interpretation of the on-wire value
+/// depends on the EntityType, which is not yet known when that field is not
+/// present in the received C-DIS PDU.
+/// This struct wraps the type in the wire format.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisEntityCapabilities(pub UVINT32);
+
+/// The DR Parameters Other field is not explicitly modeled because the interpretation of the on-wire value
+/// depends on the DR Algorithm.
+/// This struct wraps the type in the wire format.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CdisDRParametersOther(pub Vec<u8>);
+
+impl From<u128> for CdisDRParametersOther {
+    fn from(value: u128) -> Self {
+        const FIRST_BYTES_IS_EMPTY: usize = 0;
+        let mut bytes = value.to_be_bytes().to_vec();
+        let _ = bytes.remove(FIRST_BYTES_IS_EMPTY);
+        Self(bytes)
     }
 }
