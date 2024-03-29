@@ -3,7 +3,7 @@ use dis_rs::model::{Location, PduStatus};
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{SVINT12, SVINT16, SVINT24, UVINT16, UVINT8};
+use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 /// 13.1 C-DIS PDU Header
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -118,6 +118,24 @@ pub struct AngularVelocity {
 impl AngularVelocity {
     pub const SCALE: f32 = (2^11 - 1) as f32 / (4.0f32 * std::f32::consts::PI);
     pub fn new(x: SVINT12, y: SVINT12, z: SVINT12) -> Self {
+        Self {
+            x,
+            y,
+            z,
+        }
+    }
+}
+
+/// 11.1 Linear Acceleration
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct LinearAcceleration {
+    pub x: SVINT14,
+    pub y: SVINT14,
+    pub z: SVINT14,
+}
+
+impl LinearAcceleration {
+    pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
         Self {
             x,
             y,

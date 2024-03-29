@@ -2,10 +2,10 @@ use std::ops::BitAnd;
 use nom::bits::complete::take;
 use nom::IResult;
 use dis_rs::enumerations::{DeadReckoningAlgorithm, ForceId};
-use crate::constants::{EIGHT_BITS, FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, HUNDRED_TWENTY_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS};
 use crate::entity_state::model::EntityState;
 use crate::records::model::{EntityId, Units};
-use crate::records::parser::{entity_identification, entity_marking, entity_type, linear_velocity, orientation, world_coordinates};
+use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, world_coordinates};
 use crate::types::model::{UVINT16, VarInt};
 use crate::types::parser::{uvint32, uvint8};
 
@@ -55,32 +55,20 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
 
     let (input, dr_algorithm) : (BitInput, u8) = take(FOUR_BITS)(input)?;
     let dr_algorithm = DeadReckoningAlgorithm::from(dr_algorithm);
-
-    // TODO parse 120 bits...
-    let (input, dr_params_other) = if full_update_flag | (fields_present & FPF_BIT_DR_OTHER != 0) {
-        let (input, bytes) = (0u8..15).fold((input, Vec::<u8>::new()), | (input, mut bytes), _ | {
-            // FIXME - to avoid errors on the input, we unwrap_or the result from the take()-parser
-            let (input, byte) : (BitInput, u8) = take(EIGHT_BITS)(input);
-            bytes.push(byte);
-            (input, bytes)
-        } );
-        (input, Some(bytes))
-    } else { (input, None) };
-
-    // parse_field_when_present(
-    // full_update_flag, fields_present, FPF_BIT_DR_OTHER, take(HUNDRED_TWENTY_BITS))(input)?;
+    let (input, dr_params_other) : (BitInput, Option<u128>) = parse_field_when_present(
+    full_update_flag, fields_present, FPF_BIT_DR_OTHER, take(HUNDRED_TWENTY_BITS))(input)?;
 
     let (input, dr_params_entity_linear_acceleration) = parse_field_when_present(
-        full_update_flag, fields_present, FPF_BIT_DR_LIN_ACCELERATION, ...)(input)?;
+        full_update_flag, fields_present, FPF_BIT_DR_LIN_ACCELERATION, linear_acceleration)(input)?;
     let (input, dr_params_entity_angular_velocity) = parse_field_when_present(
-        full_update_flag, fields_present, FPF_BIT_DR_ANG_VELOCITY, ...)(input)?;
+        full_update_flag, fields_present, FPF_BIT_DR_ANG_VELOCITY, angular_velocity)(input)?;
 
     let (input, entity_marking) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_MARKING, entity_marking)(input)?;
     let (input, capabilities) = parse_field_when_present(
         full_update_flag, fields_present, FPF_BIT_CAPABILITIES, uvint32)(input)?;
     // TODO convert u32 to capabilities
-    let capabilities = varint_to_type::<_, _, u32>(capabilities);
+    // let capabilities = varint_to_type::<_, _, u32>(capabilities);
 
     // TODO var params
 
@@ -101,8 +89,8 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
         entity_appearance: None,
         dr_algorithm,
         dr_params_other: None,
-        dr_params_entity_linear_acceleration,
-        dr_params_entity_angular_velocity,
+        dr_params_entity_linear_acceleration: Default::default(),
+        dr_params_entity_angular_velocity: Default::default(),
         entity_marking,
         capabilities,
         variable_parameters: None,

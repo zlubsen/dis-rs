@@ -6,9 +6,9 @@ use dis_rs::enumerations::PduType;
 use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_BITS, THIRTY_TWO_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
 use crate::types::model::SVINT24;
-use crate::types::parser::{svint12, svint16, svint24, uvint16, uvint8};
+use crate::types::parser::{svint12, svint14, svint16, svint24, uvint16, uvint8};
 
 pub(crate) fn cdis_header(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisHeader> {
     let (input, protocol_version) : ((&[u8], usize), u8) = take(TWO_BITS)(input)?;
@@ -87,6 +87,17 @@ pub(crate) fn linear_velocity(input: (&[u8], usize)) -> IResult<(&[u8], usize), 
     let (input, z_component) = svint16(input)?;
 
     Ok((input, LinearVelocity::new(
+        x_component,
+        y_component,
+        z_component)))
+}
+
+pub(crate) fn linear_acceleration(input: (&[u8], usize)) -> IResult<(&[u8], usize), LinearAcceleration> {
+    let (input, x_component) = svint14(input)?;
+    let (input, y_component) = svint14(input)?;
+    let (input, z_component) = svint14(input)?;
+
+    Ok((input, LinearAcceleration::new(
         x_component,
         y_component,
         z_component)))
