@@ -47,6 +47,11 @@ pub(crate) fn field_present<T>(fields_present: T, mask: T) -> bool
     (fields_present & mask) != Default::default()
 }
 
+/// Conversion function to convert the inner type of an `Option<T>` as
+/// returned by a conditional parser to another type.
+/// Useful for transforming a `VarInt` to a standard Rust type such as `u8`.
+///
+/// Returns `None` or `Some` with the converted type
 pub(crate) fn varint_to_type<V, I, T>(enum_value: Option<V>) -> Option<T>
 where V: VarInt<InnerType = I>,
       T: From<I> {

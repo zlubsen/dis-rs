@@ -1,9 +1,9 @@
-use dis_rs::enumerations::PduType;
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
 use dis_rs::model::{Location, PduStatus};
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 /// 13.1 C-DIS PDU Header
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -613,20 +613,55 @@ pub enum CdisVariableParameter {
     EntityAssociation(CdisEntityAssociationVP),
 }
 
+/// 12.1 Articulated Part Variable Parameter (VP) Record
 #[derive(Clone, Debug, PartialEq)]
-pub struct CdisArticulatedPartVP {} // TODO
+pub struct CdisArticulatedPartVP {
+    pub change_indicator: u8,
+    pub attachment_id: u16,
+    pub type_class: ArticulatedPartsTypeClass,
+    pub type_metric: ArticulatedPartsTypeMetric,
+    pub parameter_value: CdisFloat,
+}
 
+/// 12.2 Attached Part VP Record
 #[derive(Clone, Debug, PartialEq)]
-pub struct CdisAttachedPartVP {} // TODO
+pub struct CdisAttachedPartVP {
+    pub detached_indicator: AttachedPartDetachedIndicator,
+    pub attachment_id: u16,
+    pub type_class: ArticulatedPartsTypeClass,
+    pub type_metric: ArticulatedPartsTypeMetric,
+    pub attached_part_type: EntityType,
+}
 
+/// 12.3 Entity Separation VP Record
 #[derive(Clone, Debug, PartialEq)]
-pub struct CdisEntitySeparationVP {} // TODO
+pub struct CdisEntitySeparationVP {
+    pub reason_for_separation: SeparationReasonForSeparation,
+    pub pre_entity_indicator: SeparationPreEntityIndicator,
+    pub parent_entity_id: EntityId,
+    pub station_name: StationName,
+    pub station_number: u16,
+}
 
+/// 12.4 Entity Type VP Record
 #[derive(Clone, Debug, PartialEq)]
-pub struct CdisEntityTypeVP {} // TODO
+pub struct CdisEntityTypeVP {
+    pub change_indicator: ChangeIndicator,
+    pub attached_part_type: EntityType,
+}
 
+/// 12.5 Entity Association VP Record
 #[derive(Clone, Debug, PartialEq)]
-pub struct CdisEntityAssociationVP {} // TODO
+pub struct CdisEntityAssociationVP {
+    pub change_indicator: ChangeIndicator,
+    pub association_status: EntityAssociationAssociationStatus,
+    pub association_type: EntityAssociationPhysicalAssociationType,
+    pub entity_id: EntityId,
+    pub own_station_location: StationName,
+    pub physical_connection_type: EntityAssociationPhysicalConnectionType,
+    pub group_member_type: EntityAssociationGroupMemberType,
+    pub group_number: u16,
+}
 
 #[cfg(test)]
 mod tests {

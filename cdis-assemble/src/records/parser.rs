@@ -6,7 +6,8 @@ use dis_rs::enumerations::PduType;
 use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_BITS, THIRTY_TWO_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::parser_utils::BitInput;
+use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
 use crate::types::model::SVINT24;
 use crate::types::parser::{svint12, svint14, svint16, svint24, uvint16, uvint8};
 
@@ -128,18 +129,58 @@ pub(crate) fn entity_marking(input: (&[u8], usize)) -> IResult<(&[u8], usize), C
 const WORLD_COORDINATES_LAT_SCALE: f32 = (2^30 - 1) as f32 / (f32::PI / 2.0);
 const WORLD_COORDINATES_LON_SCALE: f32 = (2^31 - 1) as f32 / (f32::PI);
 
-pub(crate) fn world_coordinates(input: (&[u8], usize)) -> IResult<(&[u8], usize), WorldCoordinates> {
-    let (input, lat_sign_bit) : ((&[u8], usize), i32) = take(ONE_BIT)(input)?;
-    let (input, lat_value_bits) : ((&[u8], usize), i32) = take(THIRTY_BITS)(input)?;
+pub(crate) fn world_coordinates(input: BitInput) -> IResult<(&[u8], usize), WorldCoordinates> {
+    let (input, lat_sign_bit) : (BitInput, i32) = take(ONE_BIT)(input)?;
+    let (input, lat_value_bits) : (BitInput, i32) = take(THIRTY_BITS)(input)?;
     let latitude = (lat_sign_bit << 31) | lat_value_bits;
     let latitude = latitude as f32 / WORLD_COORDINATES_LAT_SCALE;
-    let (input, longitude) : ((&[u8], usize), i32) = take(THIRTY_TWO_BITS)(input)?;
+    let (input, longitude) : (BitInput, i32) = take(THIRTY_TWO_BITS)(input)?;
     let longitude = longitude as f32 / WORLD_COORDINATES_LON_SCALE;
-    let (input, altitude_msl) : ((&[u8], usize), SVINT24) = svint24(input)?;
+    let (input, altitude_msl) : (BitInput, SVINT24) = svint24(input)?;
 
     Ok((input, WorldCoordinates {
         latitude,
         longitude,
         altitude_msl,
     }))
+}
+
+pub(crate) fn variable_parameter(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisVariableParameter> {
+    todo!()
+}
+
+pub(crate) fn articulated_part_vp_compressed(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisArticulatedPartVP> {
+    todo!()
+}
+
+pub(crate) fn attached_part_vp(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisAttachedPartVP> {
+    todo!()
+}
+
+pub(crate) fn attached_part_vp_compressed(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisAttachedPartVP> {
+    todo!()
+}
+
+pub(crate) fn entity_separation_vp(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntitySeparationVP> {
+    todo!()
+}
+
+pub(crate) fn entity_separation_vp_compressed(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntitySeparationVP> {
+    todo!()
+}
+
+pub(crate) fn entity_type_vp(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntityTypeVP> {
+    todo!()
+}
+
+pub(crate) fn entity_type_vp_compressed(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntityTypeVP> {
+    todo!()
+}
+
+pub(crate) fn entity_association_vp(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntityAssociationVP> {
+    todo!()
+}
+
+pub(crate) fn entity_association_vp_compressed(input: (&[u8], usize)) -> IResult<(&[u8], usize), CdisEntityAssociationVP> {
+    todo!()
 }
