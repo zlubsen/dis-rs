@@ -1,12 +1,13 @@
 use nom::bits::complete::take;
 use nom::IResult;
+use nom::multi::count;
 use dis_rs::enumerations::{DeadReckoningAlgorithm, ForceId};
 use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_TWO_BITS};
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState};
 use crate::parser_utils;
 use crate::parser_utils::BitInput;
 use crate::records::model::Units;
-use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, world_coordinates};
+use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, variable_parameter, world_coordinates};
 use crate::types::parser::{uvint32, uvint8};
 
 const FPF_BIT_FORCE_ID: u16 = 12; // 0x1000;
@@ -73,11 +74,12 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
         Some(CdisEntityCapabilities(capabilities))
     } else { None };
 
-    // TODO var params
-    // These can either be the same as DIS V7, or in compressed format
-    // Normal format: expose the parsing lib of dis-rs, and pass the 15-bytes
-    // Compressed format: write separate parsers in the records module.
-    ...
+    let (input, variable_parameters) = if let Some(num_params) = number_of_var_params {
+        count(variable_parameter, num_params)(input)?
+    } else {
+        (input, vec![])
+    };
+
 
     Ok((input, EntityState {
         units,
@@ -96,7 +98,7 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
         dr_params_entity_angular_velocity,
         entity_marking,
         capabilities,
-        variable_parameters: None,
+        variable_parameters,
     }))
 }
 

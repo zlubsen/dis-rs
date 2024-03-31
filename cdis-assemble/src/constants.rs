@@ -7,10 +7,15 @@ pub const SIX_BITS: usize = 6;
 pub const SEVEN_BITS: usize = 7;
 pub const EIGHT_BITS: usize = 8;
 pub const NINE_BITS: usize = 9;
+pub const TEN_BITS: usize = 10;
 pub const THIRTEEN_BITS: usize = 14;
 pub const FOURTEEN_BITS: usize = 14;
+pub const FIFTEEN_BITS: usize = 15;
+pub const SIXTEEN_BITS: usize = 16;
 pub const TWENTY_SIX_BITS: usize = 26;
 pub const THIRTY_BITS: usize = 30;
+
+pub const THIRTY_ONE_BITS: usize = 31;
 pub const THIRTY_TWO_BITS: usize = 32;
 pub const HUNDRED_TWENTY_BITS: usize = 120;
 pub const LEAST_SIGNIFICANT_BIT : u32 = 0x001;

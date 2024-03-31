@@ -839,10 +839,19 @@ impl From<Svint24BitSize> for u8 {
     }
 }
 
+/// 10.3 Custom Floating Point Numbers
+///
+/// The `CdisFloat` struct holds the mantissa and exponent components of a C-DIS float implementation.
+/// The actual value is available through the `to_value()`. For practical reasons it returns the value as `f64`.
+///
+/// Because some use cases (such as Variable Parameter Articulated Part record) can be encoded either
+/// as a CdisFloat or a regular 32-bit float, this struct allows to hold both variants.
+/// There are two different constructor methods for this purpose (`new()` and `from_f64` respectively).
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CdisFloat {
     mantissa: i32,
     exponent: i8,
+    pub regular_float: Option<f64>,
 }
 
 impl CdisFloat {
@@ -850,11 +859,24 @@ impl CdisFloat {
         Self {
             mantissa,
             exponent,
+            regular_float: None,
+        }
+    }
+
+    pub fn from_f64(regular_float: f64) -> Self {
+        Self {
+            mantissa: 0,
+            exponent: 0,
+            regular_float: Some(regular_float)
         }
     }
 
     pub fn to_value(&self) -> f64 {
-        self.mantissa as f64 * ((10^(self.exponent)) as f64)
+        if let Some(float) = self.regular_float {
+            float
+        } else {
+            self.mantissa as f64 * ((10 ^ (self.exponent)) as f64)
+        }
     }
 }
 

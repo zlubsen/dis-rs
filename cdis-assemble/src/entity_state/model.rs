@@ -20,7 +20,7 @@ pub struct EntityState {
     pub dr_params_entity_angular_velocity: Option<AngularVelocity>,
     pub entity_marking: Option<CdisEntityMarking>,
     pub capabilities: Option<CdisEntityCapabilities>,
-    pub variable_parameters: Option<Vec<CdisVariableParameter>>
+    pub variable_parameters: Vec<CdisVariableParameter>
 }
 
 /// The Entity Appearance field is not explicitly modeled because the interpretation of the on-wire value

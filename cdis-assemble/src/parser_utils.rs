@@ -1,8 +1,11 @@
+use std::mem::size_of;
 use bitvec::field::BitField;
 use bitvec::macros::internal::funty::Integral;
 use nom::IResult;
-use std::ops::BitAnd;
+use std::ops::{AddAssign, BitAnd, BitOr, Shl, Shr};
+use nom::complete::take;
 use crate::BitBuffer;
+use crate::constants::{EIGHT_BITS, ONE_BIT};
 use crate::types::model::VarInt;
 
 /// Write `value` to the BitBuffer `buf`, at the position of `cursor` with length `bit_size`.
@@ -59,4 +62,60 @@ where V: VarInt<InnerType = I>,
         let inner = value.value();
         Some(T::from(inner))
     } else { None }
+}
+
+/// Parse a signed value from the bit stream, formatted in `count` bits.
+/// MSB is the sign bit, the remaining bits form the value.
+/// This function then converts these two components to a signed value of type `isize`.
+pub(crate) fn take_signed(count: usize) -> impl Fn(BitInput) -> IResult<BitInput, isize> {
+    move | input | {
+        let (input, sign_bit) : (BitInput, isize) = take(ONE_BIT)(input)?;
+        let (input, value_bits) : (BitInput, isize) = take(count - ONE_BIT)(input)?;
+
+        let max_value =  2usize.pow((count-1) as u32) - 1;
+        let min_value =  - (max_value as isize + 1);
+        let value = if sign_bit != 0 {
+            min_value + value_bits
+        } else { value_bits };
+
+        Ok((input, value))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::constants::THREE_BITS;
+    use crate::parser_utils::take_signed;
+
+    #[test]
+    fn take_signed_positive_min() {
+        let input = [0b00000000];
+        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+
+        assert_eq!(0, value);
+    }
+
+    #[test]
+    fn take_signed_positive_max() {
+        let input = [0b01100000];
+        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+
+        assert_eq!(3, value);
+    }
+
+    #[test]
+    fn take_signed_negative_min() {
+        let input = [0b10000000];
+        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+
+        assert_eq!(-4, value);
+    }
+
+    #[test]
+    fn take_signed_negative_max() {
+        let input = [0b11100000];
+        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+
+        assert_eq!(-1, value);
+    }
 }
