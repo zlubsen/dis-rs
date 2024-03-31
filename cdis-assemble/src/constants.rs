@@ -17,6 +17,7 @@ pub const THIRTY_BITS: usize = 30;
 
 pub const THIRTY_ONE_BITS: usize = 31;
 pub const THIRTY_TWO_BITS: usize = 32;
+pub const THIRTY_NINE_BITS: usize = 39;
 pub const HUNDRED_TWENTY_BITS: usize = 120;
 pub const LEAST_SIGNIFICANT_BIT : u32 = 0x001;
 pub const NANOSECONDS_PER_HOUR: u32 = 3600 * 1e6 as u32;

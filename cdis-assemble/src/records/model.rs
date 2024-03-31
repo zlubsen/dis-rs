@@ -1,9 +1,13 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use dis_rs::model::{Location, PduStatus};
 use dis_rs::model::{TimeStamp};
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, LEAST_SIGNIFICANT_BIT};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
+
+pub(crate) trait CdisRecord {
+    fn record_length(&self) -> usize;
+}
 
 /// 13.1 C-DIS PDU Header
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -14,6 +18,13 @@ pub struct CdisHeader {
     pub timestamp: TimeStamp,
     pub length: u16,
     pub pdu_status: PduStatus,
+}
+
+impl CdisRecord for CdisHeader {
+    fn record_length(&self) -> usize {
+        const ALWAYS_PRESENT_FIELDS_LENGTH : usize = 58;
+        ALWAYS_PRESENT_FIELDS_LENGTH + self.exercise_id.bit_size()
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -126,6 +137,14 @@ impl AngularVelocity {
     }
 }
 
+impl CdisRecord for AngularVelocity {
+    fn record_length(&self) -> usize {
+        self.x.bit_size()
+            + self.y.bit_size()
+            + self.z.bit_size()
+    }
+}
+
 /// 11.1 Linear Acceleration
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct LinearAcceleration {
@@ -141,6 +160,14 @@ impl LinearAcceleration {
             y,
             z,
         }
+    }
+}
+
+impl CdisRecord for LinearAcceleration {
+    fn record_length(&self) -> usize {
+        self.x.bit_size()
+            + self.y.bit_size()
+            + self.z.bit_size()
     }
 }
 
@@ -162,6 +189,14 @@ impl EntityCoordinateVector {
     }
 }
 
+impl CdisRecord for EntityCoordinateVector {
+    fn record_length(&self) -> usize {
+        self.x.bit_size()
+            + self.y.bit_size()
+            + self.z.bit_size()
+    }
+}
+
 /// 11.11 Entity Identifier Record
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct EntityId {
@@ -176,6 +211,14 @@ impl EntityId {
             application,
             entity,
         }
+    }
+}
+
+impl CdisRecord for EntityId {
+    fn record_length(&self) -> usize {
+        self.site.bit_size()
+            + self.application.bit_size()
+            + self.entity.bit_size()
     }
 }
 
@@ -205,6 +248,17 @@ impl EntityType {
     }
 }
 
+impl CdisRecord for EntityType {
+    fn record_length(&self) -> usize {
+        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = 32;
+        ALWAYS_PRESENT_FIELDS_LENGTH
+            + self.category.bit_size()
+            + self.subcategory.bit_size()
+            + self.specific.bit_size()
+            + self.extra.bit_size()
+    }
+}
+
 /// 11.19 Linear Velocity
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct LinearVelocity {
@@ -220,6 +274,14 @@ impl LinearVelocity {
             y,
             z,
         }
+    }
+}
+
+impl CdisRecord for LinearVelocity {
+    fn record_length(&self) -> usize {
+        self.x.bit_size()
+            + self.y.bit_size()
+            + self.z.bit_size()
     }
 }
 
@@ -241,11 +303,23 @@ impl Orientation {
     }
 }
 
+impl CdisRecord for Orientation {
+    fn record_length(&self) -> usize {
+        THIRTY_NINE_BITS
+    }
+}
+
 /// 11.25 Units
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Units {
     Centimeter,
     Dekameter,
+}
+
+impl CdisRecord for Units {
+    fn record_length(&self) -> usize {
+        1
+    }
 }
 
 impl From<u8> for Units {
@@ -301,6 +375,14 @@ impl CdisEntityMarking {
         } else {
             CdisMarkingCharEncoding::SixBit
         }
+    }
+}
+
+impl CdisRecord for CdisEntityMarking {
+    fn record_length(&self) -> usize {
+        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = 5;
+        ALWAYS_PRESENT_FIELDS_LENGTH
+            + (self.marking.len() * self.char_encoding.bit_size())
     }
 }
 
@@ -591,6 +673,13 @@ impl WorldCoordinates {
     }
 }
 
+impl CdisRecord for WorldCoordinates {
+    fn record_length(&self) -> usize {
+        const CONST_BIT_SIZE: usize = 64;
+        CONST_BIT_SIZE + self.altitude_msl.bit_size()
+    }
+}
+
 impl From<Location> for WorldCoordinates {
     fn from(value: Location) -> Self {
         unimplemented!("ECEF to lat/lon conversion");
@@ -614,6 +703,20 @@ pub enum CdisVariableParameter {
     Unspecified,
 }
 
+impl CdisRecord for CdisVariableParameter {
+    fn record_length(&self) -> usize {
+        // TODO currently always compresses Variable Parameters; how to decide how to encode?
+        FOUR_BITS + match self {
+            CdisVariableParameter::ArticulatedPart(vp) => { vp.record_length() }
+            CdisVariableParameter::AttachedPart(vp) => { vp.record_length() }
+            CdisVariableParameter::EntitySeparation(vp) => { vp.record_length() }
+            CdisVariableParameter::EntityType(vp) => { vp.record_length() }
+            CdisVariableParameter::EntityAssociation(vp) => { vp.record_length() }
+            CdisVariableParameter::Unspecified => { 0 }
+        }
+    }
+}
+
 /// 12.1 Articulated Part Variable Parameter (VP) Record
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisArticulatedPartVP {
@@ -622,6 +725,13 @@ pub struct CdisArticulatedPartVP {
     pub type_class: ArticulatedPartsTypeClass,
     pub type_metric: ArticulatedPartsTypeMetric,
     pub parameter_value: CdisFloat,
+}
+
+impl CdisRecord for CdisArticulatedPartVP {
+    fn record_length(&self) -> usize {
+        const CONST_BIT_SIZE: usize = 50;
+        CONST_BIT_SIZE
+    }
 }
 
 /// 12.2 Attached Part VP Record
@@ -634,6 +744,14 @@ pub struct CdisAttachedPartVP {
     pub attached_part_type: EntityType,
 }
 
+impl CdisRecord for CdisAttachedPartVP {
+    fn record_length(&self) -> usize {
+        const CONST_BIT_SIZE: usize = 22;
+        CONST_BIT_SIZE
+            + self.attached_part_type.record_length()
+    }
+}
+
 /// 12.3 Entity Separation VP Record
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisEntitySeparationVP {
@@ -644,11 +762,26 @@ pub struct CdisEntitySeparationVP {
     pub station_number: u16,
 }
 
+impl CdisRecord for CdisEntitySeparationVP {
+    fn record_length(&self) -> usize {
+        const CONST_BIT_SIZE: usize = 24;
+        CONST_BIT_SIZE
+            + self.parent_entity_id.record_length()
+    }
+}
+
 /// 12.4 Entity Type VP Record
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisEntityTypeVP {
     pub change_indicator: ChangeIndicator,
     pub attached_part_type: EntityType,
+}
+
+impl CdisRecord for CdisEntityTypeVP {
+    fn record_length(&self) -> usize {
+        ONE_BIT
+            + self.attached_part_type.record_length()
+    }
 }
 
 /// 12.5 Entity Association VP Record
@@ -662,6 +795,14 @@ pub struct CdisEntityAssociationVP {
     pub physical_connection_type: EntityAssociationPhysicalConnectionType,
     pub group_member_type: EntityAssociationGroupMemberType,
     pub group_number: u16,
+}
+
+impl CdisRecord for CdisEntityAssociationVP {
+    fn record_length(&self) -> usize {
+        const CONST_BIT_SIZE: usize = 44;
+        CONST_BIT_SIZE
+            + self.entity_id.record_length()
+    }
 }
 
 #[cfg(test)]

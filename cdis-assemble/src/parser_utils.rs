@@ -1,11 +1,10 @@
-use std::mem::size_of;
 use bitvec::field::BitField;
 use bitvec::macros::internal::funty::Integral;
 use nom::IResult;
 use std::ops::{AddAssign, BitAnd, BitOr, Shl, Shr};
 use nom::complete::take;
 use crate::BitBuffer;
-use crate::constants::{EIGHT_BITS, ONE_BIT};
+use crate::constants::ONE_BIT;
 use crate::types::model::VarInt;
 
 /// Write `value` to the BitBuffer `buf`, at the position of `cursor` with length `bit_size`.

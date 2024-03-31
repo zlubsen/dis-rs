@@ -20,6 +20,19 @@ trait SerializeCdis {
     fn serialize(&self, buf : &mut BitBuffer, cursor:  usize) -> usize;
 }
 
+trait BodyProperties {
+    type FieldsPresent;
+    type FieldsPresentOutput;
+    const FIELDS_PRESENT_LENGTH: usize;
+    fn fields_present_field(&self) -> Self::FieldsPresentOutput;
+
+    fn body_length_bits(&self) -> usize;
+
+    fn fields_present_length(&self) -> usize {
+        Self::FIELDS_PRESENT_LENGTH
+    }
+}
+
 pub struct CdisPdu {
     header: CdisHeader,
     body: CdisBody,

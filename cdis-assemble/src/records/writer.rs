@@ -1,6 +1,6 @@
-use crate::records::model::{AngularVelocity, CdisEntityMarking, EntityCoordinateVector, EntityId, EntityType, LinearVelocity};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Orientation, WorldCoordinates};
 use crate::{BitBuffer, SerializeCdis};
-use crate::constants::{FOUR_BITS, NINE_BITS, ONE_BIT};
+use crate::constants::{FOUR_BITS, NINE_BITS, ONE_BIT, THIRTEEN_BITS};
 use crate::parser_utils::write_value_with_length;
 
 impl SerializeCdis for AngularVelocity {
@@ -54,6 +54,24 @@ impl SerializeCdis for LinearVelocity {
         let cursor = self.y.serialize(buf, cursor);
         let cursor = self.z.serialize(buf, cursor);
 
+        cursor
+    }
+}
+
+impl SerializeCdis for WorldCoordinates {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        self.latitude
+        self.longitude
+        let cursor = self.altitude_msl.serialize(buf, cursor);
+        cursor
+    }
+}
+
+impl SerializeCdis for Orientation {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_with_length(buf, cursor, THIRTEEN_BITS, self.psi);
+        let cursor = write_value_with_length(buf, cursor, THIRTEEN_BITS, self.theta);
+        let cursor = write_value_with_length(buf, cursor, THIRTEEN_BITS, self.phi);
         cursor
     }
 }

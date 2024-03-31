@@ -1,12 +1,15 @@
-use crate::constants::{EIGHT_BITS, FOUR_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, TWO_BITS};
 
 pub(crate) trait VarInt {
     type BitSize;
     type InnerType;
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self;
     fn bit_size(&self) -> usize;
-    fn flag_bits_value(&self) -> Self::InnerType;
+    fn flag_bits_value(&self) -> u8;
+    fn flag_bits_size(&self) -> usize;
     fn value(&self) -> Self::InnerType;
+    fn max_value(&self) -> Self::InnerType;
+    fn min_value(&self) -> Self::InnerType;
 }
 
 /// 10.2.1 UVINT8
@@ -39,8 +42,20 @@ impl VarInt for UVINT8 {
         self.bit_size.into()
     }
 
+    fn flag_bits_size(&self) -> usize {
+        Self::BitSize::FLAG_BITS_SIZE
+    }
+
     fn value(&self) -> Self::InnerType {
         self.value
+    }
+
+    fn max_value(&self) -> Self::InnerType {
+        Self::InnerType::MAX
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        Self::InnerType::MIN
     }
 }
 
@@ -65,7 +80,7 @@ pub(crate) enum Uvint8BitSize {
 }
 
 impl Uvint8BitSize {
-    pub const FLAG_BITS: usize = 1;
+    pub const FLAG_BITS_SIZE: usize = ONE_BIT;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -74,17 +89,6 @@ impl Uvint8BitSize {
         }
     }
 }
-
-// impl BitSize for Uvint8BitSize {
-//     const FLAG_BITS: usize = 1;
-//
-//     fn bit_size(&self) -> usize {
-//         match self {
-//             Uvint8BitSize::Four => { FOUR_BITS }
-//             Uvint8BitSize::Eight => { EIGHT_BITS }
-//         }
-//     }
-// }
 
 impl From<u8> for Uvint8BitSize {
     fn from(value: u8) -> Self {
@@ -111,20 +115,39 @@ pub struct UVINT16 {
     pub value: u16,
 }
 
-impl UVINT16 {
-    pub(crate) fn new(bit_size: Uvint16BitSize, value: u16) -> Self {
+impl VarInt for UVINT16 {
+    type BitSize = Uvint16BitSize;
+    type InnerType = u16;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
+    }
+
+    fn flag_bits_size(&self) -> usize {
+        Self::BitSize::FLAG_BITS_SIZE
+    }
+
+    fn value(&self) -> Self::InnerType {
+        self.value
+    }
+
+    fn max_value(&self) -> Self::InnerType {
+        Self::InnerType::MAX
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        Self::InnerType::MIN
     }
 }
 
@@ -153,7 +176,7 @@ pub(crate) enum Uvint16BitSize {
 }
 
 impl Uvint16BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -194,20 +217,39 @@ pub struct UVINT32 {
     pub value: u32,
 }
 
-impl UVINT32 {
-    pub(crate) fn new(bit_size: Uvint32BitSize, value: u32) -> Self {
+impl VarInt for UVINT32 {
+    type BitSize = Uvint32BitSize;
+    type InnerType = u32;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
+    }
+
+    fn flag_bits_size(&self) -> usize {
+        Self::BitSize::FLAG_BITS_SIZE
+    }
+
+    fn value(&self) -> Self::InnerType {
+        self.value
+    }
+
+    fn max_value(&self) -> Self::InnerType {
+        Self::InnerType::MAX
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        Self::InnerType::MIN
     }
 }
 
@@ -236,7 +278,7 @@ pub(crate) enum Uvint32BitSize {
 }
 
 impl Uvint32BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -277,32 +319,39 @@ pub struct SVINT12 {
     pub value: i16,
 }
 
-impl SVINT12 {
-    pub(crate) fn new(bit_size: Svint12BitSize, value: i16) -> Self {
+impl VarInt for SVINT12 {
+    type BitSize = Svint12BitSize;
+    type InnerType = i16;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
     }
 
-    pub(crate) const fn flag_bits_size(&self) -> usize {
-        Svint12BitSize::FLAG_SIZE
+    fn flag_bits_size(&self) -> usize {
+        Svint12BitSize::FLAG_BITS_SIZE
     }
 
-    pub(crate) fn min_value(&self) -> i16 {
-        self.bit_size.min_value()
+    fn value(&self) -> Self::InnerType {
+        self.value
     }
 
-    pub(crate) fn max_value(&self) -> i16 {
+    fn max_value(&self) -> Self::InnerType {
         self.bit_size.max_value()
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        self.bit_size.min_value()
     }
 }
 
@@ -332,7 +381,7 @@ pub(crate) enum Svint12BitSize {
 }
 
 impl Svint12BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -391,32 +440,39 @@ pub struct SVINT13 {
     pub value: i16,
 }
 
-impl SVINT13 {
-    pub(crate) fn new(bit_size: Svint13BitSize, value: i16) -> Self {
+impl VarInt for SVINT13 {
+    type BitSize = Svint13BitSize;
+
+    type InnerType = i16;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
     }
 
-    pub(crate) const fn flag_bits_size(&self) -> usize {
-        Svint13BitSize::FLAG_SIZE
+    fn flag_bits_size(&self) -> usize {
+        Svint13BitSize::FLAG_BITS_SIZE
     }
 
-    pub(crate) fn min_value(&self) -> i16 {
-        self.bit_size.min_value()
+    fn value(&self) -> Self::InnerType {
+        self.value
     }
-
-    pub(crate) fn max_value(&self) -> i16 {
+    fn max_value(&self) -> Self::InnerType {
         self.bit_size.max_value()
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        self.bit_size.min_value()
     }
 }
 
@@ -446,7 +502,7 @@ pub(crate) enum Svint13BitSize {
 }
 
 impl Svint13BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -505,32 +561,39 @@ pub struct SVINT14 {
     pub value: i16,
 }
 
-impl SVINT14 {
-    pub(crate) fn new(bit_size: Svint14BitSize, value: i16) -> Self {
+impl VarInt for SVINT14 {
+    type BitSize = Svint14BitSize;
+
+    type InnerType = i16;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
     }
 
-    pub(crate) const fn flag_bits_size(&self) -> usize {
-        Svint14BitSize::FLAG_SIZE
+    fn flag_bits_size(&self) -> usize {
+        Svint14BitSize::FLAG_BITS_SIZE
     }
 
-    pub(crate) fn min_value(&self) -> i16 {
-        self.bit_size.min_value()
+    fn value(&self) -> Self::InnerType {
+        self.value
     }
-
-    pub(crate) fn max_value(&self) -> i16 {
+    fn max_value(&self) -> Self::InnerType {
         self.bit_size.max_value()
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        self.bit_size.min_value()
     }
 }
 
@@ -560,7 +623,7 @@ pub(crate) enum Svint14BitSize {
 }
 
 impl Svint14BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -619,32 +682,39 @@ pub struct SVINT16 {
     pub value: i16,
 }
 
-impl SVINT16 {
-    pub(crate) fn new(bit_size: Svint16BitSize, value: i16) -> Self {
+impl VarInt for SVINT16 {
+    type BitSize = Svint16BitSize;
+
+    type InnerType = i16;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
     }
 
-    pub(crate) const fn flag_bits_size(&self) -> usize {
-        Svint16BitSize::FLAG_SIZE
+    fn flag_bits_size(&self) -> usize {
+        Svint16BitSize::FLAG_BITS_SIZE
     }
 
-    pub(crate) fn min_value(&self) -> i16 {
-        self.bit_size.min_value()
+    fn value(&self) -> Self::InnerType {
+        self.value
     }
-
-    pub(crate) fn max_value(&self) -> i16 {
+    fn max_value(&self) -> Self::InnerType {
         self.bit_size.max_value()
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        self.bit_size.min_value()
     }
 }
 
@@ -673,7 +743,7 @@ pub(crate) enum Svint16BitSize {
 }
 
 impl Svint16BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
@@ -732,32 +802,39 @@ pub struct SVINT24 {
     pub value: i32,
 }
 
-impl SVINT24 {
-    pub(crate) fn new(bit_size: Svint24BitSize, value: i32) -> Self {
+impl VarInt for SVINT24 {
+    type BitSize = Svint24BitSize;
+
+    type InnerType = i32;
+
+    fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
         Self {
             bit_size,
             value,
         }
     }
 
-    pub(crate) fn bit_size(&self) -> usize {
+    fn bit_size(&self) -> usize {
         self.bit_size.bit_size()
     }
 
-    pub(crate) fn flag_bits_value(&self) -> u8 {
+    fn flag_bits_value(&self) -> u8 {
         self.bit_size.into()
     }
 
-    pub(crate) const fn flag_bits_size(&self) -> usize {
-        Svint24BitSize::FLAG_SIZE
+    fn flag_bits_size(&self) -> usize {
+        Svint24BitSize::FLAG_BITS_SIZE
     }
 
-    pub(crate) fn min_value(&self) -> i32 {
-        self.bit_size.min_value()
+    fn value(&self) -> Self::InnerType {
+        self.value
     }
-
-    pub(crate) fn max_value(&self) -> i32 {
+    fn max_value(&self) -> Self::InnerType {
         self.bit_size.max_value()
+    }
+
+    fn min_value(&self) -> Self::InnerType {
+        self.bit_size.min_value()
     }
 }
 
@@ -787,7 +864,7 @@ pub(crate) enum Svint24BitSize {
 }
 
 impl Svint24BitSize {
-    pub const FLAG_SIZE: usize = TWO_BITS;
+    pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
     pub fn bit_size(&self) -> usize {
         match self {
