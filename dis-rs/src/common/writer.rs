@@ -18,7 +18,7 @@ impl Serialize for PduHeader {
         match self.protocol_version {
             ProtocolVersion::IEEE1278_12012 => {
                 if let Some(status) = self.pdu_status {
-                    crate::v7::writer::serialize_pdu_status(&status, &self.pdu_type, buf);
+                    buf.put_u8(crate::v7::writer::serialize_pdu_status(&status, &self.pdu_type));
                     buf.put_u8(0u8);
                 } else { buf.put_u16(0u16) }
             }

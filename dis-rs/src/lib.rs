@@ -13,6 +13,7 @@ pub use common::parse;
 pub use common::parse_v6 as parse_v6_pdus;
 pub use common::parse_v7 as parse_v7_pdus;
 pub use v7::parser::parse_pdu_status_fields;
+pub use v7::writer::serialize_pdu_status;
 pub use v7::entity_state::entity_capabilities_from_bytes;
 pub use common::Serialize;
 

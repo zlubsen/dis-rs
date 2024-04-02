@@ -2,18 +2,20 @@ use bitvec::prelude::{BitArray, Msb0};
 use crate::constants::MTU_BITS;
 use crate::entity_state::model::{EntityState};
 use crate::records::model::CdisHeader;
+use crate::records::parser::cdis_header;
 
 pub mod types;
 pub mod records;
 pub mod entity_state;
 pub mod constants;
-pub(crate) mod parser_utils;
-
+pub(crate) mod utils;
+pub(crate) mod parsing;
+pub(crate) mod writing;
 
 pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
 
 trait SerializeCdisPdu {
-    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;
+    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> Result<usize, CdisError>;
 }
 
 trait SerializeCdis {
@@ -31,6 +33,8 @@ trait BodyProperties {
     fn fields_present_length(&self) -> usize {
         Self::FIELDS_PRESENT_LENGTH
     }
+
+    fn into_cdis_body(self) -> CdisBody;
 }
 
 pub struct CdisPdu {
@@ -61,6 +65,14 @@ pub enum CdisBody {
     Signal,
     Receiver,
     Iff
+}
+
+pub enum CdisError {
+    ParseError(String), // the parsing of a CDIS PDU resulted in an error
+    InsufficientHeaderLength(u16), // the input was too small to contain a valid CDIS header; (u16 found)
+    InsufficientPduLength(u16, u16), // the input was too small to contain a valid CDIS PDU based on the header and parsing; (u16 expected, u16 found)
+    InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided CDIS PDU; (u16 PDU size, usize available capacity)
+    UnsupportedPdu(u8), // encountered a CDIS PDU of an unsupported type; (u8 PduType found)
 }
 
 #[cfg(test)]

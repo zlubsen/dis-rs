@@ -916,158 +916,45 @@ impl From<Svint24BitSize> for u8 {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub(crate) struct CdisFloatBase {
+    pub mantissa: i32,
+    pub exponent: i8,
+    pub regular_float: Option<f64>,
+}
+
 /// 10.3 Custom Floating Point Numbers
 ///
-/// The `CdisFloat` struct holds the mantissa and exponent components of a C-DIS float implementation.
+/// The `CdisFloat` trait models the mantissa and exponent components of a C-DIS float implementation.
 /// The actual value is available through the `to_value()`. For practical reasons it returns the value as `f64`.
 ///
 /// Because some use cases (such as Variable Parameter Articulated Part record) can be encoded either
 /// as a CdisFloat or a regular 32-bit float, this struct allows to hold both variants.
 /// There are two different constructor methods for this purpose (`new()` and `from_f64` respectively).
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct CdisFloat {
-    mantissa: i32,
-    exponent: i8,
-    pub regular_float: Option<f64>,
-}
+///
+/// The intended way of using this trait is to implement it on a custom struct.
+/// The trait impl for that struct then defines the bit sizes for mantissa and exponent.
+/// `CdisFloatBase` is available to compose the needed fields in your specific struct.
+pub(crate) trait CdisFloat {
+    const MANTISSA_BITS: usize;
+    const EXPONENT_BITS: usize;
 
-impl CdisFloat {
-    pub fn new(mantissa: i32, exponent: i8) -> Self {
-        Self {
-            mantissa,
-            exponent,
-            regular_float: None,
-        }
-    }
-
-    pub fn from_f64(regular_float: f64) -> Self {
-        Self {
-            mantissa: 0,
-            exponent: 0,
-            regular_float: Some(regular_float)
-        }
-    }
-
-    pub fn to_value(&self) -> f64 {
-        if let Some(float) = self.regular_float {
+    fn new(mantissa: i32, exponent: i8) -> Self;
+    fn from_f64(regular_float: f64) -> Self;
+    fn to_value(&self) -> f64 {
+        if let Some(float) = self.regular_float() {
             float
         } else {
-            self.mantissa as f64 * ((10 ^ (self.exponent)) as f64)
+            self.mantissa() as f64 * ((10 ^ (self.exponent())) as f64)
         }
     }
+    fn mantissa(&self) -> i32;
+    fn exponent(&self) -> i8;
+    fn regular_float(&self) -> Option<f64>;
+    fn mantissa_bit_size(&self) -> usize {
+        Self::MANTISSA_BITS
+    }
+    fn exponent_bit_size(&self) -> usize {
+        Self::EXPONENT_BITS
+    }
 }
-
-// pub(crate) trait VarInt {
-//     type Size: BitSize + From<Self::InnerType>;
-//     type InnerType;
-//
-//     fn new(bit_size: Self::Size, value: Self::InnerType) -> Self;
-//     fn bit_size(&self) -> usize;
-//     fn flag_bits_value(&self) -> Self::InnerType;
-//     fn flag_bits_size() -> usize;
-// }
-//
-// pub(crate) trait BitSize {
-//     const FLAG_BITS: usize;
-//
-//     fn bit_size(&self) -> usize;
-// }
-
-// fn test() {
-//     let aap = Uvint8Type {
-//         varint_type: Zero,
-//         value: 5,
-//     };
-// }
-//
-// type Uvint8Type = VarInt<Uvint8Def>;
-//
-// pub struct VarInt<T: TypeDef> {
-//     varint_type: T,
-//     value: T::Output,
-// }
-//
-// impl From<T:Output> for VarInt<T> {
-//     fn from(value: T) -> Self {
-//     }
-// }
-//
-// pub trait TypeDef {
-//     type Output;
-//     fn flag_bits_size() -> usize;
-//     fn sign_bit() -> Option<bool>;
-//     fn bit_size(&self) -> usize;
-//     fn min_value(&self) -> Self::Output;
-//     fn max_value(&self) -> Self::Output;
-// }
-//
-// pub enum Uvint8Def {
-//     Zero,
-//     One,
-// }
-//
-// impl TypeDef for Uvint8Def {
-//     type Output = u8;
-//
-//     fn flag_bits_size() -> usize {
-//         ONE_BIT
-//     }
-//
-//     fn sign_bit() -> Option<bool> {
-//         None
-//     }
-//
-//     fn bit_size(&self) -> usize {
-//         match self {
-//             Uvint8Def::Zero => { 4 }
-//             Uvint8Def::One => { 8 }
-//         }
-//     }
-//
-//     fn min_value(&self) -> Self::Output {
-//         match self {
-//             Uvint8Def::Zero => { 0 }
-//             Uvint8Def::One => { 0 }
-//         }
-//     }
-//
-//     fn max_value(&self) -> Self::Output {
-//         match self {
-//             Uvint8Def::Zero => { 15 }
-//             Uvint8Def::One => { 255 }
-//         }
-//     }
-// }
-//
-// impl From<u8> for Uvint8Def {
-//     fn from(value: u8) -> Self {
-//         match value {
-//             0 => Uvint8Def::Zero,
-//             _ => Uvint8Def::One,
-//         }
-//     }
-// }
-
-// impl VarInt for UVINT8 {
-//     type Size = Uvint8BitSize;
-//     type InnerType = u8;
-//
-//     fn new(bit_size: Self::Size, value: Self::InnerType) -> Self {
-//         Self {
-//             bit_size,
-//             value,
-//         }
-//     }
-//
-//     fn bit_size(&self) -> usize {
-//         self.bit_size.bit_size()
-//     }
-//
-//     fn flag_bits_value(&self) -> Self::InnerType {
-//         self.bit_size.into()
-//     }
-//
-//     fn flag_bits_size() -> usize {
-//         Self::Size::FLAG_BITS
-//     }
-// }

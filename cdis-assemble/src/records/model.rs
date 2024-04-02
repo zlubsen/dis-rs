@@ -1,9 +1,9 @@
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use dis_rs::model::{Location, PduStatus};
 use dis_rs::model::{TimeStamp};
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, FIFTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
+use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
 
 pub(crate) trait CdisRecord {
     fn record_length(&self) -> usize;
@@ -656,7 +656,7 @@ impl CdisMarkingCharEncoding {
 }
 
 /// 11.27 World Coordinates Record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct WorldCoordinates {
     pub latitude: f32,
     pub longitude: f32,
@@ -692,6 +692,48 @@ impl From<WorldCoordinates> for Location {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ParameterValueFloat {
+    base: CdisFloatBase,
+}
+
+impl CdisFloat for ParameterValueFloat {
+    const MANTISSA_BITS: usize = FIFTEEN_BITS;
+    const EXPONENT_BITS: usize = THREE_BITS;
+
+    fn new(mantissa: i32, exponent: i8) -> Self {
+        Self {
+            base: CdisFloatBase {
+                mantissa,
+                exponent,
+                regular_float: None,
+            }
+        }
+    }
+
+    fn from_f64(regular_float: f64) -> Self {
+        Self {
+            base: CdisFloatBase {
+                mantissa: 0,
+                exponent: 0,
+                regular_float: Some(regular_float),
+            }
+        }
+    }
+
+    fn mantissa(&self) -> i32 {
+        self.base.mantissa
+    }
+
+    fn exponent(&self) -> i8 {
+        self.base.exponent
+    }
+
+    fn regular_float(&self) -> Option<f64> {
+        self.base.regular_float
+    }
+}
+
 /// 12 Variable Parameter Records
 #[derive(Clone, Debug, PartialEq)]
 pub enum CdisVariableParameter {
@@ -724,7 +766,7 @@ pub struct CdisArticulatedPartVP {
     pub attachment_id: u16,
     pub type_class: ArticulatedPartsTypeClass,
     pub type_metric: ArticulatedPartsTypeMetric,
-    pub parameter_value: CdisFloat,
+    pub parameter_value: ParameterValueFloat,
 }
 
 impl CdisRecord for CdisArticulatedPartVP {
@@ -739,8 +781,7 @@ impl CdisRecord for CdisArticulatedPartVP {
 pub struct CdisAttachedPartVP {
     pub detached_indicator: AttachedPartDetachedIndicator,
     pub attachment_id: u16,
-    pub type_class: ArticulatedPartsTypeClass,
-    pub type_metric: ArticulatedPartsTypeMetric,
+    pub parameter_type: AttachedParts,
     pub attached_part_type: EntityType,
 }
 

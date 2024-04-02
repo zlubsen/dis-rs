@@ -1,5 +1,5 @@
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
-use crate::BodyProperties;
+use crate::{BodyProperties, CdisBody};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
 
@@ -57,7 +57,10 @@ impl BodyProperties for EntityState {
             + if let Some(record) = self.entity_linear_velocity { record.record_length() } else { 0 }
             + if let Some(record) = self.entity_location { record.record_length() } else { 0 }
             + if let Some(record) = self.entity_orientation { record.record_length() } else { 0 }
+    }
 
+    fn into_cdis_body(self) -> CdisBody {
+        CdisBody::EntityState(self)
     }
 }
 

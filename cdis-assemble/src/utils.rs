@@ -3,7 +3,7 @@ use bitvec::macros::internal::funty::Integral;
 use nom::IResult;
 use std::ops::{AddAssign, BitAnd, BitOr, Shl, Shr};
 use nom::complete::take;
-use crate::BitBuffer;
+use crate::{BitBuffer, SerializeCdis};
 use crate::constants::ONE_BIT;
 use crate::types::model::VarInt;
 
@@ -12,6 +12,12 @@ pub(crate) fn write_value_with_length<T: Integral>(buf: &mut BitBuffer, cursor: 
     let next_cursor = cursor + bit_size;
     buf[cursor..next_cursor].store_be(value);
     next_cursor
+}
+
+/// Helper function that checks if the provided `Option` is `Some`, and then serializes the contained value.
+/// Field must implement trait `SerializeCdis`.
+pub(crate) fn serialize_when_present<I: SerializeCdis>(field: &Option<I>, buf: &mut BitBuffer, cursor: usize) -> usize {
+    if let Some(inner) = field { inner.serialize(buf, cursor) } else { cursor }
 }
 
 pub(crate) type BitInput<'a> = (&'a[u8], usize);
@@ -84,7 +90,7 @@ pub(crate) fn take_signed(count: usize) -> impl Fn(BitInput) -> IResult<BitInput
 #[cfg(test)]
 mod tests {
     use crate::constants::THREE_BITS;
-    use crate::parser_utils::take_signed;
+    use crate::utils::take_signed;
 
     #[test]
     fn take_signed_positive_min() {

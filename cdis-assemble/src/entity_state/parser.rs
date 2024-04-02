@@ -4,13 +4,13 @@ use nom::multi::count;
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
 use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_TWO_BITS};
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState, EntityStateFieldsPresent as FPF};
-use crate::parser_utils;
-use crate::parser_utils::BitInput;
+use crate::{BodyProperties, CdisBody, CdisError, utils};
+use crate::utils::BitInput;
 use crate::records::model::Units;
 use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, variable_parameter, world_coordinates};
 use crate::types::parser::{uvint32, uvint8};
 
-pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityState> {
+pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody, CdisError> {
     let (input, fields_present) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
     let (input, units) : (BitInput, u8) = take(ONE_BIT)(input)?;
     let units = Units::from(units);
@@ -18,25 +18,25 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
     let full_update_flag = full_update_flag != 0;
 
     let (input, entity_id) = entity_identification(input)?;
-    let (input, force_id) = parser_utils::parse_field_when_present(
+    let (input, force_id) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::FORCE_ID_BIT, uvint8)(input)?;
-    let (input, number_of_var_params) = parser_utils::parse_field_when_present(
+    let (input, number_of_var_params) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::VP_BIT, uvint8)(input)?;
-    let number_of_var_params = parser_utils::varint_to_type::<_, _, usize>(number_of_var_params);
+    let number_of_var_params = utils::varint_to_type::<_, _, usize>(number_of_var_params);
 
-    let (input, primary_entity_type) = parser_utils::parse_field_when_present(
+    let (input, primary_entity_type) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::ENTITY_TYPE_BIT, entity_type)(input)?;
-    let (input, alternate_entity_type) = parser_utils::parse_field_when_present(
+    let (input, alternate_entity_type) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::ALT_ENTITY_TYPE_BIT, entity_type)(input)?;
 
-    let (input, entity_linear_velocity) = parser_utils::parse_field_when_present(
+    let (input, entity_linear_velocity) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::LINEAR_VELOCITY_BIT, linear_velocity)(input)?;
-    let (input, entity_location) = parser_utils::parse_field_when_present(
+    let (input, entity_location) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::ENTITY_LOCATION_BIT, world_coordinates)(input)?;
-    let (input, entity_orientation) = parser_utils::parse_field_when_present(
+    let (input, entity_orientation) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::ENTITY_ORIENTATION_BIT, orientation)(input)?;
 
-    let (input, entity_appearance) : (BitInput, Option<u32>) = parser_utils::parse_field_when_present(
+    let (input, entity_appearance) : (BitInput, Option<u32>) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::ENTITY_APPEARANCE_BIT, take(THIRTY_TWO_BITS))(input)?;
     let entity_appearance = if let Some(appearance) = entity_appearance {
         Some(CdisEntityAppearance(appearance))
@@ -44,16 +44,16 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
 
     let (input, dr_algorithm) : (BitInput, u8) = take(FOUR_BITS)(input)?;
     let dr_algorithm = DeadReckoningAlgorithm::from(dr_algorithm);
-    let (input, dr_params_other) : (BitInput, Option<u128>) = parser_utils::parse_field_when_present(
+    let (input, dr_params_other) : (BitInput, Option<u128>) = utils::parse_field_when_present(
     full_update_flag, fields_present, FPF::DR_OTHER_BIT, take(HUNDRED_TWENTY_BITS))(input)?;
-    let (input, dr_params_entity_linear_acceleration) = parser_utils::parse_field_when_present(
+    let (input, dr_params_entity_linear_acceleration) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::DR_LINEAR_ACCELERATION_BIT, linear_acceleration)(input)?;
-    let (input, dr_params_entity_angular_velocity) = parser_utils::parse_field_when_present(
+    let (input, dr_params_entity_angular_velocity) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::DR_ANGULAR_VELOCITY_BIT, angular_velocity)(input)?;
 
-    let (input, entity_marking) = parser_utils::parse_field_when_present(
+    let (input, entity_marking) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::MARKING_BIT, entity_marking)(input)?;
-    let (input, capabilities) = parser_utils::parse_field_when_present(
+    let (input, capabilities) = utils::parse_field_when_present(
         full_update_flag, fields_present, FPF::CAPABILITIES_BIT, uvint32)(input)?;
     let capabilities = if let Some(capabilities) = capabilities {
         Some(CdisEntityCapabilities(capabilities))
@@ -84,12 +84,12 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, EntityStat
         entity_marking,
         capabilities,
         variable_parameters,
-    }))
+    }.into_cdis_body()))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::parser_utils::{field_present, parse_field_when_present};
+    use crate::utils::{field_present, parse_field_when_present};
     use crate::records::parser::entity_identification;
 
     #[test]
