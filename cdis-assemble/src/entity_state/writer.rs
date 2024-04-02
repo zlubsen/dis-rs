@@ -1,8 +1,8 @@
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState};
-use crate::{BitBuffer, BodyProperties, SerializeCdis, SerializeCdisPdu};
+use crate::BodyProperties;
 use crate::constants::{HUNDRED_TWENTY_BITS, ONE_BIT, THIRTY_TWO_BITS};
-use crate::utils::{serialize_when_present, write_value_with_length};
 use crate::types::model::UVINT8;
+use crate::writing::{BitBuffer, serialize_when_present, SerializeCdis, SerializeCdisPdu, write_value_with_length};
 
 impl SerializeCdisPdu for EntityState {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {

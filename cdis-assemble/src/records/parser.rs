@@ -6,7 +6,8 @@ use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric
 use dis_rs::model::TimeStamp;
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::utils::{BitInput, take_signed};
+use crate::parsing::BitInput;
+use crate::parsing::take_signed;
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
 use crate::types::parser::{cdis_float, svint12, svint14, svint16, svint24, uvint16, uvint8};

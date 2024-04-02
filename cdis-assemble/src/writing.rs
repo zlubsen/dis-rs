@@ -1,4 +1,19 @@
-use crate::{BitBuffer, CdisBody, CdisPdu, SerializeCdis, SerializeCdisPdu};
+use bitvec::array::BitArray;
+use bitvec::order::Msb0;
+use bitvec::macros::internal::funty::Integral;
+use bitvec::field::BitField;
+use crate::{CdisBody, CdisPdu};
+use crate::constants::MTU_BITS;
+
+pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
+
+pub trait SerializeCdisPdu {
+    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;
+}
+
+pub trait SerializeCdis {
+    fn serialize(&self, buf : &mut BitBuffer, cursor:  usize) -> usize;
+}
 
 impl SerializeCdisPdu for CdisPdu {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
@@ -39,4 +54,17 @@ impl SerializeCdisPdu for CdisBody {
 
         cursor
     }
+}
+
+/// Write `value` to the BitBuffer `buf`, at the position of `cursor` with length `bit_size`.
+pub(crate) fn write_value_with_length<T: Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
+    let next_cursor = cursor + bit_size;
+    buf[cursor..next_cursor].store_be(value);
+    next_cursor
+}
+
+/// Helper function that checks if the provided `Option` is `Some`, and then serializes the contained value.
+/// Field must implement trait `SerializeCdis`.
+pub(crate) fn serialize_when_present<I: SerializeCdis>(field: &Option<I>, buf: &mut BitBuffer, cursor: usize) -> usize {
+    if let Some(inner) = field { inner.serialize(buf, cursor) } else { cursor }
 }

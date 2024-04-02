@@ -1,7 +1,7 @@
-use crate::BitBuffer;
+use crate::writing::BitBuffer;
 use crate::constants::ONE_BIT;
-use crate::utils::write_value_with_length;
-use crate::SerializeCdis;
+use crate::writing::write_value_with_length;
+use crate::writing::SerializeCdis;
 use crate::types::model::{CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 use crate::types::model::VarInt;
 
@@ -126,10 +126,11 @@ pub(crate) fn serialize_cdis_float<T: CdisFloat>(float: T, buf: &mut BitBuffer, 
 
 #[cfg(test)]
 mod tests {
-    use bitvec::prelude::{BitArray};
-    use crate::{BitBuffer, SerializeCdis};
+    use bitvec::prelude::BitArray;
+    use crate::writing::SerializeCdis;
     use crate::types::model::{SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT8, Uvint8BitSize};
     use crate::types::model::VarInt;
+    use crate::writing::BitBuffer;
 
     const ONE_BYTE: usize = 1;
     const TWO_BYTES: usize = 2;

@@ -1,7 +1,7 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
-use dis_rs::model::{Location, PduStatus};
+use dis_rs::model::{DisTimeStamp, Location, PduStatus};
 use dis_rs::model::{TimeStamp};
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, FIFTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
 
@@ -70,7 +70,7 @@ pub enum CdisTimeStamp {
 impl CdisTimeStamp {
     pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
         let nanoseconds_past_the_hour = CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = CdisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        let units_past_the_hour = CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
         Self::Absolute {
             units_past_the_hour,
             nanoseconds_past_the_hour
@@ -79,10 +79,24 @@ impl CdisTimeStamp {
 
     pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
         let nanoseconds_past_the_hour = CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = CdisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        let units_past_the_hour = CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
         Self::Relative {
             units_past_the_hour,
             nanoseconds_past_the_hour
+        }
+    }
+
+    pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
+        Self::Absolute {
+            units_past_the_hour,
+            nanoseconds_past_the_hour: Self::cdis_time_units_to_nanoseconds(units_past_the_hour),
+        }
+    }
+
+    pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
+        Self::Relative {
+            units_past_the_hour,
+            nanoseconds_past_the_hour: Self::cdis_time_units_to_nanoseconds(units_past_the_hour),
         }
     }
 
@@ -92,8 +106,12 @@ impl CdisTimeStamp {
     }
 
     /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
-    fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
+    fn nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
         (nanoseconds_past_the_hour as f32 / CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
+    }
+
+    fn cdis_time_units_to_nanoseconds(cdis_time_units: u32) -> u32 {
+        (cdis_time_units as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
     }
 }
 
@@ -114,6 +132,36 @@ impl From<u32> for CdisTimeStamp {
 impl From<TimeStamp> for CdisTimeStamp {
     fn from(value: TimeStamp) -> Self {
         CdisTimeStamp::from(value.raw_timestamp)
+    }
+}
+
+impl From<CdisTimeStamp> for TimeStamp {
+    fn from(value: CdisTimeStamp) -> Self {
+        let raw_timestamp = match value {
+            CdisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour } => {
+                (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT
+            }
+            CdisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour } => {
+                units_past_the_hour << 1
+            }
+        };
+
+        Self { raw_timestamp }
+    }
+}
+
+impl From<DisTimeStamp> for CdisTimeStamp {
+    fn from(value: DisTimeStamp) -> Self {
+        match value {
+            DisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
+                let units_past_the_hour = (units_past_the_hour * CDIS_TIME_UNITS_PER_HOUR) / DIS_TIME_UNITS_PER_HOUR;
+                CdisTimeStamp::new_absolute_from_units(units_past_the_hour)
+            }
+            DisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
+                let units_past_the_hour = (units_past_the_hour * CDIS_TIME_UNITS_PER_HOUR) / DIS_TIME_UNITS_PER_HOUR;
+                CdisTimeStamp::new_relative_from_units(units_past_the_hour)
+            }
+        }
     }
 }
 

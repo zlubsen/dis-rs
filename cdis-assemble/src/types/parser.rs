@@ -2,7 +2,8 @@ use nom::IResult;
 use nom::bits::complete::take;
 use nom::complete::bool;
 use crate::constants::{ONE_BIT, TWO_BITS};
-use crate::utils::{BitInput, take_signed};
+use crate::parsing::BitInput;
+use crate::parsing::take_signed;
 use crate::types::model::{CdisFloat, SVINT12, Svint12BitSize, SVINT13, Svint13BitSize, SVINT14, Svint14BitSize, SVINT16, Svint16BitSize, SVINT24, Svint24BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
 
 pub(crate) fn uvint8(input: BitInput) -> IResult<BitInput, UVINT8> {

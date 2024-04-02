@@ -1,6 +1,4 @@
-use bitvec::prelude::{BitArray, Msb0};
-use crate::constants::MTU_BITS;
-use crate::entity_state::model::{EntityState};
+use crate::entity_state::model::EntityState;
 use crate::records::model::CdisHeader;
 use crate::unsupported::Unsupported;
 
@@ -9,21 +7,12 @@ pub mod records;
 pub mod entity_state;
 pub mod unsupported;
 pub mod constants;
-pub(crate) mod utils;
 pub(crate) mod parsing;
 pub(crate) mod writing;
+pub(crate) mod codec;
 
 pub use parsing::parse;
-
-pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
-
-trait SerializeCdisPdu {
-    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;
-}
-
-trait SerializeCdis {
-    fn serialize(&self, buf : &mut BitBuffer, cursor:  usize) -> usize;
-}
+pub use writing::SerializeCdisPdu;
 
 trait BodyProperties {
     type FieldsPresent;
