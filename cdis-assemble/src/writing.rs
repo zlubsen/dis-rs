@@ -1,4 +1,4 @@
-use crate::{BitBuffer, CdisBody, CdisError, CdisPdu, SerializeCdis, SerializeCdisPdu};
+use crate::{BitBuffer, CdisBody, CdisPdu, SerializeCdis, SerializeCdisPdu};
 
 impl SerializeCdisPdu for CdisPdu {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {

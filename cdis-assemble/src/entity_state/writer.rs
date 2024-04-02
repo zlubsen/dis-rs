@@ -1,5 +1,5 @@
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState};
-use crate::{BitBuffer, BodyProperties, CdisError, SerializeCdis, SerializeCdisPdu};
+use crate::{BitBuffer, BodyProperties, SerializeCdis, SerializeCdisPdu};
 use crate::constants::{HUNDRED_TWENTY_BITS, ONE_BIT, THIRTY_TWO_BITS};
 use crate::utils::{serialize_when_present, write_value_with_length};
 use crate::types::model::UVINT8;

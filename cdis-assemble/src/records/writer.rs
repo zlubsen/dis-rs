@@ -235,6 +235,7 @@ mod tests {
         assert_eq!(expected[..FOUR_BYTES], buf.as_raw_slice()[..FOUR_BYTES]);
     }
 
+    #[test]
     fn serialize_marking_six_bit_encoding() {
         let mut buf: BitBuffer = BitArray::ZERO;
 

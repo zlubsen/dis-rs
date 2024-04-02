@@ -1,7 +1,7 @@
 use bitvec::field::BitField;
 use bitvec::macros::internal::funty::Integral;
 use nom::IResult;
-use std::ops::{AddAssign, BitAnd, BitOr, Shl, Shr};
+use std::ops::BitAnd;
 use nom::complete::take;
 use crate::{BitBuffer, SerializeCdis};
 use crate::constants::ONE_BIT;
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn take_signed_positive_min() {
         let input = [0b00000000];
-        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+        let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(0, value);
     }
@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn take_signed_positive_max() {
         let input = [0b01100000];
-        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+        let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(3, value);
     }
@@ -111,7 +111,7 @@ mod tests {
     #[test]
     fn take_signed_negative_min() {
         let input = [0b10000000];
-        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+        let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(-4, value);
     }
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn take_signed_negative_max() {
         let input = [0b11100000];
-        let (input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
+        let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(-1, value);
     }
