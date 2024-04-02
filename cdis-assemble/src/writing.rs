@@ -1,16 +1,16 @@
 use crate::{BitBuffer, CdisBody, CdisError, CdisPdu, SerializeCdis, SerializeCdisPdu};
 
 impl SerializeCdisPdu for CdisPdu {
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> Result<usize, CdisError> {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.header.serialize(buf, cursor);
-        let cursor = self.body.serialize(buf, cursor)?;
+        let cursor = self.body.serialize(buf, cursor);
 
-        Ok(cursor)
+        cursor
     }
 }
 
 impl SerializeCdisPdu for CdisBody {
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> Result<usize, CdisError> {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = match self {
             CdisBody::EntityState(body) => { body.serialize(buf, cursor) }
             // CdisBody::Fire => {}
@@ -35,8 +35,8 @@ impl SerializeCdisPdu for CdisBody {
             // CdisBody::Receiver => {}
             // CdisBody::Iff => {}
             _ => { cursor }
-        }?;
+        };
 
-        Ok(cursor)
+        cursor
     }
 }

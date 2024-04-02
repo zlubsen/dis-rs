@@ -1,11 +1,11 @@
-use nom::{Finish, IResult};
+use nom::IResult;
 use nom::multi::many1;
-use dis_rs::DisError;
 use dis_rs::enumerations::PduType;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::entity_state::parser::entity_state_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
+use crate::unsupported::Unsupported;
 use crate::utils::BitInput;
 
 /// Attempts to parse the provided buffer for CDIS PDUs
@@ -20,7 +20,7 @@ pub(crate) fn parse_multiple_cdis_pdu(input: &[u8]) -> Result<Vec<CdisPdu>, Cdis
     }
 }
 
-pub(crate) fn cdis_pdu(input: BitInput) -> IResult<BitInput, CdisPdu, CdisError> {
+pub(crate) fn cdis_pdu(input: BitInput) -> IResult<BitInput, CdisPdu> {
     let (input, header) = cdis_header(input)?;
     let (input, body) = cdis_body(&header)(input)?;
 
@@ -30,10 +30,9 @@ pub(crate) fn cdis_pdu(input: BitInput) -> IResult<BitInput, CdisPdu, CdisError>
     }))
 }
 
-pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<BitInput, CdisBody> {
+pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<BitInput, CdisBody> + '_ {
     move | input: BitInput | {
-        let (input, header) = cdis_header(input)?;
-        let (input, body) : (BitInput, Result<CdisBody, DisError>) = match header.pdu_type {
+        let (input, body) : (BitInput, CdisBody) = match header.pdu_type {
             PduType::EntityState => { entity_state_body(input)? }
             // PduType::Fire => {}
             // PduType::Detonation => {}
@@ -56,11 +55,12 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             // PduType::Signal => {}
             // PduType::Receiver => {}
             // PduType::IFF => {}
-            PduType::Other => { Err(CdisError::UnsupportedPdu(0)) }            // TODO make an implementation for Other PDUs
-            PduType::Unspecified(_val) => { Err(CdisError::UnsupportedPdu(_val.into())) }
-            _val => { Err(CdisError::UnsupportedPdu(_val.into())) } // Unsupported PDUs in CDIS v1
+            // Unsupported PDUs in CDIS v1
+            PduType::Other => { (input, CdisBody::Unsupported(Unsupported)) }
+            PduType::Unspecified(_val) => { (input, CdisBody::Unsupported(Unsupported)) }
+            _val => { (input, CdisBody::Unsupported(Unsupported)) }
         };
-        let body = body?;
+
         Ok((input, body))
     }
 }

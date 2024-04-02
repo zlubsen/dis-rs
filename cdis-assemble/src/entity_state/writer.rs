@@ -5,7 +5,7 @@ use crate::utils::{serialize_when_present, write_value_with_length};
 use crate::types::model::UVINT8;
 
 impl SerializeCdisPdu for EntityState {
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> Result<usize, CdisError> {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let fields_present = self.fields_present_field();
         let cursor = write_value_with_length(buf, cursor, self.fields_present_length(), fields_present);
         let cursor = write_value_with_length::<u8>(buf, cursor, ONE_BIT, self.units.into());
@@ -35,7 +35,7 @@ impl SerializeCdisPdu for EntityState {
         let cursor = self.variable_parameters.iter()
             .fold(cursor, |cursor, vp| vp.serialize(buf, cursor) );
 
-        Ok(cursor)
+        cursor
     }
 }
 

@@ -267,7 +267,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::InformationOperationsAction => {}
             // PduType::InformationOperationsReport => {}
             PduType::Attribute => { attribute_body(input)? }
-            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
+            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unsupported type number?
             _ => { other_body(header)(input)? }
         };
         Ok((input, body))

@@ -2,20 +2,23 @@ use bitvec::prelude::{BitArray, Msb0};
 use crate::constants::MTU_BITS;
 use crate::entity_state::model::{EntityState};
 use crate::records::model::CdisHeader;
-use crate::records::parser::cdis_header;
+use crate::unsupported::Unsupported;
 
 pub mod types;
 pub mod records;
 pub mod entity_state;
+pub mod unsupported;
 pub mod constants;
 pub(crate) mod utils;
 pub(crate) mod parsing;
 pub(crate) mod writing;
 
+pub use parsing::parse;
+
 pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
 
 trait SerializeCdisPdu {
-    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> Result<usize, CdisError>;
+    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;
 }
 
 trait SerializeCdis {
@@ -43,6 +46,7 @@ pub struct CdisPdu {
 }
 
 pub enum CdisBody {
+    Unsupported(Unsupported),
     EntityState(EntityState),
     Fire,
     Detonation,
@@ -64,7 +68,7 @@ pub enum CdisBody {
     Transmitter,
     Signal,
     Receiver,
-    Iff
+    Iff,
 }
 
 pub enum CdisError {

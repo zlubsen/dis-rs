@@ -4,13 +4,13 @@ use nom::multi::count;
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
 use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_TWO_BITS};
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState, EntityStateFieldsPresent as FPF};
-use crate::{BodyProperties, CdisBody, CdisError, utils};
+use crate::{BodyProperties, CdisBody, utils};
 use crate::utils::BitInput;
 use crate::records::model::Units;
 use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, variable_parameter, world_coordinates};
 use crate::types::parser::{uvint32, uvint8};
 
-pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody, CdisError> {
+pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
     let (input, units) : (BitInput, u8) = take(ONE_BIT)(input)?;
     let units = Units::from(units);
