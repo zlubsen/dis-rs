@@ -1,6 +1,10 @@
 # Changelog for crate DIS-RS
 
-## 0.8.0 - 2024-xx-yy
+## 0.9.0 - 2024-xx-xx
+
+...
+
+## 0.8.0 - 2024-04-03
 
 Changed the main serialization function for `PDU` to be fallible. It now returns `DisError::InsufficientBufferSize` when 
 the provided buffer does not have enough capacity to serialize the entire PDU. This should prevent the library from panicking during serialization.
