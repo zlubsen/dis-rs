@@ -1124,6 +1124,20 @@ impl DisTimeStamp {
         }
     }
 
+    pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
+        Self::Absolute {
+            units_past_the_hour,
+            nanoseconds_past_the_hour: Self::dis_time_units_to_nanoseconds(units_past_the_hour),
+        }
+    }
+
+    pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
+        Self::Relative {
+            units_past_the_hour,
+            nanoseconds_past_the_hour: Self::dis_time_units_to_nanoseconds(units_past_the_hour),
+        }
+    }
+
     /// Helper function to convert seconds to nanoseconds
     fn seconds_to_nanoseconds(seconds: u32) -> u32 {
         seconds * 1_000_000
@@ -1132,6 +1146,10 @@ impl DisTimeStamp {
     /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
     fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
         (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
+    }
+
+    fn dis_time_units_to_nanoseconds(dis_time_units: u32) -> u32 {
+        (dis_time_units as f32 * NANOSECONDS_PER_TIME_UNIT) as u32
     }
 }
 
@@ -1152,6 +1170,12 @@ impl From<u32> for DisTimeStamp {
 impl From<TimeStamp> for DisTimeStamp {
     fn from(value: TimeStamp) -> Self {
         DisTimeStamp::from(value.raw_timestamp)
+    }
+}
+
+impl From<DisTimeStamp> for u32 {
+    fn from(value: DisTimeStamp) -> Self {
+        TimeStamp::from(value).raw_timestamp
     }
 }
 
