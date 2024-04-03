@@ -30,3 +30,16 @@ pub const DIS_NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / DIS
 pub const MTU_BYTES: usize = 1500;
 pub const MTU_BITS: usize = MTU_BYTES * EIGHT_BITS;
 pub const DECIMETERS_TO_METERS: f32 = 10f32;
+
+pub struct EcefToGeoConstants;
+
+impl EcefToGeoConstants {
+    pub const WGS_84_SEMI_MAJOR_AXIS: f32 = 6378137.0;  //WGS-84 semi-major axis
+    pub const E2: f32 = 6.6943799901377997e-3;          // WGS-84 first eccentricity squared
+    pub const A1: f32 = 4.2697672707157535e+4;          //a1 = a*e2
+    pub const A2: f32 = 1.8230912546075455e+9;          //a2 = a1*a1
+    pub const A3: f32 = 1.4291722289812413e+2;          //a3 = a1*e2/2
+    pub const A4: f32 = 4.5577281365188637e+9;          //a4 = 2.5*a2
+    pub const A5: f32 = 4.2840589930055659e+4;          //a5 = a1+a3
+    pub const A6: f32 = 9.9330562000986220e-1;          //a6 = 1-e2
+}

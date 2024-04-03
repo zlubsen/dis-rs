@@ -80,7 +80,6 @@ impl Codec for LinearVelocity {
 
     fn encode(item: Self::Counterpart) -> Self {
         Self {
-            // TODO
             x: SVINT16::from((item.first_vector_component * DECIMETERS_TO_METERS) as i16),
             y: SVINT16::from((item.second_vector_component * DECIMETERS_TO_METERS) as i16),
             z: SVINT16::from((item.third_vector_component * DECIMETERS_TO_METERS) as i16),

@@ -1,7 +1,7 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use dis_rs::model::{DisTimeStamp, Location, PduStatus};
 use dis_rs::model::{TimeStamp};
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EcefToGeoConstants, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
 
@@ -745,14 +745,84 @@ impl CdisRecord for WorldCoordinates {
 }
 
 impl From<Location> for WorldCoordinates {
+    /// Applies ECEF to Geo conversion
+    ///
+    /// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
     fn from(value: Location) -> Self {
-        unimplemented!("ECEF to lat/lon conversion");
+        // TODO account for the scaling of lat
+        // TODO account for the scaling of lon
+        // TODO use of the Units flag - correct calculation of Altitude MSL
+        let x = value.x_coordinate as f32;
+        let y = value.y_coordinate as f32;
+        let z = value.z_coordinate as f32;
+        let zp = z.abs();
+        let w2 = x*x + y*y;
+        let w = w2.sqrt();
+        let r2 = w2 + z*z;
+        let r = r2.sqrt();
+        let longitude = y.atan2(x);
+
+        let s2 = z*z/r2;
+        let c2 = w2/r2;
+        let u = EcefToGeoConstants::A2/r;
+        let v = EcefToGeoConstants::A3 - EcefToGeoConstants::A4/r;
+        let (latitude, s, ss, c) = if c2 > 0.3 {
+            let s = ( zp/r )*( 1.0 + c2*( EcefToGeoConstants::A1 + u + s2*v )/r );
+            let latitude = s.asin();      //Lat
+            let ss = s*s;
+            let c = (1.0 - ss).sqrt();
+            (latitude, s, ss, c)
+        } else {
+            let c = ( w/r )*( 1.0 - s2*( EcefToGeoConstants::A5 - u - c2*v )/r );
+            let latitude = c.acos();      //Lat
+            let ss = 1.0 - c*c;
+            let s = ss.sqrt();
+            (latitude, s, ss, c)
+        };
+
+        let g = 1.0 - EcefToGeoConstants::E2*ss;
+        let rg = EcefToGeoConstants::WGS_84_SEMI_MAJOR_AXIS/g.sqrt();
+        let rf = EcefToGeoConstants::A6*rg;
+        let u = w - rg*c;
+        let v = zp - rf*s;
+        let f = c*u + s*v;
+        let m = c*v - s*u;
+        let p = m/( rf/g + f );
+        let latitude = latitude + p;    //Lat
+        let altitude = f + m*p/2.0;     //Altitude
+        let latitude = if z < 0.0 {
+            latitude * -1.0     //Lat
+        } else { latitude };
+
+        WorldCoordinates::new(
+            latitude,
+            longitude,
+            SVINT24::from(altitude as i32))
     }
 }
 
 impl From<WorldCoordinates> for Location {
+    /// Applies Geo to ECEF conversion
+    ///
+    /// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
     fn from(value: WorldCoordinates) -> Self {
-        unimplemented!("lat/lon to ECEF conversion");
+        // TODO account for the scaling of lat
+        // TODO account for the scaling of lon
+        // TODO use of the Units flag - correct calculation of Altitude MSL
+        let latitude = value.latitude;
+        let longitude = value.longitude;
+        let altitude = value.altitude_msl.value as f32;
+        let n = EcefToGeoConstants::WGS_84_SEMI_MAJOR_AXIS
+            / ( 1.0 - EcefToGeoConstants::E2 * latitude.sin() * latitude.sin() ).sqrt();
+        let ecef_x = ( n + altitude ) * latitude.cos() * longitude.cos();               //ECEF x
+        let ecef_y = ( n + altitude ) * latitude.cos() * longitude.sin();               //ECEF y
+        let ecef_z = ( n * ( 1.0 - EcefToGeoConstants::E2 ) + altitude ) * latitude;    //ECEF z
+
+        Self {
+            x_coordinate: ecef_x as f64,
+            y_coordinate: ecef_y as f64,
+            z_coordinate: ecef_z as f64,
+        }
     }
 }
 
