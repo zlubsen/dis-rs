@@ -9,6 +9,8 @@ The impls for the `Serialize` and `SerializePdu` traits are not changed and coul
 
 Added UnderwaterAcoustics (UA) PDU.
 
+Traits ``BodyInfo`` and ``Interaction`` are now public.
+
 ## 0.7.0 - 2024-03-12
 Added Logistics PDUs (ServiceRequest, ResupplyOffer, ResupplyReceived, ResupplyCancel, RepairComplete, RepairResponse)
 
