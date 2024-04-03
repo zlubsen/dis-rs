@@ -756,12 +756,12 @@ impl VectorF32 {
     }
 
     pub fn with_second(mut self, second: f32) -> Self {
-        self.first_vector_component = second;
+        self.second_vector_component = second;
         self
     }
 
     pub fn with_third(mut self, third: f32) -> Self {
-        self.first_vector_component = third;
+        self.third_vector_component = third;
         self
     }
 }

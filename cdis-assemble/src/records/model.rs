@@ -1,7 +1,7 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use dis_rs::model::{DisTimeStamp, Location, PduStatus};
 use dis_rs::model::{TimeStamp};
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
 
@@ -373,9 +373,10 @@ impl CdisRecord for Orientation {
 }
 
 /// 11.25 Units
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub enum Units {
     Centimeter,
+    #[default]
     Dekameter,
 }
 
@@ -443,7 +444,7 @@ impl CdisEntityMarking {
 
 impl CdisRecord for CdisEntityMarking {
     fn record_length(&self) -> usize {
-        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = 5;
+        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = FIVE_BITS;
         ALWAYS_PRESENT_FIELDS_LENGTH
             + (self.marking.len() * self.char_encoding.bit_size())
     }

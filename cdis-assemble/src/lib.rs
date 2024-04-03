@@ -1,5 +1,6 @@
+use dis_rs::model::TimeStamp;
 use crate::entity_state::model::EntityState;
-use crate::records::model::CdisHeader;
+use crate::records::model::{CdisHeader, CdisRecord};
 use crate::unsupported::Unsupported;
 
 pub mod types;
@@ -29,11 +30,32 @@ trait BodyProperties {
     fn into_cdis_body(self) -> CdisBody;
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct CdisPdu {
     header: CdisHeader,
     body: CdisBody,
 }
 
+impl CdisPdu {
+    pub fn finalize_from_parts(header: CdisHeader, body: CdisBody, time_stamp: impl Into<TimeStamp>) -> Self {
+        let time_stamp: TimeStamp = time_stamp.into();
+        Self {
+            header: CdisHeader {
+                timestamp: time_stamp,
+                length: (header.record_length() + body.body_length()) as u16,
+                ..header
+            },
+            body
+        }
+    }
+
+    pub fn pdu_length(&self) -> usize {
+        self.header.record_length()
+        + self.body.body_length()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum CdisBody {
     Unsupported(Unsupported),
     EntityState(EntityState),
@@ -58,6 +80,36 @@ pub enum CdisBody {
     Signal,
     Receiver,
     Iff,
+}
+
+impl CdisBody {
+    pub fn body_length(&self) -> usize {
+        match self {
+            CdisBody::Unsupported(_) => { 0 }
+            CdisBody::EntityState(body) => { body.body_length_bits() }
+            CdisBody::Fire => { 0 }
+            CdisBody::Detonation => { 0 }
+            CdisBody::Collision => { 0 }
+            CdisBody::CreateEntity => { 0 }
+            CdisBody::RemoveEntity => { 0 }
+            CdisBody::StartResume => { 0 }
+            CdisBody::StopFreeze => { 0 }
+            CdisBody::Acknowledge => { 0 }
+            CdisBody::ActionRequest => { 0 }
+            CdisBody::ActionResponse => { 0 }
+            CdisBody::DataQuery => { 0 }
+            CdisBody::SetData => { 0 }
+            CdisBody::Data => { 0 }
+            CdisBody::EventReport => { 0 }
+            CdisBody::Comment => { 0 }
+            CdisBody::ElectromagneticEmission => { 0 }
+            CdisBody::Designator => { 0 }
+            CdisBody::Transmitter => { 0 }
+            CdisBody::Signal => { 0 }
+            CdisBody::Receiver => { 0 }
+            CdisBody::Iff => { 0 }
+        }
+    }
 }
 
 pub enum CdisError {
