@@ -141,14 +141,14 @@ pub(crate) fn linear_acceleration(input: BitInput) -> IResult<BitInput, LinearAc
 }
 
 pub(crate) fn orientation(input: BitInput) -> IResult<BitInput, Orientation> {
-    let (input, psi) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
-    let (input, theta) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
-    let (input, phi) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
+    let (input, psi) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, theta) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, phi) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
 
     Ok((input, Orientation::new(
-        psi,
-        theta,
-        phi)))
+        psi as i16,
+        theta as i16,
+        phi as i16)))
 }
 
 pub(crate) fn entity_marking(input: BitInput) -> IResult<BitInput, CdisEntityMarking> {

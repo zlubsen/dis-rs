@@ -68,3 +68,16 @@ pub(crate) fn write_value_with_length<T: Integral>(buf: &mut BitBuffer, cursor: 
 pub(crate) fn serialize_when_present<I: SerializeCdis>(field: &Option<I>, buf: &mut BitBuffer, cursor: usize) -> usize {
     if let Some(inner) = field { inner.serialize(buf, cursor) } else { cursor }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn write_value_with_length_positive() {
+        assert!(false)
+    }
+
+    #[test]
+    fn write_value_with_length_negative() {
+        assert!(false)
+    }
+}

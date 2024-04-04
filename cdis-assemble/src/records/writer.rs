@@ -87,8 +87,8 @@ impl SerializeCdis for LinearVelocity {
 impl SerializeCdis for WorldCoordinates {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         // TODO float to signed integer - apply scaling
-        // self.latitude
-        // self.longitude
+        self.latitude
+        self.longitude
         let cursor = self.altitude_msl.serialize(buf, cursor);
         cursor
     }

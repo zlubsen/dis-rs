@@ -223,4 +223,9 @@ mod tests {
 
         assert_eq!(expected[..TWO_BYTES], buf.as_raw_slice()[..TWO_BYTES]);
     }
+
+    #[test]
+    fn serialize_cdis_float() {
+        assert!(false)
+    }
 }

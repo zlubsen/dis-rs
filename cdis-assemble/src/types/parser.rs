@@ -191,4 +191,9 @@ mod tests {
 
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn parse_cdis_float() {
+        assert!(false)
+    }
 }

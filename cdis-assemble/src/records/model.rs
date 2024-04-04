@@ -363,13 +363,13 @@ impl CdisRecord for LinearVelocity {
 /// 11.22 Orientation
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Orientation {
-    pub psi: u16,
-    pub theta: u16,
-    pub phi: u16,
+    pub psi: i16,
+    pub theta: i16,
+    pub phi: i16,
 }
 
 impl Orientation {
-    pub fn new(psi: u16, theta: u16, phi: u16) -> Self {
+    pub fn new(psi: i16, theta: i16, phi: i16) -> Self {
         Self {
             psi,
             theta,

@@ -2,7 +2,7 @@ use dis_rs::enumerations::{Country, EntityKind, PlatformDomain};
 use dis_rs::model::{DisTimeStamp, PduHeader, TimeStamp, VectorF32};
 use crate::codec::Codec;
 use crate::constants::{METERS_TO_DECIMETERS, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity};
+use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation};
 use crate::types::model::{SVINT12, SVINT14, SVINT16, UVINT16, UVINT8};
 
 impl Codec for CdisHeader {
@@ -77,6 +77,7 @@ impl Codec for EntityType {
 /// C-DIS specifies linear velocity in decimeters/sec
 impl Codec for LinearVelocity {
     type Counterpart = VectorF32;
+    const SCALING: f32 = 1.0;
 
     fn encode(item: Self::Counterpart) -> Self {
         Self {
@@ -91,6 +92,30 @@ impl Codec for LinearVelocity {
             .with_first(self.x.value as f32 / METERS_TO_DECIMETERS)
             .with_second(self.y.value as f32 / METERS_TO_DECIMETERS)
             .with_third(self.z.value as f32 / METERS_TO_DECIMETERS)
+    }
+}
+
+/// DIS specifies Euler Angles (Orientation) in radians.
+/// CDIS specifies Euler Angles in degrees
+impl Codec for Orientation {
+    type Counterpart = dis_rs::model::Orientation;
+    const SCALING: f32 = (2^12 - 1) as f32 / std::f32::consts::PI;
+
+    fn encode(item: Self::Counterpart) -> Self {
+        Self {
+            // TODO apply proper mapping/scaling
+            // This field shall specify a geocentric orientation using Euler angles as specified in DIS. The values shall be
+            // scaled signed integer units up to +- (180 degrees). Scale = (212
+            // - 1) / . Angles shall be reduced to within
+            // the +- (180 degrees) range before scaling to get accurate values.
+            psi: (item.psi * Self::SCALING) as i16,
+            theta: (item.psi * Self::SCALING) as i16,
+            phi: (item.psi * Self::SCALING) as i16,
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        todo!()
     }
 }
 
@@ -180,7 +205,6 @@ mod tests {
             SVINT16::from(-222),
             SVINT16::from(333));
         let dis = cdis.decode();
-        //VectorF32::new(11.1f32, -22.2f32, 33.3f32);
 
         assert_eq!(dis.first_vector_component, 11.1f32);
         assert_eq!(dis.second_vector_component, -22.2f32);
@@ -215,5 +239,15 @@ mod tests {
         assert!((0.95f32..1.0f32).contains(&back_to_dis.first_vector_component));
         assert!((12.5f32..12.6f32).contains(&back_to_dis.second_vector_component));
         assert!((-3.14f32..-3.11f32).contains(&back_to_dis.third_vector_component));
+    }
+
+    #[test]
+    fn entity_location_dis_to_cdis() {
+        assert!(false)
+    }
+
+    #[test]
+    fn entity_orientation_dis_to_cdis() {
+        assert!(false)
     }
 }
