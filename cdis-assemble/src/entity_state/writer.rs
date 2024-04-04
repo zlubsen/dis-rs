@@ -23,8 +23,8 @@ impl SerializeCdisPdu for EntityState {
         let cursor = serialize_when_present(&self.entity_appearance, buf, cursor);
 
         let cursor = write_value_with_length::<u8>(buf, cursor, ONE_BIT, self.dr_algorithm.into());
-        let cursor = if let Some(other) = self.dr_params_other {
-            write_value_with_length(buf, cursor, HUNDRED_TWENTY_BITS, other)
+        let cursor = if let Some(other) = &self.dr_params_other {
+            write_value_with_length(buf, cursor, HUNDRED_TWENTY_BITS, other.0)
         } else { cursor };
         let cursor = serialize_when_present(&self.dr_params_entity_linear_acceleration, buf, cursor);
         let cursor = serialize_when_present(&self.dr_params_entity_angular_velocity, buf, cursor);

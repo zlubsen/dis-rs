@@ -1,5 +1,5 @@
 use crate::codec::Codec;
-use crate::entity_state::model::EntityState;
+use crate::entity_state::model::{CdisDRParametersOther, EntityState};
 use crate::records::model::{EntityId, EntityType, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{UVINT8};
 
@@ -15,12 +15,13 @@ impl Codec for EntityState {
             entity_type: Some(EntityType::encode(item.entity_type)),
             alternate_entity_type: Some(EntityType::encode(item.alternative_entity_type)),
             entity_linear_velocity: Some(LinearVelocity::encode(item.entity_linear_velocity)),
+            // TODO test / validate if correct
             entity_location: Some(WorldCoordinates::from(item.entity_location)),
             // TODO check if this is the correct conversion - and move to the record (codec trait)
             entity_orientation: Some(Orientation::new(item.entity_orientation.psi as u16, item.entity_orientation.theta as u16, item.entity_orientation.phi as u16)),
-            entity_appearance: None,
-            dr_algorithm: Default::default(),
-            dr_params_other: None,
+            entity_appearance: Some((&item.entity_appearance).into()),
+            dr_algorithm: item.dead_reckoning_parameters.algorithm,
+            dr_params_other: Some(CdisDRParametersOther::from(item.dead_reckoning_parameters.other_parameters)),
             dr_params_entity_linear_acceleration: None,
             dr_params_entity_angular_velocity: None,
             entity_marking: None,

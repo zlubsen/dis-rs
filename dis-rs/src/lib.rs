@@ -6,6 +6,7 @@ mod v7;
 mod constants;
 mod fixed_parameters;
 mod variable_parameters;
+pub mod utils;
 
 include!(concat!(env!("OUT_DIR"), "/enumerations.rs"));
 

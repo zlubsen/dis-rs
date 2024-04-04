@@ -49,22 +49,7 @@ impl SerializePdu for EntityState {
 
 impl Serialize for EntityAppearance {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let appearance: u32 = match self {
-            EntityAppearance::LandPlatform(appearance) => u32::from(*appearance),
-            EntityAppearance::AirPlatform(appearance) => u32::from(*appearance),
-            EntityAppearance::SurfacePlatform(appearance) => u32::from(*appearance),
-            EntityAppearance::SubsurfacePlatform(appearance) => u32::from(*appearance),
-            EntityAppearance::SpacePlatform(appearance) => u32::from(*appearance),
-            EntityAppearance::Munition(appearance) => u32::from(*appearance),
-            EntityAppearance::LifeForms(appearance) => u32::from(*appearance),
-            EntityAppearance::Environmental(appearance) => u32::from(*appearance),
-            EntityAppearance::CulturalFeature(appearance) => u32::from(*appearance),
-            EntityAppearance::Supply(appearance) => u32::from(*appearance),
-            EntityAppearance::Radio(appearance) => u32::from(*appearance),
-            EntityAppearance::Expendable(appearance) => u32::from(*appearance),
-            EntityAppearance::SensorEmitter(appearance) => u32::from(*appearance),
-            EntityAppearance::Unspecified(appearance) => u32::from_be_bytes(*appearance),
-        };
+        let appearance: u32 = u32::from(self);
         buf.put_u32(appearance);
         4
     }

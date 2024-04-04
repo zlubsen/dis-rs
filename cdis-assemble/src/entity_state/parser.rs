@@ -3,7 +3,7 @@ use nom::IResult;
 use nom::multi::count;
 use dis_rs::enumerations::DeadReckoningAlgorithm;
 use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS, THIRTY_TWO_BITS};
-use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState, EntityStateFieldsPresent as FPF};
+use crate::entity_state::model::{CdisDRParametersOther, CdisEntityAppearance, CdisEntityCapabilities, EntityState, EntityStateFieldsPresent as FPF};
 use crate::{BodyProperties, CdisBody, parsing};
 use crate::parsing::BitInput;
 use crate::records::model::Units;
@@ -46,6 +46,10 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
     let dr_algorithm = DeadReckoningAlgorithm::from(dr_algorithm);
     let (input, dr_params_other) : (BitInput, Option<u128>) = parsing::parse_field_when_present(
     full_update_flag, fields_present, FPF::DR_OTHER_BIT, take(HUNDRED_TWENTY_BITS))(input)?;
+    let dr_params_other = if let Some(bytes) = dr_params_other {
+        Some(CdisDRParametersOther::from(bytes))
+    } else { None };
+
     let (input, dr_params_entity_linear_acceleration) = parsing::parse_field_when_present(
         full_update_flag, fields_present, FPF::DR_LINEAR_ACCELERATION_BIT, linear_acceleration)(input)?;
     let (input, dr_params_entity_angular_velocity) = parsing::parse_field_when_present(

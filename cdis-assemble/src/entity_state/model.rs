@@ -1,4 +1,7 @@
+use bytes::{BufMut, BytesMut};
+use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
+use dis_rs::Serialize;
 use crate::{BodyProperties, CdisBody};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
@@ -16,7 +19,7 @@ pub struct EntityState {
     pub entity_orientation: Option<Orientation>,
     pub entity_appearance: Option<CdisEntityAppearance>,
     pub dr_algorithm: DeadReckoningAlgorithm,
-    pub dr_params_other: Option<u128>,
+    pub dr_params_other: Option<CdisDRParametersOther>,
     pub dr_params_entity_linear_acceleration: Option<LinearAcceleration>,
     pub dr_params_entity_angular_velocity: Option<AngularVelocity>,
     pub entity_marking: Option<CdisEntityMarking>,
@@ -71,6 +74,12 @@ impl BodyProperties for EntityState {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisEntityAppearance(pub u32);
 
+impl From<&EntityAppearance> for CdisEntityAppearance{
+    fn from(value: &EntityAppearance) -> Self {
+        CdisEntityAppearance(value.into())
+    }
+}
+
 /// The Capabilities field is not explicitly modeled because the interpretation of the on-wire value
 /// depends on the EntityType, which is not yet known when that field is not
 /// present in the received C-DIS PDU.
@@ -82,14 +91,22 @@ pub struct CdisEntityCapabilities(pub UVINT32);
 /// depends on the DR Algorithm.
 /// This struct wraps the type in the wire format.
 #[derive(Clone, Debug, PartialEq)]
-pub struct CdisDRParametersOther(pub Vec<u8>);
+pub struct CdisDRParametersOther(pub u128);
 
 impl From<u128> for CdisDRParametersOther {
     fn from(value: u128) -> Self {
-        const FIRST_BYTES_IS_EMPTY: usize = 0;
-        let mut bytes = value.to_be_bytes().to_vec();
-        let _ = bytes.remove(FIRST_BYTES_IS_EMPTY);
-        Self(bytes)
+        Self(value)
+    }
+}
+
+impl From<DrOtherParameters> for CdisDRParametersOther {
+    fn from(value: DrOtherParameters) -> Self {
+        const SIXTEEN_BYTES: usize = std::mem::size_of::<u128>();
+        let mut buf = BytesMut::with_capacity(SIXTEEN_BYTES);
+        buf.put_u8(0);
+        value.serialize(&mut buf);
+        let int_bytes: [u8; SIXTEEN_BYTES] = buf[..SIXTEEN_BYTES].try_into().unwrap_or([0; SIXTEEN_BYTES]);
+        Self(u128::from_be_bytes(int_bytes))
     }
 }
 

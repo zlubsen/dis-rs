@@ -117,6 +117,27 @@ impl EntityAppearance {
     }
 }
 
+impl From<&EntityAppearance> for u32 {
+    fn from(value: &EntityAppearance) -> Self {
+        match value {
+            EntityAppearance::LandPlatform(appearance) => u32::from(*appearance),
+            EntityAppearance::AirPlatform(appearance) => u32::from(*appearance),
+            EntityAppearance::SurfacePlatform(appearance) => u32::from(*appearance),
+            EntityAppearance::SubsurfacePlatform(appearance) => u32::from(*appearance),
+            EntityAppearance::SpacePlatform(appearance) => u32::from(*appearance),
+            EntityAppearance::Munition(appearance) => u32::from(*appearance),
+            EntityAppearance::LifeForms(appearance) => u32::from(*appearance),
+            EntityAppearance::Environmental(appearance) => u32::from(*appearance),
+            EntityAppearance::CulturalFeature(appearance) => u32::from(*appearance),
+            EntityAppearance::Supply(appearance) => u32::from(*appearance),
+            EntityAppearance::Radio(appearance) => u32::from(*appearance),
+            EntityAppearance::Expendable(appearance) => u32::from(*appearance),
+            EntityAppearance::SensorEmitter(appearance) => u32::from(*appearance),
+            EntityAppearance::Unspecified(appearance) => u32::from_be_bytes(*appearance),
+        }
+    }
+}
+
 /// 6.2.29 Entity Marking record
 #[derive(Clone, Debug, PartialEq)]
 pub struct EntityMarking {
