@@ -29,4 +29,5 @@ pub const DIS_TIME_UNITS_PER_HOUR: u32 = (2^31) - 1;
 pub const DIS_NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
 pub const MTU_BYTES: usize = 1500;
 pub const MTU_BITS: usize = MTU_BYTES * EIGHT_BITS;
-pub const DECIMETERS_TO_METERS: f32 = 10f32;
+pub const METERS_TO_DECIMETERS: f32 = 10f32;
+pub const RADIANS_SEC_TO_DEGREES_SEC: f32 = 180.0 / std::f32::consts::PI;

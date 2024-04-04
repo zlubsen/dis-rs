@@ -190,13 +190,25 @@ pub struct AngularVelocity {
 }
 
 impl AngularVelocity {
-    pub const SCALE: f32 = (2^11 - 1) as f32 / (4.0f32 * std::f32::consts::PI);
+    pub const SCALING: f32 = (2^11 - 1) as f32 / (4.0 * std::f32::consts::PI);
     pub fn new(x: SVINT12, y: SVINT12, z: SVINT12) -> Self {
         Self {
             x,
             y,
             z,
         }
+    }
+
+    pub fn x_scaled(&self) -> f32 {
+        self.x.value as f32 / Self::SCALING
+    }
+
+    pub fn y_scaled(&self) -> f32 {
+        self.y.value as f32 / Self::SCALING
+    }
+
+    pub fn z_scaled(&self) -> f32 {
+        self.z.value as f32 / Self::SCALING
     }
 }
 

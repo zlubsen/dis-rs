@@ -1,7 +1,9 @@
+use dis_rs::model::VectorF32;
 use crate::codec::Codec;
-use crate::entity_state::model::{CdisDRParametersOther, EntityState};
-use crate::records::model::{EntityId, EntityType, LinearVelocity, Orientation, Units, WorldCoordinates};
-use crate::types::model::{UVINT8};
+use crate::constants::{METERS_TO_DECIMETERS, RADIANS_SEC_TO_DEGREES_SEC};
+use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+use crate::types::model::{SVINT12, SVINT14, UVINT32, UVINT8};
 
 impl Codec for EntityState {
     type Counterpart = dis_rs::entity_state::model::EntityState;
@@ -22,10 +24,10 @@ impl Codec for EntityState {
             entity_appearance: Some((&item.entity_appearance).into()),
             dr_algorithm: item.dead_reckoning_parameters.algorithm,
             dr_params_other: Some(CdisDRParametersOther::from(item.dead_reckoning_parameters.other_parameters)),
-            dr_params_entity_linear_acceleration: None,
-            dr_params_entity_angular_velocity: None,
-            entity_marking: None,
-            capabilities: None,
+            dr_params_entity_linear_acceleration: Some(LinearAcceleration::from(item.dead_reckoning_parameters.linear_acceleration)),
+            dr_params_entity_angular_velocity: Some(AngularVelocity::from(item.dead_reckoning_parameters.angular_velocity)),
+            entity_marking: Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
+            capabilities: Some(CdisEntityCapabilities(UVINT32::from(u32::from(item.entity_capabilities)))),
             variable_parameters: vec![],
         }
     }
