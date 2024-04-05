@@ -1,9 +1,10 @@
 use dis_rs::enumerations::{Country, EntityKind, PlatformDomain};
 use dis_rs::model::{DisTimeStamp, PduHeader, TimeStamp, VectorF32};
+use dis_rs::utils::{ecef_to_geo_location, geo_location_to_ecef};
 use crate::codec::Codec;
 use crate::constants::{METERS_TO_DECIMETERS, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation};
-use crate::types::model::{SVINT12, SVINT14, SVINT16, UVINT16, UVINT8};
+use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 impl Codec for CdisHeader {
     type Counterpart = PduHeader;
@@ -77,46 +78,59 @@ impl Codec for EntityType {
 /// C-DIS specifies linear velocity in decimeters/sec
 impl Codec for LinearVelocity {
     type Counterpart = VectorF32;
-    const SCALING: f32 = 1.0;
+    const CONVERSION: f32 = METERS_TO_DECIMETERS;
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            x: SVINT16::from((item.first_vector_component * METERS_TO_DECIMETERS) as i16),
-            y: SVINT16::from((item.second_vector_component * METERS_TO_DECIMETERS) as i16),
-            z: SVINT16::from((item.third_vector_component * METERS_TO_DECIMETERS) as i16),
+            x: SVINT16::from((item.first_vector_component * Self::CONVERSION) as i16),
+            y: SVINT16::from((item.second_vector_component * Self::CONVERSION) as i16),
+            z: SVINT16::from((item.third_vector_component * Self::CONVERSION) as i16),
         }
     }
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::default()
-            .with_first(self.x.value as f32 / METERS_TO_DECIMETERS)
-            .with_second(self.y.value as f32 / METERS_TO_DECIMETERS)
-            .with_third(self.z.value as f32 / METERS_TO_DECIMETERS)
+            .with_first(self.x.value as f32 / Self::CONVERSION)
+            .with_second(self.y.value as f32 / Self::CONVERSION)
+            .with_third(self.z.value as f32 / Self::CONVERSION)
     }
 }
 
 /// DIS specifies Euler Angles (Orientation) in radians.
 /// CDIS specifies Euler Angles in degrees
+///
+/// This field shall specify a geocentric orientation using Euler angles as specified in DIS. The values shall be
+/// scaled signed integer units up to +-pi (180 degrees). Scale = (2^12 - 1) / pi.
+/// Angles shall be reduced to within the +-pi (180 degrees) range before scaling to get accurate values.
 impl Codec for Orientation {
     type Counterpart = dis_rs::model::Orientation;
-    const SCALING: f32 = (2^12 - 1) as f32 / std::f32::consts::PI;
+    const SCALING: f32 = 4095f32 / std::f32::consts::PI; // (2^12 - 1) = 4095
+    const CONVERSION: f32 = RADIANS_SEC_TO_DEGREES_SEC;
+    const NORMALISATION: f32 = std::f32::consts::PI;
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            // TODO apply proper mapping/scaling
-            // This field shall specify a geocentric orientation using Euler angles as specified in DIS. The values shall be
-            // scaled signed integer units up to +- (180 degrees). Scale = (212
-            // - 1) / . Angles shall be reduced to within
-            // the +- (180 degrees) range before scaling to get accurate values.
-            psi: (item.psi * Self::SCALING) as i16
-            theta: (item.psi * Self::SCALING) as i16
-            phi: (item.psi * Self::SCALING) as i16
+            psi: (normalize_radians_to_plusminus_pi(item.psi) * Self::SCALING) as i16,
+            theta: (normalize_radians_to_plusminus_pi(item.theta) * Self::SCALING) as i16,
+            phi: (normalize_radians_to_plusminus_pi(item.phi) * Self::SCALING) as i16,
         }
     }
 
     fn decode(&self) -> Self::Counterpart {
-        todo!()
+        Self::Counterpart::new(
+            self.psi as f32 / Self::SCALING,
+            self.theta as f32 / Self::SCALING,
+            self.phi as f32 / Self::SCALING)
     }
+}
+
+fn normalize_radians_to_plusminus_pi(radians: f32) -> f32 {
+    const TWO_PI: f32 = 2.0 * std::f32::consts::PI;
+    let radians = radians % TWO_PI;
+    let radians = (radians + TWO_PI) % TWO_PI;
+    if radians > std::f32::consts::PI {
+        radians - TWO_PI
+    } else { radians }
 }
 
 /// Encode/Decode a ``VectorF32`` to ``LinearAcceleration``.
@@ -126,20 +140,21 @@ impl Codec for Orientation {
 /// +8191, -8192 decimeters/sec/sec (Aprox 83.5 g)
 impl Codec for LinearAcceleration {
     type Counterpart = VectorF32;
+    const CONVERSION: f32 = METERS_TO_DECIMETERS;
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            x: SVINT14::from((item.first_vector_component * METERS_TO_DECIMETERS) as i16),
-            y: SVINT14::from((item.second_vector_component * METERS_TO_DECIMETERS) as i16),
-            z: SVINT14::from((item.third_vector_component * METERS_TO_DECIMETERS) as i16),
+            x: SVINT14::from((item.first_vector_component * Self::CONVERSION) as i16),
+            y: SVINT14::from((item.second_vector_component * Self::CONVERSION) as i16),
+            z: SVINT14::from((item.third_vector_component * Self::CONVERSION) as i16),
         }
     }
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::new(
-            self.x.value as f32 / METERS_TO_DECIMETERS,
-            self.y.value as f32 / METERS_TO_DECIMETERS,
-            self.z.value as f32 / METERS_TO_DECIMETERS,
+            self.x.value as f32 / Self::CONVERSION,
+            self.y.value as f32 / Self::CONVERSION,
+            self.z.value as f32 / Self::CONVERSION,
         )
     }
 }
@@ -172,12 +187,48 @@ impl Codec for AngularVelocity {
     }
 }
 
+impl Codec for WorldCoordinates {
+    type Counterpart = dis_rs::model::Location;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        let (latitude, longitude, altitude_msl) = ecef_to_geo_location(
+            item.x_coordinate as f32,
+            item.y_coordinate as f32,
+            item.z_coordinate as f32);
+        Self {
+            latitude,
+            longitude,
+            altitude_msl: SVINT24::from(altitude_msl as i32),
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        let (x, y, z) = geo_location_to_ecef(
+            self.latitude, self.longitude, self.altitude_msl.value as f32);
+        Self::Counterpart::new(
+            x as f64,
+            y as f64,
+            z as f64
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use dis_rs::model::VectorF32;
+    use dis_rs::model::{VectorF32};
     use crate::codec::Codec;
-    use crate::types::model::{SVINT12, SVINT14, SVINT16};
-    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity};
+    use crate::records::codec::normalize_radians_to_plusminus_pi;
+    use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24};
+    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+
+    #[test]
+    fn test_normalize_radians_to_plusminus_pi() {
+        assert_eq!(normalize_radians_to_plusminus_pi(std::f32::consts::PI), 3.1415925f32); // approx std::f32::consts::PI
+        assert_eq!(normalize_radians_to_plusminus_pi(-std::f32::consts::PI), std::f32::consts::PI);
+        assert_eq!(normalize_radians_to_plusminus_pi(0.5 * std::f32::consts::PI), 1.5707965); // approx std::f32::consts::FRAC_PI_2
+        assert_eq!(normalize_radians_to_plusminus_pi(3.5f32 * std::f32::consts::PI), -1.570796); // approx -std::f32::consts::FRAC_PI_2
+    }
+
 
     #[test]
     fn linear_velocity_encode() {
@@ -238,7 +289,7 @@ mod tests {
         assert!((719.4f32..720.0f32).contains(&(cdis.y.value as f32 / AngularVelocity::SCALING)));
         assert!((-180.35f32..-179.0f32).contains(&(cdis.z.value as f32 / AngularVelocity::SCALING)));
 
-        let back_to_dis = VectorF32::from(cdis);
+        let back_to_dis = cdis.decode();
         assert!((0.95f32..1.0f32).contains(&back_to_dis.first_vector_component));
         assert!((12.5f32..12.6f32).contains(&back_to_dis.second_vector_component));
         assert!((-3.14f32..-3.11f32).contains(&back_to_dis.third_vector_component));
@@ -259,11 +310,33 @@ mod tests {
 
     #[test]
     fn entity_location_dis_to_cdis() {
-        assert!(false)
+        let dis = dis_rs::model::Location::new(0.0, 0.0, 0.0);
+        let cdis = WorldCoordinates::encode(&dis);
+
+        println!("{:?}", cdis);
+        assert!(false);
+
+        let cdis = WorldCoordinates::new(90.0, 0.0, SVINT24::from(-6356752));
+        let dis = cdis.decode();
+        println!("{:?}", dis);
+        assert!(false);
     }
 
     #[test]
     fn entity_orientation_dis_to_cdis() {
-        assert!(false)
+        let dis = dis_rs::model::Orientation::new(std::f32::consts::PI, 0.0, 0.0);
+        let cdis = Orientation::encode(&dis);
+        let dis_2 = cdis.decode();
+
+        assert_eq!(cdis.psi, 4094);
+        assert_eq!(cdis.theta, 0);
+
+        assert_eq!(dis_2.psi, 3.1408255);
+        assert_eq!(dis_2.theta, 0.0);
+
+        let cdis = Orientation::new(1, 4095, -4096);
+        let dis = cdis.decode();
+
+        assert_eq!(dis.psi * Orientation::CONVERSION, 0.04395604); // in degrees, the resolution of the field
     }
 }

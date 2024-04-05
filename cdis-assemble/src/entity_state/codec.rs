@@ -19,8 +19,7 @@ impl Codec for EntityState {
             entity_linear_velocity: Some(LinearVelocity::encode(&item.entity_linear_velocity)),
             // TODO test / validate if correct
             entity_location: Some(WorldCoordinates::from(item.entity_location.clone())),
-            // TODO check if this is the correct conversion - and move to the record (codec trait) - now scaling sits in the parser
-            entity_orientation: Some(Orientation::new(item.entity_orientation.psi as i16, item.entity_orientation.theta as i16, item.entity_orientation.phi as i16)),
+            entity_orientation: Some(Orientation::encode(&item.entity_orientation)),
             entity_appearance: Some((&item.entity_appearance).into()),
             dr_algorithm: item.dead_reckoning_parameters.algorithm,
             dr_params_other: Some(CdisDRParametersOther::from(&item.dead_reckoning_parameters.other_parameters)),
