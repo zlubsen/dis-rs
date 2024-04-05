@@ -1,3 +1,4 @@
+use std::any::type_name;
 use bitvec::array::BitArray;
 use bitvec::order::Msb0;
 use bitvec::macros::internal::funty::Integral;
@@ -76,9 +77,11 @@ pub(crate) fn write_value_unsigned<T: num::Unsigned + Integral>(buf: &mut BitBuf
 pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero + Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
     let cursor = write_value_with_length(
         buf, cursor, ONE_BIT, u8::from(value.is_negative()));
-    let value_bits = - if value.is_negative() {
-        T::from_usize(2usize.pow(bit_size as u32 - 1)).unwrap_or(T::zero()) + value
-    } else { T::zero() - value };
+    let value_bits = - (if value.is_negative() {
+        T::from_usize(2usize.pow(bit_size as u32 - 1))
+            .expect(format!("Cannot determine minimum value for type {}", type_name::<T>()).as_str())
+            - value
+    } else { T::zero() - value });
     let cursor = write_value_with_length(
         buf, cursor, bit_size - ONE_BIT, value_bits);
     cursor
