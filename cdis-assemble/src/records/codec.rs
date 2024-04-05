@@ -108,9 +108,9 @@ impl Codec for Orientation {
             // scaled signed integer units up to +- (180 degrees). Scale = (212
             // - 1) / . Angles shall be reduced to within
             // the +- (180 degrees) range before scaling to get accurate values.
-            psi: (item.psi * Self::SCALING) as i16,
-            theta: (item.psi * Self::SCALING) as i16,
-            phi: (item.psi * Self::SCALING) as i16,
+            psi: (item.psi * Self::SCALING) as i16
+            theta: (item.psi * Self::SCALING) as i16
+            phi: (item.psi * Self::SCALING) as i16
         }
     }
 
@@ -168,23 +168,6 @@ impl Codec for AngularVelocity {
             self.x.value as f32 / Self::SCALING / Self::CONVERSION,
             self.y.value as f32 / Self::SCALING / Self::CONVERSION,
             self.z.value as f32 / Self::SCALING / Self::CONVERSION,
-        )
-    }
-}
-
-// TODO convert to Codec impl
-impl From<AngularVelocity> for VectorF32 {
-    /// Convert an ``AngularVelocity`` to ``VectorF32``.
-    /// DIS Lin. Acc. is in radians/sec.
-    /// CDIS Lin. Acc. is in degrees/sec.
-    ///
-    /// +-720 degrees per second max 0.35 degrees/sec resolution
-    /// Scale = (2^11 - 1) / (4 * pi)
-    fn from(value: AngularVelocity) -> Self {
-        VectorF32::new(
-            value.x.value as f32 / AngularVelocity::SCALING / RADIANS_SEC_TO_DEGREES_SEC,
-            value.y.value as f32 / AngularVelocity::SCALING / RADIANS_SEC_TO_DEGREES_SEC,
-            value.z.value as f32 / AngularVelocity::SCALING / RADIANS_SEC_TO_DEGREES_SEC,
         )
     }
 }
@@ -268,7 +251,7 @@ mod tests {
             SVINT12::from((720f32 * AngularVelocity::SCALING) as i16),
             SVINT12::from((-180f32 * AngularVelocity::SCALING) as i16));
         let dis = cdis.decode();
-println!("{:?}", dis);
+
         assert!((0.95f32..1.0f32).contains(&dis.first_vector_component));
         assert!((12.5f32..12.6f32).contains(&dis.second_vector_component));
         assert!((-3.14f32..-3.11f32).contains(&dis.third_vector_component));
