@@ -99,8 +99,8 @@ impl From<u128> for CdisDRParametersOther {
     }
 }
 
-impl From<DrOtherParameters> for CdisDRParametersOther {
-    fn from(value: DrOtherParameters) -> Self {
+impl From<&DrOtherParameters> for CdisDRParametersOther {
+    fn from(value: &DrOtherParameters) -> Self {
         const SIXTEEN_BYTES: usize = std::mem::size_of::<u128>();
         let mut buf = BytesMut::with_capacity(SIXTEEN_BYTES);
         buf.put_u8(0);

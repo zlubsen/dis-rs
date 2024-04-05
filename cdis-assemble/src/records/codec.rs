@@ -8,7 +8,7 @@ use crate::types::model::{SVINT12, SVINT14, SVINT16, UVINT16, UVINT8};
 impl Codec for CdisHeader {
     type Counterpart = PduHeader;
 
-    fn encode(item: Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart) -> Self {
         Self {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(item.exercise_id),
@@ -29,7 +29,7 @@ impl Codec for CdisHeader {
 impl Codec for EntityId {
     type Counterpart = dis_rs::model::EntityId;
 
-    fn encode(item: Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart) -> Self {
         EntityId::new(
             UVINT16::from(item.simulation_address.site_id),
             UVINT16::from(item.simulation_address.application_id),
@@ -49,7 +49,7 @@ impl Codec for EntityId {
 impl Codec for EntityType {
     type Counterpart = dis_rs::model::EntityType;
 
-    fn encode(item: Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart) -> Self {
         EntityType::new(
             item.kind.into(),
             item.domain.into(),
@@ -79,7 +79,7 @@ impl Codec for LinearVelocity {
     type Counterpart = VectorF32;
     const SCALING: f32 = 1.0;
 
-    fn encode(item: Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart) -> Self {
         Self {
             x: SVINT16::from((item.first_vector_component * METERS_TO_DECIMETERS) as i16),
             y: SVINT16::from((item.second_vector_component * METERS_TO_DECIMETERS) as i16),
@@ -101,7 +101,7 @@ impl Codec for Orientation {
     type Counterpart = dis_rs::model::Orientation;
     const SCALING: f32 = (2^12 - 1) as f32 / std::f32::consts::PI;
 
-    fn encode(item: Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart) -> Self {
         Self {
             // TODO apply proper mapping/scaling
             // This field shall specify a geocentric orientation using Euler angles as specified in DIS. The values shall be
@@ -119,52 +119,71 @@ impl Codec for Orientation {
     }
 }
 
-impl From<VectorF32> for LinearAcceleration {
-    /// Convert a ``VectorF32`` to ``LinearAcceleration``.
-    /// DIS Lin. Acc. is in meters/sec/sec.
-    /// CDIS Lin. Acc. is in decimeters/sec/sec
-    ///
-    /// +8191, -8192 decimeters/sec/sec (Aprox 83.5 g)
-    fn from(value: VectorF32) -> Self {
+/// Encode/Decode a ``VectorF32`` to ``LinearAcceleration``.
+/// DIS Lin. Acc. is in meters/sec/sec (as ``VectorF32``).
+/// CDIS Lin. Acc. is in decimeters/sec/sec (as ``LinearAcceleration``).
+///
+/// +8191, -8192 decimeters/sec/sec (Aprox 83.5 g)
+impl Codec for LinearAcceleration {
+    type Counterpart = VectorF32;
+
+    fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            x: SVINT14::from((value.first_vector_component * METERS_TO_DECIMETERS) as i16),
-            y: SVINT14::from((value.second_vector_component * METERS_TO_DECIMETERS) as i16),
-            z: SVINT14::from((value.third_vector_component * METERS_TO_DECIMETERS) as i16),
+            x: SVINT14::from((item.first_vector_component * METERS_TO_DECIMETERS) as i16),
+            y: SVINT14::from((item.second_vector_component * METERS_TO_DECIMETERS) as i16),
+            z: SVINT14::from((item.third_vector_component * METERS_TO_DECIMETERS) as i16),
         }
     }
-}
 
-impl From<LinearAcceleration> for VectorF32 {
-    /// Convert a ``LinearAcceleration`` to ``VectorF32``.
-    /// DIS Lin. Acc. is in meters/sec/sec.
-    /// CDIS Lin. Acc. is in decimeters/sec/sec
-    ///
-    /// +8191, -8192 decimeters/sec/sec (Aprox 83.5 g)
-    fn from(value: LinearAcceleration) -> Self {
-        Self::new(
-            value.x.value as f32 / METERS_TO_DECIMETERS,
-            value.y.value as f32 / METERS_TO_DECIMETERS,
-            value.z.value as f32 / METERS_TO_DECIMETERS,
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::new(
+            self.x.value as f32 / METERS_TO_DECIMETERS,
+            self.y.value as f32 / METERS_TO_DECIMETERS,
+            self.z.value as f32 / METERS_TO_DECIMETERS,
         )
     }
 }
 
-impl From<VectorF32> for AngularVelocity {
-    /// Convert a ``VectorF32`` to ``AngularVelocity``.
-    /// DIS Lin. Acc. is in radians/sec.
-    /// CDIS Lin. Acc. is in degrees/sec.
-    ///
-    /// +-720 degrees per second max 0.35 degrees/sec resolution
-    /// Scale = (2^11 - 1) / (4 * pi)
-    fn from(value: VectorF32) -> Self {
+/// Encode/Decode a ``VectorF32`` to ``AngularVelocity``.
+/// DIS Lin. Acc. is in radians/sec.
+/// CDIS Lin. Acc. is in degrees/sec.
+///
+/// +-720 degrees per second max 0.35 degrees/sec resolution
+/// Scale = (2^11 - 1) / (4 * pi)
+impl Codec for AngularVelocity {
+    type Counterpart = VectorF32;
+    const SCALING: f32 = (2^11 - 1) as f32 / (4.0 * std::f32::consts::PI);
+    const CONVERSION: f32 = RADIANS_SEC_TO_DEGREES_SEC;
+
+    fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            x: SVINT12::from((value.first_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
-            y: SVINT12::from((value.second_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
-            z: SVINT12::from((value.third_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
+            x: SVINT12::from((item.first_vector_component * Self::CONVERSION * Self::SCALING) as i16),
+            y: SVINT12::from((item.second_vector_component * Self::CONVERSION * Self::SCALING) as i16),
+            z: SVINT12::from((item.third_vector_component * Self::CONVERSION * Self::SCALING) as i16),
         }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::new(
+            self.x.value as f32 / Self::SCALING / Self::CONVERSION,
+            self.y.value as f32 / Self::SCALING / Self::CONVERSION,
+            self.z.value as f32 / Self::SCALING / Self::CONVERSION,
+        )
     }
 }
 
+// // TODO convert to Codec impl
+// impl From<VectorF32> for AngularVelocity {
+//     fn from(value: VectorF32) -> Self {
+//         Self {
+//             x: SVINT12::from((value.first_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
+//             y: SVINT12::from((value.second_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
+//             z: SVINT12::from((value.third_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
+//         }
+//     }
+// }
+
+// TODO convert to Codec impl
 impl From<AngularVelocity> for VectorF32 {
     /// Convert an ``AngularVelocity`` to ``VectorF32``.
     /// DIS Lin. Acc. is in radians/sec.
@@ -191,7 +210,7 @@ mod tests {
     #[test]
     fn encode_linear_velocity() {
         let dis = VectorF32::new(11.1f32, -22.2f32, 33.3f32);
-        let cdis = LinearVelocity::encode(dis);
+        let cdis = LinearVelocity::encode(&dis);
 
         assert_eq!(cdis.x.value, 111);
         assert_eq!(cdis.y.value, -222);
@@ -214,7 +233,7 @@ mod tests {
     #[test]
     fn linear_acceleration_dis_to_cdis() {
         let dis = VectorF32::new(1.0, -819.2, 0.0);
-        let cdis = LinearAcceleration::from(dis);
+        let cdis = LinearAcceleration::encode(&dis);
 
         assert_eq!(cdis.x.value, 10);
         assert_eq!(cdis.y.value, -8192);
@@ -225,15 +244,15 @@ mod tests {
     fn angular_velocity_dis_to_cdis() {
         const ANGULAR_VELOCITY_SCALE: f32 = (2^11 - 1) as f32 / (4.0 * std::f32::consts::PI);
         let dis = VectorF32::new(1.0, 4.0 * std::f32::consts::PI, -std::f32::consts::PI);
-        let cdis = AngularVelocity::from(dis);
+        let cdis = AngularVelocity::encode(&dis);
 
         assert_eq!(cdis.x.value, (57f32 * ANGULAR_VELOCITY_SCALE) as i16);
         assert_eq!(cdis.y.value, (720f32 * ANGULAR_VELOCITY_SCALE) as i16);
         assert_eq!(cdis.z.value, (-180f32 * ANGULAR_VELOCITY_SCALE) as i16);
 
-        assert!((56.5f32..57.0f32).contains(&cdis.x_scaled()));
-        assert!((719.4f32..720.0f32).contains(&cdis.y_scaled()));
-        assert!((-180.35f32..-179.0f32).contains(&cdis.z_scaled()));
+        assert!((56.5f32..57.0f32).contains(&(cdis.x.value as f32 / AngularVelocity::SCALING)));
+        assert!((719.4f32..720.0f32).contains(&(cdis.y.value as f32 / AngularVelocity::SCALING)));
+        assert!((-180.35f32..-179.0f32).contains(&(cdis.z.value as f32 / AngularVelocity::SCALING)));
 
         let back_to_dis = VectorF32::from(cdis);
         assert!((0.95f32..1.0f32).contains(&back_to_dis.first_vector_component));

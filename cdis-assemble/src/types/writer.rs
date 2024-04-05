@@ -1,15 +1,14 @@
-use crate::writing::BitBuffer;
+use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
 use crate::constants::ONE_BIT;
-use crate::writing::write_value_with_length;
 use crate::writing::SerializeCdis;
 use crate::types::model::{CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 use crate::types::model::VarInt;
 
 impl SerializeCdis for UVINT8 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.bit_size(), self.value);
 
         cursor
@@ -18,9 +17,9 @@ impl SerializeCdis for UVINT8 {
 
 impl SerializeCdis for UVINT16 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.bit_size(), self.value);
 
         cursor
@@ -29,9 +28,9 @@ impl SerializeCdis for UVINT16 {
 
 impl SerializeCdis for UVINT32 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.bit_size(), self.value);
 
         cursor
@@ -40,13 +39,14 @@ impl SerializeCdis for UVINT32 {
 
 impl SerializeCdis for SVINT12 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
-            buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
-        let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
-        let cursor = write_value_with_length(
-            buf, cursor, self.bit_size() - 1, field_value);
+        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
+        // let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.bit_size() - 1, field_value);
 
         cursor
     }
@@ -54,13 +54,16 @@ impl SerializeCdis for SVINT12 {
 
 impl SerializeCdis for SVINT13 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
-            buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
-        let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
-        let cursor = write_value_with_length(
-            buf, cursor, self.bit_size() - 1, field_value);
+        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        // let cursor = write_value_with_length(
+        //     buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
+        // let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.bit_size() - 1, field_value);
 
         cursor
     }
@@ -68,13 +71,16 @@ impl SerializeCdis for SVINT13 {
 
 impl SerializeCdis for SVINT14 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
-            buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
-        let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
-        let cursor = write_value_with_length(
-            buf, cursor, self.bit_size() - 1, field_value);
+        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        // let cursor = write_value_with_length(
+        //     buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
+        // let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.bit_size() - 1, field_value);
 
         cursor
     }
@@ -82,13 +88,16 @@ impl SerializeCdis for SVINT14 {
 
 impl SerializeCdis for SVINT16 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
-            buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
-        let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
-        let cursor = write_value_with_length(
-            buf, cursor, self.bit_size() - 1, field_value);
+        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        // let cursor = write_value_with_length(
+        //     buf, cursor, ONE_BIT, if self.value.is_negative() { 1u8 } else { 0u8 });
+        // let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.bit_size() - 1, field_value);
 
         cursor
     }
@@ -96,30 +105,35 @@ impl SerializeCdis for SVINT16 {
 
 impl SerializeCdis for SVINT24 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_with_length(
+        let cursor = write_value_unsigned(
             buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_with_length(
-            buf, cursor, ONE_BIT, u8::from(self.value.is_negative()));
-        let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
-        let cursor = write_value_with_length(
-            buf, cursor, self.bit_size() - 1, field_value);
+        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        // let cursor = write_value_with_length(
+        //     buf, cursor, ONE_BIT, u8::from(self.value.is_negative()));
+        // let field_value = - (if self.value.is_negative() { self.min_value() } else { 0 } - self.value);
+        // let cursor = write_value_with_length(
+        //     buf, cursor, self.bit_size() - 1, field_value);
 
         cursor
     }
 }
 
 pub(crate) fn serialize_cdis_float<T: CdisFloat>(float: T, buf: &mut BitBuffer, cursor: usize) -> usize {
-    let cursor = write_value_with_length(
-        buf, cursor, ONE_BIT, u8::from(float.mantissa().is_negative()));
-    let mantissa_value = - (if float.mantissa().is_negative() { i32::MIN } else { 0 } - float.mantissa());
-    let cursor = write_value_with_length(
-        buf, cursor, float.mantissa_bit_size(), mantissa_value);
+    let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
+    let cursor = write_value_signed(buf, cursor, float.exponent_bit_size(), float.exponent());
+    // let cursor = write_value_with_length(
+    //     buf, cursor, ONE_BIT, u8::from(float.mantissa().is_negative()));
+    // let mantissa_value = - (if float.mantissa().is_negative() { i32::MIN } else { 0 } - float.mantissa());
+    // let cursor = write_value_with_length(
+    //     buf, cursor, float.mantissa_bit_size(), mantissa_value);
 
-    let cursor = write_value_with_length(
-        buf, cursor, ONE_BIT, u8::from(float.exponent().is_negative()));
-    let exponent_value = - (if float.exponent().is_negative() { i8::MIN } else { 0 } - float.exponent());
-    let cursor = write_value_with_length(
-        buf, cursor, float.exponent_bit_size(), exponent_value);
+    // let cursor = write_value_with_length(
+    //     buf, cursor, ONE_BIT, u8::from(float.exponent().is_negative()));
+    // let exponent_value = - (if float.exponent().is_negative() { i8::MIN } else { 0 } - float.exponent());
+    // let cursor = write_value_with_length(
+    //     buf, cursor, float.exponent_bit_size(), exponent_value);
 
     cursor
 }
