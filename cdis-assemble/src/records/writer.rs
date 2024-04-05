@@ -119,7 +119,7 @@ impl SerializeCdis for CdisEntityMarking {
 
 impl SerializeCdis for ParameterValueFloat {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        serialize_cdis_float(*self, buf, cursor)
+        serialize_cdis_float(buf, cursor, self)
     }
 }
 

@@ -945,7 +945,7 @@ pub(crate) trait CdisFloat {
         if let Some(float) = self.regular_float() {
             float
         } else {
-            self.mantissa() as f64 * ((10 ^ (self.exponent())) as f64)
+            self.mantissa() as f64 * (10f64.powf(self.exponent() as f64))
         }
     }
     fn mantissa(&self) -> i32;

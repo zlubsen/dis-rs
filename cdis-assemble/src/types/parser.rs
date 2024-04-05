@@ -98,8 +98,9 @@ where T: CdisFloat {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
-    use crate::types::model::{SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+    use crate::constants::{FOURTEEN_BITS, THREE_BITS};
+    use crate::types::parser::{cdis_float, svint12, uvint16, uvint32, uvint8};
+    use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
     use crate::types::model::VarInt;
 
     #[test]
@@ -192,8 +193,55 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
+    pub struct TestFloat {
+        base: CdisFloatBase,
+    }
+
+    impl CdisFloat for TestFloat {
+        const MANTISSA_BITS: usize = FOURTEEN_BITS;
+        const EXPONENT_BITS: usize = THREE_BITS;
+
+        fn new(mantissa: i32, exponent: i8) -> Self {
+            Self {
+                base: CdisFloatBase {
+                    mantissa,
+                    exponent,
+                    regular_float: None,
+                }
+            }
+        }
+
+        fn from_f64(regular_float: f64) -> Self {
+            Self {
+                base: CdisFloatBase {
+                    mantissa: 0,
+                    exponent: 0,
+                    regular_float: Some(regular_float),
+                }
+            }
+        }
+
+        fn mantissa(&self) -> i32 {
+            self.base.mantissa
+        }
+
+        fn exponent(&self) -> i8 {
+            self.base.exponent
+        }
+
+        fn regular_float(&self) -> Option<f64> {
+            self.base.regular_float
+        }
+    }
+
     #[test]
     fn parse_cdis_float() {
-        assert!(false)
+        let input = [0b00000000, 0b00000100, 0b10000000];
+
+        let (_input, float) = cdis_float::<TestFloat>((&input, 0)).unwrap();
+        assert_eq!(float.mantissa(), 1);
+        assert_eq!(float.exponent(), 1);
+        let expected = 1f64 * 10f64.powi(1);
+        assert_eq!(float.to_value(), expected);
     }
 }
