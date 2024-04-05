@@ -172,17 +172,6 @@ impl Codec for AngularVelocity {
     }
 }
 
-// // TODO convert to Codec impl
-// impl From<VectorF32> for AngularVelocity {
-//     fn from(value: VectorF32) -> Self {
-//         Self {
-//             x: SVINT12::from((value.first_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
-//             y: SVINT12::from((value.second_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
-//             z: SVINT12::from((value.third_vector_component * RADIANS_SEC_TO_DEGREES_SEC * Self::SCALING) as i16),
-//         }
-//     }
-// }
-
 // TODO convert to Codec impl
 impl From<AngularVelocity> for VectorF32 {
     /// Convert an ``AngularVelocity`` to ``VectorF32``.
@@ -204,11 +193,11 @@ impl From<AngularVelocity> for VectorF32 {
 mod tests {
     use dis_rs::model::VectorF32;
     use crate::codec::Codec;
-    use crate::types::model::SVINT16;
+    use crate::types::model::{SVINT12, SVINT14, SVINT16};
     use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity};
 
     #[test]
-    fn encode_linear_velocity() {
+    fn linear_velocity_encode() {
         let dis = VectorF32::new(11.1f32, -22.2f32, 33.3f32);
         let cdis = LinearVelocity::encode(&dis);
 
@@ -218,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_linear_velocity() {
+    fn linear_velocity_decode() {
         let cdis = LinearVelocity::new(
             SVINT16::from(111),
             SVINT16::from(-222),
@@ -231,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn linear_acceleration_dis_to_cdis() {
+    fn linear_acceleration_encode() {
         let dis = VectorF32::new(1.0, -819.2, 0.0);
         let cdis = LinearAcceleration::encode(&dis);
 
@@ -241,7 +230,19 @@ mod tests {
     }
 
     #[test]
-    fn angular_velocity_dis_to_cdis() {
+    fn linear_acceleration_decode() {
+        let cdis = LinearAcceleration::new(
+            SVINT14::from(10),
+            SVINT14::from(-8192),
+            SVINT14::from(0));
+        let expected_dis = VectorF32::new(1.0, -819.2, 0.0);
+        let dis = cdis.decode();
+
+        assert_eq!(dis, expected_dis);
+    }
+
+    #[test]
+    fn angular_velocity_encode() {
         const ANGULAR_VELOCITY_SCALE: f32 = (2^11 - 1) as f32 / (4.0 * std::f32::consts::PI);
         let dis = VectorF32::new(1.0, 4.0 * std::f32::consts::PI, -std::f32::consts::PI);
         let cdis = AngularVelocity::encode(&dis);
@@ -258,6 +259,19 @@ mod tests {
         assert!((0.95f32..1.0f32).contains(&back_to_dis.first_vector_component));
         assert!((12.5f32..12.6f32).contains(&back_to_dis.second_vector_component));
         assert!((-3.14f32..-3.11f32).contains(&back_to_dis.third_vector_component));
+    }
+
+    #[test]
+    fn angular_velocity_decode() {
+        let cdis = AngularVelocity::new(
+            SVINT12::from((57f32 * AngularVelocity::SCALING) as i16),
+            SVINT12::from((720f32 * AngularVelocity::SCALING) as i16),
+            SVINT12::from((-180f32 * AngularVelocity::SCALING) as i16));
+        let dis = cdis.decode();
+println!("{:?}", dis);
+        assert!((0.95f32..1.0f32).contains(&dis.first_vector_component));
+        assert!((12.5f32..12.6f32).contains(&dis.second_vector_component));
+        assert!((-3.14f32..-3.11f32).contains(&dis.third_vector_component));
     }
 
     #[test]
