@@ -743,23 +743,6 @@ impl CdisRecord for WorldCoordinates {
     }
 }
 
-impl From<Location> for WorldCoordinates {
-    fn from(value: Location) -> Self {
-        // TODO account for the scaling of lat
-        // TODO account for the scaling of lon
-        // TODO use of the Units flag - correct calculation of Altitude MSL - move to Codec trait?
-        let (latitude, longitude, altitude_msl) = dis_rs::utils::ecef_to_geo_location(
-            value.x_coordinate as f32,
-            value.y_coordinate as f32,
-            value.z_coordinate as f32);
-        Self {
-            latitude,
-            longitude,
-            altitude_msl: SVINT24::from(altitude_msl as i32),
-        }
-    }
-}
-
 impl From<WorldCoordinates> for Location {
     /// Applies Geo to ECEF conversion
     ///
@@ -768,15 +751,15 @@ impl From<WorldCoordinates> for Location {
         // TODO account for the scaling of lat
         // TODO account for the scaling of lon
         // TODO use of the Units flag - correct calculation of Altitude MSL
-        let (ecef_x, ecef_y, ecef_z) = dis_rs::utils::geo_location_to_ecef(
-            value.latitude,
-            value.longitude,
-            value.altitude_msl.value as f32);
+        let (ecef_x, ecef_y, ecef_z) = dis_rs::utils::geodetic_lla_to_ecef(
+            value.latitude as f64,
+            value.longitude as f64,
+            value.altitude_msl.value as f64);
 
         Self {
-            x_coordinate: ecef_x as f64,
-            y_coordinate: ecef_y as f64,
-            z_coordinate: ecef_z as f64,
+            x_coordinate: ecef_x,
+            y_coordinate: ecef_y,
+            z_coordinate: ecef_z,
         }
     }
 }

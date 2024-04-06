@@ -1,9 +1,9 @@
 use dis_rs::enumerations::{Country, EntityKind, PlatformDomain};
-use dis_rs::model::{DisTimeStamp, PduHeader, TimeStamp, VectorF32};
-use dis_rs::utils::{ecef_to_geo_location, geo_location_to_ecef};
+use dis_rs::model::{DisTimeStamp, Location, PduHeader, TimeStamp, VectorF32};
+use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use crate::codec::Codec;
-use crate::constants::{METERS_TO_DECIMETERS, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
+use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 impl Codec for CdisHeader {
@@ -78,7 +78,7 @@ impl Codec for EntityType {
 /// C-DIS specifies linear velocity in decimeters/sec
 impl Codec for LinearVelocity {
     type Counterpart = VectorF32;
-    const CONVERSION: f32 = METERS_TO_DECIMETERS;
+    const CONVERSION: f32 = DECIMETERS_IN_METER;
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
@@ -105,8 +105,6 @@ impl Codec for LinearVelocity {
 impl Codec for Orientation {
     type Counterpart = dis_rs::model::Orientation;
     const SCALING: f32 = 4095f32 / std::f32::consts::PI; // (2^12 - 1) = 4095
-    const CONVERSION: f32 = RADIANS_SEC_TO_DEGREES_SEC;
-    const NORMALISATION: f32 = std::f32::consts::PI;
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
@@ -140,7 +138,7 @@ fn normalize_radians_to_plusminus_pi(radians: f32) -> f32 {
 /// +8191, -8192 decimeters/sec/sec (Aprox 83.5 g)
 impl Codec for LinearAcceleration {
     type Counterpart = VectorF32;
-    const CONVERSION: f32 = METERS_TO_DECIMETERS;
+    const CONVERSION: f32 = DECIMETERS_IN_METER;
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
@@ -187,39 +185,96 @@ impl Codec for AngularVelocity {
     }
 }
 
-impl Codec for WorldCoordinates {
-    type Counterpart = dis_rs::model::Location;
+/// Encode/decode DIS geocentric (ECEF) ``Location`` to C-DIS geodetic (LLA) ``WorldCoordinates``.
+/// DIS ECEF is in meters
+/// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
+// impl Codec for WorldCoordinates {
+//     type Counterpart = dis_rs::model::Location;
+//     // TODO account for the scaling of lat
+//     // TODO account for the scaling of lon
+//     // TODO use of the Units flag - correct calculation of Altitude MSL
+//     fn encode(item: &Self::Counterpart) -> Self {
+//         let (latitude, longitude, altitude_msl) = ecef_to_geodetic_lla(
+//             item.x_coordinate,
+//             item.y_coordinate,
+//             item.z_coordinate);
+//         println!("{} - {} - {}", latitude, longitude, altitude_msl);
+//         Self {
+//             latitude: latitude as f32,
+//             longitude: longitude as f32,
+//             altitude_msl: SVINT24::from(altitude_msl as i32),
+//         }
+//     }
+//
+//     fn decode(&self) -> Self::Counterpart {
+//         let (x, y, z) = geodetic_lla_to_ecef(
+//             self.latitude as f64, self.longitude as f64, self.altitude_msl.value as f64);
+//         Self::Counterpart::new(x, y, z)
+//     }
+// }
 
-    fn encode(item: &Self::Counterpart) -> Self {
-        let (latitude, longitude, altitude_msl) = ecef_to_geo_location(
-            item.x_coordinate as f32,
-            item.y_coordinate as f32,
-            item.z_coordinate as f32);
-        Self {
-            latitude,
-            longitude,
-            altitude_msl: SVINT24::from(altitude_msl as i32),
-        }
-    }
+/// Encode DIS geocentric (ECEF) ``Location`` to C-DIS geodetic (LLA) ``WorldCoordinates``.
+/// DIS ECEF is in meters
+/// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
+pub(crate) fn encode_world_coordinates(ecef_location: &Location) -> (WorldCoordinates, Units) {
+    const CENTIMETER_PER_METER: f64 = 100f64;
+    const METER_PER_DEKAMETER: f64 = 10f64;
 
-    fn decode(&self) -> Self::Counterpart {
-        let (x, y, z) = geo_location_to_ecef(
-            self.latitude, self.longitude, self.altitude_msl.value as f32);
-        Self::Counterpart::new(
-            x as f64,
-            y as f64,
-            z as f64
-        )
+    if ecef_location.x_coordinate == 0.0 &&
+        ecef_location.y_coordinate == 0.0 &&
+        ecef_location.z_coordinate == 0.0 {
+        (WorldCoordinates {
+            latitude: 0.0,
+            longitude: 0.0,
+            altitude_msl: SVINT24::from(CENTER_OF_EARTH_ALTITUDE)
+        }, Units::Dekameter)
+    } else {
+        let (lat, lon, alt_meters) = ecef_to_geodetic_lla(
+            ecef_location.x_coordinate, ecef_location.y_coordinate, ecef_location.z_coordinate);
+
+        // Scale: (2^30 - 1) / (PI/2)
+        let lat = lat * ((2.0_f64.powi(30) - 1.0) / std::f64::consts::FRAC_PI_2);
+        // Scale: (2^31 - 1) / PI
+        let lon = lon * ((2.0_f64.powi(31) - 1.0) / std::f64::consts::PI);
+
+        let alt_cm = alt_meters * CENTIMETER_PER_METER;
+        let (alt, units) = if (alt_cm) <= ALTITUDE_CM_THRESHOLD {
+            (alt_cm, Units::Centimeter)
+        } else { (alt_meters / METER_PER_DEKAMETER, Units::Dekameter) };
+
+        let world_coordinates = WorldCoordinates::new(
+            lat as f32, lon as f32, SVINT24::from(alt as i32));
+
+        (world_coordinates, units)
     }
+}
+
+/// Decode C-DIS geodetic (LLA) ``WorldCoordinates`` to DIS geocentric (ECEF) ``Location``.
+/// DIS ECEF is in meters
+/// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
+pub(crate) fn decode_world_coordinates(lla_location: &WorldCoordinates, units: Units) -> Location {
+    const CENTIMETER_PER_METER: f32 = 100f32;
+    const METER_PER_DEKAMETER: f32 = 10f32;
+
+    let alt = match units {
+        Units::Centimeter => { lla_location.altitude_msl.value as f32 / CENTIMETER_PER_METER }
+        Units::Dekameter => { lla_location.altitude_msl.value as f32 * METER_PER_DEKAMETER }
+    };
+
+    let lat = lla_location.latitude / ((2.0_f32.powi(30) - 1.0) / std::f32::consts::FRAC_PI_2);
+    let lon = lla_location.longitude / ((2.0_f32.powi(31) - 1.0) / std::f32::consts::PI);
+
+    let (x, y, z) = geodetic_lla_to_ecef(lat as f64, lon as f64, alt as f64);
+    Location::new(x, y, z)
 }
 
 #[cfg(test)]
 mod tests {
     use dis_rs::model::{VectorF32};
     use crate::codec::Codec;
-    use crate::records::codec::normalize_radians_to_plusminus_pi;
-    use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24};
-    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+    use crate::records::codec::{decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi};
+    use crate::types::model::{SVINT12, SVINT14, SVINT16};
+    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity, Orientation};
 
     #[test]
     fn test_normalize_radians_to_plusminus_pi() {
@@ -310,15 +365,28 @@ mod tests {
 
     #[test]
     fn entity_location_dis_to_cdis() {
-        let dis = dis_rs::model::Location::new(0.0, 0.0, 0.0);
-        let cdis = WorldCoordinates::encode(&dis);
+        let dis = dis_rs::model::Location::new(3_919_999.0, 342_955.0, 5_002_819.0);
+        // println!("ECEF in - {:?}", dis);
+        // let cdis = WorldCoordinates::encode(&dis);
+        let (cdis, units) = encode_world_coordinates(&dis);
 
-        println!("{:?}", cdis);
+        // println!("{:?} - {:?} - alt in {:?}", cdis, cdis.latitude.to_degrees(), units);
         assert!(false);
+        let dis = decode_world_coordinates(&cdis, units);
 
-        let cdis = WorldCoordinates::new(90.0, 0.0, SVINT24::from(-6356752));
-        let dis = cdis.decode();
-        println!("{:?}", dis);
+        // let cdis = WorldCoordinates::new(90.0, 0.0, SVINT24::from(-6356752));
+        // let dis = decode_world_coordinates(cdis, Units::Dekameter);
+        // println!("ECEF out - {:?}", dis);
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_location_center_of_earth() {
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_location_alt_in_centimeters() {
         assert!(false);
     }
 
