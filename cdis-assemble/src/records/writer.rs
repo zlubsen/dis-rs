@@ -1,7 +1,7 @@
 use dis_rs::enumerations::VariableParameterRecordType;
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
-use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::types::writer::serialize_cdis_float;
 use crate::writing::BitBuffer;
 
@@ -85,10 +85,8 @@ impl SerializeCdis for LinearVelocity {
 
 impl SerializeCdis for WorldCoordinates {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        // TODO float to signed integer - apply scaling
-        // self.latitude
-        // self.longitude
-        todo!();
+        let cursor = write_value_signed(buf, cursor, THIRTY_ONE_BITS, self.latitude as i32);
+        let cursor = write_value_signed(buf, cursor, THIRTY_TWO_BITS, self.longitude as i32);
         let cursor = self.altitude_msl.serialize(buf, cursor);
         cursor
     }

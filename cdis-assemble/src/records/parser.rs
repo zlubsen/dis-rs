@@ -168,7 +168,7 @@ const WORLD_COORDINATES_LON_SCALE: f32 = (2^31 - 1) as f32 / (f32::PI);
 pub(crate) fn world_coordinates(input: BitInput) -> IResult<BitInput, WorldCoordinates> {
     let (input, latitude) : (BitInput, isize) = take_signed(THIRTY_ONE_BITS)(input)?;
     let latitude = latitude as f32 / WORLD_COORDINATES_LAT_SCALE;
-    let (input, longitude) : (BitInput, i32) = take(THIRTY_TWO_BITS)(input)?; // TODO does take(32) work for i32? Or should we use take_signed(32)
+    let (input, longitude) : (BitInput, isize) = take_signed(THIRTY_TWO_BITS)(input)?;
     let longitude = longitude as f32 / WORLD_COORDINATES_LON_SCALE;
     let (input, altitude_msl) : (BitInput, SVINT24) = svint24(input)?;
 

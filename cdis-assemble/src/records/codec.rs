@@ -1,10 +1,10 @@
-use dis_rs::enumerations::{Country, EntityKind, PlatformDomain};
-use dis_rs::model::{DisTimeStamp, Location, PduHeader, TimeStamp, VectorF32};
+use dis_rs::enumerations::{ChangeIndicator, Country, EntityKind, PlatformDomain};
+use dis_rs::model::{ArticulatedPart, AttachedPart, DisTimeStamp, EntityAssociationParameter, EntityTypeParameter, Location, PduHeader, SeparationParameter, TimeStamp, VariableParameter, VectorF32};
 use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use crate::codec::Codec;
 use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimeStamp, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
-use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
+use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, Units, WorldCoordinates};
+use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 impl Codec for CdisHeader {
     type Counterpart = PduHeader;
@@ -185,34 +185,6 @@ impl Codec for AngularVelocity {
     }
 }
 
-/// Encode/decode DIS geocentric (ECEF) ``Location`` to C-DIS geodetic (LLA) ``WorldCoordinates``.
-/// DIS ECEF is in meters
-/// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
-// impl Codec for WorldCoordinates {
-//     type Counterpart = dis_rs::model::Location;
-//     // TODO account for the scaling of lat
-//     // TODO account for the scaling of lon
-//     // TODO use of the Units flag - correct calculation of Altitude MSL
-//     fn encode(item: &Self::Counterpart) -> Self {
-//         let (latitude, longitude, altitude_msl) = ecef_to_geodetic_lla(
-//             item.x_coordinate,
-//             item.y_coordinate,
-//             item.z_coordinate);
-//         println!("{} - {} - {}", latitude, longitude, altitude_msl);
-//         Self {
-//             latitude: latitude as f32,
-//             longitude: longitude as f32,
-//             altitude_msl: SVINT24::from(altitude_msl as i32),
-//         }
-//     }
-//
-//     fn decode(&self) -> Self::Counterpart {
-//         let (x, y, z) = geodetic_lla_to_ecef(
-//             self.latitude as f64, self.longitude as f64, self.altitude_msl.value as f64);
-//         Self::Counterpart::new(x, y, z)
-//     }
-// }
-
 /// Encode DIS geocentric (ECEF) ``Location`` to C-DIS geodetic (LLA) ``WorldCoordinates``.
 /// DIS ECEF is in meters
 /// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
@@ -268,13 +240,157 @@ pub(crate) fn decode_world_coordinates(lla_location: &WorldCoordinates, units: U
     Location::new(x, y, z)
 }
 
+impl Codec for CdisVariableParameter {
+    type Counterpart = VariableParameter;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        match item {
+            VariableParameter::Articulated(vp) => {
+                CdisVariableParameter::ArticulatedPart(CdisArticulatedPartVP::encode(vp)) }
+            VariableParameter::Attached(vp) => {
+                CdisVariableParameter::AttachedPart(CdisAttachedPartVP::encode(vp)) }
+            VariableParameter::Separation(vp) => {
+                CdisVariableParameter::EntitySeparation(CdisEntitySeparationVP::encode(vp)) }
+            VariableParameter::EntityType(vp) => {
+                CdisVariableParameter::EntityType(CdisEntityTypeVP::encode(vp)) }
+            VariableParameter::EntityAssociation(vp) => {
+                CdisVariableParameter::EntityAssociation(CdisEntityAssociationVP::encode(vp)) }
+            VariableParameter::Unspecified(_, _) => { CdisVariableParameter::Unspecified }
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        match self {
+            CdisVariableParameter::ArticulatedPart(vp) => { VariableParameter::Articulated(vp.decode()) }
+            CdisVariableParameter::AttachedPart(vp) => { VariableParameter::Attached(vp.decode()) }
+            CdisVariableParameter::EntitySeparation(vp) => { VariableParameter::Separation(vp.decode()) }
+            CdisVariableParameter::EntityType(vp) => { VariableParameter::EntityType(vp.decode()) }
+            CdisVariableParameter::EntityAssociation(vp) => { VariableParameter::EntityAssociation(vp.decode()) }
+            CdisVariableParameter::Unspecified => { VariableParameter::Unspecified(0u8, [0u8; 15]) }
+        }
+    }
+}
+
+impl Codec for CdisArticulatedPartVP {
+    type Counterpart = ArticulatedPart;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            change_indicator: item.change_indicator.into(),
+            attachment_id: item.attachment_id,
+            type_class: item.type_class,
+            type_metric: item.type_metric,
+            parameter_value: ParameterValueFloat::from_f64(item.parameter_value as f64),
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        ArticulatedPart::default()
+            .with_change_indicator(ChangeIndicator::from(self.change_indicator))
+            .with_attachment_id(self.attachment_id)
+            .with_type_class(self.type_class)
+            .with_type_metric(self.type_metric)
+            .with_parameter_value(self.parameter_value.to_value() as f32)
+    }
+}
+
+impl Codec for CdisAttachedPartVP {
+    type Counterpart = AttachedPart;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            detached_indicator: item.detached_indicator,
+            attachment_id: item.attachment_id,
+            parameter_type: item.parameter_type,
+            attached_part_type: EntityType::encode(&item.attached_part_type),
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_detached_indicator(self.detached_indicator)
+            .with_attachment_id(self.attachment_id)
+            .with_parameter_type(self.parameter_type)
+            .with_attached_part_type(self.attached_part_type.decode())
+    }
+}
+
+impl Codec for CdisEntitySeparationVP {
+    type Counterpart = SeparationParameter;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            reason_for_separation: item.reason,
+            pre_entity_indicator: item.pre_entity_indicator,
+            parent_entity_id: EntityId::encode(&item.parent_entity_id),
+            station_name: item.station_name,
+            station_number: item.station_number,
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_reason(self.reason_for_separation)
+            .with_pre_entity_indicator(self.pre_entity_indicator)
+            .with_parent_entity_id(self.parent_entity_id.decode())
+            .with_station_name(self.station_name)
+            .with_station_number(self.station_number)
+    }
+}
+
+impl Codec for CdisEntityTypeVP {
+    type Counterpart = EntityTypeParameter;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            change_indicator: item.change_indicator,
+            attached_part_type: EntityType::encode(&item.entity_type),
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_change_indicator(self.change_indicator)
+            .with_entity_type(self.attached_part_type.decode())
+    }
+}
+
+impl Codec for CdisEntityAssociationVP {
+    type Counterpart = EntityAssociationParameter;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            change_indicator: item.change_indicator,
+            association_status: item.association_status,
+            association_type: item.association_type,
+            entity_id: EntityId::encode(&item.entity_id),
+            own_station_location: item.own_station_location,
+            physical_connection_type: item.physical_connection_type,
+            group_member_type: item.group_member_type,
+            group_number: item.group_number,
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_change_indicator(self.change_indicator)
+            .with_association_status(self.association_status)
+            .with_association_type(self.association_type)
+            .with_entity_id(self.entity_id.decode())
+            .with_own_station_location(self.own_station_location)
+            .with_physical_connection_type(self.physical_connection_type)
+            .with_group_member_type(self.group_member_type)
+            .with_group_number(self.group_number)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use dis_rs::model::{VectorF32};
     use crate::codec::Codec;
     use crate::records::codec::{decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi};
-    use crate::types::model::{SVINT12, SVINT14, SVINT16};
-    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity, Orientation};
+    use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24};
+    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 
     #[test]
     fn test_normalize_radians_to_plusminus_pi() {
@@ -364,30 +480,45 @@ mod tests {
     }
 
     #[test]
-    fn entity_location_dis_to_cdis() {
+    fn entity_location_encode() {
+        // Latitude  : 52   deg N
+        // Longitude : 05   deg E
+        // Height    : 20   m
+        // === Equals ===
+        // X : 3919999  m
+        // Y : 342955   m
+        // Z : 5002819  m
+        // As per https://www.oc.nps.edu/oc2902w/coord/llhxyz.htm
         let dis = dis_rs::model::Location::new(3_919_999.0, 342_955.0, 5_002_819.0);
-        // println!("ECEF in - {:?}", dis);
-        // let cdis = WorldCoordinates::encode(&dis);
         let (cdis, units) = encode_world_coordinates(&dis);
 
-        // println!("{:?} - {:?} - alt in {:?}", cdis, cdis.latitude.to_degrees(), units);
-        assert!(false);
+        assert_eq!(units, Units::Centimeter);
+        assert_eq!(cdis.latitude, 620384200f32);    // scaled value
+        assert_eq!((cdis.latitude / ((2.0_f32.powi(30) - 1.0) / std::f32::consts::FRAC_PI_2)).to_degrees().round(), 52.0); // unscaled and in degrees
+        assert_eq!(cdis.longitude, 59652240f32);    // scaled value
+        assert_eq!(cdis.altitude_msl.value, 1987);  // ~ 19.87 meters
+    }
+
+    #[test]
+    fn entity_location_decode() {
+        let cdis = WorldCoordinates::new(620384200f32, 59652240f32, SVINT24::from(1987));
+        let units = Units::Centimeter;
         let dis = decode_world_coordinates(&cdis, units);
 
-        // let cdis = WorldCoordinates::new(90.0, 0.0, SVINT24::from(-6356752));
-        // let dis = decode_world_coordinates(cdis, Units::Dekameter);
-        // println!("ECEF out - {:?}", dis);
-        assert!(false);
+        assert_eq!(dis.x_coordinate.round(), 3_919_998.0);
+        assert_eq!(dis.y_coordinate.round(), 342_955.0);
+        assert_eq!(dis.z_coordinate.round(), 5_002_819.0);
     }
 
     #[test]
     fn entity_location_center_of_earth() {
-        assert!(false);
-    }
+        let dis = dis_rs::model::Location::new(0.0, 0.0, 0.0);
+        let (cdis, units) = encode_world_coordinates(&dis);
 
-    #[test]
-    fn entity_location_alt_in_centimeters() {
-        assert!(false);
+        assert_eq!(cdis.latitude, 0.0);
+        assert_eq!(cdis.longitude, 0.0);
+        assert_eq!(cdis.altitude_msl.value, -8_388_608);
+        assert_eq!(units, Units::Dekameter);
     }
 
     #[test]
@@ -405,6 +536,6 @@ mod tests {
         let cdis = Orientation::new(1, 4095, -4096);
         let dis = cdis.decode();
 
-        assert_eq!(dis.psi * Orientation::CONVERSION, 0.04395604); // in degrees, the resolution of the field
+        assert_eq!(dis.psi.to_degrees(), 0.04395604); // in degrees, the resolution of the field
     }
 }

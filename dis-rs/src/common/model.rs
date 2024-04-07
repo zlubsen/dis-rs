@@ -1438,7 +1438,7 @@ impl EntityTypeParameter {
 }
 
 /// 6.2.94.4 Entity Association VP Record
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityAssociationParameter {
     pub change_indicator: ChangeIndicator,
     pub association_status: EntityAssociationAssociationStatus,

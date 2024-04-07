@@ -1,7 +1,7 @@
 use crate::codec::Codec;
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::encode_world_coordinates;
-use crate::records::model::{AngularVelocity, CdisEntityMarking, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation};
 use crate::types::model::{UVINT32, UVINT8};
 
 impl Codec for EntityState {
@@ -28,7 +28,9 @@ impl Codec for EntityState {
             dr_params_entity_angular_velocity: Some(AngularVelocity::encode(&item.dead_reckoning_parameters.angular_velocity)),
             entity_marking: Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
             capabilities: Some(CdisEntityCapabilities(UVINT32::from(u32::from(item.entity_capabilities)))),
-            variable_parameters: vec![],
+            variable_parameters: item.variable_parameters.iter()
+                .map(|vp| CdisVariableParameter::encode(vp) )
+                .collect(),
         }
     }
 
