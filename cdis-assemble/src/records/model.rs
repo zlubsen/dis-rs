@@ -182,7 +182,7 @@ impl From<CdisTimeStamp> for DisTimeStamp {
 
 /// 11.1 Angular Velocity
 /// Scale = (2^11 - 1) / (4 * pi)
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct AngularVelocity {
     pub x: SVINT12,
     pub y: SVINT12,
@@ -208,7 +208,7 @@ impl CdisRecord for AngularVelocity {
 }
 
 /// 11.1 Linear Acceleration
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct LinearAcceleration {
     pub x: SVINT14,
     pub y: SVINT14,
@@ -285,7 +285,7 @@ impl CdisRecord for EntityId {
 }
 
 /// 11.12 Entity Type
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityType {
     pub kind: u8,
     pub domain: u8,
@@ -322,7 +322,7 @@ impl CdisRecord for EntityType {
 }
 
 /// 11.19 Linear Velocity
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct LinearVelocity {
     pub x: SVINT16,
     pub y: SVINT16,
@@ -348,7 +348,7 @@ impl CdisRecord for LinearVelocity {
 }
 
 /// 11.22 Orientation
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Orientation {
     pub psi: i16,
     pub theta: i16,
@@ -437,6 +437,15 @@ impl CdisEntityMarking {
             CdisMarkingCharEncoding::FiveBit
         } else {
             CdisMarkingCharEncoding::SixBit
+        }
+    }
+}
+
+impl Default for CdisEntityMarking {
+    fn default() -> Self {
+        Self {
+            char_encoding: CdisMarkingCharEncoding::FiveBit,
+            marking: "NONAME".to_string(),
         }
     }
 }

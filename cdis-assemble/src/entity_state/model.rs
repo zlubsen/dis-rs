@@ -84,14 +84,29 @@ impl From<&EntityAppearance> for CdisEntityAppearance{
 /// depends on the EntityType, which is not yet known when that field is not
 /// present in the received C-DIS PDU.
 /// This struct wraps the type in the wire format.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct CdisEntityCapabilities(pub UVINT32);
 
 /// The DR Parameters Other field is not explicitly modeled because the interpretation of the on-wire value
 /// depends on the DR Algorithm.
 /// This struct wraps the type in the wire format.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct CdisDRParametersOther(pub u128);
+
+impl CdisDRParametersOther {
+    pub fn decode(&self, algorithm: DeadReckoningAlgorithm) -> DrOtherParameters {
+        let other: [u8; 15] = self.0.to_be_bytes()[1..16]
+            .as_ref()
+            .try_into()
+            .unwrap_or(Default::default());
+        let dr_params_other = match dis_rs::parse_dr_other_parameters(&other, algorithm) {
+            Ok((_input, params)) => { params }
+            Err(_) => { DrOtherParameters::default() } // when something goes wrong in parsing (although we parse exactly 15 bytes of input), just return zeroes (default).
+        };
+
+        dr_params_other
+    }
+}
 
 impl From<u128> for CdisDRParametersOther {
     fn from(value: u128) -> Self {

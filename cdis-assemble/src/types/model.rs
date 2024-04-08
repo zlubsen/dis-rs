@@ -13,7 +13,7 @@ pub(crate) trait VarInt {
 }
 
 /// 10.2.1 UVINT8
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct UVINT8 {
     bit_size: Uvint8BitSize,
     pub value: u8,
@@ -73,8 +73,9 @@ impl From<u8> for UVINT8 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) enum Uvint8BitSize {
+    #[default]
     Four,
     Eight,
 }
@@ -211,7 +212,7 @@ impl From<Uvint16BitSize> for u8 {
 }
 
 /// 10.2.3 UVINT32
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct UVINT32 {
     bit_size: Uvint32BitSize,
     pub value: u32,
@@ -269,8 +270,9 @@ impl From<u32> for UVINT32 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) enum Uvint32BitSize {
+    #[default]
     Eight,
     Fifteen,
     Eighteen,
@@ -313,7 +315,7 @@ impl From<Uvint32BitSize> for u8 {
 }
 
 /// 10.2.4 SVINT12
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SVINT12 {
     bit_size: Svint12BitSize,
     pub value: i16,
@@ -372,8 +374,9 @@ impl From<i16> for SVINT12 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) enum Svint12BitSize {
+    #[default]
     Three,
     Six,
     Nine,
@@ -555,7 +558,7 @@ impl From<Svint13BitSize> for u8 {
 }
 
 /// 10.2.6 SVINT14
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SVINT14 {
     bit_size: Svint14BitSize,
     pub value: i16,
@@ -614,8 +617,9 @@ impl From<i16> for SVINT14 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) enum Svint14BitSize {
+    #[default]
     Four,
     Seven,
     Nine,
@@ -676,7 +680,7 @@ impl From<Svint14BitSize> for u8 {
 }
 
 /// 10.2.7 SVINT16
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SVINT16 {
     bit_size: Svint16BitSize,
     pub value: i16,
@@ -734,8 +738,9 @@ impl From<i16> for SVINT16 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) enum Svint16BitSize {
+    #[default]
     Eight,
     Twelve,
     Thirteen,
