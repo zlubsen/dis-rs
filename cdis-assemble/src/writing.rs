@@ -6,7 +6,12 @@ use bitvec::field::BitField;
 use crate::{CdisBody, CdisPdu};
 use crate::constants::{MTU_BITS, ONE_BIT};
 
-pub(crate) type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
+pub type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
+
+pub fn create_bit_buffer() -> BitBuffer {
+    let buf: BitBuffer = BitArray::ZERO;
+    buf
+}
 
 pub trait SerializeCdisPdu {
     fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;

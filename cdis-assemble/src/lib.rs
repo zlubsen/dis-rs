@@ -14,6 +14,9 @@ pub(crate) mod codec;
 
 pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
+pub use writing::BitBuffer;
+pub use writing::create_bit_buffer;
+pub use codec::Codec;
 
 trait BodyProperties {
     type FieldsPresent;
@@ -112,6 +115,7 @@ impl CdisBody {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum CdisError {
     ParseError(String), // the parsing of a CDIS PDU resulted in an error
     InsufficientHeaderLength(u16), // the input was too small to contain a valid CDIS header; (u16 found)
