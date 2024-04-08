@@ -28,6 +28,7 @@ impl SerializeCdisPdu for CdisPdu {
 impl SerializeCdisPdu for CdisBody {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = match self {
+            CdisBody::Unsupported(_body) => { cursor }
             CdisBody::EntityState(body) => { body.serialize(buf, cursor) }
             // CdisBody::Fire => {}
             // CdisBody::Detonation => {}
