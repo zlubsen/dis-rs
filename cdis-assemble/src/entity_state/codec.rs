@@ -1,7 +1,10 @@
+use dis_rs::entity_state::model::{DrOtherParameters, DrParameters, EntityAppearance, EntityMarking};
+use dis_rs::enumerations::{EntityCapabilities, EntityMarkingCharacterSet, ForceId};
 use crate::codec::Codec;
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
-use crate::records::codec::encode_world_coordinates;
+use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation};
+use crate::records::parser::world_coordinates;
 use crate::types::model::{UVINT32, UVINT8};
 
 impl Codec for EntityState {
@@ -9,6 +12,7 @@ impl Codec for EntityState {
     const SCALING: f32 = 0.0;
 
     fn encode(item: &Self::Counterpart) -> Self {
+        // Covers full update mode
         let (entity_location, units) = encode_world_coordinates(&item.entity_location);
         let entity_location = Some(entity_location);
         Self {
@@ -35,6 +39,40 @@ impl Codec for EntityState {
     }
 
     fn decode(&self) -> Self::Counterpart {
-        todo!()
+        let entity_type = self.entity_type.unwrap_or_default().decode();
+        let entity_location = self.entity_location
+            .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) );
+
+        // TODO decode CdisDrParamsOther, depending on the algorithm
+        let other: [u8; 15] = self.dr_params_other.unwrap_or_default().0
+            .to_be_bytes()[1..16]
+            .as_ref()
+            .try_into()
+            .unwrap_or(Default::default());
+        let dr_params_other = DrOtherParameters::None(other);
+
+        // Covers full update mode
+        Self::Counterpart::builder()
+            .with_entity_id(self.entity_id.decode())
+            .with_force_id(ForceId::from(self.force_id.unwrap_or_default().value))
+            .with_entity_type(entity_type)
+            .with_alternative_entity_type(self.alternate_entity_type.unwrap_or_default().decode())
+            .with_velocity(self.entity_linear_velocity.unwrap_or_default().decode())
+            .with_location(entity_location.unwrap_or_default())
+            .with_orientation(self.entity_orientation.unwrap_or_default().decode())
+            .with_appearance(self.entity_appearance
+                .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
+                .unwrap_or_default())
+            .with_dead_reckoning_parameters(DrParameters::default()
+                .with_algorithm(self.dr_algorithm)
+                .with_parameters(dr_params_other)
+                .with_linear_acceleration(self.dr_params_entity_linear_acceleration.unwrap_or_default().decode())
+                .with_angular_velocity(self.dr_params_entity_angular_velocity.unwrap_or_default().decode()))
+            .with_marking(EntityMarking::new(self.entity_marking.unwrap_or_default().marking, EntityMarkingCharacterSet::ASCII))
+            .with_capabilities(EntityCapabilities::from(self.capabilities.unwrap_or_default().0.value))
+            .with_variable_parameters(self.variable_parameters.iter()
+                .map(|vp| vp.decode() )
+                .collect())
+            .build()
     }
 }
