@@ -146,10 +146,10 @@ pub struct EntityMarking {
 }
 
 impl EntityMarking {
-    pub fn new(marking: String, character_set: EntityMarkingCharacterSet) -> Self {
+    pub fn new(marking: impl Into<String>, character_set: EntityMarkingCharacterSet) -> Self {
         Self {
             marking_character_set: character_set,
-            marking_string: marking
+            marking_string: marking.into()
         }
     }
 

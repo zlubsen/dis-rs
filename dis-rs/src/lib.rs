@@ -16,6 +16,7 @@ pub use common::parse_v7 as parse_v7_pdus;
 pub use v7::parser::parse_pdu_status_fields;
 pub use v7::writer::serialize_pdu_status;
 pub use v7::entity_state::entity_capabilities_from_bytes;
+pub use common::entity_state::parser::dr_other_parameters as parse_dr_other_parameters;
 pub use common::Serialize;
 
 pub use common::*;
