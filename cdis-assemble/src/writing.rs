@@ -22,6 +22,7 @@ pub trait SerializeCdis {
 }
 
 impl SerializeCdisPdu for CdisPdu {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.header.serialize(buf, cursor);
         let cursor = self.body.serialize(buf, cursor);
@@ -31,6 +32,7 @@ impl SerializeCdisPdu for CdisPdu {
 }
 
 impl SerializeCdisPdu for CdisBody {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = match self {
             CdisBody::Unsupported(_body) => { cursor }
@@ -80,16 +82,18 @@ pub(crate) fn write_value_unsigned<T: num::Unsigned + Integral>(buf: &mut BitBuf
     write_value_with_length(buf, cursor, bit_size, value)
 }
 
+#[allow(clippy::let_and_return)]
 pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero + Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
     let cursor = write_value_with_length(
         buf, cursor, ONE_BIT, u8::from(value.is_negative()));
     let value_bits = - (if value.is_negative() {
         T::from_usize(2usize.pow(bit_size as u32 - 1))
-            .expect(format!("Cannot determine minimum value for type {}", type_name::<T>()).as_str())
+            .unwrap_or_else(|| panic!("Cannot determine minimum value for type {}", type_name::<T>()))
             - value
     } else { T::zero() - value });
     let cursor = write_value_with_length(
         buf, cursor, bit_size - ONE_BIT, value_bits);
+
     cursor
 }
 

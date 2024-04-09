@@ -506,6 +506,7 @@ impl CdisMarkingCharEncoding {
         }
     }
 
+    #[allow(clippy::wildcard_in_or_patterns)]
     pub fn char_from_code(&self, code: u8) -> char {
         match self {
             CdisMarkingCharEncoding::FiveBit => {
@@ -616,6 +617,7 @@ impl CdisMarkingCharEncoding {
         }
     }
 
+    #[allow(clippy::wildcard_in_or_patterns)]
     pub fn u8_from_char(&self, c: char) -> u8 {
         match self {
             CdisMarkingCharEncoding::FiveBit => {

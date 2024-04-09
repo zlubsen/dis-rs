@@ -63,7 +63,7 @@ impl From<u8> for UVINT8 {
     fn from(value: u8) -> Self {
         let bit_size = match value {
             0..=15 => Uvint8BitSize::Four,
-            ..=u8::MAX => Uvint8BitSize::Eight,
+            16..=u8::MAX => Uvint8BitSize::Eight,
         };
 
         Self {
@@ -156,9 +156,9 @@ impl From<u16> for UVINT16 {
     fn from(value: u16) -> Self {
         let bit_size = match value {
             0..=255 => Uvint16BitSize::Eight,
-            ..=2_047 => Uvint16BitSize::Eleven,
-            ..=16_383 => Uvint16BitSize::Fourteen,
-            ..=u16::MAX => Uvint16BitSize::Sixteen,
+            256..=2_047 => Uvint16BitSize::Eleven,
+            2_048..=16_383 => Uvint16BitSize::Fourteen,
+            16_384..=u16::MAX => Uvint16BitSize::Sixteen,
         };
 
         Self {
@@ -258,9 +258,9 @@ impl From<u32> for UVINT32 {
     fn from(value: u32) -> Self {
         let bit_size = match value {
             0..=255 => Uvint32BitSize::Eight,
-            ..=32_767 => Uvint32BitSize::Fifteen,
-            ..=262_143 => Uvint32BitSize::Eighteen,
-            ..=u32::MAX => Uvint32BitSize::ThirtyTwo,
+            256..=32_767 => Uvint32BitSize::Fifteen,
+            32_768..=262_143 => Uvint32BitSize::Eighteen,
+            262_144..=u32::MAX => Uvint32BitSize::ThirtyTwo,
         };
 
         Self {

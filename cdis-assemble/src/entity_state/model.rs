@@ -33,33 +33,32 @@ impl BodyProperties for EntityState {
     const FIELDS_PRESENT_LENGTH: usize = 13;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        0
-            | if self.force_id.is_some() { Self::FieldsPresent::FORCE_ID_BIT } else { 0 }
-            | if !self.variable_parameters.is_empty() { Self::FieldsPresent::VP_BIT } else { 0 }
-            | if self.entity_type.is_some() { Self::FieldsPresent::ENTITY_TYPE_BIT } else { 0 }
-            | if self.alternate_entity_type.is_some() { Self::FieldsPresent::ALT_ENTITY_TYPE_BIT } else { 0 }
-            | if self.entity_linear_velocity.is_some() { Self::FieldsPresent::LINEAR_VELOCITY_BIT } else { 0 }
-            | if self.entity_location.is_some() { Self::FieldsPresent::ENTITY_LOCATION_BIT } else { 0 }
-            | if self.entity_orientation.is_some() { Self::FieldsPresent::ENTITY_ORIENTATION_BIT } else { 0 }
-            | if self.entity_appearance.is_some() { Self::FieldsPresent::ENTITY_APPEARANCE_BIT } else { 0 }
-            | if self.dr_params_other.is_some() { Self::FieldsPresent::DR_OTHER_BIT } else { 0 }
-            | if self.dr_params_entity_linear_acceleration.is_some() { Self::FieldsPresent::DR_LINEAR_ACCELERATION_BIT } else { 0 }
-            | if self.dr_params_entity_angular_velocity.is_some() { Self::FieldsPresent::DR_ANGULAR_VELOCITY_BIT } else { 0 }
-            | if self.entity_marking.is_some() { Self::FieldsPresent::MARKING_BIT } else { 0 }
-            | if self.capabilities.is_some() { Self::FieldsPresent::CAPABILITIES_BIT } else { 0 }
+        (if self.force_id.is_some() { Self::FieldsPresent::FORCE_ID_BIT } else { 0 })
+            | (if !self.variable_parameters.is_empty() { Self::FieldsPresent::VP_BIT } else { 0 })
+            | (if self.entity_type.is_some() { Self::FieldsPresent::ENTITY_TYPE_BIT } else { 0 })
+            | (if self.alternate_entity_type.is_some() { Self::FieldsPresent::ALT_ENTITY_TYPE_BIT } else { 0 })
+            | (if self.entity_linear_velocity.is_some() { Self::FieldsPresent::LINEAR_VELOCITY_BIT } else { 0 })
+            | (if self.entity_location.is_some() { Self::FieldsPresent::ENTITY_LOCATION_BIT } else { 0 })
+            | (if self.entity_orientation.is_some() { Self::FieldsPresent::ENTITY_ORIENTATION_BIT } else { 0 })
+            | (if self.entity_appearance.is_some() { Self::FieldsPresent::ENTITY_APPEARANCE_BIT } else { 0 })
+            | (if self.dr_params_other.is_some() { Self::FieldsPresent::DR_OTHER_BIT } else { 0 })
+            | (if self.dr_params_entity_linear_acceleration.is_some() { Self::FieldsPresent::DR_LINEAR_ACCELERATION_BIT } else { 0 })
+            | (if self.dr_params_entity_angular_velocity.is_some() { Self::FieldsPresent::DR_ANGULAR_VELOCITY_BIT } else { 0 })
+            | (if self.entity_marking.is_some() { Self::FieldsPresent::MARKING_BIT } else { 0 })
+            | (if self.capabilities.is_some() { Self::FieldsPresent::CAPABILITIES_BIT } else { 0 })
     }
 
     fn body_length_bits(&self) -> usize {
         const CONST_BIT_SIZE: usize = 6;
         Self::FIELDS_PRESENT_LENGTH + CONST_BIT_SIZE
             + self.entity_id.record_length()
-            + if let Some(force_id) = self.force_id { force_id.bit_size() } else { 0 }
-            + if !self.variable_parameters.is_empty() { UVINT8::from(self.variable_parameters.len() as u8).bit_size() } else { 0 }
-            + if let Some(record) = self.entity_type { record.record_length() } else { 0 }
-            + if let Some(record) = self.alternate_entity_type { record.record_length() } else { 0 }
-            + if let Some(record) = self.entity_linear_velocity { record.record_length() } else { 0 }
-            + if let Some(record) = self.entity_location { record.record_length() } else { 0 }
-            + if let Some(record) = self.entity_orientation { record.record_length() } else { 0 }
+            + (if let Some(force_id) = self.force_id { force_id.bit_size() } else { 0 })
+            + (if !self.variable_parameters.is_empty() { UVINT8::from(self.variable_parameters.len() as u8).bit_size() } else { 0 })
+            + (if let Some(record) = self.entity_type { record.record_length() } else { 0 })
+            + (if let Some(record) = self.alternate_entity_type { record.record_length() } else { 0 })
+            + (if let Some(record) = self.entity_linear_velocity { record.record_length() } else { 0 })
+            + (if let Some(record) = self.entity_location { record.record_length() } else { 0 })
+            + (if let Some(record) = self.entity_orientation { record.record_length() } else { 0 })
     }
 
     fn into_cdis_body(self) -> CdisBody {

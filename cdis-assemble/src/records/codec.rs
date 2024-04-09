@@ -165,7 +165,7 @@ impl Codec for LinearAcceleration {
 /// Scale = (2^11 - 1) / (4 * pi)
 impl Codec for AngularVelocity {
     type Counterpart = VectorF32;
-    const SCALING: f32 = (2^11 - 1) as f32 / (4.0 * std::f32::consts::PI);
+    const SCALING: f32 = ((2^11) - 1) as f32 / (4.0 * std::f32::consts::PI);
     const CONVERSION: f32 = RADIANS_SEC_TO_DEGREES_SEC;
 
     // FIXME: possibly the rounding is off from the spec, as the example at page 27 of the standard uses +0.5 for positive numbers, and -0.5 for negative numbers

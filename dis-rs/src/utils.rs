@@ -1,14 +1,15 @@
 struct EcefToGeoConstants;
 
+#[allow(clippy::excessive_precision)]
 impl EcefToGeoConstants {
     const WGS_84_SEMI_MAJOR_AXIS: f64 = 6378137.0;  //WGS-84 semi-major axis
-    const E2: f64 = 6.6943799901377997e-3;          // WGS-84 first eccentricity squared
-    const A1: f64 = 4.2697672707157535e+4;          //a1 = a*e2
-    const A2: f64 = 1.8230912546075455e+9;          //a2 = a1*a1
-    const A3: f64 = 1.4291722289812413e+2;          //a3 = a1*e2/2
-    const A4: f64 = 4.5577281365188637e+9;          //a4 = 2.5*a2
-    const A5: f64 = 4.2840589930055659e+4;          //a5 = a1+a3
-    const A6: f64 = 9.9330562000986220e-1;          //a6 = 1-e2
+    const E2: f64 = 6.694_379_990_137_799_7e-3;          // WGS-84 first eccentricity squared
+    const A1: f64 = 4.269_767_270_715_753_5e+4;          //a1 = a*e2
+    const A2: f64 = 1.823_091_254_607_545_5e+9;          //a2 = a1*a1
+    const A3: f64 = 1.429_172_228_981_241_3e+2;          //a3 = a1*e2/2
+    const A4: f64 = 4.557_728_136_518_863_7e+9;          //a4 = 2.5*a2
+    const A5: f64 = 4.284_058_993_005_565_9e+4;          //a5 = a1+a3
+    const A6: f64 = 9.933_056_200_098_622_0e-1;          //a6 = 1-e2
 }
 
 /// Applies Geocentric (ECEF) to Geodetic (LLA) conversion

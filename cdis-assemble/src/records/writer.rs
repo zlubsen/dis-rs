@@ -6,11 +6,12 @@ use crate::types::writer::serialize_cdis_float;
 use crate::writing::BitBuffer;
 
 impl SerializeCdis for CdisHeader {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u8>(buf, cursor, TWO_BITS, self.protocol_version.into());
         let cursor = self.exercise_id.serialize(buf, cursor);
         let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, self.pdu_type.into());
-        let cursor = write_value_unsigned::<u32>(buf, cursor, TWENTY_SIX_BITS, self.timestamp.raw_timestamp.into());
+        let cursor = write_value_unsigned::<u32>(buf, cursor, TWENTY_SIX_BITS, self.timestamp.raw_timestamp);
         let cursor = write_value_unsigned(buf, cursor, FOURTEEN_BITS, self.length);
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, dis_rs::serialize_pdu_status(&self.pdu_status, &self.pdu_type));
 
@@ -19,6 +20,7 @@ impl SerializeCdis for CdisHeader {
 }
 
 impl SerializeCdis for AngularVelocity {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.x.serialize(buf, cursor);
         let cursor = self.y.serialize(buf, cursor);
@@ -29,6 +31,7 @@ impl SerializeCdis for AngularVelocity {
 }
 
 impl SerializeCdis for LinearAcceleration {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.x.serialize(buf, cursor);
         let cursor = self.y.serialize(buf, cursor);
@@ -39,6 +42,7 @@ impl SerializeCdis for LinearAcceleration {
 }
 
 impl SerializeCdis for EntityCoordinateVector {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.x.serialize(buf, cursor);
         let cursor = self.y.serialize(buf, cursor);
@@ -49,6 +53,7 @@ impl SerializeCdis for EntityCoordinateVector {
 }
 
 impl SerializeCdis for EntityId {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.site.serialize(buf, cursor);
         let cursor = self.application.serialize(buf, cursor);
@@ -59,6 +64,7 @@ impl SerializeCdis for EntityId {
 }
 
 impl SerializeCdis for EntityType {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.kind);
         let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.domain);
@@ -74,6 +80,7 @@ impl SerializeCdis for EntityType {
 }
 
 impl SerializeCdis for LinearVelocity {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.x.serialize(buf, cursor);
         let cursor = self.y.serialize(buf, cursor);
@@ -84,24 +91,29 @@ impl SerializeCdis for LinearVelocity {
 }
 
 impl SerializeCdis for WorldCoordinates {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_signed(buf, cursor, THIRTY_ONE_BITS, self.latitude as i32);
         let cursor = write_value_signed(buf, cursor, THIRTY_TWO_BITS, self.longitude as i32);
         let cursor = self.altitude_msl.serialize(buf, cursor);
+
         cursor
     }
 }
 
 impl SerializeCdis for Orientation {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.psi);
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.theta);
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.phi);
+
         cursor
     }
 }
 
 impl SerializeCdis for CdisEntityMarking {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.marking.len());
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.char_encoding.encoding());
@@ -111,6 +123,7 @@ impl SerializeCdis for CdisEntityMarking {
         let cursor = codes.iter().fold(cursor, |cur, code| {
             write_value_unsigned(buf, cur, self.char_encoding.bit_size(), *code)
         });
+
         cursor
     }
 }
@@ -154,6 +167,7 @@ impl SerializeCdis for CdisVariableParameter {
 }
 
 impl SerializeCdis for CdisArticulatedPartVP {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.change_indicator);
         let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.attachment_id);
@@ -169,6 +183,7 @@ impl SerializeCdis for CdisArticulatedPartVP {
 }
 
 impl SerializeCdis for CdisAttachedPartVP {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.detached_indicator.into());
         let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.attachment_id);
@@ -180,6 +195,7 @@ impl SerializeCdis for CdisAttachedPartVP {
 }
 
 impl SerializeCdis for CdisEntitySeparationVP {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u8>(buf, cursor, THREE_BITS, self.reason_for_separation.into());
         let cursor = write_value_unsigned::<u8>(buf, cursor, THREE_BITS, self.pre_entity_indicator.into());
@@ -192,6 +208,7 @@ impl SerializeCdis for CdisEntitySeparationVP {
 }
 
 impl SerializeCdis for CdisEntityTypeVP {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.change_indicator.into());
         let cursor = self.attached_part_type.serialize(buf, cursor);
@@ -201,6 +218,7 @@ impl SerializeCdis for CdisEntityTypeVP {
 }
 
 impl SerializeCdis for CdisEntityAssociationVP {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.change_indicator.into());
         let cursor = write_value_unsigned::<u8>(buf, cursor, FOUR_BITS, self.association_status.into());

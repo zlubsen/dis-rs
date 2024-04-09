@@ -10,6 +10,7 @@ use crate::records::model::Units;
 use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, variable_parameter, world_coordinates};
 use crate::types::parser::{uvint32, uvint8};
 
+#[allow(clippy::redundant_closure)]
 pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
     let (input, units) : (BitInput, u8) = take(ONE_BIT)(input)?;
@@ -38,17 +39,14 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
 
     let (input, entity_appearance) : (BitInput, Option<u32>) = parsing::parse_field_when_present(
         full_update_flag, fields_present, FPF::ENTITY_APPEARANCE_BIT, take(THIRTY_TWO_BITS))(input)?;
-    let entity_appearance = if let Some(appearance) = entity_appearance {
-        Some(CdisEntityAppearance(appearance))
-    } else { None };
+    // #[allow(clippy::redundant_closure)]
+    let entity_appearance = entity_appearance.map(| appearance | CdisEntityAppearance(appearance) );
 
     let (input, dr_algorithm) : (BitInput, u8) = take(FOUR_BITS)(input)?;
     let dr_algorithm = DeadReckoningAlgorithm::from(dr_algorithm);
     let (input, dr_params_other) : (BitInput, Option<u128>) = parsing::parse_field_when_present(
     full_update_flag, fields_present, FPF::DR_OTHER_BIT, take(HUNDRED_TWENTY_BITS))(input)?;
-    let dr_params_other = if let Some(bytes) = dr_params_other {
-        Some(CdisDRParametersOther::from(bytes))
-    } else { None };
+    let dr_params_other = dr_params_other.map(| bytes | CdisDRParametersOther::from(bytes) );
 
     let (input, dr_params_entity_linear_acceleration) = parsing::parse_field_when_present(
         full_update_flag, fields_present, FPF::DR_LINEAR_ACCELERATION_BIT, linear_acceleration)(input)?;
@@ -59,9 +57,7 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
         full_update_flag, fields_present, FPF::MARKING_BIT, entity_marking)(input)?;
     let (input, capabilities) = parsing::parse_field_when_present(
         full_update_flag, fields_present, FPF::CAPABILITIES_BIT, uvint32)(input)?;
-    let capabilities = if let Some(capabilities) = capabilities {
-        Some(CdisEntityCapabilities(capabilities))
-    } else { None };
+    let capabilities = capabilities.map(|cap| CdisEntityCapabilities(cap));
 
     let (input, variable_parameters) = if let Some(num_params) = number_of_var_params {
         count(variable_parameter, num_params)(input)?

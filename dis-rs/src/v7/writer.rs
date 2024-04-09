@@ -33,7 +33,7 @@ pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type : &PduType) -> u8 {
         u8::from(aii) << 5
     } else {0u8};
     
-    let status_bits = match u8::from(*pdu_type) {
+    match u8::from(*pdu_type) {
         1 => { combine_cei_lvc_tei(cei, lvc, tei) }
         2 => { combine_fti_cei_lvc(fti, cei, lvc) }
         3 => { combine_dti_cei_lvc(dti, cei, lvc) }
@@ -60,9 +60,7 @@ pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type : &PduType) -> u8 {
             // default to zeroes for Unspecified PduTypes 
             0u8
         }
-    };
-
-    status_bits
+    }
 }
 
 fn combine_cei_lvc_tei(cei: u8, lvc: u8, tei: u8) -> u8 {

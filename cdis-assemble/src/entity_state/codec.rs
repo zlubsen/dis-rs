@@ -32,7 +32,7 @@ impl Codec for EntityState {
             entity_marking: Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
             capabilities: Some(CdisEntityCapabilities(UVINT32::from(u32::from(item.entity_capabilities)))),
             variable_parameters: item.variable_parameters.iter()
-                .map(|vp| CdisVariableParameter::encode(vp) )
+                .map(CdisVariableParameter::encode )
                 .collect(),
         }
     }
