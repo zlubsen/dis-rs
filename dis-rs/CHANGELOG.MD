@@ -2,6 +2,8 @@
 
 ## 0.9.0 - 2024-xx-xx
 
+Changed `DisError` to use `thiserror` crate, so `DisError` now implements `std::error::Error`.
+
 ...
 
 ## 0.8.0 - 2024-04-03
@@ -13,7 +15,7 @@ The impls for the `Serialize` and `SerializePdu` traits are not changed and coul
 
 Added UnderwaterAcoustics (UA) PDU.
 
-Traits ``BodyInfo`` and ``Interaction`` are now public.
+Traits `BodyInfo` and `Interaction` are now public.
 
 ## 0.7.0 - 2024-03-12
 Added Logistics PDUs (ServiceRequest, ResupplyOffer, ResupplyReceived, ResupplyCancel, RepairComplete, RepairResponse)
