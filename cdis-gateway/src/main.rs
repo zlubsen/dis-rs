@@ -1,12 +1,135 @@
-use std::io::Read;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
+
 use bytes::BytesMut;
+use tokio::net::UdpSocket;
+use tokio::select;
+
 use cdis_assemble::entity_state::model::EntityState;
 use cdis_assemble::{BitBuffer, CdisPdu, Codec, create_bit_buffer, SerializeCdisPdu};
+
 use dis_rs::entity_state::model::EntityMarking;
 use dis_rs::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, PduType, PlatformDomain};
 use dis_rs::model::{EntityId, EntityType, Location, Pdu, PduHeader};
 
+use crate::config::{Config, UdpEndpoint, UdpMode};
+
+mod config;
+
 fn main() {
+    let config = Config {
+        dis_socket: UdpEndpoint {
+            mode: UdpMode::UniCast,
+            interface: IpAddr::V4(Ipv4Addr::new(127,0,0,1)),
+            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127,0,0,1), 3000)),
+            ttl: 1,
+        },
+        cdis_socket: UdpEndpoint {
+            mode: UdpMode::UniCast,
+            interface: IpAddr::V4(Ipv4Addr::new(127,0,0,1)),
+            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127,0,0,1), 3001)),
+            ttl: 1,
+        },
+        mode: Default::default(),
+    };
+
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_io()
+        .enable_time()
+        .build().unwrap();
+    let _guard = runtime.enter();
+    runtime.block_on( async { start_gateway(config).await } );
+    runtime.shutdown_background();
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum Command {
+    Nop
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum Event {
+    Nop
+}
+
+async fn start_gateway(config: Config) {
+    let (cmd_tx, cmd_rx) = tokio::sync::broadcast::channel::<Command>(10);
+    let (event_tx, _event_rx) = tokio::sync::mpsc::channel::<Event>(100);
+
+    tokio::spawn(encoder_socket(config.clone(), cmd_rx, event_tx));
+    tokio::spawn(encoder(config.clone()));
+    tokio::spawn(decoder(config.clone()));
+    tokio::spawn(decoder_socket(config.clone(), cmd_rx, event_tx));
+}
+
+async fn encoder_socket(config: Config, mut cmd_rx: tokio::sync::broadcast::Receiver<Command>, event_tx: tokio::sync::mpsc::Sender<Event>) {
+    let socket = UdpSocket::bind(config.dis_socket.address).await.unwrap();
+
+    let mut buf = BytesMut::with_capacity(1500);
+    loop {
+        select! {
+            cmd = cmd_rx.recv() => {
+                let cmd = cmd.unwrap();
+                // received a command
+            }
+            _ = socket.recv(&mut buf) => {
+                // received bytes
+            }
+        }
+    }
+}
+
+async fn decoder_socket(config: Config, mut cmd_rx: tokio::sync::broadcast::Receiver<Command>, event_tx: tokio::sync::mpsc::Sender<Event>) {
+    let socket = UdpSocket::bind(config.dis_socket.address).await.unwrap();
+
+    let mut buf = BytesMut::with_capacity(1500);
+    loop {
+        select! {
+            cmd = cmd_rx.recv() => {
+                let cmd = cmd.unwrap();
+                // received a command
+            }
+            _ = socket.recv(&mut buf) => {
+                // received bytes
+            }
+        }
+    }
+}
+
+async fn encoder(config: Config) {
+    let socket = UdpSocket::bind(config.dis_socket.address).await.unwrap();
+
+    let mut buf = BytesMut::with_capacity(1500);
+    loop {
+        select! {
+            cmd = cmd_rx.recv() => {
+                let cmd = cmd.unwrap();
+                // received a command
+            }
+            _ = socket.recv(&mut buf) => {
+                // received bytes
+            }
+        }
+    }
+}
+
+async fn decoder(config: Config) {
+    let socket = UdpSocket::bind(config.dis_socket.address).await.unwrap();
+
+    let mut buf = BytesMut::with_capacity(1500);
+    loop {
+        select! {
+            cmd = cmd_rx.recv() => {
+                let cmd = cmd.unwrap();
+                // received a command
+            }
+            _ = socket.recv(&mut buf) => {
+                // received bytes
+            }
+        }
+    }
+}
+
+fn test() {
     let mut write_buf: BitBuffer = create_bit_buffer();
     let mut read_buf = BytesMut::with_capacity(1400);
 

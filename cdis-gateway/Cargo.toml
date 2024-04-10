@@ -20,7 +20,10 @@ keywords = ["simulation", "DIS", "C-DIS", "gateway", "CLI"]
 dis-rs = { path = "../dis-rs" }
 cdis-assemble = { path = "../cdis-assemble" }
 bytes = "1.4.0"
-tokio = "1.28.1"
+tokio = { version = "1.28.1", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
 clap = "4.2.7"
+toml = "0.7.3"
+serde = "1.0.163"
+serde_derive = "1.0.163"
