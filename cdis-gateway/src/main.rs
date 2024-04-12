@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 
@@ -5,6 +6,7 @@ use bytes::{Bytes, BytesMut};
 use socket2::{Domain, Protocol, Socket, Type};
 use tokio::net::UdpSocket;
 use tokio::select;
+use tracing::{event, Level};
 
 use cdis_assemble::entity_state::model::EntityState;
 use cdis_assemble::{BitBuffer, CdisPdu, Codec, create_bit_buffer, SerializeCdisPdu};
@@ -12,7 +14,7 @@ use cdis_assemble::{BitBuffer, CdisPdu, Codec, create_bit_buffer, SerializeCdisP
 use dis_rs::entity_state::model::EntityMarking;
 use dis_rs::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, PduType, PlatformDomain};
 use dis_rs::model::{EntityId, EntityType, Location, Pdu, PduHeader};
-use dis_rs::parse;
+use crate::codec::Encoder;
 
 use crate::config::{Config, UdpEndpoint, UdpMode};
 
@@ -58,13 +60,24 @@ enum Event {
 async fn start_gateway(config: Config) {
     let (cmd_tx, cmd_rx) = tokio::sync::broadcast::channel::<Command>(10);
     let (event_tx, _event_rx) = tokio::sync::mpsc::channel::<Event>(100);
+    let (dis_socket_out_tx, dis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(100);
+    let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Bytes>(100);
+    let (cdis_socket_out_tx, cdis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(100);
+    let (cdis_socket_in_tx, cdis_socket_in_rx) = tokio::sync::mpsc::channel::<Bytes>(100);
 
-    let dis_socket = create_udp_socket(config.dis_socket);
+    let dis_socket = create_udp_socket(&config.dis_socket).await;
+    let cdis_socket = create_udp_socket(&config.cdis_socket).await;
 
-    tokio::spawn(reader_socket(config.clone(), cmd_rx, event_tx));
+    let dis_read_socket = reader_socket(dis_socket.clone(), dis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
+    let dis_write_socket = writer_socket(dis_socket.clone(), dis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
+    let cdis_read_socket = reader_socket(cdis_socket.clone(), cdis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
+    let cdis_write_socket = writer_socket(cdis_socket.clone(), cdis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
+    tokio::spawn(dis_read_socket);
+    tokio::spawn(dis_write_socket);
+    tokio::spawn(cdis_read_socket);
+    tokio::spawn(cdis_write_socket);
     tokio::spawn(encoder(config.clone()));
     tokio::spawn(decoder(config.clone()));
-    tokio::spawn(writer_socket(config.clone(), cmd_rx, event_tx));
 }
 
 async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
@@ -108,16 +121,17 @@ pub(crate) enum Payload {
     CDIS(CdisPdu)
 }
 
-async fn reader_socket(socket: Arc<UdpSocket>,
-                       to_codec: tokio::sync::mpsc::Sender<Pdu>,
+async fn reader_socket<T>(socket: Arc<UdpSocket>,
+                       to_codec: tokio::sync::mpsc::Sender<Bytes>,
                        mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                        event_tx: tokio::sync::mpsc::Sender<Event>) {
     let mut buf = BytesMut::with_capacity(1500);
 
     enum Action {
-        Received(usize, SocketAddr),
+        Received(Bytes, SocketAddr),
+        Error(std::io::Error),
         Quit
-    };
+    }
 
     loop {
         let action = select! {
@@ -127,49 +141,104 @@ async fn reader_socket(socket: Arc<UdpSocket>,
                     Command::Quit => { Action::Quit }
                 }
             }
-            (bytes_received, from_address) = socket.recv_from(&mut buf) => {
-                Action::Reveived(bytes_received, from_address)
+            received = socket.recv_from(&mut buf) => {
+                match received {
+                    Ok((bytes_received, from_address)) => {
+                        Action::Received(Bytes::copy_from_slice(&buf[..bytes_received]), from_address)
+                    }
+                    Err(err) => { Action::Error(err) }
+                }
             }
         };
 
         match action {
-            Action::Received(bytes_received, from_address) => {
-                let pdus = parse(&buf).expect("Error parsing PDUs");
-                // pdus.iter().for_each(|pdu| to_codec.send(*pdu))
+            Action::Received(bytes, from_address) => {
+                if let Err(_) = to_codec.send(bytes).await {
+                    event!(Level::ERROR, "Reader socket to codec channel dropped.");
+                    return;
+                }
+            }
+            Action::Error(io_error) => {
+                event!(Level::ERROR, "{io_error}");
+                return;
             }
             Action::Quit => {
-
+                return;
             }
         }
     }
 }
 
-fn handle_bytes(bytes_received: usize, bytes: &mut BytesMut) {
+async fn writer_socket<T>(socket: Arc<UdpSocket>, mut from_codec: tokio::sync::mpsc::Receiver<Bytes>, mut cmd_rx: tokio::sync::broadcast::Receiver<Command>, event_tx: tokio::sync::mpsc::Sender<Event>) {
+    let mut buf = BytesMut::with_capacity(1500);
 
+    enum Action {
+        Send(std::io::Result<usize>),
+        Error(std::io::Error),
+        Quit
+    }
+
+    loop {
+        let action = select! {
+            cmd = cmd_rx.recv() => {
+                let cmd = cmd.unwrap();
+                match cmd {
+                    Command::Quit => { Action::Quit }
+                }
+            }
+            bytes = from_codec.recv() => {
+                let bytes = bytes.unwrap();
+                let bytes_send = socket.send(&bytes).await;
+                Action::Send(bytes_send)
+            }
+        };
+        match action {
+            Action::Send(result) => {
+                match result {
+                    Ok(_bytes_send) => {
+                        // keep some statistics
+                    }
+                    Err(io_error) => {
+                        event!(Level::ERROR, "{io_error}");
+                        return;
+                    }
+                }
+            }
+            Action::Error(io_error) => { event!(Level::ERROR, "{io_error}"); return; }
+            Action::Quit => { return; }
+        }
+    }
 }
 
-async fn writer_socket(config: Config, mut cmd_rx: tokio::sync::broadcast::Receiver<Command>, event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let socket = UdpSocket::bind(config.dis_socket.address).await.unwrap();
+async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
+                 channel_out: tokio::sync::mpsc::Sender<Bytes>,
+                 mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+                 event_tx: tokio::sync::mpsc::Sender<Event>) {
+    let mut encoder = Encoder::new(config.mode);
 
-    let mut buf = BytesMut::with_capacity(1500);
     loop {
         select! {
             cmd = cmd_rx.recv() => {
                 let cmd = cmd.unwrap();
-                // received a command
+                match cmd {
+                    Command::Quit => { return; }
+                }
             }
-            _ = socket.recv(&mut buf) => {
-                // received bytes
+            bytes = channel_in.recv() => {
+                let bytes = bytes.unwrap();
+                let bytes = encoder.encode_buffer(bytes);
+                channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
             }
         }
     }
 }
 
-async fn encoder(config: Config, channel_in: tokio::sync::mpsc::Receiver<&Bytes>, channel_out: tokio::sync::mpsc::Sender<&Bytes>) {
-    let r = channel_in.recv().await.unwrap()
-}
+async fn decoder(config: Config,
+                 channel_in: tokio::sync::mpsc::Receiver<Bytes>,
+                 channel_out: tokio::sync::mpsc::Sender<Bytes>,
+                 mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+                 event_tx: tokio::sync::mpsc::Sender<Event>) {
 
-async fn decoder(config: Config) {
 }
 
 fn test() {

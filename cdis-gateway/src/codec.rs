@@ -1,34 +1,54 @@
-use cdis_assemble::{CdisPdu, Codec};
+use bytes::Bytes;
+use cdis_assemble::{BitBuffer, CdisPdu, Codec, SerializeCdisPdu};
 use dis_rs::model::Pdu;
-use dis_rs::{parse};
+use dis_rs::{DisError, parse};
 use crate::config::GatewayMode;
 
-struct Encoder {
+pub struct Encoder {
     mode: GatewayMode,
+    cdis_buffer: BitBuffer,
+    // hold a bytes buffer to convert the bitbuffer to bytes?
     // hold a buffer/map of received PDUs to look up which fields can be left out
 }
 
 impl Encoder {
-    fn new(mode: GatewayMode) -> Self {
+    pub fn new(mode: GatewayMode) -> Self {
         Self {
-            mode
+            mode,
+            cdis_buffer: cdis_assemble::create_bit_buffer()
         }
     }
 
-    // fn encode_buffers(&self, bytes_in: &[u8], bytes_out: &[u8]) {
-    //     let pdus = parse(bytes_in);
-    //     let cdis_pdus = match pdus {
-    //         Ok(pdus) => {
-    //             self.encode(&pdus)
-    //         }
-    //         Err(err) => {
-    //             println!("{}", err);
-    //             Vec::new()
-    //         }
-    //     };
-    // }
+    fn parsing(&self, bytes: Bytes) -> Result<Vec<Pdu>, DisError> {
+        parse(&bytes)
+    }
 
-    fn encode(&self, pdus: &Vec<Pdu>) -> Vec<CdisPdu> {
+    fn writing(&self, cdis_pdus: Vec<CdisPdu>) -> Bytes {
+        let cursor = cdis_pdus.iter()
+            .fold(0usize,
+                  | cursor, pdu| pdu.serialize(&mut self.cdis_buffer, cursor) );
+        // `cursor` contains the amount of bits written
+        let cdis_wire: Vec<u8> = self.cdis_buffer.data[0..cursor].chunks_exact(8).map(|ch| { ch[0] } ).collect();
+        Bytes::from(cdis_wire)
+    }
+
+    // TODO make fallible, result from parse (and encode) function(s)
+    pub fn encode_buffer(&mut self, bytes_in: Bytes) -> Bytes {
+        let pdus = self.parsing(bytes_in);
+        let cdis_pdus = match pdus {
+            Ok(pdus) => {
+                self.encode_pdus(&pdus)
+            }
+            Err(err) => {
+                println!("{}", err);
+                Vec::new()
+            }
+        };
+        self.writing(cdis_pdus)
+    }
+
+    // TODO make fallible, result from encode function
+    pub fn encode_pdus(&self, pdus: &Vec<Pdu>) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
             .map(|pdu| CdisPdu::encode(pdu) )
             .collect();
