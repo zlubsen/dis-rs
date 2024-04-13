@@ -1,6 +1,6 @@
 [package]
 name = "dis-rs"
-version = "0.8.0"
+version = "0.9.0-beta-1"
 authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 An implementation of the Distributed Interactive Simulation protocol in Rust.
@@ -23,6 +23,7 @@ default = []
 [dependencies]
 bytes = "1.4.0"
 nom = "7.1.3"
+thiserror = "1.0.40"
 
 [build-dependencies]
 quote = "1.0.26"

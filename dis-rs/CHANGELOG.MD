@@ -1,6 +1,12 @@
 # Changelog for crate DIS-RS
 
-## 0.8.0 - 2024-xx-yy
+## 0.9.0 - 2024-xx-xx
+
+Changed `DisError` to use `thiserror` crate, so `DisError` now implements `std::error::Error`.
+
+...
+
+## 0.8.0 - 2024-04-03
 
 Changed the main serialization function for `PDU` to be fallible. It now returns `DisError::InsufficientBufferSize` when 
 the provided buffer does not have enough capacity to serialize the entire PDU. This should prevent the library from panicking during serialization.
@@ -8,6 +14,8 @@ The `Serialize` trait is not changed, `PDU` now no longer implements this trait 
 The impls for the `Serialize` and `SerializePdu` traits are not changed and could still panic, but are practically only to be called via `PDU::serialize()`, thus behind the capacity check in that method.
 
 Added UnderwaterAcoustics (UA) PDU.
+
+Traits `BodyInfo` and `Interaction` are now public.
 
 ## 0.7.0 - 2024-03-12
 Added Logistics PDUs (ServiceRequest, ResupplyOffer, ResupplyReceived, ResupplyCancel, RepairComplete, RepairResponse)

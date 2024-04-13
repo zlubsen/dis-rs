@@ -82,7 +82,7 @@ impl From<ProtocolVersion> for SupportedVersion {
 }
 
 /// Trait for PduBody-s to query basic information, typically used in the header
-trait BodyInfo {
+pub trait BodyInfo {
     fn body_length(&self) -> u16;
     fn body_type(&self) -> PduType;
 }
@@ -90,7 +90,7 @@ trait BodyInfo {
 /// Trait for PDUs to implement whether an interaction between one or two
 /// entities happens. Used to generically query the originating ``EntityId`` and (optional) receiving ``EntityId`` of
 /// the interaction. When a PDU has no interaction, both the originator and receiver are ``None``.
-trait Interaction {
+pub trait Interaction {
     fn originator(&self) -> Option<&model::EntityId>;
     fn receiver(&self) -> Option<&model::EntityId>;
 }
