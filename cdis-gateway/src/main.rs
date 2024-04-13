@@ -1,9 +1,8 @@
 use std::io::Read;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
-use socket2::{Domain, Protocol, Socket, Type};
 use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::{event, Level};
@@ -76,29 +75,36 @@ async fn start_gateway(config: Config) {
     tokio::spawn(dis_write_socket);
     tokio::spawn(cdis_read_socket);
     tokio::spawn(cdis_write_socket);
-    tokio::spawn(encoder(config.clone()));
-    tokio::spawn(decoder(config.clone()));
+    tokio::spawn(encoder(config.clone(), dis_socket_out_rx, cdis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
+    tokio::spawn(decoder(config.clone(), cdis_socket_out_rx, dis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
 }
 
 async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
+    use socket2::{Domain, Protocol, Socket, Type};
+
     let is_ipv4 = endpoint.address.is_ipv4();
     let socket_domain = if is_ipv4 { Domain::IPV4 } else { Domain::IPV6 };
     let socket_type = Type::DGRAM;
     let socket_protocol = Protocol::UDP;
     let socket = Socket::new(socket_domain, socket_type, Some(socket_protocol)).expect("Error creating socket.");
 
-    socket.set_reuse_address(true).expect("Failed to set SO_REUSEADDR.");
-    socket.set_reuse_port(true).expect("Failed to set SO_REUSEPORT.");
+    socket.set_reuse_address(true).expect(format!("Failed to set SO_REUSEADDR for endpoint address {}.", endpoint.address).as_str());
+    socket.set_reuse_port(true).expect(format!("Failed to set SO_REUSEPORT for endpoint address {}.", endpoint.address).as_str());
 
     match (is_ipv4, endpoint.mode) {
         (true, UdpMode::UniCast) => {
             socket.bind(&endpoint.address.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
         }
         (true, UdpMode::BroadCast) => {
-            socket.set_broadcast(true).expect("Failed to set SO_BROADCAST.");
+            socket.set_broadcast(true).expect(format!("Failed to set SO_BROADCAST for endpoint address {}.", endpoint.address).as_str());
         }
         (true, UdpMode::MultiCast) => {
-            socket.join_multicast_v4(&endpoint.address.into(), endpoint.interface.into()).expect("Failed to join multicast group.");
+            if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
+                if let IpAddr::V4(interface_v4) = endpoint.interface {
+                    socket.join_multicast_v4(&ip_address_v4, &interface_v4)
+                        .expect(format!("Failed to join multicast group {} using interface {}.", ip_address_v4, interface_v4).as_str());
+                }
+            }
         }
         (false, UdpMode::UniCast) => {
             socket.bind(&endpoint.address.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str())
@@ -107,9 +113,16 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             socket.set_broadcast(true).expect("Failed to set SO_BROADCAST.");
         }
         (false, UdpMode::MultiCast) => {
-
+            if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
+                if let IpAddr::V6(interface_v6) = endpoint.interface {
+                    // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
+                    socket.join_multicast_v6(&ip_address_v6, 0)
+                        .expect(format!("Failed to join multicast group {} using interface 0 ({}).", ip_address_v6, interface_v6).as_str());
+                }
+            }
         }
     }
+    // Convert socket2::Socket to tokio::net::UdpSocket via std::net::UdpSocket
     let socket = std::net::UdpSocket::from(socket);
     let socket = UdpSocket::try_from(socket).expect("Failed to convert std::net::UdpSocket to tokio::net::UdpSocket.");
 
@@ -238,7 +251,7 @@ async fn decoder(config: Config,
                  channel_out: tokio::sync::mpsc::Sender<Bytes>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  event_tx: tokio::sync::mpsc::Sender<Event>) {
-
+    let mut decoder = Decoder::new(config.mode);
 }
 
 fn test() {
