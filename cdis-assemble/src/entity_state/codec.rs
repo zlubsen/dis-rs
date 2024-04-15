@@ -68,3 +68,17 @@ impl Codec for EntityState {
             .build()
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn cdis_entity_state_body_encode() {
+        assert!(false)
+    }
+
+    #[test]
+    fn cdis_entity_state_body_decode() {
+        assert!(false)
+    }
+}

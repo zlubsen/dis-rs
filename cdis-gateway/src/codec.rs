@@ -23,17 +23,17 @@ impl Encoder {
         parse(&bytes)
     }
 
-    fn writing(&mut self, cdis_pdus: Vec<CdisPdu>) -> Bytes {
+    fn writing(&mut self, cdis_pdus: Vec<CdisPdu>) -> Vec<u8> {
         let cursor = cdis_pdus.iter()
             .fold(0usize,
                   | cursor, pdu| pdu.serialize(&mut self.cdis_buffer, cursor) );
         // `cursor` contains the amount of bits written
         let cdis_wire: Vec<u8> = self.cdis_buffer.data[0..cursor].chunks_exact(8).map(|ch| { ch[0] } ).collect();
-        Bytes::from(cdis_wire)
+        cdis_wire
     }
 
     // TODO make fallible, result from parse (and encode) function(s)
-    pub fn encode_buffer(&mut self, bytes_in: Bytes) -> Bytes {
+    pub fn encode_buffer(&mut self, bytes_in: Bytes) -> Vec<u8> {
         let pdus = self.parsing(bytes_in);
         let cdis_pdus = match pdus {
             Ok(pdus) => {
@@ -63,8 +63,11 @@ pub struct Decoder {
 
 impl Decoder {
     pub fn new(mode: GatewayMode) -> Self {
+        let mut dis_buffer = BytesMut::with_capacity(1500);
+        dis_buffer.resize(1500, 0);
         Self {
             mode,
+            dis_buffer,
         }
     }
 
@@ -72,34 +75,33 @@ impl Decoder {
         cdis_assemble::parse(&bytes)
     }
 
-    fn writing(&mut self, dis_pdus: Vec<Pdu>) -> Bytes {
-        let cursor: usize = dis_pdus.iter()
+    fn writing(&mut self, dis_pdus: Vec<Pdu>) -> Vec<u8> {
+        let number_of_bytes: usize = dis_pdus.iter()
             .map(| pdu| { pdu.serialize(&mut self.dis_buffer).unwrap() as usize } ).sum();
 
-        let dis_wire: Vec<u8> = self.cdis_buffer.data[0..cursor].chunks_exact(8).map(|ch| { ch[0] } ).collect();
-        Bytes::from(cdis_wire)
+        Vec::from(&self.dis_buffer[..number_of_bytes])
     }
 
     // TODO make fallible, result from parse (and encode) function(s)
-    pub fn encode_buffer(&mut self, bytes_in: Bytes) -> Bytes {
-        let pdus = self.parsing(bytes_in);
-        let cdis_pdus = match pdus {
+    pub fn decode_buffer(&mut self, bytes_in: Bytes) -> Vec<u8> {
+        let cdis_pdus = self.parsing(bytes_in);
+        let pdus = match cdis_pdus {
             Ok(pdus) => {
-                self.encode_pdus(&pdus)
+                self.decode_pdus(&pdus)
             }
             Err(err) => {
-                println!("{}", err);
+                println!("{}", err); // TODO tracing or Result return value
                 Vec::new()
             }
         };
-        self.writing(cdis_pdus)
+        self.writing(pdus)
     }
 
     // TODO make fallible, result from encode function
-    pub fn encode_pdus(&self, pdus: &Vec<Pdu>) -> Vec<CdisPdu> {
-        let cdis_pdus: Vec<CdisPdu> = pdus.iter()
-            .map(|pdu| CdisPdu::encode(pdu) )
+    pub fn decode_pdus(&self, pdus: &Vec<CdisPdu>) -> Vec<Pdu> {
+        let dis_pdus: Vec<Pdu> = pdus.iter()
+            .map(|pdu| pdu.decode() )
             .collect();
-        cdis_pdus
+        dis_pdus
     }
 }

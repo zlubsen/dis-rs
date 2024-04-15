@@ -1,3 +1,4 @@
+use thiserror::Error;
 use dis_rs::model::TimeStamp;
 use crate::entity_state::model::EntityState;
 use crate::records::model::{CdisHeader, CdisRecord};
@@ -40,8 +41,10 @@ pub struct CdisPdu {
 }
 
 impl CdisPdu {
-    pub fn finalize_from_parts(header: CdisHeader, body: CdisBody, time_stamp: impl Into<TimeStamp>) -> Self {
-        let time_stamp: TimeStamp = time_stamp.into();
+    pub fn finalize_from_parts(header: CdisHeader, body: CdisBody, time_stamp: Option<impl Into<TimeStamp>>) -> Self {
+        let time_stamp: TimeStamp = if let Some(time_stamp) = time_stamp {
+            time_stamp.into()
+        } else { header.timestamp };
         Self {
             header: CdisHeader {
                 timestamp: time_stamp,
@@ -115,12 +118,18 @@ impl CdisBody {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+// TODO review messages (bits vs bytes)
+#[derive(Clone, Debug, PartialEq, Error)]
 pub enum CdisError {
+    #[error("{0}")]
     ParseError(String), // the parsing of a CDIS PDU resulted in an error
+    #[error("The buffer does not contain enough bytes for a valid C-DIS header. {0} bits available.")]
     InsufficientHeaderLength(u16), // the input was too small to contain a valid CDIS header; (u16 found)
+    #[error("C-DIS PDU has insufficient length. Expected {0}, found {1}.")]
     InsufficientPduLength(u16, u16), // the input was too small to contain a valid CDIS PDU based on the header and parsing; (u16 expected, u16 found)
+    #[error("C-DIS PDU is larger than size of the buffer for serialisation. Needs {0} bits, available {1} bits.")]
     InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided CDIS PDU; (u16 PDU size, usize available capacity)
+    #[error("Encountered a C-DIS PDU of an unsupported type: {0}.")]
     UnsupportedPdu(u8), // encountered a CDIS PDU of an unsupported type; (u8 PduType found)
 }
 

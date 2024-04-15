@@ -13,6 +13,7 @@ pub(crate) struct UdpEndpoint {
     pub(crate) interface: IpAddr,
     pub(crate) address: SocketAddr,
     pub(crate) ttl: u16,
+    pub(crate) block_own_socket: bool,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]

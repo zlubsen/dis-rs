@@ -1,4 +1,4 @@
-use dis_rs::model::{Pdu, PduBody};
+use dis_rs::model::{Pdu, PduBody, TimeStamp};
 use crate::{CdisBody, CdisPdu};
 use crate::entity_state::model::EntityState;
 use crate::records::model::{CdisHeader};
@@ -20,10 +20,8 @@ impl Codec for CdisPdu {
     type Counterpart = Pdu;
 
     fn encode(item: &Self::Counterpart) -> Self {
-        Self {
-            header: CdisHeader::encode(&item.header),
-            body: CdisBody::encode(&item.body),
-        }
+        let ret = CdisPdu::finalize_from_parts(CdisHeader::encode(&item.header), CdisBody::encode(&item.body), None::<TimeStamp>);
+        ret
     }
 
     fn decode(&self) -> Self::Counterpart {
@@ -145,5 +143,19 @@ impl Codec for CdisBody {
             // CdisBody::Iff => {}
             CdisBody::Unsupported(_) | _ => { PduBody::Other(dis_rs::other::model::Other::builder().build())}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn cdis_pdu_encode() {
+        assert!(false)
+    }
+
+    #[test]
+    fn cdis_pdu_decode() {
+        assert!(false)
     }
 }

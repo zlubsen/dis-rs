@@ -401,6 +401,15 @@ mod tests {
         assert_eq!(normalize_radians_to_plusminus_pi(3.5f32 * std::f32::consts::PI), -1.570796); // approx -std::f32::consts::FRAC_PI_2
     }
 
+    #[test]
+    fn cdis_header_encode() {
+        assert!(false)
+    }
+
+    #[test]
+    fn cdis_header_decode() {
+        assert!(false)
+    }
 
     #[test]
     fn linear_velocity_encode() {

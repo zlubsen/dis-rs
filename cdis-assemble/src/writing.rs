@@ -87,7 +87,7 @@ pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero
     let cursor = write_value_with_length(
         buf, cursor, ONE_BIT, u8::from(value.is_negative()));
     let value_bits = - (if value.is_negative() {
-        T::from_usize(2usize.pow(bit_size as u32 - 1))
+        T::from_isize(-2isize.pow(bit_size as u32 - 1))
             .unwrap_or_else(|| panic!("Cannot determine minimum value for type {}", type_name::<T>()))
             - value
     } else { T::zero() - value });
@@ -152,5 +152,14 @@ mod tests {
         let cursor = write_value_signed(&mut buf, 0, SIXTEEN_BITS, 32767);
         assert_eq!(cursor, 16);
         assert_eq!(buf.data[0..2], [0x7F, 0xFF]);
+    }
+
+    #[test]
+    fn write_value_signed_full_bit_size() {
+        let mut buf: BitBuffer = BitArray::ZERO;
+
+        let cursor = write_value_signed(&mut buf, 0, SIXTEEN_BITS, -1);
+        assert_eq!(cursor, 16);
+        assert_eq!(buf.data[0..2], [0xFF, 0xFF]);
     }
 }
