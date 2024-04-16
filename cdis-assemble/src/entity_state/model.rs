@@ -6,7 +6,7 @@ use crate::{BodyProperties, CdisBody};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct EntityState {
     pub units: Units,
     pub full_update_flag: bool,

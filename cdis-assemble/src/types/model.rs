@@ -13,10 +13,16 @@ pub(crate) trait VarInt {
 }
 
 /// 10.2.1 UVINT8
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct UVINT8 {
     bit_size: Uvint8BitSize,
     pub value: u8,
+}
+
+impl Default for UVINT8 {
+    fn default() -> Self {
+        UVINT8::from(0)
+    }
 }
 
 impl VarInt for UVINT8 {
@@ -116,6 +122,12 @@ pub struct UVINT16 {
     pub value: u16,
 }
 
+impl Default for UVINT16 {
+    fn default() -> Self {
+        UVINT16::from(0)
+    }
+}
+
 impl VarInt for UVINT16 {
     type BitSize = Uvint16BitSize;
     type InnerType = u16;
@@ -212,10 +224,16 @@ impl From<Uvint16BitSize> for u8 {
 }
 
 /// 10.2.3 UVINT32
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct UVINT32 {
     bit_size: Uvint32BitSize,
     pub value: u32,
+}
+
+impl Default for UVINT32 {
+    fn default() -> Self {
+        UVINT32::from(0)
+    }
 }
 
 impl VarInt for UVINT32 {

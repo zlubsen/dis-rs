@@ -387,11 +387,12 @@ impl Codec for CdisEntityAssociationVP {
 
 #[cfg(test)]
 mod tests {
-    use dis_rs::model::{VectorF32};
+    use dis_rs::enumerations::{PduType, ProtocolVersion};
+    use dis_rs::model::{PduHeader, VectorF32};
     use crate::codec::Codec;
     use crate::records::codec::{decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi};
     use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24};
-    use crate::records::model::{AngularVelocity, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+    use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, dis_to_cdis_u32_timestamp, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 
     #[test]
     fn test_normalize_radians_to_plusminus_pi() {
@@ -403,7 +404,16 @@ mod tests {
 
     #[test]
     fn cdis_header_encode() {
-        assert!(false)
+        let dis = PduHeader::new_v7(7, PduType::EntityState)
+            .with_length(140)
+            .with_time_stamp(20000u32);
+        let cdis = CdisHeader::encode(&dis);
+
+        assert_eq!(dis.protocol_version, ProtocolVersion::IEEE1278_12012);
+        assert_eq!(cdis.protocol_version, CdisProtocolVersion::SISO_023_2023);
+        assert_eq!(dis.exercise_id, cdis.exercise_id.value);
+        assert_eq!(dis.pdu_type, cdis.pdu_type);
+        assert_eq!(dis_to_cdis_u32_timestamp(dis.time_stamp), cdis.timestamp.raw_timestamp);
     }
 
     #[test]

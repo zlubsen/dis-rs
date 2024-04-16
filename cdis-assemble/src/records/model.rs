@@ -180,6 +180,10 @@ impl From<CdisTimeStamp> for DisTimeStamp {
     }
 }
 
+pub fn dis_to_cdis_u32_timestamp(dis_u32: u32) -> u32 {
+    TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(dis_u32))).raw_timestamp
+}
+
 /// 11.1 Angular Velocity
 /// Scale = (2^11 - 1) / (4 * pi)
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -260,7 +264,7 @@ impl CdisRecord for EntityCoordinateVector {
 }
 
 /// 11.11 Entity Identifier Record
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct EntityId {
     pub site: UVINT16,
     pub application: UVINT16,
