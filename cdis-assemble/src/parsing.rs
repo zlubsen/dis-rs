@@ -138,7 +138,8 @@ pub(crate) fn take_signed(count: usize) -> impl Fn(BitInput) -> IResult<BitInput
 #[cfg(test)]
 mod tests {
     use crate::constants::THREE_BITS;
-    use crate::parsing::take_signed;
+    use crate::parsing::{field_present, parse_field_when_present, take_signed};
+    use crate::records::parser::entity_identification;
 
     #[test]
     fn take_signed_positive_min() {
@@ -170,5 +171,72 @@ mod tests {
         let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(-1, value);
+    }
+
+    #[test]
+    fn field_present_u8_true() {
+        let fields = 0b00000010u8;
+        let mask = 0x2u8;
+
+        assert!(field_present(fields, mask));
+    }
+
+    #[test]
+    fn field_present_u32_true() {
+        let fields = 0x02004010u32;
+        let mask = 0x10u32;
+
+        assert!(field_present(fields, mask));
+    }
+
+    #[test]
+    fn parse_when_present_entity_id() {
+        let fields = 0b00000001u8;
+        let mask = 0x01u8;
+        let input : [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
+
+        // entity_identification is in reality always present, but is an easy example for a test.
+        let actual = parse_field_when_present(
+            false, fields, mask,
+            entity_identification)((&input, 0));
+
+        assert!(actual.is_ok());
+        let entity = actual.unwrap().1;
+        assert!(entity.is_some());
+        let entity = entity.unwrap();
+        assert_eq!(1u16, entity.site.value);
+        assert_eq!(1u16, entity.application.value);
+        assert_eq!(1u16, entity.entity.value);
+    }
+
+    #[test]
+    fn parse_when_present_entity_id_not_present() {
+        let fields = 0b00010000u8;
+        let mask = 0x01u8;
+        let input : [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
+
+        // entity_identification is in reality always present, but is an easy example for a test.
+        let actual = parse_field_when_present(
+            false, fields, mask,
+            entity_identification)((&input, 0));
+
+        assert!(actual.is_ok());
+        assert!(actual.unwrap().1.is_none())
+    }
+
+    #[test]
+    fn field_present_u32_false() {
+        let fields = 0x02004010u32;
+        let mask = 0x01u32;
+
+        assert!(!field_present(fields, mask));
+    }
+
+    #[test]
+    fn field_present_u8_false() {
+        let fields = 0b00000100u8;
+        let mask = 0x2u8;
+
+        assert!(!field_present(fields, mask));
     }
 }

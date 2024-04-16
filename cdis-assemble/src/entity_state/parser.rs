@@ -89,73 +89,22 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
 
 #[cfg(test)]
 mod tests {
-    use crate::parsing::{field_present, parse_field_when_present};
-    use crate::records::parser::entity_identification;
+    use crate::CdisBody;
+    use crate::entity_state::parser::entity_state_body;
+    use crate::records::model::{EntityId, Units};
+    use crate::types::model::UVINT16;
 
     #[test]
-    fn field_present_u8_true() {
-        let fields = 0b00000010u8;
-        let mask = 0x2u8;
+    fn parse_entity_state_no_fields_present() {
+        let input = [0b00000000, 0b00000_1_0_0, 0b00000001, 0b1_0000000, 0b011_00000, 0b00011_000, 0b0_0000000];
+        let ((_input, cursor), body) = entity_state_body((&input, 0)).unwrap();
 
-        assert!(field_present(fields, mask));
-    }
+        assert_eq!(cursor, 1); // cursor position in last byte of input
 
-    #[test]
-    fn field_present_u32_true() {
-        let fields = 0x02004010u32;
-        let mask = 0x10u32;
-
-        assert!(field_present(fields, mask));
-    }
-
-    #[test]
-    fn field_present_u32_false() {
-        let fields = 0x02004010u32;
-        let mask = 0x01u32;
-
-        assert!(!field_present(fields, mask));
-    }
-
-    #[test]
-    fn field_present_u8_false() {
-        let fields = 0b00000100u8;
-        let mask = 0x2u8;
-
-        assert!(!field_present(fields, mask));
-    }
-
-    #[test]
-    fn parse_when_present_entity_id() {
-        let fields = 0b00000001u8;
-        let mask = 0x01u8;
-        let input : [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
-
-        // entity_identification is in reality always present, but is an easy example for a test.
-        let actual = parse_field_when_present(
-            false, fields, mask,
-            entity_identification)((&input, 0));
-
-        assert!(actual.is_ok());
-        let entity = actual.unwrap().1;
-        assert!(entity.is_some());
-        let entity = entity.unwrap();
-        assert_eq!(1u16, entity.site.value);
-        assert_eq!(1u16, entity.application.value);
-        assert_eq!(1u16, entity.entity.value);
-    }
-
-    #[test]
-    fn parse_when_present_entity_id_not_present() {
-        let fields = 0b00010000u8;
-        let mask = 0x01u8;
-        let input : [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
-
-        // entity_identification is in reality always present, but is an easy example for a test.
-        let actual = parse_field_when_present(
-            false, fields, mask,
-            entity_identification)((&input, 0));
-
-        assert!(actual.is_ok());
-        assert!(actual.unwrap().1.is_none())
+        if let CdisBody::EntityState(es) = body {
+            assert_eq!(es.units, Units::Dekameter);
+            assert_eq!(es.entity_id, EntityId::new(UVINT16::from(3), UVINT16::from(3), UVINT16::from(3)));
+            assert!(!es.full_update_flag);
+        }
     }
 }

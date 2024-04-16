@@ -184,6 +184,10 @@ pub fn dis_to_cdis_u32_timestamp(dis_u32: u32) -> u32 {
     TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(dis_u32))).raw_timestamp
 }
 
+pub fn cdis_to_dis_u32_timestamp(cdis_u32: u32) -> u32 {
+    TimeStamp::from(DisTimeStamp::from(CdisTimeStamp::from(TimeStamp::from(cdis_u32)))).raw_timestamp
+}
+
 /// 11.1 Angular Velocity
 /// Scale = (2^11 - 1) / (4 * pi)
 #[derive(Copy, Clone, Debug, Default, PartialEq)]

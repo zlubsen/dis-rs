@@ -127,17 +127,17 @@ impl From<&DrOtherParameters> for CdisDRParametersOther {
 pub struct EntityStateFieldsPresent;
 
 impl EntityStateFieldsPresent {
-    pub const FORCE_ID_BIT: u16 = 12; // 0x1000;
-    pub const VP_BIT: u16 = 11; // 0x0800;
-    pub const ENTITY_TYPE_BIT: u16 = 10; // 0x0400;
-    pub const ALT_ENTITY_TYPE_BIT: u16 = 9; // 0x0200;
-    pub const LINEAR_VELOCITY_BIT: u16 = 8; // 0x0100;
-    pub const ENTITY_LOCATION_BIT: u16 = 7; // 0x0080;
-    pub const ENTITY_ORIENTATION_BIT: u16 = 6; // 0x0040;
-    pub const ENTITY_APPEARANCE_BIT: u16 = 5; // 0x0020;
-    pub const DR_OTHER_BIT: u16 = 4; // 0x0010;
-    pub const DR_LINEAR_ACCELERATION_BIT: u16 = 3; // 0x0008;
-    pub const DR_ANGULAR_VELOCITY_BIT: u16 = 2; // 0x0004;
-    pub const MARKING_BIT: u16 = 1; // 0x0002;
-    pub const CAPABILITIES_BIT: u16 = 0; // 0x0001;
+    pub const FORCE_ID_BIT: u16 = 0x1000;
+    pub const VP_BIT: u16 = 0x0800;
+    pub const ENTITY_TYPE_BIT: u16 = 0x0400;
+    pub const ALT_ENTITY_TYPE_BIT: u16 = 0x0200;
+    pub const LINEAR_VELOCITY_BIT: u16 = 0x0100;
+    pub const ENTITY_LOCATION_BIT: u16 = 0x0080;
+    pub const ENTITY_ORIENTATION_BIT: u16 = 0x0040;
+    pub const ENTITY_APPEARANCE_BIT: u16 = 0x0020;
+    pub const DR_OTHER_BIT: u16 = 0x0010;
+    pub const DR_LINEAR_ACCELERATION_BIT: u16 = 0x0008;
+    pub const DR_ANGULAR_VELOCITY_BIT: u16 = 0x0004;
+    pub const MARKING_BIT: u16 = 0x0002;
+    pub const CAPABILITIES_BIT: u16 = 0x0001;
 }

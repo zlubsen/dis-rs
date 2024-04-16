@@ -50,3 +50,42 @@ impl SerializeCdis for CdisEntityCapabilities {
         self.0.serialize(buf, cursor)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bitvec::prelude::BitArray;
+    use dis_rs::enumerations::{Country, DeadReckoningAlgorithm, EntityKind, ForceId, PlatformDomain};
+    use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
+    use crate::entity_state::model::{CdisEntityCapabilities, EntityState};
+    use crate::records::model::{CdisEntityMarking, EntityId, LinearVelocity, Orientation, Units, WorldCoordinates};
+    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+
+    #[test]
+    fn serialize_entity_state_no_fields_present() {
+        let cdis_body = EntityState {
+            units: Units::Dekameter,
+            full_update_flag: true,
+            entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
+            force_id: Some(UVINT8::from(u8::from(ForceId::Friendly))),
+            entity_type: Some(crate::records::model::EntityType::new(u8::from(EntityKind::Platform), u8::from(PlatformDomain::Air), u16::from(Country::from(1)), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1))),
+            alternate_entity_type: None,
+            entity_linear_velocity: Some(LinearVelocity::new(SVINT16::from(5), SVINT16::from(5),SVINT16::from(-5))),
+            entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
+            entity_orientation: Some(Orientation::new(4, 3, 2)),
+            entity_appearance: None,
+            dr_algorithm: DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity,
+            dr_params_other: None,
+            dr_params_entity_linear_acceleration: None,
+            dr_params_entity_angular_velocity: None,
+            entity_marking: Some(CdisEntityMarking::new("TEST".to_string())),
+            capabilities: Some(CdisEntityCapabilities(UVINT32::from(0xABC00000))),
+            variable_parameters: vec![],
+        }.into_cdis_body();
+
+        let mut buf: BitBuffer = BitArray::ZERO;
+        let _cursor = cdis_body.serialize(&mut buf, 0);
+
+        // println!("{:?}", buf);
+        assert_eq!(buf.data[..5], [0b1010_1110, 0b0001_1110, 0b0000_0101, 0b0000_0001, 0b0100_0000]);
+    }
+}

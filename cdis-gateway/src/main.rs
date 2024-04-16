@@ -90,8 +90,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
 
     socket.set_reuse_address(true).expect(format!("Failed to set SO_REUSEADDR for endpoint address {}.", endpoint.address).as_str());
     socket.set_reuse_port(true).expect(format!("Failed to set SO_REUSEPORT for endpoint address {}.", endpoint.address).as_str());
-
-    // socket.connect(&endpoint.address.into()).expect(format!("Failed to connect to remote address {}", endpoint.address).as_str());
+    socket.set_nonblocking(true).expect(format!("Failed to set nonblocking mode for endpoint address {}", endpoint.address).as_str());
 
     match (is_ipv4, endpoint.mode) {
         (true, UdpMode::UniCast) => {
@@ -283,35 +282,3 @@ async fn decoder(config: Config,
         }
     }
 }
-
-// fn test() {
-//     let mut write_buf: BitBuffer = create_bit_buffer();
-//     let mut read_buf = BytesMut::with_capacity(1400);
-//     read_buf.resize(1400, 0);
-//
-//     let dis_entity_state_body = dis_rs::entity_state::model::EntityState::builder()
-//         .with_entity_id(EntityId::new(8, 8, 8))
-//         .with_entity_type(EntityType::default()
-//             .with_kind(EntityKind::Platform)
-//             .with_domain(PlatformDomain::Air)
-//             .with_country(Country::Netherlands_NLD_))
-//         .with_location(Location::new(35000.0, 10000.0, 30000.0))
-//         .with_marking(EntityMarking::new("My1stPlane", EntityMarkingCharacterSet::ASCII))
-//         .build().into_pdu_body();
-//     let header = PduHeader::new_v7(1, PduType::EntityState);
-//     let dis_entity_state = Pdu::finalize_from_parts(header, dis_entity_state_body, 500);
-//     // TODO encode entire PDU...
-//     let cdis_entity_state = CdisPdu::encode(&dis_entity_state);
-//
-//     let cursor = cdis_entity_state.serialize(&mut write_buf, 0);
-//
-//     let cdis_wire: Vec<u8> = write_buf.data[0..cursor].chunks_exact(8).map(|ch| { ch[0] } ).collect();
-//     println!("{}", cdis_wire.len());
-//     dbg!(cdis_wire.clone());
-//
-//     let parsed_cdis = cdis_assemble::parse(cdis_wire.as_slice()).unwrap();
-//     dbg!(parsed_cdis);
-//
-//     let decoded_es = cdis_entity_state.decode();
-//     dbg!(decoded_es);
-// }

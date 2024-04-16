@@ -388,11 +388,11 @@ impl Codec for CdisEntityAssociationVP {
 #[cfg(test)]
 mod tests {
     use dis_rs::enumerations::{PduType, ProtocolVersion};
-    use dis_rs::model::{PduHeader, VectorF32};
+    use dis_rs::model::{PduHeader, TimeStamp, VectorF32};
     use crate::codec::Codec;
     use crate::records::codec::{decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi};
-    use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24};
-    use crate::records::model::{AngularVelocity, CdisHeader, CdisProtocolVersion, dis_to_cdis_u32_timestamp, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+    use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT8};
+    use crate::records::model::{AngularVelocity, cdis_to_dis_u32_timestamp, CdisHeader, CdisProtocolVersion, dis_to_cdis_u32_timestamp, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 
     #[test]
     fn test_normalize_radians_to_plusminus_pi() {
@@ -418,7 +418,22 @@ mod tests {
 
     #[test]
     fn cdis_header_decode() {
-        assert!(false)
+        let cdis = CdisHeader {
+            protocol_version: CdisProtocolVersion::SISO_023_2023,
+            exercise_id: UVINT8::from(5),
+            pdu_type: PduType::Acknowledge,
+            timestamp: TimeStamp::from(20000),
+            length: 140,
+            pdu_status: Default::default(),
+        };
+        let dis = cdis.decode();
+
+        assert_eq!(dis.protocol_version, ProtocolVersion::IEEE1278_12012);
+        assert_eq!(dis.exercise_id, 5);
+        assert_eq!(dis.pdu_type, PduType::Acknowledge);
+        assert_eq!(dis.time_stamp, cdis_to_dis_u32_timestamp(20000));
+        assert!(dis.pdu_status.is_some());
+        assert!(dis.pdu_status.unwrap().fire_type_indicator.is_none())
     }
 
     #[test]
