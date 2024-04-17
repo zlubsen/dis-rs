@@ -1,5 +1,6 @@
 use bytes::{Bytes, BytesMut};
 use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Codec, SerializeCdisPdu};
+use cdis_assemble::constants::MTU_BYTES;
 use dis_rs::model::Pdu;
 use dis_rs::{DisError, parse};
 use crate::config::GatewayMode;
@@ -24,11 +25,13 @@ impl Encoder {
     }
 
     fn writing(&mut self, cdis_pdus: Vec<CdisPdu>) -> Vec<u8> {
-        let cursor = cdis_pdus.iter()
-            .fold(0usize,
-                  | cursor, pdu| pdu.serialize(&mut self.cdis_buffer, cursor) );
-        // `cursor` contains the amount of bits written
-        let cdis_wire: Vec<u8> = self.cdis_buffer.data[0..cursor].chunks_exact(8).map(|ch| { ch[0] } ).collect();
+        let (total_bits, _cursor) = cdis_pdus.iter()
+            .fold((0usize, 0usize),
+                  | (total_bits, cursor), pdu| {
+                      ( total_bits + pdu.pdu_length(), pdu.serialize(&mut self.cdis_buffer, cursor) )
+                  });
+
+        let cdis_wire: Vec<u8> = Vec::from(&self.cdis_buffer.data[0..total_bits.div_ceil(8)]);
         cdis_wire
     }
 
@@ -63,8 +66,8 @@ pub struct Decoder {
 
 impl Decoder {
     pub fn new(mode: GatewayMode) -> Self {
-        let mut dis_buffer = BytesMut::with_capacity(1500);
-        dis_buffer.resize(1500, 0);
+        let mut dis_buffer = BytesMut::with_capacity(MTU_BYTES);
+        dis_buffer.resize(MTU_BYTES, 0);
         Self {
             mode,
             dis_buffer,

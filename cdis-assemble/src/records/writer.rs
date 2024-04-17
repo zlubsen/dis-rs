@@ -236,8 +236,10 @@ impl SerializeCdis for CdisEntityAssociationVP {
 #[cfg(test)]
 mod tests {
     use bitvec::prelude::BitArray;
+    use dis_rs::enumerations::PduType;
     use crate::writing::SerializeCdis;
-    use crate::records::model::CdisEntityMarking;
+    use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisRecord};
+    use crate::types::model::UVINT8;
     use crate::writing::BitBuffer;
 
     const FOUR_BYTES: usize = 4;
@@ -262,5 +264,25 @@ mod tests {
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..FOUR_BYTES], buf.as_raw_slice()[..FOUR_BYTES]);
+    }
+
+    #[test]
+    fn serialize_cdis_header() {
+        let mut buf: BitBuffer = BitArray::ZERO;
+
+        let header = CdisHeader {
+            protocol_version: CdisProtocolVersion::SISO_023_2023,
+            exercise_id: UVINT8::from(7),
+            pdu_type: PduType::EntityState,
+            timestamp: Default::default(),
+            length: 0,
+            pdu_status: Default::default(),
+        };
+
+        let expected: [u8; 8] = [0b01001110, 0b00000010, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000];
+        let next_cursor = header.serialize(&mut buf, 0);
+
+        assert_eq!(next_cursor, header.record_length());
+        assert_eq!(buf.data[..64][..8], expected);
     }
 }

@@ -3,6 +3,7 @@ use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
 use dis_rs::Serialize;
 use crate::{BodyProperties, CdisBody};
+use crate::constants::{HUNDRED_TWENTY_BITS, THIRTY_TWO_BITS};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
 
@@ -49,16 +50,24 @@ impl BodyProperties for EntityState {
     }
 
     fn body_length_bits(&self) -> usize {
-        const CONST_BIT_SIZE: usize = 6;
+        const CONST_BIT_SIZE: usize = 5; // Full_update_flag + DR_algorithm
         Self::FIELDS_PRESENT_LENGTH + CONST_BIT_SIZE
+            + self.units.record_length()
             + self.entity_id.record_length()
-            + (if let Some(force_id) = self.force_id { force_id.bit_size() } else { 0 })
-            + (if !self.variable_parameters.is_empty() { UVINT8::from(self.variable_parameters.len() as u8).bit_size() } else { 0 })
-            + (if let Some(record) = self.entity_type { record.record_length() } else { 0 })
-            + (if let Some(record) = self.alternate_entity_type { record.record_length() } else { 0 })
-            + (if let Some(record) = self.entity_linear_velocity { record.record_length() } else { 0 })
-            + (if let Some(record) = self.entity_location { record.record_length() } else { 0 })
-            + (if let Some(record) = self.entity_orientation { record.record_length() } else { 0 })
+            + (if let Some(force_id) = &self.force_id { force_id.record_length() } else { 0 })
+            + (if self.variable_parameters.is_empty() { 0 } else { UVINT8::from(self.variable_parameters.len() as u8).record_length() })
+            + (if let Some(record) = &self.entity_type { record.record_length() } else { 0 })
+            + (if let Some(record) = &self.alternate_entity_type { record.record_length() } else { 0 })
+            + (if let Some(record) = &self.entity_linear_velocity { record.record_length() } else { 0 })
+            + (if let Some(record) = &self.entity_location { record.record_length() } else { 0 })
+            + (if let Some(record) = &self.entity_orientation { record.record_length() } else { 0 })
+            + (if self.entity_appearance.is_some() { THIRTY_TWO_BITS } else { 0 } )
+            + (if self.dr_params_other.is_some() { HUNDRED_TWENTY_BITS } else { 0 } )
+            + (if let Some(record) = &self.dr_params_entity_linear_acceleration { record.record_length() } else { 0 } )
+            + (if let Some(record) = &self.dr_params_entity_angular_velocity { record.record_length() } else { 0 } )
+            + (if let Some(record) = &self.entity_marking { record.record_length() } else { 0 } )
+            + (if let Some(record) = &self.capabilities { record.0.record_length() } else { 0 } )
+            + self.variable_parameters.iter().map(|vp| vp.record_length() ).sum::<usize>()
     }
 
     fn into_cdis_body(self) -> CdisBody {

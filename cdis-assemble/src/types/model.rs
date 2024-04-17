@@ -10,6 +10,9 @@ pub(crate) trait VarInt {
     fn value(&self) -> Self::InnerType;
     fn max_value(&self) -> Self::InnerType;
     fn min_value(&self) -> Self::InnerType;
+    fn record_length(&self) -> usize {
+        self.flag_bits_size() + self.bit_size()
+    }
 }
 
 /// 10.2.1 UVINT8

@@ -1,6 +1,7 @@
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState};
 use crate::BodyProperties;
-use crate::constants::{HUNDRED_TWENTY_BITS, ONE_BIT, THIRTY_TWO_BITS};
+use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTY_TWO_BITS};
+use crate::records::model::CdisRecord;
 use crate::types::model::UVINT8;
 use crate::writing::{BitBuffer, serialize_when_present, SerializeCdis, SerializeCdisPdu, write_value_unsigned};
 
@@ -22,7 +23,7 @@ impl SerializeCdisPdu for EntityState {
         let cursor = serialize_when_present(&self.entity_orientation, buf, cursor);
         let cursor = serialize_when_present(&self.entity_appearance, buf, cursor);
 
-        let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.dr_algorithm.into());
+        let cursor = write_value_unsigned::<u8>(buf, cursor, FOUR_BITS, self.dr_algorithm.into());
         let cursor = if let Some(other) = &self.dr_params_other {
             write_value_unsigned(buf, cursor, HUNDRED_TWENTY_BITS, other.0)
         } else { cursor };
@@ -83,9 +84,9 @@ mod tests {
         }.into_cdis_body();
 
         let mut buf: BitBuffer = BitArray::ZERO;
-        let _cursor = cdis_body.serialize(&mut buf, 0);
+        let cursor = cdis_body.serialize(&mut buf, 0);
 
-        // println!("{:?}", buf);
+        assert_eq!(cursor, cdis_body.body_length());
         assert_eq!(buf.data[..5], [0b1010_1110, 0b0001_1110, 0b0000_0101, 0b0000_0001, 0b0100_0000]);
     }
 }

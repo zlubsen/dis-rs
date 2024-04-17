@@ -23,7 +23,7 @@ pub struct CdisHeader {
 impl CdisRecord for CdisHeader {
     fn record_length(&self) -> usize {
         const ALWAYS_PRESENT_FIELDS_LENGTH : usize = 58;
-        ALWAYS_PRESENT_FIELDS_LENGTH + self.exercise_id.bit_size()
+        ALWAYS_PRESENT_FIELDS_LENGTH + self.exercise_id.record_length()
     }
 }
 
@@ -209,9 +209,9 @@ impl AngularVelocity {
 
 impl CdisRecord for AngularVelocity {
     fn record_length(&self) -> usize {
-        self.x.bit_size()
-            + self.y.bit_size()
-            + self.z.bit_size()
+        self.x.record_length()
+            + self.y.record_length()
+            + self.z.record_length()
     }
 }
 
@@ -235,9 +235,9 @@ impl LinearAcceleration {
 
 impl CdisRecord for LinearAcceleration {
     fn record_length(&self) -> usize {
-        self.x.bit_size()
-            + self.y.bit_size()
-            + self.z.bit_size()
+        self.x.record_length()
+            + self.y.record_length()
+            + self.z.record_length()
     }
 }
 
@@ -261,9 +261,9 @@ impl EntityCoordinateVector {
 
 impl CdisRecord for EntityCoordinateVector {
     fn record_length(&self) -> usize {
-        self.x.bit_size()
-            + self.y.bit_size()
-            + self.z.bit_size()
+        self.x.record_length()
+            + self.y.record_length()
+            + self.z.record_length()
     }
 }
 
@@ -286,9 +286,9 @@ impl EntityId {
 
 impl CdisRecord for EntityId {
     fn record_length(&self) -> usize {
-        self.site.bit_size()
-            + self.application.bit_size()
-            + self.entity.bit_size()
+        self.site.record_length()
+            + self.application.record_length()
+            + self.entity.record_length()
     }
 }
 
@@ -320,12 +320,12 @@ impl EntityType {
 
 impl CdisRecord for EntityType {
     fn record_length(&self) -> usize {
-        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = 32;
+        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = 17;
         ALWAYS_PRESENT_FIELDS_LENGTH
-            + self.category.bit_size()
-            + self.subcategory.bit_size()
-            + self.specific.bit_size()
-            + self.extra.bit_size()
+            + self.category.record_length()
+            + self.subcategory.record_length()
+            + self.specific.record_length()
+            + self.extra.record_length()
     }
 }
 
@@ -349,9 +349,9 @@ impl LinearVelocity {
 
 impl CdisRecord for LinearVelocity {
     fn record_length(&self) -> usize {
-        self.x.bit_size()
-            + self.y.bit_size()
-            + self.z.bit_size()
+        self.x.record_length()
+            + self.y.record_length()
+            + self.z.record_length()
     }
 }
 
@@ -757,8 +757,8 @@ impl WorldCoordinates {
 
 impl CdisRecord for WorldCoordinates {
     fn record_length(&self) -> usize {
-        const CONST_BIT_SIZE: usize = 64;
-        CONST_BIT_SIZE + self.altitude_msl.bit_size()
+        const CONST_BIT_SIZE: usize = 63; // lat + lon
+        CONST_BIT_SIZE + self.altitude_msl.record_length()
     }
 }
 

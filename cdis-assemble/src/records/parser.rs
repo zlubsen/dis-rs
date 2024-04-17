@@ -17,7 +17,9 @@ const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;
 pub(crate) fn cdis_header(input: BitInput) -> IResult<BitInput, CdisHeader> {
     let (input, protocol_version) : (BitInput, u8) = take(TWO_BITS)(input)?;
     let (input, exercise_id) = uvint8(input)?;
+    println!("parse exercise id {}", exercise_id.value);
     let (input, pdu_type) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    println!("parse pdu_type {pdu_type}");
     let (input, timestamp) : (BitInput, u32) = take(TWENTY_SIX_BITS)(input)?;
     let (input, length) : (BitInput, u16) = take(FOURTEEN_BITS)(input)?;
     let (input, pdu_status) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
@@ -435,4 +437,25 @@ pub(crate) fn entity_association_vp(input: BitInput) -> IResult<BitInput, CdisEn
         group_member_type,
         group_number,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use dis_rs::enumerations::PduType;
+    use crate::records::model::CdisProtocolVersion;
+    use crate::records::parser::cdis_header;
+    use crate::types::model::UVINT8;
+
+    #[test]
+    fn parse_cdis_header() {
+        let input = [0b01001110, 0b00000010, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000];
+
+        let (input, header) = cdis_header((&input, 0)).unwrap();
+
+        assert_eq!(header.protocol_version, CdisProtocolVersion::SISO_023_2023);
+        assert_eq!(header.exercise_id, UVINT8::from(7));
+        assert_eq!(header.pdu_type, PduType::EntityState);
+        assert_eq!(header.timestamp, dis_rs::model::TimeStamp { raw_timestamp: 0 });
+        assert_eq!(header.length, 0);
+    }
 }
