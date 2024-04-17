@@ -1,10 +1,11 @@
-use cdis_assemble::{BitBuffer, CdisPdu, Codec, SerializeCdisPdu};
+use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, Codec, SerializeCdisPdu};
+use cdis_assemble::types::model::UVINT16;
 use dis_rs::entity_state::model::{EntityMarking, EntityState};
 use dis_rs::enumerations::{Country, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain};
 use dis_rs::model::{EntityId, EntityType, Pdu, PduHeader};
 
 #[test]
-fn dis_to_cdis() {
+fn dis_to_cdis_entity_state() {
     let dis_header = PduHeader::new_v7(7, PduType::EntityState);
     let dis_body = EntityState::builder()
         .with_entity_id(EntityId::new(7, 127, 255))
@@ -23,13 +24,21 @@ fn dis_to_cdis() {
     let mut buf : BitBuffer = BitBuffer::ZERO;
     let _cursor = cdis_pdu.serialize(&mut buf, 0);
 
-    let bytes = _cursor.div_ceil(8);
-    println!("buf data {:?}", &buf.data[..bytes]);
+    let written_bytes = _cursor.div_ceil(8);
 
-    let vec = Vec::from(&buf.data[.._cursor]);
+    let parsed_cdis_pdus = cdis_assemble::parse(&buf.data[..written_bytes]).unwrap();
+    let cdis_pdu = parsed_cdis_pdus.first().unwrap();
 
-    let parsed_cdis = cdis_assemble::parse(&buf.data[..bytes]).unwrap();
-// TODO panics due to attempting to parse several pdu's but not enough input > handle error
+    if let CdisBody::EntityState(es) = &cdis_pdu.body {
+        assert_eq!(es.entity_id, cdis_assemble::records::model::EntityId::new(UVINT16::from(7), UVINT16::from(127), UVINT16::from(255)));
+        assert_eq!(es.entity_type.unwrap().country, u16::from(Country::Netherlands_NLD_));
+        assert_eq!(es.entity_marking.as_ref().unwrap().marking.as_str(), "TEST")
+    } else {
+        assert!(false);
+    }
+}
 
-    println!("{:?}", parsed_cdis);
+#[test]
+fn cdis_to_dis_entity_state() {
+    assert!(false);
 }

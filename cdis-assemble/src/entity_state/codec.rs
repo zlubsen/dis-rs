@@ -14,6 +14,7 @@ impl Codec for EntityState {
         // Covers full update mode
         let (entity_location, units) = encode_world_coordinates(&item.entity_location);
         let entity_location = Some(entity_location);
+
         Self {
             units,
             full_update_flag: true,

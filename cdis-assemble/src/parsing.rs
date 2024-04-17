@@ -3,6 +3,7 @@ use nom::multi::many1;
 use dis_rs::enumerations::PduType;
 use std::ops::BitAnd;
 use nom::complete::take;
+use nom::error::Error;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::constants::ONE_BIT;
 use crate::entity_state::parser::entity_state_body;
@@ -19,7 +20,9 @@ pub fn parse(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
 pub(crate) fn parse_multiple_cdis_pdu(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
     match many1(cdis_pdu)((input, 0)) {
         Ok((_, pdus)) => { Ok(pdus) }
-        Err(err) => { Err(CdisError::ParseError(err.to_string())) } // TODO not very descriptive / error means we can not match any PDUs
+        Err(err) => {
+            Err(CdisError::ParseError(err.to_string()))
+        } // TODO not very descriptive / error means we can not match any PDUs
     }
 }
 

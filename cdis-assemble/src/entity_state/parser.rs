@@ -65,7 +65,6 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
         (input, vec![])
     };
 
-
     Ok((input, EntityState {
         units,
         full_update_flag,

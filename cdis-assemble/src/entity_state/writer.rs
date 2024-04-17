@@ -13,7 +13,7 @@ impl SerializeCdisPdu for EntityState {
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.full_update_flag.into());
         let cursor = self.entity_id.serialize(buf, cursor);
         let cursor = serialize_when_present(&self.force_id, buf, cursor);
-        let cursor = if !self.variable_parameters.is_empty() {
+        let cursor = if self.full_update_flag | !self.variable_parameters.is_empty() {
             UVINT8::from(self.variable_parameters.len() as u8 ).serialize(buf, cursor)
         } else { cursor };
         let cursor = serialize_when_present(&self.entity_type, buf, cursor);
@@ -65,7 +65,7 @@ mod tests {
     fn serialize_entity_state_no_fields_present() {
         let cdis_body = EntityState {
             units: Units::Dekameter,
-            full_update_flag: true,
+            full_update_flag: false,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: Some(UVINT8::from(u8::from(ForceId::Friendly))),
             entity_type: Some(crate::records::model::EntityType::new(u8::from(EntityKind::Platform), u8::from(PlatformDomain::Air), u16::from(Country::from(1)), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1))),
@@ -87,6 +87,6 @@ mod tests {
         let cursor = cdis_body.serialize(&mut buf, 0);
 
         assert_eq!(cursor, cdis_body.body_length());
-        assert_eq!(buf.data[..5], [0b1010_1110, 0b0001_1110, 0b0000_0101, 0b0000_0001, 0b0100_0000]);
+        assert_eq!(buf.data[..5], [0b1010_1110, 0b0001_1100, 0b0000_0101, 0b0000_0001, 0b0100_0000]);
     }
 }

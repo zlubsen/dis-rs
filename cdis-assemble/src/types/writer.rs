@@ -120,7 +120,7 @@ mod tests {
     fn serialize_uvint8_bit_flag_zero() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = UVINT8::new(Uvint8BitSize::Four, 1);
+        let input = UVINT8::from(1);
         let expected : [u8; ONE_BYTE] = [0b00001000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -131,7 +131,7 @@ mod tests {
     fn serialize_uvint8_bit_flag_one() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = UVINT8::new(Uvint8BitSize::Eight, 129);
+        let input = UVINT8::from(129);
         let expected : [u8; TWO_BYTES] = [0b11000000, 0b10000000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -142,7 +142,7 @@ mod tests {
     fn serialize_uvint16_bit_flag_zero() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = UVINT16::new(Uvint16BitSize::Eight, 1);
+        let input = UVINT16::from(1);
         let expected : [u8; TWO_BYTES] = [0b00000000, 0b01000000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -153,7 +153,7 @@ mod tests {
     fn serialize_uvint16_bit_flag_three() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = UVINT16::new(Uvint16BitSize::Sixteen, 32767);
+        let input = UVINT16::from(32767);
         let expected : [u8; THREE_BYTES] = [0b11011111, 0b11111111, 0b11000000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -164,7 +164,7 @@ mod tests {
     fn serialize_svint12_bit_flag_zero_positive() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = SVINT12::new(Svint12BitSize::Three, 1);
+        let input = SVINT12::from(1);
         let expected : [u8; ONE_BYTE] = [0b00001000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -175,7 +175,7 @@ mod tests {
     fn serialize_svint12_bit_flag_zero_negative() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = SVINT12::new(Svint12BitSize::Three, -3);
+        let input = SVINT12::from(-3);
         let expected : [u8; ONE_BYTE] = [0b00101000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -186,7 +186,7 @@ mod tests {
     fn serialize_svint12_bit_flag_three_positive() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = SVINT12::new(Svint12BitSize::Twelve, 2047);
+        let input = SVINT12::from(2047);
         let expected : [u8; TWO_BYTES] = [0b11011111, 0b11111100];
         let _next_cursor = input.serialize(&mut buf, 0);
 
@@ -197,7 +197,7 @@ mod tests {
     fn serialize_svint12_bit_flag_three_negative() {
         let mut buf: BitBuffer = BitArray::ZERO;
 
-        let input = SVINT12::new(Svint12BitSize::Twelve, -2047);
+        let input = SVINT12::from(-2047);
         let expected : [u8; TWO_BYTES] = [0b11100000, 0b00000100];
         let _next_cursor = input.serialize(&mut buf, 0);
 

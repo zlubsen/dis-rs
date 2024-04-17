@@ -36,8 +36,8 @@ trait BodyProperties {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisPdu {
-    header: CdisHeader,
-    body: CdisBody,
+    pub header: CdisHeader,
+    pub body: CdisBody,
 }
 
 impl CdisPdu {

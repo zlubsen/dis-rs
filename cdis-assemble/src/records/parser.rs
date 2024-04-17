@@ -17,9 +17,7 @@ const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;
 pub(crate) fn cdis_header(input: BitInput) -> IResult<BitInput, CdisHeader> {
     let (input, protocol_version) : (BitInput, u8) = take(TWO_BITS)(input)?;
     let (input, exercise_id) = uvint8(input)?;
-    println!("parse exercise id {}", exercise_id.value);
     let (input, pdu_type) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
-    println!("parse pdu_type {pdu_type}");
     let (input, timestamp) : (BitInput, u32) = take(TWENTY_SIX_BITS)(input)?;
     let (input, length) : (BitInput, u16) = take(FOURTEEN_BITS)(input)?;
     let (input, pdu_status) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
