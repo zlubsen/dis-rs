@@ -1654,4 +1654,28 @@ mod tests {
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
     }
+
+    #[test]
+    fn length_padded_to_num_needs_padding_in_one_block_size() {
+        let padded_record = length_padded_to_num(12, 16);
+        assert_eq!(padded_record.record_length, 16);
+        assert_eq!(padded_record.data_length, 12);
+        assert_eq!(padded_record.padding_length, 4);
+    }
+
+    #[test]
+    fn length_padded_to_num_data_equals_block_size() {
+        let padded_record = length_padded_to_num(16, 16);
+        assert_eq!(padded_record.record_length, 16);
+        assert_eq!(padded_record.data_length, 16);
+        assert_eq!(padded_record.padding_length, 0);
+    }
+
+    #[test]
+    fn length_padded_to_num_data_exceeds_minimal_block_size() {
+        let padded_record = length_padded_to_num(16, 12);
+        assert_eq!(padded_record.record_length, 24);
+        assert_eq!(padded_record.data_length, 16);
+        assert_eq!(padded_record.padding_length, 8);
+    }
 }
