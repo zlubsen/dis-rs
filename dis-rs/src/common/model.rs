@@ -670,6 +670,12 @@ impl Default for EntityId {
     }
 }
 
+impl std::fmt::Display for dis_rs::model::EntityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+       write!(f, "{}:{}:{}", self.simulation_address.site_id, self.simulation_address.application_id, self.entity_id)
+    }
+}
+
 impl EntityId {
     pub fn new(site_id : u16, application_id : u16, entity_id : u16) -> Self {
         Self {
