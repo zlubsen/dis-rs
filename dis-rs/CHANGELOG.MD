@@ -4,7 +4,9 @@
 
 Changed `DisError` to use `thiserror` crate, so `DisError` now implements `std::error::Error`.
 
-...
+Implemented `Display` for EntityId (`"site:application:entity"`).
+
+Removed possible panics by replacing subtractions with `saturating_sub()` in PDU parsers.
 
 ## 0.8.0 - 2024-04-03
 
