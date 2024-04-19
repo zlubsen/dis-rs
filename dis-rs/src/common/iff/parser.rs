@@ -203,7 +203,7 @@ fn iff_data_record(input: &[u8]) -> IResult<&[u8], IffDataRecord> {
     let (input, record_type) = be_u32(input)?;
     let record_type = VariableRecordType::from(record_type);
     let (input, record_length) = be_u16(input)?;
-    let (input, field) = take(record_length - BASE_IFF_DATA_RECORD_LENGTH_OCTETS)(input)?;
+    let (input, field) = take(record_length.saturating_sub(BASE_IFF_DATA_RECORD_LENGTH_OCTETS))(input)?;
 
     Ok((input, IffDataRecord::builder()
         .with_record_type(record_type)

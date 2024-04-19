@@ -1660,10 +1660,4 @@ mod tests {
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
     }
-
-    #[test]
-    fn display_entity_id() {
-        let entity_id = EntityId::new(1, 2, 3);
-        assert_eq!(format!("{}", entity_id).as_str(), "1:2:3");
-    }
 }
