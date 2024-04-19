@@ -3,7 +3,6 @@ use nom::multi::many1;
 use dis_rs::enumerations::PduType;
 use std::ops::BitAnd;
 use nom::complete::take;
-use nom::error::Error;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::constants::ONE_BIT;
 use crate::entity_state::parser::entity_state_body;

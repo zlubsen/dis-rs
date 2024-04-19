@@ -19,7 +19,7 @@ pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
 pub use codec::Codec;
 
-trait BodyProperties {
+pub trait BodyProperties {
     type FieldsPresent;
     type FieldsPresentOutput;
     const FIELDS_PRESENT_LENGTH: usize;

@@ -2,7 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
-use tokio::net::{ToSocketAddrs, UdpSocket};
+use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::{event, Level};
 
@@ -20,7 +20,7 @@ fn main() {
         dis_socket: UdpEndpoint {
             mode: UdpMode::UniCast,
             interface: IpAddr::V4(Ipv4Addr::new(192,168,178,11)),
-            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,11), 3000)),
+            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,255), 3000)),
             // address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::BROADCAST, 3000)),
             ttl: 1,
             block_own_socket: true,
@@ -28,7 +28,7 @@ fn main() {
         cdis_socket: UdpEndpoint {
             mode: UdpMode::UniCast,
             interface: IpAddr::V4(Ipv4Addr::new(192,168,178,11)),
-            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,11), 3001)),
+            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,255), 3001)),
             ttl: 1,
             block_own_socket: true,
         },
@@ -147,6 +147,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
     let mut buf = BytesMut::with_capacity(1500);
     buf.resize(1500, 0);
 
+    #[derive(Debug)]
     enum Action {
         ReceivedPacket(Bytes, SocketAddr),
         BlockedPacket,
@@ -173,7 +174,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
                 }
             }
         };
-
+println!("Reader action: {:?}", action);
         match action {
             Action::ReceivedPacket(bytes, _from_address) => {
                 if let Err(_) = to_codec.send(bytes).await {
@@ -204,6 +205,7 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
         Quit
     }
 
+    println!("writer {:?}", socket);
     loop {
         let action = select! {
             cmd = cmd_rx.recv() => {
@@ -215,7 +217,8 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
             bytes = from_codec.recv() => {
                 let bytes = bytes.unwrap();
                 let bytes_send = socket.send_to(&bytes, to_address).await;
-                Action::Send(Ok(100))
+                println!("Send {:?} bytes", bytes_send);
+                Action::Send(Ok(bytes_send.unwrap()))
             }
         };
         match action {
@@ -253,6 +256,7 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
             bytes = channel_in.recv() => {
                 let bytes = bytes.unwrap();
                 let bytes = encoder.encode_buffer(bytes);
+                println!("encoded a DIS pdu to C-DIS.");
                 channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
             }
         }
@@ -277,6 +281,7 @@ async fn decoder(config: Config,
             bytes = channel_in.recv() => {
                 let bytes = bytes.unwrap();
                 let bytes = decoder.decode_buffer(bytes);
+                println!("decoded a C-DIS pdu to DIS");
                 channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
             }
         }
