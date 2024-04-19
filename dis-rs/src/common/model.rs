@@ -670,7 +670,7 @@ impl Default for EntityId {
     }
 }
 
-impl std::fmt::Display for dis_rs::model::EntityId {
+impl Display for EntityId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
        write!(f, "{}:{}:{}", self.simulation_address.site_id, self.simulation_address.application_id, self.entity_id)
     }
@@ -1659,5 +1659,11 @@ mod tests {
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn display_entity_id() {
+        let entity_id = EntityId::new(1, 2, 3);
+        assert_eq!(format!("{}", entity_id).as_str(), "1:2:3");
     }
 }
