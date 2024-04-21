@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::{event, Level};
@@ -18,16 +18,16 @@ mod codec;
 fn main() {
     let config = Config {
         dis_socket: UdpEndpoint {
-            mode: UdpMode::UniCast,
-            interface: IpAddr::V4(Ipv4Addr::new(192,168,178,11)),
+            mode: UdpMode::BroadCast,
+            interface: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,11), 3000)),
             address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,255), 3000)),
             // address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::BROADCAST, 3000)),
             ttl: 1,
             block_own_socket: true,
         },
-        cdis_socket: UdpEndpoint {
-            mode: UdpMode::UniCast,
-            interface: IpAddr::V4(Ipv4Addr::new(192,168,178,11)),
+            cdis_socket: UdpEndpoint {
+            mode: UdpMode::BroadCast,
+                interface: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,11), 3001)),
             address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,255), 3001)),
             ttl: 1,
             block_own_socket: true,
@@ -94,32 +94,32 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
 
     match (is_ipv4, endpoint.mode) {
         (true, UdpMode::UniCast) => {
-            socket.bind(&endpoint.address.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
+            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
         }
         (true, UdpMode::BroadCast) => {
             socket.set_broadcast(true).expect(format!("Failed to set SO_BROADCAST for endpoint address {}.", endpoint.interface).as_str());
-            socket.bind(&endpoint.address.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
+            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
             socket.set_ttl(1).expect("Failed to set TTL.");
         }
         (true, UdpMode::MultiCast) => {
             if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
-                if let IpAddr::V4(interface_v4) = endpoint.interface {
+                if let IpAddr::V4(interface_v4) = endpoint.interface.ip() {
                     socket.join_multicast_v4(&ip_address_v4, &interface_v4)
                         .expect(format!("Failed to join multicast group {} using interface {}.", ip_address_v4, interface_v4).as_str());
                 }
             }
         }
         (false, UdpMode::UniCast) => {
-            socket.bind(&endpoint.address.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str())
+            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str())
         }
         (false, UdpMode::BroadCast) => {
             socket.set_broadcast(true).expect("Failed to set SO_BROADCAST.");
             socket.set_ttl(1).expect("Failed to set TTL.");
-            socket.bind(&endpoint.address.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str());
+            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str());
         }
         (false, UdpMode::MultiCast) => {
             if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
-                if let IpAddr::V6(interface_v6) = endpoint.interface {
+                if let IpAddr::V6(interface_v6) = endpoint.interface.ip() {
                     // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
                     socket.join_multicast_v6(&ip_address_v6, 0)
                         .expect(format!("Failed to join multicast group {} using interface 0 ({}).", ip_address_v6, interface_v6).as_str());
@@ -174,7 +174,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
                 }
             }
         };
-println!("Reader action: {:?}", action);
+
         match action {
             Action::ReceivedPacket(bytes, _from_address) => {
                 if let Err(_) = to_codec.send(bytes).await {
@@ -199,13 +199,13 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
                        mut from_codec: tokio::sync::mpsc::Receiver<Vec<u8>>,
                        mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                        _event_tx: tokio::sync::mpsc::Sender<Event>) {
+    #[derive(Debug)]
     enum Action {
         Send(std::io::Result<usize>),
         Error(std::io::Error),
         Quit
     }
 
-    println!("writer {:?}", socket);
     loop {
         let action = select! {
             cmd = cmd_rx.recv() => {
@@ -217,10 +217,11 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
             bytes = from_codec.recv() => {
                 let bytes = bytes.unwrap();
                 let bytes_send = socket.send_to(&bytes, to_address).await;
-                println!("Send {:?} bytes", bytes_send);
+
                 Action::Send(Ok(bytes_send.unwrap()))
             }
         };
+
         match action {
             Action::Send(result) => {
                 match result {
@@ -256,7 +257,6 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
             bytes = channel_in.recv() => {
                 let bytes = bytes.unwrap();
                 let bytes = encoder.encode_buffer(bytes);
-                println!("encoded a DIS pdu to C-DIS.");
                 channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
             }
         }
@@ -281,7 +281,6 @@ async fn decoder(config: Config,
             bytes = channel_in.recv() => {
                 let bytes = bytes.unwrap();
                 let bytes = decoder.decode_buffer(bytes);
-                println!("decoded a C-DIS pdu to DIS");
                 channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
             }
         }

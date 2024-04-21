@@ -1,4 +1,4 @@
-use std::net::{IpAddr, SocketAddr};
+use std::net::{SocketAddr};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) struct Config {
@@ -10,7 +10,7 @@ pub(crate) struct Config {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) struct UdpEndpoint {
     pub(crate) mode: UdpMode,
-    pub(crate) interface: IpAddr,
+    pub(crate) interface: SocketAddr,
     pub(crate) address: SocketAddr,
     pub(crate) ttl: u16,
     pub(crate) block_own_socket: bool,

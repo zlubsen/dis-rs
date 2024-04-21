@@ -154,11 +154,11 @@ impl From<DisTimeStamp> for CdisTimeStamp {
     fn from(value: DisTimeStamp) -> Self {
         match value {
             DisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
-                let units_past_the_hour = (units_past_the_hour * CDIS_TIME_UNITS_PER_HOUR) / DIS_TIME_UNITS_PER_HOUR;
+                let units_past_the_hour = units_past_the_hour * (CDIS_TIME_UNITS_PER_HOUR / DIS_TIME_UNITS_PER_HOUR);
                 CdisTimeStamp::new_absolute_from_units(units_past_the_hour)
             }
             DisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
-                let units_past_the_hour = (units_past_the_hour * CDIS_TIME_UNITS_PER_HOUR) / DIS_TIME_UNITS_PER_HOUR;
+                let units_past_the_hour = units_past_the_hour * (CDIS_TIME_UNITS_PER_HOUR / DIS_TIME_UNITS_PER_HOUR);
                 CdisTimeStamp::new_relative_from_units(units_past_the_hour)
             }
         }
@@ -169,11 +169,11 @@ impl From<CdisTimeStamp> for DisTimeStamp {
     fn from(value: CdisTimeStamp) -> Self {
         match value {
             CdisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
-                let units_past_the_hour = (units_past_the_hour * DIS_TIME_UNITS_PER_HOUR) / CDIS_TIME_UNITS_PER_HOUR;
+                let units_past_the_hour = units_past_the_hour * (DIS_TIME_UNITS_PER_HOUR / CDIS_TIME_UNITS_PER_HOUR);
                 DisTimeStamp::new_absolute_from_units(units_past_the_hour)
             }
             CdisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
-                let units_past_the_hour = (units_past_the_hour * DIS_TIME_UNITS_PER_HOUR) / CDIS_TIME_UNITS_PER_HOUR;
+                let units_past_the_hour = units_past_the_hour * (DIS_TIME_UNITS_PER_HOUR / CDIS_TIME_UNITS_PER_HOUR);
                 DisTimeStamp::new_relative_from_units(units_past_the_hour)
             }
         }

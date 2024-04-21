@@ -1,4 +1,4 @@
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Codec, SerializeCdisPdu};
 use cdis_assemble::constants::MTU_BYTES;
 use dis_rs::model::Pdu;
@@ -67,7 +67,8 @@ pub struct Decoder {
 impl Decoder {
     pub fn new(mode: GatewayMode) -> Self {
         let mut dis_buffer = BytesMut::with_capacity(MTU_BYTES);
-        dis_buffer.resize(MTU_BYTES, 0);
+        // dis_buffer.resize(MTU_BYTES, 0);
+
         Self {
             mode,
             dis_buffer,
@@ -79,10 +80,18 @@ impl Decoder {
     }
 
     fn writing(&mut self, dis_pdus: Vec<Pdu>) -> Vec<u8> {
-        let number_of_bytes: usize = dis_pdus.iter()
-            .map(| pdu| { pdu.serialize(&mut self.dis_buffer).unwrap() as usize } ).sum();
+        // FIXME now we reset the buffer by assigning a new BytesMut; should not cause reallocation of under lying memory, but need to check.
+        self.dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
-        Vec::from(&self.dis_buffer[..number_of_bytes])
+        // FIXME number of bytes reported 'serialize' is too large for observed cases (208 actual, reported 252)...
+        // number_of_bytes not used in creating the slice to put in the vec.
+        let _number_of_bytes: usize = dis_pdus.iter()
+            .map(| pdu| {
+                pdu.serialize(&mut self.dis_buffer).unwrap() as usize
+            } ).sum();
+
+        // TODO perhaps replace Vec with Bytes, but unsure how to assign the latter Bytes::from_iter(&self.dis_buffer[..].iter()), or Bytes::from(&self.dis_buffer[..])?
+        Vec::from(&self.dis_buffer[..])
     }
 
     // TODO make fallible, result from parse (and encode) function(s)
@@ -97,13 +106,14 @@ impl Decoder {
                 Vec::new()
             }
         };
+
         self.writing(pdus)
     }
 
     // TODO make fallible, result from encode function
     pub fn decode_pdus(&self, pdus: &Vec<CdisPdu>) -> Vec<Pdu> {
         let dis_pdus: Vec<Pdu> = pdus.iter()
-            .map(|pdu| pdu.decode() )
+            .map(|cdis_pdu| cdis_pdu.decode() )
             .collect();
         dis_pdus
     }
