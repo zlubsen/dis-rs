@@ -16,6 +16,7 @@ pub(crate) struct UdpEndpoint {
     pub(crate) block_own_socket: bool,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) enum UdpMode {
     #[default]

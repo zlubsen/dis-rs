@@ -20,11 +20,10 @@ impl Codec for CdisPdu {
     type Counterpart = Pdu;
 
     fn encode(item: &Self::Counterpart) -> Self {
-        let ret = CdisPdu::finalize_from_parts(
+        CdisPdu::finalize_from_parts(
             CdisHeader::encode(&item.header),
             CdisBody::encode(&item.body),
-            None::<TimeStamp>);
-        ret
+            None::<TimeStamp>)
     }
 
     fn decode(&self) -> Self::Counterpart {

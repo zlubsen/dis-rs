@@ -66,17 +66,24 @@ async fn start_gateway(config: Config) {
     let cdis_socket = create_udp_socket(&config.cdis_socket).await;
 
     let dis_read_socket = reader_socket(dis_socket.clone(), dis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
-    let dis_write_socket = writer_socket(dis_socket.clone(), config.dis_socket.address.clone(), dis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
+    let dis_write_socket = writer_socket(dis_socket.clone(), config.dis_socket.address, dis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
     let cdis_read_socket = reader_socket(cdis_socket.clone(), cdis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
-    let cdis_write_socket = writer_socket(cdis_socket.clone(), config.cdis_socket.address.clone(), cdis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
+    let cdis_write_socket = writer_socket(cdis_socket.clone(), config.cdis_socket.address, cdis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
     let h1 = tokio::spawn(dis_read_socket);
     let h2 = tokio::spawn(dis_write_socket);
     let h3 = tokio::spawn(cdis_read_socket);
     let h4 = tokio::spawn(cdis_write_socket);
-    let h5 = tokio::spawn(encoder(config.clone(), dis_socket_out_rx, cdis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
-    let h6 = tokio::spawn(decoder(config.clone(), cdis_socket_out_rx, dis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
+    let h5 = tokio::spawn(encoder(config, dis_socket_out_rx, cdis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
+    let h6 = tokio::spawn(decoder(config, cdis_socket_out_rx, dis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
 
-    tokio::join!(h1, h2, h3, h4, h5, h6);
+    let (h1, h2, h3, h4, h5, h6) =
+        tokio::join!(h1, h2, h3, h4, h5, h6);
+    h1.unwrap();
+    h2.unwrap();
+    h3.unwrap();
+    h4.unwrap();
+    h5.unwrap();
+    h6.unwrap();
 }
 
 async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
@@ -135,11 +142,6 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     Arc::new(socket)
 }
 
-pub(crate) enum Payload {
-    DIS(Pdu),
-    CDIS(CdisPdu)
-}
-
 async fn reader_socket(socket: Arc<UdpSocket>,
                        to_codec: tokio::sync::mpsc::Sender<Bytes>,
                        mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
@@ -177,7 +179,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
 
         match action {
             Action::ReceivedPacket(bytes, _from_address) => {
-                if let Err(_) = to_codec.send(bytes).await {
+                if to_codec.send(bytes).await.is_err() {
                     event!(Level::ERROR, "Reader socket to codec channel dropped.");
                     return;
                 }

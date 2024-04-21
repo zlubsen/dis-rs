@@ -1,4 +1,4 @@
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Codec, SerializeCdisPdu};
 use cdis_assemble::constants::MTU_BYTES;
 use dis_rs::model::Pdu;
@@ -51,9 +51,9 @@ impl Encoder {
     }
 
     // TODO make fallible, result from encode function
-    pub fn encode_pdus(&self, pdus: &Vec<Pdu>) -> Vec<CdisPdu> {
+    pub fn encode_pdus(&self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
-            .map(|pdu| CdisPdu::encode(pdu) )
+            .map(CdisPdu::encode )
             .collect();
         cdis_pdus
     }
@@ -66,8 +66,7 @@ pub struct Decoder {
 
 impl Decoder {
     pub fn new(mode: GatewayMode) -> Self {
-        let mut dis_buffer = BytesMut::with_capacity(MTU_BYTES);
-        // dis_buffer.resize(MTU_BYTES, 0);
+        let dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
         Self {
             mode,
@@ -111,7 +110,7 @@ impl Decoder {
     }
 
     // TODO make fallible, result from encode function
-    pub fn decode_pdus(&self, pdus: &Vec<CdisPdu>) -> Vec<Pdu> {
+    pub fn decode_pdus(&self, pdus: &[CdisPdu]) -> Vec<Pdu> {
         let dis_pdus: Vec<Pdu> = pdus.iter()
             .map(|cdis_pdu| cdis_pdu.decode() )
             .collect();

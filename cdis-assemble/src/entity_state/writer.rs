@@ -1,7 +1,6 @@
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState};
 use crate::BodyProperties;
 use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTY_TWO_BITS};
-use crate::records::model::CdisRecord;
 use crate::types::model::UVINT8;
 use crate::writing::{BitBuffer, serialize_when_present, SerializeCdis, SerializeCdisPdu, write_value_unsigned};
 
