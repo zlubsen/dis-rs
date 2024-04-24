@@ -8,7 +8,7 @@ use std::sync::Arc;
 use bytes::{BufMut, Bytes, BytesMut};
 use tokio::net::UdpSocket;
 use tokio::select;
-use tracing::{event, Level};
+use tracing::{error, event, Level};
 use clap::Parser;
 
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, GatewayMode, UdpEndpoint, UdpMode};
@@ -107,26 +107,26 @@ async fn start_gateway(config: Config) {
     let cdis_write_socket = writer_socket(
         cdis_socket.clone(), config.cdis_socket.address, cdis_socket_in_rx,
         cmd_tx.subscribe(), event_tx.clone());
-    let h1 = tokio::spawn(dis_read_socket);
-    let h2 = tokio::spawn(dis_write_socket);
-    let h3 = tokio::spawn(cdis_read_socket);
-    let h4 = tokio::spawn(cdis_write_socket);
-    let h5 = tokio::spawn(encoder(
-        config.mode, dis_socket_out_rx, cdis_socket_in_tx,
-        cmd_tx.subscribe(), event_tx.clone()));
-    let h6 = tokio::spawn(decoder(
-        config.mode, cdis_socket_out_rx, dis_socket_in_tx,
-        cmd_tx.subscribe(), event_tx.clone()));
 
-    // TODO decide if this is the neat way to handle cleaning up the tasks
-    let (h1, h2, h3, h4, h5, h6) =
-        tokio::join!(h1, h2, h3, h4, h5, h6);
-    h1.unwrap();
-    h2.unwrap();
-    h3.unwrap();
-    h4.unwrap();
-    h5.unwrap();
-    h6.unwrap();
+    let handles = tokio::try_join!(
+        tokio::spawn(dis_read_socket),
+        tokio::spawn(dis_write_socket),
+        tokio::spawn(cdis_read_socket),
+        tokio::spawn(cdis_write_socket),
+        tokio::spawn(encoder(
+            config.mode, dis_socket_out_rx, cdis_socket_in_tx,
+            cmd_tx.subscribe(), event_tx.clone())),
+        tokio::spawn(decoder(
+            config.mode, cdis_socket_out_rx, dis_socket_in_tx,
+            cmd_tx.subscribe(), event_tx.clone()))
+    );
+
+    match handles {
+        Ok(_handles) => {}
+        Err(err) => {
+            error!("Processing failed; error = {}", err);
+        }
+    }
 }
 
 /// Creates an UDP socket based on the settings contained in `endpoint`.
