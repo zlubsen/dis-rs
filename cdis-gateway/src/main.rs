@@ -156,18 +156,32 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     let socket_protocol = Protocol::UDP;
     let socket = Socket::new(socket_domain, socket_type, Some(socket_protocol)).expect("Error creating socket.");
 
-    socket.set_reuse_address(true).expect(format!("Failed to set SO_REUSEADDR for endpoint address {}.", endpoint.address).as_str());
-    socket.set_reuse_port(true).expect(format!("Failed to set SO_REUSEPORT for endpoint address {}.", endpoint.address).as_str());
-    socket.set_nonblocking(true).expect(format!("Failed to set nonblocking mode for endpoint address {}", endpoint.address).as_str());
+    if let Err(err) = socket.set_reuse_address(true) {
+        error!("Failed to set SO_REUSEADDR for endpoint address {} - {}.", endpoint.address, err);
+    }
+    if let Err(err) = socket.set_reuse_port(true) {
+        error!("Failed to set SO_REUSEPORT for endpoint address {} - {}.", endpoint.address, err);
+    }
+    if let Err(err) = socket.set_nonblocking(true) {
+        error!("Failed to set nonblocking mode for endpoint address {} - {}", endpoint.address, err);
+    }
 
     match (is_ipv4, endpoint.mode) {
         (true, UdpMode::UniCast) => {
-            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
+            if let Err(err) = socket.bind(&endpoint.interface.into()) {
+            error!("Failed to bind to IPv4 address {:?} - {}", endpoint.address, err);
+            }
         }
         (true, UdpMode::BroadCast) => {
-            socket.set_broadcast(true).expect(format!("Failed to set SO_BROADCAST for endpoint address {}.", endpoint.interface).as_str());
-            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv4 address {:?}", endpoint.address).as_str());
-            socket.set_ttl(1).expect("Failed to set TTL.");
+            if let Err(err) = socket.set_broadcast(true) {
+                error!("Failed to set SO_BROADCAST for endpoint address {} - {}.", endpoint.interface, err);
+            }
+            if let Err(err) = socket.bind(&endpoint.interface.into()) {
+                error!("Failed to bind to IPv4 address {:?} - {}", endpoint.address, err);
+            }
+            if let Err(err) = socket.set_ttl(1) {
+                error!("Failed to set TTL.");
+            }
         }
         (true, UdpMode::MultiCast) => {
             if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
@@ -178,6 +192,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             }
         }
         (false, UdpMode::UniCast) => {
+            // TODO use .inspect_err() ?
             socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str())
         }
         (false, UdpMode::BroadCast) => {
@@ -216,7 +231,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
     enum Action {
         ReceivedPacket(Bytes, SocketAddr),
         BlockedPacket,
-        Error(std::io::Error),
+        Error(io::Error),
         Quit
     }
 
@@ -268,8 +283,8 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
                        _event_tx: tokio::sync::mpsc::Sender<Event>) {
     #[derive(Debug)]
     enum Action {
-        Send(std::io::Result<usize>),
-        Error(std::io::Error),
+        Send(io::Result<usize>),
+        Error(io::Error),
         Quit
     }
 
