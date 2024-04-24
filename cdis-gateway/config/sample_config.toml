@@ -1,0 +1,40 @@
+
+# Metadata allows the user to specify
+[metadata]
+name = "Sample Gateway Configuration - FZ16"
+author = "zlubsen"
+version = "0.1"
+
+# The mode of the gateway is either "FullUpdate" or "PartialUpdate"; Optional value, defaults to FullUpdate mode
+mode = "FullUpdate"
+
+# The [dis] entry specifies the endpoint (interface and remote address) for receiving/sending DIS PDUs
+[dis]
+# `uri` specifies the remote address where to send and receive PDUs from. Format is "<IP_of_the_address>:<port>". Mandatory field.
+uri = "192.168.178.255:3000"
+# `interface` specifies the interface which to bind the gateway to. Outgoing packets are send via this interface. Format is "<IP_of_the_interface>:<port>". Mandatory field.
+interface = "192.168.178.11:3000"
+# `mode` specifies the type of connection, being `unicast`, `broadcast`, or `multicast`. Optional value, defaults to `unicast`.
+mode = "broadcast"
+# `ttl` specifies the time-to-live of packets send by the gateway via this endpoint.
+ttl = 1
+# 'block_own_host' specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
+block_own_host = true
+
+# The [cdis] entry specifies the endpoint (interface and remote address) for receiving/sending DIS PDUs
+[cdis]
+# `uri` specifies the remote address where to send and receive PDUs from. Format is "<IP_of_the_address>:<port>". Mandatory field.
+uri = "192.168.178.255:3001"
+# `interface` specifies the interface which to bind the gateway to. Outgoing packets are send via this interface. Format is "<IP_of_the_interface>:<port>". Mandatory field.
+interface = "192.168.178.11:3001"
+# `mode` specifies the type of connection, being `unicast`, `broadcast`, or `multicast`. Optional value, defaults to `unicast`.
+mode = "broadcast"
+# `ttl` specifies the time-to-live of packets send by the gateway via this endpoint.
+ttl = 1
+# 'block_own_host' specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
+block_own_host = true
+
+# The `site` entry specifies where the monitoring dashboard of the gateway is hosted.
+[site]
+# `port` specifies the port on the host where the site is hosted.
+port = 8080

@@ -23,7 +23,8 @@ bytes = "1.4.0"
 tokio = { version = "1.28.1", features = ["full"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
-clap = "4.2.7"
+clap = { version = "4.5.4", features = ["derive"] }
+clap_derive = "4.2.0"
 toml = "0.7.3"
 serde = "1.0.163"
 serde_derive = "1.0.163"

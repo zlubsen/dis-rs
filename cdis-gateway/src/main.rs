@@ -1,47 +1,71 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::fmt::{Display, Formatter};
+use std::fs::File;
+use std::io;
+use std::io::Read;
+use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
 use bytes::{BufMut, Bytes, BytesMut};
 use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::{event, Level};
+use clap::Parser;
 
-use cdis_assemble::{CdisPdu};
-use dis_rs::model::{Pdu};
-
-use crate::config::{Config, UdpEndpoint, UdpMode};
+use crate::config::{Arguments, Config, ConfigError, ConfigSpec, GatewayMode, UdpEndpoint, UdpMode};
 use crate::codec::{Decoder, Encoder};
 
 mod config;
 mod codec;
 
-fn main() {
-    let config = Config {
-        dis_socket: UdpEndpoint {
-            mode: UdpMode::BroadCast,
-            interface: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,11), 3000)),
-            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,255), 3000)),
-            // address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::BROADCAST, 3000)),
-            ttl: 1,
-            block_own_socket: true,
-        },
-            cdis_socket: UdpEndpoint {
-            mode: UdpMode::BroadCast,
-                interface: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,11), 3001)),
-            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192,168,178,255), 3001)),
-            ttl: 1,
-            block_own_socket: true,
-        },
-        mode: Default::default(),
-    };
+const DATA_CHANNEL_BUFFER_SIZE: usize = 20;
+const COMMAND_CHANNEL_BUFFER_SIZE: usize = 10;
+const EVENT_CHANNEL_BUFFER_SIZE: usize = 50;
+const READER_SOCKET_BUFFER_SIZE_BYTES: usize = 1500;
+
+fn main() -> Result<(), GatewayError>{
+    let arguments = Arguments::parse();
+
+    let mut file = File::open(arguments.config).map_err(|err| GatewayError::ConfigFileLoadError(err))?;
+    let mut buffer = String::new();
+    file.read_to_string(&mut buffer).map_err(|err| GatewayError::ConfigFileReadError(err) )?;
+
+    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err |GatewayError::ConfigFileParseError(err) )?;
+    let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigError(e))?;
+    // TODO print the used configuration
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
-        .build().unwrap();
+        .build().map_err(|_err| GatewayError::RuntimeStartError)?;
     let _guard = runtime.enter();
     runtime.block_on( async { start_gateway(config).await } );
     runtime.shutdown_background();
+
+    Ok(())
+}
+
+#[derive(Debug)]
+enum GatewayError {
+    ConfigFileLoadError(io::Error),
+    ConfigFileReadError(io::Error),
+    ConfigFileParseError(toml::de::Error),
+    ConfigError(ConfigError),
+    RuntimeStartError,
+}
+
+impl std::error::Error for GatewayError {
+}
+
+impl Display for GatewayError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GatewayError::ConfigFileLoadError(err) => { write!(f, "Error loading config file - {}.", err) }
+            GatewayError::ConfigFileReadError(err) => { write!(f, "Error reading config file contents - {}.", err) }
+            GatewayError::ConfigFileParseError(err) => { write!(f, "Error parsing config file - {}.", err) }
+            GatewayError::ConfigError(err) => { write!(f, "{}", err) }
+            GatewayError::RuntimeStartError => { write!(f, "Error starting Tokio runtime.") }
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -54,28 +78,47 @@ enum Event {
     Nop
 }
 
+/// Starts all necessary tasks and channels for the gateway.
+///
+/// A gateway consists of two sockets, both able to send and receive data.
+/// Either is the start or end of a encode/decode flow.
+/// In each flow there is either an encoder, or a decoder performing the DIS to C-DIS conversion or vice versa.
+/// Each flow of read-socket to encoder/decoder to write-socket is connected via mpsc channels.
+///
+/// Each task takes the receiver of a broadcast channel to receive `Command`s, and can emit `Event`s via an mpsc channel.
 async fn start_gateway(config: Config) {
-    let (cmd_tx, cmd_rx) = tokio::sync::broadcast::channel::<Command>(10);
-    let (event_tx, _event_rx) = tokio::sync::mpsc::channel::<Event>(100);
-    let (dis_socket_out_tx, dis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(10);
-    let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(10);
-    let (cdis_socket_out_tx, cdis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(10);
-    let (cdis_socket_in_tx, cdis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(10);
+    let (cmd_tx, cmd_rx) = tokio::sync::broadcast::channel::<Command>(COMMAND_CHANNEL_BUFFER_SIZE);
+    let (event_tx, _event_rx) = tokio::sync::mpsc::channel::<Event>(EVENT_CHANNEL_BUFFER_SIZE);
+    let (dis_socket_out_tx, dis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
+    let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
+    let (cdis_socket_out_tx, cdis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
+    let (cdis_socket_in_tx, cdis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
 
     let dis_socket = create_udp_socket(&config.dis_socket).await;
     let cdis_socket = create_udp_socket(&config.cdis_socket).await;
 
-    let dis_read_socket = reader_socket(dis_socket.clone(), dis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
-    let dis_write_socket = writer_socket(dis_socket.clone(), config.dis_socket.address, dis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
-    let cdis_read_socket = reader_socket(cdis_socket.clone(), cdis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
-    let cdis_write_socket = writer_socket(cdis_socket.clone(), config.cdis_socket.address, cdis_socket_in_rx, cmd_tx.subscribe(), event_tx.clone());
+    let dis_read_socket = reader_socket(
+        dis_socket.clone(), dis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
+    let dis_write_socket = writer_socket(
+        dis_socket.clone(), config.dis_socket.address, dis_socket_in_rx,
+        cmd_tx.subscribe(), event_tx.clone());
+    let cdis_read_socket = reader_socket(
+        cdis_socket.clone(), cdis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
+    let cdis_write_socket = writer_socket(
+        cdis_socket.clone(), config.cdis_socket.address, cdis_socket_in_rx,
+        cmd_tx.subscribe(), event_tx.clone());
     let h1 = tokio::spawn(dis_read_socket);
     let h2 = tokio::spawn(dis_write_socket);
     let h3 = tokio::spawn(cdis_read_socket);
     let h4 = tokio::spawn(cdis_write_socket);
-    let h5 = tokio::spawn(encoder(config, dis_socket_out_rx, cdis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
-    let h6 = tokio::spawn(decoder(config, cdis_socket_out_rx, dis_socket_in_tx, cmd_tx.subscribe(), event_tx.clone()));
+    let h5 = tokio::spawn(encoder(
+        config.mode, dis_socket_out_rx, cdis_socket_in_tx,
+        cmd_tx.subscribe(), event_tx.clone()));
+    let h6 = tokio::spawn(decoder(
+        config.mode, cdis_socket_out_rx, dis_socket_in_tx,
+        cmd_tx.subscribe(), event_tx.clone()));
 
+    // TODO decide if this is the neat way to handle cleaning up the tasks
     let (h1, h2, h3, h4, h5, h6) =
         tokio::join!(h1, h2, h3, h4, h5, h6);
     h1.unwrap();
@@ -86,6 +129,9 @@ async fn start_gateway(config: Config) {
     h6.unwrap();
 }
 
+/// Creates an UDP socket based on the settings contained in `endpoint`.
+/// The created `tokio::net::udp::UdpSocket` is returned wrapped in an `Arc`
+/// so that it can be used by multiple tasks (i.e., for both writing and sending).
 async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     use socket2::{Domain, Protocol, Socket, Type};
 
@@ -142,12 +188,14 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     Arc::new(socket)
 }
 
+/// Task that runs an UdpSocket for reading UDP packets from the network.
+/// Received packets will be send to the encoder/decoder task to which the `to_codec` channel is connected to.
 async fn reader_socket(socket: Arc<UdpSocket>,
                        to_codec: tokio::sync::mpsc::Sender<Bytes>,
                        mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                        _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut buf = BytesMut::with_capacity(1500);
-    buf.resize(1500, 0);
+    let mut buf = BytesMut::with_capacity(READER_SOCKET_BUFFER_SIZE_BYTES);
+    buf.resize(READER_SOCKET_BUFFER_SIZE_BYTES, 0);
 
     #[derive(Debug)]
     enum Action {
@@ -242,11 +290,11 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
     }
 }
 
-async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
+async fn encoder(mode: GatewayMode, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut encoder = Encoder::new(config.mode);
+    let mut encoder = Encoder::new(mode);
 
     loop {
         select! {
@@ -265,12 +313,12 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
     }
 }
 
-async fn decoder(config: Config,
+async fn decoder(mode: GatewayMode,
                  mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut decoder = Decoder::new(config.mode);
+    let mut decoder = Decoder::new(mode);
 
     loop {
         select! {
