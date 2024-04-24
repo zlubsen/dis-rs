@@ -8,7 +8,7 @@ use std::sync::Arc;
 use bytes::{BufMut, Bytes, BytesMut};
 use tokio::net::UdpSocket;
 use tokio::select;
-use tracing::{error, event, Level};
+use tracing::{error, event, info, Level, trace};
 use clap::Parser;
 
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, GatewayMode, UdpEndpoint, UdpMode};
@@ -23,6 +23,13 @@ const EVENT_CHANNEL_BUFFER_SIZE: usize = 50;
 const READER_SOCKET_BUFFER_SIZE_BYTES: usize = 1500;
 
 fn main() -> Result<(), GatewayError>{
+    tracing_subscriber::fmt()
+        .pretty()
+        // enable everything
+        .with_max_level(tracing::Level::TRACE)
+        // sets this to be the default, global collector for this application.
+        .init();
+
     let arguments = Arguments::parse();
 
     let mut file = File::open(arguments.config).map_err(|err| GatewayError::ConfigFileLoadError(err))?;
@@ -32,6 +39,14 @@ fn main() -> Result<(), GatewayError>{
     let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err |GatewayError::ConfigFileParseError(err) )?;
     let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigError(e))?;
     // TODO print the used configuration
+    info!("Running C-DIS Gateway");
+    if let Some(meta) = config_spec.metadata {
+        info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
+    }
+    info!("Running in {} mode.", config.mode);
+    info!("Hosting site at port {}.", config.site_host);
+    info!("DIS socket: {:?}.", config.dis_socket);
+    info!("C-DIS socket: {:?}.", config.cdis_socket);
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
@@ -245,6 +260,8 @@ async fn reader_socket(socket: Arc<UdpSocket>,
     }
 }
 
+/// Task that runs an UdpSocket for writing UDP packets to the network.
+/// Packets will be received from the encoder/decoder task to which the `to_codec` channel is connected to.
 async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
                        mut from_codec: tokio::sync::mpsc::Receiver<Vec<u8>>,
                        mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,

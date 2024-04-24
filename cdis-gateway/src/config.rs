@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Display, Formatter};
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use serde_derive::Deserialize;
 use clap::Parser;
@@ -59,6 +59,15 @@ impl TryFrom<&str> for GatewayMode {
             _ => Err(ConfigError::GatewayModeInvalid)
         }
 
+    }
+}
+
+impl Display for GatewayMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GatewayMode::FullUpdate => { write!(f, "Full Update") }
+            GatewayMode::PartialUpdate => { write!(f, "Partial Update") }
+        }
     }
 }
 
