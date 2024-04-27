@@ -1,17 +1,14 @@
-extern crate proc_macro;
-
-use std::str::FromStr;
 use proc_macro2::{Span, TokenStream};
-
-use syn::{Data, parse_macro_input, DeriveInput, Type, TypeParen};
 use quote::quote;
+use std::str::FromStr;
+use syn::{parse_macro_input, Data, DeriveInput, Type, TypeParen};
 
 /// Derive macro for reading and writing DIS PDU enumerated records from byte format into dis-rs data structures (enums) and vice versa.
 /// The derive macro will generate the correct From<T> trail implementations for enum data structures,
 /// provided that it is specified what representation (data type) is used in the wire specification (e.g., u8, u16, f32, ...).
 ///
 /// Example:
-/// '''
+/// ```rust
 /// #[derive(PduConversion)]
 /// #[repr(u8)]
 /// pub enum ForceId {
@@ -20,10 +17,10 @@ use quote::quote;
 ///     Opposing = 2,
 ///     Neutral = 3,
 /// }
-/// '''
+/// ```
 ///
 /// Will generate:
-/// '''rust
+/// ```rust
 /// impl From<u8> for ForceId {
 ///     fn from(value: u8) -> Self {
 ///         match value {
@@ -46,13 +43,12 @@ use quote::quote;
 ///         }
 ///     }
 /// }
-/// '''
+/// ```
 #[proc_macro_derive(PduConversion)]
 pub fn derive_pdu_field(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    let tokens =
-        derive_pdu_field_impl(&input).unwrap_or_else(|err| err.to_compile_error());
+    let tokens = derive_pdu_field_impl(&input).unwrap_or_else(|err| err.to_compile_error());
     tokens.into()
 }
 
@@ -79,9 +75,8 @@ fn derive_pdu_field_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
             Ok(Type::Paren(TypeParen { elem, .. })) => *elem,
             _ => continue,
         };
-        let inner_path = match &typ_paren {
-            Type::Path(t) => t,
-            _ => continue,
+        let Type::Path(inner_path) = &typ_paren else {
+            continue;
         };
         if let Some(seg) = inner_path.path.segments.last() {
             for t in &[
@@ -101,18 +96,34 @@ fn derive_pdu_field_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
 
     let variants = match &input.data {
         Data::Enum(v) => &v.variants,
-        _ => return Err(syn::Error::new(Span::call_site(), "This macro only supports enums.")),
+        _ => {
+            return Err(syn::Error::new(
+                Span::call_site(),
+                "This macro only supports enums.",
+            ))
+        }
     };
     for variant in variants {
         let ident = &variant.ident;
         let discriminant = if let Some((_, expr)) = &variant.discriminant {
             quote! { #expr }
         } else {
-            return Err(syn::Error::new(Span::call_site(), "Discriminant value must be set."))
+            return Err(syn::Error::new(
+                Span::call_site(),
+                "Discriminant value must be set.",
+            ));
         };
 
         from_arms.push(quote! {#discriminant => #name::#ident});
-        let into_value_formatted = TokenStream::from_str(format!("{}{}", quote! { #discriminant }, quote! { #discriminant_type }).as_str()).unwrap();
+        let into_value_formatted = TokenStream::from_str(
+            format!(
+                "{}{}",
+                quote! { #discriminant },
+                quote! { #discriminant_type }
+            )
+            .as_str(),
+        )
+        .unwrap();
         into_arms.push(quote! {#name::#ident => { #into_value_formatted }});
     }
 

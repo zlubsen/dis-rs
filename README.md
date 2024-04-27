@@ -1,103 +1,107 @@
 # DIS for Rust
 
-dis-rs is an implementation of the Distributed Interactive Simulation (DIS) protocol for Rust. It provides structures and functions to build PDUs in applications, send them out via a network and parse received byte streams into PDUs.
+`dis-rs` is an implementation of the `Distributed Interactive Simulation` (`DIS`) protocol for Rust.
+It provides structures and functions to build `PDU`s in applications, send them out via a network and parse received byte streams into PDUs.
 
-Constructing PDUs is done via builder pattern constructors.
+Constructing `PDU`s is done via builder pattern constructors.
 
-Given a buffer with data from the network, the library can return multiple PDUs in multiple DIS versions present in the buffer.
+Given a buffer with data from the network, the library can return multiple `PDU`s in multiple `DIS` versions present in the buffer.
 
-The library supports both versions 6 and 7 of the standard. As a rule of thumb, the lib is modeled mostly towards supporting v7 (in terms of how the data is modelled), and provides compatibility with how thing were in v6 mostly transparent for the user (i.e., an incoming v6 PDU is parsed and then stored in a v7 model and put back on the wire based on the version specified in the header).
+The library supports both versions `6` and `7` of the standard.
+As a rule of thumb, the lib is modeled mostly towards supporting `v7` (in terms of how the data is modelled), and provides compatibility with how thing were in v6 mostly transparent for the user (i.e., an incoming `v6` `PDU` is parsed and then stored in a `v7` model and put back on the wire based on the version specified in the header).
 
 ## Features
 
-Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means reading a PDU from a byte stream. 'Write' means constructing a PDU in a struct and serializing it to a buffer.
+Here is an overview of the `DIS` `PDU`s/features supported by `dis-rs`:
 
-| PDU                             | Support |
-|---------------------------------|---------|
-| Other                           | V       |
-| EntityState                     | V       |
-| Fire                            | V       |
-| Detonation                      | V       |
-| Collision                       | V       |
-| ServiceRequest                  | V       |
-| ResupplyOffer                   | V       |
-| ResupplyReceived                | V       |
-| ResupplyCancel                  | V       |
-| RepairComplete                  | V       |
-| RepairResponse                  | V       |
-| CreateEntity                    | V       |
-| RemoveEntity                    | V       |
-| StartResume                     | V       |
-| StopFreeze                      | V       |
-| Acknowledge                     | V       |
-| ActionRequest                   | V       |
-| ActionResponse                  | V       |
-| DataQuery                       | V       |
-| SetData                         | V       |
-| Data                            | V       |
-| EventReport                     | V       |
-| Comment                         | V       |
-| ElectromagneticEmission         | V       |
-| Designator                      | V       |
-| Transmitter                     | V       |
-| Signal                          | V       |
-| Receiver                        | V       |
-| IFF                             | V       |
-| UnderwaterAcoustic              | V       |
-| SupplementalEmissionEntityState | V       |
-| IntercomSignal                  |         |
-| IntercomControl                 |         |
-| AggregateState                  | V       |
-| IsGroupOf                       | V       |
-| TransferOwnership               | V       |
-| IsPartOf                        | V       |
-|   MinefieldState |         |
-|   MinefieldQuery |         |
-|    MinefieldData |         |
-|    MinefieldResponseNACK |         |
-|    EnvironmentalProcess |         |
-|    GriddedData |         |
-|    PointObjectState |         |
-|    LinearObjectState |         |
-|    ArealObjectState |         |
-|    TSPI |         |
-|    Appearance |         |
-|    ArticulatedParts |         |
-|    LEFire |         |
-|    LEDetonation |         |
-|     CreateEntityR | V       |
-|     RemoveEntityR | V       |
-|     StartResumeR | V       |
-|     StopFreezeR | V       |
-|     AcknowledgeR | V       |
-|     ActionRequestR | V       |
-|     ActionResponseR | V       |
-|     DataQueryR | V       |
-|     SetDataR | V       |
-|     DataR | V       |
-|     EventReportR | V       |
-|     CommentR | V       |
-|     RecordR | V       |
-|     SetRecordR | V       |
-|     RecordQueryR | V       |
-|     CollisionElastic | V       |
-|     EntityStateUpdate | V       |
-|    DirectedEnergyFire |         |
-|    EntityDamageStatus |         |
-|    InformationOperationsAction |         |
-|    InformationOperationsReport |         |
-|    Attribute | V       |
+| **PDU**                           |    **Support**     |
+| :-------------------------------- | :----------------: |
+| `Other`                           | :heavy_check_mark: |
+| `EntityState`                     | :heavy_check_mark: |
+| `Fire`                            | :heavy_check_mark: |
+| `Detonation`                      | :heavy_check_mark: |
+| `Collision`                       | :heavy_check_mark: |
+| `ServiceRequest`                  | :heavy_check_mark: |
+| `ResupplyOffer`                   | :heavy_check_mark: |
+| `ResupplyReceived`                | :heavy_check_mark: |
+| `ResupplyCancel`                  | :heavy_check_mark: |
+| `RepairComplete`                  | :heavy_check_mark: |
+| `RepairResponse`                  | :heavy_check_mark: |
+| `CreateEntity`                    | :heavy_check_mark: |
+| `RemoveEntity`                    | :heavy_check_mark: |
+| `StartResume`                     | :heavy_check_mark: |
+| `StopFreeze`                      | :heavy_check_mark: |
+| `Acknowledge`                     | :heavy_check_mark: |
+| `ActionRequest`                   | :heavy_check_mark: |
+| `ActionResponse`                  | :heavy_check_mark: |
+| `DataQuery`                       | :heavy_check_mark: |
+| `SetData`                         | :heavy_check_mark: |
+| `Data`                            | :heavy_check_mark: |
+| `EventReport`                     | :heavy_check_mark: |
+| `Comment`                         | :heavy_check_mark: |
+| `ElectromagneticEmission`         | :heavy_check_mark: |
+| `Designator`                      | :heavy_check_mark: |
+| `Transmitter`                     | :heavy_check_mark: |
+| `Signal`                          | :heavy_check_mark: |
+| `Receiver`                        | :heavy_check_mark: |
+| `IFF`                             | :heavy_check_mark: |
+| `UnderwaterAcoustic`              | :heavy_check_mark: |
+| `SupplementalEmissionEntityState` | :heavy_check_mark: |
+| `IntercomSignal`                  |        :x:         |
+| `IntercomControl`                 |        :x:         |
+| `AggregateState`                  | :heavy_check_mark: |
+| `IsGroupOf`                       | :heavy_check_mark: |
+| `TransferOwnership`               | :heavy_check_mark: |
+| `IsPartOf`                        | :heavy_check_mark: |
+| `MinefieldState`                  |        :x:         |
+| `MinefieldQuery`                  |        :x:         |
+| `MinefieldData`                   |        :x:         |
+| `MinefieldResponseNACK`           |        :x:         |
+| `EnvironmentalProcess`            |        :x:         |
+| `GriddedData`                     |        :x:         |
+| `PointObjectState`                |        :x:         |
+| `LinearObjectState`               |        :x:         |
+| `ArealObjectState`                |        :x:         |
+| `TSPI`                            |        :x:         |
+| `Appearance`                      |        :x:         |
+| `ArticulatedParts`                |        :x:         |
+| `LEFire`                          |        :x:         |
+| `LEDetonation`                    |        :x:         |
+| `CreateEntityR`                   | :heavy_check_mark: |
+| `RemoveEntityR`                   | :heavy_check_mark: |
+| `StartResumeR`                    | :heavy_check_mark: |
+| `StopFreezeR`                     | :heavy_check_mark: |
+| `AcknowledgeR`                    | :heavy_check_mark: |
+| `ActionRequestR`                  | :heavy_check_mark: |
+| `ActionResponseR`                 | :heavy_check_mark: |
+| `DataQueryR`                      | :heavy_check_mark: |
+| `SetDataR`                        | :heavy_check_mark: |
+| `DataR`                           | :heavy_check_mark: |
+| `EventReportR`                    | :heavy_check_mark: |
+| `CommentR`                        | :heavy_check_mark: |
+| `RecordR`                         | :heavy_check_mark: |
+| `SetRecordR`                      | :heavy_check_mark: |
+| `RecordQueryR`                    | :heavy_check_mark: |
+| `CollisionElastic`                | :heavy_check_mark: |
+| `EntityStateUpdate`               | :heavy_check_mark: |
+| `DirectedEnergyFire`              |        :x:         |
+| `EntityDamageStatus`              |        :x:         |
+| `InformationOperationsAction`     |        :x:         |
+| `InformationOperationsReport`     |        :x:         |
+| `Attribute`                       | :heavy_check_mark: |
 
 ### Enumerations
-dis-rs uses the SISO-REF-010 reference to map the wire level encoding to actual names of enumerations and values in code.
+
+`dis-rs` uses the `SISO-REF-010` reference to map the wire level encoding to actual names of enumerations and values in code.
 E.g., one can use the enum `PduType::EntityState` in code instead of remembering that a `1` means that specific value.
 
-The code for these enums is generated using a build script from the published SISO-REF-010.xml file. Which is currently a v30.
+The code for these enums is generated using a build script from the published `SISO-REF-010.xml` file. Which is currently a `v32`.
 
 ## Usage
 
 ### Constructing PDUs
-PDUs are constructed using a `default()` or `builder()` associated functions on the structs for `PduHeader` or `PduBody`s.
+
+`PDU`s are constructed using a `default()` or `builder()` associated functions on the structs for `PduHeader` or `PduBody`s.
 Using `SomePdu::builder()` constructs a Builder for the PDU.
 The Builders start with the default values for PDU fields, and you have to set fields using `.with_field_name()` functions.
 The `build()` function turns the Builder into the typed body of the PDU you are building (e.g., `Signal`).
@@ -108,17 +112,22 @@ The specific body structs, e.g. an `EntityState`, can be wrapped / converted to 
 Further, the body can be merged with a `PduHeader` using the associated function `Pdu::finalize_from_parts(header, body, timestamp)`. This will give you a complete PDU.
 
 ### Parsing
+
 The library exposes three functions to parse binary data (the DIS wire format) into PDUs from a buffer: `parse()`, `parse_v6_pdus()` and `parse_v7_pdus()`.
 Each function works the same, where the general `parse()` function returns all valid PDUs from the buffer and the others filter out v6 or v7 version PDUs.
 
 ### Serializing
-To serialize a PDU to bytes (the DIS wire format), simply call the `serialize()` function on a `Pdu`, providing the buffer as argument.
+
+To serialize a `PDU` to bytes (the `DIS` wire format), simply call the `serialize()` function on a `Pdu`, providing the buffer as argument.
 
 ## Resources
 
-- SISO: https://www.sisostds.org - Organisation maintaining the DIS standard and reference material.
-- A lot of great background material on DIS can be found at OpenDIS: http://open-dis.org and https://github.com/open-dis.
-- Wikipedia: https://en.wikipedia.org/wiki/Distributed_Interactive_Simulation.
-- DIS Data Dictionary (version 6 only): http://faculty.nps.edu/brutzman/vrtp/mil/navy/nps/disEnumerations/JdbeHtmlFiles/pdu/.
+- SISO: <https://www.sisostds.org> - Organisation maintaining the DIS standard and reference material.
+- A lot of great background material on DIS can be found at OpenDIS: <http://open-dis.org> and <https://github.com/open-dis>.
+- Wikipedia: <https://en.wikipedia.org/wiki/Distributed_Interactive_Simulation>.
+- DIS Data Dictionary (version 6 only): <http://faculty.nps.edu/brutzman/vrtp/mil/navy/nps/disEnumerations/JdbeHtmlFiles/pdu/>.
 
-Copyright (C) 2024 Zeeger Lubsen
+## License
+
+This project is licensed under the [MIT](https://opensource.org/licenses/MIT) License. \
+See [LICENSE](./LICENSE) file for details.

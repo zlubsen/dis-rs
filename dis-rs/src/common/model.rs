@@ -1604,9 +1604,9 @@ impl RecordSet {
 mod tests {
     use super::*;
 
-    const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
-    const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
-    const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
+    const ENTITY_TYPE_STR: &str = "0:1:2:3:4:5:6";
+    const ENTITY_TYPE_STR_INVALID: &str = "0,1,2,3,4,5,6";
+    const ENTITY_TYPE_STR_INVALID_EXTRA: &str = "0:1:2:3:4:5:six";
     const ENTITY_TYPE: EntityType = EntityType {
         kind: EntityKind::Other,
         domain: PlatformDomain::Land,

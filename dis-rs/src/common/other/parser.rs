@@ -135,7 +135,7 @@ mod tests {
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {
             assert_eq!(pdu.body.len(), 10);
-            assert_eq!(*pdu.body.get(0).unwrap(), 1u8);
+            assert_eq!(*pdu.body.first().unwrap(), 1u8);
         }
         assert!(input.is_empty());
     }

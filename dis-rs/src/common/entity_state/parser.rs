@@ -224,19 +224,19 @@ mod tests {
 
             if let EntityAppearance::AirPlatform(appearance) = pdu.entity_appearance {
                 assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-                assert_eq!(appearance.propulsion_killed, false);
+                assert!(!appearance.propulsion_killed);
                 assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-                assert_eq!(appearance.is_smoke_emanating, false);
-                assert_eq!(appearance.is_engine_emitting_smoke, false);
+                assert!(!appearance.is_smoke_emanating);
+                assert!(!appearance.is_engine_emitting_smoke);
                 assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
                 assert_eq!(appearance.canopy_troop_door, AppearanceCanopy::SingleCanopySingleTroopDoorOpen);
-                assert_eq!(appearance.landing_lights_on, false);
-                assert_eq!(appearance.navigation_lights_on, false);
-                assert_eq!(appearance.anticollision_lights_on, false);
-                assert_eq!(appearance.is_flaming, false);
-                assert_eq!(appearance.afterburner_on, false);
-                assert_eq!(appearance.is_frozen, false);
-                assert_eq!(appearance.power_plant_on, false);
+                assert!(!appearance.landing_lights_on);
+                assert!(!appearance.navigation_lights_on);
+                assert!(!appearance.anticollision_lights_on);
+                assert!(!appearance.is_flaming);
+                assert!(!appearance.afterburner_on);
+                assert!(!appearance.is_frozen);
+                assert!(!appearance.power_plant_on);
                 assert_eq!(appearance.state, AppearanceEntityorObjectState::Active);
             } else {
                 assert!(false)
@@ -244,15 +244,15 @@ mod tests {
 
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            let capabilities : EntityCapabilities = pdu.entity_capabilities.into();
+            let capabilities : EntityCapabilities = pdu.entity_capabilities;
             if let EntityCapabilities::AirPlatformEntityCapabilities(capabilities) = capabilities {
-                assert_eq!(capabilities.ammunition_supply, false);
-                assert_eq!(capabilities.fuel_supply, false);
-                assert_eq!(capabilities.recovery, false);
-                assert_eq!(capabilities.repair, false);
+                assert!(!capabilities.ammunition_supply);
+                assert!(!capabilities.fuel_supply);
+                assert!(!capabilities.recovery);
+                assert!(!capabilities.repair);
             }
             assert_eq!(pdu.variable_parameters.len(), 4);
-            let parameter_1 = pdu.variable_parameters.get(0).unwrap();
+            let parameter_1 = pdu.variable_parameters.first().unwrap();
             if let VariableParameter::Articulated(part) = parameter_1 {
                 assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
                 assert_eq!(part.attachment_id, 0u16);
@@ -316,14 +316,14 @@ mod tests {
 
         if let EntityAppearance::AirPlatform(appearance) = appearance {
             assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-            assert_eq!(appearance.propulsion_killed, false);
+            assert!(!appearance.propulsion_killed);
             assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-            assert_eq!(appearance.is_smoke_emanating, false);
-            assert_eq!(appearance.is_engine_emitting_smoke, false);
+            assert!(!appearance.is_smoke_emanating);
+            assert!(!appearance.is_engine_emitting_smoke);
             assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
             assert_eq!(appearance.canopy_troop_door , AppearanceCanopy::NotApplicable);
-            assert_eq!(appearance.landing_lights_on, false);
-            assert_eq!(appearance.is_flaming, false);
+            assert!(!appearance.landing_lights_on);
+            assert!(!appearance.is_flaming);
         } else {
             assert!(false);
         }
@@ -340,8 +340,8 @@ mod tests {
         let (input, appearance) = res.expect("value is Ok");
 
         if let EntityAppearance::AirPlatform(appearance) = appearance {
-            assert_eq!(appearance.is_smoke_emanating, true);
-            assert_eq!(appearance.is_engine_emitting_smoke, true);
+            assert!(appearance.is_smoke_emanating);
+            assert!(appearance.is_engine_emitting_smoke);
         } else {
             assert!(false);
         }
