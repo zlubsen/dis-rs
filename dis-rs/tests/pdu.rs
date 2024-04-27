@@ -98,5 +98,5 @@ fn test_insufficient_buffer_capacity() {
             pdu.pdu_length(),
             SOME_SMALL_AMOUNT_OF_BYTES
         ))
-    )
+    );
 }
