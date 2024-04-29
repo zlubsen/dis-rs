@@ -14,41 +14,41 @@ pub trait Codec {
 
     fn encode(item: &Self::Counterpart) -> Self;
     fn decode(&self) -> Self::Counterpart;
-
-    fn encode_partial(item: &Self::Counterpart, last: &Self::Counterpart) -> Self where Self: Sized {
-        Self::encode(item)
-    }
-
-    fn decode_partial(&self, last: &Self::Counterpart) -> Self::Counterpart {
-        Self::decode(self)
-    }
 }
 
-impl Codec for CdisPdu {
+pub trait CodecPdu {
+    type Counterpart;
+
+    fn encode(item: &Self::Counterpart, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self;
+
+    fn decode(&self, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self::Counterpart;
+}
+
+impl CodecPdu for CdisPdu {
     type Counterpart = Pdu;
 
-    fn encode(item: &Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self {
         CdisPdu::finalize_from_parts(
             CdisHeader::encode(&item.header),
-            CdisBody::encode(&item.body),
+            CdisBody::encode(&item.body, tracked.map(|pdu| &pdu.body), full_update),
             None::<TimeStamp>)
     }
 
-    fn decode(&self) -> Self::Counterpart {
+    fn decode(&self, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self::Counterpart {
         let header = self.header.decode();
         let ts = header.time_stamp;
         Self::Counterpart::finalize_from_parts(
             header,
-            self.body.decode(),
+            self.body.decode(tracked.map(|pdu| &pdu.body), full_update),
             ts
         )
     }
 }
 
-impl Codec for CdisBody {
+impl CodecPdu for CdisBody {
     type Counterpart = PduBody;
 
-    fn encode(item: &Self::Counterpart) -> Self {
+    fn encode(item: &Self::Counterpart, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self {
         match item {
             PduBody::Other(_) => { Self::Unsupported(Unsupported) }
             PduBody::EntityState(body) => { Self::EntityState(EntityState::encode(body)) }
@@ -126,7 +126,7 @@ impl Codec for CdisBody {
         }
     }
 
-    fn decode(&self) -> Self::Counterpart {
+    fn decode(&self, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self::Counterpart {
         match self {
             // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
             CdisBody::EntityState(body) => { PduBody::EntityState(body.decode()) }

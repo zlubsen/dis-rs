@@ -17,7 +17,7 @@ pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
-pub use codec::Codec;
+pub use codec::CodecPdu;
 
 pub trait BodyProperties {
     type FieldsPresent;

@@ -1,24 +1,36 @@
 use std::collections::HashMap;
+
 use bytes::{Bytes, BytesMut};
-use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Codec, SerializeCdisPdu};
+
+use cdis_assemble::{BitBuffer, CdisError, CdisPdu, CodecPdu, SerializeCdisPdu};
 use cdis_assemble::constants::MTU_BYTES;
 use dis_rs::model::Pdu;
 use dis_rs::{DisError, parse};
+
 use crate::config::GatewayMode;
+
+struct TrackedState {
+    entity_state: dis_rs::entity_state::model::EntityState,
+    ee: dis_rs::electromagnetic_emission::model::ElectromagneticEmission,
+    transmitter: dis_rs::transmitter::model::Transmitter,
+    designator: dis_rs::designator::model::Designator,
+    iff: dis_rs::iff::model::Iff,
+}
 
 pub struct Encoder {
     mode: GatewayMode,
     cdis_buffer: BitBuffer,
-    // hold a buffer/map of received PDUs to look up which fields can be left out
-    lookup: HashMap<(u16,u16,u16), Pdu>
+    lookup: HashMap<(u16,u16,u16), TrackedState>,
+    cdis_full_update_period: f32,
 }
 
 impl Encoder {
-    pub fn new(mode: GatewayMode) -> Self {
+    pub fn new(mode: GatewayMode, cdis_full_update_period: f32) -> Self {
         Self {
             mode,
             cdis_buffer: cdis_assemble::create_bit_buffer(),
             lookup: HashMap::new(),
+            cdis_full_update_period,
         }
     }
 
@@ -55,7 +67,18 @@ impl Encoder {
     // TODO make fallible, result from encode function
     pub fn encode_pdus(&self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
-            .map(CdisPdu::encode )
+            // TODO
+            // switch between partial and full update modes
+            // if full update mode, just encode and send
+            // if partial update mode, check if we already have stored a previous snapshot of the PDU type
+            // if not, store the PDU, record the time for the update period, send a full update cdis PDU
+            // if yes, check if the full_update_period has elapsed;
+            //     if yes, store the PDU, record the time, and send a full update cdis PDU
+            //     if not, compute a partial update cdis PDU and send it.
+            //         Computation happens by comparing optional fields and leaving them out if not changed
+            .map(|pdu| {
+                CdisPdu::encode(pdu, None, true)
+            } )
             .collect();
         cdis_pdus
     }
@@ -64,15 +87,19 @@ impl Encoder {
 pub struct Decoder {
     mode: GatewayMode,
     dis_buffer: BytesMut,
+    lookup: HashMap<(u16,u16,u16), TrackedState>,
+    cdis_full_update_period: f32,
 }
 
 impl Decoder {
-    pub fn new(mode: GatewayMode) -> Self {
+    pub fn new(mode: GatewayMode, cdis_full_update_period: f32) -> Self {
         let dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
         Self {
             mode,
             dis_buffer,
+            lookup: HashMap::new(),
+            cdis_full_update_period,
         }
     }
 
@@ -114,7 +141,15 @@ impl Decoder {
     // TODO make fallible, result from encode function
     pub fn decode_pdus(&self, pdus: &[CdisPdu]) -> Vec<Pdu> {
         let dis_pdus: Vec<Pdu> = pdus.iter()
-            .map(|cdis_pdu| cdis_pdu.decode() )
+            // TODO
+            // switch between partial and full update modes
+            // in full update mode, decode the cdis PDU and send out the DIS pdu.
+            // in partial update mode,
+            // when a full update cdis PDU is received, decode to DIS and store the PDU, and record time
+            // when a partial update cdis PDU is received
+            //     check if we already have a full update stored to fill in the blanks, send out DIS
+            //     if no full update is present, discard the cdis PDU
+            .map(|cdis_pdu| cdis_pdu.decode(None, true) )
             .collect();
         dis_pdus
     }

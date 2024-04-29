@@ -9,6 +9,7 @@ const DEFAULT_ENDPOINT_MODE: UdpMode = UdpMode::UniCast;
 const DEFAULT_GATEWAY_MODE: GatewayMode = GatewayMode::FullUpdate;
 const DEFAULT_SITE_HOST_PORT: u16 = 8080;
 const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
+const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub(crate) struct Config {
@@ -16,17 +17,19 @@ pub(crate) struct Config {
     pub(crate) cdis_socket: UdpEndpoint,
     pub(crate) mode: GatewayMode,
     pub(crate) site_host: u16,
+    pub(crate) hbt_cdis_full_update_mplier: f32,
 }
 
 impl TryFrom<&ConfigSpec> for Config {
     type Error = ConfigError;
 
     fn try_from(value: &ConfigSpec) -> Result<Self, Self::Error> {
-        let mode = if let Some(mode) = &value.mode {
+        let mode = if let Some(mode) = &value.update_mode {
             GatewayMode::try_from(mode.as_str())?
         } else {
             DEFAULT_GATEWAY_MODE
         };
+        let hbt_cdis_full_update_mplier = value.hbt_cdis_full_update_mplier.unwrap_or(DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER);
 
         let dis_socket = UdpEndpoint::try_from(&value.dis)?;
         let cdis_socket = UdpEndpoint::try_from(&value.cdis)?;
@@ -38,6 +41,7 @@ impl TryFrom<&ConfigSpec> for Config {
             cdis_socket,
             mode,
             site_host,
+            hbt_cdis_full_update_mplier,
         })
     }
 }
@@ -54,8 +58,8 @@ impl TryFrom<&str> for GatewayMode {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "fullupdate" => Ok(Self::FullUpdate),
-            "partialupdate" => Ok(Self::PartialUpdate),
+            "full_update" => Ok(Self::FullUpdate),
+            "partial_update" => Ok(Self::PartialUpdate),
             _ => Err(ConfigError::GatewayModeInvalid)
         }
 
@@ -139,7 +143,8 @@ pub struct Arguments {
 #[derive(Debug, Deserialize)]
 pub struct ConfigSpec {
     pub metadata : Option<MetaData>,
-    pub mode : Option<String>,
+    pub update_mode : Option<String>,
+    pub hbt_cdis_full_update_mplier: Option<f32>,
     pub block_host : Option<bool>,
     pub dis: EndPointSpec,
     pub cdis: EndPointSpec,

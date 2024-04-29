@@ -4,8 +4,8 @@ name = "Test Config for Localhost"
 author = "zlubsen"
 version = "0.1"
 
-# The mode of the gateway is either "fullupdate" or "partialupdate"; Optional value, defaults to FullUpdate mode
-mode = "fullupdate"
+# The mode of the gateway is either "full_update" or "partial_update"; Optional value, defaults to FullUpdate mode
+update_mode = "full_update"
 
 # The [dis] entry specifies the endpoint (interface and remote address) for receiving/sending DIS PDUs
 [dis]

@@ -10,9 +10,9 @@ fn start_site() -> Router {
     let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
     // build our application with a route
     Router::new()
-        .fallback_service(static_files_service)
-        // .route("/sse", get(sse_handler))
-        .layer(TraceLayer::new_for_http())
+        // .fallback_service(static_files_service)
+        // // .route("/sse", get(sse_handler))
+        // .layer(TraceLayer::new_for_http())
 }
 
 // async fn sse_handler(

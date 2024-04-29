@@ -5,8 +5,8 @@ name = "Sample Gateway Configuration - FZ16"
 author = "zlubsen"
 version = "0.1"
 
-# The mode of the gateway is either "FullUpdate" or "PartialUpdate"; Optional value, defaults to FullUpdate mode
-mode = "FullUpdate"
+# The mode of the gateway is either "full_update" or "partial_update"; Optional value, defaults to FullUpdate mode
+update_mode = "full_update"
 
 # The [dis] entry specifies the endpoint (interface and remote address) for receiving/sending DIS PDUs
 [dis]

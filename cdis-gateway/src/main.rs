@@ -129,10 +129,10 @@ async fn start_gateway(config: Config) {
         tokio::spawn(cdis_read_socket),
         tokio::spawn(cdis_write_socket),
         tokio::spawn(encoder(
-            config.mode, dis_socket_out_rx, cdis_socket_in_tx,
+            config.clone(), dis_socket_out_rx, cdis_socket_in_tx,
             cmd_tx.subscribe(), event_tx.clone())),
         tokio::spawn(decoder(
-            config.mode, cdis_socket_out_rx, dis_socket_in_tx,
+            config.clone(), cdis_socket_out_rx, dis_socket_in_tx,
             cmd_tx.subscribe(), event_tx.clone()))
     );
 
@@ -322,11 +322,11 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
     }
 }
 
-async fn encoder(mode: GatewayMode, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
+async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut encoder = Encoder::new(mode);
+    let mut encoder = Encoder::new(config.mode, config.hbt_cdis_full_update_mplier);
 
     loop {
         select! {
@@ -345,12 +345,12 @@ async fn encoder(mode: GatewayMode, mut channel_in: tokio::sync::mpsc::Receiver<
     }
 }
 
-async fn decoder(mode: GatewayMode,
+async fn decoder(config: Config,
                  mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut decoder = Decoder::new(mode);
+    let mut decoder = Decoder::new(config.mode, config.hbt_cdis_full_update_mplier);
 
     loop {
         select! {
