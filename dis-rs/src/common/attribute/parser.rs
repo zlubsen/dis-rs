@@ -48,7 +48,7 @@ pub(crate) fn attribute_record(input: &[u8]) -> IResult<&[u8], AttributeRecord> 
     let (input, record_type) = be_u32(input)?;
     let record_type = VariableRecordType::from(record_type);
     let (input, record_length_octets) = be_u16(input)?;
-    let (input, fields) = take(record_length_octets - BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS)(input)?;
+    let (input, fields) = take(record_length_octets.saturating_sub(BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS))(input)?;
 
     Ok((input, AttributeRecord::new()
         .with_record_type(record_type)

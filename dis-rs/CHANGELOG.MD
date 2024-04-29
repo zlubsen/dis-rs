@@ -4,7 +4,13 @@
 
 Changed `DisError` to use `thiserror` crate, so `DisError` now implements `std::error::Error`.
 
-...
+Implemented `Display` for EntityId (`"site:application:entity"`).
+
+Removed possible panics by replacing subtractions with `saturating_sub()` in PDU parsers.
+
+Added MSRV (1.73).
+
+Replaced generated code formatting using rustfmt with prettyplease crate, as to not rely on rustfmt to be installed.
 
 ## 0.8.0 - 2024-04-03
 
