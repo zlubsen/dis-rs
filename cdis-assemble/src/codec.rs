@@ -14,6 +14,14 @@ pub trait Codec {
 
     fn encode(item: &Self::Counterpart) -> Self;
     fn decode(&self) -> Self::Counterpart;
+
+    fn encode_partial(item: &Self::Counterpart, last: &Self::Counterpart) -> Self where Self: Sized {
+        Self::encode(item)
+    }
+
+    fn decode_partial(&self, last: &Self::Counterpart) -> Self::Counterpart {
+        Self::decode(self)
+    }
 }
 
 impl Codec for CdisPdu {

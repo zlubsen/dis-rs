@@ -16,6 +16,7 @@ use crate::codec::{Decoder, Encoder};
 
 mod config;
 mod codec;
+mod site;
 
 const DATA_CHANNEL_BUFFER_SIZE: usize = 20;
 const COMMAND_CHANNEL_BUFFER_SIZE: usize = 10;
@@ -39,7 +40,7 @@ fn main() -> Result<(), GatewayError>{
     let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err |GatewayError::ConfigFileParseError(err) )?;
     let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigError(e))?;
     // TODO print the used configuration
-    info!("Running C-DIS Gateway");
+    info!("*** C-DIS Gateway ***");
     if let Some(meta) = config_spec.metadata {
         info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
     }
@@ -68,8 +69,7 @@ enum GatewayError {
     RuntimeStartError,
 }
 
-impl std::error::Error for GatewayError {
-}
+impl std::error::Error for GatewayError {}
 
 impl Display for GatewayError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

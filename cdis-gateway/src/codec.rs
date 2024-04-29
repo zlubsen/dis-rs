@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use bytes::{Bytes, BytesMut};
 use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Codec, SerializeCdisPdu};
 use cdis_assemble::constants::MTU_BYTES;
@@ -8,15 +9,16 @@ use crate::config::GatewayMode;
 pub struct Encoder {
     mode: GatewayMode,
     cdis_buffer: BitBuffer,
-    // hold a bytes buffer to convert the bitbuffer to bytes?
     // hold a buffer/map of received PDUs to look up which fields can be left out
+    lookup: HashMap<(u16,u16,u16), Pdu>
 }
 
 impl Encoder {
     pub fn new(mode: GatewayMode) -> Self {
         Self {
             mode,
-            cdis_buffer: cdis_assemble::create_bit_buffer()
+            cdis_buffer: cdis_assemble::create_bit_buffer(),
+            lookup: HashMap::new(),
         }
     }
 
@@ -43,7 +45,7 @@ impl Encoder {
                 self.encode_pdus(&pdus)
             }
             Err(err) => {
-                println!("{}", err);
+                println!("{:?}", err);
                 Vec::new()
             }
         };
