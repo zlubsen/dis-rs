@@ -1,36 +1,58 @@
-use std::collections::HashMap;
+use std::time::Duration;
 
 use bytes::{Bytes, BytesMut};
 
-use cdis_assemble::{BitBuffer, CdisError, CdisPdu, CodecPdu, SerializeCdisPdu};
+use cdis_assemble::{BitBuffer, CdisError, CdisPdu, SerializeCdisPdu};
+use cdis_assemble::codec::{CodecOptions, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
+use cdis_assemble::entity_state::codec::{DecoderStateEntityState};
 use dis_rs::model::Pdu;
 use dis_rs::{DisError, parse};
 
-use crate::config::GatewayMode;
+use crate::config::{Config, GatewayMode};
 
-struct TrackedState {
-    entity_state: dis_rs::entity_state::model::EntityState,
-    ee: dis_rs::electromagnetic_emission::model::ElectromagneticEmission,
-    transmitter: dis_rs::transmitter::model::Transmitter,
-    designator: dis_rs::designator::model::Designator,
-    iff: dis_rs::iff::model::Iff,
-}
+// enum StatefulPduUpdateType {
+//     FirstOccurrenceFull,
+//     WithinHeartbeatPartial,
+//     HeartbeatElapsedFull,
+// }
 
+// fn is_stateful_pdu_type(pdu: &Pdu) -> bool {
+//     match pdu.header.pdu_type {
+//         PduType::EntityState |
+//         PduType::ElectromagneticEmission |
+//         PduType::Transmitter |
+//         PduType::Designator |
+//         PduType::IFF => { true }
+//         _ => { false }
+//     }
+// }
+
+/// The `Encoder` manages the configuration and state of the encoding of DIS PDUs to C-DIS PDUs.
 pub struct Encoder {
-    mode: GatewayMode,
+    codec_options: CodecOptions,
     cdis_buffer: BitBuffer,
-    lookup: HashMap<(u16,u16,u16), TrackedState>,
-    cdis_full_update_period: f32,
+    state: EncoderState,
 }
 
 impl Encoder {
-    pub fn new(mode: GatewayMode, cdis_full_update_period: f32) -> Self {
+    pub fn new(config: &Config) -> Self {
+        let codec_options = CodecOptions {
+            update_mode: match config.mode.0 {
+                CodecUpdateMode::FullUpdate => { CodecUpdateMode::FullUpdate }
+                CodecUpdateMode::PartialUpdate => { CodecUpdateMode::PartialUpdate }
+            },
+            optimize_mode: config.optimization.0,
+            use_guise: config.use_guise,
+            federation_parameters: config.federation_parameters,
+        };
+
         Self {
-            mode,
+            codec_options,
             cdis_buffer: cdis_assemble::create_bit_buffer(),
-            lookup: HashMap::new(),
-            cdis_full_update_period,
+            state: EncoderState {
+                entity_state: Default::default(),
+            },
         }
     }
 
@@ -65,11 +87,11 @@ impl Encoder {
     }
 
     // TODO make fallible, result from encode function
-    pub fn encode_pdus(&self, pdus: &[Pdu]) -> Vec<CdisPdu> {
+    pub fn encode_pdus(&mut self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
             // TODO
             // switch between partial and full update modes
-            // if full update mode, just encode and send
+            // V if full update mode, just encode and send
             // if partial update mode, check if we already have stored a previous snapshot of the PDU type
             // if not, store the PDU, record the time for the update period, send a full update cdis PDU
             // if yes, check if the full_update_period has elapsed;
@@ -77,7 +99,7 @@ impl Encoder {
             //     if not, compute a partial update cdis PDU and send it.
             //         Computation happens by comparing optional fields and leaving them out if not changed
             .map(|pdu| {
-                CdisPdu::encode(pdu, None, true)
+                CdisPdu::encode(pdu, &self.state, &self.codec_options)
             } )
             .collect();
         cdis_pdus
@@ -87,8 +109,8 @@ impl Encoder {
 pub struct Decoder {
     mode: GatewayMode,
     dis_buffer: BytesMut,
-    lookup: HashMap<(u16,u16,u16), TrackedState>,
-    cdis_full_update_period: f32,
+    state: DecoderState,
+    cdis_full_update_period: Duration,
 }
 
 impl Decoder {
@@ -98,8 +120,8 @@ impl Decoder {
         Self {
             mode,
             dis_buffer,
-            lookup: HashMap::new(),
-            cdis_full_update_period,
+            state: DecoderState { entity_state: DecoderStateEntityState::default() },
+            cdis_full_update_period: Duration::from_secs_f32(cdis_full_update_period),
         }
     }
 
@@ -118,11 +140,12 @@ impl Decoder {
                 pdu.serialize(&mut self.dis_buffer).unwrap() as usize
             } ).sum();
 
-        // TODO perhaps replace Vec with Bytes, but unsure how to assign the latter Bytes::from_iter(&self.dis_buffer[..].iter()), or Bytes::from(&self.dis_buffer[..])?
+        // TODO perhaps replace Vec with Bytes, but unsure how to assign the latter
+        // E.g., Bytes::from_iter(&self.dis_buffer[..].iter()), or Bytes::from(&self.dis_buffer[..])?
         Vec::from(&self.dis_buffer[..])
     }
 
-    // TODO make fallible, result from parse (and encode) function(s)
+    // TODO make fallible, result from parse (and decode) function(s)
     pub fn decode_buffer(&mut self, bytes_in: Bytes) -> Vec<u8> {
         let cdis_pdus = self.parsing(bytes_in);
         let pdus = match cdis_pdus {

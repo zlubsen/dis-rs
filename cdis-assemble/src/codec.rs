@@ -1,11 +1,14 @@
-use dis_rs::model::{Pdu, PduBody, TimeStamp};
+use std::collections::HashMap;
+use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
+use dis_rs::{Interaction, VariableParameters};
 use crate::{CdisBody, CdisPdu};
+use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
-use crate::records::model::{CdisHeader};
+use crate::records::model::CdisHeader;
 use crate::unsupported::Unsupported;
 
 pub trait Codec {
-    /// The DIS PDU, Body, Record, ... that is to be converted.
+    /// The Record, Type, ... that is to be converted.
     type Counterpart;
     const SCALING: f32 = 0.0;
     const SCALING_2: f32 = 0.0;
@@ -16,42 +19,117 @@ pub trait Codec {
     fn decode(&self) -> Self::Counterpart;
 }
 
-pub trait CodecPdu {
-    type Counterpart;
-
-    fn encode(item: &Self::Counterpart, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self;
-
-    fn decode(&self, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self::Counterpart;
+#[derive(Debug, Default)]
+pub struct EncoderState {
+    pub entity_state: HashMap<EntityId, EncoderStateEntityState>,
 }
 
-impl CodecPdu for CdisPdu {
-    type Counterpart = Pdu;
+#[derive(Debug, Default)]
+pub struct DecoderState {
+    pub entity_state: HashMap<EntityId, DecoderStateEntityState>,
+}
 
-    fn encode(item: &Self::Counterpart, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self {
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub enum CodecUpdateMode {
+    #[default]
+    FullUpdate,
+    PartialUpdate,
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub enum CodecOptimizeMode {
+    Bandwidth,
+    #[default]
+    Completeness,
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CodecOptions {
+    pub update_mode: CodecUpdateMode,
+    pub optimize_mode: CodecOptimizeMode,
+    pub use_guise: bool,
+    pub federation_parameters: VariableParameters,
+}
+
+impl CodecOptions {
+    pub fn new_full_update() -> Self {
+        Self {
+            update_mode: Default::default(),
+            optimize_mode: Default::default(),
+            use_guise: false,
+            federation_parameters: Default::default(),
+        }
+    }
+
+    pub fn new_partial_update() -> Self {
+        Self {
+            update_mode: CodecUpdateMode::PartialUpdate,
+            optimize_mode: Default::default(),
+            use_guise: false,
+            federation_parameters: Default::default(),
+        }
+    }
+
+    pub fn use_guise(mut self, use_guise: bool) -> Self {
+        self.use_guise = use_guise;
+        self
+    }
+
+    pub fn optimize_bandwidth(mut self) -> Self {
+        self.optimize_mode = CodecOptimizeMode::Bandwidth;
+        self
+    }
+
+    pub fn optimize_completeness(mut self) -> Self {
+        self.optimize_mode = CodecOptimizeMode::Completeness;
+        self
+    }
+
+    pub fn with_federation_parameters(mut self, parameters: VariableParameters) -> Self {
+        self.federation_parameters = parameters;
+        self
+    }
+}
+
+impl CdisPdu {
+    pub fn encode(item: &Pdu, state: &EncoderState, options: &CodecOptions) -> Self {
         CdisPdu::finalize_from_parts(
             CdisHeader::encode(&item.header),
-            CdisBody::encode(&item.body, tracked.map(|pdu| &pdu.body), full_update),
+            CdisBody::encode(&item.body, state, options),
             None::<TimeStamp>)
     }
 
-    fn decode(&self, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self::Counterpart {
+    fn decode(&self, state: &DecoderState, options: &CodecOptions) -> Pdu {
         let header = self.header.decode();
         let ts = header.time_stamp;
-        Self::Counterpart::finalize_from_parts(
+        Pdu::finalize_from_parts(
             header,
-            self.body.decode(tracked.map(|pdu| &pdu.body), full_update),
+            self.body.decode(state, options),
             ts
         )
     }
 }
 
-impl CodecPdu for CdisBody {
-    type Counterpart = PduBody;
-
-    fn encode(item: &Self::Counterpart, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self {
+impl CdisBody {
+    pub fn encode(item: &PduBody, state: &mut EncoderState, options: &CodecOptions) -> Self {
         match item {
             PduBody::Other(_) => { Self::Unsupported(Unsupported) }
-            PduBody::EntityState(body) => { Self::EntityState(EntityState::encode(body)) }
+            PduBody::EntityState(body) => {
+                let state_for_id = state.entity_state.get(body.originator().unwrap());
+                // let a = state.entity_state.entry(*body.originator().unwrap()).and_modify( |state| {
+                //
+                // }).or_insert_with(|| {
+                //     Self::EntityState(EntityState::encode(body, None, options));
+                //     EncoderStateEntityState::new()
+                // });
+
+                let pdu = if let Some(state) = state_for_id {
+                    Self::EntityState(EntityState::encode(body, state_for_id, options))
+                } else {
+                    Self::EntityState(EntityState::encode(body, None, options))
+                };
+                pdu
+            }
             PduBody::Fire(_) => { Self::Unsupported(Unsupported) }
             PduBody::Detonation(_) => { Self::Unsupported(Unsupported) }
             PduBody::Collision(_) => { Self::Unsupported(Unsupported) }
@@ -126,10 +204,10 @@ impl CodecPdu for CdisBody {
         }
     }
 
-    fn decode(&self, tracked: Option<&Self::Counterpart>, full_update: bool) -> Self::Counterpart {
+    fn decode(&self, state: &DecoderState, options: &CodecOptions) -> PduBody {
         match self {
             // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
-            CdisBody::EntityState(body) => { PduBody::EntityState(body.decode()) }
+            CdisBody::EntityState(body) => { PduBody::EntityState(body.decode(&state.entity_state, options)) }
             // CdisBody::Fire => {}
             // CdisBody::Detonation => {}
             // CdisBody::Collision => {}

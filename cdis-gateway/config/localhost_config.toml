@@ -30,10 +30,46 @@ interface = "127.0.0.1:3001"
 mode = "unicast"
 # `ttl` specifies the time-to-live of packets send by the gateway via this endpoint.
 ttl = 1
-# 'block_own_host' specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
+# `block_own_host` specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
 block_own_host = true
 
 # The `site` entry specifies where the monitoring dashboard of the gateway is hosted.
 [site]
 # `port` specifies the port on the host where the site is hosted.
 port = 8080
+
+# The `encoder` entry specifies settings for the encoding/decoding of PDUs.
+[encoder]
+# `use_guise` indicates that the federation uses the Guise function, i.e. the interpretation of the alternate entity type in the Entity State PDU
+# It takes a boolean value, `true` or `false`. Optional, defaults to `false`.
+# When set to `true`, the alternate entity type is not encoded in C-DIS PDUs.
+use_guise = false
+# `optimization` sets the type of processing the gateway will optimize for. The field takes a string value, either "bandwidth" or "completeness".
+# Optional value.
+# In practice, optimizing for `bandwidth` means that the EntityState PDU fields 'DR Other Parameters' and 'Capabilities' are never encoded and transmitted over C-DIS.
+optimization = "completeness"
+
+# The `federation` entry specifies DIS Federation Agreements.
+[federation]
+# `hbt_cdis_full_update_mplier` sets the CDIS heartbeat full update multiplier. Optional field. Float value. Defaults to 2.4.
+hbt_cdis_full_update_mplier = 2.4
+# hbt_espdu_kind_cultural_feature # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_environmental # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_expendable # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_life_form # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_munition # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_radio # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_sensor # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_emitter # Default: 5 s Tolerance: ±10%
+# hbt_espdu_kind_supply # Default: 5 s Tolerance: ±10%
+# hbt_espdu_platform_air # Default: 5 s Tolerance: ±10%
+# hbt_espdu_platform_land # Default: 5 s Tolerance: ±10%
+# hbt_espdu_platform_space # Default: 5 s Tolerance: ±10%
+# hbt_espdu_platform_subsurface # Default: 5 s Tolerance: ±10%
+# hbt_espdu_platform_surface # Default: 5 s Tolerance: ±10%
+# hbt_pdu_designator # Default: 5 s Tolerance: ±10%
+# hbt_pdu_ee # Default: 5 s Tolerance: ±10%
+# hbt_pdu_iff # Default: 10 s Tolerance: ±10%
+# hbt_pdu_transmitter # Default: 2 s Tolerance: ±10%
+# hbt_stationary # Default: 1 min Tolerance: ±10%
+# hbt_timeout_mplier # Default: 2.4 (see NOTE 2)

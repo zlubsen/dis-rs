@@ -630,7 +630,7 @@ impl From<PduType> for ProtocolFamily {
 }
 
 /// 6.2.80 Simulation Address record
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,
@@ -656,7 +656,7 @@ impl Default for SimulationAddress {
 
 /// 6.2.28 Entity Identifier record
 /// 6.2.81 Simulation Identifier record
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
     pub entity_id : u16

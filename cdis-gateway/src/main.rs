@@ -5,13 +5,13 @@ use std::io::Read;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 use tokio::net::UdpSocket;
 use tokio::select;
-use tracing::{error, event, info, Level, trace};
+use tracing::{error, event, info, Level};
 use clap::Parser;
 
-use crate::config::{Arguments, Config, ConfigError, ConfigSpec, GatewayMode, UdpEndpoint, UdpMode};
+use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
 use crate::codec::{Decoder, Encoder};
 
 mod config;
@@ -37,7 +37,7 @@ fn main() -> Result<(), GatewayError>{
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).map_err(|err| GatewayError::ConfigFileReadError(err) )?;
 
-    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err |GatewayError::ConfigFileParseError(err) )?;
+    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err | GatewayError::ConfigFileParseError(err) )?;
     let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigError(e))?;
     // TODO print the used configuration
     info!("*** C-DIS Gateway ***");
@@ -102,7 +102,7 @@ enum Event {
 ///
 /// Each task takes the receiver of a broadcast channel to receive `Command`s, and can emit `Event`s via an mpsc channel.
 async fn start_gateway(config: Config) {
-    let (cmd_tx, cmd_rx) = tokio::sync::broadcast::channel::<Command>(COMMAND_CHANNEL_BUFFER_SIZE);
+    let (cmd_tx, _cmd_rx) = tokio::sync::broadcast::channel::<Command>(COMMAND_CHANNEL_BUFFER_SIZE);
     let (event_tx, _event_rx) = tokio::sync::mpsc::channel::<Event>(EVENT_CHANNEL_BUFFER_SIZE);
     let (dis_socket_out_tx, dis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
     let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
@@ -180,7 +180,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
                 error!("Failed to bind to IPv4 address {:?} - {}", endpoint.address, err);
             }
             if let Err(err) = socket.set_ttl(1) {
-                error!("Failed to set TTL.");
+                error!("Failed to set TTL - {err}.");
             }
         }
         (true, UdpMode::MultiCast) => {
@@ -284,23 +284,37 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
     #[derive(Debug)]
     enum Action {
         Send(io::Result<usize>),
-        Error(io::Error),
+        SocketError,
+        ChannelError,
         Quit
     }
 
     loop {
         let action = select! {
             cmd = cmd_rx.recv() => {
-                let cmd = cmd.unwrap();
                 match cmd {
-                    Command::Quit => { Action::Quit }
+                    Ok(cmd) => {
+                        match cmd {
+                            Command::Quit => { Action::Quit }
+                        }
+                    }
+                    Err(_) => Action::ChannelError
                 }
+
             }
             bytes = from_codec.recv() => {
-                let bytes = bytes.unwrap();
-                let bytes_send = socket.send_to(&bytes, to_address).await;
+                match bytes {
+                    Some(bytes) => {
+                        match socket.send_to(&bytes, to_address).await {
+                            Ok(bytes_send) => Action::Send(Ok(bytes_send)),
+                            Err(_err) => Action::SocketError,
+                        }
+                    }
+                    None => {
+                        Action::ChannelError
+                    }
+                }
 
-                Action::Send(Ok(bytes_send.unwrap()))
             }
         };
 
@@ -316,17 +330,19 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
                     }
                 }
             }
-            Action::Error(io_error) => { event!(Level::ERROR, "{io_error}"); return; }
+            Action::SocketError => { event!(Level::ERROR, "Failed to write through socket: {socket:?}"); return; }
+            Action::ChannelError => { event!(Level::ERROR, "Internal channel failure in write socket task"); return; }
             Action::Quit => { return; }
         }
     }
 }
 
+/// Task that runs the encoder part of the gateway, being connected to the DIS socket for input, and outputs to the C-DIS socket.
 async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut encoder = Encoder::new(config.mode, config.hbt_cdis_full_update_mplier);
+    let mut encoder = Encoder::new(&config);
 
     loop {
         select! {
@@ -345,6 +361,7 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
     }
 }
 
+/// Task that runs the decoder part of the gateway, being connected to the C-DIS socket for input, and outputs to the DIS socket.
 async fn decoder(config: Config,
                  mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,

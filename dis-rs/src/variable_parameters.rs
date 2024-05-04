@@ -2,6 +2,7 @@ use crate::{NO_APPLIC, NO_ENTITY, NO_SITE};
 use crate::common::model::EntityId;
 
 #[allow(non_snake_case)]
+#[derive(Copy, Clone, Debug)]
 pub struct VariableParameters {
     pub AGG_RESPONSE_DFLT: f32, //Default: 10 s
     pub COLLISION_ELASTIC_TIMEOUT: f32, //Default: 5 s

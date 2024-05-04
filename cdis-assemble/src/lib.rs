@@ -11,13 +11,12 @@ pub mod unsupported;
 pub mod constants;
 pub(crate) mod parsing;
 pub(crate) mod writing;
-pub(crate) mod codec;
+pub mod codec;
 
 pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
-pub use codec::CodecPdu;
 
 pub trait BodyProperties {
     type FieldsPresent;
