@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
 use dis_rs::{Interaction, VariableParameters};
-use crate::{CdisBody, CdisPdu};
+use crate::{CdisBody, CdisInteraction, CdisPdu};
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
 use crate::records::model::CdisHeader;
 use crate::unsupported::Unsupported;
+
+pub const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
 
 pub trait Codec {
     /// The Record, Type, ... that is to be converted.
@@ -49,6 +51,7 @@ pub struct CodecOptions {
     pub optimize_mode: CodecOptimizeMode,
     pub use_guise: bool,
     pub federation_parameters: VariableParameters,
+    pub hbt_cdis_full_update_mplier: f32,
 }
 
 impl CodecOptions {
@@ -58,6 +61,7 @@ impl CodecOptions {
             optimize_mode: Default::default(),
             use_guise: false,
             federation_parameters: Default::default(),
+            hbt_cdis_full_update_mplier: DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER
         }
     }
 
@@ -67,6 +71,7 @@ impl CodecOptions {
             optimize_mode: Default::default(),
             use_guise: false,
             federation_parameters: Default::default(),
+            hbt_cdis_full_update_mplier: DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER,
         }
     }
 
@@ -91,123 +96,131 @@ impl CodecOptions {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub enum CodecStateResult {
+    #[default]
+    StateUnaffected,
+    StateUpdateEntityState,
+}
+
 impl CdisPdu {
-    pub fn encode(item: &Pdu, state: &EncoderState, options: &CodecOptions) -> Self {
-        CdisPdu::finalize_from_parts(
+    pub fn encode(item: &Pdu, state: &EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
+        let (body, state_results) = CdisBody::encode(&item.body, state, options);
+        let pdu = CdisPdu::finalize_from_parts(
             CdisHeader::encode(&item.header),
-            CdisBody::encode(&item.body, state, options),
-            None::<TimeStamp>)
+            body,
+            None::<TimeStamp>);
+        (pdu, state_results)
     }
 
-    fn decode(&self, state: &DecoderState, options: &CodecOptions) -> Pdu {
+    pub fn decode(&self, state: &DecoderState, options: &CodecOptions) -> (Pdu, CodecStateResult) {
         let header = self.header.decode();
         let ts = header.time_stamp;
-        Pdu::finalize_from_parts(
+        let (body, state_result) = self.body.decode(state, options);
+        let pdu = Pdu::finalize_from_parts(
             header,
-            self.body.decode(state, options),
-            ts
-        )
+            body,
+            ts);
+        (pdu, state_result)
     }
 }
 
 impl CdisBody {
-    pub fn encode(item: &PduBody, state: &mut EncoderState, options: &CodecOptions) -> Self {
+    pub fn encode(item: &PduBody, state: &EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
         match item {
-            PduBody::Other(_) => { Self::Unsupported(Unsupported) }
+            PduBody::Other(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::EntityState(body) => {
                 let state_for_id = state.entity_state.get(body.originator().unwrap());
-                // let a = state.entity_state.entry(*body.originator().unwrap()).and_modify( |state| {
-                //
-                // }).or_insert_with(|| {
-                //     Self::EntityState(EntityState::encode(body, None, options));
-                //     EncoderStateEntityState::new()
-                // });
 
-                let pdu = if let Some(state) = state_for_id {
-                    Self::EntityState(EntityState::encode(body, state_for_id, options))
+                let (body, state_result) = if let Some(state) = state_for_id {
+                    EntityState::encode(body, state_for_id, options)
                 } else {
-                    Self::EntityState(EntityState::encode(body, None, options))
+                    EntityState::encode(body, None, options)
                 };
-                pdu
+                (Self::EntityState(body), state_result)
             }
-            PduBody::Fire(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Detonation(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Collision(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ServiceRequest(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ResupplyOffer(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ResupplyReceived(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ResupplyCancel(_) => { Self::Unsupported(Unsupported) }
-            PduBody::RepairComplete(_) => { Self::Unsupported(Unsupported) }
-            PduBody::RepairResponse(_) => { Self::Unsupported(Unsupported) }
-            PduBody::CreateEntity(_) => { Self::Unsupported(Unsupported) }
-            PduBody::RemoveEntity(_) => { Self::Unsupported(Unsupported) }
-            PduBody::StartResume(_) => { Self::Unsupported(Unsupported) }
-            PduBody::StopFreeze(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Acknowledge(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ActionRequest(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ActionResponse(_) => { Self::Unsupported(Unsupported) }
-            PduBody::DataQuery(_) => { Self::Unsupported(Unsupported) }
-            PduBody::SetData(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Data(_) => { Self::Unsupported(Unsupported) }
-            PduBody::EventReport(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Comment(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ElectromagneticEmission(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Designator(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Transmitter(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Signal(_) => { Self::Unsupported(Unsupported) }
-            PduBody::Receiver(_) => { Self::Unsupported(Unsupported) }
-            PduBody::IFF(_) => { Self::Unsupported(Unsupported) }
-            PduBody::UnderwaterAcoustic(_) => { Self::Unsupported(Unsupported) }
-            PduBody::SupplementalEmissionEntityState(_) => { Self::Unsupported(Unsupported) }
-            PduBody::IntercomSignal => { Self::Unsupported(Unsupported) }
-            PduBody::IntercomControl => { Self::Unsupported(Unsupported) }
-            PduBody::AggregateState(_) => { Self::Unsupported(Unsupported) }
-            PduBody::IsGroupOf(_) => { Self::Unsupported(Unsupported) }
-            PduBody::TransferOwnership(_) => { Self::Unsupported(Unsupported) }
-            PduBody::IsPartOf(_) => { Self::Unsupported(Unsupported) }
-            PduBody::MinefieldState => { Self::Unsupported(Unsupported) }
-            PduBody::MinefieldQuery => { Self::Unsupported(Unsupported) }
-            PduBody::MinefieldData => { Self::Unsupported(Unsupported) }
-            PduBody::MinefieldResponseNACK => { Self::Unsupported(Unsupported) }
-            PduBody::EnvironmentalProcess => { Self::Unsupported(Unsupported) }
-            PduBody::GriddedData => { Self::Unsupported(Unsupported) }
-            PduBody::PointObjectState => { Self::Unsupported(Unsupported) }
-            PduBody::LinearObjectState => { Self::Unsupported(Unsupported) }
-            PduBody::ArealObjectState => { Self::Unsupported(Unsupported) }
-            PduBody::TSPI => { Self::Unsupported(Unsupported) }
-            PduBody::Appearance => { Self::Unsupported(Unsupported) }
-            PduBody::ArticulatedParts => { Self::Unsupported(Unsupported) }
-            PduBody::LEFire => { Self::Unsupported(Unsupported) }
-            PduBody::LEDetonation => { Self::Unsupported(Unsupported) }
-            PduBody::CreateEntityR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::RemoveEntityR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::StartResumeR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::StopFreezeR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::AcknowledgeR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ActionRequestR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::ActionResponseR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::DataQueryR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::SetDataR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::DataR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::EventReportR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::CommentR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::RecordR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::SetRecordR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::RecordQueryR(_) => { Self::Unsupported(Unsupported) }
-            PduBody::CollisionElastic(_) => { Self::Unsupported(Unsupported) }
-            PduBody::EntityStateUpdate(_) => { Self::Unsupported(Unsupported) }
-            PduBody::DirectedEnergyFire => { Self::Unsupported(Unsupported) }
-            PduBody::EntityDamageStatus => { Self::Unsupported(Unsupported) }
-            PduBody::InformationOperationsAction => { Self::Unsupported(Unsupported) }
-            PduBody::InformationOperationsReport => { Self::Unsupported(Unsupported) }
-            PduBody::Attribute(_) => { Self::Unsupported(Unsupported) }
+            PduBody::Fire(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Detonation(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Collision(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ServiceRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ResupplyOffer(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ResupplyReceived(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ResupplyCancel(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::RepairComplete(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::RepairResponse(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::CreateEntity(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::RemoveEntity(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::StartResume(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::StopFreeze(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Acknowledge(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ActionRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ActionResponse(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::DataQuery(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::SetData(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Data(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::EventReport(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Comment(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ElectromagneticEmission(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Designator(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Transmitter(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Signal(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Receiver(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::IFF(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::UnderwaterAcoustic(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::SupplementalEmissionEntityState(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::IntercomSignal => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::IntercomControl => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::AggregateState(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::IsGroupOf(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::TransferOwnership(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::IsPartOf(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::MinefieldState => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::MinefieldQuery => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::MinefieldData => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::MinefieldResponseNACK => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::EnvironmentalProcess => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::GriddedData => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::PointObjectState => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::LinearObjectState => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ArealObjectState => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::TSPI => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Appearance => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ArticulatedParts => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::LEFire => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::LEDetonation => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::CreateEntityR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::RemoveEntityR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::StartResumeR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::StopFreezeR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::AcknowledgeR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ActionRequestR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ActionResponseR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::DataQueryR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::SetDataR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::DataR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::EventReportR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::CommentR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::RecordR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::SetRecordR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::RecordQueryR(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::CollisionElastic(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::EntityStateUpdate(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::DirectedEnergyFire => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::EntityDamageStatus => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::InformationOperationsAction => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::InformationOperationsReport => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Attribute(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
         }
     }
 
-    fn decode(&self, state: &DecoderState, options: &CodecOptions) -> PduBody {
+    pub fn decode(&self, state: &DecoderState, options: &CodecOptions) -> (PduBody, CodecStateResult) {
         match self {
             // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
-            CdisBody::EntityState(body) => { PduBody::EntityState(body.decode(&state.entity_state, options)) }
+            CdisBody::EntityState(body) => {
+                let state_for_id = state.entity_state.get(&EntityId::from(body.originator().unwrap()));
+                let (body, state_result) = body.decode(state_for_id, options);
+                (PduBody::EntityState(body), state_result)
+            }
             // CdisBody::Fire => {}
             // CdisBody::Detonation => {}
             // CdisBody::Collision => {}
@@ -229,7 +242,9 @@ impl CdisBody {
             // CdisBody::Signal => {}
             // CdisBody::Receiver => {}
             // CdisBody::Iff => {}
-            CdisBody::Unsupported(_) | _ => { PduBody::Other(dis_rs::other::model::Other::builder().build())}
+            CdisBody::Unsupported(_) | _ => {
+                (PduBody::Other(dis_rs::other::model::Other::builder().build()), CodecStateResult::StateUnaffected)
+            }
         }
     }
 }

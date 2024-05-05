@@ -1,5 +1,5 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
-use dis_rs::model::{DisTimeStamp, Location, PduStatus};
+use dis_rs::model::{DisTimeStamp, Location, PduStatus, SimulationAddress};
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
@@ -280,6 +280,16 @@ impl EntityId {
             site,
             application,
             entity,
+        }
+    }
+}
+
+impl From<&EntityId> for dis_rs::model::EntityId {
+    fn from(value: &EntityId) -> Self {
+        Self {
+            simulation_address: SimulationAddress::new(
+                value.site.value, value.application.value),
+            entity_id: value.entity.value,
         }
     }
 }

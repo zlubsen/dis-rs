@@ -1,7 +1,7 @@
 use thiserror::Error;
 use dis_rs::model::TimeStamp;
 use crate::entity_state::model::EntityState;
-use crate::records::model::{CdisHeader, CdisRecord};
+use crate::records::model::{CdisHeader, CdisRecord, EntityId};
 use crate::unsupported::Unsupported;
 
 pub mod types;
@@ -33,6 +33,11 @@ pub trait BodyProperties {
     fn into_cdis_body(self) -> CdisBody;
 }
 
+pub trait CdisInteraction {
+    fn originator(&self) -> Option<&EntityId>;
+    fn receiver(&self) -> Option<&EntityId>;
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisPdu {
     pub header: CdisHeader,
@@ -57,6 +62,16 @@ impl CdisPdu {
     pub fn pdu_length(&self) -> usize {
         self.header.record_length()
         + self.body.body_length()
+    }
+}
+
+impl CdisInteraction for CdisPdu {
+    fn originator(&self) -> Option<&EntityId> {
+        self.body.originator()
+    }
+
+    fn receiver(&self) -> Option<&EntityId> {
+        self.body.receiver()
     }
 }
 
@@ -113,6 +128,64 @@ impl CdisBody {
             CdisBody::Signal => { 0 }
             CdisBody::Receiver => { 0 }
             CdisBody::Iff => { 0 }
+        }
+    }
+}
+
+impl CdisInteraction for CdisBody {
+    fn originator(&self) -> Option<&EntityId> {
+        match self {
+            CdisBody::Unsupported(_) => { None }
+            CdisBody::EntityState(body) => { body.originator() }
+            CdisBody::Fire => { None }
+            CdisBody::Detonation => { None }
+            CdisBody::Collision => { None }
+            CdisBody::CreateEntity => { None }
+            CdisBody::RemoveEntity => { None }
+            CdisBody::StartResume => { None }
+            CdisBody::StopFreeze => { None }
+            CdisBody::Acknowledge => { None }
+            CdisBody::ActionRequest => { None }
+            CdisBody::ActionResponse => { None } 
+            CdisBody::DataQuery => { None } 
+            CdisBody::SetData => { None } 
+            CdisBody::Data => { None } 
+            CdisBody::EventReport => { None } 
+            CdisBody::Comment => { None } 
+            CdisBody::ElectromagneticEmission => { None } 
+            CdisBody::Designator => { None } 
+            CdisBody::Transmitter => { None } 
+            CdisBody::Signal => { None } 
+            CdisBody::Receiver => { None } 
+            CdisBody::Iff => { None } 
+        }
+    }
+
+    fn receiver(&self) -> Option<&EntityId> {
+        match self {
+            CdisBody::Unsupported(_) => { None }
+            CdisBody::EntityState(body) => { body.receiver() }
+            CdisBody::Fire => { None } 
+            CdisBody::Detonation => { None } 
+            CdisBody::Collision => { None } 
+            CdisBody::CreateEntity => { None } 
+            CdisBody::RemoveEntity => { None } 
+            CdisBody::StartResume => { None } 
+            CdisBody::StopFreeze => { None } 
+            CdisBody::Acknowledge => { None } 
+            CdisBody::ActionRequest => { None } 
+            CdisBody::ActionResponse => { None } 
+            CdisBody::DataQuery => { None } 
+            CdisBody::SetData => { None } 
+            CdisBody::Data => { None } 
+            CdisBody::EventReport => { None } 
+            CdisBody::Comment => { None } 
+            CdisBody::ElectromagneticEmission => { None } 
+            CdisBody::Designator => { None } 
+            CdisBody::Transmitter => { None } 
+            CdisBody::Signal => { None } 
+            CdisBody::Receiver => { None } 
+            CdisBody::Iff => { None } 
         }
     }
 }

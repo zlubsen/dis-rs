@@ -3,17 +3,16 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use serde_derive::Deserialize;
 use clap::Parser;
-use cdis_assemble::codec::{CodecOptimizeMode, CodecUpdateMode};
+use cdis_assemble::codec::{CodecOptimizeMode, CodecUpdateMode, DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER};
 use dis_rs::VariableParameters;
 
 const DEFAULT_TTL: u16 = 1;
 const DEFAULT_ENDPOINT_MODE: UdpMode = UdpMode::UniCast;
-const DEFAULT_GATEWAY_MODE: GatewayMode = GatewayMode::default();
+const DEFAULT_GATEWAY_MODE: CodecUpdateMode = CodecUpdateMode::FullUpdate;
 const DEFAULT_SITE_HOST_PORT: u16 = 8080;
 const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
-const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
 const DEFAULT_ENCODER_USE_GUISE: bool = false;
-const DEFAULT_ENCODER_OPTIMIZATION: EncoderOptimization = EncoderOptimization::default();
+const DEFAULT_ENCODER_OPTIMIZATION: CodecOptimizeMode = CodecOptimizeMode::Completeness;
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Config {
@@ -34,7 +33,7 @@ impl TryFrom<&ConfigSpec> for Config {
         let mode = if let Some(mode) = &value.update_mode {
             GatewayMode::try_from(mode.as_str())?
         } else {
-            DEFAULT_GATEWAY_MODE
+            GatewayMode(DEFAULT_GATEWAY_MODE)
         };
 
         let dis_socket = UdpEndpoint::try_from(&value.dis)?;
@@ -50,10 +49,10 @@ impl TryFrom<&ConfigSpec> for Config {
         let (use_guise, optimization) = if let Some(encoder) = &value.encoder {
             let use_guise = encoder.use_guise
                 .map_or(DEFAULT_ENCODER_USE_GUISE, | val | val );
-            let optimization = encoder.optimization
-                .map_or(Ok(DEFAULT_ENCODER_OPTIMIZATION), |val| EncoderOptimization::try_from(val.as_str()) )?;
+            let optimization = encoder.optimization.as_ref()
+                .map_or(Ok(EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)), |val| EncoderOptimization::try_from(val.as_str()) )?;
             (use_guise, optimization)
-        } else { (DEFAULT_ENCODER_USE_GUISE, DEFAULT_ENCODER_OPTIMIZATION) };
+        } else { (DEFAULT_ENCODER_USE_GUISE, EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)) };
 
         Ok(Self {
             dis_socket,

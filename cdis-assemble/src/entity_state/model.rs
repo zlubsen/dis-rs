@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
 use dis_rs::Serialize;
-use crate::{BodyProperties, CdisBody};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{HUNDRED_TWENTY_BITS, THIRTY_TWO_BITS};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
@@ -78,6 +78,17 @@ impl BodyProperties for EntityState {
         CdisBody::EntityState(self)
     }
 }
+
+impl CdisInteraction for EntityState {
+    fn originator(&self) -> Option<&EntityId> {
+        Some(&self.entity_id)
+    }
+
+    fn receiver(&self) -> Option<&EntityId> {
+        None
+    }
+}
+
 
 /// The Entity Appearance field is not explicitly modeled because the interpretation of the on-wire value
 /// depends on the EntityType, which is not yet known when that field is not

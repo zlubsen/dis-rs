@@ -1,32 +1,15 @@
-use std::time::Duration;
+use std::time::Instant;
 
 use bytes::{Bytes, BytesMut};
 
-use cdis_assemble::{BitBuffer, CdisError, CdisPdu, SerializeCdisPdu};
-use cdis_assemble::codec::{CodecOptions, CodecUpdateMode, DecoderState, EncoderState};
+use cdis_assemble::{BitBuffer, CdisError, CdisInteraction, CdisPdu, SerializeCdisPdu};
+use cdis_assemble::codec::{CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
-use cdis_assemble::entity_state::codec::{DecoderStateEntityState};
-use dis_rs::model::Pdu;
+use cdis_assemble::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
+use dis_rs::model::{EntityId, Pdu};
 use dis_rs::{DisError, parse};
 
-use crate::config::{Config, GatewayMode};
-
-// enum StatefulPduUpdateType {
-//     FirstOccurrenceFull,
-//     WithinHeartbeatPartial,
-//     HeartbeatElapsedFull,
-// }
-
-// fn is_stateful_pdu_type(pdu: &Pdu) -> bool {
-//     match pdu.header.pdu_type {
-//         PduType::EntityState |
-//         PduType::ElectromagneticEmission |
-//         PduType::Transmitter |
-//         PduType::Designator |
-//         PduType::IFF => { true }
-//         _ => { false }
-//     }
-// }
+use crate::config::Config;
 
 /// The `Encoder` manages the configuration and state of the encoding of DIS PDUs to C-DIS PDUs.
 pub struct Encoder {
@@ -45,6 +28,7 @@ impl Encoder {
             optimize_mode: config.optimization.0,
             use_guise: config.use_guise,
             federation_parameters: config.federation_parameters,
+            hbt_cdis_full_update_mplier: config.hbt_cdis_full_update_mplier,
         };
 
         Self {
@@ -89,17 +73,18 @@ impl Encoder {
     // TODO make fallible, result from encode function
     pub fn encode_pdus(&mut self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
-            // TODO
-            // switch between partial and full update modes
-            // V if full update mode, just encode and send
-            // if partial update mode, check if we already have stored a previous snapshot of the PDU type
-            // if not, store the PDU, record the time for the update period, send a full update cdis PDU
-            // if yes, check if the full_update_period has elapsed;
-            //     if yes, store the PDU, record the time, and send a full update cdis PDU
-            //     if not, compute a partial update cdis PDU and send it.
-            //         Computation happens by comparing optional fields and leaving them out if not changed
             .map(|pdu| {
-                CdisPdu::encode(pdu, &self.state, &self.codec_options)
+                let (pdu, state_result) = CdisPdu::encode(pdu, &self.state, &self.codec_options);
+                match state_result {
+                    CodecStateResult::StateUnaffected => {}
+                    CodecStateResult::StateUpdateEntityState => {
+                        self.state.entity_state.entry(dis_rs::model::EntityId::from(
+                            pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
+                            .and_modify(|e| e.last_send = Instant::now() )
+                            .or_insert(EncoderStateEntityState::new());
+                    }
+                }
+                pdu
             } )
             .collect();
         cdis_pdus
@@ -107,21 +92,29 @@ impl Encoder {
 }
 
 pub struct Decoder {
-    mode: GatewayMode,
+    codec_options: CodecOptions,
     dis_buffer: BytesMut,
     state: DecoderState,
-    cdis_full_update_period: Duration,
 }
 
 impl Decoder {
-    pub fn new(mode: GatewayMode, cdis_full_update_period: f32) -> Self {
+    pub fn new(config: &Config) -> Self {
+        let codec_options = CodecOptions {
+            update_mode: match config.mode.0 {
+                CodecUpdateMode::FullUpdate => { CodecUpdateMode::FullUpdate }
+                CodecUpdateMode::PartialUpdate => { CodecUpdateMode::PartialUpdate }
+            },
+            optimize_mode: config.optimization.0,
+            use_guise: config.use_guise,
+            federation_parameters: config.federation_parameters,
+            hbt_cdis_full_update_mplier: config.hbt_cdis_full_update_mplier,
+        };
         let dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
         Self {
-            mode,
+            codec_options,
             dis_buffer,
-            state: DecoderState { entity_state: DecoderStateEntityState::default() },
-            cdis_full_update_period: Duration::from_secs_f32(cdis_full_update_period),
+            state: DecoderState { entity_state: Default::default() },
         }
     }
 
@@ -162,7 +155,7 @@ impl Decoder {
     }
 
     // TODO make fallible, result from encode function
-    pub fn decode_pdus(&self, pdus: &[CdisPdu]) -> Vec<Pdu> {
+    pub fn decode_pdus(&mut self, pdus: &[CdisPdu]) -> Vec<Pdu> {
         let dis_pdus: Vec<Pdu> = pdus.iter()
             // TODO
             // switch between partial and full update modes
@@ -172,7 +165,21 @@ impl Decoder {
             // when a partial update cdis PDU is received
             //     check if we already have a full update stored to fill in the blanks, send out DIS
             //     if no full update is present, discard the cdis PDU
-            .map(|cdis_pdu| cdis_pdu.decode(None, true) )
+            .map(|cdis_pdu| {
+                let (pdu, state_result) = cdis_pdu.decode(&self.state, &self.codec_options);
+                match state_result {
+                    CodecStateResult::StateUnaffected => {}
+                    CodecStateResult::StateUpdateEntityState => {
+                        self.state.entity_state.entry(EntityId::from(
+                            cdis_pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
+                            .and_modify(|e| {
+
+                            } )
+                            .or_insert(); // TODO only insert full updates
+                    }
+                }
+                pdu
+            })
             .collect();
         dis_pdus
     }

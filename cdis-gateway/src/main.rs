@@ -367,7 +367,7 @@ async fn decoder(config: Config,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                  _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut decoder = Decoder::new(config.mode, config.hbt_cdis_full_update_mplier);
+    let mut decoder = Decoder::new(&config);
 
     loop {
         select! {

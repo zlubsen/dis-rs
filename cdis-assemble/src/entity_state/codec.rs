@@ -2,7 +2,7 @@ use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking}
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
 use dis_rs::model::EntityType as DisEntityType;
 use std::time::Instant;
-use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecUpdateMode};
+use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode};
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
@@ -35,7 +35,7 @@ pub struct DecoderStateEntityState {
 }
 
 impl EntityState {
-    pub fn encode(item: &Counterpart, state: Option<&EncoderStateEntityState>, options: &CodecOptions) -> Self {
+    pub fn encode(item: &Counterpart, state: Option<&EncoderStateEntityState>, options: &CodecOptions) -> (Self, CodecStateResult) {
         let (entity_location, units) = encode_world_coordinates(&item.entity_location);
         let entity_location = Some(entity_location);
 
@@ -56,12 +56,13 @@ impl EntityState {
             entity_location,
             entity_orientation,
             entity_appearance,
-            entity_marking
+            entity_marking,
+            state_result
         ) = if options.update_mode == CodecUpdateMode::PartialUpdate
             && state.is_some()
             && !evaluate_timeout_for_entity_type(&item.entity_type, state.unwrap(), options) {
             // Do not update stateful fields when a full update is not required
-            ( None, None, None, None, None, None, None )
+            ( None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
         } else {
             // full update mode, or partial with a (state) timeout on the entity
             (
@@ -71,11 +72,12 @@ impl EntityState {
                 entity_location,
                 Some(Orientation::encode(&item.entity_orientation)),
                 Some((&item.entity_appearance).into()),
-                Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone()))
+                Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
+                CodecStateResult::StateUpdateEntityState
             )
         };
 
-        Self {
+        (Self {
             units,
             full_update_flag: options.update_mode == CodecUpdateMode::FullUpdate,
             entity_id: EntityId::encode(&item.entity_id),
@@ -95,15 +97,17 @@ impl EntityState {
             variable_parameters: item.variable_parameters.iter()
                 .map(CdisVariableParameter::encode )
                 .collect(),
-        }
+        }, state_result)
     }
 
-    pub fn decode(&self, state: &DecoderStateEntityState, options: &CodecOptions) -> Counterpart {
+    pub fn decode(&self, state: Option<&DecoderStateEntityState>, options: &CodecOptions) -> (Counterpart, CodecStateResult) {
         // pre-compute, decoded value is needed two times
         let entity_type = self.entity_type.unwrap_or_default().decode();
 
+        let state_result = CodecStateResult::StateUnaffected;
+
         // Covers full update mode
-        Counterpart::builder()
+        (Counterpart::builder()
             .with_entity_id(self.entity_id.decode())
             .with_force_id(ForceId::from(self.force_id.unwrap_or_default().value))
             .with_entity_type(entity_type)
@@ -126,7 +130,7 @@ impl EntityState {
             .with_variable_parameters(self.variable_parameters.iter()
                 .map(|vp| vp.decode() )
                 .collect())
-            .build()
+            .build(), state_result)
     }
 }
 
@@ -213,5 +217,5 @@ fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, state: &Encoder
         (_, _) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // ...And also for anything other/unspecified.
     };
 
-    elapsed > hbt_timeout
+    elapsed > (hbt_timeout * config.hbt_cdis_full_update_mplier)
 }
