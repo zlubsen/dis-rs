@@ -45,6 +45,7 @@ fn main() -> Result<(), GatewayError>{
         info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
     }
     info!("Running in {} mode.", config.mode);
+    info!("Encoder options - use guise: {} - {}", config.use_guise, config.optimization);
     info!("Hosting site at port {}.", config.site_host);
     info!("DIS socket: {:?}.", config.dis_socket);
     info!("C-DIS socket: {:?}.", config.cdis_socket);

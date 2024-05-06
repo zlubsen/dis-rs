@@ -26,9 +26,25 @@ pub struct EncoderState {
     pub entity_state: HashMap<EntityId, EncoderStateEntityState>,
 }
 
+impl EncoderState {
+    pub fn new() -> Self {
+        Self {
+            entity_state: Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct DecoderState {
     pub entity_state: HashMap<EntityId, DecoderStateEntityState>,
+}
+
+impl DecoderState {
+    pub fn new() -> Self {
+        Self {
+            entity_state: Default::default()
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -105,9 +121,10 @@ pub enum CodecStateResult {
 
 impl CdisPdu {
     pub fn encode(item: &Pdu, state: &EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
+        let header = CdisHeader::encode(&item.header);
         let (body, state_results) = CdisBody::encode(&item.body, state, options);
         let pdu = CdisPdu::finalize_from_parts(
-            CdisHeader::encode(&item.header),
+            header,
             body,
             None::<TimeStamp>);
         (pdu, state_results)
@@ -132,11 +149,12 @@ impl CdisBody {
             PduBody::EntityState(body) => {
                 let state_for_id = state.entity_state.get(body.originator().unwrap());
 
-                let (body, state_result) = if let Some(state) = state_for_id {
+                let (body, state_result) = if state_for_id.is_some() {
                     EntityState::encode(body, state_for_id, options)
                 } else {
                     EntityState::encode(body, None, options)
                 };
+
                 (Self::EntityState(body), state_result)
             }
             PduBody::Fire(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -255,13 +273,16 @@ mod tests {
     use dis_rs::enumerations::{Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, ProtocolVersion};
     use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
     use crate::{BodyProperties, CdisBody, CdisPdu};
-    use crate::Codec;
+    use crate::codec::{Codec, CodecOptions, DecoderState, EncoderState};
     use crate::entity_state::model::CdisEntityCapabilities;
     use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, Units, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {
+        let encoder_state = EncoderState::new();
+        let codec_option = CodecOptions::new_full_update();
+
         let dis_header = PduHeader::new_v7(7, PduType::EntityState);
         let dis_body = EntityState::builder()
             .with_entity_id(EntityId::new(7, 127, 255))
@@ -275,7 +296,7 @@ mod tests {
             .into_pdu_body();
         let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
 
-        let cdis_pdu = CdisPdu::encode(&dis_pdu);
+        let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &encoder_state, &codec_option);
 
         let dis_body = if let PduBody::EntityState(es) = dis_pdu.body {
             es
@@ -299,6 +320,9 @@ mod tests {
 
     #[test]
     fn cdis_pdu_entity_state_body_decode() {
+        let decoder_state = DecoderState::new();
+        let codec_options = CodecOptions::new_full_update();
+
         let cdis_body = crate::EntityState {
             units: Units::Dekameter,
             full_update_flag: true,
@@ -328,7 +352,7 @@ mod tests {
         };
         let cdis = CdisPdu::finalize_from_parts(cdis_header, cdis_body, Some(TimeStamp::from(20000)));
 
-        let dis = cdis.decode();
+        let (dis, _state_result) = cdis.decode(&decoder_state, &codec_options);
 
         let dis_body = if let PduBody::EntityState(es) = dis.body {
             es

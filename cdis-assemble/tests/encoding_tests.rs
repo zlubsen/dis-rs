@@ -1,6 +1,6 @@
-use bitvec::prelude::BitArray;
 use bytes::BytesMut;
-use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, Codec, SerializeCdisPdu, BodyProperties};
+use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, SerializeCdisPdu, BodyProperties};
+use cdis_assemble::codec::{CodecOptions, DecoderState, EncoderState};
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, Units, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
@@ -10,6 +10,9 @@ use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
 
 #[test]
 fn dis_to_cdis_entity_state() {
+    let encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+
     let dis_header = PduHeader::new_v7(7, PduType::EntityState);
     let dis_body = EntityState::builder()
         .with_entity_id(EntityId::new(7, 127, 255))
@@ -23,14 +26,16 @@ fn dis_to_cdis_entity_state() {
         .into_pdu_body();
     let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
 
-    let cdis_pdu = CdisPdu::encode(&dis_pdu);
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &encoder_state, &codec_options);
 
     let mut buf : BitBuffer = BitBuffer::ZERO;
-    let num_bits_written = cdis_pdu.serialize(&mut buf, 0);
+    let written_bits = cdis_pdu.serialize(&mut buf, 0);
 
-    let written_bytes = num_bits_written.div_ceil(8);
-
-    let parsed_cdis_pdus = cdis_assemble::parse(&buf.data[..written_bytes]).unwrap();
+    let written_bytes = written_bits.div_ceil(8);
+    // FIXME parsing fails because what is encoded using CodecOptions and what is serialized / calculated size does not match.
+    // Even if an optional field is Some(), it could be left out of the serialization (and vice versa?)
+    // FIXME Could also be due to some fields that can be left out even without a full update - dr params other, capabilities etc.
+    let parsed_cdis_pdus = cdis_assemble::parse(&buf.data[..written_bytes]).unwrap()
     let cdis_pdu = parsed_cdis_pdus.first().unwrap();
 
     if let CdisBody::EntityState(es) = &cdis_pdu.body {
@@ -44,6 +49,9 @@ fn dis_to_cdis_entity_state() {
 
 #[test]
 fn cdis_to_dis_entity_state() {
+    let decoder_state = DecoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+
     let cdis_header = CdisHeader {
         protocol_version: CdisProtocolVersion::SISO_023_2023,
         exercise_id: UVINT8::from(7),
@@ -73,7 +81,7 @@ fn cdis_to_dis_entity_state() {
     }.into_cdis_body();
     let cdis_pdu = CdisPdu::finalize_from_parts(cdis_header, cdis_body, None::<TimeStamp>);
 
-    let dis_pdu = cdis_pdu.decode();
+    let (dis_pdu, _state_result) = cdis_pdu.decode(&decoder_state, &codec_options);
     let mut buf = BytesMut::with_capacity(250);
     dis_pdu.serialize(&mut buf).unwrap();
 

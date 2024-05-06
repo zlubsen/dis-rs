@@ -34,23 +34,19 @@ impl BodyProperties for EntityState {
     const FIELDS_PRESENT_LENGTH: usize = 13;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        if self.full_update_flag {
-            0x1FFF
-        } else {
-            (if self.force_id.is_some() { Self::FieldsPresent::FORCE_ID_BIT } else { 0 })
-                | (if !self.variable_parameters.is_empty() { Self::FieldsPresent::VP_BIT } else { 0 })
-                | (if self.entity_type.is_some() { Self::FieldsPresent::ENTITY_TYPE_BIT } else { 0 })
-                | (if self.alternate_entity_type.is_some() { Self::FieldsPresent::ALT_ENTITY_TYPE_BIT } else { 0 })
-                | (if self.entity_linear_velocity.is_some() { Self::FieldsPresent::LINEAR_VELOCITY_BIT } else { 0 })
-                | (if self.entity_location.is_some() { Self::FieldsPresent::ENTITY_LOCATION_BIT } else { 0 })
-                | (if self.entity_orientation.is_some() { Self::FieldsPresent::ENTITY_ORIENTATION_BIT } else { 0 })
-                | (if self.entity_appearance.is_some() { Self::FieldsPresent::ENTITY_APPEARANCE_BIT } else { 0 })
-                | (if self.dr_params_other.is_some() { Self::FieldsPresent::DR_OTHER_BIT } else { 0 })
-                | (if self.dr_params_entity_linear_acceleration.is_some() { Self::FieldsPresent::DR_LINEAR_ACCELERATION_BIT } else { 0 })
-                | (if self.dr_params_entity_angular_velocity.is_some() { Self::FieldsPresent::DR_ANGULAR_VELOCITY_BIT } else { 0 })
-                | (if self.entity_marking.is_some() { Self::FieldsPresent::MARKING_BIT } else { 0 })
-                | (if self.capabilities.is_some() { Self::FieldsPresent::CAPABILITIES_BIT } else { 0 })
-        }
+        (if self.force_id.is_some() { Self::FieldsPresent::FORCE_ID_BIT } else { 0 })
+            | (if !self.variable_parameters.is_empty() { Self::FieldsPresent::VP_BIT } else { 0 })
+            | (if self.entity_type.is_some() { Self::FieldsPresent::ENTITY_TYPE_BIT } else { 0 })
+            | (if self.alternate_entity_type.is_some() { Self::FieldsPresent::ALT_ENTITY_TYPE_BIT } else { 0 })
+            | (if self.entity_linear_velocity.is_some() { Self::FieldsPresent::LINEAR_VELOCITY_BIT } else { 0 })
+            | (if self.entity_location.is_some() { Self::FieldsPresent::ENTITY_LOCATION_BIT } else { 0 })
+            | (if self.entity_orientation.is_some() { Self::FieldsPresent::ENTITY_ORIENTATION_BIT } else { 0 })
+            | (if self.entity_appearance.is_some() { Self::FieldsPresent::ENTITY_APPEARANCE_BIT } else { 0 })
+            | (if self.dr_params_other.is_some() { Self::FieldsPresent::DR_OTHER_BIT } else { 0 })
+            | (if self.dr_params_entity_linear_acceleration.is_some() { Self::FieldsPresent::DR_LINEAR_ACCELERATION_BIT } else { 0 })
+            | (if self.dr_params_entity_angular_velocity.is_some() { Self::FieldsPresent::DR_ANGULAR_VELOCITY_BIT } else { 0 })
+            | (if self.entity_marking.is_some() { Self::FieldsPresent::MARKING_BIT } else { 0 })
+            | (if self.capabilities.is_some() { Self::FieldsPresent::CAPABILITIES_BIT } else { 0 })
     }
 
     fn body_length_bits(&self) -> usize {

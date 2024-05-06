@@ -448,7 +448,7 @@ mod tests {
     fn parse_cdis_header() {
         let input = [0b01001110, 0b00000010, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000];
 
-        let (input, header) = cdis_header((&input, 0)).unwrap();
+        let (_input, header) = cdis_header((&input, 0)).unwrap();
 
         assert_eq!(header.protocol_version, CdisProtocolVersion::SISO_023_2023);
         assert_eq!(header.exercise_id, UVINT8::from(7));

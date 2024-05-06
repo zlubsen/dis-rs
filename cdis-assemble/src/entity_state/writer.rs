@@ -7,6 +7,7 @@ use crate::writing::{BitBuffer, serialize_when_present, SerializeCdis, Serialize
 impl SerializeCdisPdu for EntityState {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let fields_present = self.fields_present_field();
+
         let cursor = write_value_unsigned(buf, cursor, self.fields_present_length(), fields_present);
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.units.into());
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.full_update_flag.into());

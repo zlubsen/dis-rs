@@ -5,7 +5,7 @@ use std::time::Instant;
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode};
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
 use crate::types::model::{UVINT32, UVINT8};
 
 type Counterpart = dis_rs::entity_state::model::EntityState;
@@ -36,13 +36,6 @@ pub struct DecoderStateEntityState {
 
 impl EntityState {
     pub fn encode(item: &Counterpart, state: Option<&EncoderStateEntityState>, options: &CodecOptions) -> (Self, CodecStateResult) {
-        let (entity_location, units) = encode_world_coordinates(&item.entity_location);
-        let entity_location = Some(entity_location);
-
-        let alternate_entity_type = if options.use_guise {
-            Some(EntityType::encode(&item.alternative_entity_type))
-        } else { None };
-
         let entity_linear_velocity = encode_ent_linear_velocity(item);
         let dr_params_other = encode_dr_params_other(item);
         let dr_params_entity_linear_acceleration = encode_dr_linear_acceleration(item);
@@ -50,6 +43,8 @@ impl EntityState {
         let capabilities = encode_entity_capabilities(item, options);
 
         let (
+            units,
+            full_update_flag,
             force_id,
             entity_type,
             alternate_entity_type,
@@ -62,14 +57,20 @@ impl EntityState {
             && state.is_some()
             && !evaluate_timeout_for_entity_type(&item.entity_type, state.unwrap(), options) {
             // Do not update stateful fields when a full update is not required
-            ( None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
+            ( Units::Dekameter, false, None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
         } else {
+            let (entity_location, units) = encode_world_coordinates(&item.entity_location);
+            let alternate_entity_type = if options.use_guise {
+                Some(EntityType::encode(&item.alternative_entity_type))
+            } else { None };
             // full update mode, or partial with a (state) timeout on the entity
             (
+                units,
+                true,
                 Some(UVINT8::from(u8::from(item.force_id))),
                 Some(EntityType::encode(&item.entity_type)),
                 alternate_entity_type,
-                entity_location,
+                Some(entity_location),
                 Some(Orientation::encode(&item.entity_orientation)),
                 Some((&item.entity_appearance).into()),
                 Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
@@ -79,7 +80,7 @@ impl EntityState {
 
         (Self {
             units,
-            full_update_flag: options.update_mode == CodecUpdateMode::FullUpdate,
+            full_update_flag,
             entity_id: EntityId::encode(&item.entity_id),
             force_id,
             entity_type,

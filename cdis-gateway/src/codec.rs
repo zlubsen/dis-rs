@@ -6,6 +6,8 @@ use cdis_assemble::{BitBuffer, CdisError, CdisInteraction, CdisPdu, SerializeCdi
 use cdis_assemble::codec::{CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
 use cdis_assemble::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
+use cdis_assemble::records::model::WorldCoordinates;
+use cdis_assemble::types::model::SVINT24;
 use dis_rs::model::{EntityId, Pdu};
 use dis_rs::{DisError, parse};
 
@@ -175,7 +177,19 @@ impl Decoder {
                             .and_modify(|e| {
 
                             } )
-                            .or_insert(); // TODO only insert full updates
+                            .or_insert(DecoderStateEntityState {
+                                last_received: Instant::now(),
+                                force_id: Default::default(),
+                                entity_type: Default::default(),
+                                alt_entity_type: Default::default(),
+                                entity_location: WorldCoordinates {
+                                    latitude: 0.0,
+                                    longitude: 0.0,
+                                    altitude_msl: SVINT24::from(0),
+                                },
+                                entity_orientation: Default::default(),
+                                entity_appearance: Default::default(),
+                            }); // TODO only insert full updates
                     }
                 }
                 pdu

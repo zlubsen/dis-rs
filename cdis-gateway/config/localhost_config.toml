@@ -53,23 +53,23 @@ optimization = "completeness"
 [federation]
 # `hbt_cdis_full_update_mplier` sets the CDIS heartbeat full update multiplier. Optional field. Float value. Defaults to 2.4.
 hbt_cdis_full_update_mplier = 2.4
-# hbt_espdu_kind_cultural_feature # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_environmental # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_expendable # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_life_form # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_munition # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_radio # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_sensor # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_emitter # Default: 5 s Tolerance: ±10%
-# hbt_espdu_kind_supply # Default: 5 s Tolerance: ±10%
-# hbt_espdu_platform_air # Default: 5 s Tolerance: ±10%
-# hbt_espdu_platform_land # Default: 5 s Tolerance: ±10%
-# hbt_espdu_platform_space # Default: 5 s Tolerance: ±10%
-# hbt_espdu_platform_subsurface # Default: 5 s Tolerance: ±10%
-# hbt_espdu_platform_surface # Default: 5 s Tolerance: ±10%
-# hbt_pdu_designator # Default: 5 s Tolerance: ±10%
-# hbt_pdu_ee # Default: 5 s Tolerance: ±10%
-# hbt_pdu_iff # Default: 10 s Tolerance: ±10%
-# hbt_pdu_transmitter # Default: 2 s Tolerance: ±10%
-# hbt_stationary # Default: 1 min Tolerance: ±10%
+# hbt_espdu_kind_cultural_feature # Default: 5 s
+# hbt_espdu_kind_environmental # Default: 5 s
+# hbt_espdu_kind_expendable # Default: 5 s
+# hbt_espdu_kind_life_form # Default: 5 s
+# hbt_espdu_kind_munition # Default: 5 s
+# hbt_espdu_kind_radio # Default: 5 s
+# hbt_espdu_kind_sensor # Default: 5 s
+# hbt_espdu_kind_emitter # Default: 5 s
+# hbt_espdu_kind_supply # Default: 5 s
+# hbt_espdu_platform_air # Default: 5 s
+# hbt_espdu_platform_land # Default: 5 s
+# hbt_espdu_platform_space # Default: 5 s
+# hbt_espdu_platform_subsurface # Default: 5 s
+# hbt_espdu_platform_surface # Default: 5 s
+# hbt_pdu_designator # Default: 5 s
+# hbt_pdu_ee # Default: 5 s
+# hbt_pdu_iff # Default: 10 s
+# hbt_pdu_transmitter # Default: 2 s
+# hbt_stationary # Default: 1 min
 # hbt_timeout_mplier # Default: 2.4 (see NOTE 2)

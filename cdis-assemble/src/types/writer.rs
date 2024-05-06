@@ -107,8 +107,7 @@ mod tests {
     use bitvec::prelude::BitArray;
     use crate::records::model::ParameterValueFloat;
     use crate::writing::SerializeCdis;
-    use crate::types::model::{CdisFloat, SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT8, Uvint8BitSize};
-    use crate::types::model::VarInt;
+    use crate::types::model::{CdisFloat, SVINT12, UVINT16, UVINT8};
     use crate::types::writer::serialize_cdis_float;
     use crate::writing::BitBuffer;
 
