@@ -10,7 +10,7 @@ use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
 
 #[test]
 fn dis_to_cdis_entity_state() {
-    let encoder_state = EncoderState::new();
+    let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
 
     let dis_header = PduHeader::new_v7(7, PduType::EntityState);
@@ -26,7 +26,7 @@ fn dis_to_cdis_entity_state() {
         .into_pdu_body();
     let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
 
-    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &encoder_state, &codec_options);
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &mut encoder_state, &codec_options);
 
     let mut buf : BitBuffer = BitBuffer::ZERO;
     let written_bits = cdis_pdu.serialize(&mut buf, 0);
@@ -35,7 +35,7 @@ fn dis_to_cdis_entity_state() {
     // FIXME parsing fails because what is encoded using CodecOptions and what is serialized / calculated size does not match.
     // Even if an optional field is Some(), it could be left out of the serialization (and vice versa?)
     // FIXME Could also be due to some fields that can be left out even without a full update - dr params other, capabilities etc.
-    let parsed_cdis_pdus = cdis_assemble::parse(&buf.data[..written_bytes]).unwrap()
+    let parsed_cdis_pdus = cdis_assemble::parse(&buf.data[..written_bytes]).unwrap();
     let cdis_pdu = parsed_cdis_pdus.first().unwrap();
 
     if let CdisBody::EntityState(es) = &cdis_pdu.body {

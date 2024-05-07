@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::time::Instant;
 use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
 use dis_rs::{Interaction, VariableParameters};
-use crate::{CdisBody, CdisInteraction, CdisPdu};
+use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
 use crate::records::model::CdisHeader;
@@ -120,7 +121,7 @@ pub enum CodecStateResult {
 }
 
 impl CdisPdu {
-    pub fn encode(item: &Pdu, state: &EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
+    pub fn encode(item: &Pdu, state: &mut EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
         let header = CdisHeader::encode(&item.header);
         let (body, state_results) = CdisBody::encode(&item.body, state, options);
         let pdu = CdisPdu::finalize_from_parts(
@@ -143,19 +144,25 @@ impl CdisPdu {
 }
 
 impl CdisBody {
-    pub fn encode(item: &PduBody, state: &EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
+    pub fn encode(item: &PduBody, state: &mut EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
         match item {
             PduBody::Other(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::EntityState(body) => {
                 let state_for_id = state.entity_state.get(body.originator().unwrap());
 
-                let (body, state_result) = if state_for_id.is_some() {
+                let (cdis_body, state_result) = if state_for_id.is_some() {
                     EntityState::encode(body, state_for_id, options)
                 } else {
                     EntityState::encode(body, None, options)
                 };
 
-                (Self::EntityState(body), state_result)
+                if state_result == CodecStateResult::StateUpdateEntityState {
+                    state.entity_state.entry(*body.originator().unwrap())
+                        .and_modify(|es| {es.last_send = Instant::now()})
+                        .or_insert(EncoderStateEntityState::new());
+                }
+
+                (cdis_body.into_cdis_body(), state_result)
             }
             PduBody::Fire(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Detonation(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -236,8 +243,12 @@ impl CdisBody {
             // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
             CdisBody::EntityState(body) => {
                 let state_for_id = state.entity_state.get(&EntityId::from(body.originator().unwrap()));
-                let (body, state_result) = body.decode(state_for_id, options);
-                (PduBody::EntityState(body), state_result)
+                let (body, state_result) = if state_for_id.is_some() {
+                    body.decode(state_for_id, options)
+                } else {
+                    body.decode(None, options)
+                };
+                (body.into_pdu_body(), state_result)
             }
             // CdisBody::Fire => {}
             // CdisBody::Detonation => {}
@@ -280,7 +291,7 @@ mod tests {
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {
-        let encoder_state = EncoderState::new();
+        let mut encoder_state = EncoderState::new();
         let codec_option = CodecOptions::new_full_update();
 
         let dis_header = PduHeader::new_v7(7, PduType::EntityState);
@@ -296,7 +307,7 @@ mod tests {
             .into_pdu_body();
         let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
 
-        let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &encoder_state, &codec_option);
+        let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &mut encoder_state, &codec_option);
 
         let dis_body = if let PduBody::EntityState(es) = dis_pdu.body {
             es

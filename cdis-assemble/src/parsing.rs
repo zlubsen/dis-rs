@@ -6,7 +6,7 @@ use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::constants::ONE_BIT;
 use crate::entity_state::parser::entity_state_body;
-use crate::records::model::CdisHeader;
+use crate::records::model::{CdisHeader, CdisRecord};
 use crate::records::parser::cdis_header;
 use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
@@ -77,7 +77,7 @@ pub(crate) type BitInput<'a> = (&'a[u8], usize);
 ///
 /// The function returns the output of parser `f` as an `Option`.
 pub(crate) fn parse_field_when_present<'a, O, T, F>(
-    full_update: bool, fields_present: T, mask: T, f: F
+    fields_present: T, mask: T, f: F
 ) -> impl Fn(BitInput<'a>) -> IResult<BitInput, Option<O>>
     where
         O: std::fmt::Debug,
@@ -85,7 +85,7 @@ pub(crate) fn parse_field_when_present<'a, O, T, F>(
         <T as BitAnd>::Output: PartialEq<T>,
         F: Fn(BitInput<'a>) -> IResult<BitInput<'a>, O>, {
     move |input: BitInput<'a>| {
-        if full_update | field_present(fields_present, mask) {
+        if field_present(fields_present, mask) {
             let result = f(input);
             match result {
                 Ok((input, result)) => { Ok((input, Some(result))) }
@@ -199,7 +199,7 @@ mod tests {
 
         // entity_identification is in reality always present, but is an easy example for a test.
         let actual = parse_field_when_present(
-            false, fields, mask,
+            fields, mask,
             entity_identification)((&input, 0));
 
         assert!(actual.is_ok());
@@ -219,7 +219,7 @@ mod tests {
 
         // entity_identification is in reality always present, but is an easy example for a test.
         let actual = parse_field_when_present(
-            false, fields, mask,
+            fields, mask,
             entity_identification)((&input, 0));
 
         assert!(actual.is_ok());

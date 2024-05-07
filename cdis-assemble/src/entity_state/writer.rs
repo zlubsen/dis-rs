@@ -13,7 +13,7 @@ impl SerializeCdisPdu for EntityState {
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.full_update_flag.into());
         let cursor = self.entity_id.serialize(buf, cursor);
         let cursor = serialize_when_present(&self.force_id, buf, cursor);
-        let cursor = if self.full_update_flag | !self.variable_parameters.is_empty() {
+        let cursor = if !self.variable_parameters.is_empty() {
             UVINT8::from(self.variable_parameters.len() as u8 ).serialize(buf, cursor)
         } else { cursor };
         let cursor = serialize_when_present(&self.entity_type, buf, cursor);
