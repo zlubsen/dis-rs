@@ -68,7 +68,7 @@ impl Interaction for EntityState {
 }
 
 /// 6.2.26 Entity Appearance record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EntityAppearance {
     LandPlatform(LandPlatformAppearance),
     AirPlatform(AirPlatformAppearance),

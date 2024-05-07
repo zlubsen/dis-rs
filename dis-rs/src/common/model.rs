@@ -774,7 +774,7 @@ impl VectorF32 {
 
 // TODO rename Location to World Coordinate
 /// 6.2.98 World Coordinates record
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
@@ -808,7 +808,7 @@ impl Location {
 
 // TODO rename Orientation to EulerAngle
 /// 6.2.32 Euler Angles record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,

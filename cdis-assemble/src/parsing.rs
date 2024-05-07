@@ -6,7 +6,7 @@ use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::constants::ONE_BIT;
 use crate::entity_state::parser::entity_state_body;
-use crate::records::model::{CdisHeader, CdisRecord};
+use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;

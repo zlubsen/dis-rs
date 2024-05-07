@@ -1,11 +1,11 @@
 use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
-use dis_rs::model::EntityType as DisEntityType;
+use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation};
 use std::time::Instant;
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode};
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units};
 use crate::types::model::{UVINT32, UVINT8};
 
 type Counterpart = dis_rs::entity_state::model::EntityState;
@@ -27,11 +27,25 @@ impl EncoderStateEntityState {
 pub struct DecoderStateEntityState {
     pub last_received: Instant,
     pub force_id: ForceId,
-    pub entity_type: EntityType,
-    pub alt_entity_type: EntityType,
-    pub entity_location: WorldCoordinates,
-    pub entity_orientation: Orientation,
+    pub entity_type: DisEntityType,
+    pub alt_entity_type: DisEntityType,
+    pub entity_location: DisLocation,
+    pub entity_orientation: DisOrientation,
     pub entity_appearance: EntityAppearance,
+}
+
+impl DecoderStateEntityState {
+    pub fn new(pdu: &dis_rs::entity_state::model::EntityState) -> Self {
+        Self {
+            last_received: Instant::now(),
+            force_id: pdu.force_id,
+            entity_type: pdu.entity_type,
+            alt_entity_type: pdu.alternative_entity_type,
+            entity_location: pdu.entity_location,
+            entity_orientation: pdu.entity_orientation,
+            entity_appearance: pdu.entity_appearance,
+        }
+    }
 }
 
 impl EntityState {
@@ -101,13 +115,43 @@ impl EntityState {
         }, state_result)
     }
 
-    pub fn decode(&self, state: Option<&DecoderStateEntityState>, options: &CodecOptions) -> (Counterpart, CodecStateResult) {
-        // pre-compute, decoded value is needed two times
-        let entity_type = self.entity_type.unwrap_or_default().decode();
+    pub fn decode(&self, state: &DecoderStateEntityState, options: &CodecOptions) -> (Counterpart, CodecStateResult) {
+        let (
+            force_id,
+            entity_type,
+            alternate_entity_type,
+            entity_location,
+            entity_orientation,
+            entity_appearance,
+            entity_marking,
+            state_result) =
+            match options.update_mode {
+                CodecUpdateMode::FullUpdate => {
+                    let entity_type = self.entity_type.unwrap_or_default().decode();
+                    (
+                        ForceId::from(self.force_id.unwrap_or_default().value),
+                        entity_type,
+                        self.alternate_entity_type.unwrap_or_default(),
+                        self.entity_location.unwrap_or_default(),
+                        self.entity_location
+                            .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
+                            .unwrap_or_default(),
+                        self.entity_appearance.as_ref()
+                            .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
+                            .unwrap_or_default(),
+                        EntityMarking::new(self.entity_marking.clone().unwrap_or_default().marking, EntityMarkingCharacterSet::ASCII),
+                        CodecStateResult::StateUpdateEntityState
+                    )
+                }
+                CodecUpdateMode::PartialUpdate => {
+                    if self.full_update_flag {
 
-        let state_result = CodecStateResult::StateUnaffected;
+                    } else {
 
-        // Covers full update mode
+                    }
+                }
+            };
+
         (Counterpart::builder()
             .with_entity_id(self.entity_id.decode())
             .with_force_id(ForceId::from(self.force_id.unwrap_or_default().value))

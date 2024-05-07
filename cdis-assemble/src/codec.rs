@@ -131,7 +131,7 @@ impl CdisPdu {
         (pdu, state_results)
     }
 
-    pub fn decode(&self, state: &DecoderState, options: &CodecOptions) -> (Pdu, CodecStateResult) {
+    pub fn decode(&self, state: &mut DecoderState, options: &CodecOptions) -> (Pdu, CodecStateResult) {
         let header = self.header.decode();
         let ts = header.time_stamp;
         let (body, state_result) = self.body.decode(state, options);
@@ -147,17 +147,17 @@ impl CdisBody {
     pub fn encode(item: &PduBody, state: &mut EncoderState, options: &CodecOptions) -> (Self, CodecStateResult) {
         match item {
             PduBody::Other(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
-            PduBody::EntityState(body) => {
-                let state_for_id = state.entity_state.get(body.originator().unwrap());
+            PduBody::EntityState(dis_body) => {
+                let state_for_id = state.entity_state.get(dis_body.originator().unwrap());
 
                 let (cdis_body, state_result) = if state_for_id.is_some() {
-                    EntityState::encode(body, state_for_id, options)
+                    EntityState::encode(dis_body, state_for_id, options)
                 } else {
-                    EntityState::encode(body, None, options)
+                    EntityState::encode(dis_body, None, options)
                 };
 
                 if state_result == CodecStateResult::StateUpdateEntityState {
-                    state.entity_state.entry(*body.originator().unwrap())
+                    state.entity_state.entry(*dis_body.originator().unwrap())
                         .and_modify(|es| {es.last_send = Instant::now()})
                         .or_insert(EncoderStateEntityState::new());
                 }
@@ -238,17 +238,32 @@ impl CdisBody {
         }
     }
 
-    pub fn decode(&self, state: &DecoderState, options: &CodecOptions) -> (PduBody, CodecStateResult) {
+    pub fn decode(&self, state: &mut DecoderState, options: &CodecOptions) -> (PduBody, CodecStateResult) {
         match self {
             // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
-            CdisBody::EntityState(body) => {
-                let state_for_id = state.entity_state.get(&EntityId::from(body.originator().unwrap()));
-                let (body, state_result) = if state_for_id.is_some() {
-                    body.decode(state_for_id, options)
+            CdisBody::EntityState(cdis_body) => {
+                let state_for_id = state.entity_state.get(&EntityId::from(cdis_body.originator().unwrap()));
+                let (dis_body, state_result) = if state_for_id.is_some() {
+                    cdis_body.decode(state_for_id, options)
                 } else {
-                    body.decode(None, options)
+                    cdis_body.decode(None, options)
                 };
-                (body.into_pdu_body(), state_result)
+
+                if state_result == CodecStateResult::StateUpdateEntityState {
+                    state.entity_state.entry(EntityId::from(cdis_body.originator().unwrap()))
+                        .and_modify(|es| {
+                            es.last_received = Instant::now();
+                            es.force_id = dis_body.force_id;
+                            es.entity_type = dis_body.entity_type;
+                            es.alt_entity_type = dis_body.alternative_entity_type;
+                            es.entity_location = dis_body.entity_location;
+                            es.entity_orientation = dis_body.entity_orientation;
+                            es.entity_appearance = dis_body.entity_appearance;
+                        })
+                        .or_insert(DecoderStateEntityState::new(&dis_body));
+                }
+
+                (dis_body.into_pdu_body(), state_result)
             }
             // CdisBody::Fire => {}
             // CdisBody::Detonation => {}
@@ -284,7 +299,7 @@ mod tests {
     use dis_rs::enumerations::{Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, ProtocolVersion};
     use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
     use crate::{BodyProperties, CdisBody, CdisPdu};
-    use crate::codec::{Codec, CodecOptions, DecoderState, EncoderState};
+    use crate::codec::{CodecOptions, DecoderState, EncoderState};
     use crate::entity_state::model::CdisEntityCapabilities;
     use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, Units, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
@@ -331,7 +346,7 @@ mod tests {
 
     #[test]
     fn cdis_pdu_entity_state_body_decode() {
-        let decoder_state = DecoderState::new();
+        let mut decoder_state = DecoderState::new();
         let codec_options = CodecOptions::new_full_update();
 
         let cdis_body = crate::EntityState {
@@ -363,7 +378,7 @@ mod tests {
         };
         let cdis = CdisPdu::finalize_from_parts(cdis_header, cdis_body, Some(TimeStamp::from(20000)));
 
-        let (dis, _state_result) = cdis.decode(&decoder_state, &codec_options);
+        let (dis, _state_result) = cdis.decode(&mut decoder_state, &codec_options);
 
         let dis_body = if let PduBody::EntityState(es) = dis.body {
             es
