@@ -3,6 +3,7 @@ use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingChar
 use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation};
 use std::time::Instant;
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode};
+use crate::codec::CodecStateResult::StateUnaffected;
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units};
@@ -32,6 +33,7 @@ pub struct DecoderStateEntityState {
     pub entity_location: DisLocation,
     pub entity_orientation: DisOrientation,
     pub entity_appearance: EntityAppearance,
+    pub entity_marking: EntityMarking,
 }
 
 impl DecoderStateEntityState {
@@ -44,6 +46,7 @@ impl DecoderStateEntityState {
             entity_location: pdu.entity_location,
             entity_orientation: pdu.entity_orientation,
             entity_appearance: pdu.entity_appearance,
+            entity_marking: pdu.entity_marking.clone(),
         }
     }
 }
@@ -88,7 +91,7 @@ impl EntityState {
                 Some(Orientation::encode(&item.entity_orientation)),
                 Some((&item.entity_appearance).into()),
                 Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
-                CodecStateResult::StateUpdateEntityState
+                if options.update_mode == CodecUpdateMode::PartialUpdate { CodecStateResult::StateUpdateEntityState } else { StateUnaffected }
             )
         };
 
@@ -115,7 +118,7 @@ impl EntityState {
         }, state_result)
     }
 
-    pub fn decode(&self, state: &DecoderStateEntityState, options: &CodecOptions) -> (Counterpart, CodecStateResult) {
+    pub fn decode(&self, state: Option<&DecoderStateEntityState>, options: &CodecOptions) -> (Counterpart, CodecStateResult) {
         let (
             force_id,
             entity_type,
@@ -127,50 +130,79 @@ impl EntityState {
             state_result) =
             match options.update_mode {
                 CodecUpdateMode::FullUpdate => {
-                    let entity_type = self.entity_type.unwrap_or_default().decode();
+                    // if in full-update-mode, fill all the fields with what is in the cdis-pdu; initialize to zeroes when not provided. State Unaffected.
+                    let entity_type = self.entity_type.map(|record| record.decode()).unwrap_or_default();
                     (
-                        ForceId::from(self.force_id.unwrap_or_default().value),
+                        ForceId::from(self.force_id.map(|record| record.value).unwrap_or_default()),
                         entity_type,
-                        self.alternate_entity_type.unwrap_or_default(),
-                        self.entity_location.unwrap_or_default(),
+                        self.alternate_entity_type.map(|record| record.decode()).unwrap_or_default(),
                         self.entity_location
                             .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
                             .unwrap_or_default(),
+                        self.entity_orientation.map(|record| record.decode() ).unwrap_or_default(),
                         self.entity_appearance.as_ref()
                             .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
                             .unwrap_or_default(),
-                        EntityMarking::new(self.entity_marking.clone().unwrap_or_default().marking, EntityMarkingCharacterSet::ASCII),
-                        CodecStateResult::StateUpdateEntityState
+                        self.entity_marking.as_ref().map(|record| EntityMarking::new(&record.marking, EntityMarkingCharacterSet::ASCII )).unwrap_or_default(),
+                        CodecStateResult::StateUnaffected
                     )
                 }
                 CodecUpdateMode::PartialUpdate => {
                     if self.full_update_flag {
-
+                        // if in partial-update-mode, and receiving a full update: fill all fields and store state. Optional fields are zeroed.
+                        let entity_type = self.entity_type.map(|record| record.decode() ).unwrap_or_default();
+                        (
+                            ForceId::from(self.force_id.unwrap_or_default().value),
+                            entity_type,
+                            self.alternate_entity_type.unwrap_or_default().decode(),
+                            self.entity_location
+                                .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
+                                .unwrap_or_default(),
+                            self.entity_orientation.map(|record| record.decode() ).unwrap_or_default(),
+                            self.entity_appearance.as_ref()
+                                .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
+                                .unwrap_or_default(),
+                            self.entity_marking.clone().map(|record| EntityMarking::new(record.marking, EntityMarkingCharacterSet::ASCII )).unwrap_or_default(),
+                            CodecStateResult::StateUpdateEntityState
+                        )
                     } else {
-
+                        // if in partial-update-mode, and receiving a partial update: fill present fields, else stateful fields from state cache, zeroed otherwise.
+                        // TODO when no full update is yet received and no state has been build yet, discard? or init to zeroes?
+                        let entity_type = self.entity_type.map(|record| record.decode() ).unwrap_or_else(|| if let Some(state) = state { state.entity_type } else { DisEntityType::default() } );
+                        (
+                            self.force_id.map(|record| ForceId::from(record.value)).unwrap_or_else(|| if let Some(state) = state { state.force_id } else { ForceId::default() } ),
+                            entity_type,
+                            self.alternate_entity_type.map(|record| record.decode()).unwrap_or_else(|| if let Some(state) = state { state.entity_type } else { DisEntityType::default() } ),
+                            self.entity_location
+                                .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
+                                .unwrap_or_else(|| if let Some(state) = state { state.entity_location } else { DisLocation::default() } ),
+                            self.entity_orientation.map(|record| record.decode() ).unwrap_or_else(|| if let Some(state) = state { state.entity_orientation } else { DisOrientation::default() } ),
+                            self.entity_appearance.as_ref()
+                                .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
+                                .unwrap_or_else(|| if let Some(state) = state { state.entity_appearance } else { EntityAppearance::default() } ),
+                            self.entity_marking.clone().map(|record| EntityMarking::new(record.marking, EntityMarkingCharacterSet::ASCII ))
+                                .unwrap_or_else(|| if let Some(state) = state { state.entity_marking.clone() } else { EntityMarking::default() } ),
+                            CodecStateResult::StateUnaffected
+                        )
                     }
                 }
             };
 
         (Counterpart::builder()
             .with_entity_id(self.entity_id.decode())
-            .with_force_id(ForceId::from(self.force_id.unwrap_or_default().value))
+            .with_force_id(force_id)
             .with_entity_type(entity_type)
-            .with_alternative_entity_type(self.alternate_entity_type.unwrap_or_default().decode())
+            .with_alternative_entity_type(alternate_entity_type)
             .with_velocity(self.entity_linear_velocity.unwrap_or_default().decode())
-            .with_location(self.entity_location
-                .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
-                .unwrap_or_default())
-            .with_orientation(self.entity_orientation.unwrap_or_default().decode())
-            .with_appearance(self.entity_appearance.as_ref()
-                .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
-                .unwrap_or_default())
+            .with_location(entity_location)
+            .with_orientation(entity_orientation)
+            .with_appearance(entity_appearance)
             .with_dead_reckoning_parameters(DrParameters::default()
                 .with_algorithm(self.dr_algorithm)
                 .with_parameters(self.dr_params_other.clone().unwrap_or_default().decode(self.dr_algorithm))
                 .with_linear_acceleration(self.dr_params_entity_linear_acceleration.unwrap_or_default().decode())
                 .with_angular_velocity(self.dr_params_entity_angular_velocity.unwrap_or_default().decode()))
-            .with_marking(EntityMarking::new(self.entity_marking.clone().unwrap_or_default().marking, EntityMarkingCharacterSet::ASCII))
+            .with_marking(entity_marking)
             .with_capabilities(dis_rs::entity_capabilities_from_bytes(self.capabilities.clone().unwrap_or_default().0.value, &entity_type))
             .with_variable_parameters(self.variable_parameters.iter()
                 .map(|vp| vp.decode() )
@@ -263,4 +295,182 @@ fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, state: &Encoder
     };
 
     elapsed > (hbt_timeout * config.hbt_cdis_full_update_mplier)
+}
+
+#[cfg(test)]
+mod tests {
+    use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState as DisEntityState};
+    use dis_rs::enumerations::{AirPlatformAppearance, Country, EntityKind, ForceId, PlatformDomain};
+    use dis_rs::enumerations::EntityMarkingCharacterSet::ASCII;
+    use dis_rs::model::{EntityId, EntityType, Orientation};
+    use crate::CdisBody;
+    use crate::codec::{CodecOptions, CodecStateResult, EncoderState};
+
+    #[test]
+    fn entity_state_body_encode_full_update() {
+        let mut state = EncoderState::new();
+        let options = CodecOptions::new_full_update();
+
+        let dis_body = DisEntityState::builder()
+            .with_entity_id(EntityId::new(1, 1, 1))
+            .with_force_id(ForceId::Friendly)
+            .with_entity_type(EntityType::default()
+                .with_domain(PlatformDomain::Air)
+                .with_country(Country::Netherlands_NLD_)
+                .with_kind(EntityKind::Platform))
+            .with_marking(EntityMarking::new("Encode01", ASCII))
+            .with_appearance(EntityAppearance::AirPlatform(AirPlatformAppearance::default()))
+            .with_orientation(Orientation::new(10.0, 20.0, 30.0))
+            .build().into_pdu_body();
+
+        let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
+
+        assert_eq!(state_result, CodecStateResult::StateUnaffected);
+        if let CdisBody::EntityState(es) = cdis_body {
+            assert!(es.full_update_flag);
+            assert_eq!(es.force_id.unwrap().value, u8::from(ForceId::Friendly));
+            assert_eq!(es.entity_type.unwrap().domain, u8::from(PlatformDomain::Air));
+            assert_eq!(es.entity_type.unwrap().country, u16::from(Country::Netherlands_NLD_));
+            assert!(es.alternate_entity_type.is_none());
+            assert!(es.entity_orientation.is_some());
+            assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn entity_state_body_encode_partial_update_first_occurrence() {
+        let mut state = EncoderState::new();
+        let options = CodecOptions::new_partial_update();
+
+        let entity_id = EntityId::new(1, 1, 1);
+        let dis_body = DisEntityState::builder()
+            .with_entity_id(entity_id)
+            .with_force_id(ForceId::Friendly)
+            .with_entity_type(EntityType::default()
+                .with_domain(PlatformDomain::Air)
+                .with_country(Country::Netherlands_NLD_)
+                .with_kind(EntityKind::Platform))
+            .with_marking(EntityMarking::new("Encode01", ASCII))
+            .with_appearance(EntityAppearance::AirPlatform(AirPlatformAppearance::default()))
+            .with_orientation(Orientation::new(10.0, 20.0, 30.0))
+            .build().into_pdu_body();
+
+        assert!(state.entity_state.get(&entity_id).is_none());
+
+        let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
+
+        assert_eq!(state_result, CodecStateResult::StateUpdateEntityState);
+        assert!(state.entity_state.get(&entity_id).is_some());
+        if let CdisBody::EntityState(es) = cdis_body {
+            assert!(es.full_update_flag);
+            assert_eq!(es.force_id.unwrap().value, u8::from(ForceId::Friendly));
+            assert_eq!(es.entity_type.unwrap().domain, u8::from(PlatformDomain::Air));
+            assert_eq!(es.entity_type.unwrap().country, u16::from(Country::Netherlands_NLD_));
+            assert!(es.alternate_entity_type.is_none());
+            assert!(es.entity_orientation.is_some());
+            assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn entity_state_body_encode_partial_update_second_occurrence() {
+        let mut state = EncoderState::new();
+        let options = CodecOptions::new_partial_update();
+
+        let dis_body = DisEntityState::builder()
+            .with_entity_id(EntityId::new(1, 1, 1))
+            .with_force_id(ForceId::Friendly)
+            .with_entity_type(EntityType::default()
+                .with_domain(PlatformDomain::Air)
+                .with_country(Country::Netherlands_NLD_)
+                .with_kind(EntityKind::Platform))
+            .with_marking(EntityMarking::new("Encode01", ASCII))
+            .with_appearance(EntityAppearance::AirPlatform(AirPlatformAppearance::default()))
+            .with_orientation(Orientation::new(10.0, 20.0, 30.0))
+            .build().into_pdu_body();
+
+        let (_,_) = CdisBody::encode(&dis_body, &mut state, &options);
+        let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
+
+        assert_eq!(state_result, CodecStateResult::StateUnaffected);
+        if let CdisBody::EntityState(es) = cdis_body {
+            assert_eq!(es.entity_id.entity.value, 1);
+            assert_eq!(es.entity_id.application.value, 1);
+            assert_eq!(es.entity_id.site.value, 1);
+            assert!(!es.full_update_flag);
+            assert!(es.force_id.is_none());
+            assert!(es.entity_type.is_none());
+            assert!(es.alternate_entity_type.is_none());
+            assert!(es.entity_orientation.is_none());
+            assert!(es.entity_marking.is_none());
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn entity_state_body_encode_dr_static() {
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_state_body_encode_dr_non_static() {
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_state_body_encode_use_guise() {
+        let mut state = EncoderState::new();
+        let options = CodecOptions::new_partial_update().use_guise(true);
+
+        let entity_id = EntityId::new(1, 1, 1);
+        let dis_body = DisEntityState::builder()
+            .with_entity_id(entity_id)
+            .with_force_id(ForceId::Friendly)
+            .with_entity_type(EntityType::default()
+                .with_domain(PlatformDomain::Air)
+                .with_country(Country::Netherlands_NLD_)
+                .with_kind(EntityKind::Platform))
+            .with_alternative_entity_type(EntityType::default()
+                .with_domain(PlatformDomain::Land)
+                .with_country(Country::UnitedStatesofAmerica_USA_)
+                .with_kind(EntityKind::Lifeform))
+            .with_marking(EntityMarking::new("Encode01", ASCII))
+            .with_appearance(EntityAppearance::AirPlatform(AirPlatformAppearance::default()))
+            .build().into_pdu_body();
+
+        let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
+
+        if let CdisBody::EntityState(es) = cdis_body {
+            assert_eq!(es.alternate_entity_type.unwrap().domain, u8::from(PlatformDomain::Land));
+            assert_eq!(es.alternate_entity_type.unwrap().country, u16::from(Country::UnitedStatesofAmerica_USA_));
+            assert_eq!(es.alternate_entity_type.unwrap().kind, u8::from(EntityKind::Lifeform));
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn entity_state_body_decode_full_update() {
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_state_body_decode_partial_update_full_flag() {
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_state_body_decode_partial_update_no_state() {
+        assert!(false);
+    }
+
+    #[test]
+    fn entity_state_body_decode_partial_update_with_state() {
+        assert!(false);
+    }
 }

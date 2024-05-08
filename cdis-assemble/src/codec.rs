@@ -243,11 +243,7 @@ impl CdisBody {
             // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
             CdisBody::EntityState(cdis_body) => {
                 let state_for_id = state.entity_state.get(&EntityId::from(cdis_body.originator().unwrap()));
-                let (dis_body, state_result) = if state_for_id.is_some() {
-                    cdis_body.decode(state_for_id, options)
-                } else {
-                    cdis_body.decode(None, options)
-                };
+                let (dis_body, state_result) = cdis_body.decode(state_for_id, options);
 
                 if state_result == CodecStateResult::StateUpdateEntityState {
                     state.entity_state.entry(EntityId::from(cdis_body.originator().unwrap()))
