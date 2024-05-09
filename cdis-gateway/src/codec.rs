@@ -8,7 +8,7 @@ use cdis_assemble::constants::MTU_BYTES;
 use cdis_assemble::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use cdis_assemble::records::model::WorldCoordinates;
 use cdis_assemble::types::model::SVINT24;
-use dis_rs::model::{EntityId, Pdu};
+use dis_rs::model::{EntityId, Location, Pdu};
 use dis_rs::{DisError, parse};
 
 use crate::config::Config;
@@ -76,7 +76,7 @@ impl Encoder {
     pub fn encode_pdus(&mut self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
             .map(|pdu| {
-                let (pdu, state_result) = CdisPdu::encode(pdu, &self.state, &self.codec_options);
+                let (pdu, state_result) = CdisPdu::encode(pdu, &mut self.state, &self.codec_options);
                 match state_result {
                     CodecStateResult::StateUnaffected => {}
                     CodecStateResult::StateUpdateEntityState => {
@@ -168,7 +168,7 @@ impl Decoder {
             //     check if we already have a full update stored to fill in the blanks, send out DIS
             //     if no full update is present, discard the cdis PDU
             .map(|cdis_pdu| {
-                let (pdu, state_result) = cdis_pdu.decode(&self.state, &self.codec_options);
+                let (pdu, state_result) = cdis_pdu.decode(&mut self.state, &self.codec_options);
                 match state_result {
                     CodecStateResult::StateUnaffected => {}
                     CodecStateResult::StateUpdateEntityState => {
@@ -182,13 +182,10 @@ impl Decoder {
                                 force_id: Default::default(),
                                 entity_type: Default::default(),
                                 alt_entity_type: Default::default(),
-                                entity_location: WorldCoordinates {
-                                    latitude: 0.0,
-                                    longitude: 0.0,
-                                    altitude_msl: SVINT24::from(0),
-                                },
+                                entity_location: Location::default(),
                                 entity_orientation: Default::default(),
                                 entity_appearance: Default::default(),
+                                entity_marking: Default::default(),
                             }); // TODO only insert full updates
                     }
                 }

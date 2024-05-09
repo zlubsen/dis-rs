@@ -13,6 +13,7 @@ use clap::Parser;
 
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
 use crate::codec::{Decoder, Encoder};
+use crate::site::run_site;
 
 mod config;
 mod codec;
@@ -39,16 +40,8 @@ fn main() -> Result<(), GatewayError>{
 
     let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err | GatewayError::ConfigFileParseError(err) )?;
     let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigError(e))?;
-    // TODO print the used configuration
-    info!("*** C-DIS Gateway ***");
-    if let Some(meta) = config_spec.metadata {
-        info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
-    }
-    info!("Running in {} mode.", config.mode);
-    info!("Encoder options - use guise: {} - {}", config.use_guise, config.optimization);
-    info!("Hosting site at port {}.", config.site_host);
-    info!("DIS socket: {:?}.", config.dis_socket);
-    info!("C-DIS socket: {:?}.", config.cdis_socket);
+
+    cli_print_config(&config, &config_spec);
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
@@ -94,6 +87,19 @@ enum Event {
     Nop
 }
 
+/// Prints basic config information to the terminal
+fn cli_print_config(config: &Config, config_spec: &ConfigSpec) {
+    info!("*** C-DIS Gateway ***");
+    if let Some(meta) = &config_spec.metadata {
+        info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
+    }
+    info!("Running in {} mode.", config.mode);
+    info!("Encoder options - use guise: {} - {}", config.use_guise, config.optimization);
+    info!("Hosting site at port {}.", config.site_host);
+    info!("DIS socket: {:?}.", config.dis_socket);
+    info!("C-DIS socket: {:?}.", config.cdis_socket);
+}
+
 /// Starts all necessary tasks and channels for the gateway.
 ///
 /// A gateway consists of two sockets, both able to send and receive data.
@@ -104,7 +110,7 @@ enum Event {
 /// Each task takes the receiver of a broadcast channel to receive `Command`s, and can emit `Event`s via an mpsc channel.
 async fn start_gateway(config: Config) {
     let (cmd_tx, _cmd_rx) = tokio::sync::broadcast::channel::<Command>(COMMAND_CHANNEL_BUFFER_SIZE);
-    let (event_tx, _event_rx) = tokio::sync::mpsc::channel::<Event>(EVENT_CHANNEL_BUFFER_SIZE);
+    let (event_tx, event_rx) = tokio::sync::mpsc::channel::<Event>(EVENT_CHANNEL_BUFFER_SIZE);
     let (dis_socket_out_tx, dis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
     let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
     let (cdis_socket_out_tx, cdis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
@@ -134,7 +140,8 @@ async fn start_gateway(config: Config) {
             cmd_tx.subscribe(), event_tx.clone())),
         tokio::spawn(decoder(
             config.clone(), cdis_socket_out_rx, dis_socket_in_tx,
-            cmd_tx.subscribe(), event_tx.clone()))
+            cmd_tx.subscribe(), event_tx.clone())),
+        tokio::spawn(run_site(config.clone(), cmd_tx.clone(), event_rx))
     );
 
     match handles {
