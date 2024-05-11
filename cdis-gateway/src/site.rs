@@ -7,20 +7,24 @@ use tower_http::trace::TraceLayer;
 use crate::{Command, Event};
 use crate::config::Config;
 
+const ASSETS_DIR: &str = "assets";
+
 pub async fn run_site(config: Config,
                 mut cmd_tx: tokio::sync::broadcast::Sender<Command>,
                 event_rx: tokio::sync::mpsc::Receiver<Event>) {
-    let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets");
+    let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(ASSETS_DIR);
     let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
-    // build our application with a route
+
     let router = Router::new()
         .fallback_service(static_files_service)
         // .route("/sse", get(sse_handler))
         .layer(TraceLayer::new_for_http());
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
+    // TODO handle bind error
+    let host_ip = format!("127.0.0.1:{}", config.site_host);
+    let listener = tokio::net::TcpListener::bind(&host_ip)
         .await
-        .unwrap();
+        .expect(format!("Failed to bind TCP socket for Web UI - {}", host_ip).as_str());
     tracing::debug!("Site listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, router).await.unwrap();
 }

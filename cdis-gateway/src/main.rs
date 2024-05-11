@@ -10,6 +10,7 @@ use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::{error, event, info, Level};
 use clap::Parser;
+use dis_rs::enumerations::PduType;
 
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
 use crate::codec::{Decoder, Encoder};
@@ -84,7 +85,16 @@ enum Command {
 
 #[derive(Clone, Debug, PartialEq)]
 enum Event {
-    Nop
+    ReceivedBytesDis(usize), // bytes received through socket
+    ReceivedBytesCDis(usize), // bytes received through socket
+    ReceivedDis(PduType),
+    ReceivedCDis(PduType),
+    EncodedPdu(PduType),
+    DecodedPdu(PduType),
+    RejectedUnsupportedDisPdu(PduType),
+    RejectedUnsupportedCDisPdu(PduType),
+    SentDis(usize), // bytes send through socket
+    SentCDis(usize), // bytes send through socket
 }
 
 /// Prints basic config information to the terminal
@@ -158,6 +168,7 @@ async fn start_gateway(config: Config) {
 async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     use socket2::{Domain, Protocol, Socket, Type};
 
+    // Create socket using socket2 crate, to be able to set required socket options (SO_REUSEADDR, SO_REUSEPORT, ...)
     let is_ipv4 = endpoint.address.is_ipv4();
     let socket_domain = if is_ipv4 { Domain::IPV4 } else { Domain::IPV6 };
     let socket_type = Type::DGRAM;
@@ -349,8 +360,8 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
 async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-                 _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut encoder = Encoder::new(&config);
+                 event_tx: tokio::sync::mpsc::Sender<Event>) {
+    let mut encoder = Encoder::new(&config, event_tx);
 
     loop {
         select! {

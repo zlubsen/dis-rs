@@ -1,27 +1,30 @@
 use std::time::Instant;
 
 use bytes::{Bytes, BytesMut};
+use tracing::error;
 
-use cdis_assemble::{BitBuffer, CdisError, CdisInteraction, CdisPdu, SerializeCdisPdu};
+use cdis_assemble::{BitBuffer, CdisBody, CdisError, CdisInteraction, CdisPdu, SerializeCdisPdu};
 use cdis_assemble::codec::{CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
 use cdis_assemble::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use cdis_assemble::records::model::WorldCoordinates;
 use cdis_assemble::types::model::SVINT24;
-use dis_rs::model::{EntityId, Location, Pdu};
+use dis_rs::model::{EntityId, Location, Pdu, PduBody};
 use dis_rs::{DisError, parse};
 
 use crate::config::Config;
+use crate::Event;
 
 /// The `Encoder` manages the configuration and state of the encoding of DIS PDUs to C-DIS PDUs.
 pub struct Encoder {
     codec_options: CodecOptions,
     cdis_buffer: BitBuffer,
     state: EncoderState,
+    event_tx: tokio::sync::mpsc::Sender<Event>,
 }
 
 impl Encoder {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, event_tx: tokio::sync::mpsc::Sender<Event>) -> Self {
         let codec_options = CodecOptions {
             update_mode: match config.mode.0 {
                 CodecUpdateMode::FullUpdate => { CodecUpdateMode::FullUpdate }
@@ -39,6 +42,7 @@ impl Encoder {
             state: EncoderState {
                 entity_state: Default::default(),
             },
+            event_tx,
         }
     }
 
@@ -53,19 +57,22 @@ impl Encoder {
                       ( total_bits + pdu.pdu_length(), pdu.serialize(&mut self.cdis_buffer, cursor) )
                   });
 
-        let cdis_wire: Vec<u8> = Vec::from(&self.cdis_buffer.data[0..total_bits.div_ceil(8)]);
+        let total_bytes = total_bits.div_ceil(8);
+        let cdis_wire: Vec<u8> = Vec::from(&self.cdis_buffer.data[0..total_bytes]);
+        self.event_tx.blocking_send(Event::SentCDis(total_bytes)).expect("Event TX channel failed in Encoder::writing.");
         cdis_wire
     }
 
     // TODO make fallible, result from parse (and encode) function(s)
     pub fn encode_buffer(&mut self, bytes_in: Bytes) -> Vec<u8> {
+        self.event_tx.blocking_send(Event::ReceivedBytesDis(bytes_in.len())).expect("Event TX channel failed in Encoder::encode_buffer.");
         let pdus = self.parsing(bytes_in);
         let cdis_pdus = match pdus {
             Ok(pdus) => {
                 self.encode_pdus(&pdus)
             }
             Err(err) => {
-                println!("{:?}", err);
+                error!("{:?}", err);
                 Vec::new()
             }
         };
@@ -76,6 +83,7 @@ impl Encoder {
     pub fn encode_pdus(&mut self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
             .map(|pdu| {
+                self.event_tx.blocking_send(Event::ReceivedDis(pdu.header.pdu_type, )).expect("Event TX channel failed in Encoder::encode_pdus - Received bytes.");
                 let (pdu, state_result) = CdisPdu::encode(pdu, &mut self.state, &self.codec_options);
                 match state_result {
                     CodecStateResult::StateUnaffected => {}
@@ -86,8 +94,13 @@ impl Encoder {
                             .or_insert(EncoderStateEntityState::new());
                     }
                 }
+                self.event_tx.blocking_send(Event::EncodedPdu(pdu.header.pdu_type)).expect("Event TX channel failed in Encoder::encode_pdus - Encoded PDU.");
                 pdu
             } )
+            .filter(|pdu| if let CdisBody::Unsupported(_) = pdu.body {
+                self.event_tx.blocking_send(Event::RejectedUnsupportedDisPdu(pdu.header.pdu_type)).expect("Event TX channel failed in Encoder::encode_pdus - Reject unsupported.");
+                false
+            } else { true }) // only process supported PDUs
             .collect();
         cdis_pdus
     }
@@ -97,10 +110,11 @@ pub struct Decoder {
     codec_options: CodecOptions,
     dis_buffer: BytesMut,
     state: DecoderState,
+    event_tx: tokio::sync::mpsc::Sender<Event>,
 }
 
 impl Decoder {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, event_tx: tokio::sync::mpsc::Sender<Event>,) -> Self {
         let codec_options = CodecOptions {
             update_mode: match config.mode.0 {
                 CodecUpdateMode::FullUpdate => { CodecUpdateMode::FullUpdate }
@@ -117,6 +131,7 @@ impl Decoder {
             codec_options,
             dis_buffer,
             state: DecoderState { entity_state: Default::default() },
+            event_tx,
         }
     }
 
@@ -128,7 +143,6 @@ impl Decoder {
         // FIXME now we reset the buffer by assigning a new BytesMut; should not cause reallocation of under lying memory, but need to check.
         self.dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
-        // FIXME number of bytes reported 'serialize' is too large for observed cases (208 actual, reported 252)...
         // number_of_bytes not used in creating the slice to put in the vec.
         let _number_of_bytes: usize = dis_pdus.iter()
             .map(| pdu| {
@@ -174,8 +188,19 @@ impl Decoder {
                     CodecStateResult::StateUpdateEntityState => {
                         self.state.entity_state.entry(EntityId::from(
                             cdis_pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
-                            .and_modify(|e| {
-
+                            .and_modify(|mut entry| {
+                                if let PduBody::EntityState(es) = &pdu.body {
+                                    *entry = DecoderStateEntityState {
+                                        last_received: Instant::now(),
+                                        force_id: es.force_id,
+                                        entity_type: es.entity_type,
+                                        alt_entity_type: es.alternative_entity_type,
+                                        entity_location: es.entity_location.clone(),
+                                        entity_orientation: es.entity_orientation.clone(),
+                                        entity_appearance: es.entity_appearance.clone(),
+                                        entity_marking: es.entity_marking.clone(),
+                                    }
+                                }
                             } )
                             .or_insert(DecoderStateEntityState {
                                 last_received: Instant::now(),
