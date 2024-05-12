@@ -59,6 +59,7 @@ impl CdisPdu {
         }
     }
 
+    /// Calculates the on-wire length of the C-DIS PDU in bits.
     pub fn pdu_length(&self) -> usize {
         self.header.record_length()
         + self.body.body_length()
