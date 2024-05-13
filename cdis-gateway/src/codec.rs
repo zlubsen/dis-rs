@@ -6,9 +6,7 @@ use tracing::error;
 use cdis_assemble::{BitBuffer, CdisBody, CdisError, CdisInteraction, CdisPdu, SerializeCdisPdu};
 use cdis_assemble::codec::{CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
-use cdis_assemble::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
-use cdis_assemble::records::model::WorldCoordinates;
-use cdis_assemble::types::model::SVINT24;
+use cdis_assemble::entity_state::codec::{DecoderStateEntityState};
 use dis_rs::model::{EntityId, Location, Pdu, PduBody};
 use dis_rs::{DisError, parse};
 
@@ -91,7 +89,7 @@ impl Encoder {
                         self.state.entity_state.entry(dis_rs::model::EntityId::from(
                             pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
                             .and_modify(|e| e.last_send = Instant::now() )
-                            .or_insert(EncoderStateEntityState::new());
+                            .or_default();
                     }
                 }
                 self.event_tx.blocking_send(Event::EncodedPdu(pdu.header.pdu_type)).expect("Event TX channel failed in Encoder::encode_pdus - Encoded PDU.");
@@ -131,7 +129,7 @@ impl Decoder {
             codec_options,
             dis_buffer,
             state: DecoderState { entity_state: Default::default() },
-            event_tx,
+            __event_tx, // TODO emit events during decoding
         }
     }
 
@@ -140,7 +138,7 @@ impl Decoder {
     }
 
     fn writing(&mut self, dis_pdus: Vec<Pdu>) -> Vec<u8> {
-        // FIXME now we reset the buffer by assigning a new BytesMut; should not cause reallocation of under lying memory, but need to check.
+        // FIXME now we reset the buffer by assigning a new BytesMut; should not cause reallocation of underlying memory, but need to check.
         self.dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
         // number_of_bytes not used in creating the slice to put in the vec.
@@ -190,28 +188,11 @@ impl Decoder {
                             cdis_pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
                             .and_modify(|mut entry| {
                                 if let PduBody::EntityState(es) = &pdu.body {
-                                    *entry = DecoderStateEntityState {
-                                        last_received: Instant::now(),
-                                        force_id: es.force_id,
-                                        entity_type: es.entity_type,
-                                        alt_entity_type: es.alternative_entity_type,
-                                        entity_location: es.entity_location.clone(),
-                                        entity_orientation: es.entity_orientation.clone(),
-                                        entity_appearance: es.entity_appearance.clone(),
-                                        entity_marking: es.entity_marking.clone(),
-                                    }
+                                    *entry = DecoderStateEntityState::new(&es)
                                 }
                             } )
-                            .or_insert(DecoderStateEntityState {
-                                last_received: Instant::now(),
-                                force_id: Default::default(),
-                                entity_type: Default::default(),
-                                alt_entity_type: Default::default(),
-                                entity_location: Location::default(),
-                                entity_orientation: Default::default(),
-                                entity_appearance: Default::default(),
-                                entity_marking: Default::default(),
-                            }); // TODO only insert full updates
+                            // TODO only insert full updates
+                            .or_insert(DecoderStateEntityState::default());
                     }
                 }
                 pdu

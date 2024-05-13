@@ -35,19 +35,19 @@ fn main() -> Result<(), GatewayError>{
 
     let arguments = Arguments::parse();
 
-    let mut file = File::open(arguments.config).map_err(|err| GatewayError::ConfigFileLoadError(err))?;
+    let mut file = File::open(arguments.config).map_err(|err| GatewayError::ConfigFileLoad(err))?;
     let mut buffer = String::new();
-    file.read_to_string(&mut buffer).map_err(|err| GatewayError::ConfigFileReadError(err) )?;
+    file.read_to_string(&mut buffer).map_err(|err| GatewayError::ConfigFileRead(err) )?;
 
-    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err | GatewayError::ConfigFileParseError(err) )?;
-    let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigError(e))?;
+    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err | GatewayError::ConfigFileParse(err) )?;
+    let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigInvalid(e))?;
 
     cli_print_config(&config, &config_spec);
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
-        .build().map_err(|_err| GatewayError::RuntimeStartError)?;
+        .build().map_err(|_err| GatewayError::RuntimeStart)?;
     let _guard = runtime.enter();
     runtime.block_on( async { start_gateway(config).await } );
     runtime.shutdown_background();
@@ -57,11 +57,11 @@ fn main() -> Result<(), GatewayError>{
 
 #[derive(Debug)]
 enum GatewayError {
-    ConfigFileLoadError(io::Error),
-    ConfigFileReadError(io::Error),
-    ConfigFileParseError(toml::de::Error),
-    ConfigError(ConfigError),
-    RuntimeStartError,
+    ConfigFileLoad(io::Error),
+    ConfigFileRead(io::Error),
+    ConfigFileParse(toml::de::Error),
+    ConfigInvalid(ConfigError),
+    RuntimeStart,
 }
 
 impl std::error::Error for GatewayError {}
@@ -69,11 +69,11 @@ impl std::error::Error for GatewayError {}
 impl Display for GatewayError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            GatewayError::ConfigFileLoadError(err) => { write!(f, "Error loading config file - {}.", err) }
-            GatewayError::ConfigFileReadError(err) => { write!(f, "Error reading config file contents - {}.", err) }
-            GatewayError::ConfigFileParseError(err) => { write!(f, "Error parsing config file - {}.", err) }
-            GatewayError::ConfigError(err) => { write!(f, "{}", err) }
-            GatewayError::RuntimeStartError => { write!(f, "Error starting Tokio runtime.") }
+            GatewayError::ConfigFileLoad(err) => { write!(f, "Error loading config file - {}.", err) }
+            GatewayError::ConfigFileRead(err) => { write!(f, "Error reading config file contents - {}.", err) }
+            GatewayError::ConfigFileParse(err) => { write!(f, "Error parsing config file - {}.", err) }
+            GatewayError::ConfigInvalid(err) => { write!(f, "{}", err) }
+            GatewayError::RuntimeStart => { write!(f, "Error starting Tokio runtime.") }
         }
     }
 }
@@ -146,12 +146,12 @@ async fn start_gateway(config: Config) {
         tokio::spawn(cdis_read_socket),
         tokio::spawn(cdis_write_socket),
         tokio::spawn(encoder(
-            config.clone(), dis_socket_out_rx, cdis_socket_in_tx,
+            config, dis_socket_out_rx, cdis_socket_in_tx,
             cmd_tx.subscribe(), event_tx.clone())),
         tokio::spawn(decoder(
-            config.clone(), cdis_socket_out_rx, dis_socket_in_tx,
+            config, cdis_socket_out_rx, dis_socket_in_tx,
             cmd_tx.subscribe(), event_tx.clone())),
-        tokio::spawn(run_site(config.clone(), cmd_tx.clone(), event_rx))
+        tokio::spawn(run_site(config, cmd_tx.clone(), event_rx))
     );
 
     match handles {
@@ -206,25 +206,25 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
                 if let IpAddr::V4(interface_v4) = endpoint.interface.ip() {
                     socket.join_multicast_v4(&ip_address_v4, &interface_v4)
-                        .expect(format!("Failed to join multicast group {} using interface {}.", ip_address_v4, interface_v4).as_str());
+                        .unwrap_or_else(|_| panic!("Failed to join multicast group {} using interface {}.", ip_address_v4, interface_v4));
                 }
             }
         }
         (false, UdpMode::UniCast) => {
             // TODO use .inspect_err() ?
-            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str())
+            socket.bind(&endpoint.interface.into()).unwrap_or_else(|_| panic!("Failed to bind to IPv6 address {:?}", endpoint.address));
         }
         (false, UdpMode::BroadCast) => {
             socket.set_broadcast(true).expect("Failed to set SO_BROADCAST.");
             socket.set_ttl(1).expect("Failed to set TTL.");
-            socket.bind(&endpoint.interface.into()).expect(format!("Failed to bind to IPv6 address {:?}", endpoint.address).as_str());
+            socket.bind(&endpoint.interface.into()).unwrap_or_else(|_| panic!("Failed to bind to IPv6 address {:?}", endpoint.address));
         }
         (false, UdpMode::MultiCast) => {
             if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
                 if let IpAddr::V6(interface_v6) = endpoint.interface.ip() {
                     // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
                     socket.join_multicast_v6(&ip_address_v6, 0)
-                        .expect(format!("Failed to join multicast group {} using interface 0 ({}).", ip_address_v6, interface_v6).as_str());
+                        .unwrap_or_else(|_| panic!("Failed to join multicast group {} using interface 0 ({}).", ip_address_v6, interface_v6));
                 }
             }
         }
@@ -385,8 +385,8 @@ async fn decoder(config: Config,
                  mut channel_in: tokio::sync::mpsc::Receiver<Bytes>,
                  channel_out: tokio::sync::mpsc::Sender<Vec<u8>>,
                  mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-                 _event_tx: tokio::sync::mpsc::Sender<Event>) {
-    let mut decoder = Decoder::new(&config);
+                 event_tx: tokio::sync::mpsc::Sender<Event>) {
+    let mut decoder = Decoder::new(&config, event_tx);
 
     loop {
         select! {

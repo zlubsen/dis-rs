@@ -758,8 +758,6 @@ mod tests {
     use crate::common::parser::{parse_multiple_header, skip_body};
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType, ProtocolFamily, ProtocolVersion};
-    use crate::model::{EntityId, PduBody};
-    use crate::parse;
 
     #[test]
     fn parse_header() {

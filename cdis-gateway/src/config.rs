@@ -39,7 +39,7 @@ impl TryFrom<&ConfigSpec> for Config {
         let dis_socket = UdpEndpoint::try_from(&value.dis)?;
         let cdis_socket = UdpEndpoint::try_from(&value.cdis)?;
 
-        let site_host = (&value.site).map_or(DEFAULT_SITE_HOST_PORT, | spec | spec.port );
+        let site_host = value.site.map_or(DEFAULT_SITE_HOST_PORT, | spec | spec.port );
 
         let hbt_cdis_full_update_mplier = if let Some(fed_spec) = &value.federation {
             fed_spec.hbt_cdis_full_update_mplier.unwrap_or(DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER)
@@ -78,7 +78,7 @@ impl TryFrom<&str> for GatewayMode {
         match value.to_lowercase().as_str() {
             "full_update" => Ok(GatewayMode(CodecUpdateMode::FullUpdate)),
             "partial_update" => Ok(GatewayMode(CodecUpdateMode::PartialUpdate)),
-            _ => Err(ConfigError::GatewayModeInvalid)
+            _ => Err(ConfigError::GatewayMode)
         }
 
     }
@@ -104,7 +104,7 @@ impl TryFrom<&str> for EncoderOptimization {
         match value.to_lowercase().as_str() {
             "bandwidth" => Ok(Self(CodecOptimizeMode::Bandwidth)),
             "completeness" => Ok(Self(CodecOptimizeMode::Completeness)),
-            _ => Err(ConfigError::OptimizationModeInvalid)
+            _ => Err(ConfigError::OptimizationMode)
         }
     }
 }
@@ -139,8 +139,8 @@ impl TryFrom<&EndPointSpec> for UdpEndpoint {
         let ttl = value.ttl.unwrap_or(DEFAULT_TTL);
         let block_own_socket = value.block_own_socket.unwrap_or(DEFAULT_BLOCK_OWN_SOCKET);
 
-        let interface = value.interface.parse().expect(format!("Cannot parse socket address {}", value.interface).as_str());
-        let address = value.interface.parse().expect(format!("Cannot parse socket address {}", value.interface).as_str());
+        let interface = value.interface.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
+        let address = value.interface.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
 
         Ok(Self {
             mode,
@@ -169,7 +169,7 @@ impl TryFrom<&str> for UdpMode {
             "unicast" => Ok(Self::UniCast),
             "broadcast" => Ok(Self::BroadCast),
             "multicast" => Ok(Self::MultiCast),
-            _ => Err(ConfigError::UdpModeInvalid)
+            _ => Err(ConfigError::UdpMode)
         }
 
     }
@@ -369,19 +369,20 @@ pub struct FederationSpec {
     pub hbt_timeout_mplier: Option<f32>, //Default: 2.4 (see NOTE 2)
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum ConfigError {
-    GatewayModeInvalid,
-    UdpModeInvalid,
-    OptimizationModeInvalid,
+    GatewayMode,
+    UdpMode,
+    OptimizationMode,
 }
 
 impl Display for ConfigError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConfigError::GatewayModeInvalid => { write!(f, "Configured Gateway mode is invalid. Valid values are 'full_update', and 'partial_update'.") }
-            ConfigError::UdpModeInvalid => { write!(f, "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'.") }
-            ConfigError::OptimizationModeInvalid => { write!(f, "Configured encoder Optimization mode is invalid. Valid values are 'bandwidth' and 'completeness'.") }
+            ConfigError::GatewayMode => { write!(f, "Configured Gateway mode is invalid. Valid values are 'full_update', and 'partial_update'.") }
+            ConfigError::UdpMode => { write!(f, "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'.") }
+            ConfigError::OptimizationMode => { write!(f, "Configured encoder Optimization mode is invalid. Valid values are 'bandwidth' and 'completeness'.") }
         }
     }
 }

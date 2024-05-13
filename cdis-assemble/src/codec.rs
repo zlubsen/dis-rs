@@ -159,7 +159,7 @@ impl CdisBody {
                 if state_result == CodecStateResult::StateUpdateEntityState {
                     state.entity_state.entry(*dis_body.originator().unwrap())
                         .and_modify(|es| {es.last_send = Instant::now()})
-                        .or_insert(EncoderStateEntityState::new());
+                        .or_default();
                 }
 
                 (cdis_body.into_cdis_body(), state_result)

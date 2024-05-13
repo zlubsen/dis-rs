@@ -1,4 +1,4 @@
-# Metadata allows the user to specify
+# Metadata allows the user to specify a name and versioning for the configuration
 [metadata]
 name = "Test Config for Localhost"
 author = "zlubsen"
@@ -6,16 +6,21 @@ version = "0.1"
 
 # The mode of the gateway is either "full_update" or "partial_update"; Optional value, defaults to FullUpdate mode
 update_mode = "full_update"
+#update_mode = "partial_update"
 
-# The [dis] entry specifies the endpoint (interface and remote address) for receiving/sending DIS PDUs
+# The `[dis]` entry specifies the endpoint (interface and remote address) for receiving/sending DIS PDUs
 [dis]
-# `uri` specifies the remote address where to send and receive PDUs from. Format is "<IP_of_the_address>:<port>". Mandatory field.
+# `uri` specifies the remote address where to send and receive PDUs from. Format is "<IPv4_address>:<port>" for IPv4 or "[<IPv6_address>]:<port>". Mandatory field.
 uri = "127.0.0.1:3000"
+#uri = "[::1]:3000"
 # `interface` specifies the interface which to bind the gateway to. Outgoing packets are send via this interface. Format is "<IP_of_the_interface>:<port>". Mandatory field.
 interface = "127.0.0.1:3000"
-# `mode` specifies the type of connection, being `unicast`, `broadcast`, or `multicast`. Optional value, defaults to `unicast`.
+#uri = "[::1]:3000"
+# `mode` specifies the type of connection, being `unicast`, `broadcast`, or `multicast`. Optional, defaults to `unicast`.
 mode = "unicast"
-# `ttl` specifies the time-to-live of packets send by the gateway via this endpoint.
+#mode = "broadcast"
+#mode = "multicast"
+# `ttl` specifies the time-to-live of packets send by the gateway via this endpoint. Optional, defaults to '1'.
 ttl = 1
 # 'block_own_host' specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
 block_own_host = true
@@ -35,7 +40,7 @@ block_own_host = true
 
 # The `site` entry specifies where the monitoring dashboard of the gateway is hosted.
 [site]
-# `port` specifies the port on the host where the site is hosted.
+# `port` specifies the port on the host where the site is hosted. It defaults to port 8080.
 port = 8080
 
 # The `encoder` entry specifies settings for the encoding/decoding of PDUs.
@@ -49,7 +54,7 @@ use_guise = false
 # In practice, optimizing for `bandwidth` means that the EntityState PDU fields 'DR Other Parameters' and 'Capabilities' are never encoded and transmitted over C-DIS.
 optimization = "completeness"
 
-# The `federation` entry specifies DIS Federation Agreements.
+# The `federation` entry specifies DIS Federation Agreements on timeouts, heartbeat timers.
 [federation]
 # `hbt_cdis_full_update_mplier` sets the CDIS heartbeat full update multiplier. Optional field. Float value. Defaults to 2.4.
 hbt_cdis_full_update_mplier = 2.4

@@ -76,6 +76,7 @@ impl CdisInteraction for CdisPdu {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum CdisBody {
     Unsupported(Unsupported),

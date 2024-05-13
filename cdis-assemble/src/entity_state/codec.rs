@@ -1,6 +1,6 @@
 use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
-use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation};
+use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Location, Orientation as DisOrientation};
 use std::time::Instant;
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode};
 use crate::codec::CodecStateResult::StateUnaffected;
@@ -16,8 +16,8 @@ pub struct EncoderStateEntityState {
     pub last_send: Instant,
 }
 
-impl EncoderStateEntityState {
-    pub fn new() -> Self {
+impl Default for EncoderStateEntityState {
+    fn default() -> Self {
         Self {
             last_send: Instant::now()
         }
@@ -47,6 +47,21 @@ impl DecoderStateEntityState {
             entity_orientation: pdu.entity_orientation,
             entity_appearance: pdu.entity_appearance,
             entity_marking: pdu.entity_marking.clone(),
+        }
+    }
+}
+
+impl Default for DecoderStateEntityState {
+    fn default() -> Self {
+        Self {
+            last_received: Instant::now(),
+            force_id: Default::default(),
+            entity_type: Default::default(),
+            alt_entity_type: Default::default(),
+            entity_location: Location::default(),
+            entity_orientation: Default::default(),
+            entity_appearance: Default::default(),
+            entity_marking: Default::default(),
         }
     }
 }

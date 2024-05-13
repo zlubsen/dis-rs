@@ -59,7 +59,11 @@ single network layer transaction - 1500 bytes).
 ## Encoding / Decoding
 The conversion of DIS to C-DIS and vice versa is done using the `CdisPdu::encode()` (associated function of the struct) and `CdisPdu::decode()` (method of an instance) functions.
 
-TODO: describe State and CodecOptions to be provided to encode/decode.
+The conversion requires, aside from the to-be converted PDU, two things:
+- a state to convert 'stateful' PDUs (such as EntityState), tracking optional fields and timeouts. Either an `EncoderState` or `DecoderState`, containing specialised data structures for specific stateful PDUs. 
+- a `CodecOptions` struct, providing the parameters for the conversion (such as Full/Partial update mode, heartbeat and timeout settings, ...).
+
+See also `tests/encoding_tests.rs` and tests in `src/codec.rs` for examples.
 
 ## Resources
 

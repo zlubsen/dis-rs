@@ -311,7 +311,7 @@ fn main() {
     // Save to file
     let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join("enumerations.rs");
     fs::write(
-        &dest_path,
+        dest_path,
         contents
     ).unwrap();
 }
