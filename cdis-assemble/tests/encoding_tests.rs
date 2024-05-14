@@ -10,7 +10,7 @@ use dis_rs::enumerations::{Country, DeadReckoningAlgorithm, EntityKind, EntityMa
 use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
 
 #[test]
-fn encode_dis_to_cdis_entity_state() {
+fn encode_dis_to_cdis_entity_state_full_mode() {
     let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
 
@@ -46,7 +46,7 @@ fn encode_dis_to_cdis_entity_state() {
 }
 
 #[test]
-fn decode_cdis_to_dis_entity_state() {
+fn decode_cdis_to_dis_entity_state_full_mode() {
     let mut decoder_state = DecoderState::new();
     let codec_options = CodecOptions::new_full_update();
 
