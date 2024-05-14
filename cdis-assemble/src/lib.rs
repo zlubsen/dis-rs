@@ -192,14 +192,13 @@ impl CdisInteraction for CdisBody {
     }
 }
 
-// TODO review messages (bits vs bytes)
 #[derive(Clone, Debug, PartialEq, Error)]
 pub enum CdisError {
     #[error("{0}")]
     ParseError(String), // the parsing of a CDIS PDU resulted in an error
     #[error("The buffer does not contain enough bytes for a valid C-DIS header. {0} bits available.")]
     InsufficientHeaderLength(u16), // the input was too small to contain a valid CDIS header; (u16 found)
-    #[error("C-DIS PDU has insufficient length. Expected {0}, found {1}.")]
+    #[error("C-DIS PDU has insufficient length. Expected {0} bits, found {1} bits.")]
     InsufficientPduLength(u16, u16), // the input was too small to contain a valid CDIS PDU based on the header and parsing; (u16 expected, u16 found)
     #[error("C-DIS PDU is larger than size of the buffer for serialisation. Needs {0} bits, available {1} bits.")]
     InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided CDIS PDU; (u16 PDU size, usize available capacity)

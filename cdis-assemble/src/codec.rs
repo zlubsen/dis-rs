@@ -240,7 +240,6 @@ impl CdisBody {
 
     pub fn decode(&self, state: &mut DecoderState, options: &CodecOptions) -> (PduBody, CodecStateResult) {
         match self {
-            // TODO add 'Unimplemented' Body to dis-rs, as impl for remaining PduBody types
             CdisBody::EntityState(cdis_body) => {
                 let state_for_id = state.entity_state.get(&EntityId::from(cdis_body.originator().unwrap()));
                 let (dis_body, state_result) = cdis_body.decode(state_for_id, options);
