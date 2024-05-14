@@ -295,7 +295,7 @@ mod tests {
     use dis_rs::enumerations::{Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain, ProtocolVersion};
     use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
     use crate::{BodyProperties, CdisBody, CdisPdu};
-    use crate::codec::{CodecOptions, DecoderState, EncoderState};
+    use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::entity_state::model::CdisEntityCapabilities;
     use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, Units, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
@@ -318,7 +318,9 @@ mod tests {
             .into_pdu_body();
         let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
 
-        let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &mut encoder_state, &codec_option);
+        let (cdis_pdu, state_result) = CdisPdu::encode(&dis_pdu, &mut encoder_state, &codec_option);
+
+        assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
         let dis_body = if let PduBody::EntityState(es) = dis_pdu.body {
             es
@@ -374,7 +376,9 @@ mod tests {
         };
         let cdis = CdisPdu::finalize_from_parts(cdis_header, cdis_body, Some(TimeStamp::from(20000)));
 
-        let (dis, _state_result) = cdis.decode(&mut decoder_state, &codec_options);
+        let (dis, state_result) = cdis.decode(&mut decoder_state, &codec_options);
+
+        assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
         let dis_body = if let PduBody::EntityState(es) = dis.body {
             es
