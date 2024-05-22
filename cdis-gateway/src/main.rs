@@ -105,7 +105,7 @@ fn cli_print_config(config: &Config, config_spec: &ConfigSpec) {
     }
     info!("Running in {} mode.", config.mode);
     info!("Encoder options - use guise: {} - {}", config.use_guise, config.optimization);
-    info!("Hosting site at port {}.", config.site_host);
+    info!("Hosting templates at port {}.", config.site_host);
     info!("DIS socket: {:?}.", config.dis_socket);
     info!("C-DIS socket: {:?}.", config.cdis_socket);
 }
