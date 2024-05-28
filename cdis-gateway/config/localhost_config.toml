@@ -41,7 +41,7 @@ block_own_host = true
 # The `templates` entry specifies where the monitoring dashboard of the gateway is hosted.
 [site]
 # `port` specifies the port on the host where the templates is hosted. It defaults to port 8080.
-port = 8082
+port = 8080
 
 # The `encoder` entry specifies settings for the encoding/decoding of PDUs.
 [encoder]

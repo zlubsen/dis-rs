@@ -3,5 +3,16 @@
     C-DIS Gateway
 {% endblock %}
 {% block content %}
-    <p class="text-xl text-yellow">Yup, here is some content.</p>
+    <p class="text-xl bg-sky-600">Yup, here is some content.</p>
+    <div class="badge badge-neutral">A Badge</div>
+
+<div id="parent-div">hiep hiep hoera!</div>
+
+<button hx-post="/clicked"
+        hx-trigger="click"
+        hx-target="#parent-div"
+        hx-swap="outerHTML"
+class="btn-primary">
+    Click Me!
+</button>
 {% endblock %}

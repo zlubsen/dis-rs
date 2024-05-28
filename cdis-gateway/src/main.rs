@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;

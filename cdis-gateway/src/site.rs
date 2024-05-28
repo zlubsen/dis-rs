@@ -3,11 +3,12 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response, Sse};
 use axum::Router;
 use axum::routing::get;
+use tokio::signal;
 // use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use crate::{Command, Event};
 use crate::config::Config;
-use crate::site::templates::HomeTemplate;
+use crate::site::templates::{ConfigTemplate, HomeTemplate};
 
 // const ASSETS_DIR: &str = "templates";
 
@@ -22,7 +23,9 @@ pub async fn run_site(config: Config,
         // .route("/sse", get(sse_handler))
         .layer(TraceLayer::new_for_http())
         .route("/", get(home))
-        .route("/styles.css", get(styles));
+        .route("/styles.css", get(styles))
+        .route("/index.js", get(scripts))
+        .route("/clicked", get(clicked));
 
     // TODO handle bind error
     let host_ip = format!("127.0.0.1:{}", config.site_host);
@@ -30,7 +33,34 @@ pub async fn run_site(config: Config,
         .await
         .expect(format!("Failed to bind TCP socket for Web UI - {}", host_ip).as_str());
     tracing::debug!("Site listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, router).await.unwrap();
+    axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+        let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
 
 // async fn sse_handler(
@@ -49,7 +79,7 @@ pub async fn styles() -> Result<impl IntoResponse, Response> {
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/css")
-        .body(include_str!("../templates/output.css").to_owned());
+        .body(include_str!("../build/styles.css").to_owned());
 
     match response {
         Ok(response) => { Ok(response) }
@@ -57,7 +87,23 @@ pub async fn styles() -> Result<impl IntoResponse, Response> {
     }
 }
 
-pub async fn home() -> HomeTemplate {
+pub async fn scripts() -> Result<impl IntoResponse, Response> {
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "text/javascript")
+        .body(include_str!("../build/index.js").to_owned());
+
+    match response {
+        Ok(response) => { Ok(response) }
+        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+    }
+}
+
+pub async fn clicked() -> impl IntoResponse {
+    ConfigTemplate
+}
+
+pub async fn home() -> impl IntoResponse {
     HomeTemplate
 }
 
