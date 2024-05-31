@@ -4,8 +4,10 @@ use axum::response::{IntoResponse, Response, Sse};
 use axum::Router;
 use axum::routing::get;
 use tokio::signal;
+use tokio::sync::broadcast::error::SendError;
 // use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
+use tracing::error;
 use crate::{Command, Event};
 use crate::config::Config;
 use crate::site::templates::{ConfigTemplate, HomeTemplate};
@@ -37,6 +39,11 @@ pub async fn run_site(config: Config,
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+
+    match cmd_tx.send(Command::Quit) {
+        Ok(_) => {}
+        Err(_) => { error!("Could not send Command::Quit.") }
+    }
 }
 
 async fn shutdown_signal() {

@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::Read;
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
@@ -11,6 +11,7 @@ use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::{error, event, info, Level};
 use clap::Parser;
+use tracing::log::trace;
 use dis_rs::enumerations::PduType;
 
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
@@ -79,8 +80,10 @@ impl Display for GatewayError {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 enum Command {
+    #[default]
+    NoOp, // Handles potentially closed channels
     Quit
 }
 
@@ -249,6 +252,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
 
     #[derive(Debug)]
     enum Action {
+        NoOp,
         ReceivedPacket(Bytes, SocketAddr),
         BlockedPacket,
         Error(io::Error),
@@ -258,15 +262,16 @@ async fn reader_socket(socket: Arc<UdpSocket>,
     loop {
         let action = select! {
             cmd = cmd_rx.recv() => {
-                let cmd = cmd.unwrap();
+                let cmd = cmd.unwrap_or_default();
                 match cmd {
+                    Command::NoOp => { Action::NoOp }
                     Command::Quit => { Action::Quit }
                 }
             }
             received = socket.recv_from(&mut buf) => {
                 match received {
                     Ok((bytes_received, from_address)) => {
-                        if socket.local_addr().unwrap() != from_address {
+                        if socket.local_addr().unwrap() != from_address { // FIXME potential panic, provide a default value...
                             Action::ReceivedPacket(Bytes::copy_from_slice(&buf[..bytes_received]), from_address)
                         } else { Action::BlockedPacket }
                     }
@@ -276,19 +281,20 @@ async fn reader_socket(socket: Arc<UdpSocket>,
         };
 
         match action {
+            Action::NoOp => { }
             Action::ReceivedPacket(bytes, _from_address) => {
                 if to_codec.send(bytes).await.is_err() {
                     event!(Level::ERROR, "Reader socket to codec channel dropped.");
                     return;
                 }
             }
-            Action::BlockedPacket => {
-            }
+            Action::BlockedPacket => { }
             Action::Error(io_error) => {
                 event!(Level::ERROR, "{io_error}");
                 return;
             }
             Action::Quit => {
+                trace!("Reader socket stopping due to receiving Command::Quit.");
                 return;
             }
         }
@@ -303,6 +309,7 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
                        _event_tx: tokio::sync::mpsc::Sender<Event>) {
     #[derive(Debug)]
     enum Action {
+        NoOp,
         Send(io::Result<usize>),
         SocketError,
         ChannelError,
@@ -316,6 +323,7 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
                     Ok(cmd) => {
                         match cmd {
                             Command::Quit => { Action::Quit }
+                            Command::NoOp => { Action::NoOp}
                         }
                     }
                     Err(_) => Action::ChannelError
@@ -339,6 +347,7 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
         };
 
         match action {
+            Action::NoOp => { }
             Action::Send(result) => {
                 match result {
                     Ok(_bytes_send) => {
@@ -352,7 +361,10 @@ async fn writer_socket(socket: Arc<UdpSocket>, to_address: SocketAddr,
             }
             Action::SocketError => { event!(Level::ERROR, "Failed to write through socket: {socket:?}"); return; }
             Action::ChannelError => { event!(Level::ERROR, "Internal channel failure in write socket task"); return; }
-            Action::Quit => { return; }
+            Action::Quit => {
+                trace!("Writer socket stopping due to receiving Command::Quit.");
+                return;
+            }
         }
     }
 }
@@ -367,15 +379,22 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
     loop {
         select! {
             cmd = cmd_rx.recv() => {
-                let cmd = cmd.unwrap();
+                let cmd = cmd.unwrap_or_default();
                 match cmd {
-                    Command::Quit => { return; }
+                    Command::NoOp => { }
+                    Command::Quit => {
+                        trace!("Encoder task stopping due to receiving Command::Quit.");
+                        return;
+                    }
                 }
             }
             bytes = channel_in.recv() => {
-                let bytes = bytes.unwrap();
-                let bytes = encoder.encode_buffer(bytes);
-                channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
+                if let Some(bytes) = bytes {
+                    let bytes = encoder.encode_buffer(bytes);
+                    channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
+                } else {
+                    trace!("Encoder task received zero bytes through channel.");
+                }
             }
         }
     }
@@ -392,15 +411,22 @@ async fn decoder(config: Config,
     loop {
         select! {
             cmd = cmd_rx.recv() => {
-                let cmd = cmd.unwrap();
+                let cmd = cmd.unwrap_or_default();
                 match cmd {
-                    Command::Quit => { return; }
+                    Command::NoOp => { }
+                    Command::Quit => {
+                        trace!("Decoder task stopping due to receiving Command::Quit.");
+                        return;
+                    }
                 }
             }
             bytes = channel_in.recv() => {
-                let bytes = bytes.unwrap();
-                let bytes = decoder.decode_buffer(bytes);
-                channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
+                if let Some(bytes) = bytes {
+                    let bytes = decoder.decode_buffer(bytes);
+                    channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
+                } else {
+                    trace!("Decoder task received zero bytes through channel.");
+                }
             }
         }
     }
