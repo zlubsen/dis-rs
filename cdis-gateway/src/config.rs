@@ -14,7 +14,7 @@ const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
 const DEFAULT_ENCODER_USE_GUISE: bool = false;
 const DEFAULT_ENCODER_OPTIMIZATION: CodecOptimizeMode = CodecOptimizeMode::Completeness;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Config {
     pub(crate) dis_socket: UdpEndpoint,
     pub(crate) cdis_socket: UdpEndpoint,
@@ -24,6 +24,7 @@ pub(crate) struct Config {
     pub(crate) hbt_cdis_full_update_mplier: f32,
     pub(crate) use_guise: bool,
     pub(crate) optimization: EncoderOptimization,
+    pub(crate) meta: MetaData,
 }
 
 impl TryFrom<&ConfigSpec> for Config {
@@ -54,6 +55,10 @@ impl TryFrom<&ConfigSpec> for Config {
             (use_guise, optimization)
         } else { (DEFAULT_ENCODER_USE_GUISE, EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)) };
 
+        let meta = if let Some(meta) = &value.metadata {
+            meta.clone()
+        } else { MetaData::default() };
+
         Ok(Self {
             dis_socket,
             cdis_socket,
@@ -62,7 +67,8 @@ impl TryFrom<&ConfigSpec> for Config {
             federation_parameters,
             hbt_cdis_full_update_mplier,
             use_guise,
-            optimization
+            optimization,
+            meta
         })
     }
 }
@@ -317,11 +323,21 @@ pub struct ConfigSpec {
     pub federation: Option<FederationSpec>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct MetaData {
     pub name : String,
     pub author : String,
     pub version : String,
+}
+
+impl Default for MetaData {
+    fn default() -> Self {
+        Self {
+            name: "Unnamed configuration".to_string(),
+            author: "Unknown author".to_string(),
+            version: "Not versioned".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]

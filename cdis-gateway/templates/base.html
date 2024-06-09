@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="lofi">
 <head>
     <link rel="stylesheet" href="/styles.css" />
-    <script defer src="/index.js"></script>
-
+<!--    <script defer src="/index.js"></script>-->
+    <script defer src="/script_htmx.js"></script>
+    <script defer src="/script_htmx_sse.js"></script>
     <title>{% block title %}{{ title }}{% endblock %}</title>
     {% block head %}{% endblock %}
 </head>
 <body>
-<main id="content">
+<main id="content" class="bg-base-200 h-screen">
     {% block content %}
     <p>Placeholder for content</p>
     {% endblock %}

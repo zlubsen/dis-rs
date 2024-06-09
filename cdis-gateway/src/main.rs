@@ -17,14 +17,17 @@ use dis_rs::enumerations::PduType;
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
 use crate::codec::{Decoder, Encoder};
 use crate::site::run_site;
+use crate::stats::{GatewayStats, run_stats, SseStat};
 
 mod config;
 mod codec;
 mod site;
+mod stats;
 
 const DATA_CHANNEL_BUFFER_SIZE: usize = 20;
 const COMMAND_CHANNEL_BUFFER_SIZE: usize = 10;
 const EVENT_CHANNEL_BUFFER_SIZE: usize = 50;
+const STATS_CHANNEL_BUFFER_SIZE: usize = 50;
 const READER_SOCKET_BUFFER_SIZE_BYTES: usize = 1500;
 
 fn main() -> Result<(), GatewayError>{
@@ -129,6 +132,7 @@ async fn start_gateway(config: Config) {
     let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
     let (cdis_socket_out_tx, cdis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
     let (cdis_socket_in_tx, cdis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
+    let (stats_tx, stats_rx) = tokio::sync::broadcast::channel::<SseStat>(STATS_CHANNEL_BUFFER_SIZE);
 
     let dis_socket = create_udp_socket(&config.dis_socket).await;
     let cdis_socket = create_udp_socket(&config.cdis_socket).await;
@@ -150,12 +154,13 @@ async fn start_gateway(config: Config) {
         tokio::spawn(cdis_read_socket),
         tokio::spawn(cdis_write_socket),
         tokio::spawn(encoder(
-            config, dis_socket_out_rx, cdis_socket_in_tx,
+            config.clone(), dis_socket_out_rx, cdis_socket_in_tx,
             cmd_tx.subscribe(), event_tx.clone())),
         tokio::spawn(decoder(
-            config, cdis_socket_out_rx, dis_socket_in_tx,
+            config.clone(), cdis_socket_out_rx, dis_socket_in_tx,
             cmd_tx.subscribe(), event_tx.clone())),
-        tokio::spawn(run_site(config, cmd_tx.clone(), event_rx))
+        tokio::spawn(run_site(config.clone(), stats_tx.clone(), cmd_tx.clone())),
+        tokio::spawn(run_stats(stats_tx, cmd_tx.subscribe(), event_rx))
     );
 
     match handles {
@@ -391,6 +396,7 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
             bytes = channel_in.recv() => {
                 if let Some(bytes) = bytes {
                     let bytes = encoder.encode_buffer(bytes);
+                    trace!("encoded a pdu");
                     channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
                 } else {
                     trace!("Encoder task received zero bytes through channel.");
