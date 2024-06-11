@@ -1,0 +1,21 @@
+<div class="stat max-w-fit ml-auto mr-auto">
+    <div class="badge badge-neutral badge-lg text-center">{{ name }}</div>
+    <div class="stat-value">{{ stats.bytes_received }}</div>
+    <div class="stat-desc">bytes received</div>
+    <div class="stat-desc">{{ stats.packets_received }} packets</div>
+    <div class="stat-value">{{ stats.bytes_sent }}</div>
+    <div class="stat-desc">bytes sent</div>
+    <div class="stat-desc">{{ stats.packets_sent }} packets</div>
+    <hr/>
+    <div class="stat-desc text-secondary">Remote: {{ socket.address }}</div>
+    <div class="stat-desc text-secondary">Interface: {{ socket.interface }}</div>
+    <div class="stat-desc text-secondary">{{ socket.mode }}</div>
+    <div class="stat-desc text-secondary">TTL {{ socket.ttl }}</div>
+    <div class="stat-desc text-secondary">
+        {% if socket.block_own_socket %}
+            Blocking own socket
+        {% else %}
+            Not blocking own socket
+        {% endif %}
+    </div>
+</div>

@@ -23,8 +23,8 @@ pub(crate) struct SocketStats {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct CodecStats {
-    pub received_count: HashMap<PduType, i64>,
-    pub codec_count: HashMap<PduType, i64>,
+    pub received_count: HashMap<PduType, u64>,
+    pub codec_count: HashMap<PduType, u64>,
     pub rejected_count: u64,
 }
 
@@ -95,15 +95,11 @@ pub async fn run_stats(
     loop {
         select! {
             _ = timer.tick() => {
-                // TODO cleanup, proper unwrap handling
+                // TODO cleanup, proper unwrap handling - trace!("Stats task stopping due to failure of stats to site channel.");
                 stat_tx.send(SseStat::DisSocket(stats.dis.clone())).unwrap();
                 stat_tx.send(SseStat::CdisSocket(stats.cdis.clone())).unwrap();
                 stat_tx.send(SseStat::Encoder(stats.encoder.clone())).unwrap();
                 stat_tx.send(SseStat::Decoder(stats.decoder.clone())).unwrap();
-                // if let Err(err) = stat_tx.send(stats.clone()).await {
-                //     trace!("Stats task stopping due to failure of stats to site channel.");
-                //     return;
-                // }
             }
             event = event_rx.recv() => {
                 if let Some(event) = event {

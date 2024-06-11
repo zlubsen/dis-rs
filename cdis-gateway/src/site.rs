@@ -1,5 +1,7 @@
 use std::convert::Infallible;
 use std::sync::Arc;
+use std::time::Duration;
+use askama::Template;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -16,7 +18,7 @@ use tracing::{debug, error};
 use tracing::log::trace;
 use crate::{Command};
 use crate::config::Config;
-use crate::site::templates::{ConfigMetaTemplate, ConfigTemplate, HomeTemplate};
+use crate::site::templates::{CodecStatsTemplate, CodecStatsValues, ConfigMetaTemplate, ConfigTemplate, HomeTemplate, SocketStatsTemplate, UdpEndpointValues};
 use crate::stats::{GatewayStats, SseStat};
 
 // const ASSETS_DIR: &str = "templates";
@@ -24,6 +26,7 @@ use crate::stats::{GatewayStats, SseStat};
 struct SiteState {
     config: Config,
     stats_tx: tokio::sync::broadcast::Sender<SseStat>,
+    cmd_tx: tokio::sync::broadcast::Sender<Command>,
 }
 
 pub async fn run_site(config: Config,
@@ -34,7 +37,8 @@ pub async fn run_site(config: Config,
 
     let state = Arc::new(SiteState {
         config: config.clone(),
-        stats_tx
+        stats_tx,
+        cmd_tx: cmd_tx.clone(),
     });
 
     let router = Router::new()
@@ -58,7 +62,7 @@ pub async fn run_site(config: Config,
         .expect(format!("Failed to bind TCP socket for Web UI - {}", host_ip).as_str());
     tracing::debug!("Site listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(shutdown_signal(cmd_tx.clone()))
         .await
         .unwrap();
 
@@ -68,7 +72,8 @@ pub async fn run_site(config: Config,
     }
 }
 
-async fn shutdown_signal() {
+// TODO move to main.rs; axum shutdown signal can be listening for a Command::Quit
+async fn shutdown_signal(cmd_tx: tokio::sync::broadcast::Sender<Command>) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -90,6 +95,9 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+
+    // Send Command::Quit, resolving not stopping the axum server due to open (infinite) SSE connections.
+    cmd_tx.send(Command::Quit).expect("Failed to send Command:Quit after receiving shutdown signal");
 }
 
 async fn sse_handler(
@@ -98,23 +106,54 @@ async fn sse_handler(
 ) -> Sse<impl Stream<Item = Result<SseEvent, Infallible>>> {
     debug!("`{}` connected", user_agent.as_str());
 
-    let mut rx = state.stats_tx.subscribe();
+    let mut stats_rx = state.stats_tx.subscribe();
+    let mut cmd_rx = state.cmd_tx.subscribe();
     let stream = async_stream::try_stream! {
         yield SseEvent::default().event("status").data("SSE connected");
 
-        while let Ok(stat) = rx.recv().await {
-            yield match stat {
-                SseStat::DisSocket(stat) => {
-                    SseEvent::default().event("dis_socket").data(format!("<div>packets: {}</div></br><div>bytes: {}</div>", stat.packets_received, stat.bytes_received).as_str())
+        loop {
+            tokio::select! {
+                stat = stats_rx.recv() => {
+                    if let Ok(stat) = stat {
+                        yield match stat {
+                            SseStat::DisSocket(stat) => {
+                                SseEvent::default().event("dis_socket").data(SocketStatsTemplate {
+                                    name: "DIS network",
+                                    stats: stat,
+                                    socket: UdpEndpointValues::from(&state.config.dis_socket),
+                                }.render().unwrap())
+                            }
+                            SseStat::CdisSocket(stat) => {
+                                SseEvent::default().event("cdis_socket").data(SocketStatsTemplate {
+                                    name: "C-DIS network",
+                                    stats: stat,
+                                    socket: UdpEndpointValues::from(&state.config.cdis_socket),
+                                }.render().unwrap())
+                            }
+                            SseStat::Encoder(stat) => {
+                                SseEvent::default().event("encoder").data(CodecStatsTemplate {
+                                    name: "Encoder",
+                                    stats: CodecStatsValues::from(&stat),
+                                }.render().unwrap())
+                            }
+                            SseStat::Decoder(stat) => {
+                                SseEvent::default().event("decoder").data(CodecStatsTemplate {
+                                    name: "Decoder",
+                                    stats: CodecStatsValues::from(&stat),
+                                }.render().unwrap())
+                            }
+                        }
+                    }
                 }
-                SseStat::CdisSocket(stat) => {
-                    SseEvent::default().event("cdis_socket").data(format!("<div>packets: {}</div></br><div>bytes: {}</div>", stat.packets_received, stat.bytes_received).as_str())
-                }
-                SseStat::Encoder(stat) => {
-                    SseEvent::default().event("encoder").data(format!("<div>encoded: {}</div></br><div>rejected: {}</div>", stat.received_count.values().len(), stat.rejected_count).as_str())
-                }
-                SseStat::Decoder(stat) => {
-                    SseEvent::default().event("decoder").data(format!("<div>decoded: {}</div></br><div>rejected: {}</div>", stat.received_count.values().len(), stat.rejected_count).as_str())
+                cmd = cmd_rx.recv() => {
+                    let cmd = cmd.unwrap_or_default();
+                    match cmd {
+                        Command::NoOp => { }
+                        Command::Quit => {
+                            trace!("SSE handler task stopping due to receiving Command::Quit.");
+                            return;
+                        }
+                    }
                 }
             }
         }
@@ -122,7 +161,7 @@ async fn sse_handler(
 
     Sse::new(stream).keep_alive(
         axum::response::sse::KeepAlive::new()
-            // .interval(Duration::from_secs(1))
+            .interval(Duration::from_secs(5))
             .text("keep-alive-text"),
     )
 }
@@ -195,16 +234,26 @@ pub async fn clicked() -> impl IntoResponse {
     ConfigTemplate
 }
 
-pub async fn home() -> impl IntoResponse {
-    HomeTemplate
+pub async fn home(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
+    HomeTemplate {
+        config: state.config.clone()
+    }
 }
 
 mod templates {
+    use std::collections::HashMap;
+    use std::net::SocketAddr;
     use askama_axum::Template;
+    use cdis_assemble::codec::CodecUpdateMode;
+    use dis_rs::enumerations::PduType;
+    use crate::config::{Config, UdpEndpoint, UdpMode};
+    use crate::stats::{CodecStats, SocketStats};
 
     #[derive(Template)]
     #[template(path = "index.html")]
-    pub struct HomeTemplate;
+    pub struct HomeTemplate {
+        pub(crate) config: Config,
+    }
 
     #[derive(Template)]
     #[template(path = "config.html")]
@@ -216,5 +265,64 @@ mod templates {
         pub(crate) name: String,
         pub(crate) author: String,
         pub(crate) version: String,
+    }
+
+    #[derive(Template)]
+    #[template(path = "socket_stats.html")]
+    pub struct SocketStatsTemplate<'a> {
+        pub(crate) name: &'a str,
+        pub(crate) stats: SocketStats,
+        pub(crate) socket: UdpEndpointValues,
+    }
+
+    pub(crate) struct UdpEndpointValues {
+        pub(crate) mode: String,
+        pub(crate) interface: String,
+        pub(crate) address: String,
+        pub(crate) ttl: u16,
+        pub(crate) block_own_socket: bool,
+    }
+
+    impl From<&UdpEndpoint> for UdpEndpointValues {
+        fn from(endpoint: &UdpEndpoint) -> Self {
+            let mode = match endpoint.mode {
+                UdpMode::UniCast => { "Unicast".to_string() }
+                UdpMode::BroadCast => { "Broadcast".to_string() }
+                UdpMode::MultiCast => { "Multicast".to_string() }
+            };
+            let interface = format!("{}:{}", endpoint.interface.ip(), endpoint.interface.port());
+            let address = format!("{}:{}", endpoint.address.ip(), endpoint.address.port());
+
+            Self {
+                mode,
+                interface,
+                address,
+                ttl: endpoint.ttl,
+                block_own_socket: endpoint.block_own_socket,
+            }
+        }
+    }
+
+    #[derive(Template)]
+    #[template(path = "codec_stats.html")]
+    pub struct CodecStatsTemplate<'a> {
+        pub(crate) name: &'a str,
+        pub(crate) stats: CodecStatsValues,
+    }
+
+    pub(crate) struct CodecStatsValues {
+        pub received_count: u64,
+        pub es_count: u64,
+        pub rejected_count: u64,
+    }
+
+    impl From<&CodecStats> for CodecStatsValues {
+        fn from(stats: &CodecStats) -> Self {
+            Self {
+                received_count: stats.received_count.values().sum(),
+                es_count: *stats.received_count.get(&PduType::EntityState).unwrap_or(&0),
+                rejected_count: stats.rejected_count,
+            }
+        }
     }
 }
