@@ -9,17 +9,17 @@ use axum::response::sse::{Event as SseEvent, Sse};
 use axum::Router;
 use axum::routing::get;
 use axum_extra::{headers, TypedHeader};
+use bytesize::ByteSize;
 use futures::stream::Stream;
 use tokio::signal;
-use tokio_stream::StreamExt;
 // use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error};
 use tracing::log::trace;
 use crate::{Command};
 use crate::config::Config;
-use crate::site::templates::{CodecStatsTemplate, CodecStatsValues, ConfigMetaTemplate, ConfigTemplate, HomeTemplate, SocketStatsTemplate, UdpEndpointValues};
-use crate::stats::{GatewayStats, SseStat};
+use crate::site::templates::{CodecStatsTemplate, CodecStatsValues, ConfigMetaTemplate, ConfigTemplate, HomeTemplate, SocketStatsTemplate, SocketStatsValues, UdpEndpointValues};
+use crate::stats::SseStat;
 
 // const ASSETS_DIR: &str = "templates";
 
@@ -117,16 +117,18 @@ async fn sse_handler(
                     if let Ok(stat) = stat {
                         yield match stat {
                             SseStat::DisSocket(stat) => {
+                                let bytes_received = stat.bytes_received;
                                 SseEvent::default().event("dis_socket").data(SocketStatsTemplate {
                                     name: "DIS network",
-                                    stats: stat,
+                                    stats: SocketStatsValues::from(&stat),
                                     socket: UdpEndpointValues::from(&state.config.dis_socket),
                                 }.render().unwrap())
                             }
                             SseStat::CdisSocket(stat) => {
+                                let bytes_sent = stat.bytes_sent;
                                 SseEvent::default().event("cdis_socket").data(SocketStatsTemplate {
                                     name: "C-DIS network",
-                                    stats: stat,
+                                    stats: SocketStatsValues::from(&stat),
                                     socket: UdpEndpointValues::from(&state.config.cdis_socket),
                                 }.render().unwrap())
                             }
@@ -241,11 +243,10 @@ pub async fn home(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
 }
 
 mod templates {
-    use std::collections::HashMap;
-    use std::net::SocketAddr;
     use askama_axum::Template;
     use cdis_assemble::codec::CodecUpdateMode;
     use dis_rs::enumerations::PduType;
+    use bytesize::ByteSize;
     use crate::config::{Config, UdpEndpoint, UdpMode};
     use crate::stats::{CodecStats, SocketStats};
 
@@ -271,8 +272,34 @@ mod templates {
     #[template(path = "socket_stats.html")]
     pub struct SocketStatsTemplate<'a> {
         pub(crate) name: &'a str,
-        pub(crate) stats: SocketStats,
+        pub(crate) stats: SocketStatsValues,
         pub(crate) socket: UdpEndpointValues,
+    }
+
+    pub(crate) struct SocketStatsValues {
+        pub(crate) bytes_received: ByteSize,
+        pub(crate) bytes_received_latest_aggregate: ByteSize,
+        pub(crate) bytes_sent: ByteSize,
+        pub(crate) bytes_sent_latest_aggregate: ByteSize,
+        pub(crate) packets_received: u64,
+        pub(crate) packets_received_latest_aggregate: u64,
+        pub(crate) packets_sent: u64,
+        pub(crate) packets_sent_latest_aggregate: u64,
+    }
+
+    impl From<&SocketStats> for SocketStatsValues {
+        fn from(stats: &SocketStats) -> Self {
+            Self {
+                bytes_received: ByteSize::b(stats.bytes_received),
+                bytes_received_latest_aggregate: ByteSize::b(stats.bytes_received_latest_aggregate),
+                bytes_sent: ByteSize::b(stats.bytes_sent),
+                bytes_sent_latest_aggregate: ByteSize::b(stats.bytes_sent_latest_aggregate),
+                packets_received: stats.packets_received,
+                packets_received_latest_aggregate: stats.packets_received_latest_aggregate,
+                packets_sent: stats.packets_sent,
+                packets_sent_latest_aggregate: stats.packets_sent_latest_aggregate,
+            }
+        }
     }
 
     pub(crate) struct UdpEndpointValues {
@@ -314,14 +341,22 @@ mod templates {
         pub received_count: u64,
         pub es_count: u64,
         pub rejected_count: u64,
+        pub unimplemented_count: u64,
+        pub compression_rate_total: String,
     }
 
     impl From<&CodecStats> for CodecStatsValues {
         fn from(stats: &CodecStats) -> Self {
             Self {
-                received_count: stats.received_count.values().sum(),
-                es_count: *stats.received_count.get(&PduType::EntityState).unwrap_or(&0),
+                received_count: stats.received_count.values().map(|val| val.0).sum::<u64>().saturating_sub(stats.rejected_count),
+                es_count: stats.received_count.get(&PduType::EntityState).unwrap_or(&(0, 0)).0,
                 rejected_count: stats.rejected_count,
+                unimplemented_count: stats.unimplemented_count,
+                compression_rate_total: if stats.compression_rate_total.is_nan() {
+                    "0.0".to_string()
+                } else {
+                    format!("{0:.2}", stats.compression_rate_total)
+                },
             }
         }
     }

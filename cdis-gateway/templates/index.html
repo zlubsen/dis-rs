@@ -4,40 +4,39 @@
 {% endblock %}
 {% block content %}
 
-<div class="container mx-auto flex flex-row min-h-16">
-    <div class="basis-1/6"></div>
-    <div class="basis-1/6"></div>
-    <div class="basis-2/6 text-2xl text-primary text-center h-full">
-        <span class="absolute transform translate-y-1/2 -translate-x-1/2">C-DIS Gateway</span>
+<div class="container mx-auto flex flex-row items-stretch min-h-16">
+    <div class="basis-2/6"></div>
+    <div class="basis-2/6 text-2xl text-primary text-center">
+        <span class="stat">C-DIS Gateway</span>
     </div>
-    <div class="basis-1/6 text-accent text-center h-full">
-<!--        <span class="absolute transform translate-y-1/2">(Update Mode) (Settings)</span>-->
+    <div class="basis-1/6 text-accent text-center">
+        <span class="stat">{{ config.mode }}</span>
     </div>
     <div class="basis-1/6">
         {% include "indicators.html" %}
     </div>
 </div>
 
-<div class="container mx-auto grid grid-cols-10 grid-rows-2 gap-3 place-items-stretch content-stretch" hx-ext="sse" sse-connect="/sse">
+<div class="container mx-auto grid grid-cols-10 grid-rows-2 gap-3 place-items-stretch content-stretch w-full" hx-ext="sse" sse-connect="/sse">
     <div class="row-span-2 col-span-2 stats">
-        <div class="stat max-w-fit ml-auto mr-auto" sse-swap="dis_socket"></div>
+        <div class="stat max-w-fit" sse-swap="dis_socket"></div>
     </div>
-    <div class="w-2 h-full">
+    <div class="w-1 h-full">
     </div>
     <div class="col-span-4 stats">
-        <div class="stat max-w-fit ml-auto mr-auto" sse-swap="encoder"></div>
+        <div class="stat w-full" sse-swap="encoder"></div>
     </div>
-    <div class="w-2">
+    <div class="w-1">
     </div>
     <div class="row-span-2 col-span-2 stats">
-        <div class="stat max-w-fit ml-auto mr-auto" sse-swap="cdis_socket"></div>
+        <div class="stat max-w-fit" sse-swap="cdis_socket"></div>
     </div>
-    <div class="w-2">
+    <div class="w-1">
     </div>
     <div class="col-span-4 stats">
-        <div class="stat max-w-fit ml-auto mr-auto" sse-swap="decoder"></div>
+        <div class="stat w-full" sse-swap="decoder"></div>
     </div>
-    <div class="w-2">
+    <div class="w-1">
     </div>
 </div>
 {% endblock %}

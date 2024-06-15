@@ -1,14 +1,17 @@
 <div class="stat max-w-fit ml-auto mr-auto">
     <div class="badge badge-neutral badge-lg text-center">{{ name }}</div>
     <div class="stat-value">{{ stats.bytes_received }}</div>
-    <div class="stat-desc">bytes received</div>
-    <div class="stat-desc">{{ stats.packets_received }} packets</div>
-    <div class="stat-value">{{ stats.bytes_sent }}</div>
-    <div class="stat-desc">bytes sent</div>
-    <div class="stat-desc">{{ stats.packets_sent }} packets</div>
+    <div class="stat-desc">bytes received ({{ stats.bytes_received_latest_aggregate }}/sec)</div>
+    <div class="stat-value text-sm">{{ stats.packets_received }}</div>
+    <div class="stat-desc">packets ({{ stats.packets_received_latest_aggregate }}/sec)</div>
     <hr/>
-    <div class="stat-desc text-secondary">Remote: {{ socket.address }}</div>
-    <div class="stat-desc text-secondary">Interface: {{ socket.interface }}</div>
+    <div class="stat-value">{{ stats.bytes_sent }}</div>
+    <div class="stat-desc">bytes sent ({{ stats.bytes_sent_latest_aggregate }}/sec)</div>
+    <div class="stat-value text-sm">{{ stats.packets_sent }}</div>
+    <div class="stat-desc">packets ({{ stats.packets_sent_latest_aggregate }}/sec)</div>
+    <hr/>
+    <div class="stat-desc text-secondary">Remote address: {{ socket.address }}</div>
+    <div class="stat-desc text-secondary">Interface address: {{ socket.interface }}</div>
     <div class="stat-desc text-secondary">{{ socket.mode }}</div>
     <div class="stat-desc text-secondary">TTL {{ socket.ttl }}</div>
     <div class="stat-desc text-secondary">

@@ -94,12 +94,14 @@ enum Command {
 enum Event {
     ReceivedBytesDis(usize), // bytes received through socket
     ReceivedBytesCDis(usize), // bytes received through socket
-    ReceivedDis(PduType),
-    ReceivedCDis(PduType),
-    EncodedPdu(PduType),
-    DecodedPdu(PduType),
-    RejectedUnsupportedDisPdu(PduType),
-    RejectedUnsupportedCDisPdu(PduType),
+    ReceivedDis(PduType, u64), // type of the pdu and size of that pdu in bytes
+    ReceivedCDis(PduType, u64),
+    EncodedPdu(PduType, u64),
+    DecodedPdu(PduType, u64),
+    RejectedUnsupportedDisPdu(PduType, u64),
+    RejectedUnsupportedCDisPdu(PduType, u64),
+    UnimplementedEncodedPdu(PduType, u64),
+    UnimplementedDecodedPdu(PduType, u64),
     SentDis(usize), // bytes send through socket
     SentCDis(usize), // bytes send through socket
 }
@@ -396,7 +398,6 @@ async fn encoder(config: Config, mut channel_in: tokio::sync::mpsc::Receiver<Byt
             bytes = channel_in.recv() => {
                 if let Some(bytes) = bytes {
                     let bytes = encoder.encode_buffer(bytes);
-                    trace!("encoded a pdu");
                     channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
                 } else {
                     trace!("Encoder task received zero bytes through channel.");

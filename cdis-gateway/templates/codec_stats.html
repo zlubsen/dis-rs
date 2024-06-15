@@ -1,7 +1,22 @@
-<div class="stat max-w-fit ml-auto mr-auto">
+<div class="stat w-full">
     <div class="badge badge-neutral badge-lg text-center">{{ name }}</div>
-    <div class="stat-value">{{ stats.received_count }} / {{ stats.rejected_count }}</div>
-    <div class="stat-desc">PDUs encoded / rejected</div>
-    <div class="stat-value">{{ stats.es_count }}</div>
+    <div class="flex flex-nowrap justify-between w-full">
+        <div>
+            <div class="stat-value">{{ stats.received_count }}</div>
+            <div class="stat-desc">PDUs encoded</div>
+        </div>
+        <div>
+            <div class="stat-value">{{ stats.rejected_count }}</div>
+            <div class="stat-desc">PDUs rejected</div>
+        </div>
+        <div>
+            <div class="stat-value">{{ stats.compression_rate_total }} %</div>
+            <div class="stat-desc">Compression rate</div>
+        </div>
+    </div>
+    <hr/>
+    <div class="stat-value text-sm">{{ stats.es_count }}</div>
     <div class="stat-desc">ES</div>
+    <div class="stat-value text-sm">{{ stats.unimplemented_count }}</div>
+    <div class="stat-desc">Unimplemented</div>
 </div>

@@ -1,4 +1,5 @@
 use thiserror::Error;
+use dis_rs::enumerations::PduType;
 use dis_rs::model::TimeStamp;
 use crate::entity_state::model::EntityState;
 use crate::records::model::{CdisHeader, CdisRecord, EntityId};
@@ -206,11 +207,186 @@ pub enum CdisError {
     UnsupportedPdu(u8), // encountered a CDIS PDU of an unsupported type; (u8 PduType found)
 }
 
+/// Trait that indicates whether a PDU is supported in the C-DIS standard
+pub trait Supported {
+    /// Returns true when a PDUs having a certain PduType is supported by the C-DIS standard, false otherwise.
+    fn is_supported(&self) -> bool;
+}
+
+impl Supported for PduType {
+    fn is_supported(&self) -> bool {
+        match self {
+            PduType::EntityState |
+            PduType::Fire |
+            PduType::Detonation |
+            PduType::Collision |
+            PduType::CreateEntity |
+            PduType::RemoveEntity |
+            PduType::StartResume |
+            PduType::StopFreeze |
+            PduType::Acknowledge |
+            PduType::ActionRequest |
+            PduType::ActionResponse |
+            PduType::DataQuery |
+            PduType::SetData |
+            PduType::Data |
+            PduType::EventReport |
+            PduType::Comment |
+            PduType::ElectromagneticEmission |
+            PduType::Designator |
+            PduType::Transmitter |
+            PduType::Signal |
+            PduType::Receiver |
+            PduType::IFF => { true }
+            _ => { false }
+        }
+    }
+}
+
+/// Trait that indicates whether a PDU is implemented in C-DIS
+pub trait Implemented {
+    /// Returns true when the library implements PDUs having a certain PduType, false otherwise.
+    fn is_implemented(&self) -> bool;
+}
+
+impl Implemented for PduType {
+    fn is_implemented(&self) -> bool {
+        match self {
+            PduType::EntityState => { true }
+            // PduType::Fire |
+            // PduType::Detonation |
+            // PduType::Collision |
+            // PduType::CreateEntity |
+            // PduType::RemoveEntity |
+            // PduType::StartResume |
+            // PduType::StopFreeze |
+            // PduType::Acknowledge |
+            // PduType::ActionRequest |
+            // PduType::ActionResponse |
+            // PduType::DataQuery |
+            // PduType::SetData |
+            // PduType::Data |
+            // PduType::EventReport |
+            // PduType::Comment |
+            // PduType::ElectromagneticEmission |
+            // PduType::Designator |
+            // PduType::Transmitter |
+            // PduType::Signal |
+            // PduType::Receiver |
+            // PduType::IFF
+            _ => { false }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    // #[test]
-    // fn it_works() {
-    //     let result = add(2, 2);
-    //     assert_eq!(result, 4);
-    // }
+    use dis_rs::enumerations::PduType;
+    use crate::{CdisBody, Implemented, Supported};
+
+    #[test]
+    fn ensure_supported_pdus() {
+        assert_eq!(PduType::EntityState.is_supported(), true);
+        assert_eq!(PduType::Fire.is_supported(), true);
+        assert_eq!(PduType::Detonation.is_supported(), true);
+        assert_eq!(PduType::Collision.is_supported(), true);
+        assert_eq!(PduType::CreateEntity.is_supported(), true);
+        assert_eq!(PduType::RemoveEntity.is_supported(), true);
+        assert_eq!(PduType::StartResume.is_supported(), true);
+        assert_eq!(PduType::StopFreeze.is_supported(), true);
+        assert_eq!(PduType::Acknowledge.is_supported(), true);
+        assert_eq!(PduType::ActionRequest.is_supported(), true);
+        assert_eq!(PduType::ActionResponse.is_supported(), true);
+        assert_eq!(PduType::DataQuery.is_supported(), true);
+        assert_eq!(PduType::SetData.is_supported(), true);
+        assert_eq!(PduType::Data.is_supported(), true);
+        assert_eq!(PduType::EventReport.is_supported(), true);
+        assert_eq!(PduType::Comment.is_supported(), true);
+        assert_eq!(PduType::ElectromagneticEmission.is_supported(), true);
+        assert_eq!(PduType::Designator.is_supported(), true);
+        assert_eq!(PduType::Transmitter.is_supported(), true);
+        assert_eq!(PduType::Signal.is_supported(), true);
+        assert_eq!(PduType::Receiver.is_supported(), true);
+        assert_eq!(PduType::IFF.is_supported(), true);
+
+        assert_eq!(PduType::Other.is_supported(), false);
+        assert_eq!(PduType::ServiceRequest.is_supported(), false);
+        assert_eq!(PduType::ResupplyOffer.is_supported(), false);
+        assert_eq!(PduType::ResupplyReceived.is_supported(), false);
+        assert_eq!(PduType::ResupplyCancel.is_supported(), false);
+        assert_eq!(PduType::RepairComplete.is_supported(), false);
+        assert_eq!(PduType::RepairResponse.is_supported(), false);
+        assert_eq!(PduType::UnderwaterAcoustic.is_supported(), false);
+        assert_eq!(PduType::SupplementalEmissionEntityState.is_supported(), false);
+        assert_eq!(PduType::IntercomSignal.is_supported(), false);
+        assert_eq!(PduType::IntercomControl.is_supported(), false);
+        assert_eq!(PduType::AggregateState.is_supported(), false);
+        assert_eq!(PduType::IsGroupOf.is_supported(), false);
+        assert_eq!(PduType::TransferOwnership.is_supported(), false);
+        assert_eq!(PduType::IsPartOf.is_supported(), false);
+        assert_eq!(PduType::MinefieldState.is_supported(), false);
+        assert_eq!(PduType::MinefieldQuery.is_supported(), false);
+        assert_eq!(PduType::MinefieldData.is_supported(), false);
+        assert_eq!(PduType::MinefieldResponseNACK.is_supported(), false);
+        assert_eq!(PduType::EnvironmentalProcess.is_supported(), false);
+        assert_eq!(PduType::GriddedData.is_supported(), false);
+        assert_eq!(PduType::PointObjectState.is_supported(), false);
+        assert_eq!(PduType::LinearObjectState.is_supported(), false);
+        assert_eq!(PduType::ArealObjectState.is_supported(), false);
+        assert_eq!(PduType::TSPI.is_supported(), false);
+        assert_eq!(PduType::Appearance.is_supported(), false);
+        assert_eq!(PduType::ArticulatedParts.is_supported(), false);
+        assert_eq!(PduType::LEFire.is_supported(), false);
+        assert_eq!(PduType::LEDetonation.is_supported(), false);
+        assert_eq!(PduType::CreateEntityR.is_supported(), false);
+        assert_eq!(PduType::RemoveEntityR.is_supported(), false);
+        assert_eq!(PduType::StartResumeR.is_supported(), false);
+        assert_eq!(PduType::StopFreezeR.is_supported(), false);
+        assert_eq!(PduType::AcknowledgeR.is_supported(), false);
+        assert_eq!(PduType::ActionRequestR.is_supported(), false);
+        assert_eq!(PduType::ActionResponseR.is_supported(), false);
+        assert_eq!(PduType::DataQueryR.is_supported(), false);
+        assert_eq!(PduType::SetDataR.is_supported(), false);
+        assert_eq!(PduType::DataR.is_supported(), false);
+        assert_eq!(PduType::EventReportR.is_supported(), false);
+        assert_eq!(PduType::CommentR.is_supported(), false);
+        assert_eq!(PduType::RecordR.is_supported(), false);
+        assert_eq!(PduType::SetRecordR.is_supported(), false);
+        assert_eq!(PduType::RecordQueryR.is_supported(), false);
+        assert_eq!(PduType::CollisionElastic.is_supported(), false);
+        assert_eq!(PduType::EntityStateUpdate.is_supported(), false);
+        assert_eq!(PduType::DirectedEnergyFire.is_supported(), false);
+        assert_eq!(PduType::EntityDamageStatus.is_supported(), false);
+        assert_eq!(PduType::InformationOperationsAction.is_supported(), false);
+        assert_eq!(PduType::InformationOperationsReport.is_supported(), false);
+        assert_eq!(PduType::Attribute.is_supported(), false);
+        assert_eq!(PduType::Unspecified(0).is_supported(), false);
+    }
+
+    #[test]
+    fn validate_implemented_pdus() {
+        assert_eq!(PduType::EntityState.is_implemented(), true);
+        
+        assert_eq!(PduType::Fire.is_implemented() || CdisBody::Fire.body_length() != 0, false);
+        assert_eq!(PduType::Detonation.is_implemented() || CdisBody::Detonation.body_length() != 0, false);
+        assert_eq!(PduType::Collision.is_implemented() || CdisBody::Collision.body_length() != 0, false);
+        assert_eq!(PduType::CreateEntity.is_implemented() || CdisBody::CreateEntity.body_length() != 0, false);
+        assert_eq!(PduType::RemoveEntity.is_implemented() || CdisBody::RemoveEntity.body_length() != 0, false);
+        assert_eq!(PduType::StartResume.is_implemented() || CdisBody::StartResume.body_length() != 0, false);
+        assert_eq!(PduType::StopFreeze.is_implemented() || CdisBody::StopFreeze.body_length() != 0, false);
+        assert_eq!(PduType::Acknowledge.is_implemented() || CdisBody::Acknowledge.body_length() != 0, false);
+        assert_eq!(PduType::ActionRequest.is_implemented() || CdisBody::ActionRequest.body_length() != 0, false);
+        assert_eq!(PduType::ActionResponse.is_implemented() || CdisBody::ActionResponse.body_length() != 0, false);
+        assert_eq!(PduType::DataQuery.is_implemented() || CdisBody::DataQuery.body_length() != 0, false);
+        assert_eq!(PduType::SetData.is_implemented() || CdisBody::SetData.body_length() != 0, false);
+        assert_eq!(PduType::Data.is_implemented() || CdisBody::Data.body_length() != 0, false);
+        assert_eq!(PduType::EventReport.is_implemented() || CdisBody::EventReport.body_length() != 0, false);
+        assert_eq!(PduType::Comment.is_implemented() || CdisBody::Comment.body_length() != 0, false);
+        assert_eq!(PduType::ElectromagneticEmission.is_implemented() || CdisBody::ElectromagneticEmission.body_length() != 0, false);
+        assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);
+        assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
+        assert_eq!(PduType::Signal.is_implemented() || CdisBody::Signal.body_length() != 0, false);
+        assert_eq!(PduType::Receiver.is_implemented() || CdisBody::Receiver.body_length() != 0, false);
+        assert_eq!(PduType::IFF.is_implemented() || CdisBody::Iff.body_length() != 0, false);
+    }
 }

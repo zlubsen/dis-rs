@@ -16,13 +16,36 @@
             </a>
         </li>
     {% endif %}
-<!--    <li class="tooltip tooltip-bottom" data-tip="Configuration">-->
+    <li class="tooltip tooltip-bottom" data-tip="Show configuration">
+        <div class="dropdown dropdown-bottom">
+            <div tabindex="0" role="button">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                <li><a>Site port: {{ config.site_host }}</a></li>
+                <li><a>Hbt multiplier: {{ config.hbt_cdis_full_update_mplier }}</a></li>
+                <li><a>Use guise: {{ config.use_guise }}</a></li>
+                <li><a>{{ config.optimization }}</a></li>
+            </ul>
+        </div>
+<!--        <button type="button" class="" id="menu-button" aria-expanded="false" aria-haspopup="false">-->
+<!--            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>-->
+<!--        </button>-->
+<!--        <div class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">-->
+<!--            <div class="py-1" role="none">-->
+<!--                &lt;!&ndash; Active: "bg-gray-100 text-gray-900", Not Active: "text-gray-700" &ndash;&gt;-->
+<!--                <a href="#" class="block px-4 py-2 text-sm text-gray-700" role="menuitem" tabindex="-1" id="menu-item-0">Site port: {{ config.site_host }}</a>-->
+<!--                <a href="#" class="block px-4 py-2 text-sm text-gray-700" role="menuitem" tabindex="-1" id="menu-item-1">Hbt multiplier: {{ config.hbt_cdis_full_update_mplier }}</a>-->
+<!--                <a href="#" class="block px-4 py-2 text-sm text-gray-700" role="menuitem" tabindex="-1" id="menu-item-2">Use guise: {{ config.use_guise }}</a>-->
+<!--                <a href="#" class="block px-4 py-2 text-sm text-gray-700" role="menuitem" tabindex="-1" id="menu-item-3">{{ config.optimization }}</a>-->
+<!--            </div>-->
+<!--        </div>-->
 <!--        <a>-->
 <!--            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>-->
 <!--        </a>-->
-<!--    </li>-->
+    </li>
     <li>
-        <a class="tooltip tooltip-bottom" data-tip="Theme">
+        <a class="tooltip tooltip-bottom" data-tip="Toggle theme">
             <label class="swap swap-rotate">
                 <!-- this hidden checkbox controls the state -->
                 <input type="checkbox" class="theme-controller" value="black" />

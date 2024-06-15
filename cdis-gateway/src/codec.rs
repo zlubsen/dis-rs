@@ -3,7 +3,7 @@ use std::time::Instant;
 use bytes::{Bytes, BytesMut};
 use tracing::error;
 
-use cdis_assemble::{BitBuffer, CdisBody, CdisError, CdisInteraction, CdisPdu, SerializeCdisPdu};
+use cdis_assemble::{BitBuffer, CdisBody, CdisError, CdisInteraction, CdisPdu, Implemented, SerializeCdisPdu, Supported};
 use cdis_assemble::codec::{CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
 use cdis_assemble::entity_state::codec::{DecoderStateEntityState};
@@ -57,7 +57,7 @@ impl Encoder {
 
         let total_bytes = total_bits.div_ceil(8);
         let cdis_wire: Vec<u8> = Vec::from(&self.cdis_buffer.data[0..total_bytes]);
-        self.event_tx.try_send(Event::SentCDis(total_bytes)).expect("Event TX channel failed in Encoder::writing.");
+        self.event_tx.try_send(Event::SentCDis(total_bytes)).expect("Event transmit channel failed in Encoder::writing.");
         cdis_wire
     }
 
@@ -78,25 +78,35 @@ impl Encoder {
 
     pub fn encode_pdus(&mut self, pdus: &[Pdu]) -> Vec<CdisPdu> {
         let cdis_pdus: Vec<CdisPdu> = pdus.iter()
+            .filter(|pdu| if !pdu.header.pdu_type.is_supported() {
+                self.event_tx.try_send(Event::RejectedUnsupportedDisPdu(pdu.header.pdu_type, pdu.header.pdu_length as u64))
+                    .expect("Event TX channel failed in Encoder::encode_pdus - Reject unsupported PDU.");
+                false
+            } else { true }) // only process supported PDUs
+            .filter(|pdu| if pdu.header.pdu_type.is_implemented() { true
+            } else {
+                self.event_tx.try_send(Event::UnimplementedEncodedPdu(pdu.header.pdu_type, pdu.header.pdu_length as u64))
+                    .expect("Event TX channel failed in Encoder::encode_pdus - Reject unimplemented PDU.");
+                false
+            }) // only send out implemented C-DIS PDUs
+            .inspect(|pdu| self.event_tx.try_send(Event::ReceivedDis(pdu.header.pdu_type, pdu.header.pdu_length as u64))
+                .expect("Event TX channel failed in Encoder::encode_pdus - Received PDU.") )
             .map(|pdu| {
-                self.event_tx.try_send(Event::ReceivedDis(pdu.header.pdu_type)).expect("Event TX channel failed in Encoder::encode_pdus - Received PDU.");
                 let (pdu, state_result) = CdisPdu::encode(pdu, &mut self.state, &self.codec_options);
                 match state_result {
                     CodecStateResult::StateUnaffected => {}
                     CodecStateResult::StateUpdateEntityState => {
                         self.state.entity_state.entry(dis_rs::model::EntityId::from(
-                            pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
+                            pdu.originator()
+                                .expect("EntityState PDU always should have an originating EntityId")))
                             .and_modify(|e| e.last_send = Instant::now() )
                             .or_default();
                     }
                 }
-                self.event_tx.try_send(Event::EncodedPdu(pdu.header.pdu_type)).expect("Event TX channel failed in Encoder::encode_pdus - Encoded PDU.");
                 pdu
             } )
-            .filter(|pdu| if let CdisBody::Unsupported(_) = pdu.body {
-                self.event_tx.try_send(Event::RejectedUnsupportedDisPdu(pdu.header.pdu_type)).expect("Event TX channel failed in Encoder::encode_pdus - Reject unsupported.");
-                false
-            } else { true }) // only process supported PDUs
+            .inspect(| pdu | self.event_tx.try_send(Event::EncodedPdu(pdu.header.pdu_type, pdu.header.length.div_ceil(8) as u64))
+                .expect("Event TX channel failed in Encoder::encode_pdus - Encoded PDU.") )
             .collect();
         cdis_pdus
     }
@@ -177,12 +187,14 @@ impl Decoder {
             // when a partial update cdis PDU is received
             //     check if we already have a full update stored to fill in the blanks, send out DIS
             //     if no full update is present, discard the cdis PDU
-            .filter(|cdis| if let CdisBody::Unsupported(_) = cdis.body {
-                self.event_tx.try_send(Event::RejectedUnsupportedCDisPdu(cdis.header.pdu_type)).expect("Event TX channel failed in Decoder::decode_pdus - Reject unsupported.");
+            .filter(|cdis| if cdis.header.pdu_type.is_implemented() {
+                self.event_tx.try_send(Event::UnimplementedEncodedPdu(cdis.header.pdu_type, cdis.header.length.div_ceil(8) as u64))
+                    .expect("Event TX channel failed in Decoder::decode_pdus - Reject unimplemented PDU.");
+                // self.event_tx.try_send(Event::RejectedUnsupportedCDisPdu((cdis.header.pdu_type, cdis.header.length.div_ceil(8) as u64))).expect("Event TX channel failed in Decoder::decode_pdus - Reject unsupported.");
                 false
-            } else { true } )// only process supported C-DIS PDUs
+            } else { true } )// only process implemented C-DIS PDUs
+            .inspect(|cdis_pdu| self.event_tx.try_send(Event::ReceivedCDis(cdis_pdu.header.pdu_type, cdis_pdu.header.length.div_ceil(8) as u64)).expect("Event TX channel failed in Decoder::decode_pdus - Received PDU.") )
             .map(|cdis_pdu| {
-                self.event_tx.try_send(Event::ReceivedCDis(cdis_pdu.header.pdu_type)).expect("Event TX channel failed in Decoder::decode_pdus - Received PDU.");
                 let (pdu, state_result) = cdis_pdu.decode(&mut self.state, &self.codec_options);
                 match state_result {
                     CodecStateResult::StateUnaffected => {}
@@ -199,9 +211,9 @@ impl Decoder {
                             } else { DecoderStateEntityState::default() } );
                     }
                 }
-                self.event_tx.try_send(Event::DecodedPdu(pdu.header.pdu_type)).expect("Event TX channel failed in Decoder::decode_pdus - Decoded PDU.");
                 pdu
             })
+            .inspect(|pdu| self.event_tx.try_send(Event::DecodedPdu(pdu.header.pdu_type, pdu.header.pdu_length as u64)).expect("Event TX channel failed in Decoder::decode_pdus - Decoded PDU.") )
             .collect();
         dis_pdus
     }
