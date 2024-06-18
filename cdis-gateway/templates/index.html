@@ -17,26 +17,18 @@
     </div>
 </div>
 
-<div class="container mx-auto grid grid-cols-10 grid-rows-2 gap-3 place-items-stretch content-stretch w-full" hx-ext="sse" sse-connect="/sse">
+<div class="container mx-auto grid grid-cols-8 grid-rows-2 gap-3 place-items-stretch content-stretch w-full" hx-ext="sse" sse-connect="/sse">
     <div class="row-span-2 col-span-2 stats">
         <div class="stat max-w-fit" sse-swap="dis_socket"></div>
-    </div>
-    <div class="w-1 h-full">
     </div>
     <div class="col-span-4 stats">
         <div class="stat w-full" sse-swap="encoder"></div>
     </div>
-    <div class="w-1">
-    </div>
     <div class="row-span-2 col-span-2 stats">
         <div class="stat max-w-fit" sse-swap="cdis_socket"></div>
     </div>
-    <div class="w-1">
-    </div>
     <div class="col-span-4 stats">
         <div class="stat w-full" sse-swap="decoder"></div>
-    </div>
-    <div class="w-1">
     </div>
 </div>
 {% endblock %}
