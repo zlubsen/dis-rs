@@ -748,7 +748,7 @@ impl CdisMarkingCharEncoding {
 }
 
 /// 11.27 World Coordinates Record
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
 pub struct WorldCoordinates {
     pub latitude: f32,
     pub longitude: f32,

@@ -822,7 +822,7 @@ impl From<Svint16BitSize> for u8 {
 }
 
 /// 10.2.8 SVINT24
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
 pub struct SVINT24 {
     bit_size: Svint24BitSize,
     pub value: i32,
@@ -881,8 +881,9 @@ impl From<i32> for SVINT24 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
 pub(crate) enum Svint24BitSize {
+    #[default]
     Sixteen,
     Nineteen,
     TwentyOne,

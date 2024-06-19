@@ -8,6 +8,7 @@ use crate::unsupported::Unsupported;
 pub mod types;
 pub mod records;
 pub mod entity_state;
+pub mod fire;
 pub mod unsupported;
 pub mod constants;
 pub(crate) mod parsing;
@@ -18,6 +19,7 @@ pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
+use crate::fire::model::Fire;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -82,7 +84,7 @@ impl CdisInteraction for CdisPdu {
 pub enum CdisBody {
     Unsupported(Unsupported),
     EntityState(EntityState),
-    Fire,
+    Fire(Fire),
     Detonation,
     Collision,
     CreateEntity,
