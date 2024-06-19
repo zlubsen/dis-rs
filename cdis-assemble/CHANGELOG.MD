@@ -1,6 +1,6 @@
 # Changelog for crate DIS-RS
 
-## 0.1.0 - 2024-xx-xx
+## 0.1.0 - 2024-06-19
 
 First implementation of the `cdis-assemble` crate.
 
