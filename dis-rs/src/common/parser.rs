@@ -267,7 +267,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             // PduType::InformationOperationsAction => {}
             // PduType::InformationOperationsReport => {}
             PduType::Attribute => { attribute_body(input)? }
-            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unspecified type number?
+            PduType::Unspecified(_type_number) => { other_body(header)(input)? } // TODO Log unsupported type number?
             _ => { other_body(header)(input)? }
         };
         Ok((input, body))
@@ -309,9 +309,17 @@ pub(crate) fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
     Ok((input, protocol_family))
 }
 
+/// Skip the bytes of a PDU's body, by calculating the total length minus the length of a header.
+/// The function will skip zero bytes when the total length provided is less than the length of a header (12 bytes).
 #[allow(dead_code)]
 pub(crate) fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
-    let bytes_to_skip = total_bytes - PDU_HEADER_LEN_BYTES;
+    // if total_bytes <= PDU_HEADER_LEN_BYTES {
+    //     return Err(nom::error::Error {
+    //         input: (),
+    //         code: ErrorKind::Tag,
+    //     } )
+    // }
+    let bytes_to_skip = total_bytes.saturating_sub(PDU_HEADER_LEN_BYTES);
     move |input| {
         take(bytes_to_skip)(input)
     }
@@ -747,7 +755,7 @@ fn ceil_bits_to_bytes(bits: u16) -> u16 {
 #[cfg(test)]
 mod tests {
     use crate::common::errors::DisError;
-    use crate::common::parser::parse_multiple_header;
+    use crate::common::parser::{parse_multiple_header, skip_body};
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{PduType, ProtocolFamily, ProtocolVersion};
 
@@ -806,7 +814,7 @@ mod tests {
     #[test]
     fn parse_multiple_headers() {
         let bytes : [u8;24] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00
-            ,0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
+            ,06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
 
         let headers = parse_multiple_header(&bytes);
         assert!(headers.is_ok());
@@ -817,7 +825,7 @@ mod tests {
     #[test]
     fn parse_multiple_headers_1st_too_short() {
         let bytes : [u8;23] = [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00
-            ,0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
+            ,06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0x0c, 0x00, 0x00];
         // two pdus, headers with 0-byte body's; first header is one-byte short
 
         let headers = parse_multiple_header(&bytes);
@@ -837,5 +845,14 @@ mod tests {
         assert!(headers.is_err());
         let error = headers.expect_err("Should be Err");
         assert_eq!(error, DisError::InsufficientHeaderLength(11));
+    }
+
+    #[test]
+    fn skip_body_total_length_cannot_contain_a_header() {
+        let bytes: [u8; 2] = [0x00, 0x00];
+
+        let (input, skipped) = skip_body(2)(&bytes).unwrap();
+        assert_eq!(input, [0x00, 0x00]);
+        assert_eq!(skipped, []);
     }
 }

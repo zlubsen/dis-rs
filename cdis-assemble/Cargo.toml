@@ -1,0 +1,27 @@
+[package]
+name = "cdis-assemble"
+version = "0.1.0"
+authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
+description = """
+An implementation of the Compressed-Distributed Interactive Simulation (SISO-STD-023-2024) protocol in Rust.
+
+This main crate models C-DIS PDUs and facilities to read/write PDUs
+from Rust data structures to the wire format and vice versa. Additionally, it supports the encoding/decoding of
+regular DIS PDUs to and from its C-DIS variants.
+"""
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/zlubsen/dis-rs"
+categories = ["network-programming"]
+keywords = ["simulation", "DIS", "C-DIS"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dis-rs = { path = "../dis-rs" }
+bytes = "1.4.0"
+nom = "7.1.3"
+bitvec = "1.0.1"
+num = "0.4.1"
+thiserror = "1.0.40"

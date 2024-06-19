@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}
+    C-DIS Gateway
+{% endblock %}
+{% block content %}
+
+<div class="container mx-auto flex flex-row items-stretch min-h-16">
+    <div class="basis-2/6"></div>
+    <div class="basis-2/6 text-2xl text-primary text-center">
+        <span class="stat">C-DIS Gateway</span>
+    </div>
+    <div class="basis-1/6 text-accent text-center">
+        <span class="stat">{{ config.mode }}</span>
+    </div>
+    <div class="basis-1/6">
+        {% include "indicators.html" %}
+    </div>
+</div>
+
+<div class="container mx-auto grid grid-cols-8 grid-rows-2 gap-3 place-items-stretch content-stretch w-full" hx-ext="sse" sse-connect="/sse">
+    <div class="row-span-2 col-span-2 stats">
+        <div class="stat max-w-fit" sse-swap="dis_socket"></div>
+    </div>
+    <div class="col-span-4 stats">
+        <div class="stat w-full" sse-swap="encoder"></div>
+    </div>
+    <div class="row-span-2 col-span-2 stats">
+        <div class="stat max-w-fit" sse-swap="cdis_socket"></div>
+    </div>
+    <div class="col-span-4 stats">
+        <div class="stat w-full" sse-swap="decoder"></div>
+    </div>
+</div>
+{% endblock %}

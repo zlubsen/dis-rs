@@ -1,11 +1,10 @@
-use bytes::{BufMut, BytesMut};
 use crate::enumerations::PduType;
 use crate::v7::model::PduStatus;
 
-/// Serialization function for PduStatus.
+/// Serialization function for PduStatus. The function formats the 8-bit field for in the `PduHeader`.
 /// PduStatus needs the PduType to determine which combination of indicators in the status field to write to the buffer.
-/// Therefore it uses a separate function instead of the Serialize trait.
-pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type : &PduType, buf: &mut BytesMut) -> u16 {
+/// Therefore it uses a separate function instead of the `Serialize` trait.
+pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type : &PduType) -> u8 {
     let tei : u8 = if let Some(tei) = pdu_status.transferred_entity_indicator {
         u8::from(tei)
     } else {0u8};
@@ -34,7 +33,7 @@ pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type : &PduType, buf: &m
         u8::from(aii) << 5
     } else {0u8};
     
-    let status_bits = match u8::from(*pdu_type) {
+    match u8::from(*pdu_type) {
         1 => { combine_cei_lvc_tei(cei, lvc, tei) }
         2 => { combine_fti_cei_lvc(fti, cei, lvc) }
         3 => { combine_dti_cei_lvc(dti, cei, lvc) }
@@ -61,10 +60,7 @@ pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type : &PduType, buf: &m
             // default to zeroes for Unspecified PduTypes 
             0u8
         }
-    };
-    buf.put_u8(status_bits);
-    
-    1
+    }
 }
 
 fn combine_cei_lvc_tei(cei: u8, lvc: u8, tei: u8) -> u8 {

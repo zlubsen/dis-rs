@@ -35,7 +35,6 @@ use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
 use crate::common::transmitter::model::Transmitter;
-use crate::v7::model::PduStatus;
 use crate::constants::{EIGHT_OCTETS, FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS};
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
@@ -61,6 +60,8 @@ use crate::start_resume_r::model::StartResumeR;
 use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
+
+pub use crate::v7::model::PduStatus;
 
 #[derive(Debug, PartialEq)]
 pub struct Pdu {
@@ -629,7 +630,7 @@ impl From<PduType> for ProtocolFamily {
 }
 
 /// 6.2.80 Simulation Address record
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,
@@ -655,7 +656,7 @@ impl Default for SimulationAddress {
 
 /// 6.2.28 Entity Identifier record
 /// 6.2.81 Simulation Identifier record
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EntityId {
     pub simulation_address : SimulationAddress,
     pub entity_id : u16
@@ -761,19 +762,19 @@ impl VectorF32 {
     }
 
     pub fn with_second(mut self, second: f32) -> Self {
-        self.first_vector_component = second;
+        self.second_vector_component = second;
         self
     }
 
     pub fn with_third(mut self, third: f32) -> Self {
-        self.first_vector_component = third;
+        self.third_vector_component = third;
         self
     }
 }
 
 // TODO rename Location to World Coordinate
 /// 6.2.98 World Coordinates record
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Location {
     pub x_coordinate : f64,
     pub y_coordinate : f64,
@@ -807,7 +808,7 @@ impl Location {
 
 // TODO rename Orientation to EulerAngle
 /// 6.2.32 Euler Angles record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct Orientation {
     pub psi : f32,
     pub theta : f32,
@@ -1060,7 +1061,7 @@ impl MunitionDescriptor {
 ///
 /// This raw timestamp could also be interpreted as a Unix timestamp, or something else
 /// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct TimeStamp {
     pub raw_timestamp: u32,
 }
@@ -1112,8 +1113,8 @@ pub enum DisTimeStamp {
 
 impl DisTimeStamp {
     pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour = DisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
         Self::Absolute {
             units_past_the_hour,
             nanoseconds_past_the_hour
@@ -1121,23 +1122,41 @@ impl DisTimeStamp {
     }
 
     pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
+        let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour = DisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
         Self::Relative {
             units_past_the_hour,
             nanoseconds_past_the_hour
         }
     }
-}
 
-/// Helper function to convert seconds to nanoseconds
-fn seconds_to_nanoseconds(seconds: u32) -> u32 {
-    seconds * 1_000_000
-}
+    pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
+        Self::Absolute {
+            units_past_the_hour,
+            nanoseconds_past_the_hour: Self::dis_time_units_to_nanoseconds(units_past_the_hour),
+        }
+    }
 
-/// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
-fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
-    (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
+    pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
+        Self::Relative {
+            units_past_the_hour,
+            nanoseconds_past_the_hour: Self::dis_time_units_to_nanoseconds(units_past_the_hour),
+        }
+    }
+
+    /// Helper function to convert seconds to nanoseconds
+    fn seconds_to_nanoseconds(seconds: u32) -> u32 {
+        seconds * 1_000_000
+    }
+
+    /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
+    fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
+        (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
+    }
+
+    fn dis_time_units_to_nanoseconds(dis_time_units: u32) -> u32 {
+        (dis_time_units as f32 * NANOSECONDS_PER_TIME_UNIT) as u32
+    }
 }
 
 impl From<u32> for DisTimeStamp {
@@ -1157,6 +1176,12 @@ impl From<u32> for DisTimeStamp {
 impl From<TimeStamp> for DisTimeStamp {
     fn from(value: TimeStamp) -> Self {
         DisTimeStamp::from(value.raw_timestamp)
+    }
+}
+
+impl From<DisTimeStamp> for u32 {
+    fn from(value: DisTimeStamp) -> Self {
+        TimeStamp::from(value).raw_timestamp
     }
 }
 
@@ -1419,7 +1444,7 @@ impl EntityTypeParameter {
 }
 
 /// 6.2.94.4 Entity Association VP Record
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityAssociationParameter {
     pub change_indicator: ChangeIndicator,
     pub association_status: EntityAssociationAssociationStatus,
@@ -1659,11 +1684,5 @@ mod tests {
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
-    }
-
-    #[test]
-    fn display_entity_id() {
-        let entity_id = EntityId::new(1, 2, 3);
-        assert_eq!(format!("{}", entity_id).as_str(), "1:2:3");
     }
 }

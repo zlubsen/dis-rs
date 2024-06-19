@@ -63,25 +63,8 @@ pub(crate) fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
 pub(crate) fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityAppearance> {
     move |input: &[u8]| {
         let (input, appearance) = be_u32(input)?;
-        let appearance = match (entity_type.kind, entity_type.domain) {
-            (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
-            (EntityKind::Platform, PlatformDomain::Land) => EntityAppearance::LandPlatform(LandPlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Air) => EntityAppearance::AirPlatform(AirPlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Surface) => EntityAppearance::SurfacePlatform(SurfacePlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Subsurface) => EntityAppearance::SubsurfacePlatform(SubsurfacePlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Space) => EntityAppearance::SpacePlatform(SpacePlatformAppearance::from(appearance)),
-            (EntityKind::Munition, _) => EntityAppearance::Munition(MunitionAppearance::from(appearance)),
-            (EntityKind::Lifeform, _) => EntityAppearance::LifeForms(LifeFormsAppearance::from(appearance)),
-            (EntityKind::Environmental, _) => EntityAppearance::Environmental(EnvironmentalAppearance::from(appearance)),
-            (EntityKind::Culturalfeature, _) => EntityAppearance::CulturalFeature(CulturalFeatureAppearance::from(appearance)),
-            (EntityKind::Supply, _) => EntityAppearance::Supply(SupplyAppearance::from(appearance)),
-            (EntityKind::Radio, _) => EntityAppearance::Radio(RadioAppearance::from(appearance)),
-            (EntityKind::Expendable, _) => EntityAppearance::Expendable(ExpendableAppearance::from(appearance)),
-            (EntityKind::SensorEmitter, _) => EntityAppearance::SensorEmitter(SensorEmitterAppearance::from(appearance)),
-            (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes())
-        };
 
-        Ok((input, appearance))
+        Ok((input, EntityAppearance::from_bytes(appearance, &entity_type)))
     }
 }
 
@@ -107,28 +90,30 @@ pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let (input, algorithm) = be_u8(input)?;
     let algorithm = DeadReckoningAlgorithm::from(algorithm);
 
-    // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
-    let (input, other_parameters) = match algorithm {
-        DeadReckoningAlgorithm::StaticNonmovingEntity |
-            DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
-            DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
-            DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
-            DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
-            dr_other_parameters_euler(input)?
-        }
-        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
-            DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
-            DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
-            DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
-            dr_other_parameters_quaternion(input)?
-        }
-        DeadReckoningAlgorithm::Other => {
-            dr_other_parameters_none(input)?
-        }
-        _ => {
-            dr_other_parameters_none(input)?
-        }
-    };
+    let (input, other_parameters) = dr_other_parameters(input, algorithm)?;
+
+    // // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
+    // let (input, other_parameters) = match algorithm {
+    //     DeadReckoningAlgorithm::StaticNonmovingEntity |
+    //         DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
+    //         DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
+    //         DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
+    //         DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
+    //         dr_other_parameters_euler(input)?
+    //     }
+    //     DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
+    //         DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
+    //         DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
+    //         DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
+    //         dr_other_parameters_quaternion(input)?
+    //     }
+    //     DeadReckoningAlgorithm::Other => {
+    //         dr_other_parameters_none(input)?
+    //     }
+    //     _ => {
+    //         dr_other_parameters_none(input)?
+    //     }
+    // };
 
     let (input, acceleration) = vec3_f32(input)?;
     let (input, velocity) = vec3_f32(input)?;
@@ -139,6 +124,33 @@ pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
         linear_acceleration: acceleration,
         angular_velocity: velocity,
     }))
+}
+
+pub fn dr_other_parameters(input: &[u8], algorithm: DeadReckoningAlgorithm) -> IResult<&[u8], DrOtherParameters> {
+    // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
+    let (input, other_parameters) = match algorithm {
+        DeadReckoningAlgorithm::StaticNonmovingEntity |
+        DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
+        DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
+        DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
+            dr_other_parameters_euler(input)?
+        }
+        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
+        DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
+        DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
+            dr_other_parameters_quaternion(input)?
+        }
+        DeadReckoningAlgorithm::Other => {
+            dr_other_parameters_none(input)?
+        }
+        _ => {
+            dr_other_parameters_none(input)?
+        }
+    };
+
+    Ok((input, other_parameters))
 }
 
 pub(crate) fn dr_other_parameters_none(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {

@@ -1,7 +1,6 @@
 use std::{env, fs};
 use std::ops::{RangeInclusive};
 use std::path::Path;
-use std::process::Command;
 
 use quick_xml::Reader;
 use proc_macro2::{Ident, Literal, TokenStream};
@@ -305,24 +304,16 @@ fn main() {
     // Generate all code for enums
     let generated = generation::generate(&generation_items);
 
+    // format generated code using prettyplease
+    let ast = syn::parse_file(&generated.to_string()).expect("Error parsing generated code for pretty printing.");
+    let contents = prettyplease::unparse(&ast);
+
     // Save to file
     let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join("enumerations.rs");
     fs::write(
-        &dest_path,
-        generated.to_string()
+        dest_path,
+        contents
     ).unwrap();
-
-    // Format the file using rustfmt.
-    // This expects rustfmt to be installed.
-    let cmd = format!("rustfmt{}", env::consts::EXE_SUFFIX);
-    let output = Command::new(cmd)
-        .arg(&dest_path.clone().into_os_string())
-        .output()
-        .expect("Failed to run rustfmt");
-    if !output.status.success() {
-        let error = String::from_utf8_lossy(&output.stderr);
-        println!("Error: {:?}", error);
-    }
 }
 
 fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {

@@ -1,3 +1,6 @@
 [workspace]
-members = ["dis-rs", "dis_rs_macros", "app-receiver"]
+members = ["dis-rs", "cdis-assemble", "cdis-gateway"]
 resolver = "2"
+
+[workspace.package]
+rust-version = "1.73"

@@ -18,7 +18,7 @@ impl Serialize for PduHeader {
         match self.protocol_version {
             ProtocolVersion::IEEE1278_12012 => {
                 if let Some(status) = self.pdu_status {
-                    crate::v7::writer::serialize_pdu_status(&status, &self.pdu_type, buf);
+                    buf.put_u8(crate::v7::writer::serialize_pdu_status(&status, &self.pdu_type));
                     buf.put_u8(0u8);
                 } else { buf.put_u16(0u16) }
             }
@@ -350,6 +350,44 @@ impl Serialize for BeamData {
     }
 }
 
+impl Serialize for SupplyQuantity {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        let type_bytes = self.supply_type.serialize(buf);
+        buf.put_f32(self.quantity);
+
+        type_bytes + 4
+    }
+}
+
+impl Serialize for RecordSpecification {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.record_sets.len() as u32);
+        let record_sets_bytes : u16 = self.record_sets.iter()
+            .map(|record_set| record_set.serialize(buf) )
+            .sum();
+
+        FOUR_OCTETS as u16 + record_sets_bytes
+    }
+}
+
+impl Serialize for RecordSet {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u32(self.record_id.into());
+        buf.put_u32(self.record_serial_number);
+        buf.put_u32(0u32);
+
+        buf.put_u16(self.record_length_bytes * ONE_BYTE_IN_BITS as u16); // record length in bits
+        buf.put_u16(self.records.len() as u16); // record count
+        let records_bytes = self.records.iter()
+            .map(|record| { buf.put(record.as_slice()); record.len() })
+            .sum::<usize>() as u16;
+        let padded_record = length_padded_to_num(records_bytes as usize, EIGHT_OCTETS);
+        buf.put_bytes(0u8, padded_record.padding_length);
+
+        16 + records_bytes + padded_record.padding_length as u16
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
@@ -397,43 +435,5 @@ mod tests {
 
         let expected : [u8;12] = [0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x02, 0x00];
         assert_eq!(buf.as_ref(), expected.as_ref());
-    }
-}
-
-impl Serialize for SupplyQuantity {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let type_bytes = self.supply_type.serialize(buf);
-        buf.put_f32(self.quantity);
-
-        type_bytes + 4
-    }
-}
-
-impl Serialize for RecordSpecification {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u32(self.record_sets.len() as u32);
-        let record_sets_bytes : u16 = self.record_sets.iter()
-            .map(|record_set| record_set.serialize(buf) )
-            .sum();
-
-        FOUR_OCTETS as u16 + record_sets_bytes
-    }
-}
-
-impl Serialize for RecordSet {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u32(self.record_id.into());
-        buf.put_u32(self.record_serial_number);
-        buf.put_u32(0u32);
-
-        buf.put_u16(self.record_length_bytes * ONE_BYTE_IN_BITS as u16); // record length in bits
-        buf.put_u16(self.records.len() as u16); // record count
-        let records_bytes = self.records.iter()
-            .map(|record| { buf.put(record.as_slice()); record.len() })
-            .sum::<usize>() as u16;
-        let padded_record = length_padded_to_num(records_bytes as usize, EIGHT_OCTETS);
-        buf.put_bytes(0u8, padded_record.padding_length);
-
-        16 + records_bytes + padded_record.padding_length as u16
     }
 }
