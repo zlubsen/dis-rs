@@ -1,5 +1,5 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
-use dis_rs::model::{DisTimeStamp, Location, PduStatus, SimulationAddress};
+use dis_rs::model::{DisTimeStamp, EventId, Location, PduStatus, SimulationAddress};
 use dis_rs::model::{TimeStamp};
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
@@ -291,6 +291,17 @@ impl From<&EntityId> for dis_rs::model::EntityId {
                 value.site.value, value.application.value),
             entity_id: value.entity.value,
         }
+    }
+}
+
+/// Convert a dis-rs EventId to cdis-assemble EntityId, because the cdis library does not model the EventId record explicitly.
+impl From<&EventId> for EntityId {
+    fn from(value: &EventId) -> Self {
+        Self::new(
+            UVINT16::from(value.simulation_address.site_id),
+            UVINT16::from(value.simulation_address.application_id),
+            UVINT16::from(value.event_id),
+        )
     }
 }
 

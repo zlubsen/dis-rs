@@ -1,8 +1,7 @@
 use nom::complete::take;
 use nom::IResult;
-use nom::number::complete::{be_u16, be_u8};
 use crate::{BodyProperties, CdisBody, parsing};
-use crate::constants::{FOUR_BITS, ONE_BIT};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS};
 use crate::fire::model::{Fire, FireFieldsPresent};
 use crate::parsing::BitInput;
 use crate::records::model::{Units};
@@ -27,13 +26,13 @@ pub(crate) fn fire_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, descriptor_entity_type) = entity_type(input)?;
 
     let (input, descriptor_warhead) = parsing::parse_field_when_present(
-        fields_present, FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, be_u16)(input)?;
+        fields_present, FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, take(SIXTEEN_BITS))(input)?;
     let (input, descriptor_fuze) = parsing::parse_field_when_present(
-        fields_present, FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, be_u16)(input)?;
+        fields_present, FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, take(SIXTEEN_BITS))(input)?;
     let (input, descriptor_quantity) = parsing::parse_field_when_present(
-        fields_present, FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, be_u8)(input)?;
+        fields_present, FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, take(EIGHT_BITS))(input)?;
     let (input, descriptor_rate) = parsing::parse_field_when_present(
-        fields_present, FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, be_u8)(input)?;
+        fields_present, FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, take(EIGHT_BITS))(input)?;
 
     let (input, velocity) = linear_velocity(input)?;
 
@@ -60,11 +59,10 @@ pub(crate) fn fire_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
 #[cfg(test)]
 mod tests {
-    use crate::CdisBody;
-    use crate::entity_state::parser::entity_state_body;
-    use crate::fire::parser::fire_body;
-    use crate::records::model::{EntityId, Units};
-    use crate::types::model::UVINT16;
+    // use crate::CdisBody;
+    // use crate::fire::parser::fire_body;
+    // use crate::records::model::{EntityId, Units};
+    // use crate::types::model::UVINT16;
 
     #[test]
     fn parse_fire_no_fields_present() {

@@ -6,6 +6,7 @@ use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::constants::ONE_BIT;
 use crate::entity_state::parser::entity_state_body;
+use crate::fire::parser::fire_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::types::model::VarInt;
@@ -39,7 +40,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
     move | input: BitInput | {
         let (input, body) : (BitInput, CdisBody) = match header.pdu_type {
             PduType::EntityState => { entity_state_body(input)? }
-            // PduType::Fire => {}
+            PduType::Fire => { fire_body(input)? }
             // PduType::Detonation => {}
             // PduType::Collision => {}
             // PduType::CreateEntity => {}

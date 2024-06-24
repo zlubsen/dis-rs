@@ -112,7 +112,7 @@ impl CdisBody {
         match self {
             CdisBody::Unsupported(_) => { 0 }
             CdisBody::EntityState(body) => { body.body_length_bits() }
-            CdisBody::Fire => { 0 }
+            CdisBody::Fire(body) => { body.body_length_bits() }
             CdisBody::Detonation => { 0 }
             CdisBody::Collision => { 0 }
             CdisBody::CreateEntity => { 0 }
@@ -142,7 +142,7 @@ impl CdisInteraction for CdisBody {
         match self {
             CdisBody::Unsupported(_) => { None }
             CdisBody::EntityState(body) => { body.originator() }
-            CdisBody::Fire => { None }
+            CdisBody::Fire(body) => { body.originator() }
             CdisBody::Detonation => { None }
             CdisBody::Collision => { None }
             CdisBody::CreateEntity => { None }
@@ -170,7 +170,7 @@ impl CdisInteraction for CdisBody {
         match self {
             CdisBody::Unsupported(_) => { None }
             CdisBody::EntityState(body) => { body.receiver() }
-            CdisBody::Fire => { None } 
+            CdisBody::Fire(body) => { body.receiver() }
             CdisBody::Detonation => { None } 
             CdisBody::Collision => { None } 
             CdisBody::CreateEntity => { None } 
@@ -368,8 +368,8 @@ mod tests {
     #[test]
     fn validate_implemented_pdus() {
         assert_eq!(PduType::EntityState.is_implemented(), true);
-        
-        assert_eq!(PduType::Fire.is_implemented() || CdisBody::Fire.body_length() != 0, false);
+        assert_eq!(PduType::Fire.is_implemented(), true);
+
         assert_eq!(PduType::Detonation.is_implemented() || CdisBody::Detonation.body_length() != 0, false);
         assert_eq!(PduType::Collision.is_implemented() || CdisBody::Collision.body_length() != 0, false);
         assert_eq!(PduType::CreateEntity.is_implemented() || CdisBody::CreateEntity.body_length() != 0, false);

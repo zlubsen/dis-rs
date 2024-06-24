@@ -5,6 +5,7 @@ use dis_rs::{Interaction, VariableParameters};
 use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
+use crate::fire::model::Fire;
 use crate::records::model::CdisHeader;
 use crate::unsupported::Unsupported;
 
@@ -164,7 +165,7 @@ impl CdisBody {
 
                 (cdis_body.into_cdis_body(), state_result)
             }
-            PduBody::Fire(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Fire(dis_body) => { (Fire::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Detonation(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Collision(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ServiceRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }

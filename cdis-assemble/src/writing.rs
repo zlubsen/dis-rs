@@ -4,7 +4,7 @@ use bitvec::order::Msb0;
 use bitvec::macros::internal::funty::Integral;
 use bitvec::field::BitField;
 use crate::{CdisBody, CdisPdu};
-use crate::constants::{MTU_BITS, ONE_BIT};
+use crate::constants::{EIGHT_BITS, MTU_BITS, ONE_BIT, SIXTEEN_BITS};
 
 pub type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
 
@@ -37,7 +37,7 @@ impl SerializeCdisPdu for CdisBody {
         let cursor = match self {
             CdisBody::Unsupported(_body) => { cursor }
             CdisBody::EntityState(body) => { body.serialize(buf, cursor) }
-            // CdisBody::Fire => {}
+            CdisBody::Fire(body) => { body.serialize(buf, cursor) }
             // CdisBody::Detonation => {}
             // CdisBody::Collision => {}
             // CdisBody::CreateEntity => {}
@@ -101,6 +101,18 @@ pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero
 /// Field must implement trait `SerializeCdis`.
 pub(crate) fn serialize_when_present<I: SerializeCdis>(field: &Option<I>, buf: &mut BitBuffer, cursor: usize) -> usize {
     if let Some(inner) = field { inner.serialize(buf, cursor) } else { cursor }
+}
+
+impl SerializeCdis for u8 {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        write_value_unsigned(buf, cursor, EIGHT_BITS, *self)
+    }
+}
+
+impl SerializeCdis for u16 {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        write_value_unsigned(buf, cursor, SIXTEEN_BITS, *self)
+    }
 }
 
 #[cfg(test)]
