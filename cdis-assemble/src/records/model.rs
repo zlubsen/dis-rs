@@ -305,6 +305,16 @@ impl From<&EventId> for EntityId {
     }
 }
 
+/// Convert a cdis-assemble EntityId to dis-rs EventId, because the cdis library does not model the EventId record explicitly.
+impl From<&EntityId> for EventId {
+    fn from(value: &EntityId) -> Self {
+        Self::new(
+            SimulationAddress::new(value.site.value, value.application.value),
+            value.entity.value
+        )
+    }
+}
+
 impl CdisRecord for EntityId {
     fn record_length(&self) -> usize {
         self.site.record_length()
