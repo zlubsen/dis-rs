@@ -557,6 +557,28 @@ mod tests {
     }
 
     #[test]
+    fn entity_location_encode_and_decode_non_null() {
+        let dis_in = dis_rs::model::Location::new(3_919_999.0, 342_955.0, 5_002_819.0);
+        let (cdis, units) = encode_world_coordinates(&dis_in);
+        let dis_out = decode_world_coordinates(&cdis, units);
+
+        assert_eq!(dis_in.x_coordinate, dis_out.x_coordinate.ceil());
+        assert_eq!(dis_in.y_coordinate, dis_out.y_coordinate.round());
+        assert_eq!(dis_in.z_coordinate, dis_out.z_coordinate.round());
+    }
+
+    #[test]
+    fn entity_location_encode_and_decode_null() {
+        let dis_in = dis_rs::model::Location::new(0.0, 0.0, 5_002_819.0);
+        let (cdis, units) = encode_world_coordinates(&dis_in);
+        let dis_out = decode_world_coordinates(&cdis, units);
+
+        assert_eq!(dis_in.x_coordinate, dis_out.x_coordinate.ceil());
+        assert_eq!(dis_in.y_coordinate, dis_out.y_coordinate.round());
+        assert_eq!(dis_in.z_coordinate, dis_out.z_coordinate.round());
+    }
+
+    #[test]
     fn entity_orientation_dis_to_cdis() {
         let dis = dis_rs::model::Orientation::new(std::f32::consts::PI, 0.0, 0.0);
         let cdis = Orientation::encode(&dis);

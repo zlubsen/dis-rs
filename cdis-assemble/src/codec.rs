@@ -261,7 +261,9 @@ impl CdisBody {
 
                 (dis_body.into_pdu_body(), state_result)
             }
-            // CdisBody::Fire => {}
+            CdisBody::Fire(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::Detonation => {}
             // CdisBody::Collision => {}
             // CdisBody::CreateEntity => {}

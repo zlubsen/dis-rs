@@ -252,10 +252,16 @@ pub trait Implemented {
 }
 
 impl Implemented for PduType {
+    /// A PduType is properly implemented by the C-DIS library when:
+    /// - There is a model for the pdu body
+    /// - CdisBody enum is adapted, including the trait implementation for `CdisInteraction` and method `body_length(..)`
+    /// - There is a parser, and it is called in function `crate::parsing::cdis_body(..)`
+    /// - There is a serializer, and it is called in the `SerializeCdisPdu` trait impl for `CdisBody` in `crate::writing`.
+    /// - The codec implementations are present, and are called in `crate::codec` in the `CdisBody::encode` and `CdisBody::decode` implementations.
     fn is_implemented(&self) -> bool {
         match self {
-            PduType::EntityState => { true }
-            // PduType::Fire |
+            PduType::EntityState |
+            PduType::Fire => { true }
             // PduType::Detonation |
             // PduType::Collision |
             // PduType::CreateEntity |
