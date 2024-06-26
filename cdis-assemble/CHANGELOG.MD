@@ -1,4 +1,8 @@
-# Changelog for crate DIS-RS
+# Changelog for crate CDIS-ASSEMBLE
+
+## 0.1.1 - 2024-06-26
+
+Fire PDU support.
 
 ## 0.1.0 - 2024-06-19
 

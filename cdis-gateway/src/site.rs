@@ -337,6 +337,7 @@ mod templates {
     pub(crate) struct CodecStatsValues {
         pub received_count: u64,
         pub es_count: u64,
+        pub fire_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -347,6 +348,7 @@ mod templates {
             Self {
                 received_count: stats.received_count.values().map(|val| val.0).sum::<u64>().saturating_sub(stats.rejected_count),
                 es_count: stats.received_count.get(&PduType::EntityState).unwrap_or(&(0, 0)).0,
+                fire_count: stats.received_count.get(&PduType::Fire).unwrap_or(&(0, 0)).0,
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {

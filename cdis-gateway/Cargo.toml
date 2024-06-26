@@ -1,6 +1,6 @@
 [package]
 name = "cdis-gateway"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 A gateway for the Compressed-Distributed Interactive Simulation protocol.

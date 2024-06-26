@@ -1,5 +1,9 @@
 # Changelog for C-DIS Gateway
 
+## 0.1.1 - 2024-06-26
+
+Fire PDU support.
+
 ## 0.1.0 - 2024-06-19
 
 First implementation of the `cdis-gateway` crate (binary).

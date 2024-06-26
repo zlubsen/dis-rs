@@ -12,6 +12,8 @@ Added MSRV (1.73).
 
 Replaced generated code formatting using rustfmt with prettyplease crate, as to not rely on rustfmt to be installed.
 
+Fixes to Fire PDU builder (missing fields).
+
 ## 0.8.0 - 2024-04-03
 
 Changed the main serialization function for `PDU` to be fallible. It now returns `DisError::InsufficientBufferSize` when 
