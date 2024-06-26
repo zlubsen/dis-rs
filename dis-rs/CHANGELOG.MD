@@ -1,6 +1,6 @@
 # Changelog for crate DIS-RS
 
-## 0.9.0 - 2024-xx-xx
+## 0.9.0 - 2024-06-26
 
 Changed `DisError` to use `thiserror` crate, so `DisError` now implements `std::error::Error`.
 

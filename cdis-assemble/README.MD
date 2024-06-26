@@ -63,7 +63,7 @@ The conversion requires, aside from the to-be converted PDU, two things:
 - a state to convert 'stateful' PDUs (such as EntityState), tracking optional fields and timeouts. Either an `EncoderState` or `DecoderState`, containing specialised data structures for specific stateful PDUs. 
 - a `CodecOptions` struct, providing the parameters for the conversion (such as Full/Partial update mode, heartbeat and timeout settings, ...).
 
-See also `tests/encoding_tests.rs` and tests in `src/codec.rs` for examples.
+See also `tests/codec_tests.rs` and tests in `src/codec.rs` for examples.
 
 ## Resources
 
