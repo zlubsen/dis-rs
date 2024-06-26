@@ -217,7 +217,7 @@ pub trait Supported {
 
 impl Supported for PduType {
     fn is_supported(&self) -> bool {
-        match self {
+        matches!(self,
             PduType::EntityState |
             PduType::Fire |
             PduType::Detonation |
@@ -239,9 +239,8 @@ impl Supported for PduType {
             PduType::Transmitter |
             PduType::Signal |
             PduType::Receiver |
-            PduType::IFF => { true }
-            _ => { false }
-        }
+            PduType::IFF
+        )
     }
 }
 

@@ -100,7 +100,7 @@ impl GatewayStats {
             }
             Event::ReceivedDis(pdu_type, size) => {
                 self.encoder.received_count.entry(pdu_type)
-                    .and_modify(|mut count| {
+                    .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     } )
@@ -108,7 +108,7 @@ impl GatewayStats {
             }
             Event::ReceivedCDis(pdu_type, size) => {
                 self.decoder.received_count.entry(pdu_type)
-                    .and_modify(|mut count| {
+                    .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     } )
@@ -116,7 +116,7 @@ impl GatewayStats {
             }
             Event::EncodedPdu(pdu_type, size) => {
                 self.encoder.codec_count.entry(pdu_type)
-                    .and_modify(|mut count| {
+                    .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     } )
@@ -124,7 +124,7 @@ impl GatewayStats {
             }
             Event::DecodedPdu(pdu_type, size) => {
                 self.decoder.codec_count.entry(pdu_type)
-                    .and_modify(|mut count| {
+                    .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     } )

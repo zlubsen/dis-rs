@@ -4,6 +4,7 @@ use crate::fire::model::Fire;
 use crate::writing::{serialize_when_present, SerializeCdis, write_value_unsigned};
 
 impl SerializeCdisPdu for Fire {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let fields_present = self.fields_present_field();
 

@@ -23,9 +23,7 @@ impl Fire {
             descriptor_rate) =
                 encode_fire_descriptor(&item.descriptor);
         let range = if item.range.is_normal() {
-            if let Some(range) = item.range.to_u32() {
-                Some(UVINT32::from(range))
-            } else { None }
+            item.range.to_u32().map(UVINT32::from)
         } else { None };
 
         Fire {
@@ -53,7 +51,7 @@ impl Fire {
                 fmi.value
             } else { NO_FIRE_MISSION }
         };
-        let descriptor = decode_fire_descriptor(&self, entity_type);
+        let descriptor = decode_fire_descriptor(self, entity_type);
         Counterpart::builder()
             .with_firing_entity_id(self.firing_entity_id.decode())
             .with_target_entity_id(self.target_entity_id.decode())

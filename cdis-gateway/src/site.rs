@@ -9,7 +9,6 @@ use axum::response::sse::{Event as SseEvent, Sse};
 use axum::Router;
 use axum::routing::get;
 use axum_extra::{headers, TypedHeader};
-use bytesize::ByteSize;
 use futures::stream::Stream;
 use tokio::signal;
 // use tower_http::services::ServeDir;
@@ -23,13 +22,13 @@ use crate::stats::SseStat;
 
 // const ASSETS_DIR: &str = "templates";
 
-struct SiteState {
+pub(crate) struct SiteState {
     config: Config,
     stats_tx: tokio::sync::broadcast::Sender<SseStat>,
     cmd_tx: tokio::sync::broadcast::Sender<Command>,
 }
 
-pub async fn run_site(config: Config,
+pub(crate) async fn run_site(config: Config,
                       stats_tx: tokio::sync::broadcast::Sender<SseStat>,
                       cmd_tx: tokio::sync::broadcast::Sender<Command>) {
     // let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(ASSETS_DIR);
@@ -59,7 +58,7 @@ pub async fn run_site(config: Config,
     let host_ip = format!("127.0.0.1:{}", config.site_host);
     let listener = tokio::net::TcpListener::bind(&host_ip)
         .await
-        .expect(format!("Failed to bind TCP socket for Web UI - {}", host_ip).as_str());
+        .unwrap_or_else(|_| panic!("Failed to bind TCP socket for Web UI - {}", host_ip));
     tracing::debug!("Site listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal(cmd_tx.clone()))
@@ -117,7 +116,6 @@ async fn sse_handler(
                     if let Ok(stat) = stat {
                         yield match stat {
                             SseStat::DisSocket(stat) => {
-                                let bytes_received = stat.bytes_received;
                                 SseEvent::default().event("dis_socket").data(SocketStatsTemplate {
                                     name: "DIS network",
                                     stats: SocketStatsValues::from(&stat),
@@ -125,7 +123,6 @@ async fn sse_handler(
                                 }.render().unwrap())
                             }
                             SseStat::CdisSocket(stat) => {
-                                let bytes_sent = stat.bytes_sent;
                                 SseEvent::default().event("cdis_socket").data(SocketStatsTemplate {
                                     name: "C-DIS network",
                                     stats: SocketStatsValues::from(&stat),
@@ -168,7 +165,7 @@ async fn sse_handler(
     )
 }
 
-pub async fn styles() -> Result<impl IntoResponse, Response> {
+pub(crate) async fn styles() -> Result<impl IntoResponse, Response> {
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/css")
@@ -180,7 +177,7 @@ pub async fn styles() -> Result<impl IntoResponse, Response> {
     }
 }
 
-pub async fn scripts() -> Result<impl IntoResponse, Response> {
+pub(crate) async fn scripts() -> Result<impl IntoResponse, Response> {
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/javascript")
@@ -192,7 +189,7 @@ pub async fn scripts() -> Result<impl IntoResponse, Response> {
     }
 }
 
-pub async fn script_htmx() -> Result<impl IntoResponse, Response> {
+pub(crate) async fn script_htmx() -> Result<impl IntoResponse, Response> {
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/javascript")
@@ -204,7 +201,7 @@ pub async fn script_htmx() -> Result<impl IntoResponse, Response> {
     }
 }
 
-pub async fn script_htmx_sse() -> Result<impl IntoResponse, Response> {
+pub(crate) async fn script_htmx_sse() -> Result<impl IntoResponse, Response> {
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/javascript")
@@ -216,7 +213,7 @@ pub async fn script_htmx_sse() -> Result<impl IntoResponse, Response> {
     }
 }
 
-pub async fn config_info(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
+pub(crate) async fn config_info(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
     ConfigMetaTemplate {
         name: state.config.meta.name.clone(),
         author: state.config.meta.author.clone(),
@@ -224,7 +221,7 @@ pub async fn config_info(State(state): State<Arc<SiteState>>) -> impl IntoRespon
     }
 }
 
-pub async fn meta_info(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
+pub(crate) async fn meta_info(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
     ConfigMetaTemplate {
         name: state.config.meta.name.clone(),
         author: state.config.meta.author.clone(),
@@ -236,7 +233,7 @@ pub async fn clicked() -> impl IntoResponse {
     ConfigTemplate
 }
 
-pub async fn home(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
+pub(crate) async fn home(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
     HomeTemplate {
         config: state.config.clone()
     }

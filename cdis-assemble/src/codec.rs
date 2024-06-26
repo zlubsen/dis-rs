@@ -239,6 +239,7 @@ impl CdisBody {
         }
     }
 
+    #[allow(clippy::wildcard_in_or_patterns)]
     pub fn decode(&self, state: &mut DecoderState, options: &CodecOptions) -> (PduBody, CodecStateResult) {
         match self {
             CdisBody::EntityState(cdis_body) => {

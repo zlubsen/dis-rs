@@ -3,7 +3,7 @@ use std::time::Instant;
 use bytes::{Bytes, BytesMut};
 use tracing::error;
 
-use cdis_assemble::{BitBuffer, CdisBody, CdisError, CdisInteraction, CdisPdu, Implemented, SerializeCdisPdu, Supported};
+use cdis_assemble::{BitBuffer, CdisError, CdisInteraction, CdisPdu, Implemented, SerializeCdisPdu, Supported};
 use cdis_assemble::codec::{CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
 use cdis_assemble::entity_state::codec::{DecoderStateEntityState};
@@ -203,11 +203,11 @@ impl Decoder {
                             cdis_pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
                             .and_modify(|entry| {
                                 if let PduBody::EntityState(es) = &pdu.body {
-                                    *entry = DecoderStateEntityState::new(&es)
+                                    *entry = DecoderStateEntityState::new(es)
                                 }
                             } )
                             .or_insert_with(|| if let PduBody::EntityState(es) = &pdu.body {
-                                DecoderStateEntityState::new(&es)
+                                DecoderStateEntityState::new(es)
                             } else { DecoderStateEntityState::default() } );
                     }
                 }

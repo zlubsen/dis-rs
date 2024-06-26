@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::Read;
-use std::net::{IpAddr, SocketAddr, SocketAddrV4};
+use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
@@ -17,7 +17,7 @@ use dis_rs::enumerations::PduType;
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
 use crate::codec::{Decoder, Encoder};
 use crate::site::run_site;
-use crate::stats::{GatewayStats, run_stats, SseStat};
+use crate::stats::{run_stats, SseStat};
 
 mod config;
 mod codec;
@@ -40,12 +40,12 @@ fn main() -> Result<(), GatewayError>{
 
     let arguments = Arguments::parse();
 
-    let mut file = File::open(arguments.config).map_err(|err| GatewayError::ConfigFileLoad(err))?;
+    let mut file = File::open(arguments.config).map_err(GatewayError::ConfigFileLoad)?;
     let mut buffer = String::new();
-    file.read_to_string(&mut buffer).map_err(|err| GatewayError::ConfigFileRead(err) )?;
+    file.read_to_string(&mut buffer).map_err(GatewayError::ConfigFileRead)?;
 
-    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(| err | GatewayError::ConfigFileParse(err) )?;
-    let config = Config::try_from(&config_spec).map_err(|e| GatewayError::ConfigInvalid(e))?;
+    let config_spec : ConfigSpec = toml::from_str(buffer.as_str()).map_err(GatewayError::ConfigFileParse)?;
+    let config = Config::try_from(&config_spec).map_err(GatewayError::ConfigInvalid)?;
 
     cli_print_config(&config, &config_spec);
 
@@ -134,7 +134,7 @@ async fn start_gateway(config: Config) {
     let (dis_socket_in_tx, dis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
     let (cdis_socket_out_tx, cdis_socket_out_rx) = tokio::sync::mpsc::channel::<Bytes>(DATA_CHANNEL_BUFFER_SIZE);
     let (cdis_socket_in_tx, cdis_socket_in_rx) = tokio::sync::mpsc::channel::<Vec<u8>>(DATA_CHANNEL_BUFFER_SIZE);
-    let (stats_tx, stats_rx) = tokio::sync::broadcast::channel::<SseStat>(STATS_CHANNEL_BUFFER_SIZE);
+    let (stats_tx, _stats_rx) = tokio::sync::broadcast::channel::<SseStat>(STATS_CHANNEL_BUFFER_SIZE);
 
     let dis_socket = create_udp_socket(&config.dis_socket).await;
     let cdis_socket = create_udp_socket(&config.cdis_socket).await;
