@@ -242,7 +242,7 @@ impl CdisRecord for LinearAcceleration {
 }
 
 /// 11.10 Entity Coordinate Vector
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct EntityCoordinateVector {
     pub x: SVINT16,
     pub y: SVINT16,

@@ -5,6 +5,7 @@ use std::ops::BitAnd;
 use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::constants::ONE_BIT;
+use crate::detonation::parser::detonation_body;
 use crate::entity_state::parser::entity_state_body;
 use crate::fire::parser::fire_body;
 use crate::records::model::CdisHeader;
@@ -41,7 +42,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
         let (input, body) : (BitInput, CdisBody) = match header.pdu_type {
             PduType::EntityState => { entity_state_body(input)? }
             PduType::Fire => { fire_body(input)? }
-            // PduType::Detonation => {}
+            PduType::Detonation => { detonation_body(input)? }
             // PduType::Collision => {}
             // PduType::CreateEntity => {}
             // PduType::RemoveEntity => {}

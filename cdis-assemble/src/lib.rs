@@ -8,6 +8,7 @@ use crate::unsupported::Unsupported;
 pub mod types;
 pub mod records;
 pub mod entity_state;
+pub mod detonation;
 pub mod fire;
 pub mod unsupported;
 pub mod constants;
@@ -19,6 +20,7 @@ pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
+use crate::detonation::model::Detonation;
 use crate::fire::model::Fire;
 
 pub trait BodyProperties {
@@ -85,7 +87,7 @@ pub enum CdisBody {
     Unsupported(Unsupported),
     EntityState(EntityState),
     Fire(Fire),
-    Detonation,
+    Detonation(Detonation),
     Collision,
     CreateEntity,
     RemoveEntity,
@@ -113,7 +115,7 @@ impl CdisBody {
             CdisBody::Unsupported(_) => { 0 }
             CdisBody::EntityState(body) => { body.body_length_bits() }
             CdisBody::Fire(body) => { body.body_length_bits() }
-            CdisBody::Detonation => { 0 }
+            CdisBody::Detonation(body) => { body.body_length_bits() }
             CdisBody::Collision => { 0 }
             CdisBody::CreateEntity => { 0 }
             CdisBody::RemoveEntity => { 0 }
@@ -143,7 +145,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Unsupported(_) => { None }
             CdisBody::EntityState(body) => { body.originator() }
             CdisBody::Fire(body) => { body.originator() }
-            CdisBody::Detonation => { None }
+            CdisBody::Detonation(body) => { body.originator() }
             CdisBody::Collision => { None }
             CdisBody::CreateEntity => { None }
             CdisBody::RemoveEntity => { None }
@@ -171,7 +173,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Unsupported(_) => { None }
             CdisBody::EntityState(body) => { body.receiver() }
             CdisBody::Fire(body) => { body.receiver() }
-            CdisBody::Detonation => { None } 
+            CdisBody::Detonation(body) => { body.receiver() }
             CdisBody::Collision => { None } 
             CdisBody::CreateEntity => { None } 
             CdisBody::RemoveEntity => { None } 
