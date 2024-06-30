@@ -4,12 +4,12 @@ use dis_rs::enumerations::{DeadReckoningAlgorithm};
 use dis_rs::Serialize;
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{HUNDRED_TWENTY_BITS, THIRTY_TWO_BITS};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct EntityState {
-    pub units: Units,
+    pub units: UnitsDekameters,
     pub full_update_flag: bool,
     pub entity_id: EntityId,
     pub force_id: Option<UVINT8>,

@@ -3,6 +3,7 @@ use std::time::Instant;
 use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
 use dis_rs::{Interaction, VariableParameters};
 use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
+use crate::detonation::model::Detonation;
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
 use crate::fire::model::Fire;
@@ -166,7 +167,7 @@ impl CdisBody {
                 (cdis_body.into_cdis_body(), state_result)
             }
             PduBody::Fire(dis_body) => { (Fire::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::Detonation(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Detonation(dis_body) => { (Detonation::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Collision(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ServiceRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ResupplyOffer(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -265,7 +266,9 @@ impl CdisBody {
             CdisBody::Fire(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::Detonation => {}
+            CdisBody::Detonation(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::Collision => {}
             // CdisBody::CreateEntity => {}
             // CdisBody::RemoveEntity => {}
@@ -300,7 +303,7 @@ mod tests {
     use crate::{BodyProperties, CdisBody, CdisPdu};
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::entity_state::model::CdisEntityCapabilities;
-    use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, Units, WorldCoordinates};
+    use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
     #[test]
@@ -351,7 +354,7 @@ mod tests {
         let codec_options = CodecOptions::new_full_update();
 
         let cdis_body = crate::EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: true,
             entity_id: crate::records::model::EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: Some(UVINT8::from(u8::from(ForceId::Friendly))),

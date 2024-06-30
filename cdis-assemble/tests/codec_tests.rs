@@ -3,12 +3,13 @@ use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, SerializeCdisPdu, BodyProperti
 use cdis_assemble::codec::{CodecOptions, DecoderState, EncoderState};
 use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
-use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, Units, WorldCoordinates};
+use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use dis_rs::detonation::model::Detonation;
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AirPlatformAppearance, AirPlatformCapabilities, Country, DeadReckoningAlgorithm, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion};
+use dis_rs::enumerations::{AirPlatformAppearance, AirPlatformCapabilities, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion};
 use dis_rs::fire::model::Fire;
-use dis_rs::model::{EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp};
+use dis_rs::model::{DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VectorF32};
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {
@@ -60,7 +61,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         pdu_status: Default::default(),
     };
     let cdis_body = cdis_assemble::entity_state::model::EntityState {
-        units: Units::Dekameter,
+        units: UnitsDekameters::Dekameter,
         full_update_flag: false,
         entity_id: cdis_assemble::records::model::EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
         force_id: Some(UVINT8::from(u8::from(ForceId::Friendly))),
@@ -188,4 +189,52 @@ fn codec_consistency_fire() {
     assert_eq!(body_in.descriptor, body_out.descriptor);
     assert_eq!(body_in.velocity, body_out.velocity);
     assert_eq!(body_in.range, body_out.range);
+}
+
+#[test]
+fn codec_consistency_detonation() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Detonation).with_pdu_status(PduStatus::default());
+    let dis_body = Detonation::builder()
+        .with_source_entity_id(EntityId::new(1, 1, 1))
+        .with_target_entity_id(EntityId::new(2, 2, 1))
+        .with_exploding_entity_id(EntityId::new(1, 1, 100))
+        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 1))
+        .with_velocity(VectorF32::new(10.0, 10.0, 10.0))
+        .with_world_location(Location::new(0.0, 0.0, 20000.0))
+        .with_descriptor(DescriptorRecord::new_explosion(
+            EntityType::default()
+                .with_kind(EntityKind::Munition)
+                .with_domain(PlatformDomain::Air),
+            ExplosiveMaterialCategories::Alcohol,
+            200.0
+        ))
+        .with_entity_location(VectorF32::new(10.0, 10.0, 0.0))
+        .with_detonation_result(DetonationResult::Detonation)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Detonation(detonation) = dis_pdu_in.body { detonation } else { Detonation::default() };
+    let body_out = if let PduBody::Detonation(detonation) = dis_pdu_out.body { detonation } else { Detonation::default() };
+
+    assert_eq!(body_in.source_entity_id, body_out.source_entity_id);
+    assert_eq!(body_in.target_entity_id, body_out.target_entity_id);
+    assert_eq!(body_in.exploding_entity_id, body_out.exploding_entity_id);
+    assert_eq!(body_in.event_id, body_out.event_id);
+    assert_eq!(body_in.velocity, body_out.velocity);
+    assert_eq!(body_in.location_in_world_coordinates.x_coordinate, body_out.location_in_world_coordinates.x_coordinate.round());
+    assert_eq!(body_in.location_in_world_coordinates.y_coordinate, body_out.location_in_world_coordinates.y_coordinate.round());
+    // FIXME: explosions are not properly encoded/decoded (always end up as a munition)
+    assert_eq!(body_in.descriptor, body_out.descriptor);
+    assert_eq!(body_in.location_in_entity_coordinates, body_out.location_in_entity_coordinates);
+    assert_eq!(body_in.detonation_result, body_out.detonation_result);
+    assert_eq!(body_in.variable_parameters, body_out.variable_parameters);
 }

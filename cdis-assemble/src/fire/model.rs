@@ -1,11 +1,11 @@
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{EIGHT_BITS, SIXTEEN_BITS};
-use crate::records::model::{CdisRecord, EntityId, EntityType, LinearVelocity, Units, WorldCoordinates};
+use crate::records::model::{CdisRecord, EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates};
 use crate::types::model::{UVINT32, VarInt};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Fire {
-    pub units: Units,
+    pub units: UnitsDekameters,
     pub firing_entity_id: EntityId,
     pub target_entity_id: EntityId,
     pub munition_expandable_entity_id: EntityId,

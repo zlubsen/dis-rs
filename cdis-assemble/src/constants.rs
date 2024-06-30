@@ -30,6 +30,7 @@ pub const DIS_NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / DIS
 pub const MTU_BYTES: usize = 1400; // Maximum Transmission Unit of the network
 pub const MTU_BITS: usize = MTU_BYTES * EIGHT_BITS;
 pub const DECIMETERS_IN_METER: f32 = 10f32;
+pub const CENTIMETER_PER_METER: f32 = 100f32;
 pub const RADIANS_SEC_TO_DEGREES_SEC: f32 = 180.0 / std::f32::consts::PI;
 pub const CENTER_OF_EARTH_ALTITUDE: i32 = -8_388_608;
 pub const ALTITUDE_CM_THRESHOLD: f64 = 8_388_608f64;

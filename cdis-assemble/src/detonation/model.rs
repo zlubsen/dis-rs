@@ -1,6 +1,6 @@
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{EIGHT_BITS, SIXTEEN_BITS};
-use crate::records::model::{CdisRecord, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, Units, WorldCoordinates};
+use crate::records::model::{CdisRecord, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters, WorldCoordinates};
 use crate::types::model::{UVINT8, VarInt};
 
 #[derive(Clone, Default, Debug, PartialEq)]
@@ -50,7 +50,7 @@ impl BodyProperties for Detonation {
             + self.location_in_entity_coordinates.record_length()
             + self.detonation_results.record_length()
             + (if self.variable_parameters.is_empty() { 0 } else {
-                EIGHT_BITS + self.variable_parameters.iter().map(|vp| vp.record_length() ).sum()
+                EIGHT_BITS + self.variable_parameters.iter().map(|vp| vp.record_length() ).sum::<usize>()
             })
     }
 
@@ -79,7 +79,7 @@ impl DetonationFieldsPresent {
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct DetonationUnits {
-    pub world_location_altitude: Units,
+    pub world_location_altitude: UnitsDekameters,
     pub location_entity_coordinates: UnitsMeters,
 }
 
@@ -88,33 +88,8 @@ impl From<u8> for DetonationUnits {
         pub const WORLD_LOCATION_ALTITUDE_BIT: u8 = 0x02;
         pub const LOCATION_IN_ENTITY_COORDINATES_BIT: u8 = 0x01;
         Self {
-            world_location_altitude: Units::from((value & WORLD_LOCATION_ALTITUDE_BIT) >> 1),
+            world_location_altitude: UnitsDekameters::from((value & WORLD_LOCATION_ALTITUDE_BIT) >> 1),
             location_entity_coordinates: UnitsMeters::from(value & LOCATION_IN_ENTITY_COORDINATES_BIT),
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub enum UnitsMeters {
-    Centimeter,
-    #[default]
-    Meter,
-}
-
-impl From<u8> for UnitsMeters {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => UnitsMeters::Centimeter,
-            _ => UnitsMeters::Meter,
-        }
-    }
-}
-
-impl From<UnitsMeters> for u8 {
-    fn from(value: UnitsMeters) -> Self {
-        match value {
-            UnitsMeters::Centimeter => 0,
-            UnitsMeters::Meter => 1,
         }
     }
 }

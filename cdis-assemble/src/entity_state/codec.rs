@@ -6,7 +6,7 @@ use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, Cod
 use crate::codec::CodecStateResult::StateUnaffected;
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
-use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, Units};
+use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters};
 use crate::types::model::{UVINT32, UVINT8};
 
 type Counterpart = dis_rs::entity_state::model::EntityState;
@@ -89,7 +89,7 @@ impl EntityState {
             && state.is_some()
             && !evaluate_timeout_for_entity_type(&item.entity_type, state.unwrap(), options) {
             // Do not update stateful fields when a full update is not required
-            ( Units::Dekameter, false, None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
+            (UnitsDekameters::Dekameter, false, None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
         } else {
             let (entity_location, units) = encode_world_coordinates(&item.entity_location);
             let alternate_entity_type = if options.use_guise {
@@ -325,7 +325,7 @@ mod tests {
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::entity_state::codec::DecoderStateEntityState;
     use crate::entity_state::model::{CdisDRParametersOther, CdisEntityAppearance, EntityState};
-    use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, Units, WorldCoordinates};
+    use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, UnitsDekameters, WorldCoordinates};
     use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
     fn create_basic_dis_entity_state_body() -> EntityStateBuilder {
@@ -514,7 +514,7 @@ mod tests {
         let options = CodecOptions::new_full_update();
 
         let cdis_body = EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: true,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: Some(UVINT8::from(1)),
@@ -553,7 +553,7 @@ mod tests {
         let options = CodecOptions::new_full_update();
 
         let cdis_body = EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: true,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: Some(UVINT8::from(1)),
@@ -600,7 +600,7 @@ mod tests {
         let options = CodecOptions::new_partial_update();
 
         let cdis_body = EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: true,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: Some(UVINT8::from(1)),
@@ -639,7 +639,7 @@ mod tests {
         let options = CodecOptions::new_full_update();
 
         let cdis_body = EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: false,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: None,
@@ -690,7 +690,7 @@ mod tests {
         state.entity_state.insert(DisEntityId::new(10, 10, 10), decoder_state);
 
         let cdis_body = EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: false,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: None,

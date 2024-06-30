@@ -58,13 +58,13 @@ mod tests {
     use dis_rs::enumerations::{Country, DeadReckoningAlgorithm, EntityKind, ForceId, PlatformDomain};
     use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
     use crate::entity_state::model::{CdisEntityCapabilities, EntityState};
-    use crate::records::model::{CdisEntityMarking, EntityId, LinearVelocity, Orientation, Units, WorldCoordinates};
+    use crate::records::model::{CdisEntityMarking, EntityId, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
     #[test]
     fn serialize_entity_state_no_fields_present() {
         let cdis_body = EntityState {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             full_update_flag: false,
             entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             force_id: Some(UVINT8::from(u8::from(ForceId::Friendly))),

@@ -1,6 +1,6 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use dis_rs::model::{DisTimeStamp, EventId, Location, PduStatus, SimulationAddress};
-use dis_rs::model::{TimeStamp};
+use dis_rs::model::TimeStamp;
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
@@ -294,7 +294,8 @@ impl From<&EntityId> for dis_rs::model::EntityId {
     }
 }
 
-/// Convert a dis-rs EventId to cdis-assemble EntityId, because the cdis library does not model the EventId record explicitly.
+/// Convert (and thus encode) a dis-rs EventId to cdis-assemble EntityId,
+/// because the cdis library does not model the EventId record explicitly.
 impl From<&EventId> for EntityId {
     fn from(value: &EventId) -> Self {
         Self::new(
@@ -305,7 +306,8 @@ impl From<&EventId> for EntityId {
     }
 }
 
-/// Convert a cdis-assemble EntityId to dis-rs EventId, because the cdis library does not model the EventId record explicitly.
+/// Convert (and thus decode) a cdis-assemble EntityId to dis-rs EventId,
+/// because the cdis library does not model the EventId record explicitly.
 impl From<&EntityId> for EventId {
     fn from(value: &EntityId) -> Self {
         Self::new(
@@ -412,32 +414,57 @@ impl CdisRecord for Orientation {
 
 /// 11.25 Units
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub enum Units {
+pub enum UnitsDekameters {
     Centimeter,
     #[default]
     Dekameter,
 }
 
-impl CdisRecord for Units {
+impl CdisRecord for UnitsDekameters {
     fn record_length(&self) -> usize {
         1
     }
 }
 
-impl From<u8> for Units {
+impl From<u8> for UnitsDekameters {
     fn from(value: u8) -> Self {
         match value {
-            0 => Units::Centimeter,
-            _ => Units::Dekameter,
+            0 => UnitsDekameters::Centimeter,
+            _ => UnitsDekameters::Dekameter,
         }
     }
 }
 
-impl From<Units> for u8 {
-    fn from(value: Units) -> Self {
+impl From<UnitsDekameters> for u8 {
+    fn from(value: UnitsDekameters) -> Self {
         match value {
-            Units::Centimeter => 0,
-            Units::Dekameter => 1,
+            UnitsDekameters::Centimeter => 0,
+            UnitsDekameters::Dekameter => 1,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub enum UnitsMeters {
+    #[default]
+    Centimeter,
+    Meter,
+}
+
+impl From<u8> for UnitsMeters {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => UnitsMeters::Centimeter,
+            _ => UnitsMeters::Meter,
+        }
+    }
+}
+
+impl From<UnitsMeters> for u8 {
+    fn from(value: UnitsMeters) -> Self {
+        match value {
+            UnitsMeters::Centimeter => 0,
+            UnitsMeters::Meter => 1,
         }
     }
 }

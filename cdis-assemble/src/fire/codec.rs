@@ -111,7 +111,7 @@ mod tests {
     use crate::{BodyProperties, CdisBody};
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::fire::model::{Fire, FireFieldsPresent};
-    use crate::records::model::{EntityId, EntityType, LinearVelocity, Units, WorldCoordinates};
+    use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
     fn create_basic_dis_fire_body() -> FireBuilder {
@@ -148,7 +148,7 @@ mod tests {
             assert_ne!(fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, 0u8);
             assert_ne!(fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, 0u8);
 
-            assert_eq!(fire.units, Units::Dekameter);
+            assert_eq!(fire.units, UnitsDekameters::Dekameter);
             assert_eq!(fire.firing_entity_id, EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)));
             assert_eq!(fire.target_entity_id, EntityId::new(UVINT16::from(20), UVINT16::from(20), UVINT16::from(20)));
             assert_eq!(fire.munition_expandable_entity_id, EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(500)));
@@ -190,7 +190,7 @@ mod tests {
             assert_ne!(fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, 0u8);
             assert_eq!(fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, 0u8);
 
-            assert_eq!(fire.units, Units::Dekameter);
+            assert_eq!(fire.units, UnitsDekameters::Dekameter);
             assert_eq!(fire.descriptor_entity_type, EntityType::new(2, 2, 0,
                                                                     UVINT8::from(0), UVINT8::from(0), UVINT8::from(0), UVINT8::from(0)));
             assert_eq!(fire.descriptor_warhead.unwrap(), 4002u16);
@@ -221,7 +221,7 @@ mod tests {
             assert_eq!(fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT, 0u8);
             assert_eq!(fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT, 0u8);
 
-            assert_eq!(fire.units, Units::Dekameter);
+            assert_eq!(fire.units, UnitsDekameters::Dekameter);
             assert_eq!(fire.descriptor_entity_type, EntityType::new(8, 2, 0,
                 UVINT8::from(0), UVINT8::from(0), UVINT8::from(0), UVINT8::from(0)));
             assert!(fire.descriptor_warhead.is_none());
@@ -240,7 +240,7 @@ mod tests {
         let options = CodecOptions::new_full_update();
 
         let cdis_body = Fire {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             firing_entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             target_entity_id: EntityId::new(UVINT16::from(20), UVINT16::from(20), UVINT16::from(20)),
             munition_expandable_entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(500)),
@@ -287,7 +287,7 @@ mod tests {
         let options = CodecOptions::new_full_update();
 
         let cdis_body = Fire {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             firing_entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(10)),
             target_entity_id: EntityId::new(UVINT16::from(20), UVINT16::from(20), UVINT16::from(20)),
             munition_expandable_entity_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(500)),

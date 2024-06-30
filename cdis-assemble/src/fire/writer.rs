@@ -39,13 +39,13 @@ mod tests {
     use bitvec::prelude::BitArray;
     use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
     use crate::fire::model::Fire;
-    use crate::records::model::{EntityId, EntityType, LinearVelocity, Units, WorldCoordinates};
+    use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
 
     #[test]
     fn serialize_fire_no_fields_present() {
         let cdis_body = Fire {
-            units: Units::Dekameter,
+            units: UnitsDekameters::Dekameter,
             firing_entity_id: EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
             target_entity_id: EntityId::new(UVINT16::from(2), UVINT16::from(2), UVINT16::from(2)),
             munition_expandable_entity_id: EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(2)),

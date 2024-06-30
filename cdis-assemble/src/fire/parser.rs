@@ -4,7 +4,7 @@ use crate::{BodyProperties, CdisBody, parsing};
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS};
 use crate::fire::model::{Fire, FireFieldsPresent};
 use crate::parsing::BitInput;
-use crate::records::model::{Units};
+use crate::records::model::{UnitsDekameters};
 use crate::records::parser::{entity_identification, entity_type, linear_velocity, world_coordinates};
 use crate::types::parser::{uvint32};
 
@@ -12,7 +12,7 @@ use crate::types::parser::{uvint32};
 pub(crate) fn fire_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u8) = take(FOUR_BITS)(input)?;
     let (input, units) : (BitInput, u8) = take(ONE_BIT)(input)?;
-    let units = Units::from(units);
+    let units = UnitsDekameters::from(units);
 
     let (input, firing_entity_id) = entity_identification(input)?;
     let (input, target_entity_id) = entity_identification(input)?;
@@ -60,7 +60,7 @@ pub(crate) fn fire_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 mod tests {
     use crate::CdisBody;
     use crate::fire::parser::fire_body;
-    use crate::records::model::{EntityId, EntityType, LinearVelocity, Units};
+    use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
 
     #[test]
@@ -73,7 +73,7 @@ mod tests {
 
         assert_eq!(cursor, 1); // cursor position in last byte of input
         if let CdisBody::Fire(fire) = body {
-            assert_eq!(fire.units, Units::Dekameter);
+            assert_eq!(fire.units, UnitsDekameters::Dekameter);
             assert_eq!(fire.firing_entity_id, EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)));
             assert_eq!(fire.target_entity_id, EntityId::new(UVINT16::from(2), UVINT16::from(2), UVINT16::from(2)));
             assert_eq!(fire.munition_expandable_entity_id, EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(2)));

@@ -262,8 +262,8 @@ impl Implemented for PduType {
     fn is_implemented(&self) -> bool {
         match self {
             PduType::EntityState |
-            PduType::Fire => { true }
-            // PduType::Detonation |
+            PduType::Fire |
+            PduType::Detonation => { true }
             // PduType::Collision |
             // PduType::CreateEntity |
             // PduType::RemoveEntity |
@@ -376,8 +376,8 @@ mod tests {
     fn validate_implemented_pdus() {
         assert_eq!(PduType::EntityState.is_implemented(), true);
         assert_eq!(PduType::Fire.is_implemented(), true);
+        assert_eq!(PduType::Detonation.is_implemented(), true);
 
-        assert_eq!(PduType::Detonation.is_implemented() || CdisBody::Detonation.body_length() != 0, false);
         assert_eq!(PduType::Collision.is_implemented() || CdisBody::Collision.body_length() != 0, false);
         assert_eq!(PduType::CreateEntity.is_implemented() || CdisBody::CreateEntity.body_length() != 0, false);
         assert_eq!(PduType::RemoveEntity.is_implemented() || CdisBody::RemoveEntity.body_length() != 0, false);

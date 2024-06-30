@@ -1,9 +1,12 @@
+use num_traits::Signed;
+use num_traits::FromPrimitive;
 use dis_rs::enumerations::{ChangeIndicator, Country, EntityKind, PlatformDomain};
 use dis_rs::model::{ArticulatedPart, AttachedPart, DisTimeStamp, EntityAssociationParameter, EntityTypeParameter, Location, PduHeader, SeparationParameter, TimeStamp, VariableParameter, VectorF32};
 use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use crate::codec::Codec;
-use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, Units, WorldCoordinates};
+use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, CENTIMETER_PER_METER, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
+use crate::records::model::UnitsMeters;
+use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, UnitsDekameters, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 impl Codec for CdisHeader {
@@ -186,10 +189,68 @@ impl Codec for AngularVelocity {
     }
 }
 
+/// Encode DIS `VectorF32` representing an Entity Coordinate Vector (DIS 6.2.96a)
+/// to C-DIS `EntityCoordinateVector` (11.10).
+///
+/// The VectorF32 is in meters.
+/// The encoded `EntityCoordinateVector` will be in centimeters, or meters when
+/// _at least one encoded component value of the vector_ cannot fit in +32 767, -32 768 cm.
+/// Values outside of those bounds are placed at the boundary.
+///
+/// Returns the encoded value and a `UnitsMeters` enum indicating if the value is in _Centimeters_ (default) or _Meters_.
+pub(crate) fn encode_entity_coordinate_vector(entity_coordinate_vector: &VectorF32) -> (EntityCoordinateVector, UnitsMeters) {
+    /// Helper function to convert `f32` values to `i16`, taking the max and min of `i16` when the `f32` value is out of `i16`'s range.
+    fn f32_to_i16_without_overflow(value: f32) -> i16 {
+        i16::from_f32(value).unwrap_or_else(|| if value.is_positive() {i16::MAX} else {i16::MIN})
+    }
+
+    let cm_range = f32::from(i16::MIN)..=f32::from(i16::MAX);
+    if !cm_range.contains(&entity_coordinate_vector.first_vector_component)
+        || !cm_range.contains(&entity_coordinate_vector.second_vector_component)
+        || !cm_range.contains(&entity_coordinate_vector.third_vector_component) {
+        // at least one vector component is larger than the possible range for centimeters.
+        (EntityCoordinateVector {
+            x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component)),
+            y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component)),
+            z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component)),
+        }, UnitsMeters::Meter)
+    } else {
+        // all vector components can be expressed in centimeters
+        (EntityCoordinateVector {
+            x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component * CENTIMETER_PER_METER)),
+            y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component * CENTIMETER_PER_METER)),
+            z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component * CENTIMETER_PER_METER)),
+        }, UnitsMeters::Centimeter)
+    }
+}
+
+/// Decode C-DIS `EntityCoordinateVector` (11.10) to DIS `VectorF32` representing an Entity Coordinate Vector (DIS 6.2.96a).
+/// The units parameter indicates whether the entity coordinate vector's value are in centimeters or meters.
+///
+/// The resulting `VectorF32` value are in meters.
+pub(crate) fn decode_entity_coordinate_vector(entity_coordinate_vector: &EntityCoordinateVector, units: UnitsMeters) -> VectorF32 {
+    const CENTIMETER_PER_METER: f32 = 100f32;
+
+    let (x, y, z) = match units {
+        UnitsMeters::Centimeter => {
+            (f32::from(entity_coordinate_vector.x.value) / CENTIMETER_PER_METER,
+             f32::from(entity_coordinate_vector.y.value) / CENTIMETER_PER_METER,
+             f32::from(entity_coordinate_vector.z.value) / CENTIMETER_PER_METER)
+        }
+        UnitsMeters::Meter => {
+            (f32::from(entity_coordinate_vector.x.value),
+             f32::from(entity_coordinate_vector.y.value),
+             f32::from(entity_coordinate_vector.z.value))
+        }
+    };
+
+    VectorF32::new(x, y, z)
+}
+
 /// Encode DIS geocentric (ECEF) ``Location`` to C-DIS geodetic (LLA) ``WorldCoordinates``.
 /// DIS ECEF is in meters
 /// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
-pub(crate) fn encode_world_coordinates(ecef_location: &Location) -> (WorldCoordinates, Units) {
+pub(crate) fn encode_world_coordinates(ecef_location: &Location) -> (WorldCoordinates, UnitsDekameters) {
     const CENTIMETER_PER_METER: f64 = 100f64;
     const METER_PER_DEKAMETER: f64 = 10f64;
 
@@ -200,7 +261,7 @@ pub(crate) fn encode_world_coordinates(ecef_location: &Location) -> (WorldCoordi
             latitude: 0.0,
             longitude: 0.0,
             altitude_msl: SVINT24::from(CENTER_OF_EARTH_ALTITUDE)
-        }, Units::Dekameter)
+        }, UnitsDekameters::Dekameter)
     } else {
         let (lat, lon, alt_meters) = ecef_to_geodetic_lla(
             ecef_location.x_coordinate, ecef_location.y_coordinate, ecef_location.z_coordinate);
@@ -212,8 +273,8 @@ pub(crate) fn encode_world_coordinates(ecef_location: &Location) -> (WorldCoordi
 
         let alt_cm = alt_meters * CENTIMETER_PER_METER;
         let (alt, units) = if (alt_cm) <= ALTITUDE_CM_THRESHOLD {
-            (alt_cm, Units::Centimeter)
-        } else { (alt_meters / METER_PER_DEKAMETER, Units::Dekameter) };
+            (alt_cm, UnitsDekameters::Centimeter)
+        } else { (alt_meters / METER_PER_DEKAMETER, UnitsDekameters::Dekameter) };
 
         let world_coordinates = WorldCoordinates::new(
             lat as f32, lon as f32, SVINT24::from(alt as i32));
@@ -225,13 +286,13 @@ pub(crate) fn encode_world_coordinates(ecef_location: &Location) -> (WorldCoordi
 /// Decode C-DIS geodetic (LLA) ``WorldCoordinates`` to DIS geocentric (ECEF) ``Location``.
 /// DIS ECEF is in meters
 /// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
-pub(crate) fn decode_world_coordinates(lla_location: &WorldCoordinates, units: Units) -> Location {
+pub(crate) fn decode_world_coordinates(lla_location: &WorldCoordinates, units: UnitsDekameters) -> Location {
     const CENTIMETER_PER_METER: f32 = 100f32;
     const METER_PER_DEKAMETER: f32 = 10f32;
 
     let alt = match units {
-        Units::Centimeter => { lla_location.altitude_msl.value as f32 / CENTIMETER_PER_METER }
-        Units::Dekameter => { lla_location.altitude_msl.value as f32 * METER_PER_DEKAMETER }
+        UnitsDekameters::Centimeter => { lla_location.altitude_msl.value as f32 / CENTIMETER_PER_METER }
+        UnitsDekameters::Dekameter => { lla_location.altitude_msl.value as f32 * METER_PER_DEKAMETER }
     };
 
     let lat = lla_location.latitude / ((2.0_f32.powi(30) - 1.0) / std::f32::consts::FRAC_PI_2);
@@ -392,7 +453,7 @@ mod tests {
     use crate::codec::Codec;
     use crate::records::codec::{decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi};
     use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT8};
-    use crate::records::model::{AngularVelocity, cdis_to_dis_u32_timestamp, CdisHeader, CdisProtocolVersion, dis_to_cdis_u32_timestamp, LinearAcceleration, LinearVelocity, Orientation, Units, WorldCoordinates};
+    use crate::records::model::{AngularVelocity, cdis_to_dis_u32_timestamp, CdisHeader, CdisProtocolVersion, dis_to_cdis_u32_timestamp, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 
     #[test]
     fn test_normalize_radians_to_plusminus_pi() {
@@ -527,7 +588,7 @@ mod tests {
         let dis = dis_rs::model::Location::new(3_919_999.0, 342_955.0, 5_002_819.0);
         let (cdis, units) = encode_world_coordinates(&dis);
 
-        assert_eq!(units, Units::Centimeter);
+        assert_eq!(units, UnitsDekameters::Centimeter);
         assert_eq!(cdis.latitude, 620384200f32);    // scaled value
         assert_eq!((cdis.latitude / ((2.0_f32.powi(30) - 1.0) / std::f32::consts::FRAC_PI_2)).to_degrees().round(), 52.0); // unscaled and in degrees
         assert_eq!(cdis.longitude, 59652240f32);    // scaled value
@@ -537,7 +598,7 @@ mod tests {
     #[test]
     fn entity_location_decode() {
         let cdis = WorldCoordinates::new(620384200f32, 59652240f32, SVINT24::from(1987));
-        let units = Units::Centimeter;
+        let units = UnitsDekameters::Centimeter;
         let dis = decode_world_coordinates(&cdis, units);
 
         assert_eq!(dis.x_coordinate.round(), 3_919_998.0);
@@ -553,7 +614,7 @@ mod tests {
         assert_eq!(cdis.latitude, 0.0);
         assert_eq!(cdis.longitude, 0.0);
         assert_eq!(cdis.altitude_msl.value, -8_388_608);
-        assert_eq!(units, Units::Dekameter);
+        assert_eq!(units, UnitsDekameters::Dekameter);
     }
 
     #[test]

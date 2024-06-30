@@ -6,7 +6,7 @@ use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTEEN_BITS, T
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityAppearance, CdisEntityCapabilities, EntityState, EntityStateFieldsPresent as FPF};
 use crate::{BodyProperties, CdisBody, parsing};
 use crate::parsing::BitInput;
-use crate::records::model::Units;
+use crate::records::model::UnitsDekameters;
 use crate::records::parser::{angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration, linear_velocity, orientation, variable_parameter, world_coordinates};
 use crate::types::parser::{uvint32, uvint8};
 
@@ -14,7 +14,7 @@ use crate::types::parser::{uvint32, uvint8};
 pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u16) = take(THIRTEEN_BITS)(input)?;
     let (input, units) : (BitInput, u8) = take(ONE_BIT)(input)?;
-    let units = Units::from(units);
+    let units = UnitsDekameters::from(units);
     let (input, full_update_flag) : (BitInput, u8) = take(ONE_BIT)(input)?;
     let full_update_flag = full_update_flag != 0;
 
@@ -90,7 +90,7 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
 mod tests {
     use crate::CdisBody;
     use crate::entity_state::parser::entity_state_body;
-    use crate::records::model::{EntityId, Units};
+    use crate::records::model::{EntityId, UnitsDekameters};
     use crate::types::model::UVINT16;
 
     #[test]
@@ -101,7 +101,7 @@ mod tests {
         assert_eq!(cursor, 1); // cursor position in last byte of input
 
         if let CdisBody::EntityState(es) = body {
-            assert_eq!(es.units, Units::Dekameter);
+            assert_eq!(es.units, UnitsDekameters::Dekameter);
             assert_eq!(es.entity_id, EntityId::new(UVINT16::from(3), UVINT16::from(3), UVINT16::from(3)));
             assert!(!es.full_update_flag);
         }
