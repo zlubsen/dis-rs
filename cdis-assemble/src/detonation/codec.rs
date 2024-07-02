@@ -1,5 +1,5 @@
 use num_traits::Zero;
-use dis_rs::enumerations::{DetonationResult, EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead};
+use dis_rs::enumerations::{DetonationResult, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead};
 use dis_rs::model::{DescriptorRecord, EventId, MunitionDescriptor};
 use crate::codec::Codec;
 use crate::detonation::model::{Detonation, DetonationUnits};
@@ -80,6 +80,7 @@ fn encode_detonation_descriptor(item : &DescriptorRecord) -> (EntityType, Option
             (EntityType::encode(entity_type), None, None, None, None)
         }
         DescriptorRecord::Explosion { entity_type, explosive_material: _, explosive_force: _} => {
+            // FIXME the standard is unclear how the explosive material and explosive force values are encoded/decoded by C-DIS
             (EntityType::encode(entity_type), None, None, None, None)
         }
     }
@@ -98,7 +99,8 @@ fn decode_detonation_descriptor(detonation_body: &Detonation, entity_type: dis_r
             DescriptorRecord::new_expendable(entity_type)
         }
         _ => {
-            DescriptorRecord::new_munition(entity_type, MunitionDescriptor::default())
+            // FIXME the standard is unclear how the explosive material and explosive force values are encoded/decoded by C-DIS
+            DescriptorRecord::new_explosion(entity_type, ExplosiveMaterialCategories::NoStatement, 0.0)
         }
     }
 }
@@ -107,15 +109,17 @@ fn decode_detonation_descriptor(detonation_body: &Detonation, entity_type: dis_r
 mod tests {
     use dis_rs::detonation::builder::DetonationBuilder;
     use dis_rs::detonation::model::Detonation as DisDetonation;
-    use dis_rs::model::{EntityId as DisEntityId, EntityType as DisEntityType, EventId, Location, MunitionDescriptor, PduBody, SimulationAddress};
+    use dis_rs::enumerations::{EntityKind, ExplosiveMaterialCategories, PlatformDomain};
+    use dis_rs::model::{DescriptorRecord, EntityId as DisEntityId, EntityType as DisEntityType, EventId, Location, SimulationAddress};
 
     fn create_basic_dis_detonation_body() -> DetonationBuilder {
         DisDetonation::builder()
-            .with_firing_entity_id(DisEntityId::new(10, 10, 10))
+            .with_source_entity_id(DisEntityId::new(10, 10, 10))
             .with_target_entity_id(DisEntityId::new(20, 20, 20))
-            .with_entity_id(DisEntityId::new(10, 10, 500))
+            .with_exploding_entity_id(DisEntityId::new(10, 10, 500))
             .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
-            .with_location_in_world(Location::new(20000.0, 20000.0, 20000.0))
+            .with_descriptor(DescriptorRecord::new_explosion(DisEntityType::default().with_kind(EntityKind::Munition).with_domain(PlatformDomain::Land), ExplosiveMaterialCategories::Alcohol, 20.0))
+            .with_world_location(Location::new(20000.0, 20000.0, 20000.0))
     }
 
     #[test]

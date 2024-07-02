@@ -79,6 +79,7 @@ fn encode_fire_descriptor(item : &DescriptorRecord) -> (EntityType, Option<u16>,
             (EntityType::encode(entity_type), None, None, None, None)
         }
         DescriptorRecord::Explosion { entity_type, explosive_material: _, explosive_force: _} => {
+            // Fire PDU should not have an DescriptorRecord::Explosion, so material and force are not encoded.
             (EntityType::encode(entity_type), None, None, None, None)
         }
     }
@@ -97,6 +98,7 @@ fn decode_fire_descriptor(fire_body: &Fire, entity_type: dis_rs::model::EntityTy
             DescriptorRecord::new_expendable(entity_type)
         }
         _ => {
+            // Fire PDU should not have other EntityKinds than Munition or Expandable, so any others are decoded into munition by default
             DescriptorRecord::new_munition(entity_type, MunitionDescriptor::default())
         }
     }

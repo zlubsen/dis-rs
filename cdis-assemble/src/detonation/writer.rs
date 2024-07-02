@@ -42,11 +42,11 @@ impl SerializeCdisPdu for Detonation {
 
 #[cfg(test)]
 mod tests {
-    use bitvec::prelude::BitArray;
-    use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
-    use crate::fire::model::Fire;
-    use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates};
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
+    // use bitvec::prelude::BitArray;
+    // use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
+    // use crate::fire::model::Fire;
+    // use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates};
+    // use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
 
     #[test]
     fn serialize_detonation_no_fields_present() {
