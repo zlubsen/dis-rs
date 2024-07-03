@@ -71,6 +71,7 @@ mod tests {
 
     #[test]
     fn parse_detonation_no_fields_present() {
+        todo!()
         // let input = [0b0000_1_000, 0b0000001_0, 0b00000000, 0b1_0000000, 0b001_00000, 0b00010_000, 0b0000010_0, 0b00000001, 0b0_0000000, 0b001_00000, 0b00001_000, 0b0000010_0, 0b00000000, 0b1_0000000, 0b001_00000, 0b00011_000, 0b00000000, 0b00000000, 0b00000000, 0b0000_0000, 0b00000000, 0b00000000, 0b00000000, 0b0000_0000, 0b00000000, 0b000001_00, 0b10_0010_00, 0b0000000_0, 0b0000_0000, 0b0_00000_00, 0b000_00000, 0b00001_000, 0b0000001_0, 0b00000000, 0b1_0000000];
         // //                      ^ fl ^u^ entityid                                       ^ entityid                                       ^ entityid                                   ^ eventid                                        ^ location                                    ^31                                              ^32                          ^ entity_type                                                   ^ velocity                                       ^ remainder
         // //                      flags 4; units 1; entity/event ids 12x ten bits; location: 31 + 32 + 18; entity_type 4 + 4 + 9 + 5 + 5 + 5 + 5; (no descriptor 16 + 16 + 8 + 8); velocity 10 + 10 + 10; (no range)

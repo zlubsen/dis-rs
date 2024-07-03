@@ -207,8 +207,8 @@ fn codec_consistency_detonation() {
         .with_world_location(Location::new(0.0, 0.0, 20000.0))
         .with_descriptor(DescriptorRecord::new_explosion(
             EntityType::default()
-                .with_kind(EntityKind::Munition)
-                .with_domain(PlatformDomain::Air),
+                .with_kind(EntityKind::Other)
+                .with_domain(PlatformDomain::Land),
             ExplosiveMaterialCategories::Alcohol,
             200.0
         ))

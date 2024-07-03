@@ -254,7 +254,7 @@ mod tests {
             descriptor_warhead: Some(u16::from(MunitionDescriptorWarhead::Dummy)),
             descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
             descriptor_quantity: Some(1),
-            descriptor_rate: Some(1),
+            descriptor_rate: Some(0),
             velocity: LinearVelocity::new(
                 SVINT16::from(100),
                 SVINT16::from(100),
@@ -278,7 +278,7 @@ mod tests {
                 assert_eq!(munition.warhead, MunitionDescriptorWarhead::Dummy);
                 assert_eq!(munition.fuse, MunitionDescriptorFuse::Dummy_8110);
                 assert_eq!(munition.quantity, 1);
-                assert_eq!(munition.rate, 1);
+                assert_eq!(munition.rate, 0);
             } else { assert!(false) };
         } else { assert!(false) };
     }

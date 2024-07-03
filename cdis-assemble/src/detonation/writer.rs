@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn serialize_detonation_no_fields_present() {
-        assert!(false);
+        todo!();
         // let cdis_body = Fire {
         //     units: UnitsDekameters::Dekameter,
         //     firing_entity_id: EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
