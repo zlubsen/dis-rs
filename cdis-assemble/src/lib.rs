@@ -8,6 +8,7 @@ use crate::unsupported::Unsupported;
 pub mod types;
 pub mod records;
 pub mod entity_state;
+pub mod collision;
 pub mod detonation;
 pub mod fire;
 pub mod unsupported;
@@ -20,6 +21,7 @@ pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
+use crate::collision::model::Collision;
 use crate::detonation::model::Detonation;
 use crate::fire::model::Fire;
 
@@ -88,7 +90,7 @@ pub enum CdisBody {
     EntityState(EntityState),
     Fire(Fire),
     Detonation(Detonation),
-    Collision,
+    Collision(Collision),
     CreateEntity,
     RemoveEntity,
     StartResume,
@@ -116,7 +118,7 @@ impl CdisBody {
             CdisBody::EntityState(body) => { body.body_length_bits() }
             CdisBody::Fire(body) => { body.body_length_bits() }
             CdisBody::Detonation(body) => { body.body_length_bits() }
-            CdisBody::Collision => { 0 }
+            CdisBody::Collision(body) => { body.body_length_bits() }
             CdisBody::CreateEntity => { 0 }
             CdisBody::RemoveEntity => { 0 }
             CdisBody::StartResume => { 0 }
@@ -146,7 +148,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::EntityState(body) => { body.originator() }
             CdisBody::Fire(body) => { body.originator() }
             CdisBody::Detonation(body) => { body.originator() }
-            CdisBody::Collision => { None }
+            CdisBody::Collision(body) => { body.originator() }
             CdisBody::CreateEntity => { None }
             CdisBody::RemoveEntity => { None }
             CdisBody::StartResume => { None }
@@ -174,7 +176,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::EntityState(body) => { body.receiver() }
             CdisBody::Fire(body) => { body.receiver() }
             CdisBody::Detonation(body) => { body.receiver() }
-            CdisBody::Collision => { None } 
+            CdisBody::Collision(body) => { body.receiver() }
             CdisBody::CreateEntity => { None } 
             CdisBody::RemoveEntity => { None } 
             CdisBody::StartResume => { None } 
@@ -263,8 +265,8 @@ impl Implemented for PduType {
         match self {
             PduType::EntityState |
             PduType::Fire |
-            PduType::Detonation => { true }
-            // PduType::Collision |
+            PduType::Detonation |
+            PduType::Collision => { true }
             // PduType::CreateEntity |
             // PduType::RemoveEntity |
             // PduType::StartResume |
@@ -377,8 +379,8 @@ mod tests {
         assert_eq!(PduType::EntityState.is_implemented(), true);
         assert_eq!(PduType::Fire.is_implemented(), true);
         assert_eq!(PduType::Detonation.is_implemented(), true);
+        assert_eq!(PduType::Collision.is_implemented(), true);
 
-        assert_eq!(PduType::Collision.is_implemented() || CdisBody::Collision.body_length() != 0, false);
         assert_eq!(PduType::CreateEntity.is_implemented() || CdisBody::CreateEntity.body_length() != 0, false);
         assert_eq!(PduType::RemoveEntity.is_implemented() || CdisBody::RemoveEntity.body_length() != 0, false);
         assert_eq!(PduType::StartResume.is_implemented() || CdisBody::StartResume.body_length() != 0, false);

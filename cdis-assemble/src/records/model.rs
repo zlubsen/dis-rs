@@ -469,6 +469,31 @@ impl From<UnitsMeters> for u8 {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub enum UnitsMass {
+    #[default]
+    Grams,
+    Kilograms,
+}
+
+impl From<u8> for UnitsMass {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => UnitsMass::Grams,
+            _ => UnitsMass::Kilograms,
+        }
+    }
+}
+
+impl From<UnitsMass> for u8 {
+    fn from(value: UnitsMass) -> Self {
+        match value {
+            UnitsMass::Grams => 0,
+            UnitsMass::Kilograms => 1,
+        }
+    }
+}
+
 /// 11.26 Valid Entity State Marking Characters
 #[derive(Clone, Debug, PartialEq)]
 pub struct CdisEntityMarking {
