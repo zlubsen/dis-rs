@@ -5,6 +5,7 @@ use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use dis_rs::collision::model::Collision;
 use dis_rs::detonation::model::Detonation;
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
@@ -277,4 +278,62 @@ fn codec_consistency_collision() {
     assert_eq!(body_in.velocity, body_out.velocity);
     assert_eq!(body_in.mass, body_out.mass);
     assert_eq!(body_in.location, body_out.location);
+}
+
+#[test]
+fn codec_consistency_create_entity() {
+    use dis_rs::create_entity::model::CreateEntity;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::CreateEntity).with_pdu_status(PduStatus::default());
+    let dis_body = CreateEntity::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_request_id(1)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::CreateEntity(body) = dis_pdu_in.body { body } else { CreateEntity::default() };
+    let body_out = if let PduBody::CreateEntity(body) = dis_pdu_out.body { body } else { CreateEntity::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
+}
+
+#[test]
+fn codec_consistency_remove_entity() {
+    use dis_rs::remove_entity::model::RemoveEntity;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::RemoveEntity).with_pdu_status(PduStatus::default());
+    let dis_body = RemoveEntity::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_request_id(1)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::RemoveEntity(body) = dis_pdu_in.body { body } else { RemoveEntity::default() };
+    let body_out = if let PduBody::RemoveEntity(body) = dis_pdu_out.body { body } else { RemoveEntity::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
 }

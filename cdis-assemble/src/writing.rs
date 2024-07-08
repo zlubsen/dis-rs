@@ -40,8 +40,8 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::Fire(body) => { body.serialize(buf, cursor) }
             CdisBody::Detonation(body) => { body.serialize(buf, cursor) }
             CdisBody::Collision(body) => { body.serialize(buf, cursor) }
-            // CdisBody::CreateEntity => {}
-            // CdisBody::RemoveEntity => {}
+            CdisBody::CreateEntity(body) => { body.serialize(buf, cursor) }
+            CdisBody::RemoveEntity(body) => { body.serialize(buf, cursor) }
             // CdisBody::StartResume => {}
             // CdisBody::StopFreeze => {}
             // CdisBody::Acknowledge => {}

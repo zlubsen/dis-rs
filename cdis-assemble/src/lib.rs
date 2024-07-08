@@ -9,6 +9,8 @@ pub mod types;
 pub mod records;
 pub mod entity_state;
 pub mod collision;
+pub mod create_entity;
+pub mod remove_entity;
 pub mod detonation;
 pub mod fire;
 pub mod unsupported;
@@ -22,8 +24,10 @@ pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
 use crate::collision::model::Collision;
+use crate::create_entity::model::CreateEntity;
 use crate::detonation::model::Detonation;
 use crate::fire::model::Fire;
+use crate::remove_entity::model::RemoveEntity;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -91,8 +95,8 @@ pub enum CdisBody {
     Fire(Fire),
     Detonation(Detonation),
     Collision(Collision),
-    CreateEntity,
-    RemoveEntity,
+    CreateEntity(CreateEntity),
+    RemoveEntity(RemoveEntity),
     StartResume,
     StopFreeze,
     Acknowledge,
@@ -119,8 +123,8 @@ impl CdisBody {
             CdisBody::Fire(body) => { body.body_length_bits() }
             CdisBody::Detonation(body) => { body.body_length_bits() }
             CdisBody::Collision(body) => { body.body_length_bits() }
-            CdisBody::CreateEntity => { 0 }
-            CdisBody::RemoveEntity => { 0 }
+            CdisBody::CreateEntity(body) => { body.body_length_bits() }
+            CdisBody::RemoveEntity(body) => { body.body_length_bits() }
             CdisBody::StartResume => { 0 }
             CdisBody::StopFreeze => { 0 }
             CdisBody::Acknowledge => { 0 }
@@ -149,8 +153,8 @@ impl CdisInteraction for CdisBody {
             CdisBody::Fire(body) => { body.originator() }
             CdisBody::Detonation(body) => { body.originator() }
             CdisBody::Collision(body) => { body.originator() }
-            CdisBody::CreateEntity => { None }
-            CdisBody::RemoveEntity => { None }
+            CdisBody::CreateEntity(body) => { body.originator() }
+            CdisBody::RemoveEntity(body) => { body.originator() }
             CdisBody::StartResume => { None }
             CdisBody::StopFreeze => { None }
             CdisBody::Acknowledge => { None }
@@ -177,8 +181,8 @@ impl CdisInteraction for CdisBody {
             CdisBody::Fire(body) => { body.receiver() }
             CdisBody::Detonation(body) => { body.receiver() }
             CdisBody::Collision(body) => { body.receiver() }
-            CdisBody::CreateEntity => { None } 
-            CdisBody::RemoveEntity => { None } 
+            CdisBody::CreateEntity(body) => { body.receiver() }
+            CdisBody::RemoveEntity(body) => { body.receiver() }
             CdisBody::StartResume => { None } 
             CdisBody::StopFreeze => { None } 
             CdisBody::Acknowledge => { None } 
@@ -266,9 +270,9 @@ impl Implemented for PduType {
             PduType::EntityState |
             PduType::Fire |
             PduType::Detonation |
-            PduType::Collision => { true }
-            // PduType::CreateEntity |
-            // PduType::RemoveEntity |
+            PduType::Collision |
+            PduType::CreateEntity |
+            PduType::RemoveEntity => { true }
             // PduType::StartResume |
             // PduType::StopFreeze |
             // PduType::Acknowledge |
@@ -376,13 +380,13 @@ mod tests {
 
     #[test]
     fn validate_implemented_pdus() {
-        assert_eq!(PduType::EntityState.is_implemented(), true);
-        assert_eq!(PduType::Fire.is_implemented(), true);
-        assert_eq!(PduType::Detonation.is_implemented(), true);
-        assert_eq!(PduType::Collision.is_implemented(), true);
-
-        assert_eq!(PduType::CreateEntity.is_implemented() || CdisBody::CreateEntity.body_length() != 0, false);
-        assert_eq!(PduType::RemoveEntity.is_implemented() || CdisBody::RemoveEntity.body_length() != 0, false);
+        assert!(PduType::EntityState.is_implemented());
+        assert!(PduType::Fire.is_implemented());
+        assert!(PduType::Detonation.is_implemented());
+        assert!(PduType::Collision.is_implemented());
+        assert!(PduType::CreateEntity.is_implemented());
+        assert!(PduType::RemoveEntity.is_implemented());
+        
         assert_eq!(PduType::StartResume.is_implemented() || CdisBody::StartResume.body_length() != 0, false);
         assert_eq!(PduType::StopFreeze.is_implemented() || CdisBody::StopFreeze.body_length() != 0, false);
         assert_eq!(PduType::Acknowledge.is_implemented() || CdisBody::Acknowledge.body_length() != 0, false);

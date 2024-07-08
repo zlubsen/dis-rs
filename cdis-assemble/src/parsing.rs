@@ -6,11 +6,13 @@ use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::collision::parser::collision_body;
 use crate::constants::ONE_BIT;
+use crate::create_entity::parser::create_entity_body;
 use crate::detonation::parser::detonation_body;
 use crate::entity_state::parser::entity_state_body;
 use crate::fire::parser::fire_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
+use crate::remove_entity::parser::remove_entity_body;
 use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 
@@ -45,8 +47,8 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::Fire => { fire_body(input)? }
             PduType::Detonation => { detonation_body(input)? }
             PduType::Collision => { collision_body(input)? }
-            // PduType::CreateEntity => {}
-            // PduType::RemoveEntity => {}
+            PduType::CreateEntity => { create_entity_body(input)? }
+            PduType::RemoveEntity => { remove_entity_body(input)? }
             // PduType::StartResume => {}
             // PduType::StopFreeze => {}
             // PduType::Acknowledge => {}

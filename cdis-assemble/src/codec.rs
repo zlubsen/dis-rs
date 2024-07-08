@@ -4,11 +4,13 @@ use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
 use dis_rs::{Interaction, VariableParameters};
 use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
 use crate::collision::model::Collision;
+use crate::create_entity::model::CreateEntity;
 use crate::detonation::model::Detonation;
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
 use crate::fire::model::Fire;
 use crate::records::model::CdisHeader;
+use crate::remove_entity::model::RemoveEntity;
 use crate::unsupported::Unsupported;
 
 pub const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
@@ -176,8 +178,8 @@ impl CdisBody {
             PduBody::ResupplyCancel(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::RepairComplete(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::RepairResponse(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
-            PduBody::CreateEntity(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
-            PduBody::RemoveEntity(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::CreateEntity(dis_body) => { (CreateEntity::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
+            PduBody::RemoveEntity(dis_body) => { (RemoveEntity::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::StartResume(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::StopFreeze(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Acknowledge(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -273,8 +275,12 @@ impl CdisBody {
             CdisBody::Collision(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::CreateEntity => {}
-            // CdisBody::RemoveEntity => {}
+            CdisBody::CreateEntity(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
+            CdisBody::RemoveEntity(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::StartResume => {}
             // CdisBody::StopFreeze => {}
             // CdisBody::Acknowledge => {}
