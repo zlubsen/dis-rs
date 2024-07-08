@@ -238,3 +238,13 @@ fn codec_consistency_detonation() {
     assert_eq!(body_in.detonation_result, body_out.detonation_result);
     assert_eq!(body_in.variable_parameters, body_out.variable_parameters);
 }
+
+#[test]
+fn codec_consistency_collision() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Collision).with_pdu_status(PduStatus::default());
+    todo!()
+}
