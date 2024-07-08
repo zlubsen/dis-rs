@@ -3,6 +3,7 @@ use std::time::Instant;
 use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
 use dis_rs::{Interaction, VariableParameters};
 use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
+use crate::collision::model::Collision;
 use crate::detonation::model::Detonation;
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
@@ -168,7 +169,7 @@ impl CdisBody {
             }
             PduBody::Fire(dis_body) => { (Fire::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Detonation(dis_body) => { (Detonation::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::Collision(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Collision(dis_body) => { (Collision::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::ServiceRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ResupplyOffer(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ResupplyReceived(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -269,7 +270,9 @@ impl CdisBody {
             CdisBody::Detonation(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::Collision => {}
+            CdisBody::Collision(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::CreateEntity => {}
             // CdisBody::RemoveEntity => {}
             // CdisBody::StartResume => {}

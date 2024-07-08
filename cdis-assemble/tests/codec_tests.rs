@@ -6,8 +6,9 @@ use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 use dis_rs::detonation::model::Detonation;
+
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AirPlatformAppearance, AirPlatformCapabilities, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion};
+use dis_rs::enumerations::{AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion};
 use dis_rs::fire::model::Fire;
 use dis_rs::model::{DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VectorF32};
 
@@ -193,6 +194,8 @@ fn codec_consistency_fire() {
 
 #[test]
 fn codec_consistency_detonation() {
+    use dis_rs::detonation::model::Detonation;
+
     let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
     let mut decoder_state = DecoderState::new();
@@ -241,10 +244,37 @@ fn codec_consistency_detonation() {
 
 #[test]
 fn codec_consistency_collision() {
+    use dis_rs::collision::model::Collision;
+
     let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
     let mut decoder_state = DecoderState::new();
 
     let dis_header = PduHeader::new_v7(7, PduType::Collision).with_pdu_status(PduStatus::default());
-    todo!()
+    let dis_body = Collision::builder()
+        .with_issuing_entity_id(EntityId::new(1, 1, 1))
+        .with_colliding_entity_id(EntityId::new(2, 2, 1))
+        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 1))
+        .with_collision_type(CollisionType::Inelastic)
+        .with_location(VectorF32::new(1.0, 1.0, 1.0))
+        .with_velocity(VectorF32::new(10.0, 0.0, 0.0))
+        .with_mass(1000.0)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Collision(collision) = dis_pdu_in.body { collision } else { Collision::default() };
+    let body_out = if let PduBody::Collision(collision) = dis_pdu_out.body { collision } else { Collision::default() };
+
+    assert_eq!(body_in.issuing_entity_id, body_out.issuing_entity_id);
+    assert_eq!(body_in.colliding_entity_id, body_out.colliding_entity_id);
+    assert_eq!(body_in.event_id, body_out.event_id);
+    assert_eq!(body_in.collision_type, body_out.collision_type);
+    assert_eq!(body_in.velocity, body_out.velocity);
+    assert_eq!(body_in.mass, body_out.mass);
+    assert_eq!(body_in.location, body_out.location);
 }

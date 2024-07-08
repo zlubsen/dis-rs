@@ -49,7 +49,7 @@ impl Collision {
 /// DIS has a f32 value in Kilograms. C-DIS has a UVINT32 in either Grams or Kilograms as indicated by the UnitsMeters enum.
 fn encode_collision_mass(mass: f32) -> (UVINT32, UnitsMass) {
     const MAX_NUMBER_AS_GRAMS_IN_KG: f32 = 65.535;
-    if mass > MAX_NUMBER_AS_GRAMS_IN_KG {
+    if mass <= MAX_NUMBER_AS_GRAMS_IN_KG {
         let mass = u32::from_f32(mass * 1000.0).unwrap_or_else(|| u32::MAX);
         (UVINT32::from(mass), UnitsMass::Grams)
     } else {
@@ -69,24 +69,63 @@ fn decode_collision_mass(mass: u32, unit: UnitsMass) -> f32 {
 #[cfg(test)]
 mod tests {
     use dis_rs::collision::builder::CollisionBuilder;
-    use dis_rs::collision::model::Collision;
-    use dis_rs::enumerations::{EntityKind, PlatformDomain};
-    use dis_rs::model::{EntityId as DisEntityId, EntityType as DisEntityType, EventId, Location, PduBody, SimulationAddress, VectorF32};
+    use dis_rs::enumerations::CollisionType;
+    use dis_rs::model::{EntityId as DisEntityId, EventId, PduBody, SimulationAddress};
     use crate::{BodyProperties, CdisBody};
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
-    use crate::records::model::{EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMass};
+    use crate::collision::model::{Collision, CollisionUnits};
+    use crate::records::model::{UnitsMass, UnitsMeters};
+    use crate::types::model::UVINT32;
 
     fn create_basic_dis_collision_body() -> CollisionBuilder {
+        use dis_rs::collision::model::Collision;
         Collision::builder()
             .with_issuing_entity_id(DisEntityId::new(20, 20, 20))
             .with_colliding_entity_id(DisEntityId::new(10, 10, 500))
             .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
-        //     .with_velocity(VectorF32::new(10.0, 10.0, 10.0))
-        //     .with_world_location(Location::new(20000.0, 20000.0, 20000.0))
     }
 
     #[test]
-    fn detonation_body_encode_units_centimeters() {
-        todo!()
+    fn collision_body_encode_mass_grams() {
+        let mut state = EncoderState::new();
+        let options = CodecOptions::new_full_update();
+
+        let dis_body = create_basic_dis_collision_body()
+            .with_mass(60.001)
+            .build().into_pdu_body();
+
+        let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
+
+        assert_eq!(state_result, CodecStateResult::StateUnaffected);
+        if let CdisBody::Collision(collision) = cdis_body {
+            assert_eq!(collision.mass, UVINT32::from(60001))
+        }
+    }
+
+    #[test]
+    fn collision_body_decode_mass_grams() {
+        let mut state = DecoderState::new();
+        let options = CodecOptions::new_full_update();
+
+        let cdis_body = Collision {
+            units: CollisionUnits {
+                location_entity_coordinates: UnitsMeters::Centimeter,
+                mass: UnitsMass::Grams,
+            },
+            issuing_entity_id: Default::default(),
+            colliding_entity_id: Default::default(),
+            event_id: Default::default(),
+            collision_type: CollisionType::Inelastic,
+            velocity: Default::default(),
+            mass: UVINT32::from(60001),
+            location: Default::default(),
+        }.into_cdis_body();
+
+        let (dis_body, state_result) = cdis_body.decode(&mut state, &options);
+
+        assert_eq!(state_result, CodecStateResult::StateUnaffected);
+        if let PduBody::Collision(collision) = dis_body {
+            assert_eq!(collision.mass, 60.001f32);
+        }
     }
 }
