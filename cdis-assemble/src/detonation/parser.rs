@@ -67,7 +67,7 @@ mod tests {
     use dis_rs::enumerations::DetonationResult;
     use crate::CdisBody;
     use crate::detonation::parser::detonation_body;
-    use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters};
+    use crate::records::model::{EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters};
     use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
 
     #[test]
@@ -97,6 +97,8 @@ mod tests {
                                        UVINT8::from(0), UVINT8::from(0), UVINT8::from(0), UVINT8::from(0)));
             assert!(detonation.descriptor_warhead.is_none());
             assert!(detonation.descriptor_quantity.is_none());
+            assert_eq!(detonation.location_in_entity_coordinates,
+                       EntityCoordinateVector::new(SVINT16::from(0), SVINT16::from(0), SVINT16::from(0)));
             assert_eq!(detonation.detonation_results, UVINT8::from(u8::from(DetonationResult::Detonation)))
         } else { assert!(false) }
     }
