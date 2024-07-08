@@ -232,7 +232,7 @@ fn codec_consistency_detonation() {
     assert_eq!(body_in.velocity, body_out.velocity);
     assert_eq!(body_in.location_in_world_coordinates.x_coordinate, body_out.location_in_world_coordinates.x_coordinate.round());
     assert_eq!(body_in.location_in_world_coordinates.y_coordinate, body_out.location_in_world_coordinates.y_coordinate.round());
-    // FIXME: explosions are not properly encoded/decoded (always end up as a munition)
+    // FIXME: explosions are not properly encoded/decoded because fields explosive_material and explosive_force are not specified in C-DIS
     assert_eq!(body_in.descriptor, body_out.descriptor);
     assert_eq!(body_in.location_in_entity_coordinates, body_out.location_in_entity_coordinates);
     assert_eq!(body_in.detonation_result, body_out.detonation_result);
