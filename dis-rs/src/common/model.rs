@@ -1186,7 +1186,7 @@ impl From<DisTimeStamp> for u32 {
 }
 
 /// 6.2.14 Clock Time record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ClockTime {
     pub hour: i32,
     pub time_past_hour: u32,
