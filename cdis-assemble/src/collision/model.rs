@@ -1,6 +1,6 @@
 use dis_rs::enumerations::CollisionType;
 use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId, LinearVelocity, UnitsDekameters, UnitsMass, UnitsMeters};
+use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId, LinearVelocity, UnitsMass, UnitsMeters};
 use crate::types::model::{UVINT32, VarInt};
 
 #[derive(Clone, Default, Debug, PartialEq)]
