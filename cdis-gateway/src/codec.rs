@@ -188,7 +188,7 @@ impl Decoder {
             //     check if we already have a full update stored to fill in the blanks, send out DIS
             //     if no full update is present, discard the cdis PDU
             .filter(|cdis| if cdis.header.pdu_type.is_implemented() {
-                self.event_tx.try_send(Event::UnimplementedEncodedPdu(cdis.header.pdu_type, cdis.header.length.div_ceil(8) as u64))
+                self.event_tx.try_send(Event::UnimplementedDecodedPdu(cdis.header.pdu_type, cdis.header.length.div_ceil(8) as u64))
                     .expect("Event TX channel failed in Decoder::decode_pdus - Reject unimplemented PDU.");
                 // self.event_tx.try_send(Event::RejectedUnsupportedCDisPdu((cdis.header.pdu_type, cdis.header.length.div_ceil(8) as u64))).expect("Event TX channel failed in Decoder::decode_pdus - Reject unsupported.");
                 false
