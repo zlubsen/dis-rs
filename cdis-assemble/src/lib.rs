@@ -16,6 +16,7 @@ pub mod entity_state;
 pub mod fire;
 pub mod remove_entity;
 pub mod start_resume;
+pub mod stop_freeze;
 pub mod unsupported;
 
 pub(crate) mod parsing;
@@ -32,6 +33,7 @@ use crate::detonation::model::Detonation;
 use crate::fire::model::Fire;
 use crate::remove_entity::model::RemoveEntity;
 use crate::start_resume::model::StartResume;
+use crate::stop_freeze::model::StopFreeze;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -102,7 +104,7 @@ pub enum CdisBody {
     CreateEntity(CreateEntity),
     RemoveEntity(RemoveEntity),
     StartResume(StartResume),
-    StopFreeze,
+    StopFreeze(StopFreeze),
     Acknowledge,
     ActionRequest,
     ActionResponse,
@@ -130,7 +132,7 @@ impl CdisBody {
             CdisBody::CreateEntity(body) => { body.body_length_bits() }
             CdisBody::RemoveEntity(body) => { body.body_length_bits() }
             CdisBody::StartResume(body) => { body.body_length_bits() }
-            CdisBody::StopFreeze => { 0 }
+            CdisBody::StopFreeze(body) => { body.body_length_bits() }
             CdisBody::Acknowledge => { 0 }
             CdisBody::ActionRequest => { 0 }
             CdisBody::ActionResponse => { 0 }
@@ -160,7 +162,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::CreateEntity(body) => { body.originator() }
             CdisBody::RemoveEntity(body) => { body.originator() }
             CdisBody::StartResume(body) => { body.originator() }
-            CdisBody::StopFreeze => { None }
+            CdisBody::StopFreeze(body) => { body.originator() }
             CdisBody::Acknowledge => { None }
             CdisBody::ActionRequest => { None }
             CdisBody::ActionResponse => { None } 
@@ -188,7 +190,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::CreateEntity(body) => { body.receiver() }
             CdisBody::RemoveEntity(body) => { body.receiver() }
             CdisBody::StartResume(body) => { body.receiver() }
-            CdisBody::StopFreeze => { None } 
+            CdisBody::StopFreeze(body) => { body.receiver() }
             CdisBody::Acknowledge => { None } 
             CdisBody::ActionRequest => { None } 
             CdisBody::ActionResponse => { None } 
@@ -277,8 +279,8 @@ impl Implemented for PduType {
             PduType::Collision |
             PduType::CreateEntity |
             PduType::RemoveEntity |
-            PduType::StartResume => { true }
-            // PduType::StopFreeze |
+            PduType::StartResume |
+            PduType::StopFreeze => { true }
             // PduType::Acknowledge |
             // PduType::ActionRequest |
             // PduType::ActionResponse |
@@ -390,9 +392,9 @@ mod tests {
         assert!(PduType::Collision.is_implemented());
         assert!(PduType::CreateEntity.is_implemented());
         assert!(PduType::RemoveEntity.is_implemented());
-        
-        assert_eq!(PduType::StartResume.is_implemented() || CdisBody::StartResume.body_length() != 0, false);
-        assert_eq!(PduType::StopFreeze.is_implemented() || CdisBody::StopFreeze.body_length() != 0, false);
+        assert!(PduType::StartResume.is_implemented());
+        assert!(PduType::StopFreeze.is_implemented());
+
         assert_eq!(PduType::Acknowledge.is_implemented() || CdisBody::Acknowledge.body_length() != 0, false);
         assert_eq!(PduType::ActionRequest.is_implemented() || CdisBody::ActionRequest.body_length() != 0, false);
         assert_eq!(PduType::ActionResponse.is_implemented() || CdisBody::ActionResponse.body_length() != 0, false);

@@ -14,6 +14,7 @@ use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::remove_entity::parser::remove_entity_body;
 use crate::start_resume::parser::start_resume_body;
+use crate::stop_freeze::parser::stop_freeze_body;
 use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 
@@ -51,7 +52,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::CreateEntity => { create_entity_body(input)? }
             PduType::RemoveEntity => { remove_entity_body(input)? }
             PduType::StartResume => { start_resume_body(input)? }
-            // PduType::StopFreeze => {}
+            PduType::StopFreeze => { stop_freeze_body(input)? }
             // PduType::Acknowledge => {}
             // PduType::ActionRequest => {}
             // PduType::ActionResponse => {}

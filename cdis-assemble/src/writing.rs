@@ -43,7 +43,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::CreateEntity(body) => { body.serialize(buf, cursor) }
             CdisBody::RemoveEntity(body) => { body.serialize(buf, cursor) }
             CdisBody::StartResume(body) => { body.serialize(buf, cursor) }
-            // CdisBody::StopFreeze => {}
+            CdisBody::StopFreeze(body) => { body.serialize(buf, cursor) }
             // CdisBody::Acknowledge => {}
             // CdisBody::ActionRequest => {}
             // CdisBody::ActionResponse => {}
@@ -77,7 +77,7 @@ fn write_value_with_length<T: Integral>(buf: &mut BitBuffer, cursor: usize, bit_
     next_cursor
 }
 
-/// Write
+/// Write an unsigned value to the BitBuffer `buf`, at the position of the `cursor`, with `bit_size` bits in length.
 pub(crate) fn write_value_unsigned<T: num::Unsigned + Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
     write_value_with_length(buf, cursor, bit_size, value)
 }

@@ -1,5 +1,15 @@
 # Changelog for crate CDIS-ASSEMBLE
 
+## 0.2.0 - 2024-xx-xx
+
+Support for new PDUs:
+- Collision
+- Detonation
+- CreateEntity
+- RemoveEntity
+- StartResume
+- StopFreeze
+
 ## 0.1.1 - 2024-06-26
 
 Fire PDU support.
