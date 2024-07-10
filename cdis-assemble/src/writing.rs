@@ -44,7 +44,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::RemoveEntity(body) => { body.serialize(buf, cursor) }
             CdisBody::StartResume(body) => { body.serialize(buf, cursor) }
             CdisBody::StopFreeze(body) => { body.serialize(buf, cursor) }
-            // CdisBody::Acknowledge => {}
+            CdisBody::Acknowledge(body) => { body.serialize(buf, cursor) }
             // CdisBody::ActionRequest => {}
             // CdisBody::ActionResponse => {}
             // CdisBody::DataQuery => {}

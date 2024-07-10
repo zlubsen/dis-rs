@@ -344,6 +344,7 @@ mod templates {
         pub remove_entity_count: u64,
         pub start_resume_count: u64,
         pub stop_freeze_count: u64,
+        pub acknowledge_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -361,6 +362,7 @@ mod templates {
                 remove_entity_count: stats.received_count.get(&PduType::RemoveEntity).unwrap_or(&(0, 0)).0,
                 start_resume_count: stats.received_count.get(&PduType::StartResume).unwrap_or(&(0, 0)).0,
                 stop_freeze_count: stats.received_count.get(&PduType::StopFreeze).unwrap_or(&(0, 0)).0,
+                acknowledge_count: stats.received_count.get(&PduType::Acknowledge).unwrap_or(&(0, 0)).0,
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {

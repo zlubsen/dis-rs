@@ -8,7 +8,7 @@ use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolV
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, StopFreezeFrozenBehavior, StopFreezeReason};
+use dis_rs::enumerations::{AcknowledgeFlag, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VectorF32};
 
 #[test]
@@ -407,5 +407,38 @@ fn codec_consistency_stop_freeze() {
     assert_eq!(body_in.real_world_time, body_out.real_world_time);
     assert_eq!(body_in.reason, body_out.reason);
     assert_eq!(body_in.frozen_behavior, body_out.frozen_behavior);
+    assert_eq!(body_in.request_id, body_out.request_id);
+}
+
+#[test]
+fn codec_consistency_acknowledge() {
+    use dis_rs::acknowledge::model::Acknowledge;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Acknowledge).with_pdu_status(PduStatus::default());
+    let dis_body = Acknowledge::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_acknowledge_flag(AcknowledgeFlag::StartResume)
+        .with_response_flag(ResponseFlag::Abletocomply)
+        .with_request_id(1)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Acknowledge(body) = dis_pdu_in.body { body } else { Acknowledge::default() };
+    let body_out = if let PduBody::Acknowledge(body) = dis_pdu_out.body { body } else { Acknowledge::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.acknowledge_flag, body_out.acknowledge_flag);
+    assert_eq!(body_in.response_flag, body_out.response_flag);
     assert_eq!(body_in.request_id, body_out.request_id);
 }

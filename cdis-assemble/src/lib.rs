@@ -9,6 +9,7 @@ pub mod types;
 pub mod records;
 pub mod constants;
 
+pub mod acknowledge;
 pub mod collision;
 pub mod create_entity;
 pub mod detonation;
@@ -27,6 +28,7 @@ pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
+use crate::acknowledge::model::Acknowledge;
 use crate::collision::model::Collision;
 use crate::create_entity::model::CreateEntity;
 use crate::detonation::model::Detonation;
@@ -105,7 +107,7 @@ pub enum CdisBody {
     RemoveEntity(RemoveEntity),
     StartResume(StartResume),
     StopFreeze(StopFreeze),
-    Acknowledge,
+    Acknowledge(Acknowledge),
     ActionRequest,
     ActionResponse,
     DataQuery,
@@ -133,7 +135,7 @@ impl CdisBody {
             CdisBody::RemoveEntity(body) => { body.body_length_bits() }
             CdisBody::StartResume(body) => { body.body_length_bits() }
             CdisBody::StopFreeze(body) => { body.body_length_bits() }
-            CdisBody::Acknowledge => { 0 }
+            CdisBody::Acknowledge(body) => { body.body_length_bits() }
             CdisBody::ActionRequest => { 0 }
             CdisBody::ActionResponse => { 0 }
             CdisBody::DataQuery => { 0 }
@@ -163,7 +165,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::RemoveEntity(body) => { body.originator() }
             CdisBody::StartResume(body) => { body.originator() }
             CdisBody::StopFreeze(body) => { body.originator() }
-            CdisBody::Acknowledge => { None }
+            CdisBody::Acknowledge(body) => { body.originator() }
             CdisBody::ActionRequest => { None }
             CdisBody::ActionResponse => { None } 
             CdisBody::DataQuery => { None } 
@@ -191,7 +193,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::RemoveEntity(body) => { body.receiver() }
             CdisBody::StartResume(body) => { body.receiver() }
             CdisBody::StopFreeze(body) => { body.receiver() }
-            CdisBody::Acknowledge => { None } 
+            CdisBody::Acknowledge(body) => { body.receiver() }
             CdisBody::ActionRequest => { None } 
             CdisBody::ActionResponse => { None } 
             CdisBody::DataQuery => { None } 
@@ -280,8 +282,8 @@ impl Implemented for PduType {
             PduType::CreateEntity |
             PduType::RemoveEntity |
             PduType::StartResume |
-            PduType::StopFreeze => { true }
-            // PduType::Acknowledge |
+            PduType::StopFreeze |
+            PduType::Acknowledge => { true }
             // PduType::ActionRequest |
             // PduType::ActionResponse |
             // PduType::DataQuery |
@@ -394,8 +396,8 @@ mod tests {
         assert!(PduType::RemoveEntity.is_implemented());
         assert!(PduType::StartResume.is_implemented());
         assert!(PduType::StopFreeze.is_implemented());
+        assert!(PduType::Acknowledge.is_implemented());
 
-        assert_eq!(PduType::Acknowledge.is_implemented() || CdisBody::Acknowledge.body_length() != 0, false);
         assert_eq!(PduType::ActionRequest.is_implemented() || CdisBody::ActionRequest.body_length() != 0, false);
         assert_eq!(PduType::ActionResponse.is_implemented() || CdisBody::ActionResponse.body_length() != 0, false);
         assert_eq!(PduType::DataQuery.is_implemented() || CdisBody::DataQuery.body_length() != 0, false);

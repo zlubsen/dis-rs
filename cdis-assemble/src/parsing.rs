@@ -4,6 +4,7 @@ use dis_rs::enumerations::PduType;
 use std::ops::BitAnd;
 use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
+use crate::acknowledge::parser::acknowledge_body;
 use crate::collision::parser::collision_body;
 use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
@@ -53,7 +54,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::RemoveEntity => { remove_entity_body(input)? }
             PduType::StartResume => { start_resume_body(input)? }
             PduType::StopFreeze => { stop_freeze_body(input)? }
-            // PduType::Acknowledge => {}
+            PduType::Acknowledge => { acknowledge_body(input)? }
             // PduType::ActionRequest => {}
             // PduType::ActionResponse => {}
             // PduType::DataQuery => {}
