@@ -42,7 +42,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::Collision(body) => { body.serialize(buf, cursor) }
             CdisBody::CreateEntity(body) => { body.serialize(buf, cursor) }
             CdisBody::RemoveEntity(body) => { body.serialize(buf, cursor) }
-            // CdisBody::StartResume => {}
+            CdisBody::StartResume(body) => { body.serialize(buf, cursor) }
             // CdisBody::StopFreeze => {}
             // CdisBody::Acknowledge => {}
             // CdisBody::ActionRequest => {}

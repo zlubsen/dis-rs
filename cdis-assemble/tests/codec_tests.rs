@@ -5,13 +5,10 @@ use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
-use dis_rs::collision::model::Collision;
-use dis_rs::detonation::model::Detonation;
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
 use dis_rs::enumerations::{AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion};
-use dis_rs::fire::model::Fire;
-use dis_rs::model::{DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VectorF32};
+use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VectorF32};
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {
@@ -150,6 +147,8 @@ fn codec_consistency_entity_state_full_mode() {
 
 #[test]
 fn codec_consistency_fire() {
+    use dis_rs::fire::model::Fire;
+
     let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
     let mut decoder_state = DecoderState::new();
@@ -335,5 +334,38 @@ fn codec_consistency_remove_entity() {
 
     assert_eq!(body_in.originating_id, body_out.originating_id);
     assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
+}
+
+#[test]
+fn codec_consistency_start_resume() {
+    use dis_rs::start_resume::model::StartResume;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::RemoveEntity).with_pdu_status(PduStatus::default());
+    let dis_body = StartResume::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_real_world_time(ClockTime::new(10, 30))
+        .with_simulation_time(ClockTime::new(0, 14))
+        .with_request_id(1)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::StartResume(body) = dis_pdu_in.body { body } else { StartResume::default() };
+    let body_out = if let PduBody::StartResume(body) = dis_pdu_out.body { body } else { StartResume::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.real_world_time, body_out.real_world_time);
+    assert_eq!(body_in.simulation_time, body_out.simulation_time);
     assert_eq!(body_in.request_id, body_out.request_id);
 }

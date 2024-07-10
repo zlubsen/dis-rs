@@ -1,3 +1,5 @@
+use dis_rs::model::ClockTime;
+use crate::constants::THIRTY_TWO_BITS;
 use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
 use crate::writing::SerializeCdis;
 use crate::types::model::{CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
@@ -98,6 +100,15 @@ impl SerializeCdis for SVINT24 {
 pub(crate) fn serialize_cdis_float<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
     let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
     let cursor = write_value_signed(buf, cursor, float.exponent_bit_size(), float.exponent());
+
+    cursor
+}
+
+/// Serializes a C-DIS Clock Time Record (11.4).
+#[allow(clippy::let_and_return)]
+pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: &ClockTime) -> usize {
+    let cursor = write_value_signed(buf, cursor, THIRTY_TWO_BITS, time.hour);
+    let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, time.time_past_hour);
 
     cursor
 }

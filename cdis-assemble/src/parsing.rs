@@ -13,6 +13,7 @@ use crate::fire::parser::fire_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::remove_entity::parser::remove_entity_body;
+use crate::start_resume::parser::start_resume_body;
 use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 
@@ -49,7 +50,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::Collision => { collision_body(input)? }
             PduType::CreateEntity => { create_entity_body(input)? }
             PduType::RemoveEntity => { remove_entity_body(input)? }
-            // PduType::StartResume => {}
+            PduType::StartResume => { start_resume_body(input)? }
             // PduType::StopFreeze => {}
             // PduType::Acknowledge => {}
             // PduType::ActionRequest => {}

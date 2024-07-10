@@ -1,7 +1,8 @@
 use nom::IResult;
 use nom::bits::complete::take;
 use nom::complete::bool;
-use crate::constants::{ONE_BIT, TWO_BITS};
+use dis_rs::model::ClockTime;
+use crate::constants::{ONE_BIT, THIRTY_TWO_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::parsing::take_signed;
 use crate::types::model::{CdisFloat, SVINT12, Svint12BitSize, SVINT13, Svint13BitSize, SVINT14, Svint14BitSize, SVINT16, Svint16BitSize, SVINT24, Svint24BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
@@ -94,6 +95,15 @@ where T: CdisFloat {
     let exponent = exponent as i8;
 
     Ok((input, T::new(mantissa, exponent)))
+}
+
+/// Parses a C-DIS Clock Time Record (11.4).
+pub(crate) fn clock_time(input: BitInput) -> IResult<BitInput, ClockTime> {
+    let (input, hour) : (BitInput, i32) = take(THIRTY_TWO_BITS)(input)?;
+    let (input, time_past_hour) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+
+    let time = ClockTime::new(hour, time_past_hour);
+    Ok((input, time))
 }
 
 #[cfg(test)]

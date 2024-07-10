@@ -11,6 +11,7 @@ use crate::entity_state::model::EntityState;
 use crate::fire::model::Fire;
 use crate::records::model::CdisHeader;
 use crate::remove_entity::model::RemoveEntity;
+use crate::start_resume::model::StartResume;
 use crate::unsupported::Unsupported;
 
 pub const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
@@ -180,7 +181,7 @@ impl CdisBody {
             PduBody::RepairResponse(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::CreateEntity(dis_body) => { (CreateEntity::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::RemoveEntity(dis_body) => { (RemoveEntity::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::StartResume(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::StartResume(dis_body) => { (StartResume::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::StopFreeze(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Acknowledge(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ActionRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -281,7 +282,9 @@ impl CdisBody {
             CdisBody::RemoveEntity(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::StartResume => {}
+            CdisBody::StartResume(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::StopFreeze => {}
             // CdisBody::Acknowledge => {}
             // CdisBody::ActionRequest => {}
