@@ -26,7 +26,7 @@ impl Detonation {
             descriptor_rate) = encode_detonation_descriptor(&item.descriptor);
         let detonation_result: u8 = item.detonation_result.into();
         let variable_parameters = item.variable_parameters.iter()
-            .map(|vp| CdisVariableParameter::encode(vp) )
+            .map(CdisVariableParameter::encode)
             .collect();
 
         Detonation {

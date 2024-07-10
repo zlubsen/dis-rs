@@ -26,7 +26,7 @@ impl Collision {
             event_id: EntityId::from(&item.event_id),
             collision_type: item.collision_type,
             velocity: LinearVelocity::encode(&item.velocity),
-            mass: UVINT32::from(mass),
+            mass,
             location,
         }
     }
@@ -50,10 +50,10 @@ impl Collision {
 fn encode_collision_mass(mass: f32) -> (UVINT32, UnitsMass) {
     const MAX_NUMBER_AS_GRAMS_IN_KG: f32 = 65.535;
     if mass <= MAX_NUMBER_AS_GRAMS_IN_KG {
-        let mass = u32::from_f32(mass * 1000.0).unwrap_or_else(|| u32::MAX);
+        let mass = u32::from_f32(mass * 1000.0).unwrap_or(u32::MAX);
         (UVINT32::from(mass), UnitsMass::Grams)
     } else {
-        let mass = u32::from_f32(mass).unwrap_or_else(|| u32::MAX);
+        let mass = u32::from_f32(mass).unwrap_or(u32::MAX);
         (UVINT32::from(mass), UnitsMass::Kilograms)
     }
 }

@@ -99,7 +99,8 @@ enum Event {
     EncodedPdu(PduType, u64),
     DecodedPdu(PduType, u64),
     RejectedUnsupportedDisPdu(PduType, u64),
-    RejectedUnsupportedCDisPdu(PduType, u64),
+    #[allow(dead_code)]
+    RejectedUnsupportedCDisPdu(PduType, u64), // Every received C-DIS PDU is by definition supported by the standard.
     UnimplementedEncodedPdu(PduType, u64),
     UnimplementedDecodedPdu(PduType, u64),
     SentDis(usize), // bytes send through socket

@@ -52,6 +52,8 @@ impl CdisInteraction for Collision {
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct CollisionUnits {
+    // TODO spec text describes location_entity_coordinates to be in Centimers and Dekameters, which is conflicting with Table 49 and implementation in Detonation PDU
+    // Choice here is to follow Table 49 - use UnitsMeters enum
     pub location_entity_coordinates: UnitsMeters,
     pub mass: UnitsMass,
 }
