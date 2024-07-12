@@ -10,6 +10,7 @@ Support for new PDUs, aligned with `cdis-assemble`:
 - StartResume
 - StopFreeze
 - Acknowledge
+- ActionRequest
 
 ## 0.1.1 - 2024-06-26
 

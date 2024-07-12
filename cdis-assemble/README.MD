@@ -15,30 +15,30 @@ See `cdis-gateway` for a functional gateway application for encoding/decoding C-
 Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemented (currently unsupported) PDUs will be treated as Other/Unsupported.
 
 | PDU                     | Support |
-|-------------------------|--|
-| Other / Unsupported     | V |
-| EntityState             | V |
-| Fire                    |  |
-| Detonation              |  |
-| Collision               |  |
-| CreateEntity            |  |
-| RemoveEntity            |  |
-| StartResume             |  |
-| StopFreeze              |  |
-| Acknowledge             |  |
-| ActionRequest           |  |
-| ActionResponse          |  |
-| DataQuery               |  |
-| SetData                 |  |
-| Data                    |  |
-| EventReport             |  |
-| Comment                 |  |
-| ElectromagneticEmission |  |
-| Designator              |  |
-| Transmitter             |  |
-| Signal                  |  |
-| Receiver                |  |
-| IFF                     |  |
+|-------------------------|---------|
+| Other / Unsupported     | V       |
+| EntityState             | V       |
+| Fire                    | V       |
+| Detonation              | V       |
+| Collision               | V       |
+| CreateEntity            | V       |
+| RemoveEntity            | V       |
+| StartResume             | V       |
+| StopFreeze              | V       |
+| Acknowledge             | V       |
+| ActionRequest           | V       |
+| ActionResponse          |         |
+| DataQuery               |         |
+| SetData                 |         |
+| Data                    |         |
+| EventReport             |         |
+| Comment                 |         |
+| ElectromagneticEmission |         |
+| Designator              |         |
+| Transmitter             |         |
+| Signal                  |         |
+| Receiver                |         |
+| IFF                     |         |
 
 ## Usage
 
