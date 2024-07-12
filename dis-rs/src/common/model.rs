@@ -1202,6 +1202,7 @@ impl ClockTime {
 }
 
 /// 6.2.18 Datum Specification record
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct DatumSpecification {
     pub fixed_datum_records: Vec<FixedDatum>,
     pub variable_datum_records: Vec<VariableDatum>,

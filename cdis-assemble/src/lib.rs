@@ -10,6 +10,7 @@ pub mod records;
 pub mod constants;
 
 pub mod acknowledge;
+pub mod action_request;
 pub mod collision;
 pub mod create_entity;
 pub mod detonation;
@@ -29,6 +30,7 @@ pub use writing::SerializeCdisPdu;
 pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
 use crate::acknowledge::model::Acknowledge;
+use crate::action_request::model::ActionRequest;
 use crate::collision::model::Collision;
 use crate::create_entity::model::CreateEntity;
 use crate::detonation::model::Detonation;
@@ -108,7 +110,7 @@ pub enum CdisBody {
     StartResume(StartResume),
     StopFreeze(StopFreeze),
     Acknowledge(Acknowledge),
-    ActionRequest,
+    ActionRequest(ActionRequest),
     ActionResponse,
     DataQuery,
     SetData,
@@ -136,7 +138,7 @@ impl CdisBody {
             CdisBody::StartResume(body) => { body.body_length_bits() }
             CdisBody::StopFreeze(body) => { body.body_length_bits() }
             CdisBody::Acknowledge(body) => { body.body_length_bits() }
-            CdisBody::ActionRequest => { 0 }
+            CdisBody::ActionRequest(body) => { body.body_length_bits() }
             CdisBody::ActionResponse => { 0 }
             CdisBody::DataQuery => { 0 }
             CdisBody::SetData => { 0 }
@@ -166,7 +168,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::StartResume(body) => { body.originator() }
             CdisBody::StopFreeze(body) => { body.originator() }
             CdisBody::Acknowledge(body) => { body.originator() }
-            CdisBody::ActionRequest => { None }
+            CdisBody::ActionRequest(body) => { body.originator() }
             CdisBody::ActionResponse => { None } 
             CdisBody::DataQuery => { None } 
             CdisBody::SetData => { None } 
@@ -194,7 +196,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::StartResume(body) => { body.receiver() }
             CdisBody::StopFreeze(body) => { body.receiver() }
             CdisBody::Acknowledge(body) => { body.receiver() }
-            CdisBody::ActionRequest => { None } 
+            CdisBody::ActionRequest(body) => { body.receiver() }
             CdisBody::ActionResponse => { None } 
             CdisBody::DataQuery => { None } 
             CdisBody::SetData => { None } 

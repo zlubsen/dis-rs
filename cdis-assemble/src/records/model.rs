@@ -1,9 +1,11 @@
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
-use dis_rs::model::{DisTimeStamp, EventId, Location, PduStatus, SimulationAddress};
+use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, THIRTY_NINE_BITS, THREE_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
+
+use num_traits::FromPrimitive;
 
 pub(crate) trait CdisRecord {
     fn record_length(&self) -> usize;
@@ -238,6 +240,31 @@ impl CdisRecord for LinearAcceleration {
         self.x.record_length()
             + self.y.record_length()
             + self.z.record_length()
+    }
+}
+
+/// 11.6 Datum Specification Record
+impl CdisRecord for DatumSpecification {
+    fn record_length(&self) -> usize {
+        UVINT8::from(u8::from_usize(self.fixed_datum_records.len()).unwrap_or(u8::MAX)).record_length()
+        + UVINT8::from(u8::from_usize(self.variable_datum_records.len()).unwrap_or(u8::MAX)).record_length()
+        + self.fixed_datum_records.iter().map(|datum| datum.record_length() ).sum::<usize>()
+        + self.variable_datum_records.iter().map(|datum| datum.record_length() ).sum::<usize>()
+    }
+}
+
+/// DIS v7 6.2.37
+impl CdisRecord for FixedDatum {
+    fn record_length(&self) -> usize {
+        SIXTY_FOUR_BITS
+    }
+}
+
+/// DIS v7 6.2.93
+impl CdisRecord for VariableDatum {
+    fn record_length(&self) -> usize {
+        THIRTY_TWO_BITS + FOURTEEN_BITS
+            + self.datum_value.len() * EIGHT_BITS
     }
 }
 

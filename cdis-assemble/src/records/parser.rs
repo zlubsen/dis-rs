@@ -2,8 +2,8 @@ use bitvec::macros::internal::funty::Floating;
 use nom::IResult;
 use nom::bits::complete::take;
 use nom::multi::count;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType};
-use dis_rs::model::TimeStamp;
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType, VariableRecordType};
+use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::parsing::BitInput;
@@ -435,6 +435,24 @@ pub(crate) fn entity_association_vp(input: BitInput) -> IResult<BitInput, CdisEn
         group_member_type,
         group_number,
     }))
+}
+
+pub(crate) fn fixed_datum(input: BitInput) -> IResult<BitInput, FixedDatum> {
+    let (input, datum_id) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    let datum_id = VariableRecordType::from(datum_id);
+
+    let (input, datum_value) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+
+    Ok((input, FixedDatum::new(datum_id, datum_value)))
+}
+
+pub(crate) fn variable_datum(input: BitInput) -> IResult<BitInput, VariableDatum> {
+    let (input, datum_id) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    let datum_id = VariableRecordType::from(datum_id);
+
+    let (input, datum_length_bits) : (BitInput, u16) = take(FOURTEEN_BITS)(input)?;
+    let aap = datum_length_bits.rem;
+    // TODO how to put the consumed amount of bits in a Vec<u8> (need to handle trailing zeroes?)
 }
 
 #[cfg(test)]
