@@ -4,6 +4,7 @@ use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
 use dis_rs::{Interaction, VariableParameters};
 use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
 use crate::acknowledge::model::Acknowledge;
+use crate::action_request::model::ActionRequest;
 use crate::collision::model::Collision;
 use crate::create_entity::model::CreateEntity;
 use crate::detonation::model::Detonation;
@@ -186,7 +187,7 @@ impl CdisBody {
             PduBody::StartResume(dis_body) => { (StartResume::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::StopFreeze(dis_body) => { (StopFreeze::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Acknowledge(dis_body) => { (Acknowledge::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::ActionRequest(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ActionRequest(dis_body) => { (ActionRequest::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::ActionResponse(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::DataQuery(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::SetData(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -293,7 +294,9 @@ impl CdisBody {
             CdisBody::Acknowledge(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::ActionRequest => {}
+            CdisBody::ActionRequest(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::ActionResponse => {}
             // CdisBody::DataQuery => {}
             // CdisBody::SetData => {}

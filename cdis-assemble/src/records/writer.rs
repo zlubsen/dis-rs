@@ -1,7 +1,9 @@
+use num_traits::FromPrimitive;
 use dis_rs::enumerations::VariableParameterRecordType;
+use dis_rs::model::{FixedDatum, VariableDatum};
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
-use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::types::writer::serialize_cdis_float;
 use crate::writing::BitBuffer;
 
@@ -228,6 +230,30 @@ impl SerializeCdis for CdisEntityAssociationVP {
         let cursor = write_value_unsigned::<u8>(buf, cursor, FIVE_BITS, self.physical_connection_type.into());
         let cursor = write_value_unsigned::<u8>(buf, cursor, FOUR_BITS, self.group_member_type.into());
         let cursor = write_value_unsigned::<u16>(buf, cursor, SIXTEEN_BITS, self.group_number);
+
+        cursor
+    }
+}
+
+impl SerializeCdis for FixedDatum {
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned::<u32>(buf, cursor, THIRTY_TWO_BITS, self.datum_id.into());
+        let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, self.datum_value);
+
+        cursor
+    }
+}
+
+impl SerializeCdis for VariableDatum {
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned::<u32>(buf, cursor, THIRTY_TWO_BITS, self.datum_id.into());
+        let cursor = write_value_unsigned(buf, cursor,
+              FOURTEEN_BITS, u16::from_usize(self.datum_value.len() * EIGHT_BITS).unwrap_or(MAX_VARIABLE_DATUM_LENGTH_BITS));
+
+        let cursor = self.datum_value.iter()
+            .fold(cursor, |cursor, vp| vp.serialize(buf, cursor) );
 
         cursor
     }

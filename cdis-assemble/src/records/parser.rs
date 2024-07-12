@@ -2,6 +2,7 @@ use bitvec::macros::internal::funty::Floating;
 use nom::IResult;
 use nom::bits::complete::take;
 use nom::multi::count;
+use num::Integer;
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType, VariableRecordType};
 use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
@@ -450,9 +451,17 @@ pub(crate) fn variable_datum(input: BitInput) -> IResult<BitInput, VariableDatum
     let (input, datum_id) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
     let datum_id = VariableRecordType::from(datum_id);
 
-    let (input, datum_length_bits) : (BitInput, u16) = take(FOURTEEN_BITS)(input)?;
-    let aap = datum_length_bits.rem;
-    // TODO how to put the consumed amount of bits in a Vec<u8> (need to handle trailing zeroes?)
+    let (input, datum_length_bits) : (BitInput, usize) = take(FOURTEEN_BITS)(input)?;
+    let (num_full_bytes, partial_bytes_bits) = datum_length_bits.div_rem(&EIGHT_BITS);
+
+    let (input, mut datum_value) : (BitInput, Vec<u8>) = count(take(EIGHT_BITS), num_full_bytes)(input)?;
+    let (input, datum_value) = if partial_bytes_bits != 0 {
+        let (input, last_byte) : (BitInput, u8) = take(partial_bytes_bits)(input)?;
+        datum_value.push(last_byte << (EIGHT_BITS - partial_bytes_bits));
+        (input, datum_value)
+    } else { (input, datum_value) };
+
+    Ok((input, VariableDatum::new(datum_id, datum_value)))
 }
 
 #[cfg(test)]

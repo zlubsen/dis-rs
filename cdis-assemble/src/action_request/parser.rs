@@ -1,11 +1,12 @@
 use nom::complete::take;
 use nom::IResult;
 use nom::multi::count;
-use crate::{CdisBody, parsing};
-use crate::action_request::model::ActionRequestFieldsPresent;
+use dis_rs::model::DatumSpecification;
+use crate::{BodyProperties, CdisBody, parsing};
+use crate::action_request::model::{ActionRequest, ActionRequestFieldsPresent};
 use crate::constants::{TWO_BITS};
 use crate::parsing::BitInput;
-use crate::records::parser::{entity_identification, variable_parameter};
+use crate::records::parser::{entity_identification, fixed_datum, variable_datum};
 use crate::types::parser::{uvint32, uvint8};
 
 pub(crate) fn action_request_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -33,4 +34,12 @@ pub(crate) fn action_request_body(input: BitInput) -> IResult<BitInput, CdisBody
     } else {
         (input, vec![])
     };
+
+    Ok((input, ActionRequest {
+        originating_id,
+        receiving_id,
+        request_id,
+        action_id,
+        datum_specification: DatumSpecification::new(fixed_datums, variable_datums),
+    }.into_cdis_body()))
 }

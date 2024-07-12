@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, SerializeCdisPdu, BodyProperties};
-use cdis_assemble::CdisBody::StopFreeze;
+use cdis_assemble::CdisBody::ActionRequest;
 use cdis_assemble::codec::{CodecOptions, DecoderState, EncoderState};
 use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
@@ -8,8 +8,8 @@ use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolV
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason};
-use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VectorF32};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {
@@ -441,4 +441,39 @@ fn codec_consistency_acknowledge() {
     assert_eq!(body_in.acknowledge_flag, body_out.acknowledge_flag);
     assert_eq!(body_in.response_flag, body_out.response_flag);
     assert_eq!(body_in.request_id, body_out.request_id);
+}
+
+#[test]
+fn codec_consistency_action_request() {
+    use dis_rs::action_request::model::ActionRequest;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::ActionRequest).with_pdu_status(PduStatus::default());
+    let dis_body = ActionRequest::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_request_id(1)
+        .with_action_id(ActionId::Joinexercise)
+        .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
+        .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::ActionRequest(body) = dis_pdu_in.body { body } else { ActionRequest::default() };
+    let body_out = if let PduBody::ActionRequest(body) = dis_pdu_out.body { body } else { ActionRequest::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
+    assert_eq!(body_in.action_id, body_out.action_id);
+    assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
+    assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
 }

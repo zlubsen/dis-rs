@@ -45,7 +45,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::StartResume(body) => { body.serialize(buf, cursor) }
             CdisBody::StopFreeze(body) => { body.serialize(buf, cursor) }
             CdisBody::Acknowledge(body) => { body.serialize(buf, cursor) }
-            // CdisBody::ActionRequest => {}
+            CdisBody::ActionRequest(body) => { body.serialize(buf, cursor) }
             // CdisBody::ActionResponse => {}
             // CdisBody::DataQuery => {}
             // CdisBody::SetData => {}

@@ -285,8 +285,8 @@ impl Implemented for PduType {
             PduType::RemoveEntity |
             PduType::StartResume |
             PduType::StopFreeze |
-            PduType::Acknowledge => { true }
-            // PduType::ActionRequest |
+            PduType::Acknowledge |
+            PduType::ActionRequest => { true }
             // PduType::ActionResponse |
             // PduType::DataQuery |
             // PduType::SetData |
@@ -399,8 +399,8 @@ mod tests {
         assert!(PduType::StartResume.is_implemented());
         assert!(PduType::StopFreeze.is_implemented());
         assert!(PduType::Acknowledge.is_implemented());
+        assert!(PduType::ActionRequest.is_implemented());
 
-        assert_eq!(PduType::ActionRequest.is_implemented() || CdisBody::ActionRequest.body_length() != 0, false);
         assert_eq!(PduType::ActionResponse.is_implemented() || CdisBody::ActionResponse.body_length() != 0, false);
         assert_eq!(PduType::DataQuery.is_implemented() || CdisBody::DataQuery.body_length() != 0, false);
         assert_eq!(PduType::SetData.is_implemented() || CdisBody::SetData.body_length() != 0, false);
