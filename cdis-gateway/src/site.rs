@@ -350,6 +350,7 @@ mod templates {
         pub set_data_count: u64,
         pub data_count: u64,
         pub event_report_count: u64,
+        pub comment_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -357,22 +358,27 @@ mod templates {
 
     impl From<&CodecStats> for CodecStatsValues {
         fn from(stats: &CodecStats) -> Self {
+            fn count_for_pdu_type(stats: &CodecStats, pdu_type: PduType) -> u64 {
+                stats.received_count.get(&pdu_type).unwrap_or(&(0, 0)).0
+            }
+
             Self {
                 received_count: stats.received_count.values().map(|val| val.0).sum::<u64>().saturating_sub(stats.rejected_count),
-                es_count: stats.received_count.get(&PduType::EntityState).unwrap_or(&(0, 0)).0,
-                fire_count: stats.received_count.get(&PduType::Fire).unwrap_or(&(0, 0)).0,
-                detonation_count: stats.received_count.get(&PduType::Detonation).unwrap_or(&(0, 0)).0,
-                collision_count: stats.received_count.get(&PduType::Collision).unwrap_or(&(0, 0)).0,
-                create_entity_count: stats.received_count.get(&PduType::CreateEntity).unwrap_or(&(0, 0)).0,
-                remove_entity_count: stats.received_count.get(&PduType::RemoveEntity).unwrap_or(&(0, 0)).0,
-                start_resume_count: stats.received_count.get(&PduType::StartResume).unwrap_or(&(0, 0)).0,
-                stop_freeze_count: stats.received_count.get(&PduType::StopFreeze).unwrap_or(&(0, 0)).0,
-                acknowledge_count: stats.received_count.get(&PduType::Acknowledge).unwrap_or(&(0, 0)).0,
-                action_request_count: stats.received_count.get(&PduType::ActionRequest).unwrap_or(&(0, 0)).0,
-                action_response_count: stats.received_count.get(&PduType::ActionResponse).unwrap_or(&(0, 0)).0,
-                set_data_count: stats.received_count.get(&PduType::SetData).unwrap_or(&(0, 0)).0,
-                data_count: stats.received_count.get(&PduType::Data).unwrap_or(&(0, 0)).0,
-                event_report_count: stats.received_count.get(&PduType::EventReport).unwrap_or(&(0, 0)).0,
+                es_count: count_for_pdu_type(stats, PduType::EntityState),
+                fire_count: count_for_pdu_type(stats, PduType::Fire),
+                detonation_count: count_for_pdu_type(stats, PduType::Detonation),
+                collision_count: count_for_pdu_type(stats, PduType::Collision),
+                create_entity_count: count_for_pdu_type(stats, PduType::CreateEntity),
+                remove_entity_count: count_for_pdu_type(stats, PduType::RemoveEntity),
+                start_resume_count: count_for_pdu_type(stats, PduType::StartResume),
+                stop_freeze_count: count_for_pdu_type(stats, PduType::StopFreeze),
+                acknowledge_count: count_for_pdu_type(stats, PduType::Acknowledge),
+                action_request_count: count_for_pdu_type(stats, PduType::ActionRequest),
+                action_response_count: count_for_pdu_type(stats, PduType::ActionResponse),
+                set_data_count: count_for_pdu_type(stats, PduType::SetData),
+                data_count: count_for_pdu_type(stats, PduType::Data),
+                event_report_count: count_for_pdu_type(stats, PduType::EventReport),
+                comment_count: count_for_pdu_type(stats, PduType::Comment),
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {

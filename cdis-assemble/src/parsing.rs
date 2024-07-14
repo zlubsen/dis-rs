@@ -8,6 +8,7 @@ use crate::acknowledge::parser::acknowledge_body;
 use crate::action_request::parser::action_request_body;
 use crate::action_response::parser::action_response_body;
 use crate::collision::parser::collision_body;
+use crate::comment::parser::comment_body;
 use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
 use crate::data::parser::data_body;
@@ -66,7 +67,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::SetData => { set_data_body(input)? }
             PduType::Data => { data_body(input)? }
             PduType::EventReport => { event_report_body(input)? }
-            // PduType::Comment => {}
+            PduType::Comment => { comment_body(input)? }
             // PduType::ElectromagneticEmission => {}
             // PduType::Designator => {}
             // PduType::Transmitter => {}

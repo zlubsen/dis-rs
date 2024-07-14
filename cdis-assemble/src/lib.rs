@@ -13,6 +13,7 @@ pub mod acknowledge;
 pub mod action_request;
 pub mod action_response;
 pub mod collision;
+pub mod comment;
 pub mod create_entity;
 pub mod detonation;
 pub mod data;
@@ -37,6 +38,7 @@ use crate::acknowledge::model::Acknowledge;
 use crate::action_request::model::ActionRequest;
 use crate::action_response::model::ActionResponse;
 use crate::collision::model::Collision;
+use crate::comment::model::Comment;
 use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::detonation::model::Detonation;
@@ -124,7 +126,7 @@ pub enum CdisBody {
     SetData(SetData),
     Data(Data),
     EventReport(EventReport),
-    Comment,
+    Comment(Comment),
     ElectromagneticEmission,
     Designator,
     Transmitter,
@@ -152,7 +154,7 @@ impl CdisBody {
             CdisBody::SetData(body) => { body.body_length_bits() }
             CdisBody::Data(body) => { body.body_length_bits() }
             CdisBody::EventReport(body) => { body.body_length_bits() }
-            CdisBody::Comment => { 0 }
+            CdisBody::Comment(body) => { body.body_length_bits() }
             CdisBody::ElectromagneticEmission => { 0 }
             CdisBody::Designator => { 0 }
             CdisBody::Transmitter => { 0 }
@@ -182,7 +184,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::SetData(body) => { body.originator() }
             CdisBody::Data(body) => { body.originator() }
             CdisBody::EventReport(body) => { body.originator() }
-            CdisBody::Comment => { None } 
+            CdisBody::Comment(body) => { body.originator() }
             CdisBody::ElectromagneticEmission => { None } 
             CdisBody::Designator => { None } 
             CdisBody::Transmitter => { None } 
@@ -210,7 +212,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::SetData(body) => { body.receiver() }
             CdisBody::Data(body) => { body.receiver() }
             CdisBody::EventReport(body) => { body.receiver() }
-            CdisBody::Comment => { None } 
+            CdisBody::Comment(body) => { body.receiver() }
             CdisBody::ElectromagneticEmission => { None } 
             CdisBody::Designator => { None } 
             CdisBody::Transmitter => { None } 
@@ -299,8 +301,8 @@ impl Implemented for PduType {
             // PduType::DataQuery |
             PduType::SetData |
             PduType::Data |
-            PduType::EventReport => { true }
-            // PduType::Comment |
+            PduType::EventReport |
+            PduType::Comment => { true }
             // PduType::ElectromagneticEmission |
             // PduType::Designator |
             // PduType::Transmitter |
@@ -412,9 +414,9 @@ mod tests {
         assert!(PduType::SetData.is_implemented());
         assert!(PduType::Data.is_implemented());
         assert!(PduType::EventReport.is_implemented());
+        assert!(PduType::Comment.is_implemented());
 
         assert_eq!(PduType::DataQuery.is_implemented() || CdisBody::DataQuery.body_length() != 0, false);
-        assert_eq!(PduType::Comment.is_implemented() || CdisBody::Comment.body_length() != 0, false);
         assert_eq!(PduType::ElectromagneticEmission.is_implemented() || CdisBody::ElectromagneticEmission.body_length() != 0, false);
         assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);
         assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);

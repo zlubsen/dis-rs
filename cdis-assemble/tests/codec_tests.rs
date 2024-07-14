@@ -610,3 +610,36 @@ fn codec_consistency_event_report() {
     assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
     assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
 }
+
+#[test]
+fn codec_consistency_comment() {
+    use dis_rs::comment::model::Comment;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Data).with_pdu_status(PduStatus::default());
+    let dis_body = Comment::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    if let CdisBody::Comment(aap) = &cdis_pdu.body {
+        assert!(aap.datum_specification.fixed_datum_records.is_empty());
+    }
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Comment(body) = dis_pdu_in.body { body } else { Comment::default() };
+    let body_out = if let PduBody::Comment(body) = dis_pdu_out.body { body } else { Comment::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}

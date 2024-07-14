@@ -7,6 +7,7 @@ use crate::acknowledge::model::Acknowledge;
 use crate::action_request::model::ActionRequest;
 use crate::action_response::model::ActionResponse;
 use crate::collision::model::Collision;
+use crate::comment::model::Comment;
 use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::detonation::model::Detonation;
@@ -197,7 +198,7 @@ impl CdisBody {
             PduBody::SetData(dis_body) => { (SetData::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Data(dis_body) => { (Data::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::EventReport(dis_body) => { (EventReport::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::Comment(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Comment(dis_body) => { (Comment::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::ElectromagneticEmission(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Designator(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Transmitter(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -314,7 +315,9 @@ impl CdisBody {
             CdisBody::EventReport(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::Comment => {}
+            CdisBody::Comment(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::ElectromagneticEmission => {}
             // CdisBody::Designator => {}
             // CdisBody::Transmitter => {}
