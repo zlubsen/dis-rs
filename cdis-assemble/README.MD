@@ -27,11 +27,11 @@ Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemen
 | StopFreeze              | V       |
 | Acknowledge             | V       |
 | ActionRequest           | V       |
-| ActionResponse          |         |
+| ActionResponse          | V       |
 | DataQuery               |         |
-| SetData                 |         |
-| Data                    |         |
-| EventReport             |         |
+| SetData                 | V       |
+| Data                    | V       |
+| EventReport             | V       |
 | Comment                 |         |
 | ElectromagneticEmission |         |
 | Designator              |         |

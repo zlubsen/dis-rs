@@ -11,12 +11,16 @@ pub mod constants;
 
 pub mod acknowledge;
 pub mod action_request;
+pub mod action_response;
 pub mod collision;
 pub mod create_entity;
 pub mod detonation;
+pub mod data;
 pub mod entity_state;
+pub mod event_report;
 pub mod fire;
 pub mod remove_entity;
+pub mod set_data;
 pub mod start_resume;
 pub mod stop_freeze;
 pub mod unsupported;
@@ -31,11 +35,15 @@ pub use writing::BitBuffer;
 pub use writing::create_bit_buffer;
 use crate::acknowledge::model::Acknowledge;
 use crate::action_request::model::ActionRequest;
+use crate::action_response::model::ActionResponse;
 use crate::collision::model::Collision;
 use crate::create_entity::model::CreateEntity;
+use crate::data::model::Data;
 use crate::detonation::model::Detonation;
+use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::remove_entity::model::RemoveEntity;
+use crate::set_data::model::SetData;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
 
@@ -111,11 +119,11 @@ pub enum CdisBody {
     StopFreeze(StopFreeze),
     Acknowledge(Acknowledge),
     ActionRequest(ActionRequest),
-    ActionResponse,
+    ActionResponse(ActionResponse),
     DataQuery,
-    SetData,
-    Data,
-    EventReport,
+    SetData(SetData),
+    Data(Data),
+    EventReport(EventReport),
     Comment,
     ElectromagneticEmission,
     Designator,
@@ -139,11 +147,11 @@ impl CdisBody {
             CdisBody::StopFreeze(body) => { body.body_length_bits() }
             CdisBody::Acknowledge(body) => { body.body_length_bits() }
             CdisBody::ActionRequest(body) => { body.body_length_bits() }
-            CdisBody::ActionResponse => { 0 }
+            CdisBody::ActionResponse(body) => { body.body_length_bits() }
             CdisBody::DataQuery => { 0 }
-            CdisBody::SetData => { 0 }
-            CdisBody::Data => { 0 }
-            CdisBody::EventReport => { 0 }
+            CdisBody::SetData(body) => { body.body_length_bits() }
+            CdisBody::Data(body) => { body.body_length_bits() }
+            CdisBody::EventReport(body) => { body.body_length_bits() }
             CdisBody::Comment => { 0 }
             CdisBody::ElectromagneticEmission => { 0 }
             CdisBody::Designator => { 0 }
@@ -169,11 +177,11 @@ impl CdisInteraction for CdisBody {
             CdisBody::StopFreeze(body) => { body.originator() }
             CdisBody::Acknowledge(body) => { body.originator() }
             CdisBody::ActionRequest(body) => { body.originator() }
-            CdisBody::ActionResponse => { None } 
+            CdisBody::ActionResponse(body) => { body.originator() }
             CdisBody::DataQuery => { None } 
-            CdisBody::SetData => { None } 
-            CdisBody::Data => { None } 
-            CdisBody::EventReport => { None } 
+            CdisBody::SetData(body) => { body.originator() }
+            CdisBody::Data(body) => { body.originator() }
+            CdisBody::EventReport(body) => { body.originator() }
             CdisBody::Comment => { None } 
             CdisBody::ElectromagneticEmission => { None } 
             CdisBody::Designator => { None } 
@@ -197,11 +205,11 @@ impl CdisInteraction for CdisBody {
             CdisBody::StopFreeze(body) => { body.receiver() }
             CdisBody::Acknowledge(body) => { body.receiver() }
             CdisBody::ActionRequest(body) => { body.receiver() }
-            CdisBody::ActionResponse => { None } 
+            CdisBody::ActionResponse(body) => { body.receiver() }
             CdisBody::DataQuery => { None } 
-            CdisBody::SetData => { None } 
-            CdisBody::Data => { None } 
-            CdisBody::EventReport => { None } 
+            CdisBody::SetData(body) => { body.receiver() }
+            CdisBody::Data(body) => { body.receiver() }
+            CdisBody::EventReport(body) => { body.receiver() }
             CdisBody::Comment => { None } 
             CdisBody::ElectromagneticEmission => { None } 
             CdisBody::Designator => { None } 
@@ -286,12 +294,12 @@ impl Implemented for PduType {
             PduType::StartResume |
             PduType::StopFreeze |
             PduType::Acknowledge |
-            PduType::ActionRequest => { true }
-            // PduType::ActionResponse |
+            PduType::ActionRequest |
+            PduType::ActionResponse |
             // PduType::DataQuery |
-            // PduType::SetData |
-            // PduType::Data |
-            // PduType::EventReport |
+            PduType::SetData |
+            PduType::Data |
+            PduType::EventReport => { true }
             // PduType::Comment |
             // PduType::ElectromagneticEmission |
             // PduType::Designator |
@@ -400,12 +408,12 @@ mod tests {
         assert!(PduType::StopFreeze.is_implemented());
         assert!(PduType::Acknowledge.is_implemented());
         assert!(PduType::ActionRequest.is_implemented());
+        assert!(PduType::ActionResponse.is_implemented());
+        assert!(PduType::SetData.is_implemented());
+        assert!(PduType::Data.is_implemented());
+        assert!(PduType::EventReport.is_implemented());
 
-        assert_eq!(PduType::ActionResponse.is_implemented() || CdisBody::ActionResponse.body_length() != 0, false);
         assert_eq!(PduType::DataQuery.is_implemented() || CdisBody::DataQuery.body_length() != 0, false);
-        assert_eq!(PduType::SetData.is_implemented() || CdisBody::SetData.body_length() != 0, false);
-        assert_eq!(PduType::Data.is_implemented() || CdisBody::Data.body_length() != 0, false);
-        assert_eq!(PduType::EventReport.is_implemented() || CdisBody::EventReport.body_length() != 0, false);
         assert_eq!(PduType::Comment.is_implemented() || CdisBody::Comment.body_length() != 0, false);
         assert_eq!(PduType::ElectromagneticEmission.is_implemented() || CdisBody::ElectromagneticEmission.body_length() != 0, false);
         assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);

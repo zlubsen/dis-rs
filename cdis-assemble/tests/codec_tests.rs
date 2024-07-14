@@ -1,6 +1,5 @@
 use bytes::BytesMut;
 use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, SerializeCdisPdu, BodyProperties};
-use cdis_assemble::CdisBody::ActionRequest;
 use cdis_assemble::codec::{CodecOptions, DecoderState, EncoderState};
 use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
@@ -8,7 +7,7 @@ use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolV
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 
 #[test]
@@ -474,6 +473,140 @@ fn codec_consistency_action_request() {
     assert_eq!(body_in.receiving_id, body_out.receiving_id);
     assert_eq!(body_in.request_id, body_out.request_id);
     assert_eq!(body_in.action_id, body_out.action_id);
+    assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
+    assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_action_response() {
+    use dis_rs::action_response::model::ActionResponse;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::ActionResponse).with_pdu_status(PduStatus::default());
+    let dis_body = ActionResponse::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_request_id(1)
+        .with_request_status(RequestStatus::Pending)
+        .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
+        .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::ActionResponse(body) = dis_pdu_in.body { body } else { ActionResponse::default() };
+    let body_out = if let PduBody::ActionResponse(body) = dis_pdu_out.body { body } else { ActionResponse::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
+    assert_eq!(body_in.request_status, body_out.request_status);
+    assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
+    assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_set_data() {
+    use dis_rs::set_data::model::SetData;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::SetData).with_pdu_status(PduStatus::default());
+    let dis_body = SetData::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_request_id(1)
+        .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
+        .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::SetData(body) = dis_pdu_in.body { body } else { SetData::default() };
+    let body_out = if let PduBody::SetData(body) = dis_pdu_out.body { body } else { SetData::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
+    assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
+    assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_data() {
+    use dis_rs::data::model::Data;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Data).with_pdu_status(PduStatus::default());
+    let dis_body = Data::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_request_id(1)
+        .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
+        .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Data(body) = dis_pdu_in.body { body } else { Data::default() };
+    let body_out = if let PduBody::Data(body) = dis_pdu_out.body { body } else { Data::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.request_id, body_out.request_id);
+    assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
+    assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_event_report() {
+    use dis_rs::event_report::model::EventReport;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Data).with_pdu_status(PduStatus::default());
+    let dis_body = EventReport::builder()
+        .with_origination_id(EntityId::new(1, 1, 1))
+        .with_receiving_id(EntityId::new(2, 2, 2))
+        .with_event_type(EventType::RanOutofFuel)
+        .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
+        .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::EventReport(body) = dis_pdu_in.body { body } else { EventReport::default() };
+    let body_out = if let PduBody::EventReport(body) = dis_pdu_out.body { body } else { EventReport::default() };
+
+    assert_eq!(body_in.originating_id, body_out.originating_id);
+    assert_eq!(body_in.receiving_id, body_out.receiving_id);
+    assert_eq!(body_in.event_type, body_out.event_type);
     assert_eq!(body_in.fixed_datum_records, body_out.fixed_datum_records);
     assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
 }

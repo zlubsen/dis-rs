@@ -46,11 +46,11 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::StopFreeze(body) => { body.serialize(buf, cursor) }
             CdisBody::Acknowledge(body) => { body.serialize(buf, cursor) }
             CdisBody::ActionRequest(body) => { body.serialize(buf, cursor) }
-            // CdisBody::ActionResponse => {}
+            CdisBody::ActionResponse(body) => { body.serialize(buf, cursor) }
             // CdisBody::DataQuery => {}
-            // CdisBody::SetData => {}
-            // CdisBody::Data => {}
-            // CdisBody::EventReport => {}
+            CdisBody::SetData(body) => { body.serialize(buf, cursor) }
+            CdisBody::Data(body) => { body.serialize(buf, cursor) }
+            CdisBody::EventReport(body) => { body.serialize(buf, cursor) }
             // CdisBody::Comment => {}
             // CdisBody::ElectromagneticEmission => {}
             // CdisBody::Designator => {}

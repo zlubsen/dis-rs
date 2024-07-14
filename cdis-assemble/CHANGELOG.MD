@@ -11,6 +11,9 @@ Support for new PDUs:
 - StopFreeze
 - Acknowledge
 - ActionRequest
+- SetData
+- Data
+- EventReport
 
 ### Open issues with the standard document:
 - Detonation: DescriptorRecord in C-DIS does not specify the format for an Explosion Descriptor record (having enum explosive_material and f32 explosive_force values), which is a valid field value in DIS v7.

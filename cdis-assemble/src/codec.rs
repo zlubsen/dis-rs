@@ -5,14 +5,18 @@ use dis_rs::{Interaction, VariableParameters};
 use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
 use crate::acknowledge::model::Acknowledge;
 use crate::action_request::model::ActionRequest;
+use crate::action_response::model::ActionResponse;
 use crate::collision::model::Collision;
 use crate::create_entity::model::CreateEntity;
+use crate::data::model::Data;
 use crate::detonation::model::Detonation;
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
+use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::records::model::CdisHeader;
 use crate::remove_entity::model::RemoveEntity;
+use crate::set_data::model::SetData;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
 use crate::unsupported::Unsupported;
@@ -188,11 +192,11 @@ impl CdisBody {
             PduBody::StopFreeze(dis_body) => { (StopFreeze::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Acknowledge(dis_body) => { (Acknowledge::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::ActionRequest(dis_body) => { (ActionRequest::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::ActionResponse(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ActionResponse(dis_body) => { (ActionResponse::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::DataQuery(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
-            PduBody::SetData(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
-            PduBody::Data(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
-            PduBody::EventReport(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::SetData(dis_body) => { (SetData::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
+            PduBody::Data(dis_body) => { (Data::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
+            PduBody::EventReport(dis_body) => { (EventReport::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Comment(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::ElectromagneticEmission(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Designator(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -297,11 +301,19 @@ impl CdisBody {
             CdisBody::ActionRequest(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::ActionResponse => {}
+            CdisBody::ActionResponse(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::DataQuery => {}
-            // CdisBody::SetData => {}
-            // CdisBody::Data => {}
-            // CdisBody::EventReport => {}
+            CdisBody::SetData(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
+            CdisBody::Data(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
+            CdisBody::EventReport(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::Comment => {}
             // CdisBody::ElectromagneticEmission => {}
             // CdisBody::Designator => {}

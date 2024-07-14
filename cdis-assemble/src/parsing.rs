@@ -6,15 +6,19 @@ use nom::complete::take;
 use crate::{CdisBody, CdisError, CdisPdu};
 use crate::acknowledge::parser::acknowledge_body;
 use crate::action_request::parser::action_request_body;
+use crate::action_response::parser::action_response_body;
 use crate::collision::parser::collision_body;
 use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
+use crate::data::parser::data_body;
 use crate::detonation::parser::detonation_body;
 use crate::entity_state::parser::entity_state_body;
+use crate::event_report::parser::event_report_body;
 use crate::fire::parser::fire_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::remove_entity::parser::remove_entity_body;
+use crate::set_data::parser::set_data_body;
 use crate::start_resume::parser::start_resume_body;
 use crate::stop_freeze::parser::stop_freeze_body;
 use crate::types::model::VarInt;
@@ -57,11 +61,11 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::StopFreeze => { stop_freeze_body(input)? }
             PduType::Acknowledge => { acknowledge_body(input)? }
             PduType::ActionRequest => { action_request_body(input)? }
-            // PduType::ActionResponse => {}
+            PduType::ActionResponse => { action_response_body(input)? }
             // PduType::DataQuery => {}
-            // PduType::SetData => {}
-            // PduType::Data => {}
-            // PduType::EventReport => {}
+            PduType::SetData => { set_data_body(input)? }
+            PduType::Data => { data_body(input)? }
+            PduType::EventReport => { event_report_body(input)? }
             // PduType::Comment => {}
             // PduType::ElectromagneticEmission => {}
             // PduType::Designator => {}
