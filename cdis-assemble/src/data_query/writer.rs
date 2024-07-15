@@ -13,7 +13,7 @@ impl SerializeCdisPdu for DataQuery {
         let cursor = self.originating_id.serialize(buf, cursor);
         let cursor = self.receiving_id.serialize(buf, cursor);
         let cursor = self.request_id.serialize(buf, cursor);
-        let time_interval = TimeStamp::from(self.time_interval.clone());
+        let time_interval = TimeStamp::from(self.time_interval);
         let cursor = write_value_unsigned::<u32>(buf, cursor, TWENTY_SIX_BITS, time_interval.raw_timestamp);
 
         let cursor = if !self.fixed_datum_ids.is_empty() {
