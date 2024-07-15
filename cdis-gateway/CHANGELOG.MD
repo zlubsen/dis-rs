@@ -1,6 +1,6 @@
 # Changelog for C-DIS Gateway
 
-## 0.2.0 - 2024-xx-xx
+## 0.2.0 - 2024-07-15
 
 Support for new PDUs, aligned with `cdis-assemble`:
 - Collision
@@ -15,6 +15,7 @@ Support for new PDUs, aligned with `cdis-assemble`:
 - SetData
 - Data
 - EventReport
+- Comment
 
 ## 0.1.1 - 2024-06-26
 

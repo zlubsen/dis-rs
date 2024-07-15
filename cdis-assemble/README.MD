@@ -32,7 +32,7 @@ Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemen
 | SetData                 | V       |
 | Data                    | V       |
 | EventReport             | V       |
-| Comment                 |         |
+| Comment                 | V       |
 | ElectromagneticEmission |         |
 | Designator              |         |
 | Transmitter             |         |

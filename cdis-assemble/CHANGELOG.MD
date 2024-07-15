@@ -1,6 +1,6 @@
 # Changelog for crate CDIS-ASSEMBLE
 
-## 0.2.0 - 2024-xx-xx
+## 0.2.0 - 2024-07-15
 
 Support for new PDUs:
 - Collision
@@ -15,6 +15,7 @@ Support for new PDUs:
 - SetData
 - Data
 - EventReport
+- Comment
 
 ### Open issues with the standard document:
 - Detonation: DescriptorRecord in C-DIS does not specify the format for an Explosion Descriptor record (having enum explosive_material and f32 explosive_force values), which is a valid field value in DIS v7.
