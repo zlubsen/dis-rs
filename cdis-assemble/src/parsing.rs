@@ -12,6 +12,7 @@ use crate::comment::parser::comment_body;
 use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
 use crate::data::parser::data_body;
+use crate::data_query::parser::data_query_body;
 use crate::detonation::parser::detonation_body;
 use crate::entity_state::parser::entity_state_body;
 use crate::event_report::parser::event_report_body;
@@ -63,7 +64,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::Acknowledge => { acknowledge_body(input)? }
             PduType::ActionRequest => { action_request_body(input)? }
             PduType::ActionResponse => { action_response_body(input)? }
-            // PduType::DataQuery => {}
+            PduType::DataQuery => { data_query_body(input)? }
             PduType::SetData => { set_data_body(input)? }
             PduType::Data => { data_body(input)? }
             PduType::EventReport => { event_report_body(input)? }

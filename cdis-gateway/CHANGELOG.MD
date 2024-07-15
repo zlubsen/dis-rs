@@ -11,6 +11,7 @@ Support for new PDUs, aligned with `cdis-assemble`:
 - StopFreeze
 - Acknowledge
 - ActionRequest
+- DataQuery
 - SetData
 - Data
 - EventReport

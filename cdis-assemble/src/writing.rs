@@ -47,7 +47,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::Acknowledge(body) => { body.serialize(buf, cursor) }
             CdisBody::ActionRequest(body) => { body.serialize(buf, cursor) }
             CdisBody::ActionResponse(body) => { body.serialize(buf, cursor) }
-            // CdisBody::DataQuery => {}
+            CdisBody::DataQuery(body) => { body.serialize(buf, cursor) }
             CdisBody::SetData(body) => { body.serialize(buf, cursor) }
             CdisBody::Data(body) => { body.serialize(buf, cursor) }
             CdisBody::EventReport(body) => { body.serialize(buf, cursor) }

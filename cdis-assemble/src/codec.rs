@@ -10,6 +10,7 @@ use crate::collision::model::Collision;
 use crate::comment::model::Comment;
 use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
+use crate::data_query::model::DataQuery;
 use crate::detonation::model::Detonation;
 use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
 use crate::entity_state::model::EntityState;
@@ -194,7 +195,7 @@ impl CdisBody {
             PduBody::Acknowledge(dis_body) => { (Acknowledge::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::ActionRequest(dis_body) => { (ActionRequest::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::ActionResponse(dis_body) => { (ActionResponse::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::DataQuery(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::DataQuery(dis_body) => { (DataQuery::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::SetData(dis_body) => { (SetData::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Data(dis_body) => { (Data::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::EventReport(dis_body) => { (EventReport::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
@@ -305,7 +306,9 @@ impl CdisBody {
             CdisBody::ActionResponse(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::DataQuery => {}
+            CdisBody::DataQuery(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             CdisBody::SetData(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }

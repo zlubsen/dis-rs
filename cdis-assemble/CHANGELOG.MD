@@ -11,6 +11,7 @@ Support for new PDUs:
 - StopFreeze
 - Acknowledge
 - ActionRequest
+- DataQuery
 - SetData
 - Data
 - EventReport

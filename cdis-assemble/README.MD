@@ -28,7 +28,7 @@ Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemen
 | Acknowledge             | V       |
 | ActionRequest           | V       |
 | ActionResponse          | V       |
-| DataQuery               |         |
+| DataQuery               | V       |
 | SetData                 | V       |
 | Data                    | V       |
 | EventReport             | V       |

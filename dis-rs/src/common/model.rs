@@ -1106,6 +1106,7 @@ impl From<DisTimeStamp> for TimeStamp {
 /// beginning of the current hour in the selected time reference.
 /// The `DisTimeStamp` stores both the units past the hour, as well as a conversion to
 /// nanoseconds past the hour.
+#[derive(Debug)]
 pub enum DisTimeStamp {
     Absolute { units_past_the_hour: u32, nanoseconds_past_the_hour: u32 },
     Relative { units_past_the_hour: u32, nanoseconds_past_the_hour: u32 },

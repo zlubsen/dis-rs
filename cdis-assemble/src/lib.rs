@@ -17,6 +17,7 @@ pub mod comment;
 pub mod create_entity;
 pub mod detonation;
 pub mod data;
+pub mod data_query;
 pub mod entity_state;
 pub mod event_report;
 pub mod fire;
@@ -41,6 +42,7 @@ use crate::collision::model::Collision;
 use crate::comment::model::Comment;
 use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
+use crate::data_query::model::DataQuery;
 use crate::detonation::model::Detonation;
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
@@ -122,7 +124,7 @@ pub enum CdisBody {
     Acknowledge(Acknowledge),
     ActionRequest(ActionRequest),
     ActionResponse(ActionResponse),
-    DataQuery,
+    DataQuery(DataQuery),
     SetData(SetData),
     Data(Data),
     EventReport(EventReport),
@@ -150,7 +152,7 @@ impl CdisBody {
             CdisBody::Acknowledge(body) => { body.body_length_bits() }
             CdisBody::ActionRequest(body) => { body.body_length_bits() }
             CdisBody::ActionResponse(body) => { body.body_length_bits() }
-            CdisBody::DataQuery => { 0 }
+            CdisBody::DataQuery(body) => { body.body_length_bits() }
             CdisBody::SetData(body) => { body.body_length_bits() }
             CdisBody::Data(body) => { body.body_length_bits() }
             CdisBody::EventReport(body) => { body.body_length_bits() }
@@ -180,7 +182,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Acknowledge(body) => { body.originator() }
             CdisBody::ActionRequest(body) => { body.originator() }
             CdisBody::ActionResponse(body) => { body.originator() }
-            CdisBody::DataQuery => { None } 
+            CdisBody::DataQuery(body) => { body.originator() }
             CdisBody::SetData(body) => { body.originator() }
             CdisBody::Data(body) => { body.originator() }
             CdisBody::EventReport(body) => { body.originator() }
@@ -208,7 +210,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Acknowledge(body) => { body.receiver() }
             CdisBody::ActionRequest(body) => { body.receiver() }
             CdisBody::ActionResponse(body) => { body.receiver() }
-            CdisBody::DataQuery => { None } 
+            CdisBody::DataQuery(body) => { body.receiver() }
             CdisBody::SetData(body) => { body.receiver() }
             CdisBody::Data(body) => { body.receiver() }
             CdisBody::EventReport(body) => { body.receiver() }
@@ -298,7 +300,7 @@ impl Implemented for PduType {
             PduType::Acknowledge |
             PduType::ActionRequest |
             PduType::ActionResponse |
-            // PduType::DataQuery |
+            PduType::DataQuery |
             PduType::SetData |
             PduType::Data |
             PduType::EventReport |
@@ -411,12 +413,12 @@ mod tests {
         assert!(PduType::Acknowledge.is_implemented());
         assert!(PduType::ActionRequest.is_implemented());
         assert!(PduType::ActionResponse.is_implemented());
+        assert!(PduType::DataQuery.is_implemented());
         assert!(PduType::SetData.is_implemented());
         assert!(PduType::Data.is_implemented());
         assert!(PduType::EventReport.is_implemented());
         assert!(PduType::Comment.is_implemented());
 
-        assert_eq!(PduType::DataQuery.is_implemented() || CdisBody::DataQuery.body_length() != 0, false);
         assert_eq!(PduType::ElectromagneticEmission.is_implemented() || CdisBody::ElectromagneticEmission.body_length() != 0, false);
         assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);
         assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
