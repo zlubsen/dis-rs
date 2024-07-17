@@ -22,6 +22,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
             <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                <li><a>Gateway version: {{ env!("CARGO_PKG_VERSION") }}</a></li>
                 <li><a>Site port: {{ config.site_host }}</a></li>
                 <li><a>Hbt multiplier: {{ config.hbt_cdis_full_update_mplier }}</a></li>
                 <li><a>Use guise: {{ config.use_guise }}</a></li>

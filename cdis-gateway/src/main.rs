@@ -110,6 +110,7 @@ enum Event {
 /// Prints basic config information to the terminal
 fn cli_print_config(config: &Config, config_spec: &ConfigSpec) {
     info!("*** C-DIS Gateway ***");
+    info!("Version {}", env!("CARGO_PKG_VERSION"));
     if let Some(meta) = &config_spec.metadata {
         info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
     }
