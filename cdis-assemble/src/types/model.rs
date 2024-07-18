@@ -458,7 +458,7 @@ impl From<Svint12BitSize> for u8 {
 }
 
 /// 10.2.5 SVINT13
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct SVINT13 {
     bit_size: Svint13BitSize,
     pub value: i16,
@@ -517,8 +517,9 @@ impl From<i16> for SVINT13 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) enum Svint13BitSize {
+    #[default]
     Five,
     Seven,
     Ten,
@@ -943,7 +944,7 @@ impl From<Svint24BitSize> for u8 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) struct CdisFloatBase {
     pub mantissa: i32,
     pub exponent: i8,

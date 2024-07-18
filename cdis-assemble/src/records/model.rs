@@ -902,7 +902,7 @@ impl From<WorldCoordinates> for Location {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ParameterValueFloat {
     base: CdisFloatBase,
 }
@@ -970,7 +970,7 @@ impl CdisRecord for CdisVariableParameter {
 }
 
 /// 12.1 Articulated Part Variable Parameter (VP) Record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct CdisArticulatedPartVP {
     pub change_indicator: u8,
     pub attachment_id: u16,

@@ -18,6 +18,7 @@ pub mod create_entity;
 pub mod detonation;
 pub mod data;
 pub mod data_query;
+pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod event_report;
 pub mod fire;

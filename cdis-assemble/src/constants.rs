@@ -14,6 +14,7 @@ pub const THIRTEEN_BITS: usize = 13;
 pub const FOURTEEN_BITS: usize = 14;
 pub const FIFTEEN_BITS: usize = 15;
 pub const SIXTEEN_BITS: usize = 16;
+pub const SEVENTEEN_BITS: usize = 17;
 pub const TWENTY_SIX_BITS: usize = 26;
 pub const THIRTY_BITS: usize = 30;
 
