@@ -4,7 +4,7 @@ use dis_rs::model::{FixedDatum, VariableDatum};
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::types::writer::serialize_cdis_float;
+use crate::types::writer::serialize_cdis_float_signed;
 use crate::writing::BitBuffer;
 
 impl SerializeCdis for CdisHeader {
@@ -132,7 +132,7 @@ impl SerializeCdis for CdisEntityMarking {
 
 impl SerializeCdis for ParameterValueFloat {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        serialize_cdis_float(buf, cursor, self)
+        serialize_cdis_float_signed(buf, cursor, self)
     }
 }
 

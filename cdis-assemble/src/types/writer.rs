@@ -97,9 +97,18 @@ impl SerializeCdis for SVINT24 {
 }
 
 #[allow(clippy::let_and_return)]
-pub(crate) fn serialize_cdis_float<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
+pub(crate) fn serialize_cdis_float_signed<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
     let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
     let cursor = write_value_signed(buf, cursor, float.exponent_bit_size(), float.exponent());
+
+    cursor
+}
+
+#[allow(clippy::let_and_return)]
+pub(crate) fn serialize_cdis_float_unsigned<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
+    let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
+    // TODO figure out if converting i8 to u8 is okay here, or do we need to store float exponents in a larger type.
+    let cursor = write_value_unsigned(buf, cursor, float.exponent_bit_size(), float.exponent() as u8);
 
     cursor
 }
@@ -119,7 +128,7 @@ mod tests {
     use crate::records::model::ParameterValueFloat;
     use crate::writing::SerializeCdis;
     use crate::types::model::{CdisFloat, SVINT12, UVINT16, UVINT8};
-    use crate::types::writer::serialize_cdis_float;
+    use crate::types::writer::serialize_cdis_float_signed;
     use crate::writing::BitBuffer;
 
     const ONE_BYTE: usize = 1;
@@ -221,7 +230,7 @@ mod tests {
         let input = ParameterValueFloat::new(1, 1);
         // ParameterValueFloat has 15 bit mantissa and 3 bit exponent fields
         let expected: [u8; THREE_BYTES] = [0b00000000, 0b00000010, 0b01000000];
-        let cursor = serialize_cdis_float(&mut buf, 0, &input);
+        let cursor = serialize_cdis_float_signed(&mut buf, 0, &input);
 
         assert_eq!(cursor, 18);
         assert_eq!(expected, buf.as_raw_slice()[..THREE_BYTES]);
