@@ -4,8 +4,7 @@ use nom::complete::bool;
 use dis_rs::model::ClockTime;
 use crate::constants::{ONE_BIT, THIRTY_TWO_BITS, TWO_BITS};
 use crate::parsing::BitInput;
-use crate::parsing::take_signed;
-use crate::types::model::{CdisFloat, SVINT12, Svint12BitSize, SVINT13, Svint13BitSize, SVINT14, Svint14BitSize, SVINT16, Svint16BitSize, SVINT24, Svint24BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+use crate::types::model::{SVINT12, Svint12BitSize, SVINT13, Svint13BitSize, SVINT14, Svint14BitSize, SVINT16, Svint16BitSize, SVINT24, Svint24BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
 
 pub(crate) fn uvint8(input: BitInput) -> IResult<BitInput, UVINT8> {
     let (input, flag_bits):(BitInput, u8) = take(ONE_BIT)(input)?;
@@ -86,17 +85,6 @@ pub(crate) fn svint24(input: BitInput) -> IResult<BitInput, SVINT24> {
     Ok((input, SVINT24::from(field_value)))
 }
 
-/// Parses a C-DIS custom floating point value, based on the concrete implementation `T` of trait `CdisFloat`.
-pub(crate) fn cdis_float<T>(input: BitInput) -> IResult<BitInput, T>
-where T: CdisFloat {
-    let (input, mantissa) : (BitInput, isize) = take_signed(T::MANTISSA_BITS)(input)?;
-    let mantissa = mantissa as i32;
-    let (input, exponent) : (BitInput, isize) = take_signed(T::EXPONENT_BITS)(input)?;
-    let exponent = exponent as i8;
-
-    Ok((input, T::new(mantissa, exponent)))
-}
-
 /// Parses a C-DIS Clock Time Record (11.4).
 pub(crate) fn clock_time(input: BitInput) -> IResult<BitInput, ClockTime> {
     let (input, hour) : (BitInput, i32) = take(THIRTY_TWO_BITS)(input)?;
@@ -108,10 +96,14 @@ pub(crate) fn clock_time(input: BitInput) -> IResult<BitInput, ClockTime> {
 
 #[cfg(test)]
 mod tests {
+    use nom::IResult;
+    use crate::BitBuffer;
     use crate::constants::{FOURTEEN_BITS, THREE_BITS};
-    use crate::types::parser::{cdis_float, svint12, uvint16, uvint32, uvint8};
-    use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+    use crate::parsing::{BitInput, take_signed};
+    use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
+    use crate::types::model::{CdisFloat, SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
     use crate::types::model::VarInt;
+    use crate::writing::write_value_signed;
 
     #[test]
     fn parse_uvint8_bit_flag_zero() {
@@ -204,43 +196,60 @@ mod tests {
     }
 
     pub struct TestFloat {
-        base: CdisFloatBase,
+        mantissa: i32,
+        exponent: i8,
     }
 
     impl CdisFloat for TestFloat {
+        type Mantissa = i32;
+        type Exponent = i8;
+        type InnerFloat = f32;
+
         const MANTISSA_BITS: usize = FOURTEEN_BITS;
         const EXPONENT_BITS: usize = THREE_BITS;
 
-        fn new(mantissa: i32, exponent: i8) -> Self {
+        fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
             Self {
-                base: CdisFloatBase {
-                    mantissa,
-                    exponent,
-                    regular_float: None,
-                }
+                mantissa,
+                exponent,
             }
         }
 
-        fn from_f64(regular_float: f64) -> Self {
+        fn from_float(float: Self::InnerFloat) -> Self {
+            let mut mantissa = float;
+            let mut exponent = 0i32;
+            let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+            while (mantissa > max_mantissa) & (exponent as usize <= Self::EXPONENT_BITS) {
+                mantissa /= 10.0;
+                exponent += 1;
+            }
+
             Self {
-                base: CdisFloatBase {
-                    mantissa: 0,
-                    exponent: 0,
-                    regular_float: Some(regular_float),
-                }
+                mantissa: mantissa as Self::Mantissa,
+                exponent: exponent as Self::Exponent,
             }
         }
 
-        fn mantissa(&self) -> i32 {
-            self.base.mantissa
+        fn to_float(&self) -> Self::InnerFloat {
+            self.mantissa as f32 * 10f32.powf(self.exponent as f32)
         }
 
-        fn exponent(&self) -> i8 {
-            self.base.exponent
+        fn parse(input: BitInput) -> IResult<BitInput, Self> {
+            let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
+            let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
+
+            Ok((input, Self {
+                mantissa: mantissa as Self::Mantissa,
+                exponent: exponent as Self::Exponent,
+            }))
         }
 
-        fn regular_float(&self) -> Option<f64> {
-            self.base.regular_float
+        #[allow(clippy::let_and_return)]
+        fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+            let cursor = write_value_signed(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+            let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+
+            cursor
         }
     }
 
@@ -248,10 +257,19 @@ mod tests {
     fn parse_cdis_float() {
         let input = [0b00000000, 0b00000100, 0b10000000];
 
-        let (_input, float) = cdis_float::<TestFloat>((&input, 0)).unwrap();
-        assert_eq!(float.mantissa(), 1);
-        assert_eq!(float.exponent(), 1);
-        let expected = 1f64 * 10f64.powi(1);
-        assert_eq!(float.to_value(), expected);
+        let (_input, float) = TestFloat::parse((&input, 0)).unwrap();
+        assert_eq!(float.mantissa, 1);
+        assert_eq!(float.exponent, 1);
+        let expected = 1f32 * 10f32.powi(1);
+        assert_eq!(float.to_float(), expected);
+    }
+
+    #[test]
+    fn cdis_float_from_f32() {
+        let float = 1234567f32;
+        let cdis_float = TestFloat::from_float(float);
+
+        assert_eq!(cdis_float.mantissa, 12345);
+        assert_eq!(cdis_float.exponent, 2)
     }
 }

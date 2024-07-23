@@ -91,11 +91,11 @@ impl EntityState {
             // Do not update stateful fields when a full update is not required
             (UnitsDekameters::Dekameter, false, None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
         } else {
+            // full update mode, or partial with a (state) timeout on the entity
             let (entity_location, units) = encode_world_coordinates(&item.entity_location);
             let alternate_entity_type = if options.use_guise {
                 Some(EntityType::encode(&item.alternative_entity_type))
             } else { None };
-            // full update mode, or partial with a (state) timeout on the entity
             (
                 units,
                 true,
@@ -289,27 +289,27 @@ fn encode_dr_angular_velocity(item: &Counterpart) -> Option<AngularVelocity> {
 
 /// Evaluate if a heartbeat timeout has occurred, given the `entity_type`, `state` of the encoder, and federation agreement settings.
 /// Returns `true` when a timeout has occurred, `false` otherwise.
-fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, state: &EncoderStateEntityState, config: &CodecOptions) -> bool {
+fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, state: &EncoderStateEntityState, options: &CodecOptions) -> bool {
     let elapsed = state.last_send.elapsed().as_secs_f32();
     let hbt_timeout = match (entity_type.kind, entity_type.domain) {
-        (EntityKind::Culturalfeature, _) => { config.federation_parameters.HBT_ESPDU_KIND_CULTURAL_FEATURE }
-        (EntityKind::Environmental, _) => { config.federation_parameters.HBT_ESPDU_KIND_ENVIRONMENTAL }
-        (EntityKind::Expendable, _) => { config.federation_parameters.HBT_ESPDU_KIND_EXPENDABLE }
-        (EntityKind::Lifeform, _) => { config.federation_parameters.HBT_ESPDU_KIND_LIFE_FORM }
-        (EntityKind::Munition, _) => { config.federation_parameters.HBT_ESPDU_KIND_MUNITION }
-        (EntityKind::Radio, _) => { config.federation_parameters.HBT_ESPDU_KIND_RADIO }
-        (EntityKind::SensorEmitter, _) => { config.federation_parameters.HBT_ESPDU_KIND_SENSOR }
-        (EntityKind::Supply, _) => { config.federation_parameters.HBT_ESPDU_KIND_SUPPLY }
-        (EntityKind::Platform, PlatformDomain::Air) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR }
-        (EntityKind::Platform, PlatformDomain::Land) => { config.federation_parameters.HBT_ESPDU_PLATFORM_LAND }
-        (EntityKind::Platform, PlatformDomain::Space) => { config.federation_parameters.HBT_ESPDU_PLATFORM_SPACE }
-        (EntityKind::Platform, PlatformDomain::Subsurface) => { config.federation_parameters.HBT_ESPDU_PLATFORM_SUBSURFACE }
-        (EntityKind::Platform, PlatformDomain::Surface) => { config.federation_parameters.HBT_ESPDU_PLATFORM_SURFACE }
-        (EntityKind::Platform, _) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // Air domain is takes as the default for any other domain...
-        (_, _) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // ...And also for anything other/unspecified.
+        (EntityKind::Culturalfeature, _) => { options.federation_parameters.HBT_ESPDU_KIND_CULTURAL_FEATURE }
+        (EntityKind::Environmental, _) => { options.federation_parameters.HBT_ESPDU_KIND_ENVIRONMENTAL }
+        (EntityKind::Expendable, _) => { options.federation_parameters.HBT_ESPDU_KIND_EXPENDABLE }
+        (EntityKind::Lifeform, _) => { options.federation_parameters.HBT_ESPDU_KIND_LIFE_FORM }
+        (EntityKind::Munition, _) => { options.federation_parameters.HBT_ESPDU_KIND_MUNITION }
+        (EntityKind::Radio, _) => { options.federation_parameters.HBT_ESPDU_KIND_RADIO }
+        (EntityKind::SensorEmitter, _) => { options.federation_parameters.HBT_ESPDU_KIND_SENSOR }
+        (EntityKind::Supply, _) => { options.federation_parameters.HBT_ESPDU_KIND_SUPPLY }
+        (EntityKind::Platform, PlatformDomain::Air) => { options.federation_parameters.HBT_ESPDU_PLATFORM_AIR }
+        (EntityKind::Platform, PlatformDomain::Land) => { options.federation_parameters.HBT_ESPDU_PLATFORM_LAND }
+        (EntityKind::Platform, PlatformDomain::Space) => { options.federation_parameters.HBT_ESPDU_PLATFORM_SPACE }
+        (EntityKind::Platform, PlatformDomain::Subsurface) => { options.federation_parameters.HBT_ESPDU_PLATFORM_SUBSURFACE }
+        (EntityKind::Platform, PlatformDomain::Surface) => { options.federation_parameters.HBT_ESPDU_PLATFORM_SURFACE }
+        (EntityKind::Platform, _) => { options.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // Air domain is takes as the default for any other domain...
+        (_, _) => { options.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // ...And also for anything other/unspecified.
     };
 
-    elapsed > (hbt_timeout * config.hbt_cdis_full_update_mplier)
+    elapsed > (hbt_timeout * options.hbt_cdis_full_update_mplier)
 }
 
 #[cfg(test)]
@@ -501,7 +501,7 @@ mod tests {
                 assert_eq!(ap.attachment_id, 1);
                 assert_eq!(ap.type_class, ArticulatedPartsTypeClass::PrimaryTurretNumber1);
                 assert_eq!(ap.type_metric, ArticulatedPartsTypeMetric::Azimuth);
-                assert_eq!(ap.parameter_value.to_value(), 45.0);
+                assert_eq!(ap.parameter_value.to_float(), 45.0f32);
             } else { assert!(false); }
         } else {
             assert!(false);
@@ -574,7 +574,7 @@ mod tests {
                 attachment_id: 1,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Azimuth,
-                parameter_value: ParameterValueFloat::from_f64(45.0),
+                parameter_value: ParameterValueFloat::from_float(45.0),
             })],
         }.into_cdis_body();
 

@@ -1,8 +1,13 @@
+use nom::complete::take;
+use nom::IResult;
+use dis_rs::electromagnetic_emission::model::FundamentalParameterData;
 use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{FOUR_BITS, SEVENTEEN_BITS};
+use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
+use crate::constants::{FOUR_BITS, FOURTEEN_BITS, SEVENTEEN_BITS, THREE_BITS};
+use crate::parsing::{BitInput, take_signed};
 use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId};
-use crate::types::model::{CdisFloat, CdisFloatBase, SVINT13, UVINT16, UVINT8, VarInt};
+use crate::types::model::{CdisFloat, SVINT13, UVINT16, UVINT8, VarInt};
+use crate::writing::{write_value_signed, write_value_unsigned};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct ElectromagneticEmission {
@@ -63,6 +68,19 @@ impl FundamentalParameter {
     fn record_length(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 67;
         FIXED_LENGTH_BITS + self.prf.record_length()
+    }
+}
+
+impl From<&FundamentalParameterData> for FundamentalParameter {
+    fn from(value: &FundamentalParameterData) -> Self {
+        // TODO proper conversion (convert to Codec trait)
+        Self {
+            frequency: FrequencyFloat::from_float(value.frequency),
+            frequency_range: FrequencyFloat::from_float(value.frequency_range),
+            erp: 0,//value.effective_power,
+            prf: UVINT16::from(0),//value.pulse_repetition_frequency,
+            pulse_width: PulseWidthFloat::from_float(value.pulse_width),
+        }
     }
 }
 
@@ -169,84 +187,115 @@ impl TrackJam {
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct FrequencyFloat {
-    base: CdisFloatBase,
+    mantissa: u32,
+    exponent: u8,
 }
 
 impl CdisFloat for FrequencyFloat {
+    type Mantissa = u32;
+    type Exponent = u8;
+    type InnerFloat = f32;
     const MANTISSA_BITS: usize = SEVENTEEN_BITS;
     const EXPONENT_BITS: usize = FOUR_BITS;
 
-    fn new(mantissa: i32, exponent: i8) -> Self {
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
         Self {
-            base: CdisFloatBase {
-                mantissa,
-                exponent,
-                regular_float: None,
-            }
+            mantissa,
+            exponent,
         }
     }
 
-    fn from_f64(regular_float: f64) -> Self {
+    fn from_float(float: Self::InnerFloat) -> Self {
+        let mut mantissa = float;
+        let mut exponent = 0usize;
+        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+            mantissa /= 10.0;
+            exponent += 1;
+        }
+
         Self {
-            base: CdisFloatBase {
-                mantissa: 0,
-                exponent: 0,
-                regular_float: Some(regular_float),
-            }
+            mantissa: mantissa as Self::Mantissa,
+            exponent: exponent as Self::Exponent,
         }
     }
 
-    fn mantissa(&self) -> i32 {
-        self.base.mantissa
+    fn to_float(&self) -> Self::InnerFloat {
+        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
     }
 
-    fn exponent(&self) -> i8 {
-        self.base.exponent
+    fn parse(input: BitInput) -> IResult<BitInput, Self> {
+        let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
+        let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
+
+        Ok((input, Self {
+            mantissa,
+            exponent
+        }))
     }
 
-    fn regular_float(&self) -> Option<f64> {
-        self.base.regular_float
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+
+        cursor
     }
 }
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct PulseWidthFloat {
-    base: CdisFloatBase,
+    pub mantissa: u16,
+    pub exponent: i8,
 }
 
 impl CdisFloat for PulseWidthFloat {
-    const MANTISSA_BITS: usize = 14;
-    const EXPONENT_BITS: usize = 3;
+    type Mantissa = u16;
+    type Exponent = i8;
+    type InnerFloat = f32;
+    const MANTISSA_BITS: usize = FOURTEEN_BITS;
+    const EXPONENT_BITS: usize = THREE_BITS;
 
-    fn new(mantissa: i32, exponent: i8) -> Self {
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
         Self {
-            base: CdisFloatBase {
-                mantissa,
-                exponent,
-                regular_float: None,
-            }
+            mantissa,
+            exponent,
         }
     }
 
-    fn from_f64(regular_float: f64) -> Self {
+    fn from_float(float: Self::InnerFloat) -> Self {
+        let mut mantissa = float;
+        let mut exponent = 0usize;
+        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+            mantissa /= 10.0;
+            exponent += 1;
+        }
+
         Self {
-            base: CdisFloatBase {
-                mantissa: 0,
-                exponent: 0,
-                regular_float: Some(regular_float),
-            }
+            mantissa: mantissa as Self::Mantissa,
+            exponent: exponent as Self::Exponent,
         }
     }
 
-    fn mantissa(&self) -> i32 {
-        self.base.mantissa
+    fn to_float(&self) -> Self::InnerFloat {
+        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
     }
 
-    fn exponent(&self) -> i8 {
-        self.base.exponent
+    fn parse(input: BitInput) -> IResult<BitInput, Self> {
+        let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
+        let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
+
+        let exponent = exponent as Self::Exponent;
+        Ok((input, Self {
+            mantissa,
+            exponent
+        }))
     }
 
-    fn regular_float(&self) -> Option<f64> {
-        self.base.regular_float
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+
+        cursor
     }
 }

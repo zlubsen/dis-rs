@@ -7,7 +7,8 @@ use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, 
 use crate::electromagnetic_emission::model::{BeamData, ElectromagneticEmission, EmitterBeam, EmitterSystem, FrequencyFloat, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
 use crate::parsing::BitInput;
 use crate::records::parser::{entity_coordinate_vector, entity_identification};
-use crate::types::parser::{cdis_float, svint13, uvint16, uvint8};
+use crate::types::parser::{svint13, uvint16, uvint8};
+use crate::types::model::CdisFloat;
 
 #[allow(clippy::redundant_closure)]
 pub(crate) fn electromagnetic_emission_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -45,11 +46,11 @@ pub(crate) fn electromagnetic_emission_body(input: BitInput) -> IResult<BitInput
 }
 
 fn fundamental_parameter(input: BitInput) -> IResult<BitInput, FundamentalParameter> {
-    let (input, frequency) = cdis_float::<FrequencyFloat>(input)?;
-    let (input, frequency_range) = cdis_float::<FrequencyFloat>(input)?;
+    let (input, frequency) = FrequencyFloat::parse(input)?;
+    let (input, frequency_range) = FrequencyFloat::parse(input)?;
     let (input, erp) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
     let (input, prf) = uvint16(input)?;
-    let (input, pulse_width) = cdis_float::<PulseWidthFloat>(input)?;
+    let (input, pulse_width) = PulseWidthFloat::parse(input)?;
 
     Ok((input, FundamentalParameter {
         frequency,

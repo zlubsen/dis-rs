@@ -1,8 +1,7 @@
 use crate::electromagnetic_emission::model::{BeamData, ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, SiteAppPair, TrackJam};
 use crate::{BitBuffer, SerializeCdisPdu};
 use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS};
-use crate::types::model::UVINT8;
-use crate::types::writer::{serialize_cdis_float_signed, serialize_cdis_float_unsigned};
+use crate::types::model::{CdisFloat, UVINT8};
 use crate::writing::{SerializeCdis, write_value_unsigned};
 
 impl SerializeCdisPdu for ElectromagneticEmission {
@@ -37,11 +36,11 @@ impl SerializeCdisPdu for ElectromagneticEmission {
 impl SerializeCdis for FundamentalParameter {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = serialize_cdis_float_unsigned(buf, cursor, &self.frequency);
-        let cursor = serialize_cdis_float_unsigned(buf, cursor, &self.frequency_range);
+        let cursor = self.frequency.serialize(buf, cursor);
+        let cursor = self.frequency_range.serialize(buf, cursor);
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.erp);
         let cursor = self.prf.serialize(buf, cursor);
-        let cursor = serialize_cdis_float_signed(buf, cursor, &self.pulse_width);
+        let cursor = self.pulse_width.serialize(buf, cursor);
 
         cursor
     }

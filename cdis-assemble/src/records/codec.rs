@@ -342,7 +342,7 @@ impl Codec for CdisArticulatedPartVP {
             attachment_id: item.attachment_id,
             type_class: item.type_class,
             type_metric: item.type_metric,
-            parameter_value: ParameterValueFloat::from_f64(item.parameter_value as f64),
+            parameter_value: ParameterValueFloat::from_float(item.parameter_value),
         }
     }
 
@@ -352,7 +352,7 @@ impl Codec for CdisArticulatedPartVP {
             .with_attachment_id(self.attachment_id)
             .with_type_class(self.type_class)
             .with_type_metric(self.type_metric)
-            .with_parameter_value(self.parameter_value.to_value() as f32)
+            .with_parameter_value(self.parameter_value.to_float())
     }
 }
 

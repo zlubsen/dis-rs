@@ -133,6 +133,7 @@ pub enum CodecStateResult {
     #[default]
     StateUnaffected,
     StateUpdateEntityState,
+    StateUpdateElectromagneticEmission
 }
 
 impl CdisPdu {
