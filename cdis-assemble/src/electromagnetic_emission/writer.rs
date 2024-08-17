@@ -72,17 +72,20 @@ impl SerializeCdis for SiteAppPair {
 impl SerializeCdis for EmitterSystem {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        // TODO only checks on `name`, not taking into account the presence of `function`.
-        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.name.is_some() as u8);
+        // Emitter System Details flag: true when both name and function are present.
+        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, (self.name.is_some() && self.function.is_some()) as u8);
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.location_with_respect_to_entity.is_some() as u8);
 
         let cursor = write_value_unsigned(buf, cursor, FIVE_BITS, self.emitter_beams.len() as u8);
 
-        let cursor = if let Some(name) = self.name {
-            write_value_unsigned::<u16>(buf, cursor, SIXTEEN_BITS, name.into())
-        } else { cursor };
-        let cursor = if let Some(function) = self.function {
-            write_value_unsigned::<u8>(buf, cursor, SIXTEEN_BITS, function.into())
+        let cursor = if self.name.is_some() && self.function.is_some() {
+            let cursor = if let Some(name) = self.name {
+                write_value_unsigned::<u16>(buf, cursor, SIXTEEN_BITS, name.into())
+            } else { cursor };
+            let cursor = if let Some(function) = self.function {
+                write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, function.into())
+            } else { cursor };
+            cursor
         } else { cursor };
         let cursor = if let Some(location) = self.location_with_respect_to_entity {
             location.serialize(buf, cursor)
@@ -135,7 +138,7 @@ impl SerializeCdis for EmitterBeam {
         } else { cursor };
 
         let cursor = self.track_jam.iter()
-            .fold(cursor, |cursor, track_jam | track_jam.serialize(buf, cursor) );
+                .fold(cursor, |cursor, track_jam | track_jam.serialize(buf, cursor) );
 
         cursor
     }

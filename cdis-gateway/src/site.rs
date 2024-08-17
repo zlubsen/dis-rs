@@ -11,7 +11,6 @@ use axum::routing::get;
 use axum_extra::{headers, TypedHeader};
 use futures::stream::Stream;
 use tokio::signal;
-// use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error};
 use tracing::log::trace;
@@ -352,6 +351,7 @@ mod templates {
         pub data_count: u64,
         pub event_report_count: u64,
         pub comment_count: u64,
+        pub ee_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -381,6 +381,7 @@ mod templates {
                 data_count: count_for_pdu_type(stats, PduType::Data),
                 event_report_count: count_for_pdu_type(stats, PduType::EventReport),
                 comment_count: count_for_pdu_type(stats, PduType::Comment),
+                ee_count: count_for_pdu_type(stats, PduType::ElectromagneticEmission),
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {

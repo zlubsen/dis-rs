@@ -123,7 +123,7 @@ impl From<Uvint8BitSize> for u8 {
 }
 
 /// 10.2.2 UVINT16
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct UVINT16 {
     bit_size: Uvint16BitSize,
     pub value: u16,
@@ -187,7 +187,7 @@ impl From<u16> for UVINT16 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub(crate) enum Uvint16BitSize {
     Eight,
     Eleven,
@@ -462,7 +462,7 @@ impl From<Svint12BitSize> for u8 {
 }
 
 /// 10.2.5 SVINT13
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct SVINT13 {
     bit_size: Svint13BitSize,
     pub value: i16,
@@ -521,7 +521,7 @@ impl From<i16> for SVINT13 {
     }
 }
 
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub(crate) enum Svint13BitSize {
     #[default]
     Five,

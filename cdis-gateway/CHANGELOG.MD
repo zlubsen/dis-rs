@@ -1,5 +1,10 @@
 # Changelog for C-DIS Gateway
 
+## 0.3.0 - 2024-xx-xx
+
+Support for new PDUs, aligned with `cdis-assemble`:
+- Electromagnetic Emission
+
 ## 0.2.0 - 2024-07-15
 
 Support for new PDUs, aligned with `cdis-assemble`:

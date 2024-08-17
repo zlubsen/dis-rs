@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use std::time::Instant;
 use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
-use dis_rs::{Interaction, VariableParameters};
-use crate::{BodyProperties, CdisBody, CdisInteraction, CdisPdu};
+use dis_rs::VariableParameters;
+use crate::{BodyProperties, CdisBody, CdisPdu};
 use crate::acknowledge::model::Acknowledge;
 use crate::action_request::model::ActionRequest;
 use crate::action_response::model::ActionResponse;
@@ -12,8 +11,8 @@ use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::data_query::model::DataQuery;
 use crate::detonation::model::Detonation;
-use crate::entity_state::codec::{DecoderStateEntityState, EncoderStateEntityState};
-use crate::entity_state::model::EntityState;
+use crate::electromagnetic_emission::codec::{decode_electromagnetic_emission_body_and_update_state, DecoderStateElectromagneticEmission, encode_electromagnetic_emission_body_and_update_state, EncoderStateElectromagneticEmission};
+use crate::entity_state::codec::{decode_entity_state_body_and_update_state, DecoderStateEntityState, encode_entity_state_body_and_update_state, EncoderStateEntityState};
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::records::model::CdisHeader;
@@ -25,27 +24,33 @@ use crate::unsupported::Unsupported;
 
 pub const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
 
+/// The Codec trait is to be implemented for any type that needs conversion
+/// to (encoding) and from (decoding) C-DIS type equivalents.
 pub trait Codec {
-    /// The Record, Type, ... that is to be converted.
+    /// The Record, Type, ... that is to be converted from and to.
     type Counterpart;
     const SCALING: f32 = 0.0;
     const SCALING_2: f32 = 0.0;
     const CONVERSION: f32 = 0.0;
     const NORMALISATION: f32 = 0.0;
 
+    /// Function that encodes `Self::Counterpart` into `Self`.
     fn encode(item: &Self::Counterpart) -> Self;
+    /// Method that decodes `Self` into `Self::Counterpart`.
     fn decode(&self) -> Self::Counterpart;
 }
 
 #[derive(Debug, Default)]
 pub struct EncoderState {
     pub entity_state: HashMap<EntityId, EncoderStateEntityState>,
+    pub ee: HashMap<EntityId, EncoderStateElectromagneticEmission>,
 }
 
 impl EncoderState {
     pub fn new() -> Self {
         Self {
-            entity_state: Default::default()
+            entity_state: Default::default(),
+            ee: Default::default(),
         }
     }
 }
@@ -53,12 +58,14 @@ impl EncoderState {
 #[derive(Debug, Default)]
 pub struct DecoderState {
     pub entity_state: HashMap<EntityId, DecoderStateEntityState>,
+    pub ee: HashMap<EntityId, DecoderStateElectromagneticEmission>,
 }
 
 impl DecoderState {
     pub fn new() -> Self {
         Self {
-            entity_state: Default::default()
+            entity_state: Default::default(),
+            ee: Default::default()
         }
     }
 }
@@ -164,21 +171,7 @@ impl CdisBody {
         match item {
             PduBody::Other(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::EntityState(dis_body) => {
-                let state_for_id = state.entity_state.get(dis_body.originator().unwrap());
-
-                let (cdis_body, state_result) = if state_for_id.is_some() {
-                    EntityState::encode(dis_body, state_for_id, options)
-                } else {
-                    EntityState::encode(dis_body, None, options)
-                };
-
-                if state_result == CodecStateResult::StateUpdateEntityState {
-                    state.entity_state.entry(*dis_body.originator().unwrap())
-                        .and_modify(|es| {es.last_send = Instant::now()})
-                        .or_default();
-                }
-
-                (cdis_body.into_cdis_body(), state_result)
+                encode_entity_state_body_and_update_state(dis_body, state, options)
             }
             PduBody::Fire(dis_body) => { (Fire::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Detonation(dis_body) => { (Detonation::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
@@ -201,7 +194,9 @@ impl CdisBody {
             PduBody::Data(dis_body) => { (Data::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::EventReport(dis_body) => { (EventReport::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Comment(dis_body) => { (Comment::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::ElectromagneticEmission(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::ElectromagneticEmission(dis_body) => {
+                encode_electromagnetic_emission_body_and_update_state(dis_body, state, options)
+            }
             PduBody::Designator(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Transmitter(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Signal(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -258,24 +253,7 @@ impl CdisBody {
     pub fn decode(&self, state: &mut DecoderState, options: &CodecOptions) -> (PduBody, CodecStateResult) {
         match self {
             CdisBody::EntityState(cdis_body) => {
-                let state_for_id = state.entity_state.get(&EntityId::from(cdis_body.originator().unwrap()));
-                let (dis_body, state_result) = cdis_body.decode(state_for_id, options);
-
-                if state_result == CodecStateResult::StateUpdateEntityState {
-                    state.entity_state.entry(EntityId::from(cdis_body.originator().unwrap()))
-                        .and_modify(|es| {
-                            es.last_received = Instant::now();
-                            es.force_id = dis_body.force_id;
-                            es.entity_type = dis_body.entity_type;
-                            es.alt_entity_type = dis_body.alternative_entity_type;
-                            es.entity_location = dis_body.entity_location;
-                            es.entity_orientation = dis_body.entity_orientation;
-                            es.entity_appearance = dis_body.entity_appearance;
-                        })
-                        .or_insert(DecoderStateEntityState::new(&dis_body));
-                }
-
-                (dis_body.into_pdu_body(), state_result)
+                decode_entity_state_body_and_update_state(cdis_body, state, options)
             }
             CdisBody::Fire(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
@@ -322,7 +300,9 @@ impl CdisBody {
             CdisBody::Comment(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::ElectromagneticEmission => {}
+            CdisBody::ElectromagneticEmission(cdis_body) => {
+                decode_electromagnetic_emission_body_and_update_state(cdis_body, state, options)
+            }
             // CdisBody::Designator => {}
             // CdisBody::Transmitter => {}
             // CdisBody::Signal => {}

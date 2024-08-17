@@ -740,7 +740,7 @@ impl Default for EventId {
 
 /// 6.2.96 Vector record
 /// 6.2.7 Angular Velocity Vector record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
@@ -1505,7 +1505,7 @@ impl EntityAssociationParameter {
 }
 
 /// 6.2.11 Beam Data record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct BeamData {
     pub azimuth_center: f32,
     pub azimuth_sweep: f32,

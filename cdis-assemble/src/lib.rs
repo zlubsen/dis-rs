@@ -420,8 +420,8 @@ mod tests {
         assert!(PduType::Data.is_implemented());
         assert!(PduType::EventReport.is_implemented());
         assert!(PduType::Comment.is_implemented());
+        assert!(PduType::ElectromagneticEmission.is_implemented());
 
-        // assert_eq!(PduType::ElectromagneticEmission.is_implemented() || CdisBody::ElectromagneticEmission.body_length() != 0, false);
         assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);
         assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
         assert_eq!(PduType::Signal.is_implemented() || CdisBody::Signal.body_length() != 0, false);

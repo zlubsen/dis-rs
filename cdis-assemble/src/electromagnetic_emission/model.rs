@@ -1,6 +1,5 @@
 use nom::complete::take;
 use nom::IResult;
-use dis_rs::electromagnetic_emission::model::FundamentalParameterData;
 use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{FOUR_BITS, FOURTEEN_BITS, SEVENTEEN_BITS, THREE_BITS};
@@ -55,7 +54,7 @@ impl CdisInteraction for ElectromagneticEmission {
     }
 }
 
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct FundamentalParameter {
     pub frequency: FrequencyFloat,
     pub frequency_range: FrequencyFloat,
@@ -71,20 +70,7 @@ impl FundamentalParameter {
     }
 }
 
-impl From<&FundamentalParameterData> for FundamentalParameter {
-    fn from(value: &FundamentalParameterData) -> Self {
-        // TODO proper conversion (convert to Codec trait)
-        Self {
-            frequency: FrequencyFloat::from_float(value.frequency),
-            frequency_range: FrequencyFloat::from_float(value.frequency_range),
-            erp: 0,//value.effective_power,
-            prf: UVINT16::from(0),//value.pulse_repetition_frequency,
-            pulse_width: PulseWidthFloat::from_float(value.pulse_width),
-        }
-    }
-}
-
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct BeamData {
     pub az_center: SVINT13,
     pub az_sweep: SVINT13,
@@ -185,7 +171,7 @@ impl TrackJam {
     }
 }
 
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct FrequencyFloat {
     mantissa: u32,
     exponent: u8,
@@ -234,6 +220,7 @@ impl CdisFloat for FrequencyFloat {
         }))
     }
 
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
         let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
@@ -242,7 +229,7 @@ impl CdisFloat for FrequencyFloat {
     }
 }
 
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct PulseWidthFloat {
     pub mantissa: u16,
     pub exponent: i8,
@@ -292,6 +279,7 @@ impl CdisFloat for PulseWidthFloat {
         }))
     }
 
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
         let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
