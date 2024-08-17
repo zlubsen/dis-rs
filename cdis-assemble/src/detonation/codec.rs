@@ -49,7 +49,6 @@ impl Detonation {
     }
 
     pub fn decode(&self) -> Counterpart {
-
         Counterpart::builder()
             .with_source_entity_id(self.source_entity_id.decode())
             .with_target_entity_id(self.target_entity_id.decode())

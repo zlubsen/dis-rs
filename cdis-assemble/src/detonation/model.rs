@@ -85,8 +85,8 @@ pub struct DetonationUnits {
 
 impl From<u8> for DetonationUnits {
     fn from(value: u8) -> Self {
-        pub const WORLD_LOCATION_ALTITUDE_BIT: u8 = 0x02;
-        pub const LOCATION_IN_ENTITY_COORDINATES_BIT: u8 = 0x01;
+        const WORLD_LOCATION_ALTITUDE_BIT: u8 = 0x02;
+        const LOCATION_IN_ENTITY_COORDINATES_BIT: u8 = 0x01;
         Self {
             world_location_altitude: UnitsDekameters::from((value & WORLD_LOCATION_ALTITUDE_BIT) >> 1),
             location_entity_coordinates: UnitsMeters::from(value & LOCATION_IN_ENTITY_COORDINATES_BIT),
