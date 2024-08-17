@@ -14,6 +14,7 @@ pub const THIRTEEN_BITS: usize = 13;
 pub const FOURTEEN_BITS: usize = 14;
 pub const FIFTEEN_BITS: usize = 15;
 pub const SIXTEEN_BITS: usize = 16;
+pub const SEVENTEEN_BITS: usize = 17;
 pub const TWENTY_SIX_BITS: usize = 26;
 pub const THIRTY_BITS: usize = 30;
 
@@ -36,3 +37,4 @@ pub const RADIANS_SEC_TO_DEGREES_SEC: f32 = 180.0 / std::f32::consts::PI;
 pub const CENTER_OF_EARTH_ALTITUDE: i32 = -8_388_608;
 pub const ALTITUDE_CM_THRESHOLD: f64 = 8_388_608f64;
 pub const MAX_VARIABLE_DATUM_LENGTH_BITS: u16 = 16_383;
+pub const MAX_TRACK_JAM_NUMBER_OF_TARGETS: usize = 15;

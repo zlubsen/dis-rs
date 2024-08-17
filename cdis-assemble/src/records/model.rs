@@ -1,11 +1,15 @@
+use nom::IResult;
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
 use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
+use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
 
 use num_traits::FromPrimitive;
+use crate::BitBuffer;
+use crate::parsing::{BitInput, take_signed};
+use crate::writing::{write_value_signed, write_value_unsigned};
 
 pub(crate) trait CdisRecord {
     fn record_length(&self) -> usize;
@@ -902,45 +906,77 @@ impl From<WorldCoordinates> for Location {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ParameterValueFloat {
-    base: CdisFloatBase,
+    mantissa: i32,
+    exponent: i8,
+    uncompressed: Option<f32>,
+}
+
+impl ParameterValueFloat {
+    pub fn new_uncompressed(float: f32) -> Self {
+        Self {
+            mantissa: 0,
+            exponent: 0,
+            uncompressed: Some(float),
+        }
+    }
 }
 
 impl CdisFloat for ParameterValueFloat {
+    type Mantissa = i32;
+    type Exponent = i8;
+    type InnerFloat = f32;
     const MANTISSA_BITS: usize = FIFTEEN_BITS;
     const EXPONENT_BITS: usize = THREE_BITS;
 
-    fn new(mantissa: i32, exponent: i8) -> Self {
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
         Self {
-            base: CdisFloatBase {
-                mantissa,
-                exponent,
-                regular_float: None,
-            }
+            mantissa,
+            exponent,
+            uncompressed: None,
         }
     }
 
-    fn from_f64(regular_float: f64) -> Self {
+    fn from_float(float: Self::InnerFloat) -> Self {
+        let mut mantissa = float;
+        let mut exponent = 0i32;
+        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+        while (mantissa > max_mantissa) & (exponent as usize <= Self::EXPONENT_BITS) {
+            mantissa /= 10.0;
+            exponent += 1;
+        }
+
         Self {
-            base: CdisFloatBase {
-                mantissa: 0,
-                exponent: 0,
-                regular_float: Some(regular_float),
-            }
+            mantissa: mantissa as Self::Mantissa,
+            exponent: exponent as Self::Exponent,
+            uncompressed: None,
         }
     }
 
-    fn mantissa(&self) -> i32 {
-        self.base.mantissa
+    fn to_float(&self) -> Self::InnerFloat {
+        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
     }
 
-    fn exponent(&self) -> i8 {
-        self.base.exponent
+    fn parse(input: BitInput) -> IResult<BitInput, Self> {
+        let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
+        let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
+        let mantissa = mantissa as Self::Mantissa;
+        let exponent = exponent as Self::Exponent;
+
+        Ok((input, Self::new(mantissa, exponent)))
     }
 
-    fn regular_float(&self) -> Option<f64> {
-        self.base.regular_float
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        if let Some(float) = self.uncompressed {
+            let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, float.to_bits());
+            cursor
+        } else {
+            let cursor = write_value_signed(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+            let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+            cursor
+        }
     }
 }
 
@@ -970,7 +1006,7 @@ impl CdisRecord for CdisVariableParameter {
 }
 
 /// 12.1 Articulated Part Variable Parameter (VP) Record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct CdisArticulatedPartVP {
     pub change_indicator: u8,
     pub attachment_id: u16,

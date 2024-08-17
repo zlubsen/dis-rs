@@ -11,7 +11,7 @@ use crate::parsing::BitInput;
 use crate::parsing::take_signed;
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
-use crate::types::parser::{cdis_float, svint12, svint14, svint16, svint24, uvint16, uvint8};
+use crate::types::parser::{svint12, svint14, svint16, svint24, uvint16, uvint8};
 
 const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;
 
@@ -246,7 +246,7 @@ pub(crate) fn articulated_part_vp_compressed(input: BitInput) -> IResult<BitInpu
     let type_metric = ArticulatedPartsTypeMetric::from(type_metric);
     let type_class = ArticulatedPartsTypeClass::from(type_class);
 
-    let (input, parameter_value) = cdis_float::<ParameterValueFloat>(input)?;
+    let (input, parameter_value) = ParameterValueFloat::parse(input)?;
 
     Ok((input, CdisArticulatedPartVP {
         change_indicator,
@@ -267,7 +267,7 @@ pub(crate) fn articulated_part_vp(input: BitInput) -> IResult<BitInput, CdisArti
     let type_class = ArticulatedPartsTypeClass::from(type_class);
     let (input, parameter_value) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
     let parameter_value = f32::from_bits(parameter_value);
-    let parameter_value = ParameterValueFloat::from_f64(parameter_value as f64);
+    let parameter_value = ParameterValueFloat::new_uncompressed(parameter_value);
 
     Ok((input, CdisArticulatedPartVP {
         change_indicator,

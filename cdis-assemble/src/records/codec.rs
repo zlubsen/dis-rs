@@ -199,29 +199,37 @@ impl Codec for AngularVelocity {
 ///
 /// Returns the encoded value and a `UnitsMeters` enum indicating if the value is in _Centimeters_ (default) or _Meters_.
 pub(crate) fn encode_entity_coordinate_vector(entity_coordinate_vector: &VectorF32) -> (EntityCoordinateVector, UnitsMeters) {
-    /// Helper function to convert `f32` values to `i16`, taking the max and min of `i16` when the `f32` value is out of `i16`'s range.
-    fn f32_to_i16_without_overflow(value: f32) -> i16 {
-        i16::from_f32(value).unwrap_or_else(|| if value.is_positive() {i16::MAX} else {i16::MIN})
-    }
-
     let cm_range = f32::from(i16::MIN)..=f32::from(i16::MAX);
     if !cm_range.contains(&entity_coordinate_vector.first_vector_component)
         || !cm_range.contains(&entity_coordinate_vector.second_vector_component)
         || !cm_range.contains(&entity_coordinate_vector.third_vector_component) {
         // at least one vector component is larger than the possible range for centimeters.
-        (EntityCoordinateVector {
-            x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component)),
-            y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component)),
-            z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component)),
-        }, UnitsMeters::Meter)
+        (encode_entity_coordinate_vector_meters(entity_coordinate_vector), UnitsMeters::Meter)
     } else {
         // all vector components can be expressed in centimeters
-        (EntityCoordinateVector {
-            x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component * CENTIMETER_PER_METER)),
-            y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component * CENTIMETER_PER_METER)),
-            z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component * CENTIMETER_PER_METER)),
-        }, UnitsMeters::Centimeter)
+        (encode_entity_coordinate_vector_centimeters(entity_coordinate_vector), UnitsMeters::Centimeter)
     }
+}
+
+pub(crate) fn encode_entity_coordinate_vector_centimeters(entity_coordinate_vector: &VectorF32) -> EntityCoordinateVector {
+    EntityCoordinateVector {
+        x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component * CENTIMETER_PER_METER)),
+        y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component * CENTIMETER_PER_METER)),
+        z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component * CENTIMETER_PER_METER)),
+    }
+}
+
+pub(crate) fn encode_entity_coordinate_vector_meters(entity_coordinate_vector: &VectorF32) -> EntityCoordinateVector {
+    EntityCoordinateVector {
+        x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component)),
+        y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component)),
+        z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component)),
+    }
+}
+
+/// Helper function to convert `f32` values to `i16`, taking the max and min of `i16` when the `f32` value is out of `i16`'s range.
+fn f32_to_i16_without_overflow(value: f32) -> i16 {
+    i16::from_f32(value).unwrap_or_else(|| if value.is_positive() {i16::MAX} else {i16::MIN})
 }
 
 /// Decode C-DIS `EntityCoordinateVector` (11.10) to DIS `VectorF32` representing an Entity Coordinate Vector (DIS 6.2.96a).
@@ -342,7 +350,7 @@ impl Codec for CdisArticulatedPartVP {
             attachment_id: item.attachment_id,
             type_class: item.type_class,
             type_metric: item.type_metric,
-            parameter_value: ParameterValueFloat::from_f64(item.parameter_value as f64),
+            parameter_value: ParameterValueFloat::from_float(item.parameter_value),
         }
     }
 
@@ -352,7 +360,7 @@ impl Codec for CdisArticulatedPartVP {
             .with_attachment_id(self.attachment_id)
             .with_type_class(self.type_class)
             .with_type_metric(self.type_metric)
-            .with_parameter_value(self.parameter_value.to_value() as f32)
+            .with_parameter_value(self.parameter_value.to_float())
     }
 }
 

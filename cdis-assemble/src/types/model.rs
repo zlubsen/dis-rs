@@ -1,4 +1,8 @@
+use nom::IResult;
+use num_traits::FromPrimitive;
+use crate::BitBuffer;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, TWO_BITS};
+use crate::parsing::BitInput;
 
 pub(crate) trait VarInt {
     type BitSize;
@@ -119,7 +123,7 @@ impl From<Uvint8BitSize> for u8 {
 }
 
 /// 10.2.2 UVINT16
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct UVINT16 {
     bit_size: Uvint16BitSize,
     pub value: u16,
@@ -183,7 +187,7 @@ impl From<u16> for UVINT16 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub(crate) enum Uvint16BitSize {
     Eight,
     Eleven,
@@ -458,7 +462,7 @@ impl From<Svint12BitSize> for u8 {
 }
 
 /// 10.2.5 SVINT13
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct SVINT13 {
     bit_size: Svint13BitSize,
     pub value: i16,
@@ -517,8 +521,9 @@ impl From<i16> for SVINT13 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub(crate) enum Svint13BitSize {
+    #[default]
     Five,
     Seven,
     Ten,
@@ -943,17 +948,10 @@ impl From<Svint24BitSize> for u8 {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub(crate) struct CdisFloatBase {
-    pub mantissa: i32,
-    pub exponent: i8,
-    pub regular_float: Option<f64>,
-}
-
 /// 10.3 Custom Floating Point Numbers
 ///
 /// The `CdisFloat` trait models the mantissa and exponent components of a C-DIS float implementation.
-/// The actual value is available through the `to_value()`. For practical reasons it returns the value as `f64`.
+/// The actual value is available through the `to_float()` method.
 ///
 /// Because some use cases (such as Variable Parameter Articulated Part record) can be encoded either
 /// as a CdisFloat or a regular 32-bit float, this struct allows to hold both variants.
@@ -961,27 +959,17 @@ pub(crate) struct CdisFloatBase {
 ///
 /// The intended way of using this trait is to implement it on a custom struct.
 /// The trait impl for that struct then defines the bit sizes for mantissa and exponent.
-/// `CdisFloatBase` is available to compose the needed fields in your specific struct.
 pub(crate) trait CdisFloat {
+    type Mantissa: FromPrimitive;
+    type Exponent: FromPrimitive;
+    type InnerFloat;
+
     const MANTISSA_BITS: usize;
     const EXPONENT_BITS: usize;
 
-    fn new(mantissa: i32, exponent: i8) -> Self;
-    fn from_f64(regular_float: f64) -> Self;
-    fn to_value(&self) -> f64 {
-        if let Some(float) = self.regular_float() {
-            float
-        } else {
-            self.mantissa() as f64 * (10f64.powf(self.exponent() as f64))
-        }
-    }
-    fn mantissa(&self) -> i32;
-    fn exponent(&self) -> i8;
-    fn regular_float(&self) -> Option<f64>;
-    fn mantissa_bit_size(&self) -> usize {
-        Self::MANTISSA_BITS
-    }
-    fn exponent_bit_size(&self) -> usize {
-        Self::EXPONENT_BITS
-    }
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self;
+    fn from_float(float: Self::InnerFloat) -> Self;
+    fn to_float(&self) -> Self::InnerFloat;
+    fn parse(input: BitInput) -> IResult<BitInput, Self> where Self: Sized;
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize;
 }

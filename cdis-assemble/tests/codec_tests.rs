@@ -5,9 +5,10 @@ use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 
 #[test]
@@ -677,4 +678,87 @@ fn codec_consistency_comment() {
     assert_eq!(body_in.originating_id, body_out.originating_id);
     assert_eq!(body_in.receiving_id, body_out.receiving_id);
     assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_electromagnetic_emission_full_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = ElectromagneticEmission::builder()
+        .with_emitting_entity_id(EntityId::new(1, 1, 1))
+        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+        .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
+        .with_emitter_system(EmitterSystem::default()
+            .with_number(20)
+            .with_name(EmitterName::ANFPS16_5505)
+            .with_function(EmitterSystemFunction::SearchAcquisition_102)
+            .with_location(VectorF32::new(1.0, 2.0, 3.0))
+            .with_beam(Beam::default()
+                .with_number(1)
+                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                .with_parameter_index(1)
+                .with_parameter_data(FundamentalParameterData::default())
+                .with_track_jam(TrackJam::default()
+                    .with_entity_id(EntityId::new(1, 2, 3)))))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::ElectromagneticEmission).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_in.body { ee } else { ElectromagneticEmission::default() };
+    let body_out = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_out.body { ee } else { ElectromagneticEmission::default() };
+
+    assert_eq!(body_in.emitting_entity_id, body_out.emitting_entity_id);
+    assert_eq!(body_in.emitter_systems, body_out.emitter_systems);
+    assert_eq!(body_in.event_id, body_out.event_id);
+    assert_eq!(body_in.state_update_indicator, body_out.state_update_indicator);
+}
+
+#[test]
+fn codec_consistency_electromagnetic_emission_partial_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_partial_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::ElectromagneticEmission).with_pdu_status(PduStatus::default());
+    let dis_body = ElectromagneticEmission::builder()
+        .with_emitting_entity_id(EntityId::new(1, 1, 1))
+        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+        .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
+        .with_emitter_system(EmitterSystem::default()
+            .with_number(20)
+            .with_name(EmitterName::ANFPS16_5505)
+            .with_function(EmitterSystemFunction::SearchAcquisition_102)
+            .with_location(VectorF32::new(1.0, 2.0, 3.0))
+            .with_beam(Beam::default()
+                .with_number(1)
+                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                .with_parameter_index(1)
+                .with_parameter_data(FundamentalParameterData::default())
+                .with_track_jam(TrackJam::default()
+                    .with_entity_id(EntityId::new(1, 2, 3)))))
+        .build()
+        .into_pdu_body();
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    assert_eq!(dis_pdu_in.pdu_length(), dis_pdu_out.pdu_length());
+    let body_in = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_in.body { ee } else { ElectromagneticEmission::default() };
+    let body_out = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_out.body { ee } else { ElectromagneticEmission::default() };
+
+    assert_eq!(body_in.emitting_entity_id, body_out.emitting_entity_id);
+    assert_eq!(body_in.emitter_systems, body_out.emitter_systems);
+    assert_eq!(body_in.event_id, body_out.event_id);
+    assert_eq!(body_in.state_update_indicator, body_out.state_update_indicator);
 }

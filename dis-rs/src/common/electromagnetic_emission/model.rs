@@ -212,7 +212,7 @@ impl Beam {
 }
 
 /// 6.2.22 EE Fundamental Parameter Data record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct FundamentalParameterData {
     pub frequency: f32,
     pub frequency_range: f32,

@@ -1,9 +1,10 @@
 use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
-use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Location, Orientation as DisOrientation};
+use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Location, Orientation as DisOrientation, PduBody};
 use std::time::Instant;
-use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode};
-use crate::codec::CodecStateResult::StateUnaffected;
+use dis_rs::Interaction;
+use crate::{BodyProperties, CdisBody};
+use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters};
@@ -11,22 +12,61 @@ use crate::types::model::{UVINT32, UVINT8};
 
 type Counterpart = dis_rs::entity_state::model::EntityState;
 
+pub(crate) fn encode_entity_state_body_and_update_state(dis_body: &Counterpart,
+                                                        state: &mut EncoderState,
+                                                        options: &CodecOptions) -> (CdisBody, CodecStateResult) {
+    let state_for_id = state.entity_state.get(&dis_body.entity_id);
+
+    let (cdis_body, state_result) = EntityState::encode(dis_body, state_for_id, options);
+
+    if state_result == CodecStateResult::StateUpdateEntityState {
+        state.entity_state.entry(*dis_body.originator().unwrap())
+            .and_modify(|es| {es.heartbeat = Instant::now()})
+            .or_default();
+    }
+
+    (cdis_body.into_cdis_body(), state_result)
+}
+
+pub(crate) fn decode_entity_state_body_and_update_state(cdis_body: &EntityState,
+                                                        state: &mut DecoderState,
+                                                        options: &CodecOptions) -> (PduBody, CodecStateResult) {
+    let state_for_id = state.entity_state.get(&dis_rs::model::EntityId::from(&cdis_body.entity_id));
+    let (dis_body, state_result) = cdis_body.decode(state_for_id, options);
+
+    if state_result == CodecStateResult::StateUpdateEntityState {
+        state.entity_state.entry(dis_rs::model::EntityId::from(&cdis_body.entity_id))
+            .and_modify(|es| {
+                es.heartbeat = Instant::now();
+                es.force_id = dis_body.force_id;
+                es.entity_type = dis_body.entity_type;
+                es.alt_entity_type = dis_body.alternative_entity_type;
+                es.entity_location = dis_body.entity_location;
+                es.entity_orientation = dis_body.entity_orientation;
+                es.entity_appearance = dis_body.entity_appearance;
+            })
+            .or_insert(DecoderStateEntityState::new(&dis_body));
+    }
+
+    (dis_body.into_pdu_body(), state_result)
+}
+
 #[derive(Debug)]
 pub struct EncoderStateEntityState {
-    pub last_send: Instant,
+    pub heartbeat: Instant,
 }
 
 impl Default for EncoderStateEntityState {
     fn default() -> Self {
         Self {
-            last_send: Instant::now()
+            heartbeat: Instant::now()
         }
     }
 }
 
 #[derive(Debug)]
 pub struct DecoderStateEntityState {
-    pub last_received: Instant,
+    pub heartbeat: Instant,
     pub force_id: ForceId,
     pub entity_type: DisEntityType,
     pub alt_entity_type: DisEntityType,
@@ -37,9 +77,9 @@ pub struct DecoderStateEntityState {
 }
 
 impl DecoderStateEntityState {
-    pub fn new(pdu: &dis_rs::entity_state::model::EntityState) -> Self {
+    pub fn new(pdu: &Counterpart) -> Self {
         Self {
-            last_received: Instant::now(),
+            heartbeat: Instant::now(),
             force_id: pdu.force_id,
             entity_type: pdu.entity_type,
             alt_entity_type: pdu.alternative_entity_type,
@@ -54,7 +94,7 @@ impl DecoderStateEntityState {
 impl Default for DecoderStateEntityState {
     fn default() -> Self {
         Self {
-            last_received: Instant::now(),
+            heartbeat: Instant::now(),
             force_id: Default::default(),
             entity_type: Default::default(),
             alt_entity_type: Default::default(),
@@ -86,16 +126,16 @@ impl EntityState {
             entity_marking,
             state_result
         ) = if options.update_mode == CodecUpdateMode::PartialUpdate
-            && state.is_some()
-            && !evaluate_timeout_for_entity_type(&item.entity_type, state.unwrap(), options) {
+            && state.is_some_and(|state|
+                !evaluate_timeout_for_entity_type(&item.entity_type, &state.heartbeat, options) ) {
             // Do not update stateful fields when a full update is not required
             (UnitsDekameters::Dekameter, false, None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
         } else {
+            // full update mode, or partial with a (state) timeout on the entity
             let (entity_location, units) = encode_world_coordinates(&item.entity_location);
             let alternate_entity_type = if options.use_guise {
                 Some(EntityType::encode(&item.alternative_entity_type))
             } else { None };
-            // full update mode, or partial with a (state) timeout on the entity
             (
                 units,
                 true,
@@ -106,7 +146,9 @@ impl EntityState {
                 Some(Orientation::encode(&item.entity_orientation)),
                 Some((&item.entity_appearance).into()),
                 Some(CdisEntityMarking::new(item.entity_marking.marking_string.clone())),
-                if options.update_mode == CodecUpdateMode::PartialUpdate { CodecStateResult::StateUpdateEntityState } else { StateUnaffected }
+                if options.update_mode == CodecUpdateMode::PartialUpdate {
+                    CodecStateResult::StateUpdateEntityState
+                } else { CodecStateResult::StateUnaffected }
             )
         };
 
@@ -289,27 +331,27 @@ fn encode_dr_angular_velocity(item: &Counterpart) -> Option<AngularVelocity> {
 
 /// Evaluate if a heartbeat timeout has occurred, given the `entity_type`, `state` of the encoder, and federation agreement settings.
 /// Returns `true` when a timeout has occurred, `false` otherwise.
-fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, state: &EncoderStateEntityState, config: &CodecOptions) -> bool {
-    let elapsed = state.last_send.elapsed().as_secs_f32();
+fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, heartbeat: &Instant, options: &CodecOptions) -> bool {
+    let elapsed = heartbeat.elapsed().as_secs_f32();
     let hbt_timeout = match (entity_type.kind, entity_type.domain) {
-        (EntityKind::Culturalfeature, _) => { config.federation_parameters.HBT_ESPDU_KIND_CULTURAL_FEATURE }
-        (EntityKind::Environmental, _) => { config.federation_parameters.HBT_ESPDU_KIND_ENVIRONMENTAL }
-        (EntityKind::Expendable, _) => { config.federation_parameters.HBT_ESPDU_KIND_EXPENDABLE }
-        (EntityKind::Lifeform, _) => { config.federation_parameters.HBT_ESPDU_KIND_LIFE_FORM }
-        (EntityKind::Munition, _) => { config.federation_parameters.HBT_ESPDU_KIND_MUNITION }
-        (EntityKind::Radio, _) => { config.federation_parameters.HBT_ESPDU_KIND_RADIO }
-        (EntityKind::SensorEmitter, _) => { config.federation_parameters.HBT_ESPDU_KIND_SENSOR }
-        (EntityKind::Supply, _) => { config.federation_parameters.HBT_ESPDU_KIND_SUPPLY }
-        (EntityKind::Platform, PlatformDomain::Air) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR }
-        (EntityKind::Platform, PlatformDomain::Land) => { config.federation_parameters.HBT_ESPDU_PLATFORM_LAND }
-        (EntityKind::Platform, PlatformDomain::Space) => { config.federation_parameters.HBT_ESPDU_PLATFORM_SPACE }
-        (EntityKind::Platform, PlatformDomain::Subsurface) => { config.federation_parameters.HBT_ESPDU_PLATFORM_SUBSURFACE }
-        (EntityKind::Platform, PlatformDomain::Surface) => { config.federation_parameters.HBT_ESPDU_PLATFORM_SURFACE }
-        (EntityKind::Platform, _) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // Air domain is takes as the default for any other domain...
-        (_, _) => { config.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // ...And also for anything other/unspecified.
+        (EntityKind::Culturalfeature, _) => { options.federation_parameters.HBT_ESPDU_KIND_CULTURAL_FEATURE }
+        (EntityKind::Environmental, _) => { options.federation_parameters.HBT_ESPDU_KIND_ENVIRONMENTAL }
+        (EntityKind::Expendable, _) => { options.federation_parameters.HBT_ESPDU_KIND_EXPENDABLE }
+        (EntityKind::Lifeform, _) => { options.federation_parameters.HBT_ESPDU_KIND_LIFE_FORM }
+        (EntityKind::Munition, _) => { options.federation_parameters.HBT_ESPDU_KIND_MUNITION }
+        (EntityKind::Radio, _) => { options.federation_parameters.HBT_ESPDU_KIND_RADIO }
+        (EntityKind::SensorEmitter, _) => { options.federation_parameters.HBT_ESPDU_KIND_SENSOR }
+        (EntityKind::Supply, _) => { options.federation_parameters.HBT_ESPDU_KIND_SUPPLY }
+        (EntityKind::Platform, PlatformDomain::Air) => { options.federation_parameters.HBT_ESPDU_PLATFORM_AIR }
+        (EntityKind::Platform, PlatformDomain::Land) => { options.federation_parameters.HBT_ESPDU_PLATFORM_LAND }
+        (EntityKind::Platform, PlatformDomain::Space) => { options.federation_parameters.HBT_ESPDU_PLATFORM_SPACE }
+        (EntityKind::Platform, PlatformDomain::Subsurface) => { options.federation_parameters.HBT_ESPDU_PLATFORM_SUBSURFACE }
+        (EntityKind::Platform, PlatformDomain::Surface) => { options.federation_parameters.HBT_ESPDU_PLATFORM_SURFACE }
+        (EntityKind::Platform, _) => { options.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // Air domain is takes as the default for any other domain...
+        (_, _) => { options.federation_parameters.HBT_ESPDU_PLATFORM_AIR } // ...And also for anything other/unspecified.
     };
 
-    elapsed > (hbt_timeout * config.hbt_cdis_full_update_mplier)
+    elapsed > (hbt_timeout * options.hbt_cdis_full_update_mplier)
 }
 
 #[cfg(test)]
@@ -501,7 +543,7 @@ mod tests {
                 assert_eq!(ap.attachment_id, 1);
                 assert_eq!(ap.type_class, ArticulatedPartsTypeClass::PrimaryTurretNumber1);
                 assert_eq!(ap.type_metric, ArticulatedPartsTypeMetric::Azimuth);
-                assert_eq!(ap.parameter_value.to_value(), 45.0);
+                assert_eq!(ap.parameter_value.to_float(), 45.0f32);
             } else { assert!(false); }
         } else {
             assert!(false);
@@ -574,7 +616,7 @@ mod tests {
                 attachment_id: 1,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Azimuth,
-                parameter_value: ParameterValueFloat::from_f64(45.0),
+                parameter_value: ParameterValueFloat::from_float(45.0),
             })],
         }.into_cdis_body();
 
@@ -678,7 +720,7 @@ mod tests {
         let options = CodecOptions::new_partial_update();
 
         let decoder_state = DecoderStateEntityState {
-            last_received: Instant::now(),
+            heartbeat: Instant::now(),
             force_id: ForceId::Friendly8,
             entity_type: DisEntityType::from_str("1:2:3:4:5:6:7").unwrap(),
             alt_entity_type: DisEntityType::from_str("3:3:3:3:3:3:3").unwrap(),
