@@ -15,9 +15,10 @@ pub mod action_response;
 pub mod collision;
 pub mod comment;
 pub mod create_entity;
-pub mod detonation;
 pub mod data;
 pub mod data_query;
+pub mod designator;
+pub mod detonation;
 pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod event_report;
@@ -44,6 +45,7 @@ use crate::comment::model::Comment;
 use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::data_query::model::DataQuery;
+use crate::designator::model::Designator;
 use crate::detonation::model::Detonation;
 use crate::electromagnetic_emission::model::ElectromagneticEmission;
 use crate::event_report::model::EventReport;
@@ -132,7 +134,7 @@ pub enum CdisBody {
     EventReport(EventReport),
     Comment(Comment),
     ElectromagneticEmission(ElectromagneticEmission),
-    Designator,
+    Designator(Designator),
     Transmitter,
     Signal,
     Receiver,
