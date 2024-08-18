@@ -2,7 +2,6 @@ use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking}
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
 use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Location, Orientation as DisOrientation, PduBody};
 use std::time::Instant;
-use dis_rs::Interaction;
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use crate::entity_state::model::{CdisDRParametersOther, CdisEntityCapabilities, EntityState};
@@ -20,7 +19,7 @@ pub(crate) fn encode_entity_state_body_and_update_state(dis_body: &Counterpart,
     let (cdis_body, state_result) = EntityState::encode(dis_body, state_for_id, options);
 
     if state_result == CodecStateResult::StateUpdateEntityState {
-        state.entity_state.entry(*dis_body.originator().unwrap())
+        state.entity_state.entry(dis_body.entity_id)
             .and_modify(|es| {es.heartbeat = Instant::now()})
             .or_default();
     }
