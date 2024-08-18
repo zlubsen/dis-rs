@@ -34,7 +34,7 @@ Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemen
 | EventReport             | V       |
 | Comment                 | V       |
 | ElectromagneticEmission | V       |
-| Designator              |         |
+| Designator              | V       |
 | Transmitter             |         |
 | Signal                  |         |
 | Receiver                |         |
