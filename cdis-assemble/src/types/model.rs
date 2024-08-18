@@ -7,12 +7,15 @@ use crate::parsing::BitInput;
 pub(crate) trait VarInt {
     type BitSize;
     type InnerType;
+    #[allow(dead_code)]
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self;
     fn bit_size(&self) -> usize;
     fn flag_bits_value(&self) -> u8;
     fn flag_bits_size(&self) -> usize;
     fn value(&self) -> Self::InnerType;
+    #[allow(dead_code)]
     fn max_value(&self) -> Self::InnerType;
+    #[allow(dead_code)]
     fn min_value(&self) -> Self::InnerType;
     fn record_length(&self) -> usize {
         self.flag_bits_size() + self.bit_size()
@@ -429,6 +432,7 @@ impl Svint12BitSize {
         }
     }
 
+    #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
             Svint12BitSize::Three => { 3 }
@@ -551,6 +555,7 @@ impl Svint13BitSize {
         }
     }
 
+    #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
             Svint13BitSize::Five => { 15 }
@@ -673,6 +678,7 @@ impl Svint14BitSize {
         }
     }
 
+    #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
             Svint14BitSize::Four => { 7 }
@@ -794,6 +800,7 @@ impl Svint16BitSize {
         }
     }
 
+    #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
             Svint16BitSize::Eight => { 127 }
@@ -916,6 +923,7 @@ impl Svint24BitSize {
         }
     }
 
+    #[allow(dead_code)]
     pub fn max_value(&self) -> i32 {
         match self {
             Svint24BitSize::Sixteen => { 32_767 }

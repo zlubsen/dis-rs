@@ -19,7 +19,7 @@ impl Codec for CdisHeader {
             pdu_type: item.pdu_type,
             timestamp: TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(item.time_stamp))),
             length: 0,
-            pdu_status: if let Some(status) = item.pdu_status { status } else { Default::default() },
+            pdu_status: item.pdu_status.unwrap_or_default(),
         }
     }
 

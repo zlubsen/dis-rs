@@ -256,6 +256,7 @@ fn set_federation_parameters(spec: &Option<FederationSpec>) -> VariableParameter
     parameters
 }
 
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct FederationAgreement {
     pub hbt_cdis_full_update_mplier: f32, //Default: 2.4

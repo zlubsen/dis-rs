@@ -5,6 +5,7 @@ use crate::constants::{FOUR_BITS, ONE_BIT, SIXTEEN_BITS};
 use crate::writing::{serialize_when_present, SerializeCdis, write_value_unsigned};
 
 impl SerializeCdisPdu for Designator {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let fields_present = self.fields_present_field();
 
@@ -32,6 +33,7 @@ impl SerializeCdisPdu for Designator {
 }
 
 impl SerializeCdis for DesignatorSystemName {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u16>(buf, cursor, SIXTEEN_BITS, (*self).into());
 
