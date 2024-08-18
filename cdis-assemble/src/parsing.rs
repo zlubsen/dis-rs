@@ -13,6 +13,7 @@ use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
 use crate::data::parser::data_body;
 use crate::data_query::parser::data_query_body;
+use crate::designator::parser::designator_body;
 use crate::detonation::parser::detonation_body;
 use crate::electromagnetic_emission::parser::electromagnetic_emission_body;
 use crate::entity_state::parser::entity_state_body;
@@ -71,7 +72,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::EventReport => { event_report_body(input)? }
             PduType::Comment => { comment_body(input)? }
             PduType::ElectromagneticEmission => { electromagnetic_emission_body(input)? }
-            // PduType::Designator => {}
+            PduType::Designator => { designator_body(input)? }
             // PduType::Transmitter => {}
             // PduType::Signal => {}
             // PduType::Receiver => {}

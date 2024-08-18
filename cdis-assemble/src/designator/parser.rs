@@ -1,13 +1,12 @@
 use nom::complete::take;
 use nom::IResult;
 use dis_rs::enumerations::{DeadReckoningAlgorithm, DesignatorSystemName};
-use crate::{BodyProperties, CdisBody, parsing};
+use crate::{BodyProperties, CdisBody};
 use crate::constants::{FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TWO_BITS};
 use crate::designator::model::{Designator, DesignatorFieldsPresent, DesignatorUnits};
 use crate::parsing::{BitInput, parse_field_when_present};
-use crate::records::model::{UnitsDekameters, UnitsMeters};
 use crate::records::parser::{entity_coordinate_vector, entity_identification, linear_acceleration, world_coordinates};
-use crate::types::parser::{uvint16, uvint32, uvint8};
+use crate::types::parser::{uvint16, uvint32};
 
 #[allow(clippy::redundant_closure)]
 pub(crate) fn designator_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -59,4 +58,41 @@ pub(crate) fn designator_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         dr_algorithm,
         dr_entity_linear_acceleration,
     }.into_cdis_body()))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::CdisBody;
+    use crate::designator::model::DesignatorUnits;
+    use crate::designator::parser::designator_body;
+    use crate::records::model::{EntityId, UnitsDekameters, UnitsMeters};
+    use crate::types::model::UVINT16;
+
+    #[test]
+    fn parse_designator_no_fields_present() {
+        let input = [0b0000_00_0_0, 0b00000000, 0b1_0000000, 0b001_00000, 0b00001_000];
+        // fields              ^fl  ^u ^f^ entityid                                       ^ remainder
+        // bits                ^ 4  ^2 ^f^ 3x 10                                          ^
+        // values              ^ 0  ^0 ^f^ 1, 1, 1                                        ^
+        let ((_input, cursor), body) = designator_body((&input, 0)).unwrap();
+
+        assert_eq!(cursor, 5); // cursor position in last byte of input
+        if let CdisBody::Designator(designator) = body {
+            assert_eq!(designator.units, DesignatorUnits {
+                location_wrt_entity_units: UnitsMeters::Centimeter,
+                world_location_altitude: UnitsDekameters::Centimeter,
+            });
+            assert!(!designator.full_update_flag);
+            assert_eq!(designator.designating_entity_id, EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)));
+            assert!(designator.code_name.is_none());
+            assert!(designator.designated_entity_id.is_none());
+            assert!(designator.designator_code.is_none());
+            assert!(designator.designator_power.is_none());
+            assert!(designator.designator_wavelength.is_none());
+            assert!(designator.spot_wrt_designated_entity.is_none());
+            assert!(designator.designator_spot_location.is_none());
+            assert!(designator.dr_algorithm.is_none());
+            assert!(designator.dr_entity_linear_acceleration.is_none());
+        } else { assert!(false) }
+    }
 }

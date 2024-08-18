@@ -5,10 +5,11 @@ use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use dis_rs::designator::model::Designator;
 use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 
 #[test]
@@ -761,4 +762,44 @@ fn codec_consistency_electromagnetic_emission_partial_mode() {
     assert_eq!(body_in.emitter_systems, body_out.emitter_systems);
     assert_eq!(body_in.event_id, body_out.event_id);
     assert_eq!(body_in.state_update_indicator, body_out.state_update_indicator);
+}
+
+#[test]
+fn codec_consistency_designator_full_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Designator::builder()
+        .with_designating_entity_id(EntityId::new(10, 10, 10))
+        .with_system_name(DesignatorSystemName::ANAAS38BNiteHawk)
+        .with_designated_entity_id(EntityId::new(20, 20, 20))
+        .with_code(DesignatorCode::Other)
+        .with_power(12.0)
+        .with_wavelength(15.0)
+        .with_spot_wrt_designated_entity(VectorF32::new(10.0, 10.0, 0.0))
+        .with_spot_location(Location::new(0.0, 0.0, 5_000_000.0))
+        .with_dead_reckoning_algorithm(DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity)
+        .with_linear_acceleration(VectorF32::new(0.0, 0.0, 0.0))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::Designator).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Designator(designator) = dis_pdu_in.body { designator } else { Designator::default() };
+    let body_out = if let PduBody::Designator(designator) = dis_pdu_out.body { designator } else { Designator::default() };
+
+    assert_eq!(body_in.designating_entity_id, body_out.designating_entity_id);
+    assert_eq!(body_in.designated_entity_id, body_out.designated_entity_id);
+    assert_eq!(body_in.system_name, body_out.system_name);
+    assert_eq!(body_in.power, body_out.power);
+    assert_eq!(body_in.wavelength, body_out.wavelength);
+    assert_eq!(body_in.spot_location.x_coordinate, body_out.spot_location.x_coordinate.round());
+    assert_eq!(body_in.spot_location.y_coordinate, body_out.spot_location.y_coordinate.round());
+    assert_eq!(body_in.spot_location.z_coordinate, body_out.spot_location.z_coordinate.round());
+    assert_eq!(body_in.linear_acceleration, body_out.linear_acceleration);
 }

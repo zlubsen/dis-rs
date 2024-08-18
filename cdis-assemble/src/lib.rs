@@ -162,7 +162,7 @@ impl CdisBody {
             CdisBody::EventReport(body) => { body.body_length_bits() }
             CdisBody::Comment(body) => { body.body_length_bits() }
             CdisBody::ElectromagneticEmission(body) => { body.body_length_bits() }
-            CdisBody::Designator => { 0 }
+            CdisBody::Designator(body) => { body.body_length_bits() }
             CdisBody::Transmitter => { 0 }
             CdisBody::Signal => { 0 }
             CdisBody::Receiver => { 0 }
@@ -192,7 +192,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::EventReport(body) => { body.originator() }
             CdisBody::Comment(body) => { body.originator() }
             CdisBody::ElectromagneticEmission(body) => { body.originator() }
-            CdisBody::Designator => { None } 
+            CdisBody::Designator(body) => { body.originator() }
             CdisBody::Transmitter => { None } 
             CdisBody::Signal => { None } 
             CdisBody::Receiver => { None } 
@@ -220,7 +220,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::EventReport(body) => { body.receiver() }
             CdisBody::Comment(body) => { body.receiver() }
             CdisBody::ElectromagneticEmission(body) => { body.receiver() }
-            CdisBody::Designator => { None } 
+            CdisBody::Designator(body) => { body.receiver() }
             CdisBody::Transmitter => { None } 
             CdisBody::Signal => { None } 
             CdisBody::Receiver => { None } 
@@ -309,8 +309,8 @@ impl Implemented for PduType {
             PduType::Data |
             PduType::EventReport |
             PduType::Comment |
-            PduType::ElectromagneticEmission => { true }
-            // PduType::Designator |
+            PduType::ElectromagneticEmission |
+            PduType::Designator => { true }
             // PduType::Transmitter |
             // PduType::Signal |
             // PduType::Receiver |
@@ -423,8 +423,8 @@ mod tests {
         assert!(PduType::EventReport.is_implemented());
         assert!(PduType::Comment.is_implemented());
         assert!(PduType::ElectromagneticEmission.is_implemented());
+        assert!(PduType::Designator.is_implemented());
 
-        assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);
         assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
         assert_eq!(PduType::Signal.is_implemented() || CdisBody::Signal.body_length() != 0, false);
         assert_eq!(PduType::Receiver.is_implemented() || CdisBody::Receiver.body_length() != 0, false);
