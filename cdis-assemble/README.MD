@@ -36,7 +36,7 @@ Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemen
 | ElectromagneticEmission | V       |
 | Designator              | V       |
 | Transmitter             |         |
-| Signal                  |         |
+| Signal                  | V       |
 | Receiver                |         |
 | IFF                     |         |
 

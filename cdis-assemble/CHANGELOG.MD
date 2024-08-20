@@ -5,6 +5,7 @@
 Support for new PDUs:
 - Electromagnetic Emission
 - Designator
+- Signal
 
 ## 0.2.0 - 2024-07-15
 
