@@ -1,8 +1,8 @@
 use nom::IResult;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName};
 use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
 
@@ -278,6 +278,39 @@ impl CdisRecord for VariableDatum {
     fn record_length(&self) -> usize {
         THIRTY_TWO_BITS + FOURTEEN_BITS
             + self.datum_value.len() * EIGHT_BITS
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum EncodingScheme {
+    EncodedAudio { encoding_class: SignalEncodingClass, encoding_type: SignalEncodingType },
+    RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u8 },
+    Unspecified { encoding_class: SignalEncodingClass, encoding_type: u8 },
+}
+
+impl Default for EncodingScheme {
+    fn default() -> Self {
+        Self::EncodedAudio {
+            encoding_class: SignalEncodingClass::Encodedaudio,
+            encoding_type: SignalEncodingType::_8bitmulaw_ITUTG_711_1,
+        }
+    }
+}
+
+impl CdisRecord for EncodingScheme {
+    fn record_length(&self) -> usize {
+        TWO_BITS + match self {
+            EncodingScheme::EncodedAudio { encoding_type, .. } => {
+                let value: u16 = (*encoding_type).into();
+                UVINT8::from(value as u8).record_length()
+            }
+            EncodingScheme::RawBinaryData { nr_of_messages, .. } => {
+                UVINT8::from(*nr_of_messages).record_length()
+            }
+            EncodingScheme::Unspecified { encoding_type, .. } => {
+                UVINT8::from(*encoding_type).record_length()
+            }
+        }
     }
 }
 

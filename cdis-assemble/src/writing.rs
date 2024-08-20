@@ -55,7 +55,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::ElectromagneticEmission(body) => { body.serialize(buf, cursor) }
             CdisBody::Designator(body) => { body.serialize(buf, cursor) }
             // CdisBody::Transmitter => {}
-            // CdisBody::Signal => {}
+            CdisBody::Signal(body) => { body.serialize(buf, cursor) }
             // CdisBody::Receiver => {}
             // CdisBody::Iff => {}
             _ => { cursor }

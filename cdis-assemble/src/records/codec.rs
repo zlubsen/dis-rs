@@ -5,7 +5,7 @@ use dis_rs::model::{ArticulatedPart, AttachedPart, DisTimeStamp, EntityAssociati
 use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use crate::codec::Codec;
 use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, CENTIMETER_PER_METER, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::UnitsMeters;
+use crate::records::model::{EncodingScheme, UnitsMeters};
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, UnitsDekameters, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
@@ -186,6 +186,44 @@ impl Codec for AngularVelocity {
             self.y.value as f32 / Self::SCALING / Self::CONVERSION,
             self.z.value as f32 / Self::SCALING / Self::CONVERSION,
         )
+    }
+}
+
+impl Codec for EncodingScheme {
+    type Counterpart = dis_rs::signal::model::EncodingScheme;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        match item {
+            Self::Counterpart::EncodedAudio { encoding_class, encoding_type } => {
+                Self::EncodedAudio { encoding_class: *encoding_class, encoding_type: *encoding_type }
+            }
+            Self::Counterpart::RawBinaryData { encoding_class, nr_of_messages } => {
+                Self::RawBinaryData { encoding_class: *encoding_class, nr_of_messages: *nr_of_messages as u8 }
+            }
+            Self::Counterpart::ApplicationSpecificData { encoding_class, .. } => {
+                Self::Unspecified { encoding_class: *encoding_class, encoding_type: 0 }
+            }
+            Self::Counterpart::DatabaseIndex { encoding_class, .. } => {
+                Self::Unspecified { encoding_class: *encoding_class, encoding_type: 0 }
+            }
+            Self::Counterpart::Unspecified { encoding_class } => {
+                Self::Unspecified { encoding_class: *encoding_class, encoding_type: 0 }
+            }
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        match self {
+            EncodingScheme::EncodedAudio { encoding_class, encoding_type } => {
+                Self::Counterpart::EncodedAudio { encoding_class: *encoding_class, encoding_type: *encoding_type }
+            }
+            EncodingScheme::RawBinaryData { encoding_class, nr_of_messages } => {
+                Self::Counterpart::RawBinaryData { encoding_class: *encoding_class, nr_of_messages: *nr_of_messages as u16 }
+            }
+            EncodingScheme::Unspecified { encoding_class, .. } => {
+                Self::Counterpart::Unspecified { encoding_class: *encoding_class }
+            }
+        }
     }
 }
 

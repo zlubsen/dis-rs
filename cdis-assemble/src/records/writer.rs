@@ -1,10 +1,10 @@
 use num_traits::FromPrimitive;
 use dis_rs::enumerations::VariableParameterRecordType;
 use dis_rs::model::{FixedDatum, VariableDatum};
-use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
 use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::types::model::CdisFloat;
+use crate::types::model::{CdisFloat, UVINT8};
 use crate::writing::BitBuffer;
 
 impl SerializeCdis for CdisHeader {
@@ -248,6 +248,29 @@ impl SerializeCdis for VariableDatum {
 
         let cursor = self.datum_value.iter()
             .fold(cursor, |cursor, vp| vp.serialize(buf, cursor) );
+
+        cursor
+    }
+}
+
+impl SerializeCdis for EncodingScheme {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let (encoding_class, encoding_type) = match self {
+            EncodingScheme::EncodedAudio { encoding_class, encoding_type } => {
+                let encoding_type: u16 = (*encoding_type).into();
+                (encoding_class, UVINT8::from(encoding_type as u8))
+            }
+            EncodingScheme::RawBinaryData { encoding_class, nr_of_messages } => {
+                (encoding_class, UVINT8::from(*nr_of_messages))
+            }
+            EncodingScheme::Unspecified { encoding_class, encoding_type } => {
+                (encoding_class, UVINT8::from(*encoding_type))
+            }
+        };
+
+        let encoding_class: u16 = (*encoding_class).into();
+        let cursor = write_value_unsigned(buf, cursor, TWO_BITS, encoding_class);
+        let cursor = encoding_type.serialize(buf, cursor);
 
         cursor
     }

@@ -3,13 +3,13 @@ use nom::IResult;
 use nom::bits::complete::take;
 use nom::multi::count;
 use num::Integer;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType, VariableRecordType};
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, VariableParameterRecordType, VariableRecordType};
 use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::parsing::take_signed;
-use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
+use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
 use crate::types::parser::{svint12, svint14, svint16, svint24, uvint16, uvint8};
 
@@ -462,6 +462,38 @@ pub(crate) fn variable_datum(input: BitInput) -> IResult<BitInput, VariableDatum
     } else { (input, datum_value) };
 
     Ok((input, VariableDatum::new(datum_id, datum_value)))
+}
+
+pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingScheme> {
+    let (input, encoding_scheme_class) : (BitInput, u16) = take(TWO_BITS)(input)?;
+    let encoding_scheme_class = SignalEncodingClass::from(encoding_scheme_class);
+    let (input, encoding_scheme_type) = uvint8(input)?;
+
+    let encoding_scheme = match encoding_scheme_class {
+        SignalEncodingClass::Encodedaudio => {
+            EncodingScheme::EncodedAudio {
+                encoding_class: encoding_scheme_class,
+                encoding_type: SignalEncodingType::from(encoding_scheme_type.value as u16)
+            }
+        }
+        SignalEncodingClass::RawBinaryData => {
+            EncodingScheme::RawBinaryData {
+                encoding_class: encoding_scheme_class,
+                nr_of_messages: encoding_scheme_type.value,
+            }
+        }
+        SignalEncodingClass::ApplicationSpecificData => {
+            EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
+        }
+        SignalEncodingClass::Databaseindex => {
+            EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
+        }
+        SignalEncodingClass::Unspecified(_) => {
+            EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
+        }
+    };
+
+    Ok((input, encoding_scheme))
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
-use crate::constants::{EIGHT_BITS, FOURTEEN_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, FOURTEEN_BITS};
 use crate::signal::model::Signal;
 use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
 
@@ -13,10 +13,7 @@ impl SerializeCdisPdu for Signal {
         let cursor = self.radio_reference_id.serialize(buf, cursor);
         let cursor = self.radio_number.serialize(buf, cursor);
 
-        let encoding_scheme_class: u16 = self.encoding_scheme_class.into();
-        let cursor = write_value_unsigned(buf, cursor, TWO_BITS, encoding_scheme_class);
-        let cursor = self.encoding_scheme_type.serialize(buf, cursor);
-
+        let cursor = self.encoding_scheme.serialize(buf, cursor);
         let tdl_type: u16 = self.tdl_type.into();
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, tdl_type);
 
@@ -25,7 +22,7 @@ impl SerializeCdisPdu for Signal {
         let cursor = serialize_when_present(&self.samples, buf, cursor);
 
         let cursor = self.data.iter()
-            .fold(cursor, | cursor, byte | write_value_unsigned(buf, cursor, EIGHT_BITS, byte) );
+            .fold(cursor, | cursor, &byte | write_value_unsigned(buf, cursor, EIGHT_BITS, byte) );
 
         cursor
     }

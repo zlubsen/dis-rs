@@ -23,6 +23,7 @@ use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::remove_entity::parser::remove_entity_body;
 use crate::set_data::parser::set_data_body;
+use crate::signal::parser::signal_body;
 use crate::start_resume::parser::start_resume_body;
 use crate::stop_freeze::parser::stop_freeze_body;
 use crate::types::model::VarInt;
@@ -74,7 +75,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::ElectromagneticEmission => { electromagnetic_emission_body(input)? }
             PduType::Designator => { designator_body(input)? }
             // PduType::Transmitter => {}
-            // PduType::Signal => {}
+            PduType::Signal => { signal_body(input)? }
             // PduType::Receiver => {}
             // PduType::IFF => {}
             // Unsupported PDUs in CDIS v1

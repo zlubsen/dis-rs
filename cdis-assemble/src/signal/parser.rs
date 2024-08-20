@@ -1,13 +1,13 @@
 use nom::complete::take;
 use nom::IResult;
 use nom::multi::count;
-use dis_rs::enumerations::{SignalEncodingClass, SignalTdlType};
+use dis_rs::enumerations::{SignalTdlType};
 use crate::{BodyProperties, CdisBody};
 use crate::constants::{EIGHT_BITS, FOURTEEN_BITS, TWO_BITS};
 use crate::parsing::{parse_field_when_present, BitInput};
-use crate::records::parser::entity_identification;
+use crate::records::parser::{encoding_scheme, entity_identification};
 use crate::signal::model::{Signal, SignalFieldsPresent};
-use crate::types::parser::{uvint16, uvint32, uvint8};
+use crate::types::parser::{uvint16, uvint32};
 
 pub(crate) fn signal_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u8) = take(TWO_BITS)(input)?;
@@ -15,9 +15,7 @@ pub(crate) fn signal_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, radio_reference_id) = entity_identification(input)?;
     let (input, radio_number) = uvint16(input)?;
 
-    let (input, encoding_scheme_class) : (BitInput, u16) = take(TWO_BITS)(input)?;
-    let encoding_scheme_class = SignalEncodingClass::from(encoding_scheme_class);
-    let (input, encoding_scheme_type) = uvint8(input)?;
+    let (input, encoding_scheme) = encoding_scheme(input)?;
 
     let (input, tdl_type) : (BitInput, u16) = take(EIGHT_BITS)(input)?;
     let tdl_type = SignalTdlType::from(tdl_type);
@@ -35,8 +33,7 @@ pub(crate) fn signal_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     Ok((input, Signal {
         radio_reference_id,
         radio_number,
-        encoding_scheme_class,
-        encoding_scheme_type,
+        encoding_scheme,
         tdl_type,
         sample_rate,
         samples,
