@@ -1,4 +1,3 @@
-use bitvec::macros::internal::funty::Fundamental;
 use num_traits::FromPrimitive;
 use crate::receiver::model::Receiver;
 use crate::records::model::EntityId;
@@ -24,7 +23,7 @@ impl Receiver {
             .with_radio_reference_id(self.radio_reference_id.decode())
             .with_radio_number(self.radio_number.value)
             .with_receiver_state(self.receiver_state)
-            .with_received_power(self.received_power.as_f32())
+            .with_received_power(self.received_power as f32)
             .with_transmitter_radio_reference_id(self.transmitter_radio_reference_id.decode())
             .with_transmitter_radio_number(self.transmitter_radio_number.value)
             .build()
