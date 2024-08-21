@@ -23,6 +23,7 @@ pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod event_report;
 pub mod fire;
+pub mod receiver;
 pub mod remove_entity;
 pub mod set_data;
 pub mod signal;
@@ -51,6 +52,7 @@ use crate::detonation::model::Detonation;
 use crate::electromagnetic_emission::model::ElectromagneticEmission;
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
+use crate::receiver::model::Receiver;
 use crate::remove_entity::model::RemoveEntity;
 use crate::set_data::model::SetData;
 use crate::signal::model::Signal;
@@ -139,7 +141,7 @@ pub enum CdisBody {
     Designator(Designator),
     Transmitter,
     Signal(Signal),
-    Receiver,
+    Receiver(Receiver),
     Iff,
 }
 
@@ -167,7 +169,7 @@ impl CdisBody {
             CdisBody::Designator(body) => { body.body_length_bits() }
             CdisBody::Transmitter => { 0 }
             CdisBody::Signal(body) => { body.body_length_bits() }
-            CdisBody::Receiver => { 0 }
+            CdisBody::Receiver(body) => { body.body_length_bits() }
             CdisBody::Iff => { 0 }
         }
     }
@@ -197,7 +199,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Designator(body) => { body.originator() }
             CdisBody::Transmitter => { None } 
             CdisBody::Signal(body) => { body.originator() }
-            CdisBody::Receiver => { None } 
+            CdisBody::Receiver(body) => { body.originator() }
             CdisBody::Iff => { None } 
         }
     }
@@ -225,7 +227,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Designator(body) => { body.receiver() }
             CdisBody::Transmitter => { None } 
             CdisBody::Signal(body) => { body.receiver() }
-            CdisBody::Receiver => { None } 
+            CdisBody::Receiver(body) => { body.receiver() }
             CdisBody::Iff => { None } 
         }
     }
@@ -314,8 +316,8 @@ impl Implemented for PduType {
             PduType::ElectromagneticEmission |
             PduType::Designator |
             // PduType::Transmitter |
-            PduType::Signal => { true }
-            // PduType::Receiver |
+            PduType::Signal |
+            PduType::Receiver => { true }
             // PduType::IFF
             _ => { false }
         }
@@ -428,6 +430,7 @@ mod tests {
         assert!(PduType::Designator.is_implemented());
 
         assert!(PduType::Signal.is_implemented());
+        // assert!(PduType::Receiver.is_implemented());
 
         assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
         assert_eq!(PduType::Receiver.is_implemented() || CdisBody::Receiver.body_length() != 0, false);
