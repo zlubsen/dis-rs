@@ -1,6 +1,6 @@
 use dis_rs::enumerations::{SignalTdlType};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::EIGHT_BITS;
+use crate::constants::{EIGHT_BITS, TWO_BITS};
 use crate::records::model::{CdisRecord, EncodingScheme, EntityId};
 use crate::types::model::{VarInt, UVINT16, UVINT32};
 
@@ -18,7 +18,7 @@ pub struct Signal {
 impl BodyProperties for Signal {
     type FieldsPresent = SignalFieldsPresent;
     type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = 2;
+    const FIELDS_PRESENT_LENGTH: usize = TWO_BITS;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
         (if self.sample_rate.is_some() { Self::FieldsPresent::SAMPLE_RATE_BIT } else { 0 })

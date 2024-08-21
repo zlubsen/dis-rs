@@ -3,7 +3,7 @@ use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::{DeadReckoningAlgorithm};
 use dis_rs::Serialize;
 use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{HUNDRED_TWENTY_BITS, THIRTY_TWO_BITS};
+use crate::constants::{HUNDRED_TWENTY_BITS, THIRTEEN_BITS, THIRTY_TWO_BITS};
 use crate::records::model::{AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use crate::types::model::{VarInt, UVINT32, UVINT8};
 
@@ -31,7 +31,7 @@ pub struct EntityState {
 impl BodyProperties for EntityState {
     type FieldsPresent = EntityStateFieldsPresent;
     type FieldsPresentOutput = u16;
-    const FIELDS_PRESENT_LENGTH: usize = 13;
+    const FIELDS_PRESENT_LENGTH: usize = THIRTEEN_BITS;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
         (if self.force_id.is_some() { Self::FieldsPresent::FORCE_ID_BIT } else { 0 })

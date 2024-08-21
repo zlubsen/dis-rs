@@ -29,6 +29,7 @@ pub mod set_data;
 pub mod signal;
 pub mod start_resume;
 pub mod stop_freeze;
+pub mod transmitter;
 pub mod unsupported;
 
 pub(crate) mod parsing;
@@ -58,6 +59,7 @@ use crate::set_data::model::SetData;
 use crate::signal::model::Signal;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
+use crate::transmitter::model::Transmitter;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -139,7 +141,7 @@ pub enum CdisBody {
     Comment(Comment),
     ElectromagneticEmission(ElectromagneticEmission),
     Designator(Designator),
-    Transmitter,
+    Transmitter(Transmitter),
     Signal(Signal),
     Receiver(Receiver),
     Iff,
@@ -167,7 +169,7 @@ impl CdisBody {
             CdisBody::Comment(body) => { body.body_length_bits() }
             CdisBody::ElectromagneticEmission(body) => { body.body_length_bits() }
             CdisBody::Designator(body) => { body.body_length_bits() }
-            CdisBody::Transmitter => { 0 }
+            CdisBody::Transmitter(body) => { body.body_length_bits() }
             CdisBody::Signal(body) => { body.body_length_bits() }
             CdisBody::Receiver(body) => { body.body_length_bits() }
             CdisBody::Iff => { 0 }
@@ -197,7 +199,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Comment(body) => { body.originator() }
             CdisBody::ElectromagneticEmission(body) => { body.originator() }
             CdisBody::Designator(body) => { body.originator() }
-            CdisBody::Transmitter => { None } 
+            CdisBody::Transmitter(body) => { body.originator() }
             CdisBody::Signal(body) => { body.originator() }
             CdisBody::Receiver(body) => { body.originator() }
             CdisBody::Iff => { None } 
@@ -225,7 +227,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Comment(body) => { body.receiver() }
             CdisBody::ElectromagneticEmission(body) => { body.receiver() }
             CdisBody::Designator(body) => { body.receiver() }
-            CdisBody::Transmitter => { None } 
+            CdisBody::Transmitter(body) => { body.receiver() }
             CdisBody::Signal(body) => { body.receiver() }
             CdisBody::Receiver(body) => { body.receiver() }
             CdisBody::Iff => { None } 
@@ -315,7 +317,7 @@ impl Implemented for PduType {
             PduType::Comment |
             PduType::ElectromagneticEmission |
             PduType::Designator |
-            // PduType::Transmitter |
+            PduType::Transmitter |
             PduType::Signal |
             PduType::Receiver => { true }
             // PduType::IFF
@@ -428,11 +430,10 @@ mod tests {
         assert!(PduType::Comment.is_implemented());
         assert!(PduType::ElectromagneticEmission.is_implemented());
         assert!(PduType::Designator.is_implemented());
-
+        assert!(PduType::Transmitter.is_implemented());
         assert!(PduType::Signal.is_implemented());
         assert!(PduType::Receiver.is_implemented());
 
-        assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
         assert_eq!(PduType::IFF.is_implemented() || CdisBody::Iff.body_length() != 0, false);
     }
 }

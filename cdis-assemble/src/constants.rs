@@ -15,9 +15,11 @@ pub const FOURTEEN_BITS: usize = 14;
 pub const FIFTEEN_BITS: usize = 15;
 pub const SIXTEEN_BITS: usize = 16;
 pub const SEVENTEEN_BITS: usize = 17;
+pub const TWENTY_ONE_BITS: usize = 21;
+pub const TWENTY_FOUR_BITS: usize = 24;
 pub const TWENTY_SIX_BITS: usize = 26;
+pub const TWENTY_EIGHT_BITS: usize = 28;
 pub const THIRTY_BITS: usize = 30;
-
 pub const THIRTY_ONE_BITS: usize = 31;
 pub const THIRTY_TWO_BITS: usize = 32;
 pub const THIRTY_NINE_BITS: usize = 39;
