@@ -354,6 +354,7 @@ mod templates {
         pub ee_count: u64,
         pub designator_count: u64,
         pub signal_count: u64,
+        pub receiver_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -386,6 +387,7 @@ mod templates {
                 ee_count: count_for_pdu_type(stats, PduType::ElectromagneticEmission),
                 designator_count: count_for_pdu_type(stats, PduType::Designator),
                 signal_count: count_for_pdu_type(stats, PduType::Signal),
+                receiver_count: count_for_pdu_type(stats, PduType::Receiver),
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {
