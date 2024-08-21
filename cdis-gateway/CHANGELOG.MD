@@ -6,6 +6,7 @@ Support for new PDUs, aligned with `cdis-assemble`:
 - Electromagnetic Emission
 - Designator
 - Signal
+- Receiver
 
 ## 0.2.0 - 2024-07-15
 

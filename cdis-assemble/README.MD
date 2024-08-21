@@ -37,7 +37,7 @@ Here is an overview of the C-DIS PDUs supported by cdis-assemble. Any unimplemen
 | Designator              | V       |
 | Transmitter             |         |
 | Signal                  | V       |
-| Receiver                |         |
+| Receiver                | V       |
 | IFF                     |         |
 
 ## Usage

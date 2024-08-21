@@ -840,10 +840,6 @@ fn codec_consistency_signal() {
     let body_out = if let PduBody::Signal(body) = dis_pdu_out.body { body } else { Signal::default() };
 
     assert_eq!(body_in, body_out);
-
-    // assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
-    // assert_eq!(body_in.receiving_id, body_out.receiving_id);
-    // assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
 }
 
 #[test]
