@@ -16,6 +16,7 @@ use crate::electromagnetic_emission::codec::{decode_electromagnetic_emission_bod
 use crate::entity_state::codec::{decode_entity_state_body_and_update_state, DecoderStateEntityState, encode_entity_state_body_and_update_state, EncoderStateEntityState};
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
+use crate::receiver::model::Receiver;
 use crate::records::model::CdisHeader;
 use crate::remove_entity::model::RemoveEntity;
 use crate::set_data::model::SetData;
@@ -209,7 +210,7 @@ impl CdisBody {
             }
             PduBody::Transmitter(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::Signal(dis_body) => { (Signal::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::Receiver(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Receiver(dis_body) => { (Receiver::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::IFF(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::UnderwaterAcoustic(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::SupplementalEmissionEntityState(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -319,7 +320,9 @@ impl CdisBody {
             CdisBody::Signal(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::Receiver => {}
+            CdisBody::Receiver(cdis_body) => {
+                (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
+            }
             // CdisBody::Iff => {}
             CdisBody::Unsupported(_) | _ => {
                 (PduBody::Other(dis_rs::other::model::Other::builder().build()), CodecStateResult::StateUnaffected)

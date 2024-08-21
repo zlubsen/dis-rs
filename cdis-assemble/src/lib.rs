@@ -430,10 +430,9 @@ mod tests {
         assert!(PduType::Designator.is_implemented());
 
         assert!(PduType::Signal.is_implemented());
-        // assert!(PduType::Receiver.is_implemented());
+        assert!(PduType::Receiver.is_implemented());
 
         assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
-        assert_eq!(PduType::Receiver.is_implemented() || CdisBody::Receiver.body_length() != 0, false);
         assert_eq!(PduType::IFF.is_implemented() || CdisBody::Iff.body_length() != 0, false);
     }
 }

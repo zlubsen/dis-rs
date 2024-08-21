@@ -9,7 +9,7 @@ use dis_rs::designator::model::Designator;
 use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ReceiverState, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 use dis_rs::signal::model::EncodingScheme;
 
@@ -844,4 +844,37 @@ fn codec_consistency_signal() {
     // assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
     // assert_eq!(body_in.receiving_id, body_out.receiving_id);
     // assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_receiver() {
+    use dis_rs::receiver::model::Receiver;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Receiver).with_pdu_status(PduStatus::default());
+    let dis_body = Receiver::builder()
+        .with_radio_reference_id(EntityId::new(1, 1, 1))
+        .with_radio_number(20)
+        .with_receiver_state(ReceiverState::Onandreceiving)
+        .with_received_power(-90.0)
+        .with_transmitter_radio_reference_id(EntityId::new(2, 2, 2))
+        .with_transmitter_radio_number(10)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+
+    assert_eq!(state_result, CodecStateResult::StateUnaffected);
+
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Receiver(body) = dis_pdu_in.body { body } else { Receiver::default() };
+    let body_out = if let PduBody::Receiver(body) = dis_pdu_out.body { body } else { Receiver::default() };
+
+    assert_eq!(body_in, body_out);
 }
