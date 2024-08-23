@@ -1,4 +1,3 @@
-use dis_rs::enumerations::VariableRecordType;
 use dis_rs::transmitter::model::VariableTransmitterParameter;
 use crate::{BitBuffer, BodyProperties};
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
@@ -37,7 +36,7 @@ impl SerializeCdis for Transmitter {
         } else { cursor };
 
         let cursor = self.antenna_pattern.iter()
-            .fold(cursor, |cursor, byte | write_value_unsigned(buf, cursor, EIGHT_BITS, byte) );
+            .fold(cursor, |cursor, byte | write_value_unsigned(buf, cursor, EIGHT_BITS, *byte) );
 
         let cursor = if let Some(frequency) = self.frequency {
             frequency.serialize(buf, cursor)
@@ -65,11 +64,11 @@ impl SerializeCdis for Transmitter {
 
         let cursor = if !self.modulation_parameters.is_empty() {
             let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.modulation_parameters.len());
-            let cursor = self.modulation_parameters.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, byte));
+            let cursor = self.modulation_parameters.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
             cursor
         } else { cursor};
 
-        let cursor = self.antenna_pattern.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, byte));
+        let cursor = self.antenna_pattern.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
 
         let cursor = self.variable_transmitter_parameters.iter()
             .fold(cursor, |cursor, param| { param.serialize(buf, cursor) });
@@ -85,7 +84,7 @@ impl SerializeCdis for VariableTransmitterParameter {
         let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, record_type);
         let record_length = self.fields.len() + SIX_OCTETS;
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, record_length);
-        let cursor = self.fields.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, byte));
+        let cursor = self.fields.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
         cursor
     }
 }
