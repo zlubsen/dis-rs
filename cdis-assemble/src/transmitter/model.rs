@@ -113,7 +113,7 @@ impl From<u8> for TransmitterUnits {
         const RELATIVE_ANTENNA_LOCATION_BIT: u8 = 0x01;
         Self {
             world_location_altitude: UnitsDekameters::from((value & WORLD_LOCATION_ALTITUDE_BIT) >> 1),
-            relative_antenna_location: UnitsMeters::from(value & RELATIVE_ANTENNA_LOCATION_BIT);
+            relative_antenna_location: UnitsMeters::from(value & RELATIVE_ANTENNA_LOCATION_BIT),
         }
     }
 }

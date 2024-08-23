@@ -33,6 +33,7 @@ Support for new PDUs:
 - EE: page 90 j) - Beam Status - Status is on if Flag = 1 or off if Flag = 0; the SISO-REF-010 lists a value of 0 as ACTIVE, and 1 as DEACTIVATED, which is the opposite when considering the on-wire values.
 - BeamData record: Table 17 lists the field Beam Sweep Sync to be SVINT13, but otherwise it is described as an unsigned 10-bit field (in text 11.3.e, table 62).
 - Encoding Scheme record: the DIS variants other than EncodedAudio and RawBinaryData are not represented in C-DIS.
+- p104: typo Cyrpto Key ID
 
 ## 0.1.1 - 2024-06-26
 

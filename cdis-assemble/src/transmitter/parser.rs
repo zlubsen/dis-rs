@@ -1,8 +1,10 @@
 use nom::complete::take;
 use nom::IResult;
-use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterTransmitState};
+use nom::multi::count;
+use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterTransmitState, VariableRecordType};
+use dis_rs::transmitter::model::VariableTransmitterParameter;
 use crate::{BodyProperties, CdisBody};
-use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THREE_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
 use crate::parsing::{field_present, parse_field_when_present, BitInput};
 use crate::records::parser::{entity_coordinate_vector, entity_identification, entity_type, world_coordinates};
 use crate::transmitter::model::{ModulationType, TransmitFrequencyBandwidthFloat, Transmitter, TransmitterFieldsPresent, TransmitterFrequencyFloat, TransmitterUnits};
@@ -74,11 +76,29 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, length_of_modulation_parameters) : (BitInput, Option<u16>) =
         parse_field_when_present(fields_present, TransmitterFieldsPresent::MODULATION_PARAMETERS_BIT, take(EIGHT_BITS))(input)?;
 
-    let (input, modulation_parameters) = ...;
+    let (input, modulation_parameters) = if field_present(fields_present, TransmitterFieldsPresent::MODULATION_PARAMETERS_BIT) {
+        let (input, params) : (BitInput, Vec<u8>) = count(
+            take(EIGHT_BITS), length_of_modulation_parameters.unwrap_or_default() as usize)(input)?;
+        (input, params)
+    } else {
+        (input, vec![])
+    };
 
-    let (input, antenna_pattern) = ...;
+    let (input, antenna_pattern) = if field_present(fields_present, TransmitterFieldsPresent::ANTENNA_PATTERN_BIT) {
+        let (input, params) : (BitInput, Vec<u8>) = count(
+            take(EIGHT_BITS), antenna_pattern_length as usize)(input)?;
+        (input, params)
+    } else {
+        (input, vec![])
+    };
 
-    let (input, variable_transmitter_parameters) = ...;
+    let (input, variable_transmitter_parameters) = if field_present(fields_present, TransmitterFieldsPresent::VARIABLE_PARAMETERS_BIT) {
+        let (input, params) : (BitInput, Vec<VariableTransmitterParameter>) = count(
+            variable_transmitter_parameter, nr_of_variable_transmitter_parameters.value as usize)(input)?;
+        (input, params)
+    } else {
+        (input, vec![])
+    };
 
     Ok((input, Transmitter {
         units,
@@ -97,8 +117,21 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         modulation_type,
         crypto_system,
         crypto_key_id,
-        modulation_parameters: vec![],
-        antenna_pattern: vec![],
-        variable_transmitter_parameters: vec![],
+        modulation_parameters,
+        antenna_pattern,
+        variable_transmitter_parameters,
     }.into_cdis_body()))
+}
+
+fn variable_transmitter_parameter(input: BitInput) -> IResult<BitInput, VariableTransmitterParameter> {
+    const SIX_OCTETS: usize = 6;
+    let (input, record_type) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    let (input, record_length) : (BitInput, usize) = take(SIXTEEN_BITS)(input)?;
+
+    let nr_of_records = record_length.saturating_sub(SIX_OCTETS);
+    let (input, record_specific_fields) : (BitInput, Vec<u8>) = count(take(EIGHT_BITS), nr_of_records)(input)?;
+
+    Ok((input, VariableTransmitterParameter::default()
+        .with_record_type(VariableRecordType::from(record_type))
+        .with_fields(record_specific_fields)))
 }

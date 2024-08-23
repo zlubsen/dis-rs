@@ -5,6 +5,7 @@ use crate::types::model::UVINT8;
 use crate::writing::{BitBuffer, serialize_when_present, SerializeCdis, SerializeCdisPdu, write_value_unsigned};
 
 impl SerializeCdisPdu for EntityState {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let fields_present = self.fields_present_field();
 
