@@ -23,6 +23,7 @@ use crate::set_data::model::SetData;
 use crate::signal::model::Signal;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
+use crate::transmitter::codec::{decode_transmitter_body_and_update_state, encode_transmitter_body_and_update_state, DecoderStateTransmitter, EncoderStateTransmitter};
 use crate::unsupported::Unsupported;
 
 pub const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
@@ -48,6 +49,7 @@ pub struct EncoderState {
     pub entity_state: HashMap<EntityId, EncoderStateEntityState>,
     pub ee: HashMap<EntityId, EncoderStateElectromagneticEmission>,
     pub designator: HashMap<EntityId, EncoderStateDesignator>,
+    pub transmitter: HashMap<EntityId, EncoderStateTransmitter>,
 }
 
 impl EncoderState {
@@ -56,6 +58,7 @@ impl EncoderState {
             entity_state: Default::default(),
             ee: Default::default(),
             designator: Default::default(),
+            transmitter: Default::default(),
         }
     }
 }
@@ -65,6 +68,7 @@ pub struct DecoderState {
     pub entity_state: HashMap<EntityId, DecoderStateEntityState>,
     pub ee: HashMap<EntityId, DecoderStateElectromagneticEmission>,
     pub designator: HashMap<EntityId, DecoderStateDesignator>,
+    pub transmitter: HashMap<EntityId, DecoderStateTransmitter>,
 }
 
 impl DecoderState {
@@ -73,6 +77,7 @@ impl DecoderState {
             entity_state: Default::default(),
             ee: Default::default(),
             designator: Default::default(),
+            transmitter: Default::default(),
         }
     }
 }
@@ -149,6 +154,7 @@ pub enum CodecStateResult {
     StateUpdateEntityState,
     StateUpdateElectromagneticEmission,
     StateUpdateDesignator,
+    StateUpdateTransmitter,
 }
 
 impl CdisPdu {
@@ -208,7 +214,9 @@ impl CdisBody {
             PduBody::Designator(dis_body) => {
                 encode_designator_body_and_update_state(dis_body, state, options)
             }
-            PduBody::Transmitter(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::Transmitter(dis_body) => {
+                encode_transmitter_body_and_update_state(dis_body, state, options)
+            }
             PduBody::Signal(dis_body) => { (Signal::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Receiver(dis_body) => { (Receiver::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::IFF(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -316,7 +324,9 @@ impl CdisBody {
             CdisBody::Designator(cdis_body) => {
                 decode_designator_body_and_update_state(cdis_body, state, options)
             }
-            // CdisBody::Transmitter => {}
+            CdisBody::Transmitter(cdis_body) => {
+                decode_transmitter_body_and_update_state(cdis_body, state, options)
+            }
             CdisBody::Signal(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }

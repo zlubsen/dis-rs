@@ -2,12 +2,12 @@ use nom::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterTransmitState, VariableRecordType};
-use dis_rs::transmitter::model::VariableTransmitterParameter;
+use dis_rs::transmitter::model::{CryptoKeyId, VariableTransmitterParameter};
 use crate::{BodyProperties, CdisBody};
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
 use crate::parsing::{field_present, parse_field_when_present, BitInput};
-use crate::records::parser::{entity_coordinate_vector, entity_identification, entity_type, world_coordinates};
-use crate::transmitter::model::{ModulationType, TransmitFrequencyBandwidthFloat, Transmitter, TransmitterFieldsPresent, TransmitterFrequencyFloat, TransmitterUnits};
+use crate::records::parser::{beam_antenna_pattern, entity_coordinate_vector, entity_identification, entity_type, world_coordinates};
+use crate::transmitter::model::{CdisSpreadSpectrum, ModulationType, TransmitFrequencyBandwidthFloat, Transmitter, TransmitterFieldsPresent, TransmitterFrequencyFloat, TransmitterUnits};
 use crate::types::parser::{uvint16, uvint8};
 use crate::types::model::CdisFloat;
 
@@ -40,7 +40,8 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         parse_field_when_present(fields_present, TransmitterFieldsPresent::ANTENNA_PATTERN_BIT, take(THREE_BITS))(input)?;
     let antenna_pattern_type = antenna_pattern_type.map(TransmitterAntennaPatternType::from);
 
-    let (input, antenna_pattern_length) : (BitInput, u16) = take(TEN_BITS)(input)?;
+    // TODO this fields actually indicated whether the beam antenna pattern is present
+    let (input, _antenna_pattern_length) : (BitInput, u16) = take(TEN_BITS)(input)?;
 
     let (input, frequency) = if field_present(fields_present, TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT) {
         let (input, frequency) = TransmitterFrequencyFloat::parse(input)?;
@@ -55,7 +56,8 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         parse_field_when_present(fields_present, TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT, take(EIGHT_BITS))(input)?;
 
     let (input, modulation_type) = if field_present(fields_present, TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT) {
-        let (input, spread_spectrum) = take(FOUR_BITS)(input)?;
+        let (input, spread_spectrum) : (BitInput, u8) = take(FOUR_BITS)(input)?;
+        let spread_spectrum = CdisSpreadSpectrum(spread_spectrum);
         let (input, major_modulation) = take(FOUR_BITS)(input)?;
         let (input, detail) = take(FOUR_BITS)(input)?;
         let (input, radio_system) = take(FOUR_BITS)(input)?;
@@ -72,6 +74,7 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let crypto_system = crypto_system.map(TransmitterCryptoSystem::from);
     let (input, crypto_key_id) : (BitInput, Option<u16>) =
         parse_field_when_present(fields_present, TransmitterFieldsPresent::CRYPTO_DETAILS_BIT, take(SIXTEEN_BITS))(input)?;
+    let crypto_key_id = crypto_key_id.map(CryptoKeyId::from);
 
     let (input, length_of_modulation_parameters) : (BitInput, Option<u16>) =
         parse_field_when_present(fields_present, TransmitterFieldsPresent::MODULATION_PARAMETERS_BIT, take(EIGHT_BITS))(input)?;
@@ -85,11 +88,10 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     };
 
     let (input, antenna_pattern) = if field_present(fields_present, TransmitterFieldsPresent::ANTENNA_PATTERN_BIT) {
-        let (input, params) : (BitInput, Vec<u8>) = count(
-            take(EIGHT_BITS), antenna_pattern_length as usize)(input)?;
-        (input, params)
+        let (input, pattern) = beam_antenna_pattern(input)?;
+        (input, Some(pattern))
     } else {
-        (input, vec![])
+        (input, None)
     };
 
     let (input, variable_transmitter_parameters) = if field_present(fields_present, TransmitterFieldsPresent::VARIABLE_PARAMETERS_BIT) {

@@ -3,13 +3,13 @@ use nom::IResult;
 use nom::bits::complete::take;
 use nom::multi::count;
 use num::Integer;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, VariableParameterRecordType, VariableRecordType};
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem, VariableParameterRecordType, VariableRecordType};
 use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::parsing::take_signed;
-use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
+use crate::records::model::{AngularVelocity, BeamAntennaPattern, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
 use crate::types::parser::{svint12, svint14, svint16, svint24, uvint16, uvint8};
 
@@ -494,6 +494,31 @@ pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingSche
     };
 
     Ok((input, encoding_scheme))
+}
+
+pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAntennaPattern> {
+    let (input, beam_direction_psi) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_theta) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_phi) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, az_beamwidth) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, el_beamwidth) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, reference_system) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let reference_system = TransmitterAntennaPatternReferenceSystem::from(reference_system);
+    let (input, e_z) : (BitInput, isize) = take_signed(SIXTEEN_BITS)(input)?;
+    let (input, e_y) : (BitInput, isize) = take_signed(SIXTEEN_BITS)(input)?;
+    let (input, phase) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+
+    Ok((input, BeamAntennaPattern {
+        beam_direction_psi: beam_direction_psi as i16,
+        beam_direction_theta: beam_direction_theta as i16,
+        beam_direction_phi: beam_direction_phi as i16,
+        az_beamwidth: az_beamwidth as i16,
+        el_beamwidth: el_beamwidth as i16,
+        reference_system,
+        e_z: e_z as i16,
+        e_y: e_y as i16,
+        phase: phase as i16,
+    }))
 }
 
 #[cfg(test)]

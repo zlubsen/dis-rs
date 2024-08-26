@@ -1,6 +1,7 @@
 use dis_rs::transmitter::model::VariableTransmitterParameter;
 use crate::{BitBuffer, BodyProperties};
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
+use crate::records::model::BeamAntennaPattern;
 use crate::transmitter::model::Transmitter;
 use crate::types::model::{CdisFloat, UVINT8};
 use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
@@ -35,8 +36,9 @@ impl SerializeCdis for Transmitter {
             write_value_unsigned(buf, cursor, THREE_BITS, antenna_pattern_type)
         } else { cursor };
 
-        let cursor = self.antenna_pattern.iter()
-            .fold(cursor, |cursor, byte | write_value_unsigned(buf, cursor, EIGHT_BITS, *byte) );
+        let cursor = if self.antenna_pattern.is_some() {
+            todo!("antenna pattern length")
+        } else { cursor };
 
         let cursor = if let Some(frequency) = self.frequency {
             frequency.serialize(buf, cursor)
@@ -47,7 +49,7 @@ impl SerializeCdis for Transmitter {
 
         let cursor = serialize_when_present(&self.power, buf, cursor);
         let cursor = if let Some(modulation) = &self.modulation_type {
-            let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.spread_spectrum);
+            let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.spread_spectrum.0);
             let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.major_modulation);
             let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.detail);
             let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.radio_system);
@@ -59,6 +61,7 @@ impl SerializeCdis for Transmitter {
             write_value_unsigned(buf, cursor, FOUR_BITS, crypto_system)
         } else { cursor };
         let cursor = if let Some(crypto_key_id) = self.crypto_key_id {
+            let crypto_key_id: u16 = crypto_key_id.into();
             write_value_unsigned(buf, cursor, SIXTEEN_BITS, crypto_key_id)
         } else { cursor };
 
@@ -68,7 +71,9 @@ impl SerializeCdis for Transmitter {
             cursor
         } else { cursor};
 
-        let cursor = self.antenna_pattern.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
+        let cursor = if let Some(pattern) = self.antenna_pattern {
+            pattern.serialize(buf, cursor)
+        } else { cursor };
 
         let cursor = self.variable_transmitter_parameters.iter()
             .fold(cursor, |cursor, param| { param.serialize(buf, cursor) });
@@ -86,5 +91,11 @@ impl SerializeCdis for VariableTransmitterParameter {
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, record_length);
         let cursor = self.fields.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
         cursor
+    }
+}
+
+impl SerializeCdis for BeamAntennaPattern {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        todo!()
     }
 }

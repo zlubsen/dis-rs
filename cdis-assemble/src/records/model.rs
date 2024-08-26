@@ -1,5 +1,5 @@
 use nom::IResult;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName};
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem};
 use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
 use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
@@ -230,7 +230,28 @@ impl CdisRecord for AngularVelocity {
     }
 }
 
-/// 11.1 Linear Acceleration
+/// 11.2 Beam Antenna Pattern Record
+/// Scale = (2^12 - 1) / pi
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub struct BeamAntennaPattern {
+    pub beam_direction_psi: i16,
+    pub beam_direction_theta: i16,
+    pub beam_direction_phi: i16,
+    pub az_beamwidth: i16,
+    pub el_beamwidth: i16,
+    pub reference_system: TransmitterAntennaPatternReferenceSystem,
+    pub e_z: i16,
+    pub e_y: i16,
+    pub phase: i16,
+}
+
+impl CdisRecord for BeamAntennaPattern {
+    fn record_length(&self) -> usize {
+        112 // = 6*13 + 2*16 + 2
+    }
+}
+
+/// 11.18 Linear Acceleration
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct LinearAcceleration {
     pub x: SVINT14,

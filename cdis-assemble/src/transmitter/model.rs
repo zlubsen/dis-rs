@@ -1,11 +1,11 @@
 use nom::complete::take;
 use nom::IResult;
-use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterTransmitState};
-use dis_rs::transmitter::model::VariableTransmitterParameter;
+use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterTransmitState};
+use dis_rs::transmitter::model::{CryptoKeyId, SpreadSpectrum, VariableTransmitterParameter};
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{EIGHT_BITS, FOUR_BITS, SEVENTEEN_BITS, SIXTEEN_BITS, TWENTY_EIGHT_BITS, TWENTY_FOUR_BITS, TWENTY_ONE_BITS};
+use crate::constants::{EIGHT_BITS, FORTY_EIGHT_BITS, FOUR_BITS, SEVENTEEN_BITS, SIXTEEN_BITS, TWENTY_EIGHT_BITS, TWENTY_FOUR_BITS, TWENTY_ONE_BITS};
 use crate::parsing::BitInput;
-use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId, EntityType, UnitsDekameters, UnitsMeters, WorldCoordinates};
+use crate::records::model::{BeamAntennaPattern, CdisRecord, EntityCoordinateVector, EntityId, EntityType, UnitsDekameters, UnitsMeters, WorldCoordinates};
 use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
 use crate::writing::write_value_unsigned;
 
@@ -26,9 +26,9 @@ pub struct Transmitter {
     pub power: Option<u8>,
     pub modulation_type: Option<ModulationType>,
     pub crypto_system: Option<TransmitterCryptoSystem>,
-    pub crypto_key_id: Option<u16>,
+    pub crypto_key_id: Option<CryptoKeyId>,
     pub modulation_parameters: Vec<u8>,
-    pub antenna_pattern: Vec<u8>,
+    pub antenna_pattern: Option<BeamAntennaPattern>,
     pub variable_transmitter_parameters: Vec<VariableTransmitterParameter>,
 }
 
@@ -42,7 +42,7 @@ impl BodyProperties for Transmitter {
         | (if !self.variable_transmitter_parameters.is_empty() { Self::FieldsPresent::VARIABLE_PARAMETERS_BIT } else { 0 })
         | (if self.antenna_location.is_some() { Self::FieldsPresent::ANTENNA_LOCATION_BIT } else { 0 } )
         | (if self.relative_antenna_location.is_some() { Self::FieldsPresent::RELATIVE_ANTENNA_LOCATION_BIT } else { 0 } )
-        | (if self.antenna_pattern_type.is_some() && !self.antenna_pattern.is_empty() { Self::FieldsPresent::ANTENNA_PATTERN_BIT } else { 0 } )
+        | (if self.antenna_pattern_type.is_some() && self.antenna_pattern.is_some() { Self::FieldsPresent::ANTENNA_PATTERN_BIT } else { 0 } )
         | (if self.frequency.is_some() && self.transmit_frequency_bandwidth.is_some()
             && self.power.is_some() && self.modulation_type.is_some() {
             Self::FieldsPresent::TRANSMITTER_DETAILS_BIT
@@ -52,8 +52,10 @@ impl BodyProperties for Transmitter {
     }
 
     fn body_length_bits(&self) -> usize {
-        const CONST_BIT_SIZE: usize = 11 + 2 + 3 + 10 + 8 + 20 + 8; // fields present, units, full update flag, transmit state, antenna pattern type, antenna pattern length, power, crypto type, crypto key, modulation parameters length
-        const VARIABLE_TRANSMITTER_PARAM_CONST_BIT_SIZE: usize = 48;
+        // FIXME remove additions
+        // fields present (8), units (2), full update flag (1), transmit state (2), antenna pattern type (...), antenna pattern length (..), power (..), crypto type (..), crypto key (..), modulation parameters length (..)
+        const CONST_BIT_SIZE: usize = 11 + 2 + 3 + 10 + 8 + 20 + 8;
+        const VARIABLE_TRANSMITTER_PARAM_CONST_BIT_SIZE: usize = FORTY_EIGHT_BITS;
 
         CONST_BIT_SIZE +
             self.radio_reference_id.record_length() +
@@ -67,7 +69,7 @@ impl BodyProperties for Transmitter {
             if self.transmit_frequency_bandwidth.is_some() { TWENTY_ONE_BITS } else { 0 } +
             if self.modulation_type.is_some() { SIXTEEN_BITS } else { 0 } +
             (self.modulation_parameters.len() * EIGHT_BITS) +
-            (self.antenna_pattern.len() * EIGHT_BITS) +
+            if let Some(record) = self.antenna_pattern { record.record_length() } else { 0 } +
             self.variable_transmitter_parameters.iter()
                 .map(| param | VARIABLE_TRANSMITTER_PARAM_CONST_BIT_SIZE + (param.fields.len() * EIGHT_BITS) )
                 .sum::<usize>()
@@ -236,8 +238,76 @@ impl CdisFloat for TransmitFrequencyBandwidthFloat {
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct ModulationType {
-    pub spread_spectrum: u8,
+    pub spread_spectrum: CdisSpreadSpectrum,
     pub major_modulation: u8,
     pub detail: u8,
     pub radio_system: u8,
+}
+
+impl From<&dis_rs::transmitter::model::ModulationType> for ModulationType {
+    fn from(value: &dis_rs::transmitter::model::ModulationType) -> Self {
+        let spread_spectrum = CdisSpreadSpectrum::from(&value.spread_spectrum);
+        let major_modulation = u16::from(value.major_modulation) as u8;
+        let detail = match value.major_modulation {
+            TransmitterMajorModulation::NoStatement => { 0u8 }
+            TransmitterMajorModulation::Amplitude(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::Angle(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::Combination(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::Pulse(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::Unmodulated(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::SATCOM(detail) => {
+                u16::from(detail) as u8
+            }
+            TransmitterMajorModulation::Unspecified(detail) => {
+                detail as u8
+            }
+        };
+        let radio_system = u16::from(value.radio_system) as u8;
+        Self {
+            spread_spectrum,
+            major_modulation,
+            detail,
+            radio_system,
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct CdisSpreadSpectrum(pub u8);
+
+impl From<&SpreadSpectrum> for CdisSpreadSpectrum {
+    fn from(value: &SpreadSpectrum) -> Self {
+        const BIT_0: u8 = 0x08;
+        const BIT_1: u8 = 0x04;
+        const BIT_2: u8 = 0x02;
+
+        let spectrum = 0u8;
+        let spectrum = if value.frequency_hopping {
+            spectrum | BIT_0
+        } else { spectrum };
+        let spectrum = if value.pseudo_noise {
+            spectrum | BIT_1
+        } else { spectrum };
+        let spectrum = if value.time_hopping {
+            spectrum | BIT_2
+        } else { spectrum };
+
+        CdisSpreadSpectrum(spectrum)
+    }
 }

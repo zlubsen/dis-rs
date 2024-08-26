@@ -4,7 +4,7 @@ use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
-use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
+use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
 use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
 
 pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
@@ -129,14 +129,8 @@ fn spread_spectrum(input: &[u8]) -> IResult<&[u8], SpreadSpectrum> {
 
 fn crypto_key_id(input: &[u8]) -> IResult<&[u8], CryptoKeyId> {
     let (input, value) = be_u16(input)?;
-    let pseudo_crypto_key = value >> 1;
-    let crypto_mode = (value & 0x0001) != 0;
-    let crypto_mode = CryptoMode::from(crypto_mode);
 
-    Ok((input, CryptoKeyId {
-        pseudo_crypto_key,
-        crypto_mode,
-    }))
+    Ok((input, CryptoKeyId::from(value)))
 }
 
 fn beam_antenna_pattern(input: &[u8]) -> IResult<&[u8], BeamAntennaPattern> {

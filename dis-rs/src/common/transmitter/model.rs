@@ -154,7 +154,7 @@ impl SpreadSpectrum {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct CryptoKeyId {
     pub pseudo_crypto_key: u16,
     pub crypto_mode: CryptoMode,
@@ -169,7 +169,30 @@ impl Default for CryptoKeyId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl From<u16> for CryptoKeyId {
+    fn from(value: u16) -> Self {
+        let pseudo_crypto_key = value >> 1;
+        let crypto_mode = (value & 0x0001) != 0;
+        let crypto_mode = CryptoMode::from(crypto_mode);
+
+        Self {
+            pseudo_crypto_key,
+            crypto_mode,
+        }
+    }
+}
+
+impl From<CryptoKeyId> for u16 {
+    fn from(value: CryptoKeyId) -> Self {
+        let crypto_mode = match value.crypto_mode {
+            CryptoMode::Baseband => { 0u16 }
+            CryptoMode::Diphase => { 1u16 }
+        };
+        (value.pseudo_crypto_key << 1) + crypto_mode
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum CryptoMode {
     Baseband,
     Diphase,
