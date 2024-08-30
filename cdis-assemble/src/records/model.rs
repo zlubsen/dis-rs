@@ -241,7 +241,7 @@ pub struct BeamAntennaPattern {
     pub el_beamwidth: i16,
     pub reference_system: TransmitterAntennaPatternReferenceSystem,
     pub e_z: i16,
-    pub e_y: i16,
+    pub e_x: i16,
     pub phase: i16,
 }
 

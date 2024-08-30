@@ -1,10 +1,10 @@
 use dis_rs::transmitter::model::VariableTransmitterParameter;
 use crate::{BitBuffer, BodyProperties};
-use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
-use crate::records::model::BeamAntennaPattern;
+use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
+use crate::records::model::{BeamAntennaPattern, CdisRecord};
 use crate::transmitter::model::Transmitter;
 use crate::types::model::{CdisFloat, UVINT8};
-use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
+use crate::writing::{serialize_when_present, write_value_signed, write_value_unsigned, SerializeCdis};
 
 impl SerializeCdis for Transmitter {
     #[allow(clippy::let_and_return)]
@@ -31,13 +31,13 @@ impl SerializeCdis for Transmitter {
 
         let cursor = serialize_when_present(&self.antenna_location, buf, cursor);
         let cursor = serialize_when_present(&self.relative_antenna_location, buf, cursor);
+
         let cursor = if let Some(antenna_pattern_type) = self.antenna_pattern_type {
             let antenna_pattern_type: u16 = antenna_pattern_type.into();
             write_value_unsigned(buf, cursor, THREE_BITS, antenna_pattern_type)
         } else { cursor };
-
-        let cursor = if self.antenna_pattern.is_some() {
-            todo!("antenna pattern length")
+        let cursor = if let Some(pattern) = self.antenna_pattern {
+            write_value_unsigned(buf, cursor, TEN_BITS, pattern.record_length())
         } else { cursor };
 
         let cursor = if let Some(frequency) = self.frequency {
@@ -82,6 +82,24 @@ impl SerializeCdis for Transmitter {
     }
 }
 
+impl SerializeCdis for BeamAntennaPattern {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_psi);
+        let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_theta);
+        let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_phi);
+        let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.az_beamwidth);
+        let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.el_beamwidth);
+
+        let reference_system : u8 = self.reference_system.into();
+        let cursor = write_value_unsigned(buf, cursor, TWO_BITS, reference_system);
+        let cursor = write_value_signed(buf, cursor, SIXTEEN_BITS, self.e_z);
+        let cursor = write_value_signed(buf, cursor, SIXTEEN_BITS, self.e_x);
+        let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.phase);
+
+        cursor
+    }
+}
+
 impl SerializeCdis for VariableTransmitterParameter {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         const SIX_OCTETS: usize = 6;
@@ -91,11 +109,5 @@ impl SerializeCdis for VariableTransmitterParameter {
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, record_length);
         let cursor = self.fields.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
         cursor
-    }
-}
-
-impl SerializeCdis for BeamAntennaPattern {
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        todo!()
     }
 }

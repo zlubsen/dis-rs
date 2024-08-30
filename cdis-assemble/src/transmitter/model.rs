@@ -1,6 +1,6 @@
 use nom::complete::take;
 use nom::IResult;
-use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterTransmitState};
+use dis_rs::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterTransmitState};
 use dis_rs::transmitter::model::{CryptoKeyId, SpreadSpectrum, VariableTransmitterParameter};
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{EIGHT_BITS, FORTY_EIGHT_BITS, FOUR_BITS, SEVENTEEN_BITS, SIXTEEN_BITS, TWENTY_EIGHT_BITS, TWENTY_FOUR_BITS, TWENTY_ONE_BITS};
@@ -236,7 +236,7 @@ impl CdisFloat for TransmitFrequencyBandwidthFloat {
     }
 }
 
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ModulationType {
     pub spread_spectrum: CdisSpreadSpectrum,
     pub major_modulation: u8,
@@ -288,26 +288,34 @@ impl From<&dis_rs::transmitter::model::ModulationType> for ModulationType {
     }
 }
 
-#[derive(Clone, Default, Debug, PartialEq)]
-pub struct CdisSpreadSpectrum(pub u8);
+impl From<&ModulationType> for dis_rs::transmitter::model::ModulationType {
+    fn from(value: &ModulationType) -> Self {
+
+        let major_modulation = TransmitterMajorModulation::from(value.major_modulation as u16);
+
+        Self::default()
+            .with_spread_spectrum(SpreadSpectrum::from(&value.spread_spectrum))
+            .with_major_modulation(major_modulation)
+            .with_radio_system(TransmitterModulationTypeSystem::from(value.radio_system as u16))
+    }
+}
+
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
+pub struct CdisSpreadSpectrum(pub u16);
 
 impl From<&SpreadSpectrum> for CdisSpreadSpectrum {
     fn from(value: &SpreadSpectrum) -> Self {
-        const BIT_0: u8 = 0x08;
-        const BIT_1: u8 = 0x04;
-        const BIT_2: u8 = 0x02;
+        let as_dis_bytes: u16 = value.into();
+        let as_cdis_bits = as_dis_bytes >> 12;
 
-        let spectrum = 0u8;
-        let spectrum = if value.frequency_hopping {
-            spectrum | BIT_0
-        } else { spectrum };
-        let spectrum = if value.pseudo_noise {
-            spectrum | BIT_1
-        } else { spectrum };
-        let spectrum = if value.time_hopping {
-            spectrum | BIT_2
-        } else { spectrum };
+        CdisSpreadSpectrum(as_cdis_bits)
+    }
+}
 
-        CdisSpreadSpectrum(spectrum)
+impl From<&CdisSpreadSpectrum> for SpreadSpectrum {
+    fn from(value: &CdisSpreadSpectrum) -> Self {
+        let as_dis_bytes = value.0 << 12;
+
+        Self::from(as_dis_bytes)
     }
 }

@@ -40,8 +40,7 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         parse_field_when_present(fields_present, TransmitterFieldsPresent::ANTENNA_PATTERN_BIT, take(THREE_BITS))(input)?;
     let antenna_pattern_type = antenna_pattern_type.map(TransmitterAntennaPatternType::from);
 
-    // TODO this fields actually indicated whether the beam antenna pattern is present
-    let (input, _antenna_pattern_length) : (BitInput, u16) = take(TEN_BITS)(input)?;
+    let (input, _antenna_pattern_length) : (BitInput, Option<u16>) = parse_field_when_present(fields_present, TransmitterFieldsPresent::ANTENNA_PATTERN_BIT, take(TEN_BITS))(input)?;
 
     let (input, frequency) = if field_present(fields_present, TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT) {
         let (input, frequency) = TransmitterFrequencyFloat::parse(input)?;
@@ -56,7 +55,7 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         parse_field_when_present(fields_present, TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT, take(EIGHT_BITS))(input)?;
 
     let (input, modulation_type) = if field_present(fields_present, TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT) {
-        let (input, spread_spectrum) : (BitInput, u8) = take(FOUR_BITS)(input)?;
+        let (input, spread_spectrum) : (BitInput, u16) = take(FOUR_BITS)(input)?;
         let spread_spectrum = CdisSpreadSpectrum(spread_spectrum);
         let (input, major_modulation) = take(FOUR_BITS)(input)?;
         let (input, detail) = take(FOUR_BITS)(input)?;

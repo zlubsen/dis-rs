@@ -120,11 +120,8 @@ fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
 
 fn spread_spectrum(input: &[u8]) -> IResult<&[u8], SpreadSpectrum> {
     let (input, spread_spectrum_values) = be_u16(input)?;
-    let frequency_hopping = ((spread_spectrum_values >> 15) & 0x0001) != 0;
-    let pseudo_noise = ((spread_spectrum_values >> 14) & 0x0001) != 0;
-    let time_hopping = ((spread_spectrum_values >> 13) & 0x0001) != 0;
 
-    Ok((input, SpreadSpectrum::new_with_values(frequency_hopping, pseudo_noise, time_hopping)))
+    Ok((input, SpreadSpectrum::from(spread_spectrum_values)))
 }
 
 fn crypto_key_id(input: &[u8]) -> IResult<&[u8], CryptoKeyId> {

@@ -1,6 +1,6 @@
 use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
-use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Location, Orientation as DisOrientation, PduBody};
+use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation, PduBody};
 use std::time::Instant;
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
@@ -97,7 +97,7 @@ impl Default for DecoderStateEntityState {
             force_id: Default::default(),
             entity_type: Default::default(),
             alt_entity_type: Default::default(),
-            entity_location: Location::default(),
+            entity_location: DisLocation::default(),
             entity_orientation: Default::default(),
             entity_appearance: Default::default(),
             entity_marking: Default::default(),
@@ -249,17 +249,17 @@ impl EntityState {
             .with_force_id(force_id)
             .with_entity_type(entity_type)
             .with_alternative_entity_type(alternate_entity_type)
-            .with_velocity(self.entity_linear_velocity.unwrap_or_default().decode())
+            .with_velocity(self.entity_linear_velocity.map(|velocity|velocity.decode()).unwrap_or_default())
             .with_location(entity_location)
             .with_orientation(entity_orientation)
             .with_appearance(entity_appearance)
             .with_dead_reckoning_parameters(DrParameters::default()
                 .with_algorithm(self.dr_algorithm)
-                .with_parameters(self.dr_params_other.clone().unwrap_or_default().decode(self.dr_algorithm))
-                .with_linear_acceleration(self.dr_params_entity_linear_acceleration.unwrap_or_default().decode())
-                .with_angular_velocity(self.dr_params_entity_angular_velocity.unwrap_or_default().decode()))
+                .with_parameters(self.dr_params_other.map(|other| other.decode(self.dr_algorithm)).unwrap_or_default())
+                .with_linear_acceleration(self.dr_params_entity_linear_acceleration.map(|param| param.decode()).unwrap_or_default())
+                .with_angular_velocity(self.dr_params_entity_angular_velocity.map(|param| param.decode()).unwrap_or_default()))
             .with_marking(entity_marking)
-            .with_capabilities(dis_rs::entity_capabilities_from_bytes(self.capabilities.clone().unwrap_or_default().0.value, &entity_type))
+            .with_capabilities(dis_rs::entity_capabilities_from_bytes(self.capabilities.clone().map(|capes| capes.0.value).unwrap_or_default(), &entity_type))
             .with_variable_parameters(self.variable_parameters.iter()
                 .map(|vp| vp.decode() )
                 .collect())

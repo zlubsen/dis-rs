@@ -98,21 +98,7 @@ impl Serialize for ModulationType {
 
 impl Serialize for SpreadSpectrum {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        const BIT_0: u16 = 0x8000;
-        const BIT_1: u16 = 0x4000;
-        const BIT_2: u16 = 0x2000;
-
-        let spectrum = 0u16;
-        let spectrum = if self.frequency_hopping {
-            spectrum | BIT_0
-        } else { spectrum };
-        let spectrum = if self.pseudo_noise {
-            spectrum | BIT_1
-        } else { spectrum };
-        let spectrum = if self.time_hopping {
-            spectrum | BIT_2
-        } else { spectrum };
-        buf.put_u16(spectrum);
+        buf.put_u16(u16::from(self));
         2
     }
 }

@@ -516,7 +516,7 @@ pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAnt
         el_beamwidth: el_beamwidth as i16,
         reference_system,
         e_z: e_z as i16,
-        e_y: e_y as i16,
+        e_x: e_y as i16,
         phase: phase as i16,
     }))
 }

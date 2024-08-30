@@ -1,10 +1,10 @@
 use std::time::Instant;
-use dis_rs::enumerations::TransmitterCryptoSystem;
-use dis_rs::model::PduBody;
+use dis_rs::enumerations::{TransmitterCryptoSystem, TransmitterInputSource};
+use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation, PduBody};
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
-use crate::records::codec::{encode_entity_coordinate_vector, encode_world_coordinates};
-use crate::records::model::{EntityId, EntityType};
+use crate::records::codec::{decode_entity_coordinate_vector, decode_world_coordinates, encode_entity_coordinate_vector, encode_world_coordinates};
+use crate::records::model::{BeamAntennaPattern, EntityId, EntityType};
 use crate::transmitter::model::{ModulationType, TransmitFrequencyBandwidthFloat, Transmitter, TransmitterFrequencyFloat, TransmitterUnits};
 use crate::types::model::{CdisFloat, UVINT16, UVINT8};
 
@@ -92,12 +92,9 @@ impl Transmitter {
 
         // include when antenna_pattern is not zeroed
         let (antenna_pattern_type, antenna_pattern) = if let Some(pattern) = &item.antenna_pattern {
-            let mut vec = Vec::new();
-            vec.extend(pattern.e_x.to_be_bytes());
-            // vec.extend(pattern.e_z) TODO
-            (Some(item.antenna_pattern_type), vec)
+            (Some(item.antenna_pattern_type), Some(BeamAntennaPattern::encode(pattern)))
         } else {
-            (None, vec![])
+            (None, None)
         };
 
         let input_source: u8 = item.input_source.into();
@@ -126,7 +123,85 @@ impl Transmitter {
     }
 
     pub fn decode(&self, state: Option<&DecoderStateTransmitter>, options: &CodecOptions) -> (Counterpart, CodecStateResult) {
-        todo!()
+        let (
+            radio_type,
+            antenna_location,
+            relative_antenna_location,
+            frequency,
+            transmit_frequency_bandwidth,
+            power,
+            modulation_type,
+            state_result) =
+            match options.update_mode {
+                CodecUpdateMode::FullUpdate => {
+                    (
+                        self.radio_type.map(|rt| rt.decode()).unwrap_or_default(),
+                        decode_world_coordinates(&self.antenna_location.unwrap_or_default(), self.units.world_location_altitude),
+                        decode_entity_coordinate_vector(&self.relative_antenna_location.unwrap_or_default(), self.units.relative_antenna_location),
+                        self.frequency.map(|freq| freq.to_float()).unwrap_or_default() as u64,
+                        self.transmit_frequency_bandwidth.map(|tfb| tfb.to_float()).unwrap_or_default(),
+                        self.power.map(|power| power as f32).unwrap_or_default(),
+                        dis_rs::transmitter::model::ModulationType::from(&self.modulation_type.unwrap_or_default()),
+                        CodecStateResult::StateUpdateTransmitter
+                    )
+                }
+                CodecUpdateMode::PartialUpdate => {
+                    if self.full_update_flag {
+                        (
+                            self.radio_type.map(|rt| rt.decode()).unwrap_or_default(),
+                            decode_world_coordinates(&self.antenna_location.unwrap_or_default(), self.units.world_location_altitude),
+                            decode_entity_coordinate_vector(&self.relative_antenna_location.unwrap_or_default(), self.units.relative_antenna_location),
+                            self.frequency.map(|freq| freq.to_float()).unwrap_or_default() as u64,
+                            self.transmit_frequency_bandwidth.map(|tfb| tfb.to_float()).unwrap_or_default(),
+                            self.power.map(|power| power as f32).unwrap_or_default(),
+                            dis_rs::transmitter::model::ModulationType::from(&self.modulation_type.unwrap_or_default()),
+                            CodecStateResult::StateUpdateTransmitter
+                        )
+                    } else {
+                        let antenna_location = if let Some(location) = &self.antenna_location {
+                            decode_world_coordinates(location, self.units.world_location_altitude)
+                        } else {
+                            if let Some(state) = state {
+                                state.antenna_location
+                            } else {
+                                Default::default()
+                            }
+                        };
+                        (
+                            self.radio_type.map(|rt| rt.decode()).unwrap_or_else(|| if let Some(state) = state { state.radio_type } else { DisEntityType::default() }),
+                            antenna_location,
+                            self.relative_antenna_location.map(|ral| decode_entity_coordinate_vector(&ral, self.units.relative_antenna_location)).unwrap_or_default(),
+                            self.frequency.map(|freq| freq.to_float() as u64).unwrap_or_else(|| if let Some(state) = state { state.frequency } else { Default::default() }),
+                            self.transmit_frequency_bandwidth.map(|tfb| tfb.to_float()).unwrap_or_else(|| if let Some(state) = state { state.transmit_frequency_bandwidth } else { Default::default() }),
+                            self.power.map(|power| power as f32).unwrap_or_else(|| if let Some(state) = state { state.power } else { Default::default() }),
+                            self.modulation_type.map(|record| dis_rs::transmitter::model::ModulationType::from(&record)).unwrap_or_else(|| if let Some(state) = state {state.modulation_type} else { Default::default() }),
+                            CodecStateResult::StateUnaffected
+                        )
+                    }
+
+                }
+            };
+        // TODO fix generated impl From<u16> for TransmitterMajorModulation { in enumerations.rs:27824
+        ...
+        (Counterpart::builder()
+             .with_radio_reference_id(self.radio_reference_id.decode())
+             .with_radio_number(self.radio_number.value)
+             .with_radio_type(radio_type)
+             .with_transmit_state(self.transmit_state)
+             .with_input_source(TransmitterInputSource::from(self.input_source.value))
+             .with_antenna_location(antenna_location)
+             .with_relative_antenna_location(relative_antenna_location)
+             .with_antenna_pattern_type(self.antenna_pattern_type.unwrap_or_default())// zeroed when None?
+             .with_frequency(frequency)
+             .with_transmit_frequency_bandwidth(transmit_frequency_bandwidth)
+             .with_power(power)
+             .with_modulation_type(modulation_type)
+             .with_crypto_system(self.crypto_system.unwrap_or_default())// zeroed when None?
+             .with_crypto_key_id(self.crypto_key_id.unwrap_or_default())// zeroed when None?
+             .with_modulation_parameters(self.modulation_parameters.clone())
+             .with_antenna_pattern(self.antenna_pattern.map(|pattern| pattern.decode()).unwrap_or_default())// zeroed when None?
+             .with_variable_transmitter_parameters(self.variable_transmitter_parameters.clone())
+             .build(), state_result)
     }
 }
 
@@ -146,12 +221,24 @@ impl Default for EncoderStateTransmitter {
 #[derive(Debug)]
 pub struct DecoderStateTransmitter {
     pub heartbeat: Instant,
+    pub radio_type: DisEntityType,
+    pub antenna_location: DisLocation,
+    pub frequency: u64,
+    pub transmit_frequency_bandwidth: f32,
+    pub power: f32,
+    pub modulation_type: dis_rs::transmitter::model::ModulationType,
 }
 
 impl DecoderStateTransmitter {
     pub fn new(pdu: &Counterpart) -> Self {
         Self {
             heartbeat: Instant::now(),
+            radio_type: pdu.radio_type,
+            antenna_location: pdu.antenna_location,
+            frequency: pdu.frequency,
+            transmit_frequency_bandwidth: pdu.transmit_frequency_bandwidth,
+            power: pdu.power,
+            modulation_type: pdu.modulation_type,
         }
     }
 }
@@ -160,6 +247,12 @@ impl Default for DecoderStateTransmitter {
     fn default() -> Self {
         Self {
             heartbeat: Instant::now(),
+            radio_type: Default::default(),
+            antenna_location: Default::default(),
+            frequency: 0,
+            transmit_frequency_bandwidth: 0.0,
+            power: 0.0,
+            modulation_type: Default::default(),
         }
     }
 }
@@ -167,4 +260,38 @@ impl Default for DecoderStateTransmitter {
 fn evaluate_timeout_for_transmitter(last_heartbeat: &Instant, options: &CodecOptions) -> bool {
     let elapsed = last_heartbeat.elapsed().as_secs_f32();
     elapsed > (options.federation_parameters.HBT_PDU_TRANSMITTER * options.hbt_cdis_full_update_mplier)
+}
+
+impl Codec for BeamAntennaPattern {
+    type Counterpart = dis_rs::transmitter::model::BeamAntennaPattern;
+    const SCALING: f32 = 4095f32 / std::f32::consts::PI; // (2^12 - 1) = 4095
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            beam_direction_psi: (item.beam_direction.psi * Self::SCALING) as i16,
+            beam_direction_theta: (item.beam_direction.theta * Self::SCALING) as i16,
+            beam_direction_phi: (item.beam_direction.phi * Self::SCALING) as i16,
+            az_beamwidth: (item.azimuth_beamwidth * Self::SCALING) as i16,
+            el_beamwidth: (item.elevation_beamwidth * Self::SCALING) as i16,
+            reference_system: item.reference_system,
+            e_z: item.e_z as i16, // TODO is this encoding correct?)
+            e_x: item.e_x as i16, // same
+            phase: (item.phase * Self::SCALING) as i16,
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_beam_direction(Orientation::new(
+                self.beam_direction_psi as f32 / Self::SCALING,
+                self.beam_direction_theta as f32 / Self::SCALING,
+                self.beam_direction_phi  as f32 / Self::SCALING,
+            ))
+            .with_azimuth_beamwidth(self.az_beamwidth as f32 / Self::SCALING)
+            .with_elevation_beamwidth(self.el_beamwidth as f32 / Self::SCALING)
+            .with_reference_system(self.reference_system)
+            .with_e_z(self.e_z as f32)
+            .with_e_x(self.e_x as f32)
+            .with_phase(self.phase as f32 / Self::SCALING)
+    }
 }

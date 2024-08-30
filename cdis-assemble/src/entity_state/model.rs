@@ -109,7 +109,7 @@ pub struct CdisEntityCapabilities(pub UVINT32);
 /// The DR Parameters Other field is not explicitly modeled because the interpretation of the on-wire value
 /// depends on the DR Algorithm.
 /// This struct wraps the type in the wire format.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct CdisDRParametersOther(pub u128);
 
 impl CdisDRParametersOther {

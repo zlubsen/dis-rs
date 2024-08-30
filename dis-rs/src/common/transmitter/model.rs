@@ -70,7 +70,7 @@ impl Interaction for Transmitter {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct ModulationType {
     pub spread_spectrum: SpreadSpectrum,
     pub major_modulation: TransmitterMajorModulation,
@@ -108,7 +108,7 @@ impl ModulationType {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SpreadSpectrum {
     pub frequency_hopping: bool,
     pub pseudo_noise: bool,
@@ -151,6 +151,36 @@ impl SpreadSpectrum {
     pub fn with_time_hopping(mut self) -> Self {
         self.time_hopping = true;
         self
+    }
+}
+
+impl From<u16> for SpreadSpectrum {
+    fn from(spread_spectrum_values: u16) -> Self {
+        let frequency_hopping = ((spread_spectrum_values >> 15) & 0x0001) != 0;
+        let pseudo_noise = ((spread_spectrum_values >> 14) & 0x0001) != 0;
+        let time_hopping = ((spread_spectrum_values >> 13) & 0x0001) != 0;
+
+        SpreadSpectrum::new_with_values(frequency_hopping, pseudo_noise, time_hopping)
+    }
+}
+
+impl From<&SpreadSpectrum> for u16 {
+    fn from(value: &SpreadSpectrum) -> Self {
+        const BIT_0: u16 = 0x8000;
+        const BIT_1: u16 = 0x4000;
+        const BIT_2: u16 = 0x2000;
+
+        let spectrum = 0u16;
+        let spectrum = if value.frequency_hopping {
+            spectrum | BIT_0
+        } else { spectrum };
+        let spectrum = if value.pseudo_noise {
+            spectrum | BIT_1
+        } else { spectrum };
+        let spectrum = if value.time_hopping {
+            spectrum | BIT_2
+        } else { spectrum };
+        spectrum
     }
 }
 
