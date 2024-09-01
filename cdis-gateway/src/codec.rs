@@ -88,20 +88,7 @@ impl Encoder {
                 .expect("Event TX channel failed in Encoder::encode_pdus - Received PDU.") )
             .map(|pdu| {
                 let (pdu, _state_result) = CdisPdu::encode(pdu, &mut self.state, &self.codec_options);
-                // FIXME processing of state_result is done after encoding of the body; not needed here, unless a combination of header and body is needed for the action
-                // match state_result {
-                //     CodecStateResult::StateUnaffected => {}
-                //     CodecStateResult::StateUpdateEntityState => {
-                //         self.state.entity_state.entry(dis_rs::model::EntityId::from(
-                //             pdu.originator()
-                //                 .expect("EntityState PDU always should have an originating EntityId")))
-                //             .and_modify(|e| e.heartbeat = Instant::now() )
-                //             .or_default();
-                //     }
-                //     CodecStateResult::StateUpdateElectromagneticEmission => {
-                //         todo!();
-                //     }
-                // }
+                // FIXME (potential) - processing of state_result is done after encoding of the body; not needed here, unless a combination of header and body is needed for the action
                 pdu
             } )
             .inspect(| pdu | self.event_tx.try_send(Event::EncodedPdu(pdu.header.pdu_type, pdu.header.length.div_ceil(8) as u64))
@@ -181,7 +168,7 @@ impl Decoder {
             // switch between partial and full update modes
             // in full update mode, decode the cdis PDU and send out the DIS pdu.
             // in partial update mode,
-            // when a full update cdis PDU is received, decode to DIS and store the PDU, and record time
+            // when a full update cdis PDU is received, decode to DIS and store the PDU, and record time for heartbeat
             // when a partial update cdis PDU is received
             //     check if we already have a full update stored to fill in the blanks, send out DIS
             //     if no full update is present, discard the cdis PDU
@@ -194,25 +181,7 @@ impl Decoder {
             .inspect(|cdis_pdu| self.event_tx.try_send(Event::ReceivedCDis(cdis_pdu.header.pdu_type, cdis_pdu.header.length.div_ceil(8) as u64)).expect("Event TX channel failed in Decoder::decode_pdus - Received PDU.") )
             .map(|cdis_pdu| {
                 let (pdu, _state_result) = cdis_pdu.decode(&mut self.state, &self.codec_options);
-                // FIXME processing of state_result is done after decoding of the body; not needed here, unless a combination of header and body is needed for the action
-                // match state_result {
-                //     CodecStateResult::StateUnaffected => {}
-                //     CodecStateResult::StateUpdateEntityState => {
-                //         self.state.entity_state.entry(EntityId::from(
-                //             cdis_pdu.originator().expect("EntityState PDU always should have an originating EntityId")))
-                //             .and_modify(|entry| {
-                //                 if let PduBody::EntityState(es) = &pdu.body {
-                //                     *entry = DecoderStateEntityState::new(es)
-                //                 }
-                //             } )
-                //             .or_insert_with(|| if let PduBody::EntityState(es) = &pdu.body {
-                //                 DecoderStateEntityState::new(es)
-                //             } else { DecoderStateEntityState::default() } );
-                //     }
-                //     CodecStateResult::StateUpdateElectromagneticEmission => {
-                //         todo!();
-                //     }
-                // }
+                // FIXME (potential) - processing of state_result is done after decoding of the body; not needed here, unless a combination of header and body is needed for the action
                 pdu
             })
             .inspect(|pdu| self.event_tx.try_send(Event::DecodedPdu(pdu.header.pdu_type, pdu.header.pdu_length as u64)).expect("Event TX channel failed in Decoder::decode_pdus - Decoded PDU.") )

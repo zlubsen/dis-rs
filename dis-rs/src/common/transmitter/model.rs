@@ -1,5 +1,5 @@
 use crate::common::model::{EntityId, Location, EntityType, length_padded_to_num, Orientation, PduBody, VectorF32};
-use crate::enumerations::{PduType, VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem};
+use crate::enumerations::{PduType, VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem, TransmitterDetailAmplitudeModulation, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAngleModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailUnmodulatedModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailSATCOMModulation};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 use crate::transmitter::builder::TransmitterBuilder;
@@ -337,5 +337,68 @@ impl VariableTransmitterParameter {
     pub fn with_fields(mut self, fields: Vec<u8>) -> Self {
         self.fields = fields;
         self
+    }
+}
+
+impl TransmitterMajorModulation {
+    pub fn new_from_bytes_with_detail(major_modulation: u16, detail: u16) -> Self {
+        let major_modulation = TransmitterMajorModulation::from(major_modulation);
+        match major_modulation {
+            TransmitterMajorModulation::NoStatement =>
+                { TransmitterMajorModulation::NoStatement }
+            TransmitterMajorModulation::Amplitude(_) =>
+                { TransmitterMajorModulation::Amplitude(TransmitterDetailAmplitudeModulation::from(detail)) }
+            TransmitterMajorModulation::AmplitudeandAngle(_) =>
+                { TransmitterMajorModulation::AmplitudeandAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
+            TransmitterMajorModulation::Angle(_) =>
+                { TransmitterMajorModulation::Angle(TransmitterDetailAngleModulation::from(detail)) }
+            TransmitterMajorModulation::Combination(_) =>
+                { TransmitterMajorModulation::Combination(TransmitterDetailCombinationModulation::from(detail)) }
+            TransmitterMajorModulation::Pulse(_) =>
+                { TransmitterMajorModulation::Pulse(TransmitterDetailPulseModulation::from(detail)) }
+            TransmitterMajorModulation::Unmodulated(_) =>
+                { TransmitterMajorModulation::Unmodulated(TransmitterDetailUnmodulatedModulation::from(detail)) }
+            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(_) =>
+                { TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(TransmitterDetailCarrierPhaseShiftModulation::from(detail)) }
+            TransmitterMajorModulation::SATCOM(_) =>
+                { TransmitterMajorModulation::SATCOM(TransmitterDetailSATCOMModulation::from(detail)) }
+            TransmitterMajorModulation::Unspecified(_) =>
+                { TransmitterMajorModulation::Unspecified(detail) }
+        }
+    }
+
+    pub fn to_bytes_with_detail(&self) -> (u16, u16) {
+        match self {
+            TransmitterMajorModulation::NoStatement => {
+                (0, 0)
+            }
+            TransmitterMajorModulation::Amplitude(detail) => {
+                (1, (*detail).into())
+            }
+            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
+                (2, (*detail).into())
+            }
+            TransmitterMajorModulation::Angle(detail) => {
+                (3, (*detail).into())
+            }
+            TransmitterMajorModulation::Combination(detail) => {
+                (4, (*detail).into())
+            }
+            TransmitterMajorModulation::Pulse(detail) => {
+                (5, (*detail).into())
+            }
+            TransmitterMajorModulation::Unmodulated(detail) => {
+                (6, (*detail).into())
+            }
+            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(detail) => {
+                (7, (*detail).into())
+            }
+            TransmitterMajorModulation::SATCOM(detail) => {
+                (8, (*detail).into())
+            }
+            TransmitterMajorModulation::Unspecified(detail) => {
+                (9, (*detail).into())
+            }
+        }
     }
 }

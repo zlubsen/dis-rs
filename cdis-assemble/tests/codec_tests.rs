@@ -9,9 +9,10 @@ use dis_rs::designator::model::Designator;
 use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ReceiverState, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ReceiverState, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 use dis_rs::signal::model::EncodingScheme;
+use dis_rs::transmitter::model::{BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter};
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {
@@ -723,6 +724,7 @@ fn codec_consistency_electromagnetic_emission_full_mode() {
     assert_eq!(body_in.state_update_indicator, body_out.state_update_indicator);
 }
 
+/// FIXME This test actually does little more than check a full update PDU conversion because there is no state.
 #[test]
 fn codec_consistency_electromagnetic_emission_partial_mode() {
     let mut encoder_state = EncoderState::new();
@@ -873,4 +875,101 @@ fn codec_consistency_receiver() {
     let body_out = if let PduBody::Receiver(body) = dis_pdu_out.body { body } else { Receiver::default() };
 
     assert_eq!(body_in, body_out);
+}
+
+#[test]
+fn codec_consistency_transmitter_full_mode() {
+    use std::str::FromStr;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Transmitter::builder()
+        .with_radio_reference_id(EntityId::new(10, 10, 10))
+        .with_radio_number(1)
+        .with_radio_type(EntityType::from_str("1:2:3:4:5:6:7").unwrap())
+        .with_transmit_state(TransmitterTransmitState::Onandtransmitting)
+        .with_input_source(TransmitterInputSource::Pilot)
+        .with_antenna_location(Location::new(0.0, 0.0, 5_000_000.0))
+        .with_relative_antenna_location(VectorF32::new(1.0, 1.0, 0.0))
+        .with_antenna_pattern_type(TransmitterAntennaPatternType::Beam)
+        .with_frequency(1_234_000_000)
+        .with_transmit_frequency_bandwidth(20.0)
+        .with_power(12.0)
+        .with_modulation_type(ModulationType::default()
+            .with_spread_spectrum(SpreadSpectrum::default())
+            .with_major_modulation(TransmitterMajorModulation::NoStatement)
+            .with_radio_system(TransmitterModulationTypeSystem::JTIDSMIDS))
+        .with_crypto_system(TransmitterCryptoSystem::NoEncryptionDevice)
+        .with_crypto_key_id(CryptoKeyId::default())
+        .with_modulation_parameters(vec![])
+        .with_antenna_pattern(BeamAntennaPattern::default().with_e_x(20.0).with_e_z(10.0))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::Transmitter).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Transmitter(designator) = dis_pdu_in.body { designator } else { Transmitter::default() };
+    let body_out = if let PduBody::Transmitter(designator) = dis_pdu_out.body { designator } else { Transmitter::default() };
+
+    assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
+    assert_eq!(body_in.transmit_state, body_out.transmit_state);
+    assert_eq!(body_in.modulation_type, body_out.modulation_type);
+    assert_eq!(body_in.antenna_pattern, body_out.antenna_pattern);
+    assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
+}
+
+/// FIXME This test actually does little more than check a full update PDU conversion because there is no state.
+#[test]
+fn codec_consistency_transmitter_partial_mode() {
+    use std::str::FromStr;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_partial_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Transmitter::builder()
+        .with_radio_reference_id(EntityId::new(10, 10, 10))
+        .with_radio_number(1)
+        .with_radio_type(EntityType::from_str("1:2:3:4:5:6:7").unwrap())
+        .with_transmit_state(TransmitterTransmitState::Onandtransmitting)
+        .with_input_source(TransmitterInputSource::Pilot)
+        .with_antenna_location(Location::new(0.0, 0.0, 5_000_000.0))
+        .with_relative_antenna_location(VectorF32::new(1.0, 1.0, 0.0))
+        .with_antenna_pattern_type(TransmitterAntennaPatternType::Beam)
+        .with_frequency(1_234_000_000)
+        .with_transmit_frequency_bandwidth(20.0)
+        .with_power(12.0)
+        .with_modulation_type(ModulationType::default()
+            .with_spread_spectrum(SpreadSpectrum::default())
+            .with_major_modulation(TransmitterMajorModulation::NoStatement)
+            .with_radio_system(TransmitterModulationTypeSystem::JTIDSMIDS))
+        .with_crypto_system(TransmitterCryptoSystem::KGV135A)
+        .with_crypto_key_id(CryptoKeyId::default())
+        .with_modulation_parameters(vec![])
+        .with_antenna_pattern(BeamAntennaPattern::default().with_e_x(20.0).with_e_z(10.0))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::Transmitter).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Transmitter(designator) = dis_pdu_in.body { designator } else { Transmitter::default() };
+    let body_out = if let PduBody::Transmitter(designator) = dis_pdu_out.body { designator } else { Transmitter::default() };
+
+    assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
+    assert_eq!(body_in.transmit_state, body_out.transmit_state);
+    assert_eq!(body_in.modulation_type, body_out.modulation_type);
+    assert_eq!(body_in.antenna_pattern, body_out.antenna_pattern);
+    assert_eq!(body_in.power, body_out.power);
+    assert_eq!(body_in.crypto_system, body_out.crypto_system);
+    assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
 }

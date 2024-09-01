@@ -247,37 +247,8 @@ pub struct ModulationType {
 impl From<&dis_rs::transmitter::model::ModulationType> for ModulationType {
     fn from(value: &dis_rs::transmitter::model::ModulationType) -> Self {
         let spread_spectrum = CdisSpreadSpectrum::from(&value.spread_spectrum);
-        let major_modulation = u16::from(value.major_modulation) as u8;
-        let detail = match value.major_modulation {
-            TransmitterMajorModulation::NoStatement => { 0u8 }
-            TransmitterMajorModulation::Amplitude(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::Angle(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::Combination(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::Pulse(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::Unmodulated(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::SATCOM(detail) => {
-                u16::from(detail) as u8
-            }
-            TransmitterMajorModulation::Unspecified(detail) => {
-                detail as u8
-            }
-        };
+        let (major_modulation, detail) = value.major_modulation.to_bytes_with_detail();
+        let (major_modulation, detail) = (major_modulation as u8, detail as u8);
         let radio_system = u16::from(value.radio_system) as u8;
         Self {
             spread_spectrum,
@@ -290,12 +261,10 @@ impl From<&dis_rs::transmitter::model::ModulationType> for ModulationType {
 
 impl From<&ModulationType> for dis_rs::transmitter::model::ModulationType {
     fn from(value: &ModulationType) -> Self {
-
-        let major_modulation = TransmitterMajorModulation::from(value.major_modulation as u16);
-
         Self::default()
             .with_spread_spectrum(SpreadSpectrum::from(&value.spread_spectrum))
-            .with_major_modulation(major_modulation)
+            .with_major_modulation(
+                TransmitterMajorModulation::new_from_bytes_with_detail(value.major_modulation as u16, value.detail as u16))
             .with_radio_system(TransmitterModulationTypeSystem::from(value.radio_system as u16))
     }
 }

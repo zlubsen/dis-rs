@@ -2,7 +2,6 @@ use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
 use crate::common::model::length_padded_to_num;
-use crate::enumerations::TransmitterMajorModulation;
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 
 impl SerializePdu for Transmitter {
@@ -57,39 +56,9 @@ impl SerializePdu for Transmitter {
 impl Serialize for ModulationType {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let spread_spectrum_bytes = self.spread_spectrum.serialize(buf);
-        buf.put_u16(self.major_modulation.into());
-        match self.major_modulation {
-            TransmitterMajorModulation::NoStatement => {
-                buf.put_u16(0u16);
-            }
-            TransmitterMajorModulation::Amplitude(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::Angle(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::Combination(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::Pulse(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::Unmodulated(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::SATCOM(detail) => {
-                buf.put_u16(detail.into());
-            }
-            TransmitterMajorModulation::Unspecified(detail) => {
-                buf.put_u16(detail);
-            }
-        }
+        let (major_modulation, detail) = self.major_modulation.to_bytes_with_detail();
+        buf.put_u16(major_modulation);
+        buf.put_u16(detail);
         buf.put_u16(self.radio_system.into());
 
         spread_spectrum_bytes + 6
