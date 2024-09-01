@@ -5,6 +5,7 @@
 Support for new PDUs, aligned with `cdis-assemble`:
 - Electromagnetic Emission
 - Designator
+- Transmitter
 - Signal
 - Receiver
 

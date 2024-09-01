@@ -5,6 +5,7 @@
 Support for new PDUs:
 - Electromagnetic Emission
 - Designator
+- Transmitter
 - Signal
 - Receiver
 
