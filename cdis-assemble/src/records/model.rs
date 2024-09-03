@@ -251,29 +251,24 @@ impl CdisRecord for BeamAntennaPattern {
     }
 }
 
-/// 11.18 Linear Acceleration
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub struct LinearAcceleration {
-    pub x: SVINT14,
-    pub y: SVINT14,
-    pub z: SVINT14,
+/// 11.3 Beam Data Record
+#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
+pub struct BeamData {
+    pub az_center: SVINT13,
+    pub az_sweep: SVINT13,
+    pub el_center: SVINT13,
+    pub el_sweep: SVINT13,
+    pub sweep_sync: u16,
 }
 
-impl LinearAcceleration {
-    pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
-    }
-}
-
-impl CdisRecord for LinearAcceleration {
+impl CdisRecord for BeamData {
     fn record_length(&self) -> usize {
-        self.x.record_length()
-            + self.y.record_length()
-            + self.z.record_length()
+        const FIXED_LENGTH_BITS: usize = 10;
+        FIXED_LENGTH_BITS +
+            self.az_center.record_length() +
+            self.az_sweep.record_length() +
+            self.el_center.record_length() +
+            self.el_sweep.record_length()
     }
 }
 
@@ -453,6 +448,44 @@ impl CdisRecord for EntityType {
             + self.subcategory.record_length()
             + self.specific.record_length()
             + self.extra.record_length()
+    }
+}
+
+/// 11.17 Layer Header Record
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct LayerHeader {
+
+}
+
+impl CdisRecord for LayerHeader {
+    fn record_length(&self) -> usize {
+        todo!()
+    }
+}
+
+/// 11.18 Linear Acceleration
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub struct LinearAcceleration {
+    pub x: SVINT14,
+    pub y: SVINT14,
+    pub z: SVINT14,
+}
+
+impl LinearAcceleration {
+    pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
+        Self {
+            x,
+            y,
+            z,
+        }
+    }
+}
+
+impl CdisRecord for LinearAcceleration {
+    fn record_length(&self) -> usize {
+        self.x.record_length()
+            + self.y.record_length()
+            + self.z.record_length()
     }
 }
 
@@ -1227,25 +1260,5 @@ mod tests {
 
         assert_eq!(String::from("JKLMN"), actual.marking.as_str());
         assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
-    }
-}
-
-#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
-pub struct BeamData {
-    pub az_center: SVINT13,
-    pub az_sweep: SVINT13,
-    pub el_center: SVINT13,
-    pub el_sweep: SVINT13,
-    pub sweep_sync: u16,
-}
-
-impl BeamData {
-    fn record_length(&self) -> usize {
-        const FIXED_LENGTH_BITS: usize = 10;
-        FIXED_LENGTH_BITS +
-            self.az_center.record_length() +
-            self.az_sweep.record_length() +
-            self.el_center.record_length() +
-            self.el_sweep.record_length()
     }
 }

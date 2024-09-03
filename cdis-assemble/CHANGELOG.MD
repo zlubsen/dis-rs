@@ -32,7 +32,7 @@ Support for new PDUs:
 - StopFreeze: field frozen_behavior is specified as having 2-bit length, but UID 68 is a 3-bit bitfield.
 - EE: page 94 - Jamming Technique Flag - bit size not listed (should be 1).
 - EE: page 90 j) - Beam Status - Status is on if Flag = 1 or off if Flag = 0; the SISO-REF-010 lists a value of 0 as ACTIVE, and 1 as DEACTIVATED, which is the opposite when considering the on-wire values.
-- BeamData record: Table 17 lists the field Beam Sweep Sync to be SVINT13, but otherwise it is described as an unsigned 10-bit field (in text 11.3.e, table 62).
+- BeamData record: Table 17 lists the field Beam Sweep Sync to be SVINT13, but otherwise it is described as an unsigned 10-bit field (in text 11.3.e, table 62, table 68).
 - Encoding Scheme record: the DIS variants other than EncodedAudio and RawBinaryData are not represented in C-DIS.
 - p104: typo Cyrpto Key ID
 

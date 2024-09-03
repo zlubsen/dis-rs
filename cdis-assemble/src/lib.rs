@@ -1,10 +1,3 @@
-use thiserror::Error;
-use dis_rs::enumerations::PduType;
-use dis_rs::model::TimeStamp;
-use crate::entity_state::model::EntityState;
-use crate::records::model::{CdisHeader, CdisRecord, EntityId};
-use crate::unsupported::Unsupported;
-
 pub mod types;
 pub mod records;
 pub mod constants;
@@ -23,6 +16,7 @@ pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod event_report;
 pub mod fire;
+pub mod iff;
 pub mod receiver;
 pub mod remove_entity;
 pub mod set_data;
@@ -35,6 +29,10 @@ pub mod unsupported;
 pub(crate) mod parsing;
 pub(crate) mod writing;
 pub mod codec;
+
+use thiserror::Error;
+use dis_rs::enumerations::PduType;
+use dis_rs::model::TimeStamp;
 
 pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
@@ -51,15 +49,19 @@ use crate::data_query::model::DataQuery;
 use crate::designator::model::Designator;
 use crate::detonation::model::Detonation;
 use crate::electromagnetic_emission::model::ElectromagneticEmission;
+use crate::entity_state::model::EntityState;
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
+use crate::iff::model::Iff;
 use crate::receiver::model::Receiver;
+use crate::records::model::{CdisHeader, CdisRecord, EntityId};
 use crate::remove_entity::model::RemoveEntity;
 use crate::set_data::model::SetData;
 use crate::signal::model::Signal;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
 use crate::transmitter::model::Transmitter;
+use crate::unsupported::Unsupported;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -144,7 +146,7 @@ pub enum CdisBody {
     Transmitter(Transmitter),
     Signal(Signal),
     Receiver(Receiver),
-    Iff,
+    Iff(Iff),
 }
 
 impl CdisBody {
@@ -172,7 +174,7 @@ impl CdisBody {
             CdisBody::Transmitter(body) => { body.body_length_bits() }
             CdisBody::Signal(body) => { body.body_length_bits() }
             CdisBody::Receiver(body) => { body.body_length_bits() }
-            CdisBody::Iff => { 0 }
+            CdisBody::Iff(body) => { body.body_length_bits() }
         }
     }
 }
@@ -202,7 +204,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Transmitter(body) => { body.originator() }
             CdisBody::Signal(body) => { body.originator() }
             CdisBody::Receiver(body) => { body.originator() }
-            CdisBody::Iff => { None } 
+            CdisBody::Iff(body) => { body.originator() }
         }
     }
 
@@ -230,7 +232,7 @@ impl CdisInteraction for CdisBody {
             CdisBody::Transmitter(body) => { body.receiver() }
             CdisBody::Signal(body) => { body.receiver() }
             CdisBody::Receiver(body) => { body.receiver() }
-            CdisBody::Iff => { None } 
+            CdisBody::Iff(body) => { body.receiver() }
         }
     }
 }
@@ -320,7 +322,7 @@ impl Implemented for PduType {
             PduType::Transmitter |
             PduType::Signal |
             PduType::Receiver => { true }
-            // PduType::IFF
+            // PduType::IFF => { true }
             _ => { false }
         }
     }
