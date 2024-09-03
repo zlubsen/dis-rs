@@ -2,13 +2,13 @@ use nom::IResult;
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem};
 use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
-use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
+use crate::records::model::CdisProtocolVersion::{Reserved, StandardDis, SISO_023_2023};
+use crate::types::model::{CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 use num_traits::FromPrimitive;
 use crate::BitBuffer;
-use crate::parsing::{BitInput, take_signed};
+use crate::parsing::{take_signed, BitInput};
 use crate::writing::{write_value_signed, write_value_unsigned};
 
 pub(crate) trait CdisRecord {
@@ -1227,5 +1227,25 @@ mod tests {
 
         assert_eq!(String::from("JKLMN"), actual.marking.as_str());
         assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
+    }
+}
+
+#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
+pub struct BeamData {
+    pub az_center: SVINT13,
+    pub az_sweep: SVINT13,
+    pub el_center: SVINT13,
+    pub el_sweep: SVINT13,
+    pub sweep_sync: u16,
+}
+
+impl BeamData {
+    fn record_length(&self) -> usize {
+        const FIXED_LENGTH_BITS: usize = 10;
+        FIXED_LENGTH_BITS +
+            self.az_center.record_length() +
+            self.az_sweep.record_length() +
+            self.el_center.record_length() +
+            self.el_sweep.record_length()
     }
 }

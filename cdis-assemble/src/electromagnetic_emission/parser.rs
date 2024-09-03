@@ -3,11 +3,12 @@ use nom::IResult;
 use nom::multi::count;
 use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
 use crate::{BodyProperties, CdisBody};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS};
-use crate::electromagnetic_emission::model::{BeamData, ElectromagneticEmission, EmitterBeam, EmitterSystem, FrequencyFloat, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS};
+use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, EmitterSystem, FrequencyFloat, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
 use crate::parsing::BitInput;
+use crate::records::parser;
 use crate::records::parser::{entity_coordinate_vector, entity_identification};
-use crate::types::parser::{svint13, uvint16, uvint8};
+use crate::types::parser::{uvint16, uvint8};
 use crate::types::model::CdisFloat;
 
 #[allow(clippy::redundant_closure)]
@@ -28,7 +29,7 @@ pub(crate) fn electromagnetic_emission_body(input: BitInput) -> IResult<BitInput
     let (input, number_of_systems) = uvint8(input)?;
 
     let (input, fundamental_params) = count(fundamental_parameter, number_of_fundamental_params)(input)?;
-    let (input, beam_data) = count(beam_data, number_of_beam_params)(input)?;
+    let (input, beam_data) = count(parser::beam_data, number_of_beam_params)(input)?;
     let (input, site_app_pairs) = count(site_app_pair, number_of_site_app_pairs)(input)?;
 
     let (input, emitter_systems) = count(emitter_system, number_of_systems.value as usize)(input)?;
@@ -58,22 +59,6 @@ fn fundamental_parameter(input: BitInput) -> IResult<BitInput, FundamentalParame
         erp,
         prf,
         pulse_width,
-    }))
-}
-
-fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
-    let (input, az_center) = svint13(input)?;
-    let (input, az_sweep) = svint13(input)?;
-    let (input, el_center) = svint13(input)?;
-    let (input, el_sweep) = svint13(input)?;
-    let (input, sweep_sync): (BitInput, u16) = take(TEN_BITS)(input)?;
-
-    Ok((input, BeamData {
-        az_center,
-        az_sweep,
-        el_center,
-        el_sweep,
-        sweep_sync,
     }))
 }
 

@@ -6,12 +6,12 @@ use num::Integer;
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem, VariableParameterRecordType, VariableRecordType};
 use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
-use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, NINE_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::parsing::take_signed;
-use crate::records::model::{AngularVelocity, BeamAntennaPattern, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
+use crate::records::model::{AngularVelocity, BeamAntennaPattern, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
-use crate::types::parser::{svint12, svint14, svint16, svint24, uvint16, uvint8};
+use crate::types::parser::{svint12, svint13, svint14, svint16, svint24, uvint16, uvint8};
 
 const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;
 
@@ -540,4 +540,20 @@ mod tests {
         assert_eq!(header.timestamp, dis_rs::model::TimeStamp { raw_timestamp: 0 });
         assert_eq!(header.length, 0);
     }
+}
+
+pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
+    let (input, az_center) = svint13(input)?;
+    let (input, az_sweep) = svint13(input)?;
+    let (input, el_center) = svint13(input)?;
+    let (input, el_sweep) = svint13(input)?;
+    let (input, sweep_sync): (BitInput, u16) = take(TEN_BITS)(input)?;
+
+    Ok((input, BeamData {
+        az_center,
+        az_sweep,
+        el_center,
+        el_sweep,
+        sweep_sync,
+    }))
 }

@@ -2,10 +2,10 @@ use nom::complete::take;
 use nom::IResult;
 use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{FOUR_BITS, FOURTEEN_BITS, SEVENTEEN_BITS, THREE_BITS};
-use crate::parsing::{BitInput, take_signed};
-use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId};
-use crate::types::model::{CdisFloat, SVINT13, UVINT16, UVINT8, VarInt};
+use crate::constants::{FOURTEEN_BITS, FOUR_BITS, SEVENTEEN_BITS, THREE_BITS};
+use crate::parsing::{take_signed, BitInput};
+use crate::records::model::{BeamData, CdisRecord, EntityCoordinateVector, EntityId};
+use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
 use crate::writing::{write_value_signed, write_value_unsigned};
 
 #[derive(Clone, Default, Debug, PartialEq)]
@@ -67,26 +67,6 @@ impl FundamentalParameter {
     fn record_length(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 67;
         FIXED_LENGTH_BITS + self.prf.record_length()
-    }
-}
-
-#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
-pub struct BeamData {
-    pub az_center: SVINT13,
-    pub az_sweep: SVINT13,
-    pub el_center: SVINT13,
-    pub el_sweep: SVINT13,
-    pub sweep_sync: u16,
-}
-
-impl BeamData {
-    fn record_length(&self) -> usize {
-        const FIXED_LENGTH_BITS: usize = 10;
-        FIXED_LENGTH_BITS +
-            self.az_center.record_length() +
-            self.az_sweep.record_length() +
-            self.el_center.record_length() +
-            self.el_sweep.record_length()
     }
 }
 

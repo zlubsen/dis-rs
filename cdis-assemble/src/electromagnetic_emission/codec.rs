@@ -3,14 +3,14 @@ use std::time::Instant;
 use num_traits::ToPrimitive;
 use dis_rs::electromagnetic_emission::model::{Beam, FundamentalParameterData, JammingTechnique};
 use dis_rs::enumerations::{BeamStatusBeamState, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-use dis_rs::model::{EntityId as DisEntityId, SimulationAddress, BeamData as DisBeamData, EventId, PduBody, VectorF32};
+use dis_rs::model::{BeamData as DisBeamData, EntityId as DisEntityId, EventId, PduBody, SimulationAddress, VectorF32};
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use crate::constants::MAX_TRACK_JAM_NUMBER_OF_TARGETS;
-use crate::electromagnetic_emission::model::{BeamData, ElectromagneticEmission, EmitterBeam, EmitterSystem, FrequencyFloat, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
+use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, EmitterSystem, FrequencyFloat, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
 use crate::records::codec::{decode_entity_coordinate_vector, encode_entity_coordinate_vector_meters};
-use crate::records::model::{EntityCoordinateVector, EntityId, UnitsMeters};
-use crate::types::model::{SVINT13, UVINT16, UVINT8, CdisFloat};
+use crate::records::model::{BeamData, EntityCoordinateVector, EntityId, UnitsMeters};
+use crate::types::model::{CdisFloat, UVINT16, UVINT8};
 
 type Counterpart = dis_rs::electromagnetic_emission::model::ElectromagneticEmission;
 type EmitterSystemCounterpart = dis_rs::electromagnetic_emission::model::EmitterSystem;
@@ -725,42 +725,16 @@ impl Codec for FundamentalParameter {
     }
 }
 
-impl Codec for BeamData {
-    type Counterpart = dis_rs::model::BeamData;
-
-    const SCALING: f32 = ((2^12) - 1) as f32 / std::f32::consts::PI;
-    const SCALING_2: f32 = 1023f32 / 100.0;
-
-    fn encode(item: &Self::Counterpart) -> Self {
-        Self {
-            az_center: SVINT13::from((item.azimuth_center * Self::SCALING).round() as i16),
-            az_sweep: SVINT13::from((item.azimuth_sweep * Self::SCALING).round() as i16),
-            el_center: SVINT13::from((item.elevation_center * Self::SCALING).round() as i16),
-            el_sweep: SVINT13::from((item.elevation_sweep * Self::SCALING).round() as i16),
-            sweep_sync: (item.sweep_sync * Self::SCALING_2).round() as u16,
-        }
-    }
-
-    fn decode(&self) -> Self::Counterpart {
-        Self::Counterpart::default()
-            .with_azimuth_center(self.az_center.value as f32 / Self::SCALING)
-            .with_azimuth_sweep(self.az_sweep.value as f32 / Self::SCALING)
-            .with_elevation_center(self.el_center.value as f32 / Self::SCALING)
-            .with_elevation_sweep(self.el_sweep.value as f32 / Self::SCALING)
-            .with_sweep_sync(self.sweep_sync as f32 / Self::SCALING_2)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission as DisEE, EmitterSystem, FundamentalParameterData, TrackJam};
     use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
     use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, SimulationAddress, VectorF32};
     use crate::electromagnetic_emission::codec::{construct_beam_data_list_full, construct_fundamental_params_list_full, construct_site_app_pairs_list, DecoderStateElectromagneticEmission, EncoderStateElectromagneticEmission};
-    use crate::electromagnetic_emission::model::{BeamData, ElectromagneticEmission, EmitterBeam, FrequencyFloat, FundamentalParameter, SiteAppPair};
+    use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, FrequencyFloat, FundamentalParameter, SiteAppPair};
     use crate::types::model::{CdisFloat, SVINT16, UVINT16, UVINT8};
     use crate::codec::{Codec, CodecOptions, CodecStateResult};
-    use crate::records::model::EntityCoordinateVector;
+    use crate::records::model::{BeamData, EntityCoordinateVector};
 
     #[test]
     fn fundamental_params_list() {

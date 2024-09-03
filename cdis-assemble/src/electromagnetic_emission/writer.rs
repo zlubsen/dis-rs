@@ -1,8 +1,8 @@
-use crate::electromagnetic_emission::model::{BeamData, ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, SiteAppPair, TrackJam};
+use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, SiteAppPair, TrackJam};
 use crate::{BitBuffer, SerializeCdisPdu};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS};
 use crate::types::model::{CdisFloat, UVINT8};
-use crate::writing::{SerializeCdis, write_value_unsigned};
+use crate::writing::{write_value_unsigned, SerializeCdis};
 
 impl SerializeCdisPdu for ElectromagneticEmission {
     #[allow(clippy::let_and_return)]
@@ -41,19 +41,6 @@ impl SerializeCdis for FundamentalParameter {
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.erp);
         let cursor = self.prf.serialize(buf, cursor);
         let cursor = self.pulse_width.serialize(buf, cursor);
-
-        cursor
-    }
-}
-
-impl SerializeCdis for BeamData {
-    #[allow(clippy::let_and_return)]
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.sweep_sync);
 
         cursor
     }
