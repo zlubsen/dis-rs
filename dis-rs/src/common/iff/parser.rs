@@ -136,40 +136,7 @@ fn iff_layer_5(input: &[u8]) -> IResult<&[u8], IffLayer5> {
 fn change_options_record(input: &[u8]) -> IResult<&[u8], ChangeOptionsRecord> {
     let (input, record) = be_u8(input)?;
 
-    let builder = ChangeOptionsRecord::builder();
-    let builder = if ((record & BIT_0_IN_BYTE) >> 7) != 0 {
-        builder.set_change_indicator()
-    } else { builder };
-
-    let builder = if ((record & BIT_1_IN_BYTE) >> 6) != 0 {
-        builder.set_system_specific_field_1()
-    } else { builder };
-
-    let builder = if ((record & BIT_2_IN_BYTE) >> 5) != 0 {
-        builder.set_system_specific_field_2()
-    } else { builder };
-
-    let builder = if ((record & BIT_3_IN_BYTE) >> 4) != 0 {
-        builder.set_heartbeat_indicator()
-    } else { builder };
-
-    let builder = if ((record & BIT_4_IN_BYTE) >> 3) != 0 {
-        builder.set_transponder_interrogator_indicator()
-    } else { builder };
-
-    let builder = if ((record & BIT_5_IN_BYTE) >> 2) != 0 {
-        builder.set_simulation_mode()
-    } else { builder };
-
-    let builder = if ((record & BIT_6_IN_BYTE) >> 1) != 0 {
-        builder.set_interactive_capable()
-    } else { builder };
-
-    let builder = if (record & BIT_7_IN_BYTE) != 0 {
-        builder.set_test_mode()
-    } else { builder };
-
-    Ok((input, builder.build()))
+    Ok((input, ChangeOptionsRecord::from(record)))
 }
 
 fn fundamental_operational_data(input: &[u8]) -> IResult<&[u8], FundamentalOperationalData> {
@@ -382,26 +349,7 @@ fn enhanced_mode_1_code(input: &[u8]) -> IResult<&[u8], EnhancedMode1Code> {
 fn system_status(input: &[u8]) -> IResult<&[u8], SystemStatus> {
     let (input, record) = be_u8(input)?;
 
-    let system_on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
-    let parameter_1_capable = ParameterCapable::from((record & BIT_1_IN_BYTE) >> 6);
-    let parameter_2_capable = ParameterCapable::from((record & BIT_2_IN_BYTE) >> 5);
-    let parameter_3_capable = ParameterCapable::from((record & BIT_3_IN_BYTE) >> 4);
-    let parameter_4_capable = ParameterCapable::from((record & BIT_4_IN_BYTE) >> 3);
-    let parameter_5_capable = ParameterCapable::from((record & BIT_5_IN_BYTE) >> 2);
-    let parameter_6_capable = ParameterCapable::from((record & BIT_6_IN_BYTE) >> 1);
-    let operational_status = OperationalStatus::from(record & BIT_7_IN_BYTE);
-
-    Ok((input, SystemStatus::builder()
-        .with_system_on_off_status(system_on_off_status)
-        .with_parameter_1_capable(parameter_1_capable)
-        .with_parameter_2_capable(parameter_2_capable)
-        .with_parameter_3_capable(parameter_3_capable)
-        .with_parameter_4_capable(parameter_4_capable)
-        .with_parameter_5_capable(parameter_5_capable)
-        .with_parameter_6_capable(parameter_6_capable)
-        .with_operational_status(operational_status)
-        .build()
-    ))
+    Ok((input, SystemStatus::from(record)))
 }
 
 // TODO This bit of error handling the correct system type to parse is not that nice.

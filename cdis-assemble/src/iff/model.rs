@@ -29,7 +29,7 @@ pub struct Iff {
 // TODO layer 5
 
 impl BodyProperties for Iff {
-    type FieldsPresent = IffFieldsPresent;
+    type FieldsPresent = IffLayer1FieldsPresent;
     type FieldsPresentOutput = u16;
     const FIELDS_PRESENT_LENGTH: usize = 12;
 
@@ -78,9 +78,9 @@ impl CdisInteraction for Iff {
     }
 }
 
-pub struct IffFieldsPresent;
+pub struct IffLayer1FieldsPresent;
 
-impl IffFieldsPresent {
+impl IffLayer1FieldsPresent {
     pub const EVENT_ID_BIT: u16 = 0x0800;
     pub const RELATIVE_ANTENNA_LOCATION_BIT: u16 = 0x0400;
     pub const SYSTEM_ID_DETAILS_BIT: u16 = 0x0200;
@@ -157,4 +157,19 @@ impl CdisRecord for IffFundamentalParameterData {
     fn record_length(&self) -> usize {
         EIGHTY_SIX_BITS
     }
+}
+
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct IffLayer3 {
+    pub layer_header: LayerHeader,
+}
+
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct IffLayer4 {
+    pub layer_header: LayerHeader,
+}
+
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct IffLayer5 {
+    pub layer_header: LayerHeader,
 }

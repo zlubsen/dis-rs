@@ -1,6 +1,6 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAddress, length_padded_to_num, PduBody};
-use crate::constants::{FOUR_OCTETS, SIX_OCTETS};
+use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, FOUR_OCTETS, SIX_OCTETS};
 use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5LocationErrors, Mode5LevelSelection, Mode5SAltitudeResolution, Mode5Reply, Mode5PlatformType, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, Level2SquitterStatus, VariableRecordType};
 use crate::common::iff::builder::{ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder, FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder, IffDataSpecificationBuilder, IffFundamentalParameterDataBuilder, IffLayer2Builder, IffLayer3Builder, IffLayer4Builder, IffLayer5Builder, InformationLayersBuilder, LayerHeaderBuilder, Mode5InterrogatorBasicDataBuilder, Mode5InterrogatorStatusBuilder, Mode5MessageFormatsBuilder, Mode5TransponderBasicDataBuilder, Mode5TransponderStatusBuilder, Mode5TransponderSupplementalDataBuilder, ModeSAltitudeBuilder, ModeSInterrogatorBasicDataBuilder, ModeSInterrogatorStatusBuilder, ModeSLevelsPresentBuilder, ModeSTransponderBasicDataBuilder, ModeSTransponderStatusBuilder, SystemIdBuilder, SystemSpecificDataBuilder, SystemStatusBuilder};
 
@@ -277,6 +277,45 @@ impl ChangeOptionsRecord {
     }
 }
 
+impl From<u8> for ChangeOptionsRecord {
+    fn from(record: u8) -> Self {
+        let builder = ChangeOptionsRecord::builder();
+        let builder = if ((record & BIT_0_IN_BYTE) >> 7) != 0 {
+            builder.set_change_indicator()
+        } else { builder };
+
+        let builder = if ((record & BIT_1_IN_BYTE) >> 6) != 0 {
+            builder.set_system_specific_field_1()
+        } else { builder };
+
+        let builder = if ((record & BIT_2_IN_BYTE) >> 5) != 0 {
+            builder.set_system_specific_field_2()
+        } else { builder };
+
+        let builder = if ((record & BIT_3_IN_BYTE) >> 4) != 0 {
+            builder.set_heartbeat_indicator()
+        } else { builder };
+
+        let builder = if ((record & BIT_4_IN_BYTE) >> 3) != 0 {
+            builder.set_transponder_interrogator_indicator()
+        } else { builder };
+
+        let builder = if ((record & BIT_5_IN_BYTE) >> 2) != 0 {
+            builder.set_simulation_mode()
+        } else { builder };
+
+        let builder = if ((record & BIT_6_IN_BYTE) >> 1) != 0 {
+            builder.set_interactive_capable()
+        } else { builder };
+
+        let builder = if (record & BIT_7_IN_BYTE) != 0 {
+            builder.set_test_mode()
+        } else { builder };
+
+        builder.build()
+    }
+}
+
 /// 6.2.39 Fundamental Operational Data record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct FundamentalOperationalData {
@@ -290,6 +329,30 @@ pub struct FundamentalOperationalData {
     pub parameter_4: u16,
     pub parameter_5: u16,
     pub parameter_6: u16,
+}
+
+impl From<u8> for SystemStatus {
+    fn from(record: u8) -> Self {
+        let system_on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
+        let parameter_1_capable = ParameterCapable::from((record & BIT_1_IN_BYTE) >> 6);
+        let parameter_2_capable = ParameterCapable::from((record & BIT_2_IN_BYTE) >> 5);
+        let parameter_3_capable = ParameterCapable::from((record & BIT_3_IN_BYTE) >> 4);
+        let parameter_4_capable = ParameterCapable::from((record & BIT_4_IN_BYTE) >> 3);
+        let parameter_5_capable = ParameterCapable::from((record & BIT_5_IN_BYTE) >> 2);
+        let parameter_6_capable = ParameterCapable::from((record & BIT_6_IN_BYTE) >> 1);
+        let operational_status = OperationalStatus::from(record & BIT_7_IN_BYTE);
+
+        SystemStatus::builder()
+            .with_system_on_off_status(system_on_off_status)
+            .with_parameter_1_capable(parameter_1_capable)
+            .with_parameter_2_capable(parameter_2_capable)
+            .with_parameter_3_capable(parameter_3_capable)
+            .with_parameter_4_capable(parameter_4_capable)
+            .with_parameter_5_capable(parameter_5_capable)
+            .with_parameter_6_capable(parameter_6_capable)
+            .with_operational_status(operational_status)
+            .build()
+    }
 }
 
 impl FundamentalOperationalData {

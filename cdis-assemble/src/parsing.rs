@@ -19,6 +19,7 @@ use crate::electromagnetic_emission::parser::electromagnetic_emission_body;
 use crate::entity_state::parser::entity_state_body;
 use crate::event_report::parser::event_report_body;
 use crate::fire::parser::fire_body;
+use crate::iff::parser::iff_body;
 use crate::receiver::parser::receiver_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
@@ -79,7 +80,7 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::Transmitter => { transmitter_body(input)? }
             PduType::Signal => { signal_body(input)? }
             PduType::Receiver => { receiver_body(input)? }
-            // PduType::IFF => {}
+            PduType::IFF => { iff_body(input)? }
             // Unsupported PDUs in CDIS v1
             PduType::Other => { (input, CdisBody::Unsupported(Unsupported)) }
             PduType::Unspecified(_val) => { (input, CdisBody::Unsupported(Unsupported)) }
