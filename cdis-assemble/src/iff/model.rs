@@ -164,12 +164,30 @@ pub struct IffLayer3 {
     pub layer_header: LayerHeader,
 }
 
+impl CdisRecord for IffLayer3 {
+    fn record_length(&self) -> usize {
+        todo!()
+    }
+}
+
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer4 {
     pub layer_header: LayerHeader,
 }
 
+impl CdisRecord for IffLayer4 {
+    fn record_length(&self) -> usize {
+        todo!()
+    }
+}
+
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer5 {
     pub layer_header: LayerHeader,
+}
+
+impl CdisRecord for IffLayer5 {
+    fn record_length(&self) -> usize {
+        todo!()
+    }
 }

@@ -193,23 +193,7 @@ fn iff_data_specification(input: &[u8]) -> IResult<&[u8], IffDataSpecification> 
 fn information_layers(input: &[u8]) -> IResult<&[u8], InformationLayers> {
     let (input, record) = be_u8(input)?;
 
-    let builder = InformationLayers::builder()
-        .with_layer_1(LayersPresenceApplicability::from(
-            (record & BIT_1_IN_BYTE) >> 6))
-        .with_layer_2(LayersPresenceApplicability::from(
-            (record & BIT_2_IN_BYTE) >> 5))
-        .with_layer_3(LayersPresenceApplicability::from(
-            (record & BIT_3_IN_BYTE) >> 4))
-        .with_layer_4(LayersPresenceApplicability::from(
-            (record & BIT_4_IN_BYTE) >> 3))
-        .with_layer_5(LayersPresenceApplicability::from(
-            (record & BIT_5_IN_BYTE) >> 2))
-        .with_layer_6(LayersPresenceApplicability::from(
-            (record & BIT_6_IN_BYTE) >> 1))
-        .with_layer_7(LayersPresenceApplicability::from(
-            record & BIT_7_IN_BYTE));
-
-    Ok((input, builder.build()))
+    Ok((input, InformationLayers::from(record)))
 }
 
 fn iff_fundamental_parameter_data(input: &[u8]) -> IResult<&[u8], IffFundamentalParameterData> {

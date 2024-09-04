@@ -454,6 +454,28 @@ impl InformationLayers {
     }
 }
 
+impl From<u8> for InformationLayers {
+    fn from(record: u8) -> Self {
+        let builder = InformationLayers::builder()
+            .with_layer_1(LayersPresenceApplicability::from(
+                (record & BIT_1_IN_BYTE) >> 6))
+            .with_layer_2(LayersPresenceApplicability::from(
+                (record & BIT_2_IN_BYTE) >> 5))
+            .with_layer_3(LayersPresenceApplicability::from(
+                (record & BIT_3_IN_BYTE) >> 4))
+            .with_layer_4(LayersPresenceApplicability::from(
+                (record & BIT_4_IN_BYTE) >> 3))
+            .with_layer_5(LayersPresenceApplicability::from(
+                (record & BIT_5_IN_BYTE) >> 2))
+            .with_layer_6(LayersPresenceApplicability::from(
+                (record & BIT_6_IN_BYTE) >> 1))
+            .with_layer_7(LayersPresenceApplicability::from(
+                record & BIT_7_IN_BYTE));
+
+        builder.build()
+    }
+}
+
 /// 6.2.44 IFF Fundamental Parameter Data Record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffFundamentalParameterData {
