@@ -2,9 +2,9 @@ use nom::complete::take;
 use nom::IResult;
 use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{FOURTEEN_BITS, FOUR_BITS, SEVENTEEN_BITS, THREE_BITS};
+use crate::constants::{FOURTEEN_BITS, THREE_BITS};
 use crate::parsing::{take_signed, BitInput};
-use crate::records::model::{BeamData, CdisRecord, EntityCoordinateVector, EntityId};
+use crate::records::model::{BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat};
 use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
 use crate::writing::{write_value_signed, write_value_unsigned};
 
@@ -148,64 +148,6 @@ impl TrackJam {
             self.entity_id.record_length() +
             (if let Some(record) = self.emitter_number { record.record_length() } else { 0 }) +
             (if let Some(record) = self.beam_number { record.record_length() } else { 0 })
-    }
-}
-
-#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
-pub struct FrequencyFloat {
-    mantissa: u32,
-    exponent: u8,
-}
-
-impl CdisFloat for FrequencyFloat {
-    type Mantissa = u32;
-    type Exponent = u8;
-    type InnerFloat = f32;
-    const MANTISSA_BITS: usize = SEVENTEEN_BITS;
-    const EXPONENT_BITS: usize = FOUR_BITS;
-
-    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
-        Self {
-            mantissa,
-            exponent,
-        }
-    }
-
-    fn from_float(float: Self::InnerFloat) -> Self {
-        let mut mantissa = float;
-        let mut exponent = 0usize;
-        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
-            mantissa /= 10.0;
-            exponent += 1;
-        }
-
-        Self {
-            mantissa: mantissa as Self::Mantissa,
-            exponent: exponent as Self::Exponent,
-        }
-    }
-
-    fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
-    }
-
-    fn parse(input: BitInput) -> IResult<BitInput, Self> {
-        let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
-        let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
-
-        Ok((input, Self {
-            mantissa,
-            exponent
-        }))
-    }
-
-    #[allow(clippy::let_and_return)]
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
-
-        cursor
     }
 }
 

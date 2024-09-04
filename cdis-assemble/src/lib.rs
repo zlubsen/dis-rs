@@ -436,7 +436,5 @@ mod tests {
         assert!(PduType::Signal.is_implemented());
         assert!(PduType::Receiver.is_implemented());
         assert!(PduType::IFF.is_implemented());
-
-        assert_eq!(PduType::IFF.is_implemented() || CdisBody::Iff.body_length() != 0, false);
     }
 }

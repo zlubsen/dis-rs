@@ -2,7 +2,7 @@ use dis_rs::enumerations::IffApplicableModes;
 use dis_rs::iff::model::{InformationLayers, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{EIGHTY_SIX_BITS, EIGHT_BITS, ONE_BIT, SIXTEEN_BITS, TWENTY_BITS, TWENTY_FOUR_BITS};
-use crate::electromagnetic_emission::model::FrequencyFloat;
+use crate::records::model::FrequencyFloat;
 use crate::records::model::{BeamData, CdisRecord, LayerHeader};
 use crate::records::model::{EntityCoordinateVector, EntityId, UnitsMeters};
 
@@ -23,7 +23,8 @@ pub struct Iff {
     pub layer_5: Option<IffLayer5>, // Data Communications
 }
 
-// TODO parser/serializer/codec for layer 1 and layer 2
+// TODO writer for layer 1 and layer 2
+// TODO codec for layer 1 and layer 2
 // TODO layer 3
 // TODO layer 4
 // TODO layer 5
@@ -145,7 +146,7 @@ impl CdisRecord for IffLayer2 {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffFundamentalParameterData {
     pub erp: u8,
-    pub frequency: FrequencyFloat, // FIXME move FrequencyFloat to a common file instead of in EE.
+    pub frequency: FrequencyFloat,
     pub pgrf: u16,
     pub pulse_width: u16,
     pub burst_length: u16,

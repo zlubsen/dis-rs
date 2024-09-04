@@ -9,7 +9,7 @@ use dis_rs::parse_pdu_status_fields;
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, NINE_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::parsing::take_signed;
-use crate::records::model::{AngularVelocity, BeamAntennaPattern, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
+use crate::records::model::{AngularVelocity, BeamAntennaPattern, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
 use crate::types::parser::{svint12, svint13, svint14, svint16, svint24, uvint16, uvint8};
 
@@ -547,7 +547,7 @@ pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
     let (input, az_sweep) = svint13(input)?;
     let (input, el_center) = svint13(input)?;
     let (input, el_sweep) = svint13(input)?;
-    let (input, sweep_sync): (BitInput, u16) = take(TEN_BITS)(input)?;
+    let (input, sweep_sync) : (BitInput, u16) = take(TEN_BITS)(input)?;
 
     Ok((input, BeamData {
         az_center,
@@ -555,5 +555,17 @@ pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
         el_center,
         el_sweep,
         sweep_sync,
+    }))
+}
+
+pub fn layer_header(input: BitInput) -> IResult<BitInput, LayerHeader> {
+    let (input, layer_number) : (BitInput, u8) = take(FOUR_BITS)(input)?;
+    let (input, layer_specific_information) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, length) : (BitInput, u16) = take(FOURTEEN_BITS)(input)?;
+
+    Ok((input, LayerHeader {
+        layer_number,
+        layer_specific_information,
+        length,
     }))
 }

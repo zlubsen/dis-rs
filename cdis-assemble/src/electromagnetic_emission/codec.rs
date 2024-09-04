@@ -7,9 +7,9 @@ use dis_rs::model::{BeamData as DisBeamData, EntityId as DisEntityId, EventId, P
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
 use crate::constants::MAX_TRACK_JAM_NUMBER_OF_TARGETS;
-use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, EmitterSystem, FrequencyFloat, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
+use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
 use crate::records::codec::{decode_entity_coordinate_vector, encode_entity_coordinate_vector_meters};
-use crate::records::model::{BeamData, EntityCoordinateVector, EntityId, UnitsMeters};
+use crate::records::model::{BeamData, EntityCoordinateVector, EntityId, FrequencyFloat, UnitsMeters};
 use crate::types::model::{CdisFloat, UVINT16, UVINT8};
 
 type Counterpart = dis_rs::electromagnetic_emission::model::ElectromagneticEmission;
@@ -731,10 +731,10 @@ mod tests {
     use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
     use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, SimulationAddress, VectorF32};
     use crate::electromagnetic_emission::codec::{construct_beam_data_list_full, construct_fundamental_params_list_full, construct_site_app_pairs_list, DecoderStateElectromagneticEmission, EncoderStateElectromagneticEmission};
-    use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, FrequencyFloat, FundamentalParameter, SiteAppPair};
+    use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, FundamentalParameter, SiteAppPair};
     use crate::types::model::{CdisFloat, SVINT16, UVINT16, UVINT8};
     use crate::codec::{Codec, CodecOptions, CodecStateResult};
-    use crate::records::model::{BeamData, EntityCoordinateVector};
+    use crate::records::model::{BeamData, EntityCoordinateVector, FrequencyFloat};
 
     #[test]
     fn fundamental_params_list() {

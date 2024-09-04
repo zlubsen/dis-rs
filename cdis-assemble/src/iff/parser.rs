@@ -1,13 +1,16 @@
 use nom::complete::take;
 use nom::IResult;
-use dis_rs::enumerations::{IffSystemMode, IffSystemName, IffSystemType};
-use dis_rs::iff::model::{ChangeOptionsRecord, InformationLayers, LayersPresenceApplicability, SystemId, SystemStatus};
+use nom::multi::count;
+use dis_rs::enumerations::{IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType};
+use dis_rs::iff::model::{ChangeOptionsRecord, InformationLayers, LayersPresenceApplicability, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, THREE_BITS, TWELVE_BITS};
-use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffLayer1FieldsPresent, IffLayer2, IffLayer3, IffLayer4, IffLayer5};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THREE_BITS, TWELVE_BITS};
+use crate::records::model::FrequencyFloat;
+use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer1FieldsPresent, IffLayer2, IffLayer3, IffLayer4, IffLayer5};
 use crate::parsing::{parse_field_when_present, BitInput};
 use crate::records::model::UnitsMeters;
-use crate::records::parser::{entity_coordinate_vector, entity_identification};
+use crate::records::parser::{beam_data, entity_coordinate_vector, entity_identification, layer_header};
+use crate::types::model::CdisFloat;
 
 pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u16) = take(TWELVE_BITS)(input)?;
@@ -124,7 +127,50 @@ fn fundamental_operational_data(fields_present: u16) -> impl Fn(BitInput) -> IRe
 }
 
 fn iff_layer_2(input: BitInput) -> IResult<BitInput, IffLayer2> {
-    todo!()
+    let (input, layer_header) = layer_header(input)?;
+    let (input, beam_data) = beam_data(input)?;
+    let (input, operational_parameter_1) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, operational_parameter_2) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, nr_of_data_records) : (BitInput, usize) = take(EIGHT_BITS)(input)?;
+
+    let (input, iff_fundamental_parameters) = count(fundamental_parameter_data_record, nr_of_data_records)(input)?;
+
+    Ok((input, IffLayer2 {
+        layer_header,
+        beam_data,
+        operational_parameter_1,
+        operational_parameter_2,
+        iff_fundamental_parameters,
+    }))
+}
+
+fn fundamental_parameter_data_record(input: BitInput) -> IResult<BitInput, IffFundamentalParameterData> {
+    let (input, erp) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, frequency) = FrequencyFloat::parse(input)?;
+    let (input, pgrf) : (BitInput, u16) = take(TEN_BITS)(input)?;
+    let (input, pulse_width) : (BitInput, u16) = take(TEN_BITS)(input)?;
+    let (input, burst_length) : (BitInput, u16) = take(TEN_BITS)(input)?;
+
+    let (input, applicable_modes) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let applicable_modes = IffApplicableModes::from(applicable_modes);
+    let (input, specific_data_1) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, specific_data_2) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, specific_data_3) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let system_specific_data = SystemSpecificData::builder()
+        .with_part_1(specific_data_1)
+        .with_part_2(specific_data_2)
+        .with_part_3(specific_data_3)
+        .build();
+
+    Ok((input, IffFundamentalParameterData {
+        erp,
+        frequency,
+        pgrf,
+        pulse_width,
+        burst_length,
+        applicable_modes,
+        system_specific_data,
+    }))
 }
 
 fn iff_layer_3(input: BitInput) -> IResult<BitInput, IffLayer3> {

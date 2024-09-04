@@ -2,11 +2,12 @@ use nom::IResult;
 use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem};
 use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SEVENTEEN_BITS, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
 use crate::records::model::CdisProtocolVersion::{Reserved, StandardDis, SISO_023_2023};
 use crate::types::model::{CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 use num_traits::FromPrimitive;
+use nom::complete::take;
 use crate::BitBuffer;
 use crate::parsing::{take_signed, BitInput};
 use crate::writing::{write_value_signed, write_value_unsigned};
@@ -454,7 +455,9 @@ impl CdisRecord for EntityType {
 /// 11.17 Layer Header Record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct LayerHeader {
-
+    pub layer_number: u8,
+    pub layer_specific_information: u8,
+    pub length: u16,
 }
 
 impl CdisRecord for LayerHeader {
@@ -1260,5 +1263,63 @@ mod tests {
 
         assert_eq!(String::from("JKLMN"), actual.marking.as_str());
         assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
+    }
+}
+
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
+pub struct FrequencyFloat {
+    mantissa: u32,
+    exponent: u8,
+}
+
+impl CdisFloat for FrequencyFloat {
+    type Mantissa = u32;
+    type Exponent = u8;
+    type InnerFloat = f32;
+    const MANTISSA_BITS: usize = SEVENTEEN_BITS;
+    const EXPONENT_BITS: usize = FOUR_BITS;
+
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
+        Self {
+            mantissa,
+            exponent,
+        }
+    }
+
+    fn from_float(float: Self::InnerFloat) -> Self {
+        let mut mantissa = float;
+        let mut exponent = 0usize;
+        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+            mantissa /= 10.0;
+            exponent += 1;
+        }
+
+        Self {
+            mantissa: mantissa as Self::Mantissa,
+            exponent: exponent as Self::Exponent,
+        }
+    }
+
+    fn to_float(&self) -> Self::InnerFloat {
+        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+    }
+
+    fn parse(input: BitInput) -> IResult<BitInput, Self> {
+        let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
+        let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
+
+        Ok((input, Self {
+            mantissa,
+            exponent
+        }))
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+
+        cursor
     }
 }
