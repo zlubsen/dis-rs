@@ -363,7 +363,7 @@ impl FundamentalOperationalData {
 
 /// Custom defined enum to model the capability of a parameter in the
 /// `FundamentalOperationalData` record.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub enum ParameterCapable {
     #[default]
     Capable,
@@ -372,7 +372,7 @@ pub enum ParameterCapable {
 
 /// Custom defined enum to model the capability of a parameter in the
 /// `FundamentalOperationalData` record.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub enum OperationalStatus {
     #[default]
     Operational,
@@ -381,7 +381,7 @@ pub enum OperationalStatus {
 
 /// Custom defined enum to model the presence or applicability of an IFF layer
 /// as used in IFF Layer 1.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub enum LayersPresenceApplicability {
     #[default]
     NotPresentApplicable,   // 0
@@ -437,7 +437,7 @@ impl IffDataSpecification {
 }
 
 /// 6.2.45 Information Layers record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct InformationLayers {
     pub layer_1: LayersPresenceApplicability,
     pub layer_2: LayersPresenceApplicability,
@@ -712,7 +712,7 @@ impl Mode5TransponderBasicData {
 }
 
 /// Custom defined enum to model a system being On or Off.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub enum OnOffStatus {
     #[default]
     Off,            // 0
@@ -936,7 +936,7 @@ pub enum SquitterStatus {
 }
 
 /// B.2.52 System Status record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct SystemStatus {
     pub system_on_off_status: OnOffStatus,
     pub parameter_1_capable: ParameterCapable,

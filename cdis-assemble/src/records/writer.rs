@@ -1,7 +1,7 @@
 use num_traits::FromPrimitive;
 use dis_rs::enumerations::VariableParameterRecordType;
 use dis_rs::model::{FixedDatum, VariableDatum};
-use crate::records::model::{AngularVelocity, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::records::model::{AngularVelocity, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisRecord, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
 use crate::writing::{write_value_signed, write_value_unsigned, SerializeCdis};
 use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS, NINE_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::types::model::{CdisFloat, UVINT8};
@@ -338,6 +338,16 @@ impl SerializeCdis for BeamData {
         let cursor = self.az_center.serialize(buf, cursor);
         let cursor = self.az_center.serialize(buf, cursor);
         let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.sweep_sync);
+
+        cursor
+    }
+}
+
+impl LayerHeader {
+    pub fn serialize_with_length(&self, body_length: usize, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.layer_number);
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.layer_specific_information);
+        let cursor = write_value_unsigned(buf, cursor, FOURTEEN_BITS, self.record_length() + body_length);
 
         cursor
     }

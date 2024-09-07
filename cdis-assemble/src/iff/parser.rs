@@ -127,6 +127,7 @@ fn fundamental_operational_data(fields_present: u16) -> impl Fn(BitInput) -> IRe
 }
 
 fn iff_layer_2(input: BitInput) -> IResult<BitInput, IffLayer2> {
+    let (input, _units) = take(ONE_BIT)(input)?;
     let (input, layer_header) = layer_header(input)?;
     let (input, beam_data) = beam_data(input)?;
     let (input, operational_parameter_1) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
@@ -151,7 +152,7 @@ fn fundamental_parameter_data_record(input: BitInput) -> IResult<BitInput, IffFu
     let (input, pulse_width) : (BitInput, u16) = take(TEN_BITS)(input)?;
     let (input, burst_length) : (BitInput, u16) = take(TEN_BITS)(input)?;
 
-    let (input, applicable_modes) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, applicable_modes) : (BitInput, u8) = take(THREE_BITS)(input)?;
     let applicable_modes = IffApplicableModes::from(applicable_modes);
     let (input, specific_data_1) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
     let (input, specific_data_2) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
