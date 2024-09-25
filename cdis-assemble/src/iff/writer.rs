@@ -1,10 +1,10 @@
-use dis_rs::iff::model::SystemId;
-use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5};
+use dis_rs::iff::model::{IffDataRecord, Mode5MessageFormats, Mode5TransponderBasicData, SystemId};
+use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5BasicData, Mode5InterrogatorBasicData};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THREE_BITS, TWELVE_BITS};
-use crate::records::model::{CdisRecord, LayerHeader};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS};
+use crate::records::model::{CdisRecord};
 use crate::types::model::CdisFloat;
-use crate::writing::{serialize_when_present, write_value_signed, write_value_unsigned, SerializeCdis};
+use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
 
 impl SerializeCdisPdu for Iff {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
@@ -48,7 +48,7 @@ impl SerializeCdis for SystemId {
         let cursor = write_value_unsigned::<u16>(buf, cursor, FOUR_BITS, self.system_type.into());
         let cursor = write_value_unsigned::<u16>(buf, cursor, FIVE_BITS, self.system_name.into());
         let cursor = write_value_unsigned::<u8>(buf, cursor, THREE_BITS, self.system_mode.into());
-        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, self.system_type.into());
+        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, (&self.change_options).into());
 
         cursor
     }
@@ -56,12 +56,12 @@ impl SerializeCdis for SystemId {
 
 impl SerializeCdis for CdisFundamentalOperationalData {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, self.system_status.into());
+        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, u8::from(&self.system_status));
         let cursor = if let Some(data) = self.data_field_1 {
             write_value_unsigned(buf, cursor, EIGHT_BITS, data)
         } else { cursor };
 
-        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, self.information_layers.into());
+        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, u8::from(&self.information_layers));
 
         let cursor = if let Some(data) = self.data_field_2 {
             write_value_unsigned(buf, cursor, EIGHT_BITS, data)
@@ -125,7 +125,16 @@ impl SerializeCdis for IffFundamentalParameterData {
 
 impl SerializeCdis for IffLayer3 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        todo!()
+        let data_records_present_value = if self.iff_data_records.is_empty() { 0u8 } else { 1u8 };
+        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, data_records_present_value);
+        let cursor = self.layer_header.serialize_with_length(self.record_length(), buf, cursor);
+        let cursor = self.reporting_simulation_site.serialize(buf, cursor);
+        let cursor = self.reporting_simulation_application.serialize(buf, cursor);
+        let cursor = self.mode_5_basic_data.serialize(buf, cursor);
+
+        let cursor = self.iff_data_records.iter().fold(cursor, | cursor, record | SerializeCdis::serialize(record, buf, cursor) );
+
+        cursor
     }
 }
 
@@ -138,5 +147,58 @@ impl SerializeCdis for IffLayer4 {
 impl SerializeCdis for IffLayer5 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         todo!()
+    }
+}
+
+impl SerializeCdis for Mode5BasicData {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        match self {
+            Mode5BasicData::Interrogator(record) => { record.serialize(buf, cursor) }
+            Mode5BasicData::Transponder(record) => { SerializeCdis::serialize(record, buf, cursor) }
+        }
+    }
+}
+
+impl SerializeCdis for Mode5InterrogatorBasicData {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.interrogator_status));
+        let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, u32::from(&self.message_formats_present));
+        let cursor = self.interrogated_entity_id.serialize(buf, cursor);
+
+        cursor
+    }
+}
+
+impl SerializeCdis for Mode5TransponderBasicData {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, u16::from(&self.status));
+        let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, self.pin);
+        let cursor = SerializeCdis::serialize(&self.mode_5_message_formats_present, buf, cursor);
+
+        let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, u16::from(&self.enhanced_mode_1));
+        let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, self.national_origin);
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.supplemental_data));
+
+        let cursor = write_value_unsigned::<u8>(buf, cursor, THREE_BITS, self.navigation_source.into());
+        let cursor = write_value_unsigned(buf, cursor, FIVE_BITS, self.figure_of_merit);
+
+        cursor
+    }
+}
+
+impl SerializeCdis for Mode5MessageFormats {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let value = u32::from(self);
+        write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, value)
+    }
+}
+
+impl SerializeCdis for IffDataRecord {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned::<u32>(buf, cursor, SIXTEEN_BITS, self.record_type.into());
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.record_length().saturating_div(EIGHT_BITS));
+        let cursor = self.record_specific_fields.iter().fold(cursor, | cursor, byte | write_value_unsigned(buf, cursor, EIGHT_BITS, *byte) );
+
+        cursor
     }
 }

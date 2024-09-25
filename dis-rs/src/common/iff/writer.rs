@@ -2,7 +2,7 @@ use bytes::{BufMut, BytesMut};
 use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::model::length_padded_to_num;
-use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS};
+use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS};
 use crate::{DisError};
 
 impl SerializePdu for Iff {
@@ -99,31 +99,7 @@ impl Serialize for IffLayer5 {
 
 impl Serialize for ChangeOptionsRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let mut byte = 0u8;
-        if self.change_indicator {
-            byte += BIT_0_IN_BYTE;
-        }
-        if self.system_specific_field_1 {
-            byte += BIT_1_IN_BYTE;
-        }
-        if self.system_specific_field_2 {
-            byte += BIT_2_IN_BYTE;
-        }
-        if self.heartbeat_indicator {
-            byte += BIT_3_IN_BYTE;
-        }
-        if self.transponder_interrogator_indicator {
-            byte += BIT_4_IN_BYTE;
-        }
-        if self.simulation_mode {
-            byte += BIT_5_IN_BYTE;
-        }
-        if self.interactive_capable {
-            byte += BIT_6_IN_BYTE;
-        }
-        if self.test_mode {
-            byte += BIT_7_IN_BYTE;
-        }
+        let byte : u8 = self.into();
         buf.put_u8(byte);
 
         ONE_OCTET as u16
@@ -201,15 +177,8 @@ impl Serialize for IffDataSpecification {
 
 impl Serialize for InformationLayers {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let layer_1 = u8::from(&self.layer_1) << 6;
-        let layer_2 = u8::from(&self.layer_2) << 5;
-        let layer_3 = u8::from(&self.layer_3) << 4;
-        let layer_4 = u8::from(&self.layer_4) << 3;
-        let layer_5 = u8::from(&self.layer_5) << 2;
-        let layer_6 = u8::from(&self.layer_6) << 1;
-        let layer_7 = u8::from(&self.layer_7);
-
-        buf.put_u8(layer_1 | layer_2 | layer_3 | layer_4 | layer_5 | layer_6 | layer_7);
+        let byte = u8::from(self);
+        buf.put_u8(byte);
 
         ONE_OCTET as u16
     }
@@ -297,23 +266,8 @@ impl From<&DapValue> for u8 {
 
 impl Serialize for EnhancedMode1Code {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let code_element_1: u16 = self.code_element_1_d << 13;
-        let code_element_2: u16 = self.code_element_2_c << 10;
-        let code_element_3: u16 = self.code_element_3_b << 7;
-        let code_element_4: u16 = self.code_element_4_a << 4;
-        let on_off_status: u16 = (u8::from(&self.on_off_status) as u16) << 2;
-        let damage_status: u16 = (u8::from(&self.damage_status) as u16) << 1;
-        let malfunction_status: u16 = u8::from(&self.malfunction_status) as u16;
-
-        buf.put_u16(
-            code_element_1 |
-                code_element_2 |
-                code_element_3 |
-                code_element_4 |
-                on_off_status |
-                damage_status |
-                malfunction_status
-        );
+        let bytes = u16::from(self);
+        buf.put_u16(bytes);
 
         TWO_OCTETS as u16
     }
@@ -334,19 +288,8 @@ impl Serialize for Mode5InterrogatorBasicData {
 
 impl Serialize for Mode5InterrogatorStatus {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let iff_mission: u8 = u8::from(self.iff_mission) << 5;
-        let message_formats_status: u8 = u8::from(self.mode_5_message_formats_status) << 4;
-        let on_off_status: u8 = u8::from(&self.on_off_status) << 2;
-        let damage_status: u8 = u8::from(&self.damage_status) << 1;
-        let malfunction_status: u8 = u8::from(&self.malfunction_status);
-
-        buf.put_u8(
-            iff_mission |
-                message_formats_status |
-                on_off_status |
-                damage_status |
-                malfunction_status
-        );
+        let byte = u8::from(self);
+        buf.put_u8(byte);
 
         ONE_OCTET as u16
     }
@@ -354,48 +297,8 @@ impl Serialize for Mode5InterrogatorStatus {
 
 impl Serialize for Mode5MessageFormats {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let mf_0 = u32::from(&self.message_format_0) << 31;
-        let mf_1 = u32::from(&self.message_format_1) << 30;
-        let mf_2 = u32::from(&self.message_format_2) << 29;
-        let mf_3 = u32::from(&self.message_format_3) << 28;
-        let mf_4 = u32::from(&self.message_format_4) << 27;
-        let mf_5 = u32::from(&self.message_format_5) << 26;
-        let mf_6 = u32::from(&self.message_format_6) << 25;
-        let mf_7 = u32::from(&self.message_format_7) << 24;
-        let mf_8 = u32::from(&self.message_format_8) << 23;
-        let mf_9 = u32::from(&self.message_format_9) << 22;
-        let mf_10 = u32::from(&self.message_format_10) << 21;
-        let mf_11 = u32::from(&self.message_format_11) << 20;
-        let mf_12 = u32::from(&self.message_format_12) << 19;
-        let mf_13 = u32::from(&self.message_format_13) << 18;
-        let mf_14 = u32::from(&self.message_format_14) << 17;
-        let mf_15 = u32::from(&self.message_format_15) << 16;
-        let mf_16 = u32::from(&self.message_format_16) << 15;
-        let mf_17 = u32::from(&self.message_format_17) << 14;
-        let mf_18 = u32::from(&self.message_format_18) << 13;
-        let mf_19 = u32::from(&self.message_format_19) << 12;
-        let mf_20 = u32::from(&self.message_format_20) << 11;
-        let mf_21 = u32::from(&self.message_format_21) << 10;
-        let mf_22 = u32::from(&self.message_format_22) << 9;
-        let mf_23 = u32::from(&self.message_format_23) << 8;
-        let mf_24 = u32::from(&self.message_format_24) << 7;
-        let mf_25 = u32::from(&self.message_format_25) << 6;
-        let mf_26 = u32::from(&self.message_format_26) << 5;
-        let mf_27 = u32::from(&self.message_format_27) << 4;
-        let mf_28 = u32::from(&self.message_format_28) << 3;
-        let mf_29 = u32::from(&self.message_format_29) << 2;
-        let mf_30 = u32::from(&self.message_format_30) << 1;
-        let mf_31 = u32::from(&self.message_format_31);
-
-        buf.put_u32(
-            mf_0 | mf_1 | mf_2 | mf_3 | mf_4
-                | mf_5 | mf_6 | mf_7 | mf_8 | mf_9
-                | mf_10 | mf_11 | mf_12 | mf_13 | mf_14
-                | mf_15 | mf_16 | mf_17 | mf_18 | mf_19
-                | mf_20 | mf_21 | mf_22 | mf_23 | mf_24
-                | mf_25 | mf_26 | mf_27 | mf_28 | mf_29
-                | mf_30 | mf_31
-        );
+        let value = u32::from(self);
+        buf.put_u32(value);
 
         4
     }
@@ -464,15 +367,8 @@ impl From<&LatLonAltSource> for u8 {
 
 impl Serialize for Mode5TransponderSupplementalData {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let squitter_status: u8 = u8::from(&self.squitter_on_off_status) << 7;
-        let level_2_squitter_status: u8 = u8::from(self.level_2_squitter_status) << 6;
-        let iff_mission: u8 = u8::from(self.iff_mission) << 3;
-
-        buf.put_u8(
-            squitter_status |
-                level_2_squitter_status |
-                iff_mission
-        );
+        let byte = u8::from(self);
+        buf.put_u8(byte);
 
         ONE_OCTET as u16
     }
@@ -509,6 +405,8 @@ impl Serialize for Mode5TransponderStatus {
                 damage_status |
                 malfunction_status
         );
+        let bytes= u16::from(self);
+        buf.put_u16(bytes);
 
         TWO_OCTETS as u16
     }
@@ -673,15 +571,8 @@ impl From<&SquitterStatus> for u8 {
 
 impl Serialize for SystemStatus {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let system_on_off_status = u8::from(&self.system_on_off_status) << 7;
-        let parameter_1 = u8::from(&self.parameter_1_capable) << 6;
-        let parameter_2 = u8::from(&self.parameter_2_capable) << 5;
-        let parameter_3 = u8::from(&self.parameter_3_capable) << 4;
-        let parameter_4 = u8::from(&self.parameter_4_capable) << 3;
-        let parameter_5 = u8::from(&self.parameter_5_capable) << 2;
-        let parameter_6 = u8::from(&self.parameter_6_capable) << 1;
-        let operational_status = u8::from(&self.operational_status);
-        buf.put_u8(system_on_off_status | parameter_1 | parameter_2 | parameter_3 | parameter_4 | parameter_5 | parameter_6 | operational_status);
+        let byte = u8::from(self);
+        buf.put_u8(byte);
 
         ONE_OCTET as u16
     }

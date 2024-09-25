@@ -1,16 +1,18 @@
 use nom::complete::take;
 use nom::IResult;
 use nom::multi::count;
-use dis_rs::enumerations::{IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType};
-use dis_rs::iff::model::{ChangeOptionsRecord, InformationLayers, LayersPresenceApplicability, SystemId, SystemSpecificData, SystemStatus};
+use dis_rs::DisError;
+use dis_rs::enumerations::{IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
+use dis_rs::iff::model::{ChangeOptionsRecord, EnhancedMode1Code, IffDataRecord, InformationLayers, LayersPresenceApplicability, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THREE_BITS, TWELVE_BITS};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS};
 use crate::records::model::FrequencyFloat;
-use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer1FieldsPresent, IffLayer2, IffLayer3, IffLayer4, IffLayer5};
+use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer1FieldsPresent, Mode5BasicData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5InterrogatorBasicData};
 use crate::parsing::{parse_field_when_present, BitInput};
 use crate::records::model::UnitsMeters;
 use crate::records::parser::{beam_data, entity_coordinate_vector, entity_identification, layer_header};
 use crate::types::model::CdisFloat;
+use crate::types::parser::uvint16;
 
 pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present) : (BitInput, u16) = take(TWELVE_BITS)(input)?;
@@ -37,7 +39,8 @@ pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         (input, Some(layer_2))
     } else { (input, None) };
     let (input, layer_3) = if fundamental_operational_data.information_layers.layer_3 == LayersPresenceApplicability::PresentApplicable {
-        let (input, layer_3) = iff_layer_3(input)?;
+        let system_type = system_id.clone().unwrap_or_default().system_type;
+        let (input, layer_3) = iff_layer_3(&system_type)(input)?;
         (input, Some(layer_3))
     } else { (input, None) };
     let (input, layer_4) = if fundamental_operational_data.information_layers.layer_4 == LayersPresenceApplicability::PresentApplicable {
@@ -127,7 +130,11 @@ fn fundamental_operational_data(fields_present: u16) -> impl Fn(BitInput) -> IRe
 }
 
 fn iff_layer_2(input: BitInput) -> IResult<BitInput, IffLayer2> {
-    let (input, _units) = take(ONE_BIT)(input)?;
+    // Units field is unused, MUST be '1' but no check performed.
+    // Presence of Fundamental Param Data is assumed present as per the spec.
+    // Field required to be consistent with all Layers; Table 68
+    let (input, _units) : (BitInput, u8) = take(ONE_BIT)(input)?;
+
     let (input, layer_header) = layer_header(input)?;
     let (input, beam_data) = beam_data(input)?;
     let (input, operational_parameter_1) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
@@ -174,8 +181,113 @@ fn fundamental_parameter_data_record(input: BitInput) -> IResult<BitInput, IffFu
     }))
 }
 
-fn iff_layer_3(input: BitInput) -> IResult<BitInput, IffLayer3> {
-    todo!()
+fn iff_layer_3(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<BitInput, IffLayer3> + '_ {
+    move |input: BitInput| {
+        let (input, data_records_present): (BitInput, u8) = take(ONE_BIT)(input)?;
+        let data_records_present = data_records_present != 0;
+        let (input, layer_header) = layer_header(input)?;
+        let (input, reporting_simulation_site) = uvint16(input)?;
+        let (input, reporting_simulation_application) = uvint16(input)?;
+        let (input, mode_5_basic_data) = mode_5_basic_data(iff_system_type)(input)?;
+
+        let (input, iff_data_records) = if data_records_present {
+            let (input, nr_of_data_records) : (BitInput, usize) = take(FIVE_BITS)(input)?;
+            count(iff_data_record, nr_of_data_records)(input)?
+        } else { (input, vec![]) };
+
+        Ok((input, IffLayer3 {
+            layer_header,
+            reporting_simulation_site,
+            reporting_simulation_application,
+            mode_5_basic_data: mode_5_basic_data.unwrap_or(Mode5BasicData::Transponder(Mode5TransponderBasicData::default())),
+            iff_data_records,
+        }))
+    }
+}
+
+fn mode_5_basic_data(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<BitInput, Result<Mode5BasicData,DisError>> + '_ {
+    move |input: BitInput| {
+        let (input, mode_5_basic_data) = match iff_system_type {
+            IffSystemType::MarkXXIIATCRBSTransponder |
+            IffSystemType::SovietTransponder |
+            IffSystemType::RRBTransponder |
+            IffSystemType::MarkXIIATransponder |
+            IffSystemType::Mode5Transponder |
+            IffSystemType::ModeSTransponder => {
+                let (input, basic_data) = mode_5_transponder_basic_data(input)?;
+                (input, Ok(Mode5BasicData::Transponder(basic_data)))
+            }
+            IffSystemType::MarkXXIIATCRBSInterrogator |
+            IffSystemType::SovietInterrogator |
+            IffSystemType::MarkXIIAInterrogator |
+            IffSystemType::Mode5Interrogator |
+            IffSystemType::ModeSInterrogator => {
+                let (input, basic_data) = mode_5_interrogator_basic_data(input)?;
+                (input, Ok(Mode5BasicData::Interrogator(basic_data)))
+            }
+            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_ |
+            IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_ |
+            IffSystemType::TCASACASTransceiver => { (input, Err(DisError::IffUndeterminedSystemType)) }
+            IffSystemType::NotUsed_InvalidValue_ => { (input, Err(DisError::IffIncorrectSystemType)) }
+            IffSystemType::Unspecified(_) => { (input, Err(DisError::IffIncorrectSystemType)) }
+        };
+
+        Ok((input, mode_5_basic_data))
+    }
+}
+
+fn mode_5_transponder_basic_data(input: BitInput) -> IResult<BitInput, Mode5TransponderBasicData> {
+    let (input, mode_5_status) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    let mode_5_status = Mode5TransponderStatus::from(mode_5_status);
+    let (input, pin) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    let (input, message_formats_present) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    let message_formats_present = Mode5MessageFormats::from(message_formats_present);
+    let (input, enhanced_mode_1) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    let enhanced_mode_1 = EnhancedMode1Code::from(enhanced_mode_1);
+    let (input, national_origin) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    let (input, supplemental) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let supplemental = Mode5TransponderSupplementalData::from(supplemental);
+    let (input, navigation_source) : (BitInput, u8) = take(THREE_BITS)(input)?;
+    let navigation_source = NavigationSource::from(navigation_source);
+    let (input, figure_of_merit) : (BitInput, u8) = take(FIVE_BITS)(input)?;
+
+    Ok((input, Mode5TransponderBasicData::builder()
+        .with_status(mode_5_status)
+        .with_pin(pin)
+        .with_mode_5_message_formats_present(message_formats_present)
+        .with_enhanced_mode_1(enhanced_mode_1)
+        .with_national_origin(national_origin)
+        .with_supplemental_data(supplemental)
+        .with_navigation_source(navigation_source)
+        .with_figure_of_merit(figure_of_merit)
+        .build()))
+}
+
+fn mode_5_interrogator_basic_data(input: BitInput) -> IResult<BitInput, Mode5InterrogatorBasicData> {
+    let (input, interrogator_status) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let interrogator_status = Mode5InterrogatorStatus::from(interrogator_status);
+    let (input, message_formats_present) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    let message_formats_present = Mode5MessageFormats::from(message_formats_present);
+    let (input, interrogated_entity_id) = entity_identification(input)?;
+
+    Ok((input, Mode5InterrogatorBasicData {
+        interrogator_status,
+        message_formats_present,
+        interrogated_entity_id,
+    }))
+}
+
+fn iff_data_record(input: BitInput) -> IResult<BitInput, IffDataRecord> {
+    const THREE_OCTETS: usize = 3;
+    let (input, record_type) : (BitInput, u32) = take(SIXTEEN_BITS)(input)?;
+    let record_type = VariableRecordType::from(record_type);
+    let (input, record_length) : (BitInput, usize) = take(EIGHT_BITS)(input)?;
+    let (input, specific_field) : (BitInput, Vec<u8>) = count(take(EIGHT_BITS), record_length.saturating_sub(THREE_OCTETS))(input)?;
+
+    Ok((input, IffDataRecord::builder()
+        .with_record_type(record_type)
+        .with_record_specific_field(specific_field)
+        .build()))
 }
 
 fn iff_layer_4(input: BitInput) -> IResult<BitInput, IffLayer4> {

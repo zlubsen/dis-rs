@@ -316,6 +316,37 @@ impl From<u8> for ChangeOptionsRecord {
     }
 }
 
+impl From<&ChangeOptionsRecord> for u8 {
+    fn from(value: &ChangeOptionsRecord) -> Self {
+        let mut byte = 0u8;
+        if value.change_indicator {
+            byte += BIT_0_IN_BYTE;
+        }
+        if value.system_specific_field_1 {
+            byte += BIT_1_IN_BYTE;
+        }
+        if value.system_specific_field_2 {
+            byte += BIT_2_IN_BYTE;
+        }
+        if value.heartbeat_indicator {
+            byte += BIT_3_IN_BYTE;
+        }
+        if value.transponder_interrogator_indicator {
+            byte += BIT_4_IN_BYTE;
+        }
+        if value.simulation_mode {
+            byte += BIT_5_IN_BYTE;
+        }
+        if value.interactive_capable {
+            byte += BIT_6_IN_BYTE;
+        }
+        if value.test_mode {
+            byte += BIT_7_IN_BYTE;
+        }
+        byte
+    }
+}
+
 /// 6.2.39 Fundamental Operational Data record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct FundamentalOperationalData {
@@ -329,30 +360,6 @@ pub struct FundamentalOperationalData {
     pub parameter_4: u16,
     pub parameter_5: u16,
     pub parameter_6: u16,
-}
-
-impl From<u8> for SystemStatus {
-    fn from(record: u8) -> Self {
-        let system_on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
-        let parameter_1_capable = ParameterCapable::from((record & BIT_1_IN_BYTE) >> 6);
-        let parameter_2_capable = ParameterCapable::from((record & BIT_2_IN_BYTE) >> 5);
-        let parameter_3_capable = ParameterCapable::from((record & BIT_3_IN_BYTE) >> 4);
-        let parameter_4_capable = ParameterCapable::from((record & BIT_4_IN_BYTE) >> 3);
-        let parameter_5_capable = ParameterCapable::from((record & BIT_5_IN_BYTE) >> 2);
-        let parameter_6_capable = ParameterCapable::from((record & BIT_6_IN_BYTE) >> 1);
-        let operational_status = OperationalStatus::from(record & BIT_7_IN_BYTE);
-
-        SystemStatus::builder()
-            .with_system_on_off_status(system_on_off_status)
-            .with_parameter_1_capable(parameter_1_capable)
-            .with_parameter_2_capable(parameter_2_capable)
-            .with_parameter_3_capable(parameter_3_capable)
-            .with_parameter_4_capable(parameter_4_capable)
-            .with_parameter_5_capable(parameter_5_capable)
-            .with_parameter_6_capable(parameter_6_capable)
-            .with_operational_status(operational_status)
-            .build()
-    }
 }
 
 impl FundamentalOperationalData {
@@ -473,6 +480,20 @@ impl From<u8> for InformationLayers {
                 record & BIT_7_IN_BYTE));
 
         builder.build()
+    }
+}
+
+impl From<&InformationLayers> for u8 {
+    fn from(value: &InformationLayers) -> Self {
+        let layer_1 = u8::from(&value.layer_1) << 6;
+        let layer_2 = u8::from(&value.layer_2) << 5;
+        let layer_3 = u8::from(&value.layer_3) << 4;
+        let layer_4 = u8::from(&value.layer_4) << 3;
+        let layer_5 = u8::from(&value.layer_5) << 2;
+        let layer_6 = u8::from(&value.layer_6) << 1;
+        let layer_7 = u8::from(&value.layer_7);
+
+        layer_1 | layer_2 | layer_3 | layer_4 | layer_5 | layer_6 | layer_7
     }
 }
 
@@ -603,6 +624,59 @@ impl EnhancedMode1Code {
     }
 }
 
+impl From<u16> for EnhancedMode1Code {
+    fn from(record: u16) -> Self {
+        const BITS_0_2: u16 = 0xE000;
+        const BITS_3_5: u16 = 0x1C00;
+        const BITS_6_8: u16 = 0x0380;
+        const BITS_9_11: u16 = 0x0070;
+        const BITS_13: u16 = 0x0004;
+        const BITS_14: u16 = 0x0002;
+        const BITS_15: u16 = 0x0001;
+
+        let code_element_1_d = (record & BITS_0_2) >> 13;
+        let code_element_2_c = (record & BITS_3_5) >> 10;
+        let code_element_3_b = (record & BITS_6_8) >> 7;
+        let code_element_4_a = (record & BITS_9_11) >> 4;
+        let on_off_status =
+            OnOffStatus::from(((record & BITS_13) >> 2) as u8);
+        let damage_status =
+            DamageStatus::from(((record & BITS_14) >> 1) as u8);
+        let malfunction_status =
+            MalfunctionStatus::from((record & BITS_15) as u8);
+
+        EnhancedMode1Code::builder()
+            .with_code_element_1_d(code_element_1_d)
+            .with_code_element_2_c(code_element_2_c)
+            .with_code_element_3_b(code_element_3_b)
+            .with_code_element_4_a(code_element_4_a)
+            .with_on_off_status(on_off_status)
+            .with_damage_status(damage_status)
+            .with_malfunction_status(malfunction_status)
+            .build()
+    }
+}
+
+impl From<&EnhancedMode1Code> for u16 {
+    fn from(value: &EnhancedMode1Code) -> Self {
+        let code_element_1: u16 = value.code_element_1_d << 13;
+        let code_element_2: u16 = value.code_element_2_c << 10;
+        let code_element_3: u16 = value.code_element_3_b << 7;
+        let code_element_4: u16 = value.code_element_4_a << 4;
+        let on_off_status: u16 = (u8::from(&value.on_off_status) as u16) << 2;
+        let damage_status: u16 = (u8::from(&value.damage_status) as u16) << 1;
+        let malfunction_status: u16 = u8::from(&value.malfunction_status) as u16;
+
+        code_element_1 |
+            code_element_2 |
+            code_element_3 |
+            code_element_4 |
+            on_off_status |
+            damage_status |
+            malfunction_status
+    }
+}
+
 /// B.2.26 Mode 5 Interrogator Basic Data record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Mode5InterrogatorBasicData {
@@ -638,6 +712,44 @@ impl Mode5InterrogatorStatus {
 
     pub fn builder() -> Mode5InterrogatorStatusBuilder {
         Mode5InterrogatorStatusBuilder::new()
+    }
+}
+
+impl From<u8> for Mode5InterrogatorStatus {
+    fn from(record: u8) -> Self {
+        const BITS_0_2: u8 = 0xE0;
+        let iff_mission = Mode5IffMission::from((record & BITS_0_2) >> 5);
+        let mode_5_message_formats_status = Mode5MessageFormatsStatus::from((record & BIT_3_IN_BYTE) >> 4);
+        let on_off_status =
+            OnOffStatus::from((record & BIT_5_IN_BYTE) >> 2);
+        let damage_status =
+            DamageStatus::from((record & BIT_6_IN_BYTE) >> 1);
+        let malfunction_status =
+            MalfunctionStatus::from(record & BIT_7_IN_BYTE);
+
+        Mode5InterrogatorStatus::builder()
+            .with_iff_mission(iff_mission)
+            .with_mode_5_message_formats_status(mode_5_message_formats_status)
+            .with_on_off_status(on_off_status)
+            .with_damage_status(damage_status)
+            .with_malfunction_status(malfunction_status)
+            .build()
+    }
+}
+
+impl From<&Mode5InterrogatorStatus> for u8 {
+    fn from(value: &Mode5InterrogatorStatus) -> Self {
+        let iff_mission: u8 = u8::from(value.iff_mission) << 5;
+        let message_formats_status: u8 = u8::from(value.mode_5_message_formats_status) << 4;
+        let on_off_status: u8 = u8::from(&value.on_off_status) << 2;
+        let damage_status: u8 = u8::from(&value.damage_status) << 1;
+        let malfunction_status: u8 = u8::from(&value.malfunction_status);
+
+        iff_mission |
+            message_formats_status |
+            on_off_status |
+            damage_status |
+            malfunction_status
     }
 }
 
@@ -685,6 +797,123 @@ impl Mode5MessageFormats {
 
     pub fn builder() -> Mode5MessageFormatsBuilder {
         Mode5MessageFormatsBuilder::new()
+    }
+}
+
+impl From<u32> for Mode5MessageFormats {
+    fn from(record: u32) -> Self {
+        let format_0 = IffPresence::from(((record >> 31) as u8) & BIT_7_IN_BYTE);
+        let format_1 = IffPresence::from(((record >> 30) as u8) & BIT_7_IN_BYTE);
+        let format_2 = IffPresence::from(((record >> 29) as u8) & BIT_7_IN_BYTE);
+        let format_3 = IffPresence::from(((record >> 28) as u8) & BIT_7_IN_BYTE);
+        let format_4 = IffPresence::from(((record >> 27) as u8) & BIT_7_IN_BYTE);
+        let format_5 = IffPresence::from(((record >> 26) as u8) & BIT_7_IN_BYTE);
+        let format_6 = IffPresence::from(((record >> 25) as u8) & BIT_7_IN_BYTE);
+        let format_7 = IffPresence::from(((record >> 24) as u8) & BIT_7_IN_BYTE);
+        let format_8 = IffPresence::from(((record >> 23) as u8) & BIT_7_IN_BYTE);
+        let format_9 = IffPresence::from(((record >> 22) as u8) & BIT_7_IN_BYTE);
+        let format_10 = IffPresence::from(((record >> 21) as u8) & BIT_7_IN_BYTE);
+        let format_11 = IffPresence::from(((record >> 20) as u8) & BIT_7_IN_BYTE);
+        let format_12 = IffPresence::from(((record >> 19) as u8) & BIT_7_IN_BYTE);
+        let format_13 = IffPresence::from(((record >> 18) as u8) & BIT_7_IN_BYTE);
+        let format_14 = IffPresence::from(((record >> 17) as u8) & BIT_7_IN_BYTE);
+        let format_15 = IffPresence::from(((record >> 16) as u8) & BIT_7_IN_BYTE);
+        let format_16 = IffPresence::from(((record >> 15) as u8) & BIT_7_IN_BYTE);
+        let format_17 = IffPresence::from(((record >> 14) as u8) & BIT_7_IN_BYTE);
+        let format_18 = IffPresence::from(((record >> 13) as u8) & BIT_7_IN_BYTE);
+        let format_19 = IffPresence::from(((record >> 12) as u8) & BIT_7_IN_BYTE);
+        let format_20 = IffPresence::from(((record >> 11) as u8) & BIT_7_IN_BYTE);
+        let format_21 = IffPresence::from(((record >> 10) as u8) & BIT_7_IN_BYTE);
+        let format_22 = IffPresence::from(((record >> 9) as u8) & BIT_7_IN_BYTE);
+        let format_23 = IffPresence::from(((record >> 8) as u8) & BIT_7_IN_BYTE);
+        let format_24 = IffPresence::from(((record >> 7) as u8) & BIT_7_IN_BYTE);
+        let format_25 = IffPresence::from(((record >> 6) as u8) & BIT_7_IN_BYTE);
+        let format_26 = IffPresence::from(((record >> 5) as u8) & BIT_7_IN_BYTE);
+        let format_27 = IffPresence::from(((record >> 4) as u8) & BIT_7_IN_BYTE);
+        let format_28 = IffPresence::from(((record >> 3) as u8) & BIT_7_IN_BYTE);
+        let format_29 = IffPresence::from(((record >> 2) as u8) & BIT_7_IN_BYTE);
+        let format_30 = IffPresence::from(((record >> 1) as u8) & BIT_7_IN_BYTE);
+        let format_31 = IffPresence::from((record as u8) & BIT_7_IN_BYTE);
+
+        Mode5MessageFormats::builder()
+            .with_message_format_0(format_0)
+            .with_message_format_1(format_1)
+            .with_message_format_2(format_2)
+            .with_message_format_3(format_3)
+            .with_message_format_4(format_4)
+            .with_message_format_5(format_5)
+            .with_message_format_6(format_6)
+            .with_message_format_7(format_7)
+            .with_message_format_8(format_8)
+            .with_message_format_9(format_9)
+            .with_message_format_10(format_10)
+            .with_message_format_11(format_11)
+            .with_message_format_12(format_12)
+            .with_message_format_13(format_13)
+            .with_message_format_14(format_14)
+            .with_message_format_15(format_15)
+            .with_message_format_16(format_16)
+            .with_message_format_17(format_17)
+            .with_message_format_18(format_18)
+            .with_message_format_19(format_19)
+            .with_message_format_20(format_20)
+            .with_message_format_21(format_21)
+            .with_message_format_22(format_22)
+            .with_message_format_23(format_23)
+            .with_message_format_24(format_24)
+            .with_message_format_25(format_25)
+            .with_message_format_26(format_26)
+            .with_message_format_27(format_27)
+            .with_message_format_28(format_28)
+            .with_message_format_29(format_29)
+            .with_message_format_30(format_30)
+            .with_message_format_31(format_31)
+            .build()
+    }
+}
+
+impl From<&Mode5MessageFormats> for u32 {
+    fn from(value: &Mode5MessageFormats) -> Self {
+        let mf_0 = u32::from(&value.message_format_0) << 31;
+        let mf_1 = u32::from(&value.message_format_1) << 30;
+        let mf_2 = u32::from(&value.message_format_2) << 29;
+        let mf_3 = u32::from(&value.message_format_3) << 28;
+        let mf_4 = u32::from(&value.message_format_4) << 27;
+        let mf_5 = u32::from(&value.message_format_5) << 26;
+        let mf_6 = u32::from(&value.message_format_6) << 25;
+        let mf_7 = u32::from(&value.message_format_7) << 24;
+        let mf_8 = u32::from(&value.message_format_8) << 23;
+        let mf_9 = u32::from(&value.message_format_9) << 22;
+        let mf_10 = u32::from(&value.message_format_10) << 21;
+        let mf_11 = u32::from(&value.message_format_11) << 20;
+        let mf_12 = u32::from(&value.message_format_12) << 19;
+        let mf_13 = u32::from(&value.message_format_13) << 18;
+        let mf_14 = u32::from(&value.message_format_14) << 17;
+        let mf_15 = u32::from(&value.message_format_15) << 16;
+        let mf_16 = u32::from(&value.message_format_16) << 15;
+        let mf_17 = u32::from(&value.message_format_17) << 14;
+        let mf_18 = u32::from(&value.message_format_18) << 13;
+        let mf_19 = u32::from(&value.message_format_19) << 12;
+        let mf_20 = u32::from(&value.message_format_20) << 11;
+        let mf_21 = u32::from(&value.message_format_21) << 10;
+        let mf_22 = u32::from(&value.message_format_22) << 9;
+        let mf_23 = u32::from(&value.message_format_23) << 8;
+        let mf_24 = u32::from(&value.message_format_24) << 7;
+        let mf_25 = u32::from(&value.message_format_25) << 6;
+        let mf_26 = u32::from(&value.message_format_26) << 5;
+        let mf_27 = u32::from(&value.message_format_27) << 4;
+        let mf_28 = u32::from(&value.message_format_28) << 3;
+        let mf_29 = u32::from(&value.message_format_29) << 2;
+        let mf_30 = u32::from(&value.message_format_30) << 1;
+        let mf_31 = u32::from(&value.message_format_31);
+
+        mf_0 | mf_1 | mf_2 | mf_3 | mf_4
+            | mf_5 | mf_6 | mf_7 | mf_8 | mf_9
+            | mf_10 | mf_11 | mf_12 | mf_13 | mf_14
+            | mf_15 | mf_16 | mf_17 | mf_18 | mf_19
+            | mf_20 | mf_21 | mf_22 | mf_23 | mf_24
+            | mf_25 | mf_26 | mf_27 | mf_28 | mf_29
+            | mf_30 | mf_31
     }
 }
 
@@ -770,6 +999,33 @@ impl Mode5TransponderSupplementalData {
     }
 }
 
+impl From<u8> for Mode5TransponderSupplementalData {
+    fn from(record: u8) -> Self {
+        const BITS_2_4: u8 = 0x38;
+        let squitter_status = SquitterStatus::from((record & BIT_0_IN_BYTE) >> 7);
+        let level_2_squitter_status = Level2SquitterStatus::from((record & BIT_1_IN_BYTE) >> 6);
+        let iff_mission = Mode5IffMission::from((record & BITS_2_4) >> 3);
+
+        Mode5TransponderSupplementalData::builder()
+            .with_squitter_on_off_status(squitter_status)
+            .with_level_2_squitter_status(level_2_squitter_status)
+            .with_iff_mission(iff_mission)
+            .build()
+    }
+}
+
+impl From<&Mode5TransponderSupplementalData> for u8 {
+    fn from(value: &Mode5TransponderSupplementalData) -> Self {
+        let squitter_status: u8 = u8::from(&value.squitter_on_off_status) << 7;
+        let level_2_squitter_status: u8 = u8::from(value.level_2_squitter_status) << 6;
+        let iff_mission: u8 = u8::from(value.iff_mission) << 3;
+
+        squitter_status |
+            level_2_squitter_status |
+            iff_mission
+    }
+}
+
 /// B.2.32 Mode 5 Transponder Status record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Mode5TransponderStatus {
@@ -793,6 +1049,81 @@ impl Mode5TransponderStatus {
 
     pub fn builder() -> Mode5TransponderStatusBuilder {
         Mode5TransponderStatusBuilder::new()
+    }
+}
+
+impl From<u16> for Mode5TransponderStatus {
+    fn from(record: u16) -> Self {
+        const BITS_0_3: u16 = 0xF000;
+        const BIT_4: u16 = 0x0800;
+        const BITS_5_6: u16 = 0x0600;
+        const BIT_7: u16 = 0x0100;
+        const BIT_8: u16 = 0x0080;
+        const BIT_9: u16 = 0x0040;
+        const BIT_10: u16 = 0x0020;
+        const BIT_11: u16 = 0x0010;
+        const BIT_13: u16 = 0x0004;
+        const BIT_14: u16 = 0x0002;
+        const BIT_15: u16 = 0x0001;
+        let mode_5_reply = Mode5Reply::from(((record & BITS_0_3) >> 12) as u8);
+        let line_test = EnabledStatus::from(((record & BIT_4) >> 11) as u8);
+        let antenna_selection = AntennaSelection::from(((record & BITS_5_6) >> 9) as u8);
+        let crypto_control = IffPresence::from(((record & BIT_7) >> 8) as u8);
+        let lat_lon_alt_source = LatLonAltSource::from(((record & BIT_8) >> 7) as u8);
+        let location_errors = Mode5LocationErrors::from(((record & BIT_9) >> 6) as u8);
+        let platform_type = Mode5PlatformType::from(((record & BIT_10) >> 5) as u8);
+        let mode_5_level_selection = Mode5LevelSelection::from(((record & BIT_11) >> 4) as u8);
+        let on_off_status = OnOffStatus::from(((record & BIT_13) >> 2) as u8);
+        let damage_status = DamageStatus::from(((record & BIT_14) >> 1) as u8);
+        let malfunction_status = MalfunctionStatus::from((record & BIT_15) as u8);
+
+        Mode5TransponderStatus::builder()
+            .with_mode_5_reply(mode_5_reply)
+            .with_line_test(line_test)
+            .with_antenna_selection(antenna_selection)
+            .with_crypto_control(crypto_control)
+            .with_lat_lon_alt_source(lat_lon_alt_source)
+            .with_location_errors(location_errors)
+            .with_platform_type(platform_type)
+            .with_mode_5_level_selection(mode_5_level_selection)
+            .with_on_off_status(on_off_status)
+            .with_damage_status(damage_status)
+            .with_malfunction_status(malfunction_status)
+            .build()
+    }
+}
+
+impl From<&Mode5TransponderStatus> for u16 {
+    fn from(value: &Mode5TransponderStatus) -> Self {
+        let mode_5_reply: u8 = u8::from(value.mode_5_reply) << 4;
+        let line_test: u8 = u8::from(&value.line_test) << 3;
+        let antenna_selection: u8 = u8::from(value.antenna_selection) << 1;
+        let crypto_control: u8 = u32::from(&value.crypto_control) as u8;
+
+        let byte_1 =
+            mode_5_reply |
+                line_test |
+                antenna_selection |
+                crypto_control;
+
+        let lat_lon_alt_source: u8 = u8::from(&value.lat_lon_alt_source) << 7;
+        let location_errors: u8 = u8::from(value.location_errors) << 6;
+        let platform_type: u8 = u8::from(value.platform_type) << 5;
+        let mode_5_level_selection: u8 = u8::from(value.mode_5_level_selection) << 4;
+        let on_off_status: u8 = u8::from(&value.on_off_status) << 2;
+        let damage_status: u8 = u8::from(&value.damage_status) << 1;
+        let malfunction_status: u8 = (&value.malfunction_status).into();
+
+        let byte_2 =
+            lat_lon_alt_source |
+                location_errors |
+                platform_type |
+                mode_5_level_selection |
+                on_off_status |
+                damage_status |
+                malfunction_status;
+
+        ((byte_1 as u16) << 8) & (byte_2 as u16)
     }
 }
 
@@ -955,6 +1286,45 @@ impl SystemStatus {
 
     pub fn builder() -> SystemStatusBuilder {
         SystemStatusBuilder::new()
+    }
+}
+
+impl From<u8> for SystemStatus {
+    fn from(record: u8) -> Self {
+        let system_on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
+        let parameter_1_capable = ParameterCapable::from((record & BIT_1_IN_BYTE) >> 6);
+        let parameter_2_capable = ParameterCapable::from((record & BIT_2_IN_BYTE) >> 5);
+        let parameter_3_capable = ParameterCapable::from((record & BIT_3_IN_BYTE) >> 4);
+        let parameter_4_capable = ParameterCapable::from((record & BIT_4_IN_BYTE) >> 3);
+        let parameter_5_capable = ParameterCapable::from((record & BIT_5_IN_BYTE) >> 2);
+        let parameter_6_capable = ParameterCapable::from((record & BIT_6_IN_BYTE) >> 1);
+        let operational_status = OperationalStatus::from(record & BIT_7_IN_BYTE);
+
+        SystemStatus::builder()
+            .with_system_on_off_status(system_on_off_status)
+            .with_parameter_1_capable(parameter_1_capable)
+            .with_parameter_2_capable(parameter_2_capable)
+            .with_parameter_3_capable(parameter_3_capable)
+            .with_parameter_4_capable(parameter_4_capable)
+            .with_parameter_5_capable(parameter_5_capable)
+            .with_parameter_6_capable(parameter_6_capable)
+            .with_operational_status(operational_status)
+            .build()
+    }
+}
+
+impl From<&SystemStatus> for u8 {
+    fn from(value: &SystemStatus) -> Self {
+        let system_on_off_status = u8::from(&value.system_on_off_status) << 7;
+        let parameter_1 = u8::from(&value.parameter_1_capable) << 6;
+        let parameter_2 = u8::from(&value.parameter_2_capable) << 5;
+        let parameter_3 = u8::from(&value.parameter_3_capable) << 4;
+        let parameter_4 = u8::from(&value.parameter_4_capable) << 3;
+        let parameter_5 = u8::from(&value.parameter_5_capable) << 2;
+        let parameter_6 = u8::from(&value.parameter_6_capable) << 1;
+        let operational_status = u8::from(&value.operational_status);
+
+        system_on_off_status | parameter_1 | parameter_2 | parameter_3 | parameter_4 | parameter_5 | parameter_6 | operational_status
     }
 }
 

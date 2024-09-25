@@ -1,10 +1,11 @@
-use dis_rs::enumerations::IffApplicableModes;
-use dis_rs::iff::model::{InformationLayers, SystemId, SystemSpecificData, SystemStatus};
+use dis_rs::enumerations::{IffApplicableModes};
+use dis_rs::iff::model::{IffDataRecord, InformationLayers, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{EIGHTY_SIX_BITS, EIGHT_BITS, ONE_BIT, SIXTEEN_BITS, TWENTY_BITS, TWENTY_FOUR_BITS};
+use crate::constants::{EIGHTY_SIX_BITS, EIGHT_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS, ONE_BIT, SIXTEEN_BITS, TWENTY_BITS, TWENTY_FOUR_BITS};
 use crate::records::model::FrequencyFloat;
 use crate::records::model::{BeamData, CdisRecord, LayerHeader};
 use crate::records::model::{EntityCoordinateVector, EntityId, UnitsMeters};
+use crate::types::model::{VarInt, UVINT16};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Iff {
@@ -23,9 +24,8 @@ pub struct Iff {
     pub layer_5: Option<IffLayer5>, // Data Communications
 }
 
-// TODO writer for layer 1 and layer 2
 // TODO codec for layer 1 and layer 2
-// TODO layer 3
+// TODO layer 3 - writer and codec
 // TODO layer 4
 // TODO layer 5
 
@@ -163,17 +163,32 @@ impl CdisRecord for IffFundamentalParameterData {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer3 {
     pub layer_header: LayerHeader,
+    pub reporting_simulation_site: UVINT16,
+    pub reporting_simulation_application: UVINT16,
+    pub mode_5_basic_data: Mode5BasicData,
+    pub iff_data_records: Vec<IffDataRecord>,
 }
 
 impl CdisRecord for IffLayer3 {
     fn record_length(&self) -> usize {
-        todo!()
+        self.layer_header.record_length() +
+            self.reporting_simulation_site.record_length() +
+            self.reporting_simulation_application.record_length() +
+            self.mode_5_basic_data.record_length() +
+            self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
+    }
+}
+
+impl CdisRecord for IffDataRecord {
+    fn record_length(&self) -> usize {
+        TWENTY_FOUR_BITS + (self.record_specific_fields.len() * EIGHT_BITS)
     }
 }
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer4 {
     pub layer_header: LayerHeader,
+    // TODO
 }
 
 impl CdisRecord for IffLayer4 {
@@ -185,10 +200,52 @@ impl CdisRecord for IffLayer4 {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer5 {
     pub layer_header: LayerHeader,
+    // TODO
 }
 
 impl CdisRecord for IffLayer5 {
     fn record_length(&self) -> usize {
         todo!()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Mode5BasicData {
+    Interrogator(Mode5InterrogatorBasicData),
+    Transponder(Mode5TransponderBasicData)
+}
+
+impl Default for Mode5BasicData {
+    fn default() -> Self {
+        Self::Interrogator(Mode5InterrogatorBasicData::default())
+    }
+}
+
+impl CdisRecord for Mode5BasicData {
+    fn record_length(&self) -> usize {
+        match self {
+            Mode5BasicData::Interrogator(basic_data) => { basic_data.record_length() }
+            Mode5BasicData::Transponder(basic_data) => { basic_data.record_length() }
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct Mode5InterrogatorBasicData {
+    pub interrogator_status: Mode5InterrogatorStatus,
+    pub message_formats_present: Mode5MessageFormats,
+    pub interrogated_entity_id: EntityId,
+}
+
+impl CdisRecord for Mode5InterrogatorBasicData {
+    fn record_length(&self) -> usize {
+        FORTY_BITS +
+            self.interrogated_entity_id.record_length()
+    }
+}
+
+impl CdisRecord for Mode5TransponderBasicData {
+    fn record_length(&self) -> usize {
+        HUNDRED_TWELVE_BITS
     }
 }

@@ -331,7 +331,7 @@ impl Implemented for PduType {
 #[cfg(test)]
 mod tests {
     use dis_rs::enumerations::PduType;
-    use crate::{CdisBody, Implemented, Supported};
+    use crate::{Implemented, Supported};
 
     #[test]
     fn ensure_supported_pdus() {
