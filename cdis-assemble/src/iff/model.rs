@@ -1,7 +1,7 @@
-use dis_rs::enumerations::{IffApplicableModes};
-use dis_rs::iff::model::{IffDataRecord, InformationLayers, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, SystemId, SystemSpecificData, SystemStatus};
+use dis_rs::enumerations::{DataCategory, IffApplicableModes};
+use dis_rs::iff::model::{IffDataRecord, InformationLayers, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, ModeSInterrogatorBasicData, ModeSTransponderBasicData, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{EIGHTY_SIX_BITS, EIGHT_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS, ONE_BIT, SIXTEEN_BITS, TWENTY_BITS, TWENTY_FOUR_BITS};
+use crate::constants::{EIGHTY_SIX_BITS, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS, NINETY_EIGHT_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TWENTY_BITS, TWENTY_FOUR_BITS};
 use crate::records::model::FrequencyFloat;
 use crate::records::model::{BeamData, CdisRecord, LayerHeader};
 use crate::records::model::{EntityCoordinateVector, EntityId, UnitsMeters};
@@ -171,10 +171,12 @@ pub struct IffLayer3 {
 
 impl CdisRecord for IffLayer3 {
     fn record_length(&self) -> usize {
+        ONE_BIT +
         self.layer_header.record_length() +
             self.reporting_simulation_site.record_length() +
             self.reporting_simulation_application.record_length() +
             self.mode_5_basic_data.record_length() +
+            if self.iff_data_records.is_empty() { 0 } else { FIVE_BITS };
             self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
     }
 }
@@ -188,24 +190,40 @@ impl CdisRecord for IffDataRecord {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer4 {
     pub layer_header: LayerHeader,
-    // TODO
+    pub reporting_simulation_site: UVINT16,
+    pub reporting_simulation_application: UVINT16,
+    pub mode_s_basic_data: ModeSBasicData,
+    pub iff_data_records: Vec<IffDataRecord>,
 }
 
 impl CdisRecord for IffLayer4 {
     fn record_length(&self) -> usize {
-        todo!()
+        SIX_BITS +
+        self.layer_header.record_length() +
+            self.reporting_simulation_site.record_length() +
+            self.reporting_simulation_application.record_length() +
+            self.mode_s_basic_data.record_length() +
+            self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
     }
 }
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffLayer5 {
     pub layer_header: LayerHeader,
-    // TODO
+    pub reporting_simulation_site: UVINT16,
+    pub reporting_simulation_application: UVINT16,
+    pub applicable_layers: InformationLayers,
+    pub data_category: DataCategory,
+    pub iff_data_records: Vec<IffDataRecord>,
 }
 
 impl CdisRecord for IffLayer5 {
     fn record_length(&self) -> usize {
-        todo!()
+        FIFTEEN_BITS +
+            self.layer_header.record_length() +
+            self.reporting_simulation_site.record_length() +
+            self.reporting_simulation_application.record_length() +
+            self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
     }
 }
 
@@ -247,5 +265,39 @@ impl CdisRecord for Mode5InterrogatorBasicData {
 impl CdisRecord for Mode5TransponderBasicData {
     fn record_length(&self) -> usize {
         HUNDRED_TWELVE_BITS
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ModeSBasicData {
+    Interrogator(ModeSInterrogatorBasicData),
+    Transponder(ModeSTransponderBasicData)
+}
+
+impl Default for ModeSBasicData {
+    fn default() -> Self {
+        Self::Interrogator(ModeSInterrogatorBasicData::default())
+    }
+}
+
+impl CdisRecord for ModeSBasicData {
+    fn record_length(&self) -> usize {
+        match self {
+            ModeSBasicData::Interrogator(basic_data) => { basic_data.record_length() }
+            ModeSBasicData::Transponder(basic_data) => { basic_data.record_length() }
+        }
+    }
+}
+
+impl CdisRecord for ModeSInterrogatorBasicData {
+    fn record_length(&self) -> usize {
+        SIXTEEN_BITS
+    }
+}
+
+impl CdisRecord for ModeSTransponderBasicData {
+    fn record_length(&self) -> usize {
+        NINETY_EIGHT_BITS +
+            (self.aircraft_identification.len() * EIGHT_BITS)
     }
 }

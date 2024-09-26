@@ -2,12 +2,12 @@ use nom::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use dis_rs::DisError;
-use dis_rs::enumerations::{IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
-use dis_rs::iff::model::{ChangeOptionsRecord, EnhancedMode1Code, IffDataRecord, InformationLayers, LayersPresenceApplicability, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, SystemId, SystemSpecificData, SystemStatus};
+use dis_rs::enumerations::{DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
+use dis_rs::iff::model::{ChangeOptionsRecord, EnhancedMode1Code, IffDataRecord, InformationLayers, LayersPresenceApplicability, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSTransponderBasicData, ModeSTransponderStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS};
 use crate::records::model::FrequencyFloat;
-use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer1FieldsPresent, Mode5BasicData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5InterrogatorBasicData};
+use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer1FieldsPresent, Mode5BasicData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5InterrogatorBasicData, ModeSBasicData};
 use crate::parsing::{parse_field_when_present, BitInput};
 use crate::records::model::UnitsMeters;
 use crate::records::parser::{beam_data, entity_coordinate_vector, entity_identification, layer_header};
@@ -205,7 +205,7 @@ fn iff_layer_3(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<
     }
 }
 
-fn mode_5_basic_data(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<BitInput, Result<Mode5BasicData,DisError>> + '_ {
+fn mode_5_basic_data(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<BitInput, Result<Mode5BasicData, DisError>> + '_ {
     move |input: BitInput| {
         let (input, mode_5_basic_data) = match iff_system_type {
             IffSystemType::MarkXXIIATCRBSTransponder |
@@ -290,10 +290,124 @@ fn iff_data_record(input: BitInput) -> IResult<BitInput, IffDataRecord> {
         .build()))
 }
 
-fn iff_layer_4(input: BitInput) -> IResult<BitInput, IffLayer4> {
-    todo!()
+fn iff_layer_4(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<BitInput, IffLayer4> + '_ {
+    move |input: BitInput| {
+        let (input, data_records_present): (BitInput, u8) = take(ONE_BIT)(input)?;
+        let data_records_present = data_records_present != 0;
+        let (input, layer_header) = layer_header(input)?;
+        let (input, reporting_simulation_site) = uvint16(input)?;
+        let (input, reporting_simulation_application) = uvint16(input)?;
+        let (input, mode_s_basic_data) = mode_s_basic_data(iff_system_type)(input)?;
+
+        let (input, iff_data_records) = if data_records_present {
+            let (input, nr_of_data_records) : (BitInput, usize) = take(FIVE_BITS)(input)?;
+            count(iff_data_record, nr_of_data_records)(input)?
+        } else { (input, vec![]) };
+
+        Ok((input, IffLayer4 {
+            layer_header,
+            reporting_simulation_site,
+            reporting_simulation_application,
+            mode_s_basic_data: mode_s_basic_data.unwrap_or(ModeSBasicData::Transponder(ModeSTransponderBasicData::default())),
+            iff_data_records,
+        }))
+    }
+}
+
+fn mode_s_basic_data(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IResult<BitInput, Result<ModeSBasicData, DisError>> + '_ {
+    move |input: BitInput| {
+        let (input, mode_s_basic_data) = match iff_system_type {
+            IffSystemType::MarkXXIIATCRBSTransponder |
+            IffSystemType::SovietTransponder |
+            IffSystemType::RRBTransponder |
+            IffSystemType::MarkXIIATransponder |
+            IffSystemType::Mode5Transponder |
+            IffSystemType::ModeSTransponder => {
+                let (input, basic_data) = mode_s_transponder_basic_data(input)?;
+                (input, Ok(ModeSBasicData::Transponder(basic_data)))
+            }
+            IffSystemType::MarkXXIIATCRBSInterrogator |
+            IffSystemType::SovietInterrogator |
+            IffSystemType::MarkXIIAInterrogator |
+            IffSystemType::Mode5Interrogator |
+            IffSystemType::ModeSInterrogator => {
+                let (input, basic_data) = mode_s_interrogator_basic_data(input)?;
+                (input, Ok(ModeSBasicData::Interrogator(basic_data)))
+            }
+            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_ |
+            IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_ |
+            IffSystemType::TCASACASTransceiver => { (input, Err(DisError::IffUndeterminedSystemType)) }
+            IffSystemType::NotUsed_InvalidValue_ => { (input, Err(DisError::IffIncorrectSystemType)) }
+            IffSystemType::Unspecified(_) => { (input, Err(DisError::IffIncorrectSystemType)) }
+        };
+
+        Ok((input, mode_s_basic_data))
+    }
+}
+
+fn mode_s_transponder_basic_data(input: BitInput) -> IResult<BitInput, ModeSTransponderBasicData> {
+    let (input, mode_s_status) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    let mode_s_status = ModeSTransponderStatus::from(mode_s_status);
+    // let (input, pin) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    // let (input, message_formats_present) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    // let message_formats_present = Mode5MessageFormats::from(message_formats_present);
+    // let (input, enhanced_mode_1) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    // let enhanced_mode_1 = EnhancedMode1Code::from(enhanced_mode_1);
+    // let (input, national_origin) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    // let (input, supplemental) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    // let supplemental = Mode5TransponderSupplementalData::from(supplemental);
+    // let (input, navigation_source) : (BitInput, u8) = take(THREE_BITS)(input)?;
+    // let navigation_source = NavigationSource::from(navigation_source);
+    // let (input, figure_of_merit) : (BitInput, u8) = take(FIVE_BITS)(input)?;
+    //
+    // Ok((input, ModeSTransponderBasicData::builder()
+    //     .with_status(mode_5_status)
+    //     .with_pin(pin)
+    //     .with_mode_5_message_formats_present(message_formats_present)
+    //     .with_enhanced_mode_1(enhanced_mode_1)
+    //     .with_national_origin(national_origin)
+    //     .with_supplemental_data(supplemental)
+    //     .with_navigation_source(navigation_source)
+    //     .with_figure_of_merit(figure_of_merit)
+    //     .build()))
+}
+
+fn mode_s_interrogator_basic_data(input: BitInput) -> IResult<BitInput, ModeSInterrogatorBasicData> {
+    // let (input, interrogator_status) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    // let interrogator_status = Mode5InterrogatorStatus::from(interrogator_status);
+    // let (input, message_formats_present) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    // let message_formats_present = Mode5MessageFormats::from(message_formats_present);
+    // let (input, interrogated_entity_id) = entity_identification(input)?;
+    //
+    // Ok((input, Mode5InterrogatorBasicData {
+    //     interrogator_status,
+    //     message_formats_present,
+    //     interrogated_entity_id,
+    // }))
 }
 
 fn iff_layer_5(input: BitInput) -> IResult<BitInput, IffLayer5> {
-    todo!()
+    let (input, data_records_present): (BitInput, u8) = take(ONE_BIT)(input)?;
+    let data_records_present = data_records_present != 0;
+    let (input, layer_header) = layer_header(input)?;
+    let (input, reporting_simulation_site) = uvint16(input)?;
+    let (input, reporting_simulation_application) = uvint16(input)?;
+    let (input, applicable_layers) : (BitInput, u8) = take(SIX_BITS)(input)?;
+    let applicable_layers = InformationLayers::from(applicable_layers);
+    let (input, data_category) : (BitInput, u8) = take(THREE_BITS)(input)?;
+    let data_category = DataCategory::from(data_category);
+
+    let (input, iff_data_records) = if data_records_present {
+        let (input, nr_of_data_records) : (BitInput, usize) = take(FIVE_BITS)(input)?;
+        count(iff_data_record, nr_of_data_records)(input)?
+    } else { (input, vec![]) };
+
+    Ok((input, IffLayer5 {
+        layer_header,
+        reporting_simulation_site,
+        reporting_simulation_application,
+        applicable_layers,
+        data_category,
+        iff_data_records,
+    }))
 }

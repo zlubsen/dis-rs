@@ -57,7 +57,7 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::Transmitter(body) => { body.serialize(buf, cursor) }
             CdisBody::Signal(body) => { body.serialize(buf, cursor) }
             CdisBody::Receiver(body) => { body.serialize(buf, cursor) }
-            // CdisBody::Iff => {}
+            CdisBody::Iff(body) => { body.serialize(buf, cursor) }
             _ => { cursor }
         };
 

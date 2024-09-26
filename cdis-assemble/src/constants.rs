@@ -28,6 +28,7 @@ pub const FORTY_BITS: usize = 40;
 pub const FORTY_EIGHT_BITS: usize = 48;
 pub const SIXTY_FOUR_BITS: usize = 64;
 pub const EIGHTY_SIX_BITS: usize = 86;
+pub const NINETY_EIGHT_BITS: usize = 98;
 pub const HUNDRED_TWELVE_BITS: usize = 112;
 pub const HUNDRED_TWENTY_BITS: usize = 120;
 pub const LEAST_SIGNIFICANT_BIT : u32 = 0x001;
