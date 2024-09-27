@@ -1,7 +1,7 @@
-use dis_rs::iff::model::{IffDataRecord, Mode5MessageFormats, Mode5TransponderBasicData, SystemId};
-use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5BasicData, Mode5InterrogatorBasicData};
+use dis_rs::iff::model::{IffDataRecord, Mode5MessageFormats, Mode5TransponderBasicData, ModeSInterrogatorBasicData, ModeSTransponderBasicData, SystemId};
+use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5BasicData, Mode5InterrogatorBasicData, ModeSBasicData};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS};
 use crate::records::model::{CdisRecord};
 use crate::types::model::CdisFloat;
 use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
@@ -132,7 +132,10 @@ impl SerializeCdis for IffLayer3 {
         let cursor = self.reporting_simulation_application.serialize(buf, cursor);
         let cursor = self.mode_5_basic_data.serialize(buf, cursor);
 
-        let cursor = self.iff_data_records.iter().fold(cursor, | cursor, record | SerializeCdis::serialize(record, buf, cursor) );
+        let cursor = if !self.iff_data_records.is_empty() {
+            let cursor = write_value_unsigned::<usize>(buf, cursor, FIVE_BITS, self.iff_data_records.len());
+            self.iff_data_records.iter().fold(cursor, | cursor, record | SerializeCdis::serialize(record, buf, cursor) )
+        } else { cursor };
 
         cursor
     }
@@ -140,13 +143,40 @@ impl SerializeCdis for IffLayer3 {
 
 impl SerializeCdis for IffLayer4 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        todo!()
+        let data_records_present_value = if self.iff_data_records.is_empty() { 0u8 } else { 1u8 };
+        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, data_records_present_value);
+        let cursor = self.layer_header.serialize_with_length(self.record_length(), buf, cursor);
+        let cursor = self.reporting_simulation_site.serialize(buf, cursor);
+        let cursor = self.reporting_simulation_application.serialize(buf, cursor);
+
+        let cursor = self.mode_s_basic_data.serialize(buf, cursor);
+
+        let cursor = if !self.iff_data_records.is_empty() {
+            let cursor = write_value_unsigned::<usize>(buf, cursor, FIVE_BITS, self.iff_data_records.len());
+            self.iff_data_records.iter().fold(cursor, | cursor, record | SerializeCdis::serialize(record, buf, cursor) )
+        } else { cursor };
+
+        cursor
     }
 }
 
 impl SerializeCdis for IffLayer5 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        todo!()
+        let data_records_present_value = if self.iff_data_records.is_empty() { 0u8 } else { 1u8 };
+        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, data_records_present_value);
+        let cursor = self.layer_header.serialize_with_length(self.record_length(), buf, cursor);
+        let cursor = self.reporting_simulation_site.serialize(buf, cursor);
+        let cursor = self.reporting_simulation_application.serialize(buf, cursor);
+
+        let cursor = write_value_unsigned(buf, cursor, SIX_BITS, u8::from(&self.applicable_layers));
+        let cursor = write_value_unsigned::<u8>(buf, cursor, THREE_BITS, self.data_category.into());
+
+        let cursor = if !self.iff_data_records.is_empty() {
+            let cursor = write_value_unsigned::<usize>(buf, cursor, FIVE_BITS, self.iff_data_records.len());
+            self.iff_data_records.iter().fold(cursor, | cursor, record | SerializeCdis::serialize(record, buf, cursor) )
+        } else { cursor };
+
+        cursor
     }
 }
 
@@ -198,6 +228,45 @@ impl SerializeCdis for IffDataRecord {
         let cursor = write_value_unsigned::<u32>(buf, cursor, SIXTEEN_BITS, self.record_type.into());
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.record_length().saturating_div(EIGHT_BITS));
         let cursor = self.record_specific_fields.iter().fold(cursor, | cursor, byte | write_value_unsigned(buf, cursor, EIGHT_BITS, *byte) );
+
+        cursor
+    }
+}
+
+impl SerializeCdis for ModeSBasicData {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        match self {
+            ModeSBasicData::Interrogator(record) => { record.serialize(buf, cursor) }
+            ModeSBasicData::Transponder(record) => { SerializeCdis::serialize(record, buf, cursor) }
+        }
+    }
+}
+
+impl SerializeCdis for ModeSInterrogatorBasicData {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.mode_s_interrogator_status));
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.mode_s_levels_present));
+
+        cursor
+    }
+}
+
+impl SerializeCdis for ModeSTransponderBasicData {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, u16::from(&self.status));
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.levels_present));
+        let cursor = write_value_unsigned(buf, cursor, THREE_BITS, u8::from(self.aircraft_present_domain));
+        let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.aircraft_identification.len());
+
+        let cursor= self.aircraft_identification
+            .as_bytes().iter()
+            .fold(cursor, | cursor, char | write_value_unsigned(buf, cursor, EIGHT_BITS, *char));
+
+        let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, self.aircraft_address);
+        let cursor = write_value_unsigned::<u8>(buf, cursor, THREE_BITS, self.aircraft_identification_type.into());
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.dap_source));
+        let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, u16::from(&self.altitude));
+        let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, self.capability_report.into());
 
         cursor
     }

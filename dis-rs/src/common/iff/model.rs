@@ -594,6 +594,52 @@ impl DapSource {
     }
 }
 
+impl From<u8> for DapSource {
+    fn from(record: u8) -> Self {
+        let indicated_air_speed = DapValue::from((record & BIT_0_IN_BYTE) >> 7);
+        let mach_number = DapValue::from((record & BIT_1_IN_BYTE) >> 6);
+        let ground_speed = DapValue::from((record & BIT_2_IN_BYTE) >> 5);
+        let magnetic_heading = DapValue::from((record & BIT_3_IN_BYTE) >> 4);
+        let track_angle_rate = DapValue::from((BIT_4_IN_BYTE & BIT_4_IN_BYTE) >> 3);
+        let true_track_angle = DapValue::from((record & BIT_5_IN_BYTE) >> 2);
+        let true_airspeed = DapValue::from((record & BIT_6_IN_BYTE) >> 1);
+        let vertical_rate = DapValue::from(record & BIT_7_IN_BYTE);
+
+        DapSource::builder()
+            .with_indicated_air_speed(indicated_air_speed)
+            .with_mach_number(mach_number)
+            .with_ground_speed(ground_speed)
+            .with_magnetic_heading(magnetic_heading)
+            .with_track_angle_rate(track_angle_rate)
+            .with_true_track_angle(true_track_angle)
+            .with_true_airspeed(true_airspeed)
+            .with_vertical_rate(vertical_rate)
+            .build()
+    }
+}
+
+impl From<&DapSource> for u8 {
+    fn from(value: &DapSource) -> Self {
+        let indicated_air_speed = u8::from(&value.indicated_air_speed) << 7;
+        let mach_number = u8::from(&value.mach_number) << 6;
+        let ground_speed = u8::from(&value.ground_speed) << 5;
+        let magnetic_heading = u8::from(&value.magnetic_heading) << 4;
+        let track_angle_rate = u8::from(&value.track_angle_rate) << 3;
+        let true_track_angle = u8::from(&value.true_track_angle) << 2;
+        let true_airspeed = u8::from(&value.true_airspeed) << 1;
+        let vertical_rate = u8::from(&value.vertical_rate);
+
+        indicated_air_speed |
+            mach_number |
+            ground_speed |
+            magnetic_heading |
+            track_angle_rate |
+            true_track_angle |
+            true_airspeed |
+            vertical_rate
+    }
+}
+
 /// Custom defined enum to model values in the DAP Source record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum DapValue {
@@ -1123,7 +1169,7 @@ impl From<&Mode5TransponderStatus> for u16 {
                 damage_status |
                 malfunction_status;
 
-        ((byte_1 as u16) << 8) & (byte_2 as u16)
+        ((byte_1 as u16) << 8) | (byte_2 as u16)
     }
 }
 
@@ -1141,6 +1187,30 @@ impl ModeSAltitude {
 
     pub fn builder() -> ModeSAltitudeBuilder {
         ModeSAltitudeBuilder::new()
+    }
+}
+
+impl From<u16> for ModeSAltitude {
+    fn from(record: u16) -> Self {
+        const BITS_0_10: u16 = 0xFFE0;
+        const BIT_11: u16 = 0x0010;
+        let altitude = (record & BITS_0_10) >> 5;
+        let resolution =
+            Mode5SAltitudeResolution::from(((record & BIT_11) as u8) >> 4);
+
+        ModeSAltitude::builder()
+            .with_altitude(altitude)
+            .with_resolution(resolution)
+            .build()
+    }
+}
+
+impl From<&ModeSAltitude> for u16 {
+    fn from(value: &ModeSAltitude) -> Self {
+        let resolution: u8 = value.resolution.into();
+        let resolution: u16 = resolution as u16;
+
+        (value.altitude << 5) | (resolution << 4)
     }
 }
 
@@ -1180,6 +1250,37 @@ impl ModeSInterrogatorStatus {
     }
 }
 
+impl From<u8> for ModeSInterrogatorStatus {
+    fn from(record: u8) -> Self {
+        const BITS_1_3: u8 = 0x70;
+        let on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
+        let transmit_state = ModeSTransmitState::from((record & BITS_1_3) >> 4);
+        let damage_status = DamageStatus::from((record & BIT_4_IN_BYTE) >> 3);
+        let malfunction_status = MalfunctionStatus::from((BIT_5_IN_BYTE & BIT_5_IN_BYTE) >> 2);
+
+        ModeSInterrogatorStatus::builder()
+            .with_on_off_status(on_off_status)
+            .with_transmit_state(transmit_state)
+            .with_damage_status(damage_status)
+            .with_malfunction_status(malfunction_status)
+            .build()
+    }
+}
+
+impl From<&ModeSInterrogatorStatus> for u8 {
+    fn from(value: &ModeSInterrogatorStatus) -> Self {
+        let on_off_status: u8 = u8::from(&value.on_off_status) << 7;
+        let transmit_state: u8 = u8::from(value.transmit_state) << 4;
+        let damage_status: u8 = u8::from(&value.damage_status) << 3;
+        let malfunction_status: u8 = u8::from(&value.malfunction_status) << 2;
+
+        on_off_status |
+            transmit_state |
+            damage_status |
+            malfunction_status
+    }
+}
+
 /// B.2.40 Mode S Levels Present record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct ModeSLevelsPresent {
@@ -1197,6 +1298,40 @@ impl ModeSLevelsPresent {
 
     pub fn builder() -> ModeSLevelsPresentBuilder {
         ModeSLevelsPresentBuilder::new()
+    }
+}
+
+impl From<u8> for ModeSLevelsPresent {
+    fn from(record: u8) -> Self {
+        let level_1 = IffPresence::from((record & BIT_1_IN_BYTE) >> 6);
+        let level_2_els = IffPresence::from((record & BIT_2_IN_BYTE) >> 5);
+        let level_2_ehs = IffPresence::from((record & BIT_3_IN_BYTE) >> 4);
+        let level_3 = IffPresence::from((record & BIT_4_IN_BYTE) >> 3);
+        let level_4 = IffPresence::from((BIT_5_IN_BYTE & BIT_5_IN_BYTE) >> 2);
+
+        ModeSLevelsPresent::builder()
+            .with_level_1(level_1)
+            .with_level_2_ehs(level_2_ehs)
+            .with_level_2_els(level_2_els)
+            .with_level_3(level_3)
+            .with_level_4(level_4)
+            .build()
+    }
+}
+
+impl From<&ModeSLevelsPresent> for u8 {
+    fn from(value: &ModeSLevelsPresent) -> Self {
+        let level_1: u8 = u8::from(&value.level_1) << 6;
+        let level_2_els: u8 = u8::from(&value.level_2_els) << 5;
+        let level_2_ehs: u8 = u8::from(&value.level_2_ehs) << 4;
+        let level_3: u8 = u8::from(&value.level_3) << 3;
+        let level_4: u8 = u8::from(&value.level_4) << 2;
+
+        level_1 |
+            level_2_els |
+            level_2_ehs |
+            level_3 |
+            level_4
     }
 }
 
@@ -1255,6 +1390,78 @@ impl ModeSTransponderStatus {
 
     pub fn builder() -> ModeSTransponderStatusBuilder {
         ModeSTransponderStatusBuilder::new()
+    }
+}
+
+impl From<u16> for ModeSTransponderStatus {
+    fn from(record: u16) -> Self {
+        const BIT_0: u16 = 0x8000;
+        const BITS_1_3: u16 = 0x7000;
+        const BIT_4: u16 = 0x800;
+        const BIT_5: u16 = 0x400;
+        const BIT_6: u16 = 0x200;
+        const BIT_7: u16 = 0x100;
+        const BIT_8: u16 = 0x80;
+        const BIT_9: u16 = 0x40;
+        const BIT_13: u16 = 0x04;
+        const BIT_14: u16 = 0x02;
+        const BIT_15: u16 = 0x01;
+
+        let squitter_status = SquitterStatus::from(((record & BIT_0) >> 15) as u8);
+        let squitter_type = ModeSSquitterType::from(((record & BITS_1_3) >> 12) as u8);
+        let squitter_record_source = ModeSSquitterRecordSource::from(((record & BIT_4) >> 11) as u8);
+        let airborne_pos_ri = IffPresence::from(((record & BIT_5) >> 10) as u8);
+        let airborne_vel_ri = IffPresence::from(((record & BIT_6) >> 9) as u8);
+        let surface_pos_ri = IffPresence::from(((record & BIT_7) >> 8) as u8);
+        let ident_ri = IffPresence::from(((record & BIT_8) >> 7) as u8);
+        let event_driven_ri = IffPresence::from(((record & BIT_9) >> 6) as u8);
+        let on_off_status = OnOffStatus::from(((record & BIT_13) >> 2) as u8);
+        let damage_status = DamageStatus::from(((record & BIT_14) >> 1) as u8);
+        let malfunction_status = MalfunctionStatus::from((record & BIT_15) as u8);
+
+        ModeSTransponderStatus::builder()
+            .with_squitter_status(squitter_status)
+            .with_squitter_type(squitter_type)
+            .with_squitter_record_source(squitter_record_source)
+            .with_airborne_position_report_indicator(airborne_pos_ri)
+            .with_airborne_velocity_report_indicator(airborne_vel_ri)
+            .with_surface_position_report_indicator(surface_pos_ri)
+            .with_identification_report_indicator(ident_ri)
+            .with_event_driven_report_indicator(event_driven_ri)
+            .with_on_off_status(on_off_status)
+            .with_damage_status(damage_status)
+            .with_malfunction_status(malfunction_status)
+            .build()
+    }
+}
+
+impl From<&ModeSTransponderStatus> for u16 {
+    fn from(value: &ModeSTransponderStatus) -> Self {
+        let squitter_status: u8 = u8::from(&value.squitter_status) << 7;
+        let squitter_type: u8 = u8::from(value.squitter_type) << 4;
+        let squitter_record_source: u8 = u8::from(value.squitter_record_source) << 3;
+        let airborne_pos_ri: u8 = u8::from(&value.airborne_position_report_indicator) << 2;
+        let airborne_vel_ri: u8 = u8::from(&value.airborne_velocity_report_indicator) << 1;
+        let surface_pos_ri: u8 = u8::from(&value.surface_position_report_indicator);
+        let byte_1 = (squitter_status |
+            squitter_type |
+            squitter_record_source |
+            airborne_pos_ri |
+            airborne_vel_ri |
+            surface_pos_ri) as u16;
+
+        let ident_ri: u8 = u8::from(&value.identification_report_indicator) << 7;
+        let event_driven_ri: u8 = u8::from(&value.event_driven_report_indicator) << 6;
+        let on_off_status: u8 = u8::from(&value.on_off_status) << 2;
+        let damage_status: u8 = u8::from(&value.damage_status) << 1;
+        let malfunction_status: u8 = u8::from(&value.malfunction_status);
+        let byte_2 = (ident_ri |
+            event_driven_ri |
+            on_off_status |
+            damage_status |
+            malfunction_status) as u16;
+
+        (byte_1 << 8) | byte_2
     }
 }
 

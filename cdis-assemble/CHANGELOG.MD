@@ -35,6 +35,7 @@ Support for new PDUs:
 - BeamData record: Table 17 lists the field Beam Sweep Sync to be SVINT13, but otherwise it is described as an unsigned 10-bit field (in text 11.3.e, table 62, table 68).
 - Encoding Scheme record: the DIS variants other than EncodedAudio and RawBinaryData are not represented in C-DIS.
 - p104: typo Cyrpto Key ID
+- CDIS table 71 states 16 bits more padding before nr of IFF data records is part of the basic data field instead of layer 4 itself. Compare to dis v7 table B.41.
 
 ## 0.1.1 - 2024-06-26
 

@@ -25,9 +25,9 @@ pub struct Iff {
 }
 
 // TODO codec for layer 1 and layer 2
-// TODO layer 3 - writer and codec
-// TODO layer 4
-// TODO layer 5
+// TODO layer 3 codec
+// TODO layer 4 codec
+// TODO layer 5 codec
 
 impl BodyProperties for Iff {
     type FieldsPresent = IffLayer1FieldsPresent;
@@ -172,11 +172,11 @@ pub struct IffLayer3 {
 impl CdisRecord for IffLayer3 {
     fn record_length(&self) -> usize {
         ONE_BIT +
-        self.layer_header.record_length() +
+            self.layer_header.record_length() +
             self.reporting_simulation_site.record_length() +
             self.reporting_simulation_application.record_length() +
             self.mode_5_basic_data.record_length() +
-            if self.iff_data_records.is_empty() { 0 } else { FIVE_BITS };
+            if self.iff_data_records.is_empty() { 0 } else { FIVE_BITS } +
             self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
     }
 }

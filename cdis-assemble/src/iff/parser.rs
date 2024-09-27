@@ -2,8 +2,8 @@ use nom::complete::take;
 use nom::IResult;
 use nom::multi::count;
 use dis_rs::DisError;
-use dis_rs::enumerations::{DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
-use dis_rs::iff::model::{ChangeOptionsRecord, EnhancedMode1Code, IffDataRecord, InformationLayers, LayersPresenceApplicability, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSTransponderBasicData, ModeSTransponderStatus, SystemId, SystemSpecificData, SystemStatus};
+use dis_rs::enumerations::{AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
+use dis_rs::iff::model::{ChangeOptionsRecord, DapSource, EnhancedMode1Code, IffDataRecord, InformationLayers, LayersPresenceApplicability, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::{BodyProperties, CdisBody};
 use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS};
 use crate::records::model::FrequencyFloat;
@@ -44,7 +44,8 @@ pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         (input, Some(layer_3))
     } else { (input, None) };
     let (input, layer_4) = if fundamental_operational_data.information_layers.layer_4 == LayersPresenceApplicability::PresentApplicable {
-        let (input, layer_4) = iff_layer_4(input)?;
+        let system_type = system_id.clone().unwrap_or_default().system_type;
+        let (input, layer_4) = iff_layer_4(&system_type)(input)?;
         (input, Some(layer_4))
     } else { (input, None) };
     let (input, layer_5) = if fundamental_operational_data.information_layers.layer_5 == LayersPresenceApplicability::PresentApplicable {
@@ -348,42 +349,58 @@ fn mode_s_basic_data(iff_system_type: &IffSystemType) -> impl Fn(BitInput) -> IR
 fn mode_s_transponder_basic_data(input: BitInput) -> IResult<BitInput, ModeSTransponderBasicData> {
     let (input, mode_s_status) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
     let mode_s_status = ModeSTransponderStatus::from(mode_s_status);
-    // let (input, pin) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
-    // let (input, message_formats_present) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
-    // let message_formats_present = Mode5MessageFormats::from(message_formats_present);
-    // let (input, enhanced_mode_1) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
-    // let enhanced_mode_1 = EnhancedMode1Code::from(enhanced_mode_1);
-    // let (input, national_origin) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
-    // let (input, supplemental) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
-    // let supplemental = Mode5TransponderSupplementalData::from(supplemental);
-    // let (input, navigation_source) : (BitInput, u8) = take(THREE_BITS)(input)?;
-    // let navigation_source = NavigationSource::from(navigation_source);
-    // let (input, figure_of_merit) : (BitInput, u8) = take(FIVE_BITS)(input)?;
-    //
-    // Ok((input, ModeSTransponderBasicData::builder()
-    //     .with_status(mode_5_status)
-    //     .with_pin(pin)
-    //     .with_mode_5_message_formats_present(message_formats_present)
-    //     .with_enhanced_mode_1(enhanced_mode_1)
-    //     .with_national_origin(national_origin)
-    //     .with_supplemental_data(supplemental)
-    //     .with_navigation_source(navigation_source)
-    //     .with_figure_of_merit(figure_of_merit)
-    //     .build()))
+
+    let (input, mode_s_levels_present) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let mode_s_levels_present = ModeSLevelsPresent::from(mode_s_levels_present);
+
+    let (input, aircraft_present_domain) : (BitInput, u8) = take(THREE_BITS)(input)?;
+    let aircraft_present_domain = AircraftPresentDomain::from(aircraft_present_domain);
+
+    let (input, nr_of_chars_in_id) : (BitInput, usize) = take(FOUR_BITS)(input)?;
+
+    let (input, aircraft_id) : (BitInput, Vec<u8>)= count(take(EIGHT_BITS), nr_of_chars_in_id)(input)?;
+    let mut aircraft_id = String::from_utf8_lossy(&aircraft_id).into_owned();
+    aircraft_id.truncate(aircraft_id.trim_end().trim_end_matches(|c : char | !c.is_alphanumeric()).len());
+
+    let (input, aircraft_address) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+
+    let (input, aircraft_id_type) : (BitInput, u8) = take(THREE_BITS)(input)?;
+    let aircraft_id_type = AircraftIdentificationType::from(aircraft_id_type);
+
+    let (input, dap_source) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let dap_source = DapSource::from(dap_source);
+
+    let (input, altitude) : (BitInput, u16) = take(SIXTEEN_BITS)(input)?;
+    let altitude = ModeSAltitude::from(altitude);
+
+    let (input, capability_report) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let capability_report = CapabilityReport::from(capability_report);
+
+    Ok((input, ModeSTransponderBasicData::builder()
+        .with_status(mode_s_status)
+        .with_levels_present(mode_s_levels_present)
+        .with_aircraft_present_domain(aircraft_present_domain)
+        .with_aircraft_identification(aircraft_id)
+        .with_aircraft_address(aircraft_address)
+        .with_aircraft_identification_type(aircraft_id_type)
+        .with_dap_source(dap_source)
+        .with_altitude(altitude)
+        .with_capability_report(capability_report)
+        .build()
+    ))
 }
 
 fn mode_s_interrogator_basic_data(input: BitInput) -> IResult<BitInput, ModeSInterrogatorBasicData> {
-    // let (input, interrogator_status) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
-    // let interrogator_status = Mode5InterrogatorStatus::from(interrogator_status);
-    // let (input, message_formats_present) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
-    // let message_formats_present = Mode5MessageFormats::from(message_formats_present);
-    // let (input, interrogated_entity_id) = entity_identification(input)?;
-    //
-    // Ok((input, Mode5InterrogatorBasicData {
-    //     interrogator_status,
-    //     message_formats_present,
-    //     interrogated_entity_id,
-    // }))
+    let (input, interrogator_status) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let interrogator_status = ModeSInterrogatorStatus::from(interrogator_status);
+
+    let (input, levels_present) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let levels_present = ModeSLevelsPresent::from(levels_present);
+
+    Ok((input, ModeSInterrogatorBasicData::builder()
+        .with_mode_s_interrogator_status(interrogator_status)
+        .with_mode_s_levels_present(levels_present)
+        .build()))
 }
 
 fn iff_layer_5(input: BitInput) -> IResult<BitInput, IffLayer5> {

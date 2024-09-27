@@ -6,8 +6,8 @@ use crate::common::DisError;
 use crate::common::model::PduBody;
 use crate::common::iff::model::{BASE_IFF_DATA_RECORD_LENGTH_OCTETS, ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
 use crate::common::parser::{beam_data, entity_id, event_id, simulation_address, vec3_f32};
-use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, EIGHT_OCTETS};
-use crate::enumerations::{AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Mode5SAltitudeResolution, ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, VariableRecordType};
+use crate::constants::{EIGHT_OCTETS};
+use crate::enumerations::{AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
 
 pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id) = entity_id(input)?;
@@ -265,26 +265,7 @@ fn system_id(input: &[u8]) -> IResult<&[u8], SystemId> {
 fn dap_source(input: &[u8]) -> IResult<&[u8], DapSource> {
     let (input, record) = be_u8(input)?;
 
-    let indicated_air_speed = DapValue::from((record & BIT_0_IN_BYTE) >> 7);
-    let mach_number = DapValue::from((record & BIT_1_IN_BYTE) >> 6);
-    let ground_speed = DapValue::from((record & BIT_2_IN_BYTE) >> 5);
-    let magnetic_heading = DapValue::from((record & BIT_3_IN_BYTE) >> 4);
-    let track_angle_rate = DapValue::from((record & BIT_4_IN_BYTE) >> 3);
-    let true_track_angle = DapValue::from((record & BIT_5_IN_BYTE) >> 2);
-    let true_airspeed = DapValue::from((record & BIT_6_IN_BYTE) >> 1);
-    let vertical_rate = DapValue::from(record & BIT_7_IN_BYTE);
-
-    Ok((input, DapSource::builder()
-        .with_indicated_air_speed(indicated_air_speed)
-        .with_mach_number(mach_number)
-        .with_ground_speed(ground_speed)
-        .with_magnetic_heading(magnetic_heading)
-        .with_track_angle_rate(track_angle_rate)
-        .with_true_track_angle(true_track_angle)
-        .with_true_airspeed(true_airspeed)
-        .with_vertical_rate(vertical_rate)
-        .build()
-    ))
+    Ok((input, DapSource::from(record)))
 }
 
 impl From<u8> for DapValue {
@@ -406,17 +387,7 @@ fn mode_5_transponder_status(input: &[u8]) -> IResult<&[u8], Mode5TransponderSta
 fn mode_s_altitude(input: &[u8]) -> IResult<&[u8], ModeSAltitude> {
     let (input, record) = be_u16(input)?;
 
-    const BITS_0_10: u16 = 0xFFE0;
-    const BIT_11: u16 = 0x0010;
-    let altitude = (record & BITS_0_10) >> 5;
-    let resolution =
-        Mode5SAltitudeResolution::from(((record & BIT_11) as u8) >> 4);
-
-    Ok((input, ModeSAltitude::builder()
-        .with_altitude(altitude)
-        .with_resolution(resolution)
-        .build()
-    ))
+    Ok((input, ModeSAltitude::from(record)))
 }
 
 // TODO This bit of error handling the correct system type to parse is not that nice.
@@ -467,38 +438,13 @@ fn mode_s_interrogator_basic_data(input: &[u8]) -> IResult<&[u8], ModeSInterroga
 fn mode_s_interrogator_status(input: &[u8]) -> IResult<&[u8], ModeSInterrogatorStatus> {
     let (input, record) = be_u8(input)?;
 
-    const BITS_1_3: u8 = 0x70;
-    let on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
-    let transmit_state = ModeSTransmitState::from((record & BITS_1_3) >> 4);
-    let damage_status = DamageStatus::from((record & BIT_4_IN_BYTE) >> 3);
-    let malfunction_status = MalfunctionStatus::from((record & BIT_5_IN_BYTE) >> 2);
-
-    Ok((input, ModeSInterrogatorStatus::builder()
-        .with_on_off_status(on_off_status)
-        .with_transmit_state(transmit_state)
-        .with_damage_status(damage_status)
-        .with_malfunction_status(malfunction_status)
-        .build()
-    ))
+    Ok((input, ModeSInterrogatorStatus::from(record)))
 }
 
 fn mode_s_levels_present(input: &[u8]) -> IResult<&[u8], ModeSLevelsPresent> {
     let (input, record) = be_u8(input)?;
 
-    let level_1 = IffPresence::from((record & BIT_1_IN_BYTE) >> 6);
-    let level_2_els = IffPresence::from((record & BIT_2_IN_BYTE) >> 5);
-    let level_2_ehs = IffPresence::from((record & BIT_3_IN_BYTE) >> 4);
-    let level_3 = IffPresence::from((record & BIT_4_IN_BYTE) >> 3);
-    let level_4 = IffPresence::from((record & BIT_5_IN_BYTE) >> 2);
-
-    Ok((input, ModeSLevelsPresent::builder()
-        .with_level_1(level_1)
-        .with_level_2_ehs(level_2_ehs)
-        .with_level_2_els(level_2_els)
-        .with_level_3(level_3)
-        .with_level_4(level_4)
-        .build()
-    ))
+    Ok((input, ModeSLevelsPresent::from(record)))
 }
 
 fn mode_s_transponder_basic_data(input: &[u8]) -> IResult<&[u8], ModeSTransponderBasicData> {
@@ -538,44 +484,7 @@ fn mode_s_transponder_basic_data(input: &[u8]) -> IResult<&[u8], ModeSTransponde
 fn mode_s_transponder_status(input: &[u8]) -> IResult<&[u8], ModeSTransponderStatus> {
     let (input, record) = be_u16(input)?;
 
-    const BIT_0: u16 = 0x8000;
-    const BITS_1_3: u16 = 0x7000;
-    const BIT_4: u16 = 0x800;
-    const BIT_5: u16 = 0x400;
-    const BIT_6: u16 = 0x200;
-    const BIT_7: u16 = 0x100;
-    const BIT_8: u16 = 0x80;
-    const BIT_9: u16 = 0x40;
-    const BIT_13: u16 = 0x04;
-    const BIT_14: u16 = 0x02;
-    const BIT_15: u16 = 0x01;
-
-    let squitter_status = SquitterStatus::from(((record & BIT_0) >> 15) as u8);
-    let squitter_type = ModeSSquitterType::from(((record & BITS_1_3) >> 12) as u8);
-    let squitter_record_source = ModeSSquitterRecordSource::from(((record & BIT_4) >> 11) as u8);
-    let airborne_pos_ri = IffPresence::from(((record & BIT_5) >> 10) as u8);
-    let airborne_vel_ri = IffPresence::from(((record & BIT_6) >> 9) as u8);
-    let surface_pos_ri = IffPresence::from(((record & BIT_7) >> 8) as u8);
-    let ident_ri = IffPresence::from(((record & BIT_8) >> 7) as u8);
-    let event_driven_ri = IffPresence::from(((record & BIT_9) >> 6) as u8);
-    let on_off_status = OnOffStatus::from(((record & BIT_13) >> 2) as u8);
-    let damage_status = DamageStatus::from(((record & BIT_14) >> 1) as u8);
-    let malfunction_status = MalfunctionStatus::from((record & BIT_15) as u8);
-
-    Ok((input, ModeSTransponderStatus::builder()
-        .with_squitter_status(squitter_status)
-        .with_squitter_type(squitter_type)
-        .with_squitter_record_source(squitter_record_source)
-        .with_airborne_position_report_indicator(airborne_pos_ri)
-        .with_airborne_velocity_report_indicator(airborne_vel_ri)
-        .with_surface_position_report_indicator(surface_pos_ri)
-        .with_identification_report_indicator(ident_ri)
-        .with_event_driven_report_indicator(event_driven_ri)
-        .with_on_off_status(on_off_status)
-        .with_damage_status(damage_status)
-        .with_malfunction_status(malfunction_status)
-        .build()
-    ))
+    Ok((input, ModeSTransponderStatus::from(record)))
 }
 
 impl From<u8> for OnOffStatus {

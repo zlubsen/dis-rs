@@ -376,37 +376,7 @@ impl Serialize for Mode5TransponderSupplementalData {
 
 impl Serialize for Mode5TransponderStatus {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let mode_5_reply: u8 = u8::from(self.mode_5_reply) << 4;
-        let line_test: u8 = u8::from(&self.line_test) << 3;
-        let antenna_selection: u8 = u8::from(self.antenna_selection) << 1;
-        let crypto_control: u8 = u32::from(&self.crypto_control) as u8;
-
-        buf.put_u8(
-            mode_5_reply |
-                line_test |
-                antenna_selection |
-                crypto_control
-        );
-
-        let lat_lon_alt_source: u8 = u8::from(&self.lat_lon_alt_source) << 7;
-        let location_errors: u8 = u8::from(self.location_errors) << 6;
-        let platform_type: u8 = u8::from(self.platform_type) << 5;
-        let mode_5_level_selection: u8 = u8::from(self.mode_5_level_selection) << 4;
-        let on_off_status: u8 = u8::from(&self.on_off_status) << 2;
-        let damage_status: u8 = u8::from(&self.damage_status) << 1;
-        let malfunction_status: u8 = (&self.malfunction_status).into();
-
-        buf.put_u8(
-            lat_lon_alt_source |
-                location_errors |
-                platform_type |
-                mode_5_level_selection |
-                on_off_status |
-                damage_status |
-                malfunction_status
-        );
-        let bytes= u16::from(self);
-        buf.put_u16(bytes);
+        buf.put_u16(self.into());
 
         TWO_OCTETS as u16
     }
@@ -414,13 +384,7 @@ impl Serialize for Mode5TransponderStatus {
 
 impl Serialize for ModeSAltitude {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let resolution: u8 = self.resolution.into();
-        let resolution: u16 = resolution as u16;
-
-        buf.put_u16(
-            (self.altitude << 5) |
-                (resolution << 4)
-        );
+        buf.put_u16(self.into());
 
         TWO_OCTETS as u16
     }
@@ -440,17 +404,7 @@ impl Serialize for ModeSInterrogatorBasicData {
 
 impl Serialize for ModeSInterrogatorStatus {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let on_off_status: u8 = u8::from(&self.on_off_status) << 7;
-        let transmit_state: u8 = u8::from(self.transmit_state) << 4;
-        let damage_status: u8 = u8::from(&self.damage_status) << 3;
-        let malfunction_status: u8 = u8::from(&self.malfunction_status) << 2;
-
-        buf.put_u8(
-            on_off_status |
-                transmit_state |
-                damage_status |
-                malfunction_status
-        );
+        buf.put_u8(self.into());
 
         ONE_OCTET as u16
     }
@@ -458,19 +412,7 @@ impl Serialize for ModeSInterrogatorStatus {
 
 impl Serialize for ModeSLevelsPresent {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let level_1: u8 = u8::from(&self.level_1) << 6;
-        let level_2_els: u8 = u8::from(&self.level_2_els) << 5;
-        let level_2_ehs: u8 = u8::from(&self.level_2_ehs) << 4;
-        let level_3: u8 = u8::from(&self.level_3) << 3;
-        let level_4: u8 = u8::from(&self.level_4) << 2;
-
-        buf.put_u8(
-            level_1 |
-                level_2_els |
-                level_2_ehs |
-                level_3 |
-                level_4
-        );
+        buf.put_u8(self.into());
 
         ONE_OCTET as u16
     }
