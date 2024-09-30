@@ -71,15 +71,15 @@ impl Default for EncoderStateDesignator {
 #[derive(Debug)]
 pub struct DecoderStateDesignator {
     pub heartbeat: Instant,
-    pub designated_entity_id: DisEntityId,
+    pub designated_entity_id: DisEntityId,      // FIXME not part of the state according to section 13.19 (GREEN)
     pub code_name: DesignatorSystemName,
     pub designator_code: DesignatorCode,
     pub designator_power: f32,
     pub designator_wavelength: f32,
-    pub spot_wrt_designated_entity: VectorF32,
+    pub spot_wrt_designated_entity: VectorF32,  // FIXME not part of the state according to section 13.19 (GREEN)
     pub designator_spot_location: Location,
-    pub dr_algorithm: DeadReckoningAlgorithm,
-    pub dr_entity_linear_acceleration: VectorF32,
+    pub dr_algorithm: DeadReckoningAlgorithm,       // FIXME not part of the state according to section 13.19 (GREEN) - check when to include/leave out
+    pub dr_entity_linear_acceleration: VectorF32,   // FIXME not part of the state according to section 13.19 (GREEN) - check when to include/leave out
 }
 
 impl DecoderStateDesignator {

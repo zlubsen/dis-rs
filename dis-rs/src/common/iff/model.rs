@@ -105,7 +105,7 @@ impl IffLayer2 {
         IffLayer2Builder::new()
     }
 
-    fn data_length(&self) -> u16 {
+    pub fn data_length(&self) -> u16 {
         const LAYER_2_BASE_DATA_LENGTH_OCTETS: u16 = 28;
         const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
         LAYER_2_BASE_DATA_LENGTH_OCTETS
@@ -259,7 +259,7 @@ impl IffLayer5 {
 }
 
 /// 6.2.13 Change/Options record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ChangeOptionsRecord {
     pub change_indicator: bool,
     pub system_specific_field_1: bool,
@@ -552,7 +552,7 @@ impl SystemSpecificData {
 }
 
 /// 6.2.87 System Identifier record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct SystemId {
     pub system_type: IffSystemType,
     pub system_name: IffSystemName,

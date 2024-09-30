@@ -5,7 +5,7 @@ use dis_rs::model::{ArticulatedPart, AttachedPart, DisTimeStamp, EntityAssociati
 use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use crate::codec::Codec;
 use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, CENTIMETER_PER_METER, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::{BeamData, EncodingScheme, UnitsMeters};
+use crate::records::model::{BeamData, EncodingScheme, LayerHeader, UnitsMeters};
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, UnitsDekameters, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
@@ -132,6 +132,24 @@ fn normalize_radians_to_plusminus_pi(radians: f32) -> f32 {
     if radians > std::f32::consts::PI {
         radians - TWO_PI
     } else { radians }
+}
+
+/// Encode a DIS LayerHeader into CDIS LayerHeader, providing the new layer length in CDIS bits.
+pub(crate) fn encode_layer_header_with_length(header: &dis_rs::iff::model::LayerHeader, layer_length_bits: u16) -> LayerHeader {
+    LayerHeader {
+        layer_number: header.layer_number,
+        layer_specific_information: header.layer_specific_information,
+        length: layer_length_bits,
+    }
+}
+
+/// Decode a CDIS LayerHeader into DIS LayerHeader, providing the new layer length in DIS bytes.
+pub(crate) fn decode_layer_header_with_length(header: &LayerHeader, layer_length_bytes: u16) -> dis_rs::iff::model::LayerHeader {
+    dis_rs::iff::model::LayerHeader::builder()
+        .with_layer_number(header.layer_number)
+        .with_layer_specific_information(header.layer_specific_information)
+        .with_length(layer_length_bytes)
+        .build()
 }
 
 /// Encode/Decode a ``VectorF32`` to ``LinearAcceleration``.
@@ -492,6 +510,32 @@ impl Codec for CdisEntityAssociationVP {
     }
 }
 
+impl Codec for BeamData {
+    type Counterpart = dis_rs::model::BeamData;
+
+    const SCALING: f32 = ((2^12) - 1) as f32 / std::f32::consts::PI;
+    const SCALING_2: f32 = 1023f32 / 100.0;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            az_center: SVINT13::from((item.azimuth_center * Self::SCALING).round() as i16),
+            az_sweep: SVINT13::from((item.azimuth_sweep * Self::SCALING).round() as i16),
+            el_center: SVINT13::from((item.elevation_center * Self::SCALING).round() as i16),
+            el_sweep: SVINT13::from((item.elevation_sweep * Self::SCALING).round() as i16),
+            sweep_sync: (item.sweep_sync * Self::SCALING_2).round() as u16,
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_azimuth_center(self.az_center.value as f32 / Self::SCALING)
+            .with_azimuth_sweep(self.az_sweep.value as f32 / Self::SCALING)
+            .with_elevation_center(self.el_center.value as f32 / Self::SCALING)
+            .with_elevation_sweep(self.el_sweep.value as f32 / Self::SCALING)
+            .with_sweep_sync(self.sweep_sync as f32 / Self::SCALING_2)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use dis_rs::enumerations::{PduType, ProtocolVersion};
@@ -701,31 +745,5 @@ mod tests {
         let dis = cdis.decode();
 
         assert_eq!(dis.psi.to_degrees(), 0.04395604); // in degrees, the resolution of the field
-    }
-}
-
-impl Codec for BeamData {
-    type Counterpart = dis_rs::model::BeamData;
-
-    const SCALING: f32 = ((2^12) - 1) as f32 / std::f32::consts::PI;
-    const SCALING_2: f32 = 1023f32 / 100.0;
-
-    fn encode(item: &Self::Counterpart) -> Self {
-        Self {
-            az_center: SVINT13::from((item.azimuth_center * Self::SCALING).round() as i16),
-            az_sweep: SVINT13::from((item.azimuth_sweep * Self::SCALING).round() as i16),
-            el_center: SVINT13::from((item.elevation_center * Self::SCALING).round() as i16),
-            el_sweep: SVINT13::from((item.elevation_sweep * Self::SCALING).round() as i16),
-            sweep_sync: (item.sweep_sync * Self::SCALING_2).round() as u16,
-        }
-    }
-
-    fn decode(&self) -> Self::Counterpart {
-        Self::Counterpart::default()
-            .with_azimuth_center(self.az_center.value as f32 / Self::SCALING)
-            .with_azimuth_sweep(self.az_sweep.value as f32 / Self::SCALING)
-            .with_elevation_center(self.el_center.value as f32 / Self::SCALING)
-            .with_elevation_sweep(self.el_sweep.value as f32 / Self::SCALING)
-            .with_sweep_sync(self.sweep_sync as f32 / Self::SCALING_2)
     }
 }

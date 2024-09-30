@@ -68,7 +68,7 @@ pub struct DecoderStateEntityState {
     pub heartbeat: Instant,
     pub force_id: ForceId,
     pub entity_type: DisEntityType,
-    pub alt_entity_type: DisEntityType,
+    pub alt_entity_type: DisEntityType,         // FIXME not part of the state according to the spec (GREEN)
     pub entity_location: DisLocation,
     pub entity_orientation: DisOrientation,
     pub entity_appearance: EntityAppearance,

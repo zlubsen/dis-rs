@@ -13,6 +13,7 @@ type Counterpart = dis_rs::transmitter::model::Transmitter;
 pub(crate) fn encode_transmitter_body_and_update_state(dis_body: &Counterpart,
                                                         state: &mut EncoderState,
                                                         options: &CodecOptions) -> (CdisBody, CodecStateResult) {
+    // TODO should the state be stored for a radio_reference_id / radio_number combo instead of only the radio_reference_id?
     let state_for_id = state.transmitter.get(&dis_body.radio_reference_id);
 
     let (cdis_body, state_result) = Transmitter::encode(dis_body, state_for_id, options);

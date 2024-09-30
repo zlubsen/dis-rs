@@ -16,6 +16,7 @@ use crate::electromagnetic_emission::codec::{decode_electromagnetic_emission_bod
 use crate::entity_state::codec::{decode_entity_state_body_and_update_state, DecoderStateEntityState, encode_entity_state_body_and_update_state, EncoderStateEntityState};
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
+use crate::iff::codec::{decode_iff_body_and_update_state, encode_iff_body_and_update_state, DecoderStateIff, EncoderStateIff};
 use crate::receiver::model::Receiver;
 use crate::records::model::CdisHeader;
 use crate::remove_entity::model::RemoveEntity;
@@ -49,7 +50,8 @@ pub struct EncoderState {
     pub entity_state: HashMap<EntityId, EncoderStateEntityState>,
     pub ee: HashMap<EntityId, EncoderStateElectromagneticEmission>,
     pub designator: HashMap<EntityId, EncoderStateDesignator>,
-    pub transmitter: HashMap<EntityId, EncoderStateTransmitter>,
+    pub transmitter: HashMap<EntityId, EncoderStateTransmitter>, // FIXME index transmitter state using (u16, EntityId).
+    pub iff: HashMap<EntityId, EncoderStateIff>,
 }
 
 impl EncoderState {
@@ -59,6 +61,7 @@ impl EncoderState {
             ee: Default::default(),
             designator: Default::default(),
             transmitter: Default::default(),
+            iff: Default::default(),
         }
     }
 }
@@ -68,7 +71,8 @@ pub struct DecoderState {
     pub entity_state: HashMap<EntityId, DecoderStateEntityState>,
     pub ee: HashMap<EntityId, DecoderStateElectromagneticEmission>,
     pub designator: HashMap<EntityId, DecoderStateDesignator>,
-    pub transmitter: HashMap<EntityId, DecoderStateTransmitter>,
+    pub transmitter: HashMap<EntityId, DecoderStateTransmitter>, // FIXME index transmitter state using (u16, EntityId).
+    pub iff: HashMap<EntityId, DecoderStateIff>,
 }
 
 impl DecoderState {
@@ -78,6 +82,7 @@ impl DecoderState {
             ee: Default::default(),
             designator: Default::default(),
             transmitter: Default::default(),
+            iff: Default::default(),
         }
     }
 }
@@ -155,6 +160,7 @@ pub enum CodecStateResult {
     StateUpdateElectromagneticEmission,
     StateUpdateDesignator,
     StateUpdateTransmitter,
+    StateUpdateIff,
 }
 
 impl CdisPdu {
@@ -219,7 +225,9 @@ impl CdisBody {
             }
             PduBody::Signal(dis_body) => { (Signal::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
             PduBody::Receiver(dis_body) => { (Receiver::encode(dis_body).into_cdis_body(), CodecStateResult::StateUnaffected) }
-            PduBody::IFF(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
+            PduBody::IFF(dis_body) => {
+                encode_iff_body_and_update_state(dis_body, state, options)
+            }
             PduBody::UnderwaterAcoustic(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::SupplementalEmissionEntityState(_) => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
             PduBody::IntercomSignal => { (Self::Unsupported(Unsupported), CodecStateResult::StateUnaffected) }
@@ -333,7 +341,9 @@ impl CdisBody {
             CdisBody::Receiver(cdis_body) => {
                 (cdis_body.decode().into_pdu_body(), CodecStateResult::StateUnaffected)
             }
-            // CdisBody::Iff => {}
+            CdisBody::Iff(cdis_body) => {
+                decode_iff_body_and_update_state(cdis_body, state, options)
+            }
             CdisBody::Unsupported(_) | _ => {
                 (PduBody::Other(dis_rs::other::model::Other::builder().build()), CodecStateResult::StateUnaffected)
             }
