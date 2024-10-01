@@ -344,7 +344,7 @@ impl CdisBody {
             CdisBody::Iff(cdis_body) => {
                 decode_iff_body_and_update_state(cdis_body, state, options)
             }
-            CdisBody::Unsupported(_) | _ => {
+            CdisBody::Unsupported(_) => {
                 (PduBody::Other(dis_rs::other::model::Other::builder().build()), CodecStateResult::StateUnaffected)
             }
         }

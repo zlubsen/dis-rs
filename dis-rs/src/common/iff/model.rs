@@ -534,7 +534,7 @@ impl LayerHeader {
 }
 
 // TODO placeholder for 24-bits - See Annex B.
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct SystemSpecificData {
     pub part_1: u8,
     pub part_2: u8,

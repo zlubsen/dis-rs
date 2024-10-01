@@ -1,12 +1,13 @@
 use std::time::Instant;
-use num_traits::Zero;
-use dis_rs::iff::model::{FundamentalOperationalData, SystemId};
-use dis_rs::model::{EventId, PduBody, VectorF32};
+use num_traits::{ToPrimitive, Zero};
+use dis_rs::iff::model::{FundamentalOperationalData, IffDataSpecification, Mode5TransponderBasicData, SystemId};
+use dis_rs::model::{EventId, PduBody, SimulationAddress, VectorF32};
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
-use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5};
+use crate::iff::model::{CdisFundamentalOperationalData, Iff, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5BasicData, Mode5InterrogatorBasicData, ModeSBasicData};
 use crate::records::codec::{decode_entity_coordinate_vector, decode_layer_header_with_length, encode_entity_coordinate_vector, encode_layer_header_with_length};
-use crate::records::model::{BeamData, CdisRecord, EntityCoordinateVector, EntityId, UnitsMeters};
+use crate::records::model::{BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat, UnitsMeters};
+use crate::types::model::{CdisFloat, UVINT16};
 
 type Counterpart = dis_rs::iff::model::Iff;
 
@@ -250,6 +251,7 @@ impl Codec for IffLayer2 {
             .with_operational_parameter_2(self.operational_parameter_2)
             .with_iff_fundamental_parameters(self.iff_fundamental_parameters.iter().map(|param| param.decode()).collect())
             .build();
+
         let header = decode_layer_header_with_length(&self.layer_header, layer.data_length());
         layer.layer_header = header;
         layer
@@ -260,11 +262,31 @@ impl Codec for IffLayer3 {
     type Counterpart = dis_rs::iff::model::IffLayer3;
 
     fn encode(item: &Self::Counterpart) -> Self {
-        todo!()
+        let mut layer = Self {
+            layer_header: Default::default(),
+            reporting_simulation_site: UVINT16::from(item.reporting_simulation.site_id),
+            reporting_simulation_application: UVINT16::from(item.reporting_simulation.application_id),
+            mode_5_basic_data: Mode5BasicData::encode(&item.mode_5_basic_data),
+            iff_data_records: item.data_records.iff_data_records.clone(),
+        };
+
+        let header = encode_layer_header_with_length(&item.layer_header, layer.record_length() as u16);
+        layer.layer_header = header;
+        layer
     }
 
     fn decode(&self) -> Self::Counterpart {
-        todo!()
+        let mut layer = Self::Counterpart::builder()
+            .with_reporting_simulation(SimulationAddress::new(self.reporting_simulation_site.value, self.reporting_simulation_application.value))
+            .with_mode_5_basic_data(self.mode_5_basic_data.decode())
+            .with_iff_data_specification(IffDataSpecification::builder()
+                .with_iff_data_records(self.iff_data_records.clone())
+                .build())
+            .build();
+
+        let header = decode_layer_header_with_length(&self.layer_header, layer.data_length());
+        layer.layer_header = header;
+        layer
     }
 }
 
@@ -272,11 +294,31 @@ impl Codec for IffLayer4 {
     type Counterpart = dis_rs::iff::model::IffLayer4;
 
     fn encode(item: &Self::Counterpart) -> Self {
-        todo!()
+        let mut layer = Self {
+            layer_header: Default::default(),
+            reporting_simulation_site: UVINT16::from(item.reporting_simulation.site_id),
+            reporting_simulation_application: UVINT16::from(item.reporting_simulation.application_id),
+            mode_s_basic_data: ModeSBasicData::encode(&item.mode_s_basic_data),
+            iff_data_records: item.data_records.iff_data_records.clone(),
+        };
+
+        let header = encode_layer_header_with_length(&item.layer_header, layer.record_length() as u16);
+        layer.layer_header = header;
+        layer
     }
 
     fn decode(&self) -> Self::Counterpart {
-        todo!()
+        let mut layer = Self::Counterpart::builder()
+            .with_reporting_simulation(SimulationAddress::new(self.reporting_simulation_site.value, self.reporting_simulation_application.value))
+            .with_mode_s_basic_data(self.mode_s_basic_data.decode())
+            .with_iff_data_specification(IffDataSpecification::builder()
+                .with_iff_data_records(self.iff_data_records.clone())
+                .build())
+            .build();
+
+        let header = decode_layer_header_with_length(&self.layer_header, layer.data_length());
+        layer.layer_header = header;
+        layer
     }
 }
 
@@ -284,11 +326,33 @@ impl Codec for IffLayer5 {
     type Counterpart = dis_rs::iff::model::IffLayer5;
 
     fn encode(item: &Self::Counterpart) -> Self {
-        todo!()
+        let mut layer = Self {
+            layer_header: Default::default(),
+            reporting_simulation_site: UVINT16::from(item.reporting_simulation.site_id),
+            reporting_simulation_application: UVINT16::from(item.reporting_simulation.application_id),
+            applicable_layers: item.applicable_layers,
+            data_category: item.data_category,
+            iff_data_records: item.data_records.iff_data_records.clone(),
+        };
+
+        let header = encode_layer_header_with_length(&item.layer_header, layer.record_length() as u16);
+        layer.layer_header = header;
+        layer
     }
 
     fn decode(&self) -> Self::Counterpart {
-        todo!()
+        let mut layer = Self::Counterpart::builder()
+            .with_reporting_simulation(SimulationAddress::new(self.reporting_simulation_site.value, self.reporting_simulation_application.value))
+            .with_applicable_layers(self.applicable_layers)
+            .with_data_category(self.data_category)
+            .with_iff_data_specification(IffDataSpecification::builder()
+                .with_iff_data_records(self.iff_data_records.clone())
+                .build())
+            .build();
+
+        let header = decode_layer_header_with_length(&self.layer_header, layer.data_length());
+        layer.layer_header = header;
+        layer
     }
 }
 
@@ -296,19 +360,104 @@ impl Codec for IffFundamentalParameterData {
     type Counterpart = dis_rs::iff::model::IffFundamentalParameterData;
 
     fn encode(item: &Self::Counterpart) -> Self {
-        todo!();
         Self {
-            erp: 0,
-            frequency: Default::default(),
-            pgrf: 0,
-            pulse_width: 0,
-            burst_length: 0,
-            applicable_modes: Default::default(),
-            system_specific_data: Default::default(),
+            erp: item.erp.to_u8().unwrap_or(0),                     // TODO check if conversion is correct
+            frequency: FrequencyFloat::from_float(item.frequency),
+            pgrf: item.pgrf.to_u16().unwrap_or(0),                  // TODO check if conversion is correct
+            pulse_width: item.pulse_width.to_u16().unwrap_or(0),    // TODO check if conversion is correct
+            burst_length: item.burst_length.to_u16().unwrap_or(0),  // TODO check if conversion is correct
+            applicable_modes: item.applicable_modes,
+            system_specific_data: item.system_specific_data,
         }
     }
 
     fn decode(&self) -> Self::Counterpart {
-        todo!()
+        Self::Counterpart::builder()
+            .with_erp(self.erp.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
+            .with_frequency(self.frequency.to_float())
+            .with_pgrf(self.pgrf.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
+            .with_pulse_width(self.pulse_width.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
+            .with_burst_length(self.burst_length.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
+            .with_applicable_modes(self.applicable_modes)
+            .with_system_specific_data(self.system_specific_data)
+            .build()
+    }
+}
+
+impl Codec for Mode5BasicData {
+    type Counterpart = dis_rs::iff::model::Mode5BasicData;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        match item {
+            Self::Counterpart::Interrogator(data) => {
+                Self::Interrogator(Mode5InterrogatorBasicData {
+                    interrogator_status: data.status.clone(),
+                    message_formats_present: data.mode_5_message_formats_present.clone(),
+                    interrogated_entity_id: EntityId::encode(&data.interrogated_entity_id),
+                })
+            }
+            Self::Counterpart::Transponder(data) => {
+                Self::Transponder(Mode5TransponderBasicData {
+                    status: data.status.clone(),
+                    pin: data.pin,
+                    mode_5_message_formats_present: data.mode_5_message_formats_present.clone(),
+                    enhanced_mode_1: data.enhanced_mode_1.clone(),
+                    national_origin: data.national_origin,
+                    supplemental_data: data.supplemental_data.clone(),
+                    navigation_source: data.navigation_source,
+                    figure_of_merit: data.figure_of_merit,
+                })
+            }
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        match self {
+            Mode5BasicData::Interrogator(data) => {
+                Self::Counterpart::Interrogator(dis_rs::iff::model::Mode5InterrogatorBasicData::builder()
+                    .with_status(data.interrogator_status.clone())
+                    .with_mode_5_message_formats_present(data.message_formats_present.clone())
+                    .with_interrogated_entity_id(data.interrogated_entity_id.decode())
+                    .build())
+            }
+            Mode5BasicData::Transponder(data) => {
+                Self::Counterpart::Transponder(dis_rs::iff::model::Mode5TransponderBasicData::builder()
+                    .with_status(data.status.clone())
+                    .with_pin(data.pin)
+                    .with_mode_5_message_formats_present(data.mode_5_message_formats_present.clone())
+                    .with_enhanced_mode_1(data.enhanced_mode_1.clone())
+                    .with_national_origin(data.national_origin)
+                    .with_supplemental_data(data.supplemental_data.clone())
+                    .with_national_origin(data.national_origin)
+                    .with_figure_of_merit(data.figure_of_merit)
+                    .build())
+            }
+        }
+    }
+}
+
+impl Codec for ModeSBasicData {
+    type Counterpart = dis_rs::iff::model::ModeSBasicData;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        match item {
+            Self::Counterpart::Interrogator(data) => {
+                Self::Interrogator(data.clone())
+            }
+            Self::Counterpart::Transponder(data) => {
+                Self::Transponder(data.clone())
+            }
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        match self {
+            ModeSBasicData::Interrogator(data) => {
+                Self::Counterpart::Interrogator(data.clone())
+            }
+            ModeSBasicData::Transponder(data) => {
+                Self::Counterpart::Transponder(data.clone())
+            }
+        }
     }
 }
