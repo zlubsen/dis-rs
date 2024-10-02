@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 use askama::Template;
+use axum::body::Body;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -46,6 +47,7 @@ pub(crate) async fn run_site(config: Config,
         .route("/", get(home))
         .route("/styles.css", get(styles))
         .route("/index.js", get(scripts))
+        .route("/favicon.ico", get(favicon))
         .route("/script_htmx.js", get(script_htmx))
         .route("/script_htmx_sse.js", get(script_htmx_sse))
         .route("/config", get(config_info))
@@ -181,6 +183,19 @@ pub(crate) async fn scripts() -> Result<impl IntoResponse, Response> {
         .status(StatusCode::OK)
         .header("Content-Type", "text/javascript")
         .body(include_str!("../build/index.js").to_owned());
+
+    match response {
+        Ok(response) => { Ok(response) }
+        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+    }
+}
+
+pub(crate) async fn favicon() -> Result<impl IntoResponse, Response> {
+    let bytes = Vec::from(include_bytes!("../assets/favicon.ico").to_owned());
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "image/x-icon")
+        .body(Body::from(bytes));
 
     match response {
         Ok(response) => { Ok(response) }
