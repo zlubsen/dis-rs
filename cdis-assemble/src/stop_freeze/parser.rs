@@ -32,7 +32,7 @@ pub(crate) fn stop_freeze_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
 /// Parse a StopFreezeFrozenBehavior record from a C-DIS bitstream
 fn frozen_behavior(input: BitInput) -> IResult<BitInput, StopFreezeFrozenBehavior> {
-    // TODO spec states 2-bit field; StopFreezeFrozenBehavior expects 3 bit flags.
+    // FIXME spec states 2-bit field; StopFreezeFrozenBehavior expects 3 bit flags.
     // Decision here is to use 3 bits for StopFreezeFrozenBehavior
     let (input, run_simulation_clock) : (BitInput, u8) = take(ONE_BIT)(input)?;
     let (input, transmit_updates) : (BitInput, u8) = take(ONE_BIT)(input)?;
