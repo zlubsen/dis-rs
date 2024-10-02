@@ -70,7 +70,6 @@ impl Interaction for Iff {
     }
 
     fn receiver(&self) -> Option<&EntityId> {
-        // TODO can we derive the receiving entity from a layer?
         None
     }
 }
@@ -95,7 +94,7 @@ impl Default for IffLayer2 {
             beam_data: Default::default(),
             operational_parameter_1: 0,
             operational_parameter_2: 0,
-            iff_fundamental_parameters: vec![],
+            iff_fundamental_parameters: vec![IffFundamentalParameterData::default()],
         }
     }
 }
@@ -110,6 +109,11 @@ impl IffLayer2 {
         const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
         LAYER_2_BASE_DATA_LENGTH_OCTETS
             + (self.iff_fundamental_parameters.len() as u16 * IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS)
+    }
+
+    pub fn finalize_layer_header_length(mut self) -> Self {
+        self.layer_header.length = self.data_length();
+        self
     }
 }
 
@@ -143,6 +147,11 @@ impl IffLayer3 {
     pub fn data_length(&self) -> u16 {
         const LAYER_3_BASE_DATA_LENGTH_OCTETS: u16 = 26;
         LAYER_3_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
+    }
+
+    pub fn finalize_layer_header_length(mut self) -> Self {
+        self.layer_header.length = self.data_length();
+        self
     }
 }
 
@@ -198,6 +207,11 @@ impl IffLayer4 {
     pub fn data_length(&self) -> u16 {
         const LAYER_4_BASE_DATA_LENGTH_OCTETS: u16 = 34;
         LAYER_4_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
+    }
+
+    pub fn finalize_layer_header_length(mut self) -> Self {
+        self.layer_header.length = self.data_length();
+        self
     }
 }
 
@@ -255,6 +269,11 @@ impl IffLayer5 {
     pub fn data_length(&self) -> u16 {
         const LAYER_5_BASE_DATA_LENGTH_OCTETS: u16 = 14;
         LAYER_5_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
+    }
+
+    pub fn finalize_layer_header_length(mut self) -> Self {
+        self.layer_header.length = self.data_length();
+        self
     }
 }
 

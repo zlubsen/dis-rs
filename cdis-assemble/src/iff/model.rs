@@ -24,11 +24,6 @@ pub struct Iff {
     pub layer_5: Option<IffLayer5>, // Data Communications
 }
 
-// TODO codec for layer 1 and layer 2
-// TODO layer 3 codec
-// TODO layer 4 codec
-// TODO layer 5 codec
-
 impl BodyProperties for Iff {
     type FieldsPresent = IffLayer1FieldsPresent;
     type FieldsPresentOutput = u16;

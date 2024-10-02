@@ -9,7 +9,8 @@ use dis_rs::designator::model::Designator;
 use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ReceiverState, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, IffSystemMode, IffSystemName, IffSystemType, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ReceiverState, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType};
+use dis_rs::iff::model::{ChangeOptionsRecord, FundamentalOperationalData, Iff, IffLayer2, IffLayer3, IffLayer4, IffLayer5, InformationLayers, LayersPresenceApplicability, SystemId};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
 use dis_rs::signal::model::EncodingScheme;
 use dis_rs::transmitter::model::{BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter};
@@ -972,4 +973,54 @@ fn codec_consistency_transmitter_partial_mode() {
     assert_eq!(body_in.power, body_out.power);
     assert_eq!(body_in.crypto_system, body_out.crypto_system);
     assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
+}
+
+#[test]
+fn codec_consistency_iff_full_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Iff::builder()
+        .with_emitting_entity_id(EntityId::new(10, 10, 10))
+        .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+        .with_relative_antenna_location(VectorF32::new(1.0, 2.0, 3.0))
+        .with_system_id(SystemId::builder()
+            .with_system_name(IffSystemName::GenericMarkXIIACombinedInterrogatorTransponder_CIT_)
+            .with_system_mode(IffSystemMode::Normal)
+            .with_system_type(IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_)
+            .with_change_options(ChangeOptionsRecord::default())
+            .build())
+        .with_system_designator(255)
+        .with_system_specific_data(0)
+        .with_fundamental_operational_data(FundamentalOperationalData::builder()
+            .with_information_layers(InformationLayers::builder()
+                .with_layer_2(LayersPresenceApplicability::PresentApplicable)
+                .with_layer_3(LayersPresenceApplicability::PresentApplicable)
+                .with_layer_4(LayersPresenceApplicability::PresentApplicable)
+                .with_layer_5(LayersPresenceApplicability::PresentApplicable)
+                .build())
+            .build())
+        .with_layer_2(IffLayer2::default().finalize_layer_header_length())
+        .with_layer_3(IffLayer3::default().finalize_layer_header_length())
+        .with_layer_4(IffLayer4::default().finalize_layer_header_length())
+        .with_layer_5(IffLayer5::default().finalize_layer_header_length())
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::IFF).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::IFF(iff) = dis_pdu_in.body { iff } else { Iff::default() };
+    let body_out = if let PduBody::IFF(iff) = dis_pdu_out.body { iff } else { Iff::default() };
+    assert_eq!(body_in, body_out);
+
+    // assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
+    // assert_eq!(body_in.transmit_state, body_out.transmit_state);
+    // assert_eq!(body_in.modulation_type, body_out.modulation_type);
+    // assert_eq!(body_in.antenna_pattern, body_out.antenna_pattern);
+    // assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
 }
