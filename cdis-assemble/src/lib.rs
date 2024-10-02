@@ -321,8 +321,8 @@ impl Implemented for PduType {
             PduType::Designator |
             PduType::Transmitter |
             PduType::Signal |
-            PduType::Receiver => { true }
-            // PduType::IFF => { true }
+            PduType::Receiver |
+            PduType::IFF => { true }
             _ => { false }
         }
     }

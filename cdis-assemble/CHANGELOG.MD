@@ -8,6 +8,7 @@ Support for new PDUs:
 - Transmitter
 - Signal
 - Receiver
+- IFF
 
 ## 0.2.0 - 2024-07-15
 
