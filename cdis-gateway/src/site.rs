@@ -356,6 +356,7 @@ mod templates {
         pub transmitter_count: u64,
         pub signal_count: u64,
         pub receiver_count: u64,
+        pub iff_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -390,6 +391,7 @@ mod templates {
                 transmitter_count: count_for_pdu_type(stats, PduType::Transmitter),
                 signal_count: count_for_pdu_type(stats, PduType::Signal),
                 receiver_count: count_for_pdu_type(stats, PduType::Receiver),
+                iff_count: count_for_pdu_type(stats, PduType::IFF),
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {
