@@ -13,13 +13,12 @@ type Counterpart = dis_rs::transmitter::model::Transmitter;
 pub(crate) fn encode_transmitter_body_and_update_state(dis_body: &Counterpart,
                                                         state: &mut EncoderState,
                                                         options: &CodecOptions) -> (CdisBody, CodecStateResult) {
-    // TODO should the state be stored for a radio_reference_id / radio_number combo instead of only the radio_reference_id?
-    let state_for_id = state.transmitter.get(&dis_body.radio_reference_id);
+    let state_for_id = state.transmitter.get(&(dis_body.radio_reference_id, dis_body.radio_number));
 
     let (cdis_body, state_result) = Transmitter::encode(dis_body, state_for_id, options);
 
     if state_result == CodecStateResult::StateUpdateTransmitter {
-        state.transmitter.entry(dis_body.radio_reference_id)
+        state.transmitter.entry((dis_body.radio_reference_id, dis_body.radio_number))
             .and_modify(|tr| { tr.heartbeat = Instant::now() })
             .or_default();
     }
@@ -30,11 +29,11 @@ pub(crate) fn encode_transmitter_body_and_update_state(dis_body: &Counterpart,
 pub(crate) fn decode_transmitter_body_and_update_state(cdis_body: &Transmitter,
                                                         state: &mut DecoderState,
                                                         options: &CodecOptions) -> (PduBody, CodecStateResult) {
-    let state_for_id = state.transmitter.get(&dis_rs::model::EntityId::from(&cdis_body.radio_reference_id));
+    let state_for_id = state.transmitter.get(&(dis_rs::model::EntityId::from(&cdis_body.radio_reference_id), cdis_body.radio_number.value));
     let (dis_body, state_result) = cdis_body.decode(state_for_id, options);
 
     if state_result == CodecStateResult::StateUpdateTransmitter {
-        state.transmitter.entry(dis_rs::model::EntityId::from(&cdis_body.radio_reference_id))
+        state.transmitter.entry((dis_rs::model::EntityId::from(&cdis_body.radio_reference_id), cdis_body.radio_number.value))
             .and_modify(|tr| {
                 tr.heartbeat = Instant::now();
                 tr.radio_type = dis_body.radio_type;

@@ -50,7 +50,7 @@ pub struct EncoderState {
     pub entity_state: HashMap<EntityId, EncoderStateEntityState>,
     pub ee: HashMap<EntityId, EncoderStateElectromagneticEmission>,
     pub designator: HashMap<EntityId, EncoderStateDesignator>,
-    pub transmitter: HashMap<EntityId, EncoderStateTransmitter>, // FIXME index transmitter state using (u16, EntityId).
+    pub transmitter: HashMap<(EntityId, u16), EncoderStateTransmitter>,
     pub iff: HashMap<EntityId, EncoderStateIff>,
 }
 
@@ -71,7 +71,7 @@ pub struct DecoderState {
     pub entity_state: HashMap<EntityId, DecoderStateEntityState>,
     pub ee: HashMap<EntityId, DecoderStateElectromagneticEmission>,
     pub designator: HashMap<EntityId, DecoderStateDesignator>,
-    pub transmitter: HashMap<EntityId, DecoderStateTransmitter>, // FIXME index transmitter state using (u16, EntityId).
+    pub transmitter: HashMap<(EntityId, u16), DecoderStateTransmitter>,
     pub iff: HashMap<EntityId, DecoderStateIff>,
 }
 
