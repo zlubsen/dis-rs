@@ -10,6 +10,8 @@ Support for new PDUs:
 - Receiver
 - IFF
 
+Removed the 'use_guise' configuration option, which was redundant. The need for encoding the alternative entity type in the EntityState PDU is determined based on the value of the field.
+
 ## 0.2.0 - 2024-07-15
 
 Support for new PDUs:
