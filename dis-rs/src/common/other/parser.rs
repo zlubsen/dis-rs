@@ -14,11 +14,18 @@ pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
         let (input, originating, receiving) = match header.pdu_type {
             // PDUs with only an origin
             PduType::EntityState |
+            PduType::EntityStateUpdate |
             PduType::ElectromagneticEmission |
             PduType::Designator |
             PduType::Transmitter |
             PduType::Signal |
             PduType::Receiver |
+            PduType::SupplementalEmissionEntityState |
+            PduType::UnderwaterAcoustic |
+            PduType::IsGroupOf |
+            PduType::CreateEntityR |
+            PduType::RemoveEntityR |
+            PduType::AggregateState |
             PduType::IFF => {
                 let (input, originating) = peek_originating_field(input)?;
                 (input, Some(originating), None)
@@ -44,35 +51,7 @@ pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             PduType::SetData |
             PduType::Data |
             PduType::EventReport |
-            PduType::Comment => {
-                let (input, (origin, receiving)) = peek_originating_receiving_fields(input)?;
-                (input, Some(origin), Some(receiving))
-            }
-            // All others, and/or not evaluated TODO determine if these PDUs have an originating and receiving ID
-            PduType::UnderwaterAcoustic |
-            PduType::SupplementalEmissionEntityState |
-            PduType::IntercomSignal |
-            PduType::IntercomControl |
-            PduType::AggregateState |
-            PduType::IsGroupOf |
-            PduType::TransferOwnership |
             PduType::IsPartOf |
-            PduType::MinefieldState |
-            PduType::MinefieldQuery |
-            PduType::MinefieldData |
-            PduType::MinefieldResponseNACK |
-            PduType::EnvironmentalProcess |
-            PduType::GriddedData |
-            PduType::PointObjectState |
-            PduType::LinearObjectState |
-            PduType::ArealObjectState |
-            PduType::TSPI |
-            PduType::Appearance |
-            PduType::ArticulatedParts |
-            PduType::LEFire |
-            PduType::LEDetonation |
-            PduType::CreateEntityR |
-            PduType::RemoveEntityR |
             PduType::StartResumeR |
             PduType::StopFreezeR |
             PduType::AcknowledgeR |
@@ -87,7 +66,28 @@ pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             PduType::SetRecordR |
             PduType::RecordQueryR |
             PduType::CollisionElastic |
-            PduType::EntityStateUpdate |
+            PduType::Comment => {
+                let (input, (origin, receiving)) = peek_originating_receiving_fields(input)?;
+                (input, Some(origin), Some(receiving))
+            }
+            // All others, and/or not evaluated TODO determine if these PDUs have an originating and receiving ID when implementing
+            PduType::IntercomSignal |
+            PduType::IntercomControl |
+            PduType::TransferOwnership |
+            PduType::MinefieldState |
+            PduType::MinefieldQuery |
+            PduType::MinefieldData |
+            PduType::MinefieldResponseNACK |
+            PduType::EnvironmentalProcess |
+            PduType::GriddedData |
+            PduType::PointObjectState |
+            PduType::LinearObjectState |
+            PduType::ArealObjectState |
+            PduType::TSPI |
+            PduType::Appearance |
+            PduType::ArticulatedParts |
+            PduType::LEFire |
+            PduType::LEDetonation |
             PduType::DirectedEnergyFire |
             PduType::EntityDamageStatus |
             PduType::InformationOperationsAction |

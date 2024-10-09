@@ -283,7 +283,7 @@ impl Codec for BeamAntennaPattern {
             el_beamwidth: (item.elevation_beamwidth * Self::SCALING) as i16,
             reference_system: item.reference_system,
             e_z: item.e_z as i16, // TODO is this encoding correct?)
-            e_x: item.e_x as i16, // same
+            e_x: item.e_x as i16, // TODO is this encoding correct?)
             phase: (item.phase * Self::SCALING) as i16,
         }
     }

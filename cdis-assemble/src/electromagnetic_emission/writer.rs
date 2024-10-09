@@ -90,7 +90,7 @@ impl SerializeCdis for EmitterBeam {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.fundamental_params_index.is_some() as u8);
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.beam_data_index.is_some() as u8);
-        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.jamming_technique_kind.is_some() as u8); // TODO only considers jamming_technique_kind
+        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, self.jamming_technique_kind.is_some() as u8);
         let track_jam_flag = if let Some(track_jam) = self.track_jam.first() {
             track_jam.beam_number.is_some() & track_jam.emitter_number.is_some()
         } else { false };

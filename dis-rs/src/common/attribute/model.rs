@@ -50,7 +50,6 @@ impl BodyInfo for Attribute {
 }
 
 impl Interaction for Attribute {
-    // TODO cannot assign to a specific entity using only the simulation address
     fn originator(&self) -> Option<&EntityId> {
         None
     }

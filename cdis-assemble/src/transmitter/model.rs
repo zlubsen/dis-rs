@@ -81,12 +81,10 @@ impl BodyProperties for Transmitter {
 
 impl CdisInteraction for Transmitter {
     fn originator(&self) -> Option<&EntityId> {
-        todo!()
+        Some(&self.radio_reference_id)
     }
 
-    fn receiver(&self) -> Option<&EntityId> {
-        todo!()
-    }
+    fn receiver(&self) -> Option<&EntityId> { None }
 }
 
 pub struct TransmitterFieldsPresent;
