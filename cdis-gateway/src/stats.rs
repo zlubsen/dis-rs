@@ -148,7 +148,6 @@ impl GatewayStats {
             }
             Event::UnimplementedDecodedPdu(_pdu_type, size) => {
                 // fail; // TODO test stats of decoder
-                // TODO - unimplemented encoded/decoded still get output to the other socket.
                 self.decoder.unimplemented_count += 1;
                 self.decoder.unimplemented_bytes += size;
             }

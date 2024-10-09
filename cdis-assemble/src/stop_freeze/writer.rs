@@ -24,7 +24,7 @@ impl SerializeCdisPdu for StopFreeze {
 /// Writes the StopFreezeFrozenBehavior bit field to the BitBuffer
 #[allow(clippy::let_and_return)]
 fn serialize_frozen_behavior(buf: &mut BitBuffer, cursor: usize, frozen_behavior: &StopFreezeFrozenBehavior) -> usize {
-    // TODO spec states 2-bit field; StopFreezeFrozenBehavior expects 3 bit flags.
+    // C-DIS v1.0 spec states 2-bit field; StopFreezeFrozenBehavior expects 3 bit flags.
     // Decision here is to use 3 bits for StopFreezeFrozenBehavior
     let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, frozen_behavior.run_simulation_clock.into());
     let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, frozen_behavior.transmit_updates.into());

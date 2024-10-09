@@ -280,7 +280,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
             received = socket.recv_from(&mut buf) => {
                 match received {
                     Ok((bytes_received, from_address)) => {
-                        if socket.local_addr().unwrap() != from_address { // FIXME potential panic, provide a default value...
+                        if socket.local_addr().unwrap_or_default() != from_address {
                             Action::ReceivedPacket(Bytes::copy_from_slice(&buf[..bytes_received]), from_address)
                         } else { Action::BlockedPacket }
                     }

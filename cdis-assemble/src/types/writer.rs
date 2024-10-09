@@ -96,23 +96,6 @@ impl SerializeCdis for SVINT24 {
     }
 }
 
-// #[allow(clippy::let_and_return)]
-// pub(crate) fn serialize_cdis_float_signed<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
-//     let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
-//     let cursor = write_value_signed(buf, cursor, float.exponent_bit_size(), float.exponent());
-//
-//     cursor
-// }
-//
-// #[allow(clippy::let_and_return)]
-// pub(crate) fn serialize_cdis_float_unsigned<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
-//     let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
-//     // TODO figure out if converting i8 to u8 is okay here, or do we need to store float exponents in a larger type.
-//     let cursor = write_value_unsigned(buf, cursor, float.exponent_bit_size(), float.exponent() as u8);
-//
-//     cursor
-// }
-
 /// Serializes a C-DIS Clock Time Record (11.4).
 #[allow(clippy::let_and_return)]
 pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: &ClockTime) -> usize {

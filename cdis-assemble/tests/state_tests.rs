@@ -2,5 +2,5 @@
 // - EntityState
 // - ElectroMagnetic Emission
 // - Designator
-// - ...
-// - ...
+// - Transmitter
+// - IFF

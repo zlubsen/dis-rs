@@ -52,9 +52,8 @@ impl BodyProperties for Transmitter {
     }
 
     fn body_length_bits(&self) -> usize {
-        // FIXME remove additions
         // fields present (8), units (2), full update flag (1), transmit state (2), antenna pattern type (...), antenna pattern length (..), power (..), crypto type (..), crypto key (..), modulation parameters length (..)
-        const CONST_BIT_SIZE: usize = 11 + 2 + 3 + 10 + 8 + 20 + 8;
+        const CONST_BIT_SIZE: usize = 62;
         const VARIABLE_TRANSMITTER_PARAM_CONST_BIT_SIZE: usize = FORTY_EIGHT_BITS;
 
         CONST_BIT_SIZE +

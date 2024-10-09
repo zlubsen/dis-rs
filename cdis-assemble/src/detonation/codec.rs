@@ -2,10 +2,10 @@ use num_traits::Zero;
 use dis_rs::enumerations::{DetonationResult, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse, MunitionDescriptorWarhead};
 use dis_rs::model::{DescriptorRecord, EventId, MunitionDescriptor};
 use crate::codec::Codec;
-use crate::detonation::model::{Detonation, DetonationUnits};
+use crate::detonation::model::{Detonation, DetonationUnits, ExplosiveForceFloat};
 use crate::records::codec::{decode_entity_coordinate_vector, decode_world_coordinates, encode_entity_coordinate_vector, encode_world_coordinates};
 use crate::records::model::{CdisVariableParameter, EntityId, EntityType, LinearVelocity};
-use crate::types::model::UVINT8;
+use crate::types::model::{CdisFloat, UVINT16, UVINT8};
 
 type Counterpart = dis_rs::detonation::model::Detonation;
 
@@ -23,7 +23,9 @@ impl Detonation {
             descriptor_warhead,
             descriptor_fuze,
             descriptor_quantity,
-            descriptor_rate) = encode_detonation_descriptor(&item.descriptor);
+            descriptor_rate,
+            descriptor_explosive_material,
+            descriptor_explosive_force) = encode_detonation_descriptor(&item.descriptor);
         let detonation_result: u8 = item.detonation_result.into();
         let variable_parameters = item.variable_parameters.iter()
             .map(CdisVariableParameter::encode)
@@ -42,6 +44,8 @@ impl Detonation {
             descriptor_fuze,
             descriptor_quantity,
             descriptor_rate,
+            descriptor_explosive_material,
+            descriptor_explosive_force,
             location_in_entity_coordinates,
             detonation_results: UVINT8::from(detonation_result),
             variable_parameters,
@@ -66,21 +70,23 @@ impl Detonation {
     }
 }
 
-fn encode_detonation_descriptor(item : &DescriptorRecord) -> (EntityType, Option<u16>, Option<u16>, Option<u8>, Option<u8>) {
+fn encode_detonation_descriptor(item : &DescriptorRecord) -> (EntityType, Option<u16>, Option<u16>, Option<u8>, Option<u8>, Option<UVINT16>, Option<ExplosiveForceFloat>) {
     match item {
         DescriptorRecord::Munition { entity_type, munition } => {
             let warhead = Some(munition.warhead.into());
             let fuze = Some(munition.fuse.into());
             let quantity = if munition.quantity.is_zero() { None } else { Some(munition.quantity.min(u8::MAX as u16) as u8) };
             let rate = if munition.rate.is_zero() { None } else { Some(munition.rate.min(u8::MAX as u16) as u8) };
-            (EntityType::encode(entity_type), warhead, fuze, quantity, rate)
+            (EntityType::encode(entity_type), warhead, fuze, quantity, rate, None, None)
         }
         DescriptorRecord::Expendable { entity_type } => {
-            (EntityType::encode(entity_type), None, None, None, None)
+            (EntityType::encode(entity_type), None, None, None, None, None, None)
         }
-        DescriptorRecord::Explosion { entity_type, explosive_material: _, explosive_force: _} => {
-            // FIXME the standard is unclear how the explosive material and explosive force values are encoded/decoded by C-DIS
-            (EntityType::encode(entity_type), None, None, None, None)
+        DescriptorRecord::Explosion { entity_type, explosive_material, explosive_force} => {
+            // TODO remove comment or change impl when the standard defines how the explosive material and explosive force values are encoded/decoded by C-DIS
+            let explosive_material: u16 = (*explosive_material).into();
+            let explosive_material = UVINT16::from(explosive_material);
+            (EntityType::encode(entity_type), None, None, None, None, Some(explosive_material), Some(ExplosiveForceFloat::from_float(*explosive_force)))
         }
     }
 }
@@ -98,8 +104,10 @@ fn decode_detonation_descriptor(detonation_body: &Detonation, entity_type: dis_r
             DescriptorRecord::new_expendable(entity_type)
         }
         _ => {
-            // FIXME the standard is unclear how the explosive material and explosive force values are encoded/decoded by C-DIS
-            DescriptorRecord::new_explosion(entity_type, ExplosiveMaterialCategories::NoStatement, 0.0)
+            // TODO remove comment or change impl when the standard defines how the explosive material and explosive force values are encoded/decoded by C-DIS
+            let explosive_material = detonation_body.descriptor_explosive_material.map(|record| record.value).unwrap_or_default();
+            let explosive_force = detonation_body.descriptor_explosive_force.map(|float| float.to_float()).unwrap_or_default();
+            DescriptorRecord::new_explosion(entity_type, ExplosiveMaterialCategories::from(explosive_material), explosive_force)
         }
     }
 }
@@ -191,6 +199,8 @@ mod tests {
             descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
             descriptor_quantity: Some(1),
             descriptor_rate: Some(0),
+            descriptor_explosive_material: None,
+            descriptor_explosive_force: None,
             location_in_entity_coordinates: EntityCoordinateVector::new(SVINT16::from(10), SVINT16::from(10), SVINT16::from(10)),
             detonation_results: UVINT8::from(5),
             variable_parameters: vec![],
@@ -241,6 +251,8 @@ mod tests {
             descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
             descriptor_quantity: Some(1),
             descriptor_rate: Some(0),
+            descriptor_explosive_material: None,
+            descriptor_explosive_force: None,
             location_in_entity_coordinates: EntityCoordinateVector::new(SVINT16::from(10), SVINT16::from(10), SVINT16::from(10)),
             detonation_results: UVINT8::from(5),
             variable_parameters: vec![],
