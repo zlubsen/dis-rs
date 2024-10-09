@@ -1,6 +1,6 @@
 use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain};
-use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation, PduBody};
+use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation, PduBody, VectorF32};
 use std::time::Instant;
 use crate::{BodyProperties, CdisBody};
 use crate::codec::{Codec, CodecOptimizeMode, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
@@ -108,7 +108,7 @@ impl EntityState {
         } else { None };
         let entity_linear_velocity = encode_ent_linear_velocity(item);
         let dr_params_other = encode_dr_params_other(item);
-        let dr_params_entity_linear_acceleration = encode_dr_linear_acceleration(item);
+        let dr_params_entity_linear_acceleration = encode_dr_linear_acceleration(item.dead_reckoning_parameters.algorithm, &item.dead_reckoning_parameters.linear_acceleration);
         let dr_params_entity_angular_velocity = encode_dr_angular_velocity(item);
         let capabilities = encode_entity_capabilities(item, options);
 
@@ -285,7 +285,7 @@ fn encode_entity_capabilities(item: &Counterpart, options: &CodecOptions) -> Opt
 }
 
 /// Encodes the Dead Reckoning Parameters Other field, when the DR Algorithm requires it , and the DIS on-wire are non-zero.
-fn encode_dr_params_other(item: &Counterpart) -> Option<CdisDRParametersOther> {
+pub fn encode_dr_params_other(item: &Counterpart) -> Option<CdisDRParametersOther> {
     let other_params = CdisDRParametersOther::from(&item.dead_reckoning_parameters.other_parameters);
     if item.dead_reckoning_parameters.algorithm != DeadReckoningAlgorithm::Other
         && other_params.0 != 0 {
@@ -296,13 +296,13 @@ fn encode_dr_params_other(item: &Counterpart) -> Option<CdisDRParametersOther> {
 }
 
 /// Encodes the Dead Reckoning Linear Acceleration field when the Dead Reckoning Algorithm requires it (no 4, 5, 8 and 9).
-fn encode_dr_linear_acceleration(item: &Counterpart) -> Option<LinearAcceleration> {
-    match item.dead_reckoning_parameters.algorithm {
+pub(crate) fn encode_dr_linear_acceleration(algorithm: DeadReckoningAlgorithm, linear_acceleration: &VectorF32) -> Option<LinearAcceleration> {
+    match algorithm {
         DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
         DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
         DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates |
         DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
-            Some(LinearAcceleration::encode(&item.dead_reckoning_parameters.linear_acceleration))
+            Some(LinearAcceleration::encode(linear_acceleration))
         }
         _ => { None }
     }
