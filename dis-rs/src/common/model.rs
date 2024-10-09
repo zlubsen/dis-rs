@@ -1051,7 +1051,7 @@ impl MunitionDescriptor {
     }
 }
 
-/// Custom type to model timestamps, just wrapping a `u32` value. By default
+/// Custom type to model timestamps, just wrapping a `u32` value. By default,
 /// the `PduHeader` uses this type. Users can decide to convert the raw value
 /// to a `DisTimeStamp`, which models the Absolute and Relative interpretations of the value as defined by the standard.
 ///
@@ -1100,11 +1100,11 @@ impl From<DisTimeStamp> for TimeStamp {
 }
 
 /// A timestamp type that models the timestamp mechanism as described in the
-/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets a u32 value
+/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets an u32 value
 /// as an Absolute or a Relative timestamp based on the Least Significant Bit.
 /// The remaining (upper) bits represent the units of time passed since the
 /// beginning of the current hour in the selected time reference.
-/// The `DisTimeStamp` stores both the units past the hour, as well as a conversion to
+/// The `DisTimeStamp` stores both the units past the hour, and a conversion to
 /// nanoseconds past the hour.
 #[derive(Debug)]
 pub enum DisTimeStamp {
