@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn detonation_body_encode_units_centimeters() {
         let mut state = EncoderState::new();
-        let options = CodecOptions::new_partial_update().use_guise(true);
+        let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_detonation_body()
             .with_entity_location(VectorF32::new(50.0, 0.0, 0.0))
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn detonation_body_encode_units_meters() {
         let mut state = EncoderState::new();
-        let options = CodecOptions::new_partial_update().use_guise(true);
+        let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_detonation_body()
             .with_entity_location(VectorF32::new(33000.0, 0.0, 0.0))
