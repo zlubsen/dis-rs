@@ -26,7 +26,6 @@ impl Encoder {
                 CodecUpdateMode::PartialUpdate => { CodecUpdateMode::PartialUpdate }
             },
             optimize_mode: config.optimization.0,
-            use_guise: config.use_guise,
             federation_parameters: config.federation_parameters,
             hbt_cdis_full_update_mplier: config.hbt_cdis_full_update_mplier,
         };
@@ -113,7 +112,6 @@ impl Decoder {
                 CodecUpdateMode::PartialUpdate => { CodecUpdateMode::PartialUpdate }
             },
             optimize_mode: config.optimization.0,
-            use_guise: config.use_guise,
             federation_parameters: config.federation_parameters,
             hbt_cdis_full_update_mplier: config.hbt_cdis_full_update_mplier,
         };

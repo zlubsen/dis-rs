@@ -105,7 +105,6 @@ pub enum CodecOptimizeMode {
 pub struct CodecOptions {
     pub update_mode: CodecUpdateMode,
     pub optimize_mode: CodecOptimizeMode,
-    pub use_guise: bool,
     pub federation_parameters: VariableParameters,
     pub hbt_cdis_full_update_mplier: f32,
 }
@@ -115,7 +114,6 @@ impl CodecOptions {
         Self {
             update_mode: Default::default(),
             optimize_mode: Default::default(),
-            use_guise: false,
             federation_parameters: Default::default(),
             hbt_cdis_full_update_mplier: DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER
         }
@@ -125,15 +123,9 @@ impl CodecOptions {
         Self {
             update_mode: CodecUpdateMode::PartialUpdate,
             optimize_mode: Default::default(),
-            use_guise: false,
             federation_parameters: Default::default(),
             hbt_cdis_full_update_mplier: DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER,
         }
-    }
-
-    pub fn use_guise(mut self, use_guise: bool) -> Self {
-        self.use_guise = use_guise;
-        self
     }
 
     pub fn optimize_bandwidth(mut self) -> Self {

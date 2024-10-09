@@ -39,7 +39,6 @@ pub(crate) fn decode_entity_state_body_and_update_state(cdis_body: &EntityState,
                 es.heartbeat = Instant::now();
                 es.force_id = dis_body.force_id;
                 es.entity_type = dis_body.entity_type;
-                es.alt_entity_type = dis_body.alternative_entity_type;
                 es.entity_location = dis_body.entity_location;
                 es.entity_orientation = dis_body.entity_orientation;
                 es.entity_appearance = dis_body.entity_appearance;
@@ -68,7 +67,6 @@ pub struct DecoderStateEntityState {
     pub heartbeat: Instant,
     pub force_id: ForceId,
     pub entity_type: DisEntityType,
-    pub alt_entity_type: DisEntityType,         // FIXME not part of the state according to the spec (GREEN)
     pub entity_location: DisLocation,
     pub entity_orientation: DisOrientation,
     pub entity_appearance: EntityAppearance,
@@ -81,7 +79,6 @@ impl DecoderStateEntityState {
             heartbeat: Instant::now(),
             force_id: pdu.force_id,
             entity_type: pdu.entity_type,
-            alt_entity_type: pdu.alternative_entity_type,
             entity_location: pdu.entity_location,
             entity_orientation: pdu.entity_orientation,
             entity_appearance: pdu.entity_appearance,
@@ -96,7 +93,6 @@ impl Default for DecoderStateEntityState {
             heartbeat: Instant::now(),
             force_id: Default::default(),
             entity_type: Default::default(),
-            alt_entity_type: Default::default(),
             entity_location: DisLocation::default(),
             entity_orientation: Default::default(),
             entity_appearance: Default::default(),
@@ -107,6 +103,9 @@ impl Default for DecoderStateEntityState {
 
 impl EntityState {
     pub fn encode(item: &Counterpart, state: Option<&EncoderStateEntityState>, options: &CodecOptions) -> (Self, CodecStateResult) {
+        let alternate_entity_type = if item.alternative_entity_type != DisEntityType::default() {
+            Some(EntityType::encode(&item.alternative_entity_type))
+        } else { None };
         let entity_linear_velocity = encode_ent_linear_velocity(item);
         let dr_params_other = encode_dr_params_other(item);
         let dr_params_entity_linear_acceleration = encode_dr_linear_acceleration(item);
@@ -118,7 +117,6 @@ impl EntityState {
             full_update_flag,
             force_id,
             entity_type,
-            alternate_entity_type,
             entity_location,
             entity_orientation,
             entity_appearance,
@@ -128,19 +126,15 @@ impl EntityState {
             && state.is_some_and(|state|
                 !evaluate_timeout_for_entity_type(&item.entity_type, &state.heartbeat, options) ) {
             // Do not update stateful fields when a full update is not required
-            (UnitsDekameters::Dekameter, false, None, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
+            (UnitsDekameters::Dekameter, false, None, None, None, None, None, None, CodecStateResult::StateUnaffected )
         } else {
             // full update mode, or partial with a (state) timeout on the entity
             let (entity_location, units) = encode_world_coordinates(&item.entity_location);
-            let alternate_entity_type = if options.use_guise {
-                Some(EntityType::encode(&item.alternative_entity_type))
-            } else { None };
             (
                 units,
                 true,
                 Some(UVINT8::from(u8::from(item.force_id))),
                 Some(EntityType::encode(&item.entity_type)),
-                alternate_entity_type,
                 Some(entity_location),
                 Some(Orientation::encode(&item.entity_orientation)),
                 Some((&item.entity_appearance).into()),
@@ -178,7 +172,6 @@ impl EntityState {
         let (
             force_id,
             entity_type,
-            alternate_entity_type,
             entity_location,
             entity_orientation,
             entity_appearance,
@@ -191,7 +184,6 @@ impl EntityState {
                     (
                         ForceId::from(self.force_id.map(|record| record.value).unwrap_or_default()),
                         entity_type,
-                        self.alternate_entity_type.map(|record| record.decode()).unwrap_or_default(),
                         self.entity_location
                             .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
                             .unwrap_or_default(),
@@ -210,7 +202,6 @@ impl EntityState {
                         (
                             ForceId::from(self.force_id.unwrap_or_default().value),
                             entity_type,
-                            self.alternate_entity_type.unwrap_or_default().decode(),
                             self.entity_location
                                 .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
                                 .unwrap_or_default(),
@@ -228,7 +219,6 @@ impl EntityState {
                         (
                             self.force_id.map(|record| ForceId::from(record.value)).unwrap_or_else(|| if let Some(state) = state { state.force_id } else { ForceId::default() } ),
                             entity_type,
-                            self.alternate_entity_type.map(|record| record.decode()).unwrap_or_else(|| if let Some(state) = state { state.alt_entity_type } else { DisEntityType::default() } ),
                             self.entity_location
                                 .map(| world_coordinates | decode_world_coordinates(&world_coordinates, self.units) )
                                 .unwrap_or_else(|| if let Some(state) = state { state.entity_location } else { DisLocation::default() } ),
@@ -243,6 +233,9 @@ impl EntityState {
                     }
                 }
             };
+
+
+        let alternate_entity_type = self.alternate_entity_type.map(|record| record.decode()).unwrap_or_default();
 
         (Counterpart::builder()
             .with_entity_id(self.entity_id.decode())
@@ -498,7 +491,7 @@ mod tests {
     #[test]
     fn entity_state_body_encode_use_guise() {
         let mut state = EncoderState::new();
-        let options = CodecOptions::new_partial_update().use_guise(true);
+        let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_entity_state_body()
             .with_alternative_entity_type(DisEntityType::default()
@@ -722,7 +715,6 @@ mod tests {
             heartbeat: Instant::now(),
             force_id: ForceId::Friendly8,
             entity_type: DisEntityType::from_str("1:2:3:4:5:6:7").unwrap(),
-            alt_entity_type: DisEntityType::from_str("3:3:3:3:3:3:3").unwrap(),
             entity_location: Location::new(20000.0, 20000.0, 20000.0),
             entity_orientation: DisOrientation::new(10.0, 10.0, 10.0),
             entity_appearance: EntityAppearance::default(),
@@ -757,7 +749,6 @@ mod tests {
         if let PduBody::EntityState(es) = dis_body {
             assert_eq!(es.entity_id, DisEntityId::new(10, 10, 10));
             assert_eq!(es.entity_type, DisEntityType::from_str("1:2:3:4:5:6:7").unwrap());
-            assert_eq!(es.alternative_entity_type, DisEntityType::from_str("3:3:3:3:3:3:3").unwrap());
             assert_eq!(es.force_id, ForceId::Friendly8);
             assert_eq!(es.entity_marking.marking_string, "STATE15".to_string())
         } else {

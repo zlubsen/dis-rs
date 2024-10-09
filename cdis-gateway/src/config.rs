@@ -11,7 +11,6 @@ const DEFAULT_ENDPOINT_MODE: UdpMode = UdpMode::UniCast;
 const DEFAULT_GATEWAY_MODE: CodecUpdateMode = CodecUpdateMode::FullUpdate;
 const DEFAULT_SITE_HOST_PORT: u16 = 8080;
 const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
-const DEFAULT_ENCODER_USE_GUISE: bool = false;
 const DEFAULT_ENCODER_OPTIMIZATION: CodecOptimizeMode = CodecOptimizeMode::Completeness;
 
 #[derive(Clone, Debug)]
@@ -22,7 +21,6 @@ pub(crate) struct Config {
     pub(crate) site_host: u16,
     pub(crate) federation_parameters: VariableParameters,
     pub(crate) hbt_cdis_full_update_mplier: f32,
-    pub(crate) use_guise: bool,
     pub(crate) optimization: EncoderOptimization,
     pub(crate) meta: MetaData,
 }
@@ -47,13 +45,11 @@ impl TryFrom<&ConfigSpec> for Config {
         } else { DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER };
         let federation_parameters = set_federation_parameters(&value.federation);
 
-        let (use_guise, optimization) = if let Some(encoder) = &value.encoder {
-            let use_guise = encoder.use_guise
-                .map_or(DEFAULT_ENCODER_USE_GUISE, | val | val );
+        let optimization = if let Some(encoder) = &value.encoder {
             let optimization = encoder.optimization.as_ref()
                 .map_or(Ok(EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)), |val| EncoderOptimization::try_from(val.as_str()) )?;
-            (use_guise, optimization)
-        } else { (DEFAULT_ENCODER_USE_GUISE, EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)) };
+            optimization
+        } else { EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION) };
 
         let meta = if let Some(meta) = &value.metadata {
             meta.clone()
@@ -66,7 +62,6 @@ impl TryFrom<&ConfigSpec> for Config {
             site_host,
             federation_parameters,
             hbt_cdis_full_update_mplier,
-            use_guise,
             optimization,
             meta
         })
@@ -357,7 +352,6 @@ pub struct SiteSpec {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct EncoderSpec {
-    pub use_guise: Option<bool>,
     pub optimization: Option<String>,
 }
 

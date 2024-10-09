@@ -45,10 +45,6 @@ port = 8080
 
 # The `encoder` entry specifies settings for the encoding/decoding of PDUs.
 [encoder]
-# `use_guise` indicates that the federation uses the Guise function, i.e. the interpretation of the alternate entity type in the Entity State PDU
-# It takes a boolean value, `true` or `false`. Optional, defaults to `false`.
-# When set to `true`, the alternate entity type is not encoded in C-DIS PDUs.
-use_guise = false
 # `optimization` sets the type of processing the gateway will optimize for. The field takes a string value, either "bandwidth" or "completeness".
 # Optional value.
 # In practice, optimizing for `bandwidth` means that the EntityState PDU fields 'DR Other Parameters' and 'Capabilities' are never encoded and transmitted over C-DIS.
