@@ -1,6 +1,7 @@
 use crate::detonation::model::Detonation;
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 use crate::constants::{EIGHT_BITS, ONE_BIT};
+use crate::types::model::CdisFloat;
 use crate::writing::{serialize_when_present, SerializeCdis, write_value_unsigned};
 
 impl SerializeCdisPdu for Detonation {
@@ -26,6 +27,11 @@ impl SerializeCdisPdu for Detonation {
 
         let cursor = serialize_when_present(&self.descriptor_quantity, buf, cursor);
         let cursor = serialize_when_present(&self.descriptor_rate, buf, cursor);
+
+        let cursor = serialize_when_present(&self.descriptor_explosive_material, buf, cursor);
+        let cursor = if let Some(explosive_force) = &self.descriptor_explosive_force {
+            explosive_force.serialize(buf, cursor)
+        } else { cursor };
 
         let cursor = self.location_in_entity_coordinates.serialize(buf, cursor);
         let cursor = self.detonation_results.serialize(buf, cursor);

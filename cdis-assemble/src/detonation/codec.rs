@@ -83,7 +83,6 @@ fn encode_detonation_descriptor(item : &DescriptorRecord) -> (EntityType, Option
             (EntityType::encode(entity_type), None, None, None, None, None, None)
         }
         DescriptorRecord::Explosion { entity_type, explosive_material, explosive_force} => {
-            // TODO remove comment or change impl when the standard defines how the explosive material and explosive force values are encoded/decoded by C-DIS
             let explosive_material: u16 = (*explosive_material).into();
             let explosive_material = UVINT16::from(explosive_material);
             (EntityType::encode(entity_type), None, None, None, None, Some(explosive_material), Some(ExplosiveForceFloat::from_float(*explosive_force)))
@@ -104,7 +103,6 @@ fn decode_detonation_descriptor(detonation_body: &Detonation, entity_type: dis_r
             DescriptorRecord::new_expendable(entity_type)
         }
         _ => {
-            // TODO remove comment or change impl when the standard defines how the explosive material and explosive force values are encoded/decoded by C-DIS
             let explosive_material = detonation_body.descriptor_explosive_material.map(|record| record.value).unwrap_or_default();
             let explosive_force = detonation_body.descriptor_explosive_force.map(|float| float.to_float()).unwrap_or_default();
             DescriptorRecord::new_explosion(entity_type, ExplosiveMaterialCategories::from(explosive_material), explosive_force)

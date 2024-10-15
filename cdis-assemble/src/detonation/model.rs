@@ -1,11 +1,11 @@
 use nom::complete::take;
 use nom::IResult;
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{EIGHT_BITS, FOUR_BITS, SIXTEEN_BITS, TWENTY_BITS, TWO_BITS};
-use crate::parsing::BitInput;
+use crate::constants::{EIGHT_BITS, FIFTEEN_BITS, FOUR_BITS, SIXTEEN_BITS, THREE_BITS, TWO_BITS};
+use crate::parsing::{take_signed, BitInput};
 use crate::records::model::{CdisRecord, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters, WorldCoordinates};
 use crate::types::model::{UVINT8, VarInt, UVINT16, CdisFloat};
-use crate::writing::write_value_unsigned;
+use crate::writing::{write_value_signed, write_value_unsigned};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Detonation {
@@ -36,6 +36,7 @@ impl BodyProperties for Detonation {
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
         (if self.descriptor_warhead.is_some() && self.descriptor_fuze.is_some() { Self::FieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT } else { 0 })
             | (if self.descriptor_quantity.is_some() && self.descriptor_rate.is_some() { Self::FieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT } else { 0 })
+            | (if self.descriptor_explosive_material.is_some() && self.descriptor_explosive_force.is_some() { Self::FieldsPresent::DESCRIPTOR_EXPLOSIVE_BIT } else { 0 })
             | (if !self.variable_parameters.is_empty() { Self::FieldsPresent::VARIABLE_PARAMETERS_BIT } else { 0 })
     }
 
@@ -107,8 +108,8 @@ impl From<u8> for DetonationUnits {
 /// TODO not part of the v1.0 standard - need to align the actual encoding once standardized.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct ExplosiveForceFloat {
-    mantissa: u32,
-    exponent: u8,
+    mantissa: u16,
+    exponent: i8,
 }
 
 impl ExplosiveForceFloat {
@@ -118,11 +119,11 @@ impl ExplosiveForceFloat {
 }
 
 impl CdisFloat for ExplosiveForceFloat {
-    type Mantissa = u32;
-    type Exponent = u8;
+    type Mantissa = u16;
+    type Exponent = i8;
     type InnerFloat = f32;
-    const MANTISSA_BITS: usize = TWENTY_BITS;
-    const EXPONENT_BITS: usize = FOUR_BITS;
+    const MANTISSA_BITS: usize = FIFTEEN_BITS;
+    const EXPONENT_BITS: usize = THREE_BITS;
 
     fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
         Self {
@@ -152,18 +153,19 @@ impl CdisFloat for ExplosiveForceFloat {
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
         let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
-        let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
+        let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
+        let exponent = exponent as i8;
 
         Ok((input, Self {
             mantissa,
-            exponent
+            exponent,
         }))
     }
 
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+        let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
 
         cursor
     }
