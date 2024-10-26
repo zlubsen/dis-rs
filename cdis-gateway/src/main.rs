@@ -224,7 +224,6 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             }
         }
         (false, UdpMode::UniCast) => {
-            // TODO use .inspect_err() ?
             socket.bind(&endpoint.interface.into()).unwrap_or_else(|_| panic!("Failed to bind to IPv6 address {:?}", endpoint.address));
         }
         (false, UdpMode::BroadCast) => {
