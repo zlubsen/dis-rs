@@ -51,7 +51,7 @@ impl Node for UdpNode {
                 _ = self.socket.recv(&mut self.buffer) => {
                     ()
                 }
-                _ = self.incoming => {
+                _ = incoming => {
                     ()
                 }
                 _ = self.socket.recv(&mut self.buffer) => {

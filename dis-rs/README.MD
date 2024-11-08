@@ -12,81 +12,81 @@ The library supports both versions 6 and 7 of the standard. As a rule of thumb, 
 
 Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means reading a PDU from a byte stream. 'Write' means constructing a PDU in a struct and serializing it to a buffer. 
 
-| PDU                             | Support |
-|---------------------------------|-|
-| Other                           | V |
-| EntityState                     | V |
-| Fire                            | V |
-| Detonation                      | V |
-| Collision                       | V |
-| ServiceRequest                  | V |
-| ResupplyOffer                   | V |
-| ResupplyReceived                | V |
-| ResupplyCancel                  | V |
-| RepairComplete                  | V |
-| RepairResponse                  | V |
-| CreateEntity                    | V |
-| RemoveEntity                    | V |
-| StartResume                     | V |
-| StopFreeze                      | V |
-| Acknowledge                     | V |
-| ActionRequest                   | V |
-| ActionResponse                  | V |
-| DataQuery                       | V |
-| SetData                         | V |
-| Data                            | V |
-| EventReport                     | V |
-| Comment                         | V |
-| ElectromagneticEmission         | V |
-| Designator                      | V |
-| Transmitter                     | V |
-| Signal                          | V |
-| Receiver                        | V |
-| IFF                             | V |
-| UnderwaterAcoustic              | V |
+| PDU                          | Support |
+|------------------------------|-|
+| Other                        | V |
+| EntityState                  | V |
+| Fire                         | V |
+| Detonation                   | V |
+| Collision                    | V |
+| ServiceRequest               | V |
+| ResupplyOffer                | V |
+| ResupplyReceived             | V |
+| ResupplyCancel               | V |
+| RepairComplete               | V |
+| RepairResponse               | V |
+| CreateEntity                 | V |
+| RemoveEntity                 | V |
+| StartResume                  | V |
+| StopFreeze                   | V |
+| Acknowledge                  | V |
+| ActionRequest                | V |
+| ActionResponse               | V |
+| DataQuery                    | V |
+| SetData                      | V |
+| Data                         | V |
+| EventReport                  | V |
+| Comment                      | V |
+| ElectromagneticEmission      | V |
+| Designator                   | V |
+| Transmitter                  | V |
+| Signal                       | V |
+| Receiver                     | V |
+| IFF                          | V |
+| UnderwaterAcoustic           | V |
 | SupplementalEmissionEntityState | V |
-| IntercomSignal                  | |
-| IntercomControl                 | |
-| AggregateState                  | V |
-| IsGroupOf                       | V |
-| TransferOwnership               | V |
-| IsPartOf                        | V |
-|   MinefieldState | |
-|   MinefieldQuery | |
-|    MinefieldData | |
-|    MinefieldResponseNACK | |
-|    EnvironmentalProcess | |
-|    GriddedData | |
-|    PointObjectState | |
-|    LinearObjectState | |
-|    ArealObjectState | |
-|    TSPI | |
-|    Appearance | |
-|    ArticulatedParts | |
-|    LEFire | |
-|    LEDetonation | |
-|     CreateEntityR | V |
-|     RemoveEntityR | V |
-|     StartResumeR | V |
-|     StopFreezeR | V |
-|     AcknowledgeR | V |
-|     ActionRequestR | V |
-|     ActionResponseR | V |
-|     DataQueryR | V |
-|     SetDataR | V |
-|     DataR | V |
-|     EventReportR | V |
-|     CommentR | V |
-|     RecordR | V |
-|     SetRecordR | V |
-|     RecordQueryR | V |
-|     CollisionElastic | V |
-|     EntityStateUpdate | V |
-|    DirectedEnergyFire | |
-|    EntityDamageStatus | |
-|    InformationOperationsAction | |
-|    InformationOperationsReport | |
-|    Attribute | V |
+| IntercomSignal               | |
+| IntercomControl              | |
+| AggregateState               | V |
+| IsGroupOf                    | V |
+| TransferOwnership            | V |
+| IsPartOf                     | V |
+| MinefieldState | |
+| MinefieldQuery | |
+| MinefieldData | |
+| MinefieldResponseNACK | |
+| EnvironmentalProcess | |
+| GriddedData | |
+| PointObjectState | |
+| LinearObjectState | |
+| ArealObjectState | |
+| TSPI | |
+| Appearance | |
+| ArticulatedParts | |
+| LEFire | |
+| LEDetonation | |
+| CreateEntityR | V |
+| RemoveEntityR | V |
+| StartResumeR | V |
+| StopFreezeR | V |
+| AcknowledgeR | V |
+| ActionRequestR | V |
+| ActionResponseR | V |
+| DataQueryR | V |
+| SetDataR | V |
+| DataR | V |
+| EventReportR | V |
+| CommentR | V |
+| RecordR | V |
+| SetRecordR | V |
+| RecordQueryR | V |
+| CollisionElastic | V |
+| EntityStateUpdate | V |
+| DirectedEnergyFire | |
+| EntityDamageStatus | |
+| InformationOperationsAction | |
+| InformationOperationsReport | |
+| Attribute | V |
 
 ### Enumerations
 dis-rs uses the SISO-REF-010 reference to map the wire level encoding to actual names of enumerations and values in code.

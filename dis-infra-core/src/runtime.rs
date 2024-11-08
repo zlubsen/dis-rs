@@ -5,7 +5,7 @@ use crate::error::InfraError;
 
 pub struct InfraRuntime {
     async_runtime: Runtime,
-    nodes: Vec<dyn Node>,
+    nodes: Vec<Node>,
 }
 
 impl InfraRuntime {
