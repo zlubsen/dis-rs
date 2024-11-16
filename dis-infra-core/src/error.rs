@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::io;
 
 #[derive(Debug)]
-pub(crate) enum InfraError {
+pub enum InfraError {
     // ConfigFileLoad(io::Error),
     // ConfigFileRead(io::Error),
     // ConfigFileParse(toml::de::Error),
