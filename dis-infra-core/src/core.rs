@@ -1,4 +1,6 @@
 use std::any::Any;
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 use std::time::Duration;
 use bytes::{Bytes, BytesMut};
@@ -6,8 +8,10 @@ use tokio::net::UdpSocket;
 use tokio::task::JoinHandle;
 use crate::runtime::{Command, Event};
 
+pub type InstanceId = u64;
+
 pub(crate) struct BaseNode {
-    pub(crate) instance_id: u64,
+    pub(crate) instance_id: InstanceId,
     pub(crate) cmd_rx: tokio::sync::broadcast::Receiver<Command>,
     pub(crate) event_tx: tokio::sync::mpsc::Sender<Event>,
 }
@@ -149,6 +153,10 @@ pub(crate) struct BaseNode {
 // }
 
 ////
+
+pub enum InfraError {
+    SubscribeToChannelError { instance_id: InstanceId },
+}
 
 pub trait NodeData {
     fn request_subscription(&self) -> Box<dyn Any>;
