@@ -2,7 +2,7 @@ use bytes::{Bytes, BytesMut};
 use futures::stream::FuturesUnordered;
 use tokio::select;
 use tokio::sync::broadcast::{Sender, Receiver};
-use crate::core::{BaseNode, Node};
+use crate::core::{BaseNode, NodeData};
 
 // pub(crate) struct UdpNode {
 //     base_node: BaseNode,

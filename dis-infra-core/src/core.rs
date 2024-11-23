@@ -1,21 +1,10 @@
 use std::any::Any;
+use std::sync::Arc;
 use std::time::Duration;
 use bytes::{Bytes, BytesMut};
 use tokio::net::UdpSocket;
 use tokio::task::JoinHandle;
 use crate::runtime::{Command, Event};
-
-pub trait Node {
-    // const NAME: &'static str; // const UUID: u64;
-    // type Input;
-    // type Output;
-
-    fn node_name() -> &'static str;
-    fn node_instance_id(&self) -> u64;
-    async fn run(&mut self);
-    // /// Call `subscribe()` to obtain a receiver for this node, outputting the data from the node
-    // fn subscribe(&self) -> tokio::sync::broadcast::Receiver<dyn Any>;
-}
 
 pub(crate) struct BaseNode {
     pub(crate) instance_id: u64,
@@ -164,12 +153,14 @@ pub(crate) struct BaseNode {
 pub trait NodeData {
     fn request_subscription(&self) -> Box<dyn Any>;
     fn register_subscription(&mut self, receiver: Box<dyn Any>);
+
+    fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()>;
 }
 
 pub trait NodeRunner {
     type Data;
 
-    fn with_data(data: Box<dyn Any>) -> Result<Self, ()> where Self: Sized;
+    fn spawn_with_data(data: Self::Data) -> JoinHandle<()>;
     async fn run(&mut self);
 }
 
@@ -214,20 +205,20 @@ impl NodeData for NodeOneData {
             println!("Could not downcast");
         }
     }
+
+    fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        NodeOneRunner::spawn_with_data(*self)
+    }
 }
 
 impl NodeRunner for NodeOneRunner {
     type Data = NodeOneData;
 
-    fn with_data(data: Box<dyn Any>) -> Result<Self, ()> {
-        // Self {
-        //     data
-        // }
-        if let Ok(data) = data.downcast::<Self::Data>() {
-            Ok(Self {
-                data: *data,
-            })
-        } else { Err(()) }
+    fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+        let mut node_runner = Self {
+            data
+        };
+        tokio::spawn(async move { node_runner.run().await })
     }
 
     async fn run(&mut self) {
@@ -306,20 +297,20 @@ impl NodeData for NodeTwoData {
             println!("Could not downcast");
         }
     }
+
+    fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        NodeTwoRunner::spawn_with_data(*self)
+    }
 }
 
 impl NodeRunner for NodeTwoRunner {
     type Data = NodeTwoData;
 
-    fn with_data(data: Box<dyn Any>) -> Result<Self, ()> {
-        // Self {
-        //     data
-        // }
-        if let Ok(data) = data.downcast::<Self::Data>() {
-            Ok(Self {
-                data: *data,
-            })
-        } else { Err(()) }
+    fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+        let mut node_runner = Self {
+            data
+        };
+        tokio::spawn(async move { node_runner.run().await })
     }
 
     async fn run(&mut self) {

@@ -1,9 +1,10 @@
-use std::any::{type_name, Any};
-use std::ops::Deref;
+use std::any::Any;
+use std::ops::Add;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::signal;
 use tokio::task::{JoinSet};
+use tokio::time::Instant;
 use crate::core::{NodeData, NodeOneData, NodeOneRunner, NodeRunner, NodeTwoData, NodeTwoRunner};
 use crate::error::InfraError;
 
@@ -33,25 +34,29 @@ impl InfraRuntime {
 
     pub fn run(&self) {
         self.async_runtime.block_on( async {
-            // let mut node_one_data: Box<dyn NodeData> = Box::new(NodeOneData::new(1, self.command_tx.subscribe(), self.event_tx.clone()));
-            // let mut node_two_data: Box<dyn NodeData> = Box::new(NodeTwoData::new(2, self.command_tx.subscribe(), self.event_tx.clone()));
-            let mut node_one_data = Box::new(NodeOneData::new(1, self.command_tx.subscribe(), self.event_tx.clone()));
-            let mut node_two_data = Box::new(NodeTwoData::new(2, self.command_tx.subscribe(), self.event_tx.clone()));
+            let mut node_one_data: Box<dyn NodeData> = Box::new(NodeOneData::new(1, self.command_tx.subscribe(), self.event_tx.clone()));
+            let mut node_two_data: Box<dyn NodeData> = Box::new(NodeTwoData::new(2, self.command_tx.subscribe(), self.event_tx.clone()));
 
+            // connect the nodes
+            let node_one_receiver = node_one_data.request_subscription();
+            node_two_data.register_subscription(node_one_receiver);
+
+            // connect the first node to an input channel, for testing
             let (node_one_input_tx, node_one_input_rx) = tokio::sync::broadcast::channel::<u8>(10);
             let dyn_tx: Box<dyn Any> = Box::new(node_one_input_rx);
             node_one_data.register_subscription(dyn_tx);
 
-            let node_one_receiver = node_one_data.request_subscription();
-            node_two_data.register_subscription(node_one_receiver);
-
+            // connect the last node to an output channel, for testing
             let node_two_receiver = node_two_data.request_subscription();
             let mut node_two_receiver = if let Ok(receiver) = node_two_receiver.downcast::<tokio::sync::broadcast::Receiver<u16>>() {
                 *receiver
             } else { panic!("Downcast error") };
 
-            let node_one = tokio::spawn(async move { NodeOneRunner::with_data(node_one_data).unwrap().run().await });
-            let node_two = tokio::spawn(async move { NodeTwoRunner::with_data(node_two_data).unwrap().run().await });
+            let node_one = node_one_data.spawn_into_runner();
+            let node_two = node_two_data.spawn_into_runner();
+
+            let mut timeout_interval = tokio::time::interval_at(Instant::now().add(Duration::from_secs(15)), Duration::from_secs(1));
+            let mut input_interval = tokio::time::interval_at(Instant::now().add(Duration::from_secs(3)), Duration::from_secs(3));
 
             loop {
                 tokio::select! {
@@ -59,13 +64,13 @@ impl InfraRuntime {
                         println!("\nReceived shutdown signal from terminal");
                         break;
                     }
-                    _ = tokio::time::sleep(Duration::from_secs(15)) => {
+                    _ = timeout_interval.tick() => {
                         println!("Timeout, shutting down");
                         break;
                     }
-                    _ = tokio::time::sleep(Duration::from_secs(3)) => {
+                    _ = input_interval.tick() => {
                         match node_one_input_tx.send(123) {
-                            Ok(a) => {
+                            Ok(_num_receivers) => {
                                 println!("Sent input to NodeOne (123)");
                             }
                             Err(err) => {
@@ -133,8 +138,6 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
-    // RequestSubscription{ addressed_node_id: u8, callback: tokio::sync::oneshot::Sender<tokio::sync::broadcast::Receiver<Box<dyn Any>>> },
-    // RegisterSubscription{ addressed_node_id: u8, channel: tokio::sync::broadcast::Receiver<Box<dyn Any>> },
     Quit
 }
 
