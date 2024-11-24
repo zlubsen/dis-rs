@@ -57,7 +57,7 @@ mod tests {
                 is_blinking: false,
                 is_frozen: false,
                 power_plant_on: false,
-                state: AppearanceEntityorObjectState::Active,
+                state: AppearanceEntityOrObjectState::Active,
                 formation_lights_on: false,
                 landing_gear_extended: false,
                 cargo_doors_opened: false,
@@ -68,7 +68,7 @@ mod tests {
                 weightonwheels: false,
             }))
             .with_dead_reckoning_parameters(DrParameters {
-                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
                 other_parameters: DrOtherParameters::WorldOrientationQuaternion(
                     DrWorldOrientationQuaternion::default()),
                 linear_acceleration: VectorF32 {

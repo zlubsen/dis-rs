@@ -21,7 +21,7 @@ mod tests {
             .with_receiving_id(EntityId::new(20,20,20))
             .with_request_id(5)
             .with_acknowledge_flag(AcknowledgeFlag::StartResume)
-            .with_response_flag(ResponseFlag::Abletocomply)
+            .with_response_flag(ResponseFlag::AbleToComply)
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));

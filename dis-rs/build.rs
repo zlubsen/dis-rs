@@ -1,5 +1,5 @@
 use std::{env, fs};
-use std::ops::{RangeInclusive};
+use std::ops::RangeInclusive;
 use std::path::Path;
 
 use quick_xml::Reader;
@@ -317,10 +317,9 @@ fn main() {
 }
 
 fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
-    // Remove / replace the following characters
     #[allow(clippy::collapsible_str_replace)]
-    let intermediate = value
-        .replace(' ', "")
+    let intermediate: String = value
+        // Remove / replace the following characters
         .replace('-', "")
         .replace('/', "")
         .replace('.', "_")
@@ -332,7 +331,23 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace(';', "")
         .replace('(', "_")
         .replace(')', "_")
-        .replace('=', "_");
+        .replace('=', "_")
+        // Split by white space (1), capitalize each substring (2), then merge (3).
+        // Example procedure for "Life form":
+        // 1 | Split      : ["Life", "form"]
+        // 2 | Capitalize : ["Life", "Form"]
+        // 3 | Merge      : "LifeForm"
+        .split(' ')
+        .map(|string| {
+            let mut chars = string.chars();
+            match chars.next() {
+                // Empty string
+                None => "".to_string(),
+                // Uppercase character and concatenate
+                Some(char) => format!("{}{}", char.to_uppercase().to_string(), chars.as_str()),
+            }
+        })
+        .collect();
 
     // Prefix values starting with a digit with '_'
     // .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.

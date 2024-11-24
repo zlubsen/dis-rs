@@ -264,10 +264,10 @@ fn encode_dr_params_other(item: &Counterpart) -> Option<CdisDRParametersOther> {
 /// Encodes the Dead Reckoning Linear Acceleration field when the Dead Reckoning Algorithm requires it (no 4, 5, 8 and 9).
 fn encode_dr_linear_acceleration(item: &Counterpart) -> Option<LinearAcceleration> {
     match item.dead_reckoning_parameters.algorithm {
-        DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
-        DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity |
+        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWExceptInBodyCoordinates => {
             Some(LinearAcceleration::encode(&item.dead_reckoning_parameters.linear_acceleration))
         }
         _ => { None }
@@ -277,10 +277,10 @@ fn encode_dr_linear_acceleration(item: &Counterpart) -> Option<LinearAcceleratio
 /// Encodes the Dead Reckoning Angular Velocity field when the Dead Reckoning Algorithm requires it (no 3, 4, 7 and 8).
 fn encode_dr_angular_velocity(item: &Counterpart) -> Option<AngularVelocity> {
     match item.dead_reckoning_parameters.algorithm {
-        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RPB_SimilarToRPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
             Some(AngularVelocity::encode(&item.dead_reckoning_parameters.angular_velocity))
         }
         _ => { None }
@@ -292,10 +292,10 @@ fn encode_dr_angular_velocity(item: &Counterpart) -> Option<AngularVelocity> {
 fn evaluate_timeout_for_entity_type(entity_type: &DisEntityType, state: &EncoderStateEntityState, config: &CodecOptions) -> bool {
     let elapsed = state.last_send.elapsed().as_secs_f32();
     let hbt_timeout = match (entity_type.kind, entity_type.domain) {
-        (EntityKind::Culturalfeature, _) => { config.federation_parameters.HBT_ESPDU_KIND_CULTURAL_FEATURE }
+        (EntityKind::CulturalFeature, _) => { config.federation_parameters.HBT_ESPDU_KIND_CULTURAL_FEATURE }
         (EntityKind::Environmental, _) => { config.federation_parameters.HBT_ESPDU_KIND_ENVIRONMENTAL }
         (EntityKind::Expendable, _) => { config.federation_parameters.HBT_ESPDU_KIND_EXPENDABLE }
-        (EntityKind::Lifeform, _) => { config.federation_parameters.HBT_ESPDU_KIND_LIFE_FORM }
+        (EntityKind::LifeForm, _) => { config.federation_parameters.HBT_ESPDU_KIND_LIFE_FORM }
         (EntityKind::Munition, _) => { config.federation_parameters.HBT_ESPDU_KIND_MUNITION }
         (EntityKind::Radio, _) => { config.federation_parameters.HBT_ESPDU_KIND_RADIO }
         (EntityKind::SensorEmitter, _) => { config.federation_parameters.HBT_ESPDU_KIND_SENSOR }
@@ -429,7 +429,7 @@ mod tests {
 
         let dis_body = create_basic_dis_entity_state_body()
             .with_dead_reckoning_parameters(DrParameters::default()
-                .with_algorithm(DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity)
+                .with_algorithm(DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity)
                 .with_parameters(DrOtherParameters::LocalEulerAngles(DrEulerAngles::default()
                     .with_local_pitch(1.0)
                     .with_local_roll(1.0)
@@ -447,7 +447,7 @@ mod tests {
             assert!(es.alternate_entity_type.is_none());
             assert!(es.entity_orientation.is_some());
             assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
-            assert_eq!(es.dr_algorithm, DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity);
+            assert_eq!(es.dr_algorithm, DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity);
             assert!(es.dr_params_other.is_some());
         } else {
             assert!(false);
@@ -462,8 +462,8 @@ mod tests {
         let dis_body = create_basic_dis_entity_state_body()
             .with_alternative_entity_type(DisEntityType::default()
                 .with_domain(PlatformDomain::Land)
-                .with_country(Country::UnitedStatesofAmerica_USA_)
-                .with_kind(EntityKind::Lifeform))
+                .with_country(Country::UnitedStatesOfAmerica_USA_)
+                .with_kind(EntityKind::LifeForm))
             .with_appearance(EntityAppearance::AirPlatform(AirPlatformAppearance::default()))
             .build().into_pdu_body();
 
@@ -471,8 +471,8 @@ mod tests {
 
         if let CdisBody::EntityState(es) = cdis_body {
             assert_eq!(es.alternate_entity_type.unwrap().domain, u8::from(PlatformDomain::Land));
-            assert_eq!(es.alternate_entity_type.unwrap().country, u16::from(Country::UnitedStatesofAmerica_USA_));
-            assert_eq!(es.alternate_entity_type.unwrap().kind, u8::from(EntityKind::Lifeform));
+            assert_eq!(es.alternate_entity_type.unwrap().country, u16::from(Country::UnitedStatesOfAmerica_USA_));
+            assert_eq!(es.alternate_entity_type.unwrap().kind, u8::from(EntityKind::LifeForm));
         } else {
             assert!(false);
         }
@@ -524,7 +524,7 @@ mod tests {
             entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(1, 1, 1)),
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
-            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
@@ -563,7 +563,7 @@ mod tests {
             entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(1, 1, 1)),
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
-            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
@@ -610,7 +610,7 @@ mod tests {
             entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(1, 1, 1)),
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
-            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
@@ -649,7 +649,7 @@ mod tests {
             entity_location: None,
             entity_orientation: None,
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
-            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
@@ -700,7 +700,7 @@ mod tests {
             entity_location: None,
             entity_orientation: None,
             entity_appearance: None,
-            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+            dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),

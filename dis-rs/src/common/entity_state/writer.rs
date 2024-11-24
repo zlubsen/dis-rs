@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::entity_state::model::{DrParameters, EntityMarking, EntityState};
-use crate::common::model::{EntityType};
+use crate::common::model::EntityType;
 use crate::common::entity_state::model::{DrEulerAngles, DrOtherParameters, DrWorldOrientationQuaternion, EntityAppearance};
 use crate::enumerations::{DrParametersType, ForceId};
 use crate::v6::entity_state::model::EntityCapabilities;
@@ -142,7 +142,7 @@ mod tests {
     use crate::common::model::{ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader, VariableParameter, VectorF32};
     use crate::common::Serialize;
     use crate::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain};
-    use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityorObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
+    use crate::enumerations::{AirPlatformAppearance, AppearanceAntiCollisionDayNight, AppearanceCanopy, AppearanceDamage, AppearanceEntityOrObjectState, AppearanceNavigationPositionBrightness, AppearanceNVGMode, AppearancePaintScheme, AppearanceTrailingEffects};
 
     #[test]
     fn entity_marking() {
@@ -219,7 +219,7 @@ mod tests {
                 is_blinking: false,
                 is_frozen: false,
                 power_plant_on: false,
-                state: AppearanceEntityorObjectState::Active,
+                state: AppearanceEntityOrObjectState::Active,
                 formation_lights_on: false,
                 landing_gear_extended: false,
                 cargo_doors_opened: false,
@@ -230,7 +230,7 @@ mod tests {
                 weightonwheels: false,
             }))
             .with_dead_reckoning_parameters(DrParameters {
-                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
                 other_parameters: DrOtherParameters::None([0u8;15]),
                 linear_acceleration: VectorF32 {
                     first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32

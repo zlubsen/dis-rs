@@ -65,7 +65,7 @@ impl Serialize for ModulationType {
             TransmitterMajorModulation::Amplitude(detail) => {
                 buf.put_u16(detail.into());
             }
-            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
+            TransmitterMajorModulation::AmplitudeAndAngle(detail) => {
                 buf.put_u16(detail.into());
             }
             TransmitterMajorModulation::Angle(detail) => {

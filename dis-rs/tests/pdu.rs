@@ -10,7 +10,7 @@ fn test_pdu() {
         body: PduBody::Signal(
             Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
-                    encoding_class: SignalEncodingClass::Encodedaudio,
+                    encoding_class: SignalEncodingClass::EncodedAudio,
                     encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
                 })
                 .with_data(data.clone())
@@ -41,7 +41,7 @@ fn test_two_pdus() {
         body: PduBody::Signal(
             Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
-                    encoding_class: SignalEncodingClass::Encodedaudio,
+                    encoding_class: SignalEncodingClass::EncodedAudio,
                     encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
                 })
                 .with_data(data.clone())
@@ -77,7 +77,7 @@ fn test_insufficient_buffer_capacity() {
         body: PduBody::Signal(
             Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
-                    encoding_class: SignalEncodingClass::Encodedaudio,
+                    encoding_class: SignalEncodingClass::EncodedAudio,
                     encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
                 })
                 .with_data(data.clone())

@@ -92,8 +92,8 @@ fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
             { TransmitterMajorModulation::NoStatement }
         TransmitterMajorModulation::Amplitude(_) =>
             { TransmitterMajorModulation::Amplitude(TransmitterDetailAmplitudeModulation::from(detail)) }
-        TransmitterMajorModulation::AmplitudeandAngle(_) =>
-            { TransmitterMajorModulation::AmplitudeandAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
+        TransmitterMajorModulation::AmplitudeAndAngle(_) =>
+            { TransmitterMajorModulation::AmplitudeAndAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
         TransmitterMajorModulation::Angle(_) =>
             { TransmitterMajorModulation::Angle(TransmitterDetailAngleModulation::from(detail)) }
         TransmitterMajorModulation::Combination(_) =>
