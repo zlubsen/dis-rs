@@ -3,15 +3,15 @@ use nom::IResult;
 use nom::bits::complete::take;
 use nom::multi::count;
 use num::Integer;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName, VariableParameterRecordType, VariableRecordType};
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem, VariableParameterRecordType, VariableRecordType};
 use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
-use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, NINE_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::parsing::take_signed;
-use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
+use crate::records::model::{AngularVelocity, BeamAntennaPattern, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
 use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
-use crate::types::parser::{cdis_float, svint12, svint14, svint16, svint24, uvint16, uvint8};
+use crate::types::parser::{svint12, svint13, svint14, svint16, svint24, uvint16, uvint8};
 
 const FIVE_LEAST_SIGNIFICANT_BITS : u32 = 0x1f;
 
@@ -246,7 +246,7 @@ pub(crate) fn articulated_part_vp_compressed(input: BitInput) -> IResult<BitInpu
     let type_metric = ArticulatedPartsTypeMetric::from(type_metric);
     let type_class = ArticulatedPartsTypeClass::from(type_class);
 
-    let (input, parameter_value) = cdis_float::<ParameterValueFloat>(input)?;
+    let (input, parameter_value) = ParameterValueFloat::parse(input)?;
 
     Ok((input, CdisArticulatedPartVP {
         change_indicator,
@@ -267,7 +267,7 @@ pub(crate) fn articulated_part_vp(input: BitInput) -> IResult<BitInput, CdisArti
     let type_class = ArticulatedPartsTypeClass::from(type_class);
     let (input, parameter_value) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
     let parameter_value = f32::from_bits(parameter_value);
-    let parameter_value = ParameterValueFloat::from_f64(parameter_value as f64);
+    let parameter_value = ParameterValueFloat::new_uncompressed(parameter_value);
 
     Ok((input, CdisArticulatedPartVP {
         change_indicator,
@@ -464,6 +464,63 @@ pub(crate) fn variable_datum(input: BitInput) -> IResult<BitInput, VariableDatum
     Ok((input, VariableDatum::new(datum_id, datum_value)))
 }
 
+pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingScheme> {
+    let (input, encoding_scheme_class) : (BitInput, u16) = take(TWO_BITS)(input)?;
+    let encoding_scheme_class = SignalEncodingClass::from(encoding_scheme_class);
+    let (input, encoding_scheme_type) = uvint8(input)?;
+
+    let encoding_scheme = match encoding_scheme_class {
+        SignalEncodingClass::EncodedAudio => {
+            EncodingScheme::EncodedAudio {
+                encoding_class: encoding_scheme_class,
+                encoding_type: SignalEncodingType::from(encoding_scheme_type.value as u16)
+            }
+        }
+        SignalEncodingClass::RawBinaryData => {
+            EncodingScheme::RawBinaryData {
+                encoding_class: encoding_scheme_class,
+                nr_of_messages: encoding_scheme_type.value,
+            }
+        }
+        SignalEncodingClass::ApplicationSpecificData => {
+            EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
+        }
+        SignalEncodingClass::DatabaseIndex => {
+            EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
+        }
+        SignalEncodingClass::Unspecified(_) => {
+            EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
+        }
+    };
+
+    Ok((input, encoding_scheme))
+}
+
+pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAntennaPattern> {
+    let (input, beam_direction_psi) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_theta) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_phi) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, az_beamwidth) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, el_beamwidth) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, reference_system) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let reference_system = TransmitterAntennaPatternReferenceSystem::from(reference_system);
+    let (input, e_z) : (BitInput, isize) = take_signed(SIXTEEN_BITS)(input)?;
+    let (input, e_y) : (BitInput, isize) = take_signed(SIXTEEN_BITS)(input)?;
+    let (input, phase) : (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+
+    Ok((input, BeamAntennaPattern {
+        beam_direction_psi: beam_direction_psi as i16,
+        beam_direction_theta: beam_direction_theta as i16,
+        beam_direction_phi: beam_direction_phi as i16,
+        az_beamwidth: az_beamwidth as i16,
+        el_beamwidth: el_beamwidth as i16,
+        reference_system,
+        e_z: e_z as i16,
+        e_x: e_y as i16,
+        phase: phase as i16,
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use dis_rs::enumerations::PduType;
@@ -483,4 +540,32 @@ mod tests {
         assert_eq!(header.timestamp, dis_rs::model::TimeStamp { raw_timestamp: 0 });
         assert_eq!(header.length, 0);
     }
+}
+
+pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
+    let (input, az_center) = svint13(input)?;
+    let (input, az_sweep) = svint13(input)?;
+    let (input, el_center) = svint13(input)?;
+    let (input, el_sweep) = svint13(input)?;
+    let (input, sweep_sync) : (BitInput, u16) = take(TEN_BITS)(input)?;
+
+    Ok((input, BeamData {
+        az_center,
+        az_sweep,
+        el_center,
+        el_sweep,
+        sweep_sync,
+    }))
+}
+
+pub fn layer_header(input: BitInput) -> IResult<BitInput, LayerHeader> {
+    let (input, layer_number) : (BitInput, u8) = take(FOUR_BITS)(input)?;
+    let (input, layer_specific_information) : (BitInput, u8) = take(EIGHT_BITS)(input)?;
+    let (input, length) : (BitInput, u16) = take(FOURTEEN_BITS)(input)?;
+
+    Ok((input, LayerHeader {
+        layer_number,
+        layer_specific_information,
+        length,
+    }))
 }

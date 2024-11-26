@@ -1,5 +1,5 @@
 use std::{env, fs};
-use std::ops::{RangeInclusive};
+use std::ops::RangeInclusive;
 use std::path::Path;
 
 use quick_xml::Reader;
@@ -317,10 +317,9 @@ fn main() {
 }
 
 fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
-    // Remove / replace the following characters
     #[allow(clippy::collapsible_str_replace)]
-    let intermediate = value
-        .replace(' ', "")
+    let intermediate: String = value
+        // Remove / replace the following characters
         .replace('-', "")
         .replace('/', "")
         .replace('.', "_")
@@ -332,7 +331,23 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace(';', "")
         .replace('(', "_")
         .replace(')', "_")
-        .replace('=', "_");
+        .replace('=', "_")
+        // Split by white space (1), capitalize each substring (2), then merge (3).
+        // Example procedure for "Life form":
+        // 1 | Split      : ["Life", "form"]
+        // 2 | Capitalize : ["Life", "Form"]
+        // 3 | Merge      : "LifeForm"
+        .split(' ')
+        .map(|string| {
+            let mut chars = string.chars();
+            match chars.next() {
+                // Empty string
+                None => "".to_string(),
+                // Uppercase character and concatenate
+                Some(char) => format!("{}{}", char.to_uppercase().to_string(), chars.as_str()),
+            }
+        })
+        .collect();
 
     // Prefix values starting with a digit with '_'
     // .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.
@@ -484,42 +499,41 @@ mod extraction {
             Some(usize::from_str(&reader.decoder().decode(&attr_uid.value).unwrap()).unwrap())
         } else { None };
         let should_generate = ENUM_UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
-        if should_generate.is_none() {
-            // skip this enum, not to be generated
-            return Err(());
-        }
-        let name_override = should_generate.unwrap().1;
-        let size_override = should_generate.unwrap().2;
-        let postfix_items = should_generate.unwrap().3;
 
-        let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            if let Some(name) = name_override {
-                Some(name.to_string())
+        if let Some(should_generate) = should_generate {
+            let name_override = should_generate.1;
+            let size_override = should_generate.2;
+            let postfix_items = should_generate.3;
+
+            let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+                if let Some(name) = name_override {
+                    Some(name.to_string())
+                } else {
+                    Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
+                }
+            } else { None };
+
+            let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
+                if let Some(size) = size_override {
+                    Some(size)
+                } else {
+                    Some(usize::from_str(&reader.decoder().decode(&attr_size.value).unwrap()).unwrap())
+                }
+            } else { None };
+
+            if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
+                Ok(Enum {
+                    uid,
+                    name,
+                    size,
+                    items: vec![],
+                    postfix_items
+                })
             } else {
-                Some(String::from_utf8(attr_name.value.to_vec()).unwrap())
+                // something is wrong with the attributes of the element, skip it.
+                Err(())
             }
-        } else { None };
-
-        let size = if let Ok(Some(attr_size)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
-            if let Some(size) = size_override {
-                Some(size)
-            } else {
-                Some(usize::from_str(&reader.decoder().decode(&attr_size.value).unwrap()).unwrap())
-            }
-        } else { None };
-
-        if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
-            Ok(Enum {
-                uid,
-                name,
-                size,
-                items: vec![],
-                postfix_items
-            })
-        } else {
-            // something is wrong with the attributes of the element, skip it.
-            Err(())
-        }
+        } else { Err(()) }
     }
 
     fn extract_enum_item(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Result<EnumItem, ()> {
@@ -704,7 +718,9 @@ mod generation {
         let name = format_name(e.name.as_str(), e.uid);
         let name_ident = format_ident!("{}", name);
         let arms = quote_enum_decl_arms(&e.items, e.size, e.postfix_items, lookup_xref);
+        let uid_doc_comment = format!("UID {}", e.uid);
         quote!(
+            #[doc = #uid_doc_comment]
             #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
             #[allow(non_camel_case_types)]
             pub enum #name_ident {
@@ -791,9 +807,15 @@ mod generation {
                         #discriminant_literal_min..=#discriminant_literal_max => #name_ident::#item_ident(value)
                     ))
                 }
-                EnumItem::CrossRef(_item) => {
-                    // Manual impl, cannot be determined based on discriminant value alone (e.g., need domain enum for capabilities and appearance)
-                    None
+                EnumItem::CrossRef(item) => {
+                    // Aside from this code a manual impl is required for crossref'ed bitfields, cannot be determined based on discriminant value alone (e.g., need domain enum for capabilities and appearance)
+                    // Here we set a default value for the contained CrossRef item
+                    let item_name = format_name(item.description.as_str(), item.value);
+                    let item_ident = format_ident!("{}", item_name);
+                    let discriminant_literal = discriminant_literal(item.value, data_size);
+                    Some(quote!(
+                        #discriminant_literal => #name_ident::#item_ident(Default::default())
+                    ))
                 }
             }
         }).collect();
@@ -897,13 +919,10 @@ mod generation {
                     let item_description = item.description.as_str();
                     let item_name = format_name(item_description, item.value);
                     let item_ident = format_ident!("{}", item_name);
-                    let _value_ident = format_ident!("{}", "contained");
+                    // let _value_ident = format_ident!("{}", "contained");
 
                     Some(quote!(
-                        // TODO Display impls for bitfield structs
-                        // This is a placeholder
-                        #name_ident::#item_ident(_) => write!(f, "#name_ident::#item_ident(_)",)
-                        // #name_ident::#item_ident(#value_ident) => #value_ident.display()
+                        #name_ident::#item_ident(_) => write!(f, #item_description)
                     ))
                 }
             }
@@ -930,13 +949,16 @@ mod generation {
         let decl = quote_bitfield_decl(item, &lookup_xref);
         let from = quote_bitfield_from_impl(item, &lookup_xref); // struct from u32
         let into = quote_bitfield_into_impl(item, &lookup_xref); // struct into u32
-        // TODO let display = quote_bitfield_display_impl(item); // display values of fields or bitstring
+        let display = quote_bitfield_display_impl(item);
+
         quote!(
             #decl
 
             #from
 
             #into
+
+            #display
         )
     }
 
@@ -945,7 +967,9 @@ mod generation {
         let formatted_name = format_name(item.name.as_str(), item.uid);
         let name_ident = format_ident!("{}", formatted_name);
         let fields = quote_bitfield_decl_fields(&item.fields, lookup_xref);
+        let uid_doc_comment = format!("UID {}", item.uid);
         quote!(
+            #[doc = #uid_doc_comment]
             #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
             pub struct #name_ident {
                 #(#fields),*
@@ -1063,6 +1087,19 @@ mod generation {
                 )
             }
         }).collect()
+    }
+
+    fn quote_bitfield_display_impl(item: &Bitfield) -> TokenStream {
+        let formatted_name = format_name(item.name.as_str(), item.uid);
+        let name_ident = format_ident!("{}", formatted_name);
+
+        quote!(
+            impl Display for #name_ident {
+                fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                    write!(f, #formatted_name)
+                }
+            }
+        )
     }
 
     fn size_to_type(data_size: usize) -> &'static str {

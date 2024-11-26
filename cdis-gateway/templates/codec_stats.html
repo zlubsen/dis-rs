@@ -15,7 +15,7 @@
         </div>
     </div>
     <hr class="h-2"/>
-    <div class="grid grid-cols-7 grid-rows-2 w-full">
+    <div class="grid grid-cols-6 grid-rows-2 w-full">
         <div class="tooltip text-left" data-tip="Entity State">
             <div class="stat-value text-sm">{{ stats.es_count }}</div>
             <div class="stat-desc">ES</div>
@@ -81,27 +81,27 @@
             <div class="stat-desc">Comment</div>
         </div>
         <div class="tooltip text-left" data-tip="Electromagnetic Emission">
-            <div class="stat-value text-sm"><span class="text-primary-content/30">0</span></div>
+            <div class="stat-value text-sm">{{ stats.ee_count }}</div>
             <div class="stat-desc">EE</div>
         </div>
         <div class="tooltip text-left" data-tip="Designator">
-            <div class="stat-value text-sm"><span class="text-primary-content/30">0</span></div>
+            <div class="stat-value text-sm">{{ stats.designator_count }}</div>
             <div class="stat-desc">Desig</div>
         </div>
         <div class="tooltip text-left" data-tip="Transmitter">
-            <div class="stat-value text-sm"><span class="text-primary-content/30">0</span></div>
-            <div class="stat-desc">Trans</div>
+            <div class="stat-value text-sm">{{ stats.transmitter_count }}</div>
+            <div class="stat-desc">Tx</div>
         </div>
         <div class="tooltip text-left" data-tip="Signal">
-            <div class="stat-value text-sm"><span class="text-primary-content/30">0</span></div>
+            <div class="stat-value text-sm">{{ stats.signal_count }}</div>
             <div class="stat-desc">Sig</div>
         </div>
         <div class="tooltip text-left" data-tip="Receiver">
-            <div class="stat-value text-sm"><span class="text-primary-content/30">0</span></div>
-            <div class="stat-desc">Recv</div>
+            <div class="stat-value text-sm">{{ stats.receiver_count }}</div>
+            <div class="stat-desc">Rx</div>
         </div>
         <div class="tooltip text-left" data-tip="Identification Friend or Foe">
-            <div class="stat-value text-sm"><span class="text-primary-content/30">0</span></div>
+            <div class="stat-value text-sm">{{ stats.iff_count }}</div>
             <div class="stat-desc">IFF</div>
         </div>
         <div class="tooltip text-left" data-tip="Unimplemented">
@@ -109,14 +109,4 @@
             <div class="stat-desc">Unimpl</div>
         </div>
     </div>
-<!--    <div class="flex flex-wrap justify-start content-stretch">-->
-<!--        <div>-->
-<!--            <div class="stat-value text-sm">{{ stats.es_count }}</div>-->
-<!--            <div class="stat-desc">ES</div>-->
-<!--        </div>-->
-<!--        <div>-->
-<!--            <div class="stat-value text-sm">{{ stats.unimplemented_count }}</div>-->
-<!--            <div class="stat-desc">Unimplemented</div>-->
-<!--        </div>-->
-<!--    </div>-->
 </div>

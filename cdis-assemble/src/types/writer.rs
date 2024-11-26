@@ -2,7 +2,7 @@ use dis_rs::model::ClockTime;
 use crate::constants::THIRTY_TWO_BITS;
 use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
 use crate::writing::SerializeCdis;
-use crate::types::model::{CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use crate::types::model::{SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 use crate::types::model::VarInt;
 
 impl SerializeCdis for UVINT8 {
@@ -96,14 +96,6 @@ impl SerializeCdis for SVINT24 {
     }
 }
 
-#[allow(clippy::let_and_return)]
-pub(crate) fn serialize_cdis_float<T: CdisFloat>(buf: &mut BitBuffer, cursor: usize, float: &T) -> usize {
-    let cursor = write_value_signed(buf, cursor, float.mantissa_bit_size(), float.mantissa());
-    let cursor = write_value_signed(buf, cursor, float.exponent_bit_size(), float.exponent());
-
-    cursor
-}
-
 /// Serializes a C-DIS Clock Time Record (11.4).
 #[allow(clippy::let_and_return)]
 pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: &ClockTime) -> usize {
@@ -118,8 +110,8 @@ mod tests {
     use bitvec::prelude::BitArray;
     use crate::records::model::ParameterValueFloat;
     use crate::writing::SerializeCdis;
-    use crate::types::model::{CdisFloat, SVINT12, UVINT16, UVINT8};
-    use crate::types::writer::serialize_cdis_float;
+    use crate::types::model::CdisFloat;
+    use crate::types::model::{SVINT12, UVINT16, UVINT8};
     use crate::writing::BitBuffer;
 
     const ONE_BYTE: usize = 1;
@@ -221,10 +213,9 @@ mod tests {
         let input = ParameterValueFloat::new(1, 1);
         // ParameterValueFloat has 15 bit mantissa and 3 bit exponent fields
         let expected: [u8; THREE_BYTES] = [0b00000000, 0b00000010, 0b01000000];
-        let cursor = serialize_cdis_float(&mut buf, 0, &input);
+        let cursor = CdisFloat::serialize(&input, &mut buf, 0);
 
         assert_eq!(cursor, 18);
         assert_eq!(expected, buf.as_raw_slice()[..THREE_BYTES]);
-
     }
 }

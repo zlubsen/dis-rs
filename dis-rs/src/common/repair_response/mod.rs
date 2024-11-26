@@ -19,7 +19,7 @@ mod tests {
         let body = RepairResponse::builder()
             .with_receiving_id(EntityId::new(1, 1, 2))
             .with_repairing_id(EntityId::new(9, 1, 1))
-            .with_repair_result(RepairResponseRepairResult::repairended)
+            .with_repair_result(RepairResponseRepairResult::RepairEnded)
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));

@@ -13,16 +13,22 @@ use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
 use crate::data::parser::data_body;
 use crate::data_query::parser::data_query_body;
+use crate::designator::parser::designator_body;
 use crate::detonation::parser::detonation_body;
+use crate::electromagnetic_emission::parser::electromagnetic_emission_body;
 use crate::entity_state::parser::entity_state_body;
 use crate::event_report::parser::event_report_body;
 use crate::fire::parser::fire_body;
+use crate::iff::parser::iff_body;
+use crate::receiver::parser::receiver_body;
 use crate::records::model::CdisHeader;
 use crate::records::parser::cdis_header;
 use crate::remove_entity::parser::remove_entity_body;
 use crate::set_data::parser::set_data_body;
+use crate::signal::parser::signal_body;
 use crate::start_resume::parser::start_resume_body;
 use crate::stop_freeze::parser::stop_freeze_body;
+use crate::transmitter::parser::transmitter_body;
 use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 
@@ -69,12 +75,12 @@ pub(crate) fn cdis_body(header: &CdisHeader) -> impl Fn(BitInput) -> IResult<Bit
             PduType::Data => { data_body(input)? }
             PduType::EventReport => { event_report_body(input)? }
             PduType::Comment => { comment_body(input)? }
-            // PduType::ElectromagneticEmission => {}
-            // PduType::Designator => {}
-            // PduType::Transmitter => {}
-            // PduType::Signal => {}
-            // PduType::Receiver => {}
-            // PduType::IFF => {}
+            PduType::ElectromagneticEmission => { electromagnetic_emission_body(input)? }
+            PduType::Designator => { designator_body(input)? }
+            PduType::Transmitter => { transmitter_body(input)? }
+            PduType::Signal => { signal_body(input)? }
+            PduType::Receiver => { receiver_body(input)? }
+            PduType::IFF => { iff_body(input)? }
             // Unsupported PDUs in CDIS v1
             PduType::Other => { (input, CdisBody::Unsupported(Unsupported)) }
             PduType::Unspecified(_val) => { (input, CdisBody::Unsupported(Unsupported)) }

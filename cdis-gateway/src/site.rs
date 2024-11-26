@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 use askama::Template;
+use axum::body::Body;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -11,7 +12,6 @@ use axum::routing::get;
 use axum_extra::{headers, TypedHeader};
 use futures::stream::Stream;
 use tokio::signal;
-// use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error};
 use tracing::log::trace;
@@ -47,6 +47,7 @@ pub(crate) async fn run_site(config: Config,
         .route("/", get(home))
         .route("/styles.css", get(styles))
         .route("/index.js", get(scripts))
+        .route("/favicon.ico", get(favicon))
         .route("/script_htmx.js", get(script_htmx))
         .route("/script_htmx_sse.js", get(script_htmx_sse))
         .route("/config", get(config_info))
@@ -182,6 +183,19 @@ pub(crate) async fn scripts() -> Result<impl IntoResponse, Response> {
         .status(StatusCode::OK)
         .header("Content-Type", "text/javascript")
         .body(include_str!("../build/index.js").to_owned());
+
+    match response {
+        Ok(response) => { Ok(response) }
+        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+    }
+}
+
+pub(crate) async fn favicon() -> Result<impl IntoResponse, Response> {
+    let bytes = Vec::from(include_bytes!("../assets/favicon.ico").to_owned());
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header("Content-Type", "image/x-icon")
+        .body(Body::from(bytes));
 
     match response {
         Ok(response) => { Ok(response) }
@@ -352,6 +366,12 @@ mod templates {
         pub data_count: u64,
         pub event_report_count: u64,
         pub comment_count: u64,
+        pub ee_count: u64,
+        pub designator_count: u64,
+        pub transmitter_count: u64,
+        pub signal_count: u64,
+        pub receiver_count: u64,
+        pub iff_count: u64,
         pub rejected_count: u64,
         pub unimplemented_count: u64,
         pub compression_rate_total: String,
@@ -381,6 +401,12 @@ mod templates {
                 data_count: count_for_pdu_type(stats, PduType::Data),
                 event_report_count: count_for_pdu_type(stats, PduType::EventReport),
                 comment_count: count_for_pdu_type(stats, PduType::Comment),
+                ee_count: count_for_pdu_type(stats, PduType::ElectromagneticEmission),
+                designator_count: count_for_pdu_type(stats, PduType::Designator),
+                transmitter_count: count_for_pdu_type(stats, PduType::Transmitter),
+                signal_count: count_for_pdu_type(stats, PduType::Signal),
+                receiver_count: count_for_pdu_type(stats, PduType::Receiver),
+                iff_count: count_for_pdu_type(stats, PduType::IFF),
                 rejected_count: stats.rejected_count,
                 unimplemented_count: stats.unimplemented_count,
                 compression_rate_total: if stats.compression_rate_total.is_nan() {

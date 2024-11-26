@@ -20,7 +20,7 @@ mod tests {
             .with_origination_id(EntityId::new(10,10,10))
             .with_receiving_id(EntityId::new(20,20,20))
             .with_event_type(EventType::MobilityDisabled)
-            .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::_7_62mm_quantity_24010, 100)])
+            .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::_7_62mm_Quantity_24010, 100)])
             .with_variable_datums(vec![VariableDatum::new(VariableRecordType::Country_11130, vec![0x1, 0x2, 0x3])])
             .build()
             .into_pdu_body();

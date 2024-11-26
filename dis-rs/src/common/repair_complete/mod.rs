@@ -19,7 +19,7 @@ mod tests {
         let body = RepairComplete::builder()
             .with_receiving_id(EntityId::new(1, 1, 2))
             .with_repairing_id(EntityId::new(9, 1, 1))
-            .with_repair(RepairCompleteRepair::airframe_1010)
+            .with_repair(RepairCompleteRepair::Airframe_1010)
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));

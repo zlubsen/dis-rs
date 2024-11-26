@@ -52,13 +52,12 @@ impl SerializeCdisPdu for CdisBody {
             CdisBody::Data(body) => { body.serialize(buf, cursor) }
             CdisBody::EventReport(body) => { body.serialize(buf, cursor) }
             CdisBody::Comment(body) => { body.serialize(buf, cursor) }
-            // CdisBody::ElectromagneticEmission => {}
-            // CdisBody::Designator => {}
-            // CdisBody::Transmitter => {}
-            // CdisBody::Signal => {}
-            // CdisBody::Receiver => {}
-            // CdisBody::Iff => {}
-            _ => { cursor }
+            CdisBody::ElectromagneticEmission(body) => { body.serialize(buf, cursor) }
+            CdisBody::Designator(body) => { body.serialize(buf, cursor) }
+            CdisBody::Transmitter(body) => { body.serialize(buf, cursor) }
+            CdisBody::Signal(body) => { body.serialize(buf, cursor) }
+            CdisBody::Receiver(body) => { body.serialize(buf, cursor) }
+            CdisBody::Iff(body) => { body.serialize(buf, cursor) }
         };
 
         cursor

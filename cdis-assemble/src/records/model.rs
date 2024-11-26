@@ -1,11 +1,16 @@
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, StationName};
+use nom::IResult;
+use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem};
 use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
 use dis_rs::model::TimeStamp;
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS};
-use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
-use crate::types::model::{CdisFloat, CdisFloatBase, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8, VarInt};
+use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SEVENTEEN_BITS, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::records::model::CdisProtocolVersion::{Reserved, StandardDis, SISO_023_2023};
+use crate::types::model::{CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 use num_traits::FromPrimitive;
+use nom::complete::take;
+use crate::BitBuffer;
+use crate::parsing::{take_signed, BitInput};
+use crate::writing::{write_value_signed, write_value_unsigned};
 
 pub(crate) trait CdisRecord {
     fn record_length(&self) -> usize;
@@ -226,29 +231,45 @@ impl CdisRecord for AngularVelocity {
     }
 }
 
-/// 11.1 Linear Acceleration
+/// 11.2 Beam Antenna Pattern Record
+/// Scale = (2^12 - 1) / pi
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub struct LinearAcceleration {
-    pub x: SVINT14,
-    pub y: SVINT14,
-    pub z: SVINT14,
+pub struct BeamAntennaPattern {
+    pub beam_direction_psi: i16,
+    pub beam_direction_theta: i16,
+    pub beam_direction_phi: i16,
+    pub az_beamwidth: i16,
+    pub el_beamwidth: i16,
+    pub reference_system: TransmitterAntennaPatternReferenceSystem,
+    pub e_z: i16,
+    pub e_x: i16,
+    pub phase: i16,
 }
 
-impl LinearAcceleration {
-    pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+impl CdisRecord for BeamAntennaPattern {
+    fn record_length(&self) -> usize {
+        112 // = 6*13 + 2*16 + 2
     }
 }
 
-impl CdisRecord for LinearAcceleration {
+/// 11.3 Beam Data Record
+#[derive(Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
+pub struct BeamData {
+    pub az_center: SVINT13,
+    pub az_sweep: SVINT13,
+    pub el_center: SVINT13,
+    pub el_sweep: SVINT13,
+    pub sweep_sync: u16,
+}
+
+impl CdisRecord for BeamData {
     fn record_length(&self) -> usize {
-        self.x.record_length()
-            + self.y.record_length()
-            + self.z.record_length()
+        const FIXED_LENGTH_BITS: usize = 10;
+        FIXED_LENGTH_BITS +
+            self.az_center.record_length() +
+            self.az_sweep.record_length() +
+            self.el_center.record_length() +
+            self.el_sweep.record_length()
     }
 }
 
@@ -274,6 +295,39 @@ impl CdisRecord for VariableDatum {
     fn record_length(&self) -> usize {
         THIRTY_TWO_BITS + FOURTEEN_BITS
             + self.datum_value.len() * EIGHT_BITS
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum EncodingScheme {
+    EncodedAudio { encoding_class: SignalEncodingClass, encoding_type: SignalEncodingType },
+    RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u8 },
+    Unspecified { encoding_class: SignalEncodingClass, encoding_type: u8 },
+}
+
+impl Default for EncodingScheme {
+    fn default() -> Self {
+        Self::EncodedAudio {
+            encoding_class: SignalEncodingClass::EncodedAudio,
+            encoding_type: SignalEncodingType::_8bitMulaw_ITUTG_711_1,
+        }
+    }
+}
+
+impl CdisRecord for EncodingScheme {
+    fn record_length(&self) -> usize {
+        TWO_BITS + match self {
+            EncodingScheme::EncodedAudio { encoding_type, .. } => {
+                let value: u16 = (*encoding_type).into();
+                UVINT8::from(value as u8).record_length()
+            }
+            EncodingScheme::RawBinaryData { nr_of_messages, .. } => {
+                UVINT8::from(*nr_of_messages).record_length()
+            }
+            EncodingScheme::Unspecified { encoding_type, .. } => {
+                UVINT8::from(*encoding_type).record_length()
+            }
+        }
     }
 }
 
@@ -395,6 +449,46 @@ impl CdisRecord for EntityType {
             + self.subcategory.record_length()
             + self.specific.record_length()
             + self.extra.record_length()
+    }
+}
+
+/// 11.17 Layer Header Record
+#[derive(Clone, Default, Debug, PartialEq)]
+pub struct LayerHeader {
+    pub layer_number: u8,
+    pub layer_specific_information: u8,
+    pub length: u16,
+}
+
+impl CdisRecord for LayerHeader {
+    fn record_length(&self) -> usize {
+        TWENTY_SIX_BITS
+    }
+}
+
+/// 11.18 Linear Acceleration
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub struct LinearAcceleration {
+    pub x: SVINT14,
+    pub y: SVINT14,
+    pub z: SVINT14,
+}
+
+impl LinearAcceleration {
+    pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
+        Self {
+            x,
+            y,
+            z,
+        }
+    }
+}
+
+impl CdisRecord for LinearAcceleration {
+    fn record_length(&self) -> usize {
+        self.x.record_length()
+            + self.y.record_length()
+            + self.z.record_length()
     }
 }
 
@@ -902,45 +996,77 @@ impl From<WorldCoordinates> for Location {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ParameterValueFloat {
-    base: CdisFloatBase,
+    mantissa: i32,
+    exponent: i8,
+    uncompressed: Option<f32>,
+}
+
+impl ParameterValueFloat {
+    pub fn new_uncompressed(float: f32) -> Self {
+        Self {
+            mantissa: 0,
+            exponent: 0,
+            uncompressed: Some(float),
+        }
+    }
 }
 
 impl CdisFloat for ParameterValueFloat {
+    type Mantissa = i32;
+    type Exponent = i8;
+    type InnerFloat = f32;
     const MANTISSA_BITS: usize = FIFTEEN_BITS;
     const EXPONENT_BITS: usize = THREE_BITS;
 
-    fn new(mantissa: i32, exponent: i8) -> Self {
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
         Self {
-            base: CdisFloatBase {
-                mantissa,
-                exponent,
-                regular_float: None,
-            }
+            mantissa,
+            exponent,
+            uncompressed: None,
         }
     }
 
-    fn from_f64(regular_float: f64) -> Self {
+    fn from_float(float: Self::InnerFloat) -> Self {
+        let mut mantissa = float;
+        let mut exponent = 0i32;
+        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+        while (mantissa > max_mantissa) & (exponent as usize <= Self::EXPONENT_BITS) {
+            mantissa /= 10.0;
+            exponent += 1;
+        }
+
         Self {
-            base: CdisFloatBase {
-                mantissa: 0,
-                exponent: 0,
-                regular_float: Some(regular_float),
-            }
+            mantissa: mantissa as Self::Mantissa,
+            exponent: exponent as Self::Exponent,
+            uncompressed: None,
         }
     }
 
-    fn mantissa(&self) -> i32 {
-        self.base.mantissa
+    fn to_float(&self) -> Self::InnerFloat {
+        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
     }
 
-    fn exponent(&self) -> i8 {
-        self.base.exponent
+    fn parse(input: BitInput) -> IResult<BitInput, Self> {
+        let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
+        let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
+        let mantissa = mantissa as Self::Mantissa;
+        let exponent = exponent as Self::Exponent;
+
+        Ok((input, Self::new(mantissa, exponent)))
     }
 
-    fn regular_float(&self) -> Option<f64> {
-        self.base.regular_float
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        if let Some(float) = self.uncompressed {
+            let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, float.to_bits());
+            cursor
+        } else {
+            let cursor = write_value_signed(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+            let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+            cursor
+        }
     }
 }
 
@@ -970,7 +1096,7 @@ impl CdisRecord for CdisVariableParameter {
 }
 
 /// 12.1 Articulated Part Variable Parameter (VP) Record
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct CdisArticulatedPartVP {
     pub change_indicator: u8,
     pub attachment_id: u16,
@@ -1137,5 +1263,63 @@ mod tests {
 
         assert_eq!(String::from("JKLMN"), actual.marking.as_str());
         assert_eq!(CdisMarkingCharEncoding::SixBit, actual.char_encoding);
+    }
+}
+
+#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
+pub struct FrequencyFloat {
+    mantissa: u32,
+    exponent: u8,
+}
+
+impl CdisFloat for FrequencyFloat {
+    type Mantissa = u32;
+    type Exponent = u8;
+    type InnerFloat = f32;
+    const MANTISSA_BITS: usize = SEVENTEEN_BITS;
+    const EXPONENT_BITS: usize = FOUR_BITS;
+
+    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
+        Self {
+            mantissa,
+            exponent,
+        }
+    }
+
+    fn from_float(float: Self::InnerFloat) -> Self {
+        let mut mantissa = float;
+        let mut exponent = 0usize;
+        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
+        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+            mantissa /= 10.0;
+            exponent += 1;
+        }
+
+        Self {
+            mantissa: mantissa as Self::Mantissa,
+            exponent: exponent as Self::Exponent,
+        }
+    }
+
+    fn to_float(&self) -> Self::InnerFloat {
+        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+    }
+
+    fn parse(input: BitInput) -> IResult<BitInput, Self> {
+        let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
+        let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
+
+        Ok((input, Self {
+            mantissa,
+            exponent
+        }))
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+
+        cursor
     }
 }

@@ -1,14 +1,19 @@
 use bytes::BytesMut;
 use cdis_assemble::{BitBuffer, CdisBody, CdisPdu, SerializeCdisPdu, BodyProperties};
-use cdis_assemble::codec::{CodecOptions, DecoderState, EncoderState};
+use cdis_assemble::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
 use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use dis_rs::designator::model::Designator;
+use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam};
 
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
-use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DetonationResult, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, RequestStatus, ResponseFlag, StopFreezeFrozenBehavior, StopFreezeReason, VariableRecordType};
+use dis_rs::enumerations::{AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType, Country, DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName, DetonationResult, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, EntityCapabilities, EntityKind, EntityMarkingCharacterSet, EventType, ExplosiveMaterialCategories, FireTypeIndicator, ForceId, HighDensityTrackJam, IffSystemMode, IffSystemName, IffSystemType, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType, PlatformDomain, ProtocolVersion, ReceiverState, RequestStatus, ResponseFlag, SignalEncodingClass, SignalEncodingType, SignalTdlType, StopFreezeFrozenBehavior, StopFreezeReason, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType};
+use dis_rs::iff::model::{ChangeOptionsRecord, FundamentalOperationalData, Iff, IffLayer2, IffLayer3, IffLayer4, IffLayer5, InformationLayers, LayersPresenceApplicability, SystemId};
 use dis_rs::model::{ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location, MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp, VariableDatum, VectorF32};
+use dis_rs::signal::model::EncodingScheme;
+use dis_rs::transmitter::model::{BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter};
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {
@@ -235,7 +240,7 @@ fn codec_consistency_detonation() {
     assert_eq!(body_in.velocity, body_out.velocity);
     assert_eq!(body_in.location_in_world_coordinates.x_coordinate, body_out.location_in_world_coordinates.x_coordinate.round());
     assert_eq!(body_in.location_in_world_coordinates.y_coordinate, body_out.location_in_world_coordinates.y_coordinate.round());
-    // FIXME: explosions are not properly encoded/decoded because fields explosive_material and explosive_force are not specified in C-DIS
+    // FIXME: explosions are not properly encoded/decoded because fields explosive_material and explosive_force are not specified in C-DIS - custom impl now, align with future standardization
     assert_eq!(body_in.descriptor, body_out.descriptor);
     assert_eq!(body_in.location_in_entity_coordinates, body_out.location_in_entity_coordinates);
     assert_eq!(body_in.detonation_result, body_out.detonation_result);
@@ -422,7 +427,7 @@ fn codec_consistency_acknowledge() {
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
         .with_acknowledge_flag(AcknowledgeFlag::StartResume)
-        .with_response_flag(ResponseFlag::Abletocomply)
+        .with_response_flag(ResponseFlag::AbleToComply)
         .with_request_id(1)
         .build().into_pdu_body();
 
@@ -455,7 +460,7 @@ fn codec_consistency_action_request() {
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
         .with_request_id(1)
-        .with_action_id(ActionId::Joinexercise)
+        .with_action_id(ActionId::JoinExercise)
         .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
         .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
         .build().into_pdu_body();
@@ -625,7 +630,7 @@ fn codec_consistency_event_report() {
     let dis_body = EventReport::builder()
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
-        .with_event_type(EventType::RanOutofFuel)
+        .with_event_type(EventType::RanOutOfFuel)
         .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
         .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
         .build().into_pdu_body();
@@ -665,8 +670,8 @@ fn codec_consistency_comment() {
 
     let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
 
-    if let CdisBody::Comment(aap) = &cdis_pdu.body {
-        assert!(aap.datum_specification.fixed_datum_records.is_empty());
+    if let CdisBody::Comment(comment) = &cdis_pdu.body {
+        assert!(comment.datum_specification.fixed_datum_records.is_empty());
     }
 
     let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
@@ -677,4 +682,345 @@ fn codec_consistency_comment() {
     assert_eq!(body_in.originating_id, body_out.originating_id);
     assert_eq!(body_in.receiving_id, body_out.receiving_id);
     assert_eq!(body_in.variable_datum_records, body_out.variable_datum_records);
+}
+
+#[test]
+fn codec_consistency_electromagnetic_emission_full_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = ElectromagneticEmission::builder()
+        .with_emitting_entity_id(EntityId::new(1, 1, 1))
+        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+        .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
+        .with_emitter_system(EmitterSystem::default()
+            .with_number(20)
+            .with_name(EmitterName::ANFPS16_5505)
+            .with_function(EmitterSystemFunction::SearchAcquisition_102)
+            .with_location(VectorF32::new(1.0, 2.0, 3.0))
+            .with_beam(Beam::default()
+                .with_number(1)
+                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                .with_parameter_index(1)
+                .with_parameter_data(FundamentalParameterData::default())
+                .with_track_jam(TrackJam::default()
+                    .with_entity_id(EntityId::new(1, 2, 3)))))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::ElectromagneticEmission).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_in.body { ee } else { ElectromagneticEmission::default() };
+    let body_out = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_out.body { ee } else { ElectromagneticEmission::default() };
+
+    assert_eq!(body_in.emitting_entity_id, body_out.emitting_entity_id);
+    assert_eq!(body_in.emitter_systems, body_out.emitter_systems);
+    assert_eq!(body_in.event_id, body_out.event_id);
+    assert_eq!(body_in.state_update_indicator, body_out.state_update_indicator);
+}
+
+/// FIXME This test actually does little more than check a full update PDU conversion because there is no state.
+#[test]
+fn codec_consistency_electromagnetic_emission_partial_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_partial_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::ElectromagneticEmission).with_pdu_status(PduStatus::default());
+    let dis_body = ElectromagneticEmission::builder()
+        .with_emitting_entity_id(EntityId::new(1, 1, 1))
+        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+        .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
+        .with_emitter_system(EmitterSystem::default()
+            .with_number(20)
+            .with_name(EmitterName::ANFPS16_5505)
+            .with_function(EmitterSystemFunction::SearchAcquisition_102)
+            .with_location(VectorF32::new(1.0, 2.0, 3.0))
+            .with_beam(Beam::default()
+                .with_number(1)
+                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                .with_parameter_index(1)
+                .with_parameter_data(FundamentalParameterData::default())
+                .with_track_jam(TrackJam::default()
+                    .with_entity_id(EntityId::new(1, 2, 3)))))
+        .build()
+        .into_pdu_body();
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    assert_eq!(dis_pdu_in.pdu_length(), dis_pdu_out.pdu_length());
+    let body_in = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_in.body { ee } else { ElectromagneticEmission::default() };
+    let body_out = if let PduBody::ElectromagneticEmission(ee) = dis_pdu_out.body { ee } else { ElectromagneticEmission::default() };
+
+    assert_eq!(body_in.emitting_entity_id, body_out.emitting_entity_id);
+    assert_eq!(body_in.emitter_systems, body_out.emitter_systems);
+    assert_eq!(body_in.event_id, body_out.event_id);
+    assert_eq!(body_in.state_update_indicator, body_out.state_update_indicator);
+}
+
+#[test]
+fn codec_consistency_designator_full_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Designator::builder()
+        .with_designating_entity_id(EntityId::new(10, 10, 10))
+        .with_system_name(DesignatorSystemName::ANAAS38BNiteHawk)
+        .with_designated_entity_id(EntityId::new(20, 20, 20))
+        .with_code(DesignatorCode::Other)
+        .with_power(12.0)
+        .with_wavelength(15.0)
+        .with_spot_wrt_designated_entity(VectorF32::new(10.0, 10.0, 0.0))
+        .with_spot_location(Location::new(0.0, 0.0, 5_000_000.0))
+        .with_dead_reckoning_algorithm(DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity)
+        .with_linear_acceleration(VectorF32::new(0.0, 0.0, 0.0))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::Designator).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Designator(designator) = dis_pdu_in.body { designator } else { Designator::default() };
+    let body_out = if let PduBody::Designator(designator) = dis_pdu_out.body { designator } else { Designator::default() };
+
+    assert_eq!(body_in.designating_entity_id, body_out.designating_entity_id);
+    assert_eq!(body_in.designated_entity_id, body_out.designated_entity_id);
+    assert_eq!(body_in.system_name, body_out.system_name);
+    assert_eq!(body_in.power, body_out.power);
+    assert_eq!(body_in.wavelength, body_out.wavelength);
+    assert_eq!(body_in.spot_location.x_coordinate, body_out.spot_location.x_coordinate.round());
+    assert_eq!(body_in.spot_location.y_coordinate, body_out.spot_location.y_coordinate.round());
+    assert_eq!(body_in.spot_location.z_coordinate, body_out.spot_location.z_coordinate.round());
+    assert_eq!(body_in.linear_acceleration, body_out.linear_acceleration);
+}
+
+#[test]
+fn codec_consistency_signal() {
+    use dis_rs::signal::model::Signal;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Signal).with_pdu_status(PduStatus::default());
+    let dis_body = Signal::builder()
+        .with_radio_reference_id(EntityId::new(1, 1, 1))
+        .with_radio_number(20)
+        .with_encoding_scheme(EncodingScheme::EncodedAudio {
+            encoding_class: SignalEncodingClass::EncodedAudio,
+            encoding_type: SignalEncodingType::_8bitMulaw_ITUTG_711_1
+        })
+        .with_tdl_type(SignalTdlType::Other_0)
+        .with_sample_rate(480)
+        .with_samples(150)
+        .with_data(vec![0x01, 0x02, 0x03])
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+
+    assert_eq!(state_result, CodecStateResult::StateUnaffected);
+
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Signal(body) = dis_pdu_in.body { body } else { Signal::default() };
+    let body_out = if let PduBody::Signal(body) = dis_pdu_out.body { body } else { Signal::default() };
+
+    assert_eq!(body_in, body_out);
+}
+
+#[test]
+fn codec_consistency_receiver() {
+    use dis_rs::receiver::model::Receiver;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_header = PduHeader::new_v7(7, PduType::Receiver).with_pdu_status(PduStatus::default());
+    let dis_body = Receiver::builder()
+        .with_radio_reference_id(EntityId::new(1, 1, 1))
+        .with_radio_number(20)
+        .with_receiver_state(ReceiverState::OnAndReceiving)
+        .with_received_power(-90.0)
+        .with_transmitter_radio_reference_id(EntityId::new(2, 2, 2))
+        .with_transmitter_radio_number(10)
+        .build().into_pdu_body();
+
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+
+    assert_eq!(state_result, CodecStateResult::StateUnaffected);
+
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Receiver(body) = dis_pdu_in.body { body } else { Receiver::default() };
+    let body_out = if let PduBody::Receiver(body) = dis_pdu_out.body { body } else { Receiver::default() };
+
+    assert_eq!(body_in, body_out);
+}
+
+#[test]
+fn codec_consistency_transmitter_full_mode() {
+    use std::str::FromStr;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Transmitter::builder()
+        .with_radio_reference_id(EntityId::new(10, 10, 10))
+        .with_radio_number(1)
+        .with_radio_type(EntityType::from_str("1:2:3:4:5:6:7").unwrap())
+        .with_transmit_state(TransmitterTransmitState::OnAndTransmitting)
+        .with_input_source(TransmitterInputSource::Pilot)
+        .with_antenna_location(Location::new(0.0, 0.0, 5_000_000.0))
+        .with_relative_antenna_location(VectorF32::new(1.0, 1.0, 0.0))
+        .with_antenna_pattern_type(TransmitterAntennaPatternType::Beam)
+        .with_frequency(1_234_000_000)
+        .with_transmit_frequency_bandwidth(20.0)
+        .with_power(12.0)
+        .with_modulation_type(ModulationType::default()
+            .with_spread_spectrum(SpreadSpectrum::default())
+            .with_major_modulation(TransmitterMajorModulation::NoStatement)
+            .with_radio_system(TransmitterModulationTypeSystem::JTIDSMIDS))
+        .with_crypto_system(TransmitterCryptoSystem::NoEncryptionDevice)
+        .with_crypto_key_id(CryptoKeyId::default())
+        .with_modulation_parameters(vec![])
+        .with_antenna_pattern(BeamAntennaPattern::default().with_e_x(20.0).with_e_z(10.0))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::Transmitter).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Transmitter(designator) = dis_pdu_in.body { designator } else { Transmitter::default() };
+    let body_out = if let PduBody::Transmitter(designator) = dis_pdu_out.body { designator } else { Transmitter::default() };
+
+    assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
+    assert_eq!(body_in.transmit_state, body_out.transmit_state);
+    assert_eq!(body_in.modulation_type, body_out.modulation_type);
+    assert_eq!(body_in.antenna_pattern, body_out.antenna_pattern);
+    assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
+}
+
+/// FIXME This test actually does little more than check a full update PDU conversion because there is no state.
+#[test]
+fn codec_consistency_transmitter_partial_mode() {
+    use std::str::FromStr;
+
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_partial_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Transmitter::builder()
+        .with_radio_reference_id(EntityId::new(10, 10, 10))
+        .with_radio_number(1)
+        .with_radio_type(EntityType::from_str("1:2:3:4:5:6:7").unwrap())
+        .with_transmit_state(TransmitterTransmitState::OnAndTransmitting)
+        .with_input_source(TransmitterInputSource::Pilot)
+        .with_antenna_location(Location::new(0.0, 0.0, 5_000_000.0))
+        .with_relative_antenna_location(VectorF32::new(1.0, 1.0, 0.0))
+        .with_antenna_pattern_type(TransmitterAntennaPatternType::Beam)
+        .with_frequency(1_234_000_000)
+        .with_transmit_frequency_bandwidth(20.0)
+        .with_power(12.0)
+        .with_modulation_type(ModulationType::default()
+            .with_spread_spectrum(SpreadSpectrum::default())
+            .with_major_modulation(TransmitterMajorModulation::NoStatement)
+            .with_radio_system(TransmitterModulationTypeSystem::JTIDSMIDS))
+        .with_crypto_system(TransmitterCryptoSystem::KGV135A)
+        .with_crypto_key_id(CryptoKeyId::default())
+        .with_modulation_parameters(vec![])
+        .with_antenna_pattern(BeamAntennaPattern::default().with_e_x(20.0).with_e_z(10.0))
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::Transmitter).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::Transmitter(designator) = dis_pdu_in.body { designator } else { Transmitter::default() };
+    let body_out = if let PduBody::Transmitter(designator) = dis_pdu_out.body { designator } else { Transmitter::default() };
+
+    assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
+    assert_eq!(body_in.transmit_state, body_out.transmit_state);
+    assert_eq!(body_in.modulation_type, body_out.modulation_type);
+    assert_eq!(body_in.antenna_pattern, body_out.antenna_pattern);
+    assert_eq!(body_in.power, body_out.power);
+    assert_eq!(body_in.crypto_system, body_out.crypto_system);
+    assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
+}
+
+#[test]
+fn codec_consistency_iff_full_mode() {
+    let mut encoder_state = EncoderState::new();
+    let codec_options = CodecOptions::new_full_update();
+    let mut decoder_state = DecoderState::new();
+
+    let dis_body = Iff::builder()
+        .with_emitting_entity_id(EntityId::new(10, 10, 10))
+        .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+        .with_relative_antenna_location(VectorF32::new(1.0, 2.0, 3.0))
+        .with_system_id(SystemId::builder()
+            .with_system_name(IffSystemName::GenericMarkXIIACombinedInterrogatorTransponder_CIT_)
+            .with_system_mode(IffSystemMode::Normal)
+            .with_system_type(IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_)
+            .with_change_options(ChangeOptionsRecord::default())
+            .build())
+        .with_system_designator(255)
+        .with_system_specific_data(0)
+        .with_fundamental_operational_data(FundamentalOperationalData::builder()
+            .with_information_layers(InformationLayers::builder()
+                .with_layer_2(LayersPresenceApplicability::PresentApplicable)
+                .with_layer_3(LayersPresenceApplicability::PresentApplicable)
+                .with_layer_4(LayersPresenceApplicability::PresentApplicable)
+                .with_layer_5(LayersPresenceApplicability::PresentApplicable)
+                .build())
+            .build())
+        .with_layer_2(IffLayer2::default().finalize_layer_header_length())
+        .with_layer_3(IffLayer3::default().finalize_layer_header_length())
+        .with_layer_4(IffLayer4::default().finalize_layer_header_length())
+        .with_layer_5(IffLayer5::default().finalize_layer_header_length())
+        .build()
+        .into_pdu_body();
+    let dis_header = PduHeader::new_v7(7, PduType::IFF).with_pdu_status(PduStatus::default());
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+    let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+    let (dis_pdu_out, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
+    assert_eq!(dis_pdu_in.header, dis_pdu_out.header);
+    let body_in = if let PduBody::IFF(iff) = dis_pdu_in.body { iff } else { Iff::default() };
+    let body_out = if let PduBody::IFF(iff) = dis_pdu_out.body { iff } else { Iff::default() };
+    assert_eq!(body_in, body_out);
+
+    // assert_eq!(body_in.radio_reference_id, body_out.radio_reference_id);
+    // assert_eq!(body_in.transmit_state, body_out.transmit_state);
+    // assert_eq!(body_in.modulation_type, body_out.modulation_type);
+    // assert_eq!(body_in.antenna_pattern, body_out.antenna_pattern);
+    // assert_eq!(body_in.relative_antenna_location, body_out.relative_antenna_location);
 }

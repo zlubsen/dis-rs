@@ -110,6 +110,7 @@ enum Event {
 /// Prints basic config information to the terminal
 fn cli_print_config(config: &Config, config_spec: &ConfigSpec) {
     info!("*** C-DIS Gateway ***");
+    info!("Version {}", env!("CARGO_PKG_VERSION"));
     if let Some(meta) = &config_spec.metadata {
         info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
     }
@@ -279,7 +280,7 @@ async fn reader_socket(socket: Arc<UdpSocket>,
             received = socket.recv_from(&mut buf) => {
                 match received {
                     Ok((bytes_received, from_address)) => {
-                        if socket.local_addr().unwrap() != from_address { // FIXME potential panic, provide a default value...
+                        if socket.local_addr().unwrap_or_default() != from_address {
                             Action::ReceivedPacket(Bytes::copy_from_slice(&buf[..bytes_received]), from_address)
                         } else { Action::BlockedPacket }
                     }

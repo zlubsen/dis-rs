@@ -19,6 +19,7 @@ impl EcefToGeoConstants {
 ///
 /// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
 pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64, f64) {
+    // TODO handle special case for centre of earth, where lat/lon are ignored (CDIS 7.1 ad. c).
     let zp = ecef_z.abs();
     let w2 = ecef_x * ecef_x + ecef_y * ecef_y;
     let w = w2.sqrt();

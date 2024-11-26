@@ -602,21 +602,21 @@ impl From<PduType> for ProtocolFamily {
             PduType::ArticulatedParts => ProtocolFamily::LiveEntity_LE_InformationInteraction,
             PduType::LEFire => ProtocolFamily::LiveEntity_LE_InformationInteraction,
             PduType::LEDetonation => ProtocolFamily::LiveEntity_LE_InformationInteraction,
-            PduType::CreateEntityR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::RemoveEntityR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::StartResumeR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::StopFreezeR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::AcknowledgeR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::ActionRequestR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::ActionResponseR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::DataQueryR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::SetDataR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::DataR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::EventReportR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::CommentR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::RecordR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::SetRecordR => ProtocolFamily::SimulationManagementwithReliability,
-            PduType::RecordQueryR => ProtocolFamily::SimulationManagementwithReliability,
+            PduType::CreateEntityR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::RemoveEntityR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::StartResumeR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::StopFreezeR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::AcknowledgeR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::ActionRequestR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::ActionResponseR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::DataQueryR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::SetDataR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::DataR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::EventReportR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::CommentR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::RecordR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::SetRecordR => ProtocolFamily::SimulationManagementWithReliability,
+            PduType::RecordQueryR => ProtocolFamily::SimulationManagementWithReliability,
             PduType::CollisionElastic => ProtocolFamily::EntityInformationInteraction,
             PduType::EntityStateUpdate => ProtocolFamily::EntityInformationInteraction,
             PduType::DirectedEnergyFire => ProtocolFamily::Warfare,
@@ -630,7 +630,7 @@ impl From<PduType> for ProtocolFamily {
 }
 
 /// 6.2.80 Simulation Address record
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct SimulationAddress {
     pub site_id : u16,
     pub application_id : u16,
@@ -740,7 +740,7 @@ impl Default for EventId {
 
 /// 6.2.96 Vector record
 /// 6.2.7 Angular Velocity Vector record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct VectorF32 {
     pub first_vector_component : f32,
     pub second_vector_component : f32,
@@ -1051,7 +1051,7 @@ impl MunitionDescriptor {
     }
 }
 
-/// Custom type to model timestamps, just wrapping a `u32` value. By default
+/// Custom type to model timestamps, just wrapping a `u32` value. By default,
 /// the `PduHeader` uses this type. Users can decide to convert the raw value
 /// to a `DisTimeStamp`, which models the Absolute and Relative interpretations of the value as defined by the standard.
 ///
@@ -1100,11 +1100,11 @@ impl From<DisTimeStamp> for TimeStamp {
 }
 
 /// A timestamp type that models the timestamp mechanism as described in the
-/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets a u32 value
+/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets an u32 value
 /// as an Absolute or a Relative timestamp based on the Least Significant Bit.
 /// The remaining (upper) bits represent the units of time passed since the
 /// beginning of the current hour in the selected time reference.
-/// The `DisTimeStamp` stores both the units past the hour, as well as a conversion to
+/// The `DisTimeStamp` stores both the units past the hour, and a conversion to
 /// nanoseconds past the hour.
 #[derive(Debug)]
 pub enum DisTimeStamp {
@@ -1505,7 +1505,7 @@ impl EntityAssociationParameter {
 }
 
 /// 6.2.11 Beam Data record
-#[derive(Clone, Default, Debug, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct BeamData {
     pub azimuth_center: f32,
     pub azimuth_sweep: f32,

@@ -1,10 +1,3 @@
-use thiserror::Error;
-use dis_rs::enumerations::PduType;
-use dis_rs::model::TimeStamp;
-use crate::entity_state::model::EntityState;
-use crate::records::model::{CdisHeader, CdisRecord, EntityId};
-use crate::unsupported::Unsupported;
-
 pub mod types;
 pub mod records;
 pub mod constants;
@@ -15,21 +8,31 @@ pub mod action_response;
 pub mod collision;
 pub mod comment;
 pub mod create_entity;
-pub mod detonation;
 pub mod data;
 pub mod data_query;
+pub mod designator;
+pub mod detonation;
+pub mod electromagnetic_emission;
 pub mod entity_state;
 pub mod event_report;
 pub mod fire;
+pub mod iff;
+pub mod receiver;
 pub mod remove_entity;
 pub mod set_data;
+pub mod signal;
 pub mod start_resume;
 pub mod stop_freeze;
+pub mod transmitter;
 pub mod unsupported;
 
 pub(crate) mod parsing;
 pub(crate) mod writing;
 pub mod codec;
+
+use thiserror::Error;
+use dis_rs::enumerations::PduType;
+use dis_rs::model::TimeStamp;
 
 pub use parsing::parse;
 pub use writing::SerializeCdisPdu;
@@ -43,13 +46,22 @@ use crate::comment::model::Comment;
 use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::data_query::model::DataQuery;
+use crate::designator::model::Designator;
 use crate::detonation::model::Detonation;
+use crate::electromagnetic_emission::model::ElectromagneticEmission;
+use crate::entity_state::model::EntityState;
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
+use crate::iff::model::Iff;
+use crate::receiver::model::Receiver;
+use crate::records::model::{CdisHeader, CdisRecord, EntityId};
 use crate::remove_entity::model::RemoveEntity;
 use crate::set_data::model::SetData;
+use crate::signal::model::Signal;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
+use crate::transmitter::model::Transmitter;
+use crate::unsupported::Unsupported;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -129,12 +141,12 @@ pub enum CdisBody {
     Data(Data),
     EventReport(EventReport),
     Comment(Comment),
-    ElectromagneticEmission,
-    Designator,
-    Transmitter,
-    Signal,
-    Receiver,
-    Iff,
+    ElectromagneticEmission(ElectromagneticEmission),
+    Designator(Designator),
+    Transmitter(Transmitter),
+    Signal(Signal),
+    Receiver(Receiver),
+    Iff(Iff),
 }
 
 impl CdisBody {
@@ -157,12 +169,12 @@ impl CdisBody {
             CdisBody::Data(body) => { body.body_length_bits() }
             CdisBody::EventReport(body) => { body.body_length_bits() }
             CdisBody::Comment(body) => { body.body_length_bits() }
-            CdisBody::ElectromagneticEmission => { 0 }
-            CdisBody::Designator => { 0 }
-            CdisBody::Transmitter => { 0 }
-            CdisBody::Signal => { 0 }
-            CdisBody::Receiver => { 0 }
-            CdisBody::Iff => { 0 }
+            CdisBody::ElectromagneticEmission(body) => { body.body_length_bits() }
+            CdisBody::Designator(body) => { body.body_length_bits() }
+            CdisBody::Transmitter(body) => { body.body_length_bits() }
+            CdisBody::Signal(body) => { body.body_length_bits() }
+            CdisBody::Receiver(body) => { body.body_length_bits() }
+            CdisBody::Iff(body) => { body.body_length_bits() }
         }
     }
 }
@@ -187,12 +199,12 @@ impl CdisInteraction for CdisBody {
             CdisBody::Data(body) => { body.originator() }
             CdisBody::EventReport(body) => { body.originator() }
             CdisBody::Comment(body) => { body.originator() }
-            CdisBody::ElectromagneticEmission => { None } 
-            CdisBody::Designator => { None } 
-            CdisBody::Transmitter => { None } 
-            CdisBody::Signal => { None } 
-            CdisBody::Receiver => { None } 
-            CdisBody::Iff => { None } 
+            CdisBody::ElectromagneticEmission(body) => { body.originator() }
+            CdisBody::Designator(body) => { body.originator() }
+            CdisBody::Transmitter(body) => { body.originator() }
+            CdisBody::Signal(body) => { body.originator() }
+            CdisBody::Receiver(body) => { body.originator() }
+            CdisBody::Iff(body) => { body.originator() }
         }
     }
 
@@ -215,12 +227,12 @@ impl CdisInteraction for CdisBody {
             CdisBody::Data(body) => { body.receiver() }
             CdisBody::EventReport(body) => { body.receiver() }
             CdisBody::Comment(body) => { body.receiver() }
-            CdisBody::ElectromagneticEmission => { None } 
-            CdisBody::Designator => { None } 
-            CdisBody::Transmitter => { None } 
-            CdisBody::Signal => { None } 
-            CdisBody::Receiver => { None } 
-            CdisBody::Iff => { None } 
+            CdisBody::ElectromagneticEmission(body) => { body.receiver() }
+            CdisBody::Designator(body) => { body.receiver() }
+            CdisBody::Transmitter(body) => { body.receiver() }
+            CdisBody::Signal(body) => { body.receiver() }
+            CdisBody::Receiver(body) => { body.receiver() }
+            CdisBody::Iff(body) => { body.receiver() }
         }
     }
 }
@@ -304,13 +316,13 @@ impl Implemented for PduType {
             PduType::SetData |
             PduType::Data |
             PduType::EventReport |
-            PduType::Comment => { true }
-            // PduType::ElectromagneticEmission |
-            // PduType::Designator |
-            // PduType::Transmitter |
-            // PduType::Signal |
-            // PduType::Receiver |
-            // PduType::IFF
+            PduType::Comment |
+            PduType::ElectromagneticEmission |
+            PduType::Designator |
+            PduType::Transmitter |
+            PduType::Signal |
+            PduType::Receiver |
+            PduType::IFF => { true }
             _ => { false }
         }
     }
@@ -319,7 +331,7 @@ impl Implemented for PduType {
 #[cfg(test)]
 mod tests {
     use dis_rs::enumerations::PduType;
-    use crate::{CdisBody, Implemented, Supported};
+    use crate::{Implemented, Supported};
 
     #[test]
     fn ensure_supported_pdus() {
@@ -418,12 +430,11 @@ mod tests {
         assert!(PduType::Data.is_implemented());
         assert!(PduType::EventReport.is_implemented());
         assert!(PduType::Comment.is_implemented());
-
-        assert_eq!(PduType::ElectromagneticEmission.is_implemented() || CdisBody::ElectromagneticEmission.body_length() != 0, false);
-        assert_eq!(PduType::Designator.is_implemented() || CdisBody::Designator.body_length() != 0, false);
-        assert_eq!(PduType::Transmitter.is_implemented() || CdisBody::Transmitter.body_length() != 0, false);
-        assert_eq!(PduType::Signal.is_implemented() || CdisBody::Signal.body_length() != 0, false);
-        assert_eq!(PduType::Receiver.is_implemented() || CdisBody::Receiver.body_length() != 0, false);
-        assert_eq!(PduType::IFF.is_implemented() || CdisBody::Iff.body_length() != 0, false);
+        assert!(PduType::ElectromagneticEmission.is_implemented());
+        assert!(PduType::Designator.is_implemented());
+        assert!(PduType::Transmitter.is_implemented());
+        assert!(PduType::Signal.is_implemented());
+        assert!(PduType::Receiver.is_implemented());
+        assert!(PduType::IFF.is_implemented());
     }
 }

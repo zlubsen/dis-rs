@@ -4,8 +4,8 @@ use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
-use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
-use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation, TransmitterDetailUnmodulatedModulation, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
+use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
+use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
 
 pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
@@ -85,30 +85,8 @@ pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<
 fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
     let (input, spread_spectrum) = spread_spectrum(input)?;
     let (input, major_modulation) = be_u16(input)?;
-    let major_modulation = TransmitterMajorModulation::from(major_modulation);
     let (input, detail) = be_u16(input)?;
-    let major_modulation = match major_modulation {
-        TransmitterMajorModulation::NoStatement =>
-            { TransmitterMajorModulation::NoStatement }
-        TransmitterMajorModulation::Amplitude(_) =>
-            { TransmitterMajorModulation::Amplitude(TransmitterDetailAmplitudeModulation::from(detail)) }
-        TransmitterMajorModulation::AmplitudeandAngle(_) =>
-            { TransmitterMajorModulation::AmplitudeandAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
-        TransmitterMajorModulation::Angle(_) =>
-            { TransmitterMajorModulation::Angle(TransmitterDetailAngleModulation::from(detail)) }
-        TransmitterMajorModulation::Combination(_) =>
-            { TransmitterMajorModulation::Combination(TransmitterDetailCombinationModulation::from(detail)) }
-        TransmitterMajorModulation::Pulse(_) =>
-            { TransmitterMajorModulation::Pulse(TransmitterDetailPulseModulation::from(detail)) }
-        TransmitterMajorModulation::Unmodulated(_) =>
-            { TransmitterMajorModulation::Unmodulated(TransmitterDetailUnmodulatedModulation::from(detail)) }
-        TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(_) =>
-            { TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(TransmitterDetailCarrierPhaseShiftModulation::from(detail)) }
-        TransmitterMajorModulation::SATCOM(_) =>
-            { TransmitterMajorModulation::SATCOM(TransmitterDetailSATCOMModulation::from(detail)) }
-        TransmitterMajorModulation::Unspecified(_) =>
-            { TransmitterMajorModulation::Unspecified(detail) }
-    };
+    let major_modulation = TransmitterMajorModulation::new_from_bytes_with_detail(major_modulation, detail);
     let (input, radio_system) = be_u16(input)?;
     let radio_system = TransmitterModulationTypeSystem::from(radio_system);
 
@@ -120,23 +98,14 @@ fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
 
 fn spread_spectrum(input: &[u8]) -> IResult<&[u8], SpreadSpectrum> {
     let (input, spread_spectrum_values) = be_u16(input)?;
-    let frequency_hopping = ((spread_spectrum_values >> 15) & 0x0001) != 0;
-    let pseudo_noise = ((spread_spectrum_values >> 14) & 0x0001) != 0;
-    let time_hopping = ((spread_spectrum_values >> 13) & 0x0001) != 0;
 
-    Ok((input, SpreadSpectrum::new_with_values(frequency_hopping, pseudo_noise, time_hopping)))
+    Ok((input, SpreadSpectrum::from(spread_spectrum_values)))
 }
 
 fn crypto_key_id(input: &[u8]) -> IResult<&[u8], CryptoKeyId> {
     let (input, value) = be_u16(input)?;
-    let pseudo_crypto_key = value >> 1;
-    let crypto_mode = (value & 0x0001) != 0;
-    let crypto_mode = CryptoMode::from(crypto_mode);
 
-    Ok((input, CryptoKeyId {
-        pseudo_crypto_key,
-        crypto_mode,
-    }))
+    Ok((input, CryptoKeyId::from(value)))
 }
 
 fn beam_antenna_pattern(input: &[u8]) -> IResult<&[u8], BeamAntennaPattern> {

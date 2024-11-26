@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn fire_body_encode_munition() {
         let mut state = EncoderState::new();
-        let options = CodecOptions::new_partial_update().use_guise(true);
+        let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_fire_body()
             .with_munition_descriptor(
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn fire_body_encode_munition_no_qnt_rt() {
         let mut state = EncoderState::new();
-        let options = CodecOptions::new_partial_update().use_guise(true);
+        let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_fire_body()
             .with_munition_descriptor(
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn fire_body_encode_expandable() {
         let mut state = EncoderState::new();
-        let options = CodecOptions::new_partial_update().use_guise(true);
+        let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_fire_body()
             .with_expendable_descriptor(DisEntityType::default()

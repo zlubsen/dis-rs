@@ -24,7 +24,7 @@ mod tests {
             .with_event_type(RecordQueryREventType::InternalEntityStateData)
             .with_time(TimeStamp::new(123456))
             .with_record_query_specification(RecordQuerySpecification::default()
-                .with_record_ids(vec![VariableRecordType::_7_62mmM62_quantity_24005, VariableRecordType::_7_62mmM80_quantity_24008]))
+                .with_record_ids(vec![VariableRecordType::_7_62mmM62_Quantity_24005, VariableRecordType::_7_62mmM80_Quantity_24008]))
             .build()
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));

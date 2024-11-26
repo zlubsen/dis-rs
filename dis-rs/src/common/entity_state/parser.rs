@@ -131,15 +131,15 @@ pub fn dr_other_parameters(input: &[u8], algorithm: DeadReckoningAlgorithm) -> I
     let (input, other_parameters) = match algorithm {
         DeadReckoningAlgorithm::StaticNonmovingEntity |
         DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
-        DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
-        DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity |
+        DeadReckoningAlgorithm::DRM_FPB_SimilarToFPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWExceptInBodyCoordinates => {
             dr_other_parameters_euler(input)?
         }
-        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RPB_SimilarToRPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
         DeadReckoningAlgorithm::Other => {
@@ -249,12 +249,12 @@ mod tests {
                 assert_eq!(appearance.afterburner_on, false);
                 assert_eq!(appearance.is_frozen, false);
                 assert_eq!(appearance.power_plant_on, false);
-                assert_eq!(appearance.state, AppearanceEntityorObjectState::Active);
+                assert_eq!(appearance.state, AppearanceEntityOrObjectState::Active);
             } else {
                 assert!(false)
             }
 
-            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
+            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
             let capabilities : EntityCapabilities = pdu.entity_capabilities.into();
             if let EntityCapabilities::AirPlatformEntityCapabilities(capabilities) = capabilities {

@@ -1,10 +1,10 @@
 use num_traits::FromPrimitive;
 use dis_rs::enumerations::VariableParameterRecordType;
 use dis_rs::model::{FixedDatum, VariableDatum};
-use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates};
-use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
-use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS, NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
-use crate::types::writer::serialize_cdis_float;
+use crate::records::model::{AngularVelocity, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisRecord, CdisVariableParameter, EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration, LinearVelocity, Orientation, WorldCoordinates};
+use crate::writing::{write_value_signed, write_value_unsigned, SerializeCdis};
+use crate::constants::{EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS, NINE_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::types::model::{CdisFloat, UVINT8};
 use crate::writing::BitBuffer;
 
 impl SerializeCdis for CdisHeader {
@@ -127,12 +127,6 @@ impl SerializeCdis for CdisEntityMarking {
         });
 
         cursor
-    }
-}
-
-impl SerializeCdis for ParameterValueFloat {
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        serialize_cdis_float(buf, cursor, self)
     }
 }
 
@@ -259,6 +253,29 @@ impl SerializeCdis for VariableDatum {
     }
 }
 
+impl SerializeCdis for EncodingScheme {
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let (encoding_class, encoding_type) = match self {
+            EncodingScheme::EncodedAudio { encoding_class, encoding_type } => {
+                let encoding_type: u16 = (*encoding_type).into();
+                (encoding_class, UVINT8::from(encoding_type as u8))
+            }
+            EncodingScheme::RawBinaryData { encoding_class, nr_of_messages } => {
+                (encoding_class, UVINT8::from(*nr_of_messages))
+            }
+            EncodingScheme::Unspecified { encoding_class, encoding_type } => {
+                (encoding_class, UVINT8::from(*encoding_type))
+            }
+        };
+
+        let encoding_class: u16 = (*encoding_class).into();
+        let cursor = write_value_unsigned(buf, cursor, TWO_BITS, encoding_class);
+        let cursor = encoding_type.serialize(buf, cursor);
+
+        cursor
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bitvec::prelude::BitArray;
@@ -310,5 +327,28 @@ mod tests {
 
         assert_eq!(next_cursor, header.record_length());
         assert_eq!(buf.data[..64][..8], expected);
+    }
+}
+
+impl SerializeCdis for BeamData {
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.sweep_sync);
+
+        cursor
+    }
+}
+
+impl LayerHeader {
+    pub fn serialize_with_length(&self, body_length: usize, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.layer_number);
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.layer_specific_information);
+        let cursor = write_value_unsigned(buf, cursor, FOURTEEN_BITS, self.record_length() + body_length);
+
+        cursor
     }
 }

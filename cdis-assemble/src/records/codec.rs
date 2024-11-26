@@ -5,9 +5,9 @@ use dis_rs::model::{ArticulatedPart, AttachedPart, DisTimeStamp, EntityAssociati
 use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use crate::codec::Codec;
 use crate::constants::{ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, CENTIMETER_PER_METER, DECIMETERS_IN_METER, RADIANS_SEC_TO_DEGREES_SEC};
-use crate::records::model::UnitsMeters;
+use crate::records::model::{BeamData, EncodingScheme, LayerHeader, UnitsMeters};
 use crate::records::model::{AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP, CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat, UnitsDekameters, WorldCoordinates};
-use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
 
 impl Codec for CdisHeader {
     type Counterpart = PduHeader;
@@ -19,7 +19,7 @@ impl Codec for CdisHeader {
             pdu_type: item.pdu_type,
             timestamp: TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(item.time_stamp))),
             length: 0,
-            pdu_status: if let Some(status) = item.pdu_status { status } else { Default::default() },
+            pdu_status: item.pdu_status.unwrap_or_default(),
         }
     }
 
@@ -134,6 +134,24 @@ fn normalize_radians_to_plusminus_pi(radians: f32) -> f32 {
     } else { radians }
 }
 
+/// Encode a DIS LayerHeader into CDIS LayerHeader, providing the new layer length in CDIS bits.
+pub(crate) fn encode_layer_header_with_length(header: &dis_rs::iff::model::LayerHeader, layer_length_bits: u16) -> LayerHeader {
+    LayerHeader {
+        layer_number: header.layer_number,
+        layer_specific_information: header.layer_specific_information,
+        length: layer_length_bits,
+    }
+}
+
+/// Decode a CDIS LayerHeader into DIS LayerHeader, providing the new layer length in DIS bytes.
+pub(crate) fn decode_layer_header_with_length(header: &LayerHeader, layer_length_bytes: u16) -> dis_rs::iff::model::LayerHeader {
+    dis_rs::iff::model::LayerHeader::builder()
+        .with_layer_number(header.layer_number)
+        .with_layer_specific_information(header.layer_specific_information)
+        .with_length(layer_length_bytes)
+        .build()
+}
+
 /// Encode/Decode a ``VectorF32`` to ``LinearAcceleration``.
 /// DIS Lin. Acc. is in meters/sec/sec (as ``VectorF32``).
 /// CDIS Lin. Acc. is in decimeters/sec/sec (as ``LinearAcceleration``).
@@ -189,6 +207,44 @@ impl Codec for AngularVelocity {
     }
 }
 
+impl Codec for EncodingScheme {
+    type Counterpart = dis_rs::signal::model::EncodingScheme;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        match item {
+            Self::Counterpart::EncodedAudio { encoding_class, encoding_type } => {
+                Self::EncodedAudio { encoding_class: *encoding_class, encoding_type: *encoding_type }
+            }
+            Self::Counterpart::RawBinaryData { encoding_class, nr_of_messages } => {
+                Self::RawBinaryData { encoding_class: *encoding_class, nr_of_messages: *nr_of_messages as u8 }
+            }
+            Self::Counterpart::ApplicationSpecificData { encoding_class, .. } => {
+                Self::Unspecified { encoding_class: *encoding_class, encoding_type: 0 }
+            }
+            Self::Counterpart::DatabaseIndex { encoding_class, .. } => {
+                Self::Unspecified { encoding_class: *encoding_class, encoding_type: 0 }
+            }
+            Self::Counterpart::Unspecified { encoding_class } => {
+                Self::Unspecified { encoding_class: *encoding_class, encoding_type: 0 }
+            }
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        match self {
+            EncodingScheme::EncodedAudio { encoding_class, encoding_type } => {
+                Self::Counterpart::EncodedAudio { encoding_class: *encoding_class, encoding_type: *encoding_type }
+            }
+            EncodingScheme::RawBinaryData { encoding_class, nr_of_messages } => {
+                Self::Counterpart::RawBinaryData { encoding_class: *encoding_class, nr_of_messages: *nr_of_messages as u16 }
+            }
+            EncodingScheme::Unspecified { encoding_class, .. } => {
+                Self::Counterpart::Unspecified { encoding_class: *encoding_class }
+            }
+        }
+    }
+}
+
 /// Encode DIS `VectorF32` representing an Entity Coordinate Vector (DIS 6.2.96a)
 /// to C-DIS `EntityCoordinateVector` (11.10).
 ///
@@ -199,29 +255,37 @@ impl Codec for AngularVelocity {
 ///
 /// Returns the encoded value and a `UnitsMeters` enum indicating if the value is in _Centimeters_ (default) or _Meters_.
 pub(crate) fn encode_entity_coordinate_vector(entity_coordinate_vector: &VectorF32) -> (EntityCoordinateVector, UnitsMeters) {
-    /// Helper function to convert `f32` values to `i16`, taking the max and min of `i16` when the `f32` value is out of `i16`'s range.
-    fn f32_to_i16_without_overflow(value: f32) -> i16 {
-        i16::from_f32(value).unwrap_or_else(|| if value.is_positive() {i16::MAX} else {i16::MIN})
-    }
-
     let cm_range = f32::from(i16::MIN)..=f32::from(i16::MAX);
     if !cm_range.contains(&entity_coordinate_vector.first_vector_component)
         || !cm_range.contains(&entity_coordinate_vector.second_vector_component)
         || !cm_range.contains(&entity_coordinate_vector.third_vector_component) {
         // at least one vector component is larger than the possible range for centimeters.
-        (EntityCoordinateVector {
-            x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component)),
-            y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component)),
-            z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component)),
-        }, UnitsMeters::Meter)
+        (encode_entity_coordinate_vector_meters(entity_coordinate_vector), UnitsMeters::Meter)
     } else {
         // all vector components can be expressed in centimeters
-        (EntityCoordinateVector {
-            x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component * CENTIMETER_PER_METER)),
-            y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component * CENTIMETER_PER_METER)),
-            z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component * CENTIMETER_PER_METER)),
-        }, UnitsMeters::Centimeter)
+        (encode_entity_coordinate_vector_centimeters(entity_coordinate_vector), UnitsMeters::Centimeter)
     }
+}
+
+pub(crate) fn encode_entity_coordinate_vector_centimeters(entity_coordinate_vector: &VectorF32) -> EntityCoordinateVector {
+    EntityCoordinateVector {
+        x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component * CENTIMETER_PER_METER)),
+        y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component * CENTIMETER_PER_METER)),
+        z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component * CENTIMETER_PER_METER)),
+    }
+}
+
+pub(crate) fn encode_entity_coordinate_vector_meters(entity_coordinate_vector: &VectorF32) -> EntityCoordinateVector {
+    EntityCoordinateVector {
+        x: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.first_vector_component)),
+        y: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.second_vector_component)),
+        z: SVINT16::from(f32_to_i16_without_overflow(entity_coordinate_vector.third_vector_component)),
+    }
+}
+
+/// Helper function to convert `f32` values to `i16`, taking the max and min of `i16` when the `f32` value is out of `i16`'s range.
+fn f32_to_i16_without_overflow(value: f32) -> i16 {
+    i16::from_f32(value).unwrap_or_else(|| if value.is_positive() {i16::MAX} else {i16::MIN})
 }
 
 /// Decode C-DIS `EntityCoordinateVector` (11.10) to DIS `VectorF32` representing an Entity Coordinate Vector (DIS 6.2.96a).
@@ -342,7 +406,7 @@ impl Codec for CdisArticulatedPartVP {
             attachment_id: item.attachment_id,
             type_class: item.type_class,
             type_metric: item.type_metric,
-            parameter_value: ParameterValueFloat::from_f64(item.parameter_value as f64),
+            parameter_value: ParameterValueFloat::from_float(item.parameter_value),
         }
     }
 
@@ -352,7 +416,7 @@ impl Codec for CdisArticulatedPartVP {
             .with_attachment_id(self.attachment_id)
             .with_type_class(self.type_class)
             .with_type_metric(self.type_metric)
-            .with_parameter_value(self.parameter_value.to_value() as f32)
+            .with_parameter_value(self.parameter_value.to_float())
     }
 }
 
@@ -446,6 +510,32 @@ impl Codec for CdisEntityAssociationVP {
     }
 }
 
+impl Codec for BeamData {
+    type Counterpart = dis_rs::model::BeamData;
+
+    const SCALING: f32 = ((2^12) - 1) as f32 / std::f32::consts::PI;
+    const SCALING_2: f32 = 1023f32 / 100.0;
+
+    fn encode(item: &Self::Counterpart) -> Self {
+        Self {
+            az_center: SVINT13::from((item.azimuth_center * Self::SCALING).round() as i16),
+            az_sweep: SVINT13::from((item.azimuth_sweep * Self::SCALING).round() as i16),
+            el_center: SVINT13::from((item.elevation_center * Self::SCALING).round() as i16),
+            el_sweep: SVINT13::from((item.elevation_sweep * Self::SCALING).round() as i16),
+            sweep_sync: (item.sweep_sync * Self::SCALING_2).round() as u16,
+        }
+    }
+
+    fn decode(&self) -> Self::Counterpart {
+        Self::Counterpart::default()
+            .with_azimuth_center(self.az_center.value as f32 / Self::SCALING)
+            .with_azimuth_sweep(self.az_sweep.value as f32 / Self::SCALING)
+            .with_elevation_center(self.el_center.value as f32 / Self::SCALING)
+            .with_elevation_sweep(self.el_sweep.value as f32 / Self::SCALING)
+            .with_sweep_sync(self.sweep_sync as f32 / Self::SCALING_2)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use dis_rs::enumerations::{PduType, ProtocolVersion};
@@ -453,7 +543,7 @@ mod tests {
     use crate::codec::Codec;
     use crate::records::codec::{decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi};
     use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT8};
-    use crate::records::model::{AngularVelocity, cdis_to_dis_u32_timestamp, CdisHeader, CdisProtocolVersion, dis_to_cdis_u32_timestamp, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
+    use crate::records::model::{cdis_to_dis_u32_timestamp, dis_to_cdis_u32_timestamp, AngularVelocity, CdisHeader, CdisProtocolVersion, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates};
 
     #[test]
     fn test_normalize_radians_to_plusminus_pi() {
