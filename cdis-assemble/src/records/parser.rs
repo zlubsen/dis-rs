@@ -470,7 +470,7 @@ pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingSche
     let (input, encoding_scheme_type) = uvint8(input)?;
 
     let encoding_scheme = match encoding_scheme_class {
-        SignalEncodingClass::Encodedaudio => {
+        SignalEncodingClass::EncodedAudio => {
             EncodingScheme::EncodedAudio {
                 encoding_class: encoding_scheme_class,
                 encoding_type: SignalEncodingType::from(encoding_scheme_type.value as u16)
@@ -485,7 +485,7 @@ pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingSche
         SignalEncodingClass::ApplicationSpecificData => {
             EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
         }
-        SignalEncodingClass::Databaseindex => {
+        SignalEncodingClass::DatabaseIndex => {
             EncodingScheme::Unspecified { encoding_class: encoding_scheme_class, encoding_type: encoding_scheme_type.value }
         }
         SignalEncodingClass::Unspecified(_) => {

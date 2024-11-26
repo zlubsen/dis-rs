@@ -308,8 +308,8 @@ pub enum EncodingScheme {
 impl Default for EncodingScheme {
     fn default() -> Self {
         Self::EncodedAudio {
-            encoding_class: SignalEncodingClass::Encodedaudio,
-            encoding_type: SignalEncodingType::_8bitmulaw_ITUTG_711_1,
+            encoding_class: SignalEncodingClass::EncodedAudio,
+            encoding_type: SignalEncodingType::_8bitMulaw_ITUTG_711_1,
         }
     }
 }

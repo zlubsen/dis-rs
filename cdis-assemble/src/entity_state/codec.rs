@@ -300,8 +300,8 @@ pub(crate) fn encode_dr_linear_acceleration(algorithm: DeadReckoningAlgorithm, l
     match algorithm {
         DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
         DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity |
-        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWExceptInBodyCoordinates => {
             Some(LinearAcceleration::encode(linear_acceleration))
         }
         _ => { None }

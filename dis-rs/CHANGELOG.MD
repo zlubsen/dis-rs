@@ -1,6 +1,10 @@
 # Changelog for crate DIS-RS
 
-## 0.10.0 - 2024-xx-xx
+## 0.10.0 - 2024-11-26
+
+The generated enumerations by `build.rs` now have more proper UpperCamelCase names (such as `LifeForm` instead of `Lifeform`). Thanks to @carlocorradini.
+
+Updated Enumerations to SISO-REF-010 v33.
 
 `ClockTime` is now Copy.
 

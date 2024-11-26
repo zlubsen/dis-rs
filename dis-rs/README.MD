@@ -51,42 +51,42 @@ Here is an overview of the DIS PDUs/features supported by dis-rs. 'Read' means r
 | IsGroupOf                       | V |
 | TransferOwnership               | V |
 | IsPartOf                        | V |
-|   MinefieldState | |
-|   MinefieldQuery | |
-|    MinefieldData | |
-|    MinefieldResponseNACK | |
-|    EnvironmentalProcess | |
-|    GriddedData | |
-|    PointObjectState | |
-|    LinearObjectState | |
-|    ArealObjectState | |
-|    TSPI | |
-|    Appearance | |
-|    ArticulatedParts | |
-|    LEFire | |
-|    LEDetonation | |
-|     CreateEntityR | V |
-|     RemoveEntityR | V |
-|     StartResumeR | V |
-|     StopFreezeR | V |
-|     AcknowledgeR | V |
-|     ActionRequestR | V |
-|     ActionResponseR | V |
-|     DataQueryR | V |
-|     SetDataR | V |
-|     DataR | V |
-|     EventReportR | V |
-|     CommentR | V |
-|     RecordR | V |
-|     SetRecordR | V |
-|     RecordQueryR | V |
-|     CollisionElastic | V |
-|     EntityStateUpdate | V |
-|    DirectedEnergyFire | |
-|    EntityDamageStatus | |
-|    InformationOperationsAction | |
-|    InformationOperationsReport | |
-|    Attribute | V |
+| MinefieldState                  | |
+| MinefieldQuery                  | |
+| MinefieldData                   | |
+| MinefieldResponseNACK           | |
+| EnvironmentalProcess            | |
+| GriddedData                     | |
+| PointObjectState                | |
+| LinearObjectState               | |
+| ArealObjectState                | |
+| TSPI                            | |
+| Appearance                      | |
+| ArticulatedParts                | |
+| LEFire                          | |
+| LEDetonation                    | |
+| CreateEntityR                   | V |
+| RemoveEntityR                   | V |
+| StartResumeR                    | V |
+| StopFreezeR                     | V |
+| AcknowledgeR                    | V |
+| ActionRequestR                  | V |
+| ActionResponseR                 | V |
+| DataQueryR                      | V |
+| SetDataR                        | V |
+| DataR                           | V |
+| EventReportR                    | V |
+| CommentR                        | V |
+| RecordR                         | V |
+| SetRecordR                      | V |
+| RecordQueryR                    | V |
+| CollisionElastic                | V |
+| EntityStateUpdate               | V |
+| DirectedEnergyFire              | |
+| EntityDamageStatus              | |
+| InformationOperationsAction     | |
+| InformationOperationsReport     | |
+| Attribute                       | V |
 
 ### Enumerations
 dis-rs uses the SISO-REF-010 reference to map the wire level encoding to actual names of enumerations and values in code.

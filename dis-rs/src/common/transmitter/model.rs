@@ -348,8 +348,8 @@ impl TransmitterMajorModulation {
                 { TransmitterMajorModulation::NoStatement }
             TransmitterMajorModulation::Amplitude(_) =>
                 { TransmitterMajorModulation::Amplitude(TransmitterDetailAmplitudeModulation::from(detail)) }
-            TransmitterMajorModulation::AmplitudeandAngle(_) =>
-                { TransmitterMajorModulation::AmplitudeandAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
+            TransmitterMajorModulation::AmplitudeAndAngle(_) =>
+                { TransmitterMajorModulation::AmplitudeAndAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
             TransmitterMajorModulation::Angle(_) =>
                 { TransmitterMajorModulation::Angle(TransmitterDetailAngleModulation::from(detail)) }
             TransmitterMajorModulation::Combination(_) =>
@@ -375,7 +375,7 @@ impl TransmitterMajorModulation {
             TransmitterMajorModulation::Amplitude(detail) => {
                 (1, (*detail).into())
             }
-            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
+            TransmitterMajorModulation::AmplitudeAndAngle(detail) => {
                 (2, (*detail).into())
             }
             TransmitterMajorModulation::Angle(detail) => {

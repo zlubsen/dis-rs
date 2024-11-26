@@ -821,8 +821,8 @@ fn codec_consistency_signal() {
         .with_radio_reference_id(EntityId::new(1, 1, 1))
         .with_radio_number(20)
         .with_encoding_scheme(EncodingScheme::EncodedAudio {
-            encoding_class: SignalEncodingClass::Encodedaudio,
-            encoding_type: SignalEncodingType::_8bitmulaw_ITUTG_711_1
+            encoding_class: SignalEncodingClass::EncodedAudio,
+            encoding_type: SignalEncodingType::_8bitMulaw_ITUTG_711_1
         })
         .with_tdl_type(SignalTdlType::Other_0)
         .with_sample_rate(480)
@@ -857,7 +857,7 @@ fn codec_consistency_receiver() {
     let dis_body = Receiver::builder()
         .with_radio_reference_id(EntityId::new(1, 1, 1))
         .with_radio_number(20)
-        .with_receiver_state(ReceiverState::Onandreceiving)
+        .with_receiver_state(ReceiverState::OnAndReceiving)
         .with_received_power(-90.0)
         .with_transmitter_radio_reference_id(EntityId::new(2, 2, 2))
         .with_transmitter_radio_number(10)
@@ -890,7 +890,7 @@ fn codec_consistency_transmitter_full_mode() {
         .with_radio_reference_id(EntityId::new(10, 10, 10))
         .with_radio_number(1)
         .with_radio_type(EntityType::from_str("1:2:3:4:5:6:7").unwrap())
-        .with_transmit_state(TransmitterTransmitState::Onandtransmitting)
+        .with_transmit_state(TransmitterTransmitState::OnAndTransmitting)
         .with_input_source(TransmitterInputSource::Pilot)
         .with_antenna_location(Location::new(0.0, 0.0, 5_000_000.0))
         .with_relative_antenna_location(VectorF32::new(1.0, 1.0, 0.0))
@@ -938,7 +938,7 @@ fn codec_consistency_transmitter_partial_mode() {
         .with_radio_reference_id(EntityId::new(10, 10, 10))
         .with_radio_number(1)
         .with_radio_type(EntityType::from_str("1:2:3:4:5:6:7").unwrap())
-        .with_transmit_state(TransmitterTransmitState::Onandtransmitting)
+        .with_transmit_state(TransmitterTransmitState::OnAndTransmitting)
         .with_input_source(TransmitterInputSource::Pilot)
         .with_antenna_location(Location::new(0.0, 0.0, 5_000_000.0))
         .with_relative_antenna_location(VectorF32::new(1.0, 1.0, 0.0))
