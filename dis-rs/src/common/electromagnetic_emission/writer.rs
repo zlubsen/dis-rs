@@ -168,7 +168,7 @@ mod tests {
                         .with_elevation_center(f32::from_be_bytes([0x3f, 0x30, 0x95, 0x54]))
                         .with_elevation_sweep(f32::from_be_bytes([0x3c, 0x0e, 0xfa, 0x35]))
                         .with_sweep_sync(0f32))
-                    .with_beam_function(ElectromagneticEmissionBeamFunction::Commandguidance)
+                    .with_beam_function(ElectromagneticEmissionBeamFunction::CommandGuidance)
                     .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
                     .with_track_jam(TrackJam::new()
                         .with_beam(0)

@@ -18,7 +18,7 @@ mod tests {
         let header = PduHeader::new_v6(1, PduType::Signal);
 
         let body = Signal::builder()
-            .with_encoding_scheme(EncodingScheme::EncodedAudio {encoding_class: SignalEncodingClass::Encodedaudio, encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_BigEndian_4})
+            .with_encoding_scheme(EncodingScheme::EncodedAudio {encoding_class: SignalEncodingClass::EncodedAudio, encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_BigEndian_4})
             .with_samples(20)
             .with_sample_rate(20000)
             .with_radio_number(10)

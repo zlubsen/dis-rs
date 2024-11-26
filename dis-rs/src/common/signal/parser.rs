@@ -39,7 +39,7 @@ fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingSch
     let encoding_class = SignalEncodingClass::from(encoding_class);
 
     match encoding_class {
-        SignalEncodingClass::Encodedaudio => {
+        SignalEncodingClass::EncodedAudio => {
             let encoding_type = SignalEncodingType::from(low_bits);
             EncodingScheme::EncodedAudio { encoding_class, encoding_type }
         }
@@ -54,7 +54,7 @@ fn parse_encoding_scheme(encoding_scheme_bytes: u16, data: &[u8]) -> EncodingSch
                 SignalUserProtocolIdentificationNumber::from(user_protocol_id);
             EncodingScheme::ApplicationSpecificData { encoding_class, user_protocol_id }
         }
-        SignalEncodingClass::Databaseindex => {
+        SignalEncodingClass::DatabaseIndex => {
             let mut index_bytes = [0u8,0u8,0u8,0u8];
             index_bytes.clone_from_slice(&data[0..4]);
             let mut offset_bytes = [0u8,0u8,0u8,0u8];

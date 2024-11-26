@@ -427,7 +427,7 @@ fn codec_consistency_acknowledge() {
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
         .with_acknowledge_flag(AcknowledgeFlag::StartResume)
-        .with_response_flag(ResponseFlag::Abletocomply)
+        .with_response_flag(ResponseFlag::AbleToComply)
         .with_request_id(1)
         .build().into_pdu_body();
 
@@ -460,7 +460,7 @@ fn codec_consistency_action_request() {
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
         .with_request_id(1)
-        .with_action_id(ActionId::Joinexercise)
+        .with_action_id(ActionId::JoinExercise)
         .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
         .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
         .build().into_pdu_body();
@@ -630,7 +630,7 @@ fn codec_consistency_event_report() {
     let dis_body = EventReport::builder()
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
-        .with_event_type(EventType::RanOutofFuel)
+        .with_event_type(EventType::RanOutOfFuel)
         .with_fixed_datums(vec![FixedDatum::new(VariableRecordType::AngleOfAttack_610026, 10)])
         .with_variable_datums(vec![VariableDatum::new(VariableRecordType::VehicleMass_26000, vec![0x01, 0x02, 0x03])])
         .build().into_pdu_body();
