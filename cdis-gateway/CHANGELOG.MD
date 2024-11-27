@@ -1,8 +1,9 @@
 # Changelog for C-DIS Gateway
 
-## 0.3.0 - 2024-xx-xx
+## 0.3.0 - 2024-11-27
 
 Support for new PDUs, aligned with `cdis-assemble`:
+
 - Electromagnetic Emission
 - Designator
 - Transmitter
@@ -15,6 +16,7 @@ Proper implementation of block_own_host and uri EndPointSpec config options (iss
 ## 0.2.0 - 2024-07-15
 
 Support for new PDUs, aligned with `cdis-assemble`:
+
 - Collision
 - Detonation
 - CreateEntity
