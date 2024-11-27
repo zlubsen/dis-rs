@@ -10,6 +10,8 @@ Support for new PDUs, aligned with `cdis-assemble`:
 - Receiver
 - IFF
 
+Proper implementation of block_own_host and uri EndPointSpec config options (issues #36, #37).
+
 ## 0.2.0 - 2024-07-15
 
 Support for new PDUs, aligned with `cdis-assemble`:
