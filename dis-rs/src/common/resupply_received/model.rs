@@ -1,10 +1,10 @@
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
-use crate::enumerations::{PduType};
-use crate::model::{SUPPLY_QUANTITY_RECORD_LENGTH, SupplyQuantity};
+use crate::enumerations::PduType;
+use crate::model::{SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
 use crate::resupply_received::builder::ResupplyReceivedBuilder;
 
-const RESUPPLY_RECEIVED_BASE_BODY_LENGTH : u16 = 28;
+const RESUPPLY_RECEIVED_BASE_BODY_LENGTH: u16 = 28;
 
 /// 5.5.7 Resupply Received PDU
 ///
@@ -32,7 +32,8 @@ impl ResupplyReceived {
 
 impl BodyInfo for ResupplyReceived {
     fn body_length(&self) -> u16 {
-        RESUPPLY_RECEIVED_BASE_BODY_LENGTH + (self.supplies.len() as u16 * SUPPLY_QUANTITY_RECORD_LENGTH)
+        RESUPPLY_RECEIVED_BASE_BODY_LENGTH
+            + (self.supplies.len() as u16 * SUPPLY_QUANTITY_RECORD_LENGTH)
     }
 
     fn body_type(&self) -> PduType {

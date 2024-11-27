@@ -1,7 +1,9 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{PduType, RequiredReliabilityService, TransferControlTransferType};
-use crate::model::{BASE_RECORD_SPEC_RECORD_LENGTH, EntityId, length_padded_to_num, PduBody, RecordSpecification};
+use crate::model::{
+    length_padded_to_num, EntityId, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
+};
 use crate::transfer_ownership::builder::TransferOwnershipBuilder;
 
 const BASE_TRANSFER_OWNERSHIP_BODY_LENGTH: u16 = 28;
@@ -36,13 +38,19 @@ impl TransferOwnership {
 
 impl BodyInfo for TransferOwnership {
     fn body_length(&self) -> u16 {
-        BASE_TRANSFER_OWNERSHIP_BODY_LENGTH +
-            (self.record_specification.record_sets.iter()
+        BASE_TRANSFER_OWNERSHIP_BODY_LENGTH
+            + (self
+                .record_specification
+                .record_sets
+                .iter()
                 .map(|record| {
-                    let data_length_bytes = record.records.iter()
-                        .map(|rec| rec.len() as u16 )
+                    let data_length_bytes = record
+                        .records
+                        .iter()
+                        .map(|rec| rec.len() as u16)
                         .sum::<u16>();
-                    let padded_record = length_padded_to_num(data_length_bytes.into(), EIGHT_OCTETS);
+                    let padded_record =
+                        length_padded_to_num(data_length_bytes.into(), EIGHT_OCTETS);
                     BASE_RECORD_SPEC_RECORD_LENGTH + padded_record.record_length as u16
                 })
                 .sum::<u16>())

@@ -1,5 +1,5 @@
-use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService};
 use crate::common::model::EntityId;
+use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService};
 use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
 
@@ -33,7 +33,10 @@ impl RecordQueryRBuilder {
         self
     }
 
-    pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
+    pub fn with_required_reliability_service(
+        mut self,
+        required_reliability_service: RequiredReliabilityService,
+    ) -> Self {
         self.0.required_reliability_service = required_reliability_service;
         self
     }
@@ -48,7 +51,10 @@ impl RecordQueryRBuilder {
         self
     }
 
-    pub fn with_record_query_specification(mut self, record_query_specification: RecordQuerySpecification) -> Self {
+    pub fn with_record_query_specification(
+        mut self,
+        record_query_specification: RecordQuerySpecification,
+    ) -> Self {
         self.0.record_query_specification = record_query_specification;
         self
     }

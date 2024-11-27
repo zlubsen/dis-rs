@@ -1,5 +1,5 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ReceiverState};
 use crate::receiver::builder::ReceiverBuilder;
 

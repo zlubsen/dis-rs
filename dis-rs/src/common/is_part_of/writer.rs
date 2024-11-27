@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::is_part_of::model::{IsPartOf, NamedLocationId, Relationship};
 use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for IsPartOf {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -10,7 +10,11 @@ impl SerializePdu for IsPartOf {
         let part_location_bytes = self.part_location.serialize(buf);
         let named_location_bytes = self.named_location_id.serialize(buf);
 
-        originating_bytes + receiving_bytes + relationship_bytes + part_location_bytes + named_location_bytes
+        originating_bytes
+            + receiving_bytes
+            + relationship_bytes
+            + part_location_bytes
+            + named_location_bytes
     }
 }
 

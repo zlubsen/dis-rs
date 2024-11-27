@@ -1,7 +1,10 @@
-use bytes::{BufMut, BytesMut};
-use crate::aggregate_state::model::{aggregate_state_intermediate_length_padding, AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem};
-use crate::{Serialize, SerializePdu, SupportedVersion};
+use crate::aggregate_state::model::{
+    aggregate_state_intermediate_length_padding, AggregateMarking, AggregateState, AggregateType,
+    SilentAggregateSystem, SilentEntitySystem,
+};
 use crate::common::BodyInfo;
+use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for AggregateState {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -21,28 +24,34 @@ impl SerializePdu for AggregateState {
         buf.put_u16(self.silent_aggregate_systems.len() as u16);
         buf.put_u16(self.silent_entity_systems.len() as u16);
 
-        self.aggregates.iter()
-            .map(|record| record.serialize(buf) )
+        self.aggregates
+            .iter()
+            .map(|record| record.serialize(buf))
             .sum::<u16>();
-        self.entities.iter()
-            .map(|record| record.serialize(buf) )
+        self.entities
+            .iter()
+            .map(|record| record.serialize(buf))
             .sum::<u16>();
 
-        let (_intermediate_length, padding_length) = aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
+        let (_intermediate_length, padding_length) =
+            aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
 
         buf.put_bytes(0u8, padding_length.into());
 
-        self.silent_aggregate_systems.iter()
-            .map(|record| record.serialize(buf) )
+        self.silent_aggregate_systems
+            .iter()
+            .map(|record| record.serialize(buf))
             .sum::<u16>();
 
-        self.silent_entity_systems.iter()
-            .map(|record| record.serialize(buf) )
+        self.silent_entity_systems
+            .iter()
+            .map(|record| record.serialize(buf))
             .sum::<u16>();
 
-        buf.put_u32(self.variable_datums.len() as u32 );
-        self.variable_datums.iter()
-            .map(|datum| datum.serialize(buf) )
+        buf.put_u32(self.variable_datums.len() as u32);
+        self.variable_datums
+            .iter()
+            .map(|datum| datum.serialize(buf))
             .sum::<u16>();
 
         self.body_length()
@@ -70,7 +79,7 @@ impl Serialize for AggregateMarking {
         let marking = self.marking_string.clone(); // clone necessary because into_bytes consumes self.
 
         buf.put_slice(&marking.into_bytes()[..]);
-        (0..num_pad).for_each( |_i| buf.put_u8(0x20) );
+        (0..num_pad).for_each(|_i| buf.put_u8(0x20));
 
         self.record_length()
     }
@@ -91,8 +100,9 @@ impl Serialize for SilentEntitySystem {
         buf.put_u16(self.number_of_entities);
         buf.put_u16(self.appearances.len() as u16);
         self.entity_type.serialize(buf);
-        self.appearances.iter()
-            .map(|record | record.serialize(buf) )
+        self.appearances
+            .iter()
+            .map(|record| record.serialize(buf))
             .sum::<u16>();
 
         self.record_length()

@@ -1,6 +1,6 @@
-use dis_rs::model::DatumSpecification;
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::records::model::{CdisRecord, EntityId};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::model::DatumSpecification;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Comment {
@@ -15,8 +15,15 @@ impl BodyProperties for Comment {
     const FIELDS_PRESENT_LENGTH: usize = 2;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if !self.datum_specification.fixed_datum_records.is_empty() { Self::FieldsPresent::FIXED_DATUMS_BIT } else { 0 })
-        | (if !self.datum_specification.variable_datum_records.is_empty() { Self::FieldsPresent::VARIABLE_DATUMS_BIT } else { 0 })
+        (if !self.datum_specification.fixed_datum_records.is_empty() {
+            Self::FieldsPresent::FIXED_DATUMS_BIT
+        } else {
+            0
+        }) | (if !self.datum_specification.variable_datum_records.is_empty() {
+            Self::FieldsPresent::VARIABLE_DATUMS_BIT
+        } else {
+            0
+        })
     }
 
     fn body_length_bits(&self) -> usize {

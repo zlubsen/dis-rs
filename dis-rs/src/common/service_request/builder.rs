@@ -1,7 +1,7 @@
-use crate::common::service_request::model::ServiceRequest;
 use crate::common::model::EntityId;
-use crate::enumerations::ServiceRequestServiceTypeRequested;
 use crate::common::model::SupplyQuantity;
+use crate::common::service_request::model::ServiceRequest;
+use crate::enumerations::ServiceRequestServiceTypeRequested;
 
 pub struct ServiceRequestBuilder(ServiceRequest);
 
@@ -28,7 +28,10 @@ impl ServiceRequestBuilder {
         self
     }
 
-    pub fn with_service_type_requested(mut self, service_type_requested: ServiceRequestServiceTypeRequested) -> Self {
+    pub fn with_service_type_requested(
+        mut self,
+        service_type_requested: ServiceRequestServiceTypeRequested,
+    ) -> Self {
         self.0.service_type_requested = service_type_requested;
         self
     }

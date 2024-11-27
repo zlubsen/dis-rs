@@ -31,12 +31,14 @@ pub const EIGHTY_SIX_BITS: usize = 86;
 pub const NINETY_EIGHT_BITS: usize = 98;
 pub const HUNDRED_TWELVE_BITS: usize = 112;
 pub const HUNDRED_TWENTY_BITS: usize = 120;
-pub const LEAST_SIGNIFICANT_BIT : u32 = 0x001;
+pub const LEAST_SIGNIFICANT_BIT: u32 = 0x001;
 pub const NANOSECONDS_PER_HOUR: u32 = 3600 * 1e6 as u32;
-pub const CDIS_TIME_UNITS_PER_HOUR: u32 = (2^25) - 1;
-pub const CDIS_NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / CDIS_TIME_UNITS_PER_HOUR as f32;
-pub const DIS_TIME_UNITS_PER_HOUR: u32 = (2^31) - 1;
-pub const DIS_NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
+pub const CDIS_TIME_UNITS_PER_HOUR: u32 = (2 ^ 25) - 1;
+pub const CDIS_NANOSECONDS_PER_TIME_UNIT: f32 =
+    NANOSECONDS_PER_HOUR as f32 / CDIS_TIME_UNITS_PER_HOUR as f32;
+pub const DIS_TIME_UNITS_PER_HOUR: u32 = (2 ^ 31) - 1;
+pub const DIS_NANOSECONDS_PER_TIME_UNIT: f32 =
+    NANOSECONDS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
 pub const MTU_BYTES: usize = 1400; // Maximum Transmission Unit of the network
 pub const MTU_BITS: usize = MTU_BYTES * EIGHT_BITS;
 pub const DECIMETERS_IN_METER: f32 = 10f32;

@@ -1,9 +1,9 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{ClockTime, EntityId, PduBody};
-use crate::enumerations::{StopFreezeReason, StopFreezeFrozenBehavior, PduType};
+use crate::common::{BodyInfo, Interaction};
+use crate::enumerations::{PduType, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze::builder::StopFreezeBuilder;
 
-const STOP_FREEZE_BODY_LENGTH : u16 = 28;
+const STOP_FREEZE_BODY_LENGTH: u16 = 28;
 
 /// 5.6.5.5 Stop/Freeze PDU
 ///

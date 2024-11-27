@@ -27,7 +27,10 @@ impl ActionRequestRBuilder {
         self
     }
 
-    pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
+    pub fn with_required_reliability_service(
+        mut self,
+        required_reliability_service: RequiredReliabilityService,
+    ) -> Self {
         self.0.required_reliability_service = required_reliability_service;
         self
     }

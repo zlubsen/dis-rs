@@ -9,11 +9,15 @@ type Counterpart = dis_rs::signal::model::Signal;
 
 impl Signal {
     pub fn encode(item: &Counterpart) -> Self {
-        let (sample_rate, samples) = if let DisEncodingScheme::EncodedAudio { .. } = item.encoding_scheme {
-            (Some(UVINT32::from(item.sample_rate)), Some(UVINT16::from(item.samples))) // both are required for audio
-        } else {
-            (None, None) // optional for all others - leave out; 13.21 g) and i)
-        };
+        let (sample_rate, samples) =
+            if let DisEncodingScheme::EncodedAudio { .. } = item.encoding_scheme {
+                (
+                    Some(UVINT32::from(item.sample_rate)),
+                    Some(UVINT16::from(item.samples)),
+                ) // both are required for audio
+            } else {
+                (None, None) // optional for all others - leave out; 13.21 g) and i)
+            };
 
         Self {
             radio_reference_id: EntityId::encode(&item.radio_reference_id),
@@ -29,10 +33,14 @@ impl Signal {
     pub fn decode(&self) -> Counterpart {
         let sample_rate = if let Some(sample_rate) = self.sample_rate {
             sample_rate.value
-        } else { Default::default() };
+        } else {
+            Default::default()
+        };
         let samples = if let Some(samples) = self.samples {
             samples.value
-        } else { Default::default() };
+        } else {
+            Default::default()
+        };
 
         Counterpart::builder()
             .with_radio_reference_id(self.radio_reference_id.decode())

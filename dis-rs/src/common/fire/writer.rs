@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::fire::model::Fire;
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Fire {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -14,8 +14,14 @@ impl SerializePdu for Fire {
         let velocity_bytes = self.velocity.serialize(buf);
         buf.put_f32(self.range);
 
-        firing_entity_id_bytes + target_entity_id_bytes + munition_id_bytes
-            + event_id_bytes + 4 + location_in_world_bytes
-            + descriptor_bytes + velocity_bytes + 4
+        firing_entity_id_bytes
+            + target_entity_id_bytes
+            + munition_id_bytes
+            + event_id_bytes
+            + 4
+            + location_in_world_bytes
+            + descriptor_bytes
+            + velocity_bytes
+            + 4
     }
 }

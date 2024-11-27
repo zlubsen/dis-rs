@@ -1,8 +1,8 @@
+use crate::records::model::{CdisRecord, EntityId};
+use crate::types::model::{VarInt, UVINT32};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::{StopFreezeFrozenBehavior, StopFreezeReason};
 use dis_rs::model::ClockTime;
-use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::records::model::{CdisRecord, EntityId};
-use crate::types::model::{UVINT32, VarInt};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct StopFreeze {

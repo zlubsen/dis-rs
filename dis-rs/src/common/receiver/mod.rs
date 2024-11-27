@@ -1,25 +1,24 @@
-pub mod parser;
-pub mod model;
-pub mod writer;
 pub mod builder;
+pub mod model;
+pub mod parser;
+pub mod writer;
 
 #[cfg(test)]
 mod tests {
-    use bytes::BytesMut;
-    use crate::enumerations::{PduType};
+    use crate::common::model::DisTimeStamp;
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
-    use crate::common::model::{DisTimeStamp};
+    use crate::enumerations::PduType;
     use crate::receiver::model::Receiver;
+    use bytes::BytesMut;
 
     #[test]
     fn receiver_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::Receiver);
 
-        let body = Receiver::builder()
-            .build()
-            .into_pdu_body();
-        let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
+        let body = Receiver::builder().build().into_pdu_body();
+        let original_pdu =
+            Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
         let pdu_length = original_pdu.header.pdu_length;
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);

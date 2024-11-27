@@ -1,10 +1,10 @@
-use crate::common::model::{EntityId, Location, PduBody, VectorF32};
-use crate::enumerations::PduType;
-use crate::common::{BodyInfo, Interaction};
 use crate::common::designator::builder::DesignatorBuilder;
-use crate::enumerations::{DesignatorSystemName, DesignatorCode, DeadReckoningAlgorithm};
+use crate::common::model::{EntityId, Location, PduBody, VectorF32};
+use crate::common::{BodyInfo, Interaction};
+use crate::enumerations::PduType;
+use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName};
 
-pub const DESIGNATOR_BODY_LENGTH : u16 = 76;
+pub const DESIGNATOR_BODY_LENGTH: u16 = 76;
 
 /// 5.7.4 Designator PDU
 ///

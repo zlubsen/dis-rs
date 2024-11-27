@@ -1,5 +1,5 @@
-use crate::enumerations::RequiredReliabilityService;
 use crate::common::model::EntityId;
+use crate::enumerations::RequiredReliabilityService;
 use crate::model::RecordSpecification;
 use crate::set_record_r::model::SetRecordR;
 
@@ -33,7 +33,10 @@ impl SetRecordRBuilder {
         self
     }
 
-    pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
+    pub fn with_required_reliability_service(
+        mut self,
+        required_reliability_service: RequiredReliabilityService,
+    ) -> Self {
         self.0.required_reliability_service = required_reliability_service;
         self
     }

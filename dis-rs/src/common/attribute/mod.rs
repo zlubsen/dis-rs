@@ -1,16 +1,16 @@
+pub mod builder;
 pub mod model;
 pub mod parser;
 pub mod writer;
-pub mod builder;
 
 #[cfg(test)]
 mod tests {
-    use bytes::BytesMut;
     use crate::common::attribute::model::Attribute;
-    use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion};
+    use crate::common::model::DisTimeStamp;
     use crate::common::model::{Pdu, PduHeader, SimulationAddress};
     use crate::common::parser::parse_pdu;
-    use crate::common::model::{DisTimeStamp};
+    use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion};
+    use bytes::BytesMut;
 
     #[test]
     fn attribute_internal_consistency() {
@@ -23,7 +23,8 @@ mod tests {
             .with_record_pdu_type(PduType::Attribute)
             .build()
             .into_pdu_body();
-        let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
+        let original_pdu =
+            Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
         let pdu_length = original_pdu.header.pdu_length;
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);

@@ -1,5 +1,5 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::data_query_r::builder::DataQueryRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService, VariableRecordType};
@@ -36,9 +36,9 @@ impl DataQueryR {
 
 impl BodyInfo for DataQueryR {
     fn body_length(&self) -> u16 {
-        BASE_DATA_QUERY_R_BODY_LENGTH +
-            (FOUR_OCTETS * self.fixed_datum_records.len()) as u16 +
-            (FOUR_OCTETS * self.variable_datum_records.len()) as u16
+        BASE_DATA_QUERY_R_BODY_LENGTH
+            + (FOUR_OCTETS * self.fixed_datum_records.len()) as u16
+            + (FOUR_OCTETS * self.variable_datum_records.len()) as u16
     }
 
     fn body_type(&self) -> PduType {

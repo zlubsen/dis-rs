@@ -17,7 +17,10 @@ impl AttributeBuilder {
         self.0
     }
 
-    pub fn with_originating_simulation_address(mut self, originating_simulation_address: SimulationAddress) -> Self {
+    pub fn with_originating_simulation_address(
+        mut self,
+        originating_simulation_address: SimulationAddress,
+    ) -> Self {
         self.0.originating_simulation_address = originating_simulation_address;
         self
     }
@@ -27,12 +30,18 @@ impl AttributeBuilder {
         self
     }
 
-    pub fn with_record_protocol_version(mut self, record_protocol_version: ProtocolVersion) -> Self {
+    pub fn with_record_protocol_version(
+        mut self,
+        record_protocol_version: ProtocolVersion,
+    ) -> Self {
         self.0.record_protocol_version = record_protocol_version;
         self
     }
 
-    pub fn with_master_attribute_record_type(mut self, master_attribute_record_type: VariableRecordType) -> Self {
+    pub fn with_master_attribute_record_type(
+        mut self,
+        master_attribute_record_type: VariableRecordType,
+    ) -> Self {
         self.0.master_attribute_record_type = master_attribute_record_type;
         self
     }
@@ -47,7 +56,10 @@ impl AttributeBuilder {
         self
     }
 
-    pub fn with_attribute_record_sets(mut self, attribute_record_sets: Vec<AttributeRecordSet>) -> Self {
+    pub fn with_attribute_record_sets(
+        mut self,
+        attribute_record_sets: Vec<AttributeRecordSet>,
+    ) -> Self {
         self.0.attribute_record_sets = attribute_record_sets;
         self
     }

@@ -1,8 +1,8 @@
-use dis_rs::model::{DisTimeStamp, TimeStamp};
 use crate::codec::Codec;
 use crate::data_query::model::DataQuery;
 use crate::records::model::{cdis_to_dis_u32_timestamp, CdisTimeStamp, EntityId};
 use crate::types::model::UVINT32;
+use dis_rs::model::{DisTimeStamp, TimeStamp};
 
 type Counterpart = dis_rs::data_query::model::DataQuery;
 
@@ -20,7 +20,8 @@ impl DataQuery {
     }
 
     pub fn decode(&self) -> Counterpart {
-        let time_interval = cdis_to_dis_u32_timestamp(TimeStamp::from(self.time_interval).raw_timestamp);
+        let time_interval =
+            cdis_to_dis_u32_timestamp(TimeStamp::from(self.time_interval).raw_timestamp);
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())
             .with_receiving_id(self.receiving_id.decode())

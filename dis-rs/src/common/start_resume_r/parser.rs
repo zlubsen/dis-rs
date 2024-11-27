@@ -1,9 +1,9 @@
-use nom::IResult;
-use nom::number::complete::{be_u16, be_u32, be_u8};
-use crate::common::parser::{clock_time, entity_id};
 use crate::common::model::PduBody;
+use crate::common::parser::{clock_time, entity_id};
 use crate::enumerations::RequiredReliabilityService;
 use crate::start_resume_r::model::StartResumeR;
+use nom::number::complete::{be_u16, be_u32, be_u8};
+use nom::IResult;
 
 pub(crate) fn start_resume_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
@@ -11,7 +11,8 @@ pub(crate) fn start_resume_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, real_world_time) = clock_time(input)?;
     let (input, simulation_time) = clock_time(input)?;
     let (input, required_reliability_service) = be_u8(input)?;
-    let required_reliability_service = RequiredReliabilityService::from(required_reliability_service);
+    let required_reliability_service =
+        RequiredReliabilityService::from(required_reliability_service);
     let (input, _padding) = be_u8(input)?;
     let (input, _padding) = be_u16(input)?;
     let (input, request_id) = be_u32(input)?;

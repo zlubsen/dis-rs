@@ -1,12 +1,16 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{BeamData, EntityId, EventId, PduBody, VectorF32};
+use crate::common::{BodyInfo, Interaction};
 use crate::electromagnetic_emission::builder::ElectromagneticEmissionBuilder;
-use crate::enumerations::{BeamStatusBeamState, ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam, PduType};
+use crate::enumerations::{
+    BeamStatusBeamState, ElectromagneticEmissionBeamFunction,
+    ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
+    HighDensityTrackJam, PduType,
+};
 
-const EMISSION_BASE_BODY_LENGTH : u16 = 16;
-const EMITTER_SYSTEM_BASE_LENGTH : u16 = 20;
-const BEAM_BASE_LENGTH : u16 = 52;
-const TRACK_JAM_BASE_LENGTH : u16 = 8;
+const EMISSION_BASE_BODY_LENGTH: u16 = 16;
+const EMITTER_SYSTEM_BASE_LENGTH: u16 = 20;
+const BEAM_BASE_LENGTH: u16 = 52;
+const TRACK_JAM_BASE_LENGTH: u16 = 8;
 
 /// 5.7.3 Electromagnetic Emission (EE) PDU
 ///
@@ -36,9 +40,11 @@ impl ElectromagneticEmission {
 impl BodyInfo for ElectromagneticEmission {
     fn body_length(&self) -> u16 {
         EMISSION_BASE_BODY_LENGTH
-            + self.emitter_systems.iter()
-            .map(|system| system.system_data_length_bytes())
-            .sum::<u16>()
+            + self
+                .emitter_systems
+                .iter()
+                .map(|system| system.system_data_length_bytes())
+                .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {
@@ -57,9 +63,15 @@ impl Interaction for ElectromagneticEmission {
             if let Some(beam) = emitter.beams.first() {
                 if let Some(tracks) = beam.track_jam_data.first() {
                     Some(&tracks.entity_id)
-                } else { None }
-            } else { None }
-        } else { None }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -86,7 +98,7 @@ impl EmitterSystem {
             function: EmitterSystemFunction::default(),
             number: 0,
             location: Default::default(),
-            beams: vec![]
+            beams: vec![],
         }
     }
 
@@ -122,9 +134,11 @@ impl EmitterSystem {
 
     pub fn system_data_length_bytes(&self) -> u16 {
         EMITTER_SYSTEM_BASE_LENGTH
-            + self.beams.iter()
-            .map(|beam| beam.beam_data_length_bytes() )
-            .sum::<u16>()
+            + self
+                .beams
+                .iter()
+                .map(|beam| beam.beam_data_length_bytes())
+                .sum::<u16>()
     }
 }
 
@@ -152,7 +166,7 @@ impl Beam {
             high_density_track_jam: HighDensityTrackJam::default(),
             beam_status: BeamStatusBeamState::default(),
             jamming_technique: JammingTechnique::default(),
-            track_jam_data: vec![]
+            track_jam_data: vec![],
         }
     }
 
@@ -176,12 +190,18 @@ impl Beam {
         self
     }
 
-    pub fn with_beam_function(mut self, beam_function: ElectromagneticEmissionBeamFunction) -> Self {
+    pub fn with_beam_function(
+        mut self,
+        beam_function: ElectromagneticEmissionBeamFunction,
+    ) -> Self {
         self.beam_function = beam_function;
         self
     }
 
-    pub fn with_high_density_track_jam(mut self, high_density_track_jam: HighDensityTrackJam) -> Self {
+    pub fn with_high_density_track_jam(
+        mut self,
+        high_density_track_jam: HighDensityTrackJam,
+    ) -> Self {
         self.high_density_track_jam = high_density_track_jam;
         self
     }
@@ -228,7 +248,7 @@ impl FundamentalParameterData {
             frequency_range: 0.0,
             effective_power: 0.0,
             pulse_repetition_frequency: 0.0,
-            pulse_width: 0.0
+            pulse_width: 0.0,
         }
     }
 
@@ -273,7 +293,7 @@ impl JammingTechnique {
             kind: 0,
             category: 0,
             subcategory: 0,
-            specific: 0
+            specific: 0,
         }
     }
 
@@ -311,7 +331,7 @@ impl TrackJam {
         Self {
             entity_id: EntityId::default(),
             emitter: 0,
-            beam: 0
+            beam: 0,
         }
     }
 

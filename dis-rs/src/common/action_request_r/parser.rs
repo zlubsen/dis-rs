@@ -1,15 +1,16 @@
-use nom::IResult;
-use nom::number::complete::{be_u16, be_u32, be_u8};
 use crate::action_request_r::model::ActionRequestR;
+use crate::common::model::PduBody;
 use crate::common::parser::{datum_specification, entity_id};
 use crate::enumerations::{ActionId, RequiredReliabilityService};
-use crate::common::model::PduBody;
+use nom::number::complete::{be_u16, be_u32, be_u8};
+use nom::IResult;
 
 pub(crate) fn action_request_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, required_reliability_service) = be_u8(input)?;
-    let required_reliability_service = RequiredReliabilityService::from(required_reliability_service);
+    let required_reliability_service =
+        RequiredReliabilityService::from(required_reliability_service);
     let (input, _padding) = be_u8(input)?;
     let (input, _padding) = be_u16(input)?;
     let (input, request_id) = be_u32(input)?;

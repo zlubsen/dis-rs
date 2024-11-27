@@ -1,9 +1,9 @@
-use nom::IResult;
-use nom::number::complete::{be_u32, be_u8};
-use crate::common::parser::{clock_time, entity_id};
 use crate::common::model::PduBody;
+use crate::common::parser::{clock_time, entity_id};
 use crate::enumerations::{RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze_r::model::StopFreezeR;
+use nom::number::complete::{be_u32, be_u8};
+use nom::IResult;
 
 pub(crate) fn stop_freeze_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
@@ -17,7 +17,8 @@ pub(crate) fn stop_freeze_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
     let reason = StopFreezeReason::from(reason);
     let behavior = StopFreezeFrozenBehavior::from(behavior);
-    let required_reliability_service = RequiredReliabilityService::from(required_reliability_service);
+    let required_reliability_service =
+        RequiredReliabilityService::from(required_reliability_service);
 
     let body = StopFreezeR::builder()
         .with_origination_id(originating_id)

@@ -1,8 +1,11 @@
-use dis_rs::enumerations::{DeadReckoningAlgorithm, DesignatorSystemName};
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{FOUR_BITS, SIXTEEN_BITS};
-use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId, LinearAcceleration, UnitsDekameters, UnitsMeters, WorldCoordinates};
-use crate::types::model::{UVINT16, UVINT32, VarInt};
+use crate::records::model::{
+    CdisRecord, EntityCoordinateVector, EntityId, LinearAcceleration, UnitsDekameters, UnitsMeters,
+    WorldCoordinates,
+};
+use crate::types::model::{VarInt, UVINT16, UVINT32};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::enumerations::{DeadReckoningAlgorithm, DesignatorSystemName};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Designator {
@@ -28,26 +31,77 @@ impl BodyProperties for Designator {
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
         (if self.designated_entity_id.is_some() && self.spot_wrt_designated_entity.is_some() {
             Self::FieldsPresent::DESIGNATED_ENTITY_ID_AND_SPOT_LOCATION_WRT_ENTITY_BIT
-        } else { 0 })
-        | (if self.code_name.is_some() && self.designator_code.is_some() && self.designator_power.is_some() && self.designator_wavelength.is_some() {
-            Self::FieldsPresent::DESIGNATOR_DETAILS_BIT } else { 0 })
-        | (if self.designator_spot_location.is_some() { Self::FieldsPresent::DESIGNATOR_SPOT_LOCATION_BIT } else { 0 })
-        | (if self.dr_algorithm.is_some() & self.dr_entity_linear_acceleration.is_some() { Self::FieldsPresent::ENTITY_DR_AND_LINEAR_ACCELERATION_BIT } else { 0 })
+        } else {
+            0
+        }) | (if self.code_name.is_some()
+            && self.designator_code.is_some()
+            && self.designator_power.is_some()
+            && self.designator_wavelength.is_some()
+        {
+            Self::FieldsPresent::DESIGNATOR_DETAILS_BIT
+        } else {
+            0
+        }) | (if self.designator_spot_location.is_some() {
+            Self::FieldsPresent::DESIGNATOR_SPOT_LOCATION_BIT
+        } else {
+            0
+        }) | (if self.dr_algorithm.is_some() & self.dr_entity_linear_acceleration.is_some() {
+            Self::FieldsPresent::ENTITY_DR_AND_LINEAR_ACCELERATION_BIT
+        } else {
+            0
+        })
     }
 
     fn body_length_bits(&self) -> usize {
         const CONST_BIT_SIZE: usize = 3; // units flags, full update flag
-        Self::FIELDS_PRESENT_LENGTH + CONST_BIT_SIZE
+        Self::FIELDS_PRESENT_LENGTH
+            + CONST_BIT_SIZE
             + self.designating_entity_id.record_length()
-            + if self.code_name.is_some() { SIXTEEN_BITS } else { 0 }
-            + if let Some(record) = self.designated_entity_id { record.record_length() } else { 0 }
-            + if let Some(record) = self.designator_code { record.record_length() } else { 0 }
-            + if let Some(record) = self.designator_power { record.record_length() } else { 0 }
-            + if let Some(record) = self.designator_wavelength { record.record_length() } else { 0 }
-            + if let Some(record) = self.spot_wrt_designated_entity { record.record_length() } else { 0 }
-            + if let Some(record) = self.designator_spot_location { record.record_length() } else { 0 }
-            + if self.dr_algorithm.is_some() { FOUR_BITS } else { 0 }
-            + if let Some(record) = self.dr_entity_linear_acceleration { record.record_length() } else { 0 }
+            + if self.code_name.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            }
+            + if let Some(record) = self.designated_entity_id {
+                record.record_length()
+            } else {
+                0
+            }
+            + if let Some(record) = self.designator_code {
+                record.record_length()
+            } else {
+                0
+            }
+            + if let Some(record) = self.designator_power {
+                record.record_length()
+            } else {
+                0
+            }
+            + if let Some(record) = self.designator_wavelength {
+                record.record_length()
+            } else {
+                0
+            }
+            + if let Some(record) = self.spot_wrt_designated_entity {
+                record.record_length()
+            } else {
+                0
+            }
+            + if let Some(record) = self.designator_spot_location {
+                record.record_length()
+            } else {
+                0
+            }
+            + if self.dr_algorithm.is_some() {
+                FOUR_BITS
+            } else {
+                0
+            }
+            + if let Some(record) = self.dr_entity_linear_acceleration {
+                record.record_length()
+            } else {
+                0
+            }
     }
 
     fn into_cdis_body(self) -> CdisBody {

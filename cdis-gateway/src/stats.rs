@@ -1,9 +1,9 @@
+use crate::{Command, Event};
+use dis_rs::enumerations::PduType;
 use std::collections::HashMap;
 use std::time::Duration;
 use tokio::select;
 use tracing::log::trace;
-use dis_rs::enumerations::PduType;
-use crate::{Command, Event};
 
 #[derive(Clone, Debug)]
 pub(crate) enum SseStat {
@@ -73,8 +73,8 @@ impl CodecStats {
     fn aggregate(&mut self) {
         const TO_PERCENT: f64 = 100.0;
         // FIXME: this calculates the ratio between ALL received bytes and the encoded/decoded output bytes, no taking into account the rejected, non-codec'ed PDUs.
-        let encoded_bytes = self.codec_count.values().map(|stat| stat.1 ).sum::<u64>() as f64;
-        let received_bytes = self.received_count.values().map(|stat| stat.1 ).sum::<u64>() as f64;
+        let encoded_bytes = self.codec_count.values().map(|stat| stat.1).sum::<u64>() as f64;
+        let received_bytes = self.received_count.values().map(|stat| stat.1).sum::<u64>() as f64;
         if received_bytes.is_normal() {
             self.compression_rate_total = encoded_bytes / received_bytes * TO_PERCENT;
         }
@@ -99,35 +99,43 @@ impl GatewayStats {
                 self.cdis.receive(count as u64, 1);
             }
             Event::ReceivedDis(pdu_type, size) => {
-                self.encoder.received_count.entry(pdu_type)
+                self.encoder
+                    .received_count
+                    .entry(pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
-                    } )
+                    })
                     .or_insert((1, size));
             }
             Event::ReceivedCDis(pdu_type, size) => {
-                self.decoder.received_count.entry(pdu_type)
+                self.decoder
+                    .received_count
+                    .entry(pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
-                    } )
+                    })
                     .or_insert((1, size));
             }
             Event::EncodedPdu(pdu_type, size) => {
-                self.encoder.codec_count.entry(pdu_type)
+                self.encoder
+                    .codec_count
+                    .entry(pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
-                    } )
+                    })
                     .or_insert((1, size));
             }
             Event::DecodedPdu(pdu_type, size) => {
-                self.decoder.codec_count.entry(pdu_type)
+                self.decoder
+                    .codec_count
+                    .entry(pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
-                    } )
+                    })
                     .or_insert((1, size));
             }
             Event::RejectedUnsupportedDisPdu(_pdu_type, _size) => {
@@ -158,7 +166,8 @@ impl GatewayStats {
 pub async fn run_stats(
     stat_tx: tokio::sync::broadcast::Sender<SseStat>,
     mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-    mut event_rx: tokio::sync::mpsc::Receiver<Event>) {
+    mut event_rx: tokio::sync::mpsc::Receiver<Event>,
+) {
     let mut stats = GatewayStats::default();
     let mut emit_timer = tokio::time::interval(Duration::from_millis(500));
     let mut aggregate_timer = tokio::time::interval(Duration::from_secs(1));

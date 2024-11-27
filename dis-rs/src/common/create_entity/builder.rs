@@ -16,7 +16,6 @@ impl CreateEntityBuilder {
         self.0
     }
 
-
     pub fn with_origination_id(mut self, originating_id: EntityId) -> Self {
         self.0.originating_id = originating_id;
         self
@@ -31,5 +30,4 @@ impl CreateEntityBuilder {
         self.0.request_id = request_id;
         self
     }
-
 }

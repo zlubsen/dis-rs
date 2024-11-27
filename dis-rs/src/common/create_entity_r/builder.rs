@@ -17,7 +17,6 @@ impl CreateEntityRBuilder {
         self.0
     }
 
-
     pub fn with_origination_id(mut self, originating_id: EntityId) -> Self {
         self.0.originating_id = originating_id;
         self
@@ -28,7 +27,10 @@ impl CreateEntityRBuilder {
         self
     }
 
-    pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
+    pub fn with_required_reliability_service(
+        mut self,
+        required_reliability_service: RequiredReliabilityService,
+    ) -> Self {
         self.0.required_reliability_service = required_reliability_service;
         self
     }
@@ -37,5 +39,4 @@ impl CreateEntityRBuilder {
         self.0.request_id = request_id;
         self
     }
-
 }

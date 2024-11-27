@@ -1,8 +1,10 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::comment::builder::CommentBuilder;
-use crate::common::model::{EntityId, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, length_padded_to_num, PduBody};
-use crate::enumerations::PduType;
+use crate::common::model::{
+    length_padded_to_num, EntityId, PduBody, VariableDatum, BASE_VARIABLE_DATUM_LENGTH,
+};
+use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
+use crate::enumerations::PduType;
 
 const BASE_COMMENT_BODY_LENGTH: u16 = 20;
 
@@ -32,13 +34,18 @@ impl Comment {
 
 impl BodyInfo for Comment {
     fn body_length(&self) -> u16 {
-        BASE_COMMENT_BODY_LENGTH +
-            (self.variable_datum_records.iter().map(|datum| {
-                let padded_record = length_padded_to_num(
-                    BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
-                    EIGHT_OCTETS);
-                padded_record.record_length as u16
-            } ).sum::<u16>())
+        BASE_COMMENT_BODY_LENGTH
+            + (self
+                .variable_datum_records
+                .iter()
+                .map(|datum| {
+                    let padded_record = length_padded_to_num(
+                        BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
+                        EIGHT_OCTETS,
+                    );
+                    padded_record.record_length as u16
+                })
+                .sum::<u16>())
     }
 
     fn body_type(&self) -> PduType {

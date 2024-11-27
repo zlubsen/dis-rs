@@ -1,5 +1,7 @@
 use crate::fire::model::Fire;
-use crate::model::{DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, VectorF32};
+use crate::model::{
+    DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, VectorF32,
+};
 
 pub struct FireBuilder(Fire);
 
@@ -51,7 +53,11 @@ impl FireBuilder {
         self
     }
 
-    pub fn with_munition_descriptor(mut self, entity_type: EntityType, munition: MunitionDescriptor) -> Self {
+    pub fn with_munition_descriptor(
+        mut self,
+        entity_type: EntityType,
+        munition: MunitionDescriptor,
+    ) -> Self {
         self.0.descriptor = DescriptorRecord::new_munition(entity_type, munition);
         self
     }

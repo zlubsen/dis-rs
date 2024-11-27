@@ -35,9 +35,9 @@ impl SEES {
 
 impl BodyInfo for SEES {
     fn body_length(&self) -> u16 {
-        BASE_SEES_BODY_LENGTH +
-            (BASE_SYSTEM_DATA_LENGTH * self.propulsion_systems.len() as u16) +
-            (BASE_SYSTEM_DATA_LENGTH * self.vectoring_nozzle_systems.len() as u16)
+        BASE_SEES_BODY_LENGTH
+            + (BASE_SYSTEM_DATA_LENGTH * self.propulsion_systems.len() as u16)
+            + (BASE_SYSTEM_DATA_LENGTH * self.vectoring_nozzle_systems.len() as u16)
     }
 
     fn body_type(&self) -> PduType {

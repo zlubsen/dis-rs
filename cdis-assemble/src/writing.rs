@@ -1,10 +1,10 @@
-use std::any::type_name;
-use bitvec::array::BitArray;
-use bitvec::order::Msb0;
-use bitvec::macros::internal::funty::Integral;
-use bitvec::field::BitField;
-use crate::{CdisBody, CdisPdu};
 use crate::constants::{EIGHT_BITS, MTU_BITS, ONE_BIT, SIXTEEN_BITS};
+use crate::{CdisBody, CdisPdu};
+use bitvec::array::BitArray;
+use bitvec::field::BitField;
+use bitvec::macros::internal::funty::Integral;
+use bitvec::order::Msb0;
+use std::any::type_name;
 
 pub type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
 
@@ -14,11 +14,11 @@ pub fn create_bit_buffer() -> BitBuffer {
 }
 
 pub trait SerializeCdisPdu {
-    fn serialize(&self, buf : &mut BitBuffer, cursor : usize) -> usize;
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize;
 }
 
 pub trait SerializeCdis {
-    fn serialize(&self, buf : &mut BitBuffer, cursor:  usize) -> usize;
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize;
 }
 
 impl SerializeCdisPdu for CdisPdu {
@@ -35,29 +35,29 @@ impl SerializeCdisPdu for CdisBody {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = match self {
-            CdisBody::Unsupported(_body) => { cursor }
-            CdisBody::EntityState(body) => { body.serialize(buf, cursor) }
-            CdisBody::Fire(body) => { body.serialize(buf, cursor) }
-            CdisBody::Detonation(body) => { body.serialize(buf, cursor) }
-            CdisBody::Collision(body) => { body.serialize(buf, cursor) }
-            CdisBody::CreateEntity(body) => { body.serialize(buf, cursor) }
-            CdisBody::RemoveEntity(body) => { body.serialize(buf, cursor) }
-            CdisBody::StartResume(body) => { body.serialize(buf, cursor) }
-            CdisBody::StopFreeze(body) => { body.serialize(buf, cursor) }
-            CdisBody::Acknowledge(body) => { body.serialize(buf, cursor) }
-            CdisBody::ActionRequest(body) => { body.serialize(buf, cursor) }
-            CdisBody::ActionResponse(body) => { body.serialize(buf, cursor) }
-            CdisBody::DataQuery(body) => { body.serialize(buf, cursor) }
-            CdisBody::SetData(body) => { body.serialize(buf, cursor) }
-            CdisBody::Data(body) => { body.serialize(buf, cursor) }
-            CdisBody::EventReport(body) => { body.serialize(buf, cursor) }
-            CdisBody::Comment(body) => { body.serialize(buf, cursor) }
-            CdisBody::ElectromagneticEmission(body) => { body.serialize(buf, cursor) }
-            CdisBody::Designator(body) => { body.serialize(buf, cursor) }
-            CdisBody::Transmitter(body) => { body.serialize(buf, cursor) }
-            CdisBody::Signal(body) => { body.serialize(buf, cursor) }
-            CdisBody::Receiver(body) => { body.serialize(buf, cursor) }
-            CdisBody::Iff(body) => { body.serialize(buf, cursor) }
+            CdisBody::Unsupported(_body) => cursor,
+            CdisBody::EntityState(body) => body.serialize(buf, cursor),
+            CdisBody::Fire(body) => body.serialize(buf, cursor),
+            CdisBody::Detonation(body) => body.serialize(buf, cursor),
+            CdisBody::Collision(body) => body.serialize(buf, cursor),
+            CdisBody::CreateEntity(body) => body.serialize(buf, cursor),
+            CdisBody::RemoveEntity(body) => body.serialize(buf, cursor),
+            CdisBody::StartResume(body) => body.serialize(buf, cursor),
+            CdisBody::StopFreeze(body) => body.serialize(buf, cursor),
+            CdisBody::Acknowledge(body) => body.serialize(buf, cursor),
+            CdisBody::ActionRequest(body) => body.serialize(buf, cursor),
+            CdisBody::ActionResponse(body) => body.serialize(buf, cursor),
+            CdisBody::DataQuery(body) => body.serialize(buf, cursor),
+            CdisBody::SetData(body) => body.serialize(buf, cursor),
+            CdisBody::Data(body) => body.serialize(buf, cursor),
+            CdisBody::EventReport(body) => body.serialize(buf, cursor),
+            CdisBody::Comment(body) => body.serialize(buf, cursor),
+            CdisBody::ElectromagneticEmission(body) => body.serialize(buf, cursor),
+            CdisBody::Designator(body) => body.serialize(buf, cursor),
+            CdisBody::Transmitter(body) => body.serialize(buf, cursor),
+            CdisBody::Signal(body) => body.serialize(buf, cursor),
+            CdisBody::Receiver(body) => body.serialize(buf, cursor),
+            CdisBody::Iff(body) => body.serialize(buf, cursor),
         };
 
         cursor
@@ -70,36 +70,62 @@ impl SerializeCdisPdu for CdisBody {
 /// C-DIS negative values in 2's complement have to be written manually, consisting of a sign bit and the value bits.
 ///
 /// Returns the new cursor position.
-fn write_value_with_length<T: Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
+fn write_value_with_length<T: Integral>(
+    buf: &mut BitBuffer,
+    cursor: usize,
+    bit_size: usize,
+    value: T,
+) -> usize {
     let next_cursor = cursor + bit_size;
     buf[cursor..next_cursor].store_be(value);
     next_cursor
 }
 
 /// Write an unsigned value to the BitBuffer `buf`, at the position of the `cursor`, with `bit_size` bits in length.
-pub(crate) fn write_value_unsigned<T: num::Unsigned + Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
+pub(crate) fn write_value_unsigned<T: num::Unsigned + Integral>(
+    buf: &mut BitBuffer,
+    cursor: usize,
+    bit_size: usize,
+    value: T,
+) -> usize {
     write_value_with_length(buf, cursor, bit_size, value)
 }
 
 #[allow(clippy::let_and_return)]
-pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero + Integral>(buf: &mut BitBuffer, cursor: usize, bit_size: usize, value: T) -> usize {
-    let cursor = write_value_with_length(
-        buf, cursor, ONE_BIT, u8::from(value.is_negative()));
-    let value_bits = - (if value.is_negative() {
-        T::from_isize((-2isize).pow(bit_size as u32 - 1))
-            .unwrap_or_else(|| panic!("Cannot determine minimum value for type {}", type_name::<T>()))
-            - value
-    } else { T::zero() - value });
-    let cursor = write_value_with_length(
-        buf, cursor, bit_size - ONE_BIT, value_bits);
+pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero + Integral>(
+    buf: &mut BitBuffer,
+    cursor: usize,
+    bit_size: usize,
+    value: T,
+) -> usize {
+    let cursor = write_value_with_length(buf, cursor, ONE_BIT, u8::from(value.is_negative()));
+    let value_bits = -(if value.is_negative() {
+        T::from_isize((-2isize).pow(bit_size as u32 - 1)).unwrap_or_else(|| {
+            panic!(
+                "Cannot determine minimum value for type {}",
+                type_name::<T>()
+            )
+        }) - value
+    } else {
+        T::zero() - value
+    });
+    let cursor = write_value_with_length(buf, cursor, bit_size - ONE_BIT, value_bits);
 
     cursor
 }
 
 /// Helper function that checks if the provided `Option` is `Some`, and then serializes the contained value.
 /// Field must implement trait `SerializeCdis`.
-pub(crate) fn serialize_when_present<I: SerializeCdis>(field: &Option<I>, buf: &mut BitBuffer, cursor: usize) -> usize {
-    if let Some(inner) = field { inner.serialize(buf, cursor) } else { cursor }
+pub(crate) fn serialize_when_present<I: SerializeCdis>(
+    field: &Option<I>,
+    buf: &mut BitBuffer,
+    cursor: usize,
+) -> usize {
+    if let Some(inner) = field {
+        inner.serialize(buf, cursor)
+    } else {
+        cursor
+    }
 }
 
 impl SerializeCdis for u8 {
@@ -116,9 +142,9 @@ impl SerializeCdis for u16 {
 
 #[cfg(test)]
 mod tests {
+    use crate::constants::{SIXTEEN_BITS, SIX_BITS};
+    use crate::writing::{write_value_signed, write_value_unsigned, BitBuffer};
     use bitvec::prelude::BitArray;
-    use crate::constants::{SIX_BITS, SIXTEEN_BITS};
-    use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
 
     #[test]
     fn write_value_unsigned_zero() {

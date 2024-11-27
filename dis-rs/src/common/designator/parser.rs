@@ -1,9 +1,9 @@
-use nom::IResult;
-use nom::number::complete::{be_f32, be_u16, be_u8};
-use crate::common::parser::{entity_id, location, vec3_f32};
-use crate::common::model::PduBody;
-use crate::enumerations::{DesignatorSystemName, DesignatorCode, DeadReckoningAlgorithm};
 use crate::common::designator::model::Designator;
+use crate::common::model::PduBody;
+use crate::common::parser::{entity_id, location, vec3_f32};
+use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName};
+use nom::number::complete::{be_f32, be_u16, be_u8};
+use nom::IResult;
 
 pub(crate) fn designator_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, designating_entity_id) = entity_id(input)?;

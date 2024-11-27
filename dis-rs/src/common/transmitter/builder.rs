@@ -1,6 +1,11 @@
-use crate::enumerations::{TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterInputSource, TransmitterTransmitState};
+use crate::enumerations::{
+    TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterInputSource,
+    TransmitterTransmitState,
+};
 use crate::model::{EntityId, EntityType, Location, VectorF32};
-use crate::transmitter::model::{BeamAntennaPattern, CryptoKeyId, ModulationType, Transmitter, VariableTransmitterParameter};
+use crate::transmitter::model::{
+    BeamAntennaPattern, CryptoKeyId, ModulationType, Transmitter, VariableTransmitterParameter,
+};
 
 pub struct TransmitterBuilder(Transmitter);
 
@@ -52,7 +57,10 @@ impl TransmitterBuilder {
         self
     }
 
-    pub fn with_antenna_pattern_type(mut self, antenna_pattern_type: TransmitterAntennaPatternType) -> Self {
+    pub fn with_antenna_pattern_type(
+        mut self,
+        antenna_pattern_type: TransmitterAntennaPatternType,
+    ) -> Self {
         self.0.antenna_pattern_type = antenna_pattern_type;
         self
     }
@@ -95,13 +103,21 @@ impl TransmitterBuilder {
         self
     }
 
-    pub fn with_variable_transmitter_parameters(mut self, variable_transmitter_parameters: Vec<VariableTransmitterParameter>) -> Self {
+    pub fn with_variable_transmitter_parameters(
+        mut self,
+        variable_transmitter_parameters: Vec<VariableTransmitterParameter>,
+    ) -> Self {
         self.0.variable_transmitter_parameters = variable_transmitter_parameters;
         self
     }
 
-    pub fn with_variable_transmitter_parameter(mut self, variable_transmitter_parameter: VariableTransmitterParameter) -> Self {
-        self.0.variable_transmitter_parameters.push(variable_transmitter_parameter);
+    pub fn with_variable_transmitter_parameter(
+        mut self,
+        variable_transmitter_parameter: VariableTransmitterParameter,
+    ) -> Self {
+        self.0
+            .variable_transmitter_parameters
+            .push(variable_transmitter_parameter);
         self
     }
 }

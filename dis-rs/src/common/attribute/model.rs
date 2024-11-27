@@ -1,10 +1,10 @@
+use crate::common::attribute::builder::AttributeBuilder;
 use crate::common::model::{EntityId, PduBody, SimulationAddress};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::attribute::builder::AttributeBuilder;
-use crate::enumerations::{PduType, ProtocolVersion, VariableRecordType, AttributeActionCode};
+use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, VariableRecordType};
 
 pub const BASE_ATTRIBUTE_BODY_LENGTH: u16 = 20;
-pub const BASE_ATTRIBUTE_RECORD_SET_LENGTH : u16 = 8;
+pub const BASE_ATTRIBUTE_RECORD_SET_LENGTH: u16 = 8;
 pub const BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS: u16 = 6;
 
 /// 5.3.6 Attribute PDU
@@ -12,12 +12,12 @@ pub const BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS: u16 = 6;
 /// 7.2.6 Attribute PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Attribute {
-    pub originating_simulation_address : SimulationAddress,
+    pub originating_simulation_address: SimulationAddress,
     pub record_pdu_type: PduType,
     pub record_protocol_version: ProtocolVersion,
     pub master_attribute_record_type: VariableRecordType,
     pub action_code: AttributeActionCode,
-    pub attribute_record_sets: Vec<AttributeRecordSet>
+    pub attribute_record_sets: Vec<AttributeRecordSet>,
 }
 
 impl Attribute {
@@ -36,12 +36,22 @@ impl Attribute {
 
 impl BodyInfo for Attribute {
     fn body_length(&self) -> u16 {
-        BASE_ATTRIBUTE_BODY_LENGTH + self.attribute_record_sets.iter()
-            .map(|set| BASE_ATTRIBUTE_RECORD_SET_LENGTH + set.attribute_records.iter()
-                .map(|record|
-                    BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS + record.specific_fields.len() as u16)
-                .sum::<u16>())
-            .sum::<u16>()
+        BASE_ATTRIBUTE_BODY_LENGTH
+            + self
+                .attribute_record_sets
+                .iter()
+                .map(|set| {
+                    BASE_ATTRIBUTE_RECORD_SET_LENGTH
+                        + set
+                            .attribute_records
+                            .iter()
+                            .map(|record| {
+                                BASE_ATTRIBUTE_RECORD_LENGTH_OCTETS
+                                    + record.specific_fields.len() as u16
+                            })
+                            .sum::<u16>()
+                })
+                .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {

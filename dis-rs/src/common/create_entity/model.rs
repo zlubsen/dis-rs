@@ -1,9 +1,9 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::create_entity::builder::CreateEntityBuilder;
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 
-const CREATE_ENTITY_BODY_LENGTH : u16 = 16;
+const CREATE_ENTITY_BODY_LENGTH: u16 = 16;
 
 /// 5.6.5.2 Create Entity PDU
 ///

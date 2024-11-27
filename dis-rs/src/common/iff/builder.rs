@@ -1,6 +1,24 @@
-use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
-use crate::common::model::{EntityId, BeamData, EventId, SimulationAddress, VectorF32};
-use crate::enumerations::{AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors, Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution, ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, VariableRecordType};
+use crate::common::iff::model::{
+    ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code,
+    FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification,
+    IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence,
+    InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability,
+    MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus,
+    Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus,
+    Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData,
+    ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus,
+    OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData,
+    SystemStatus,
+};
+use crate::common::model::{BeamData, EntityId, EventId, SimulationAddress, VectorF32};
+use crate::enumerations::{
+    AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport,
+    DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType,
+    Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors,
+    Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution,
+    ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource,
+    VariableRecordType,
+};
 
 pub struct IffBuilder(Iff);
 
@@ -608,7 +626,7 @@ impl DapSourceBuilder {
 
 pub struct EnhancedMode1CodeBuilder(EnhancedMode1Code);
 
-impl EnhancedMode1CodeBuilder{
+impl EnhancedMode1CodeBuilder {
     pub fn new() -> Self {
         Self(EnhancedMode1Code::default())
     }

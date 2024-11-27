@@ -1,8 +1,8 @@
-use nom::IResult;
-use num_traits::FromPrimitive;
-use crate::BitBuffer;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, TWO_BITS};
 use crate::parsing::BitInput;
+use crate::BitBuffer;
+use nom::IResult;
+use num_traits::FromPrimitive;
 
 pub(crate) trait VarInt {
     type BitSize;
@@ -44,10 +44,7 @@ impl VarInt for UVINT8 {
     /// As such, this constructor is mainly for testing purposes,
     /// hence it is not part of the public API of the library.
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -82,10 +79,7 @@ impl From<u8> for UVINT8 {
             16..=u8::MAX => Uvint8BitSize::Eight,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -101,8 +95,8 @@ impl Uvint8BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Uvint8BitSize::Four => { FOUR_BITS }
-            Uvint8BitSize::Eight => { EIGHT_BITS }
+            Uvint8BitSize::Four => FOUR_BITS,
+            Uvint8BitSize::Eight => EIGHT_BITS,
         }
     }
 }
@@ -119,8 +113,8 @@ impl From<u8> for Uvint8BitSize {
 impl From<Uvint8BitSize> for u8 {
     fn from(value: Uvint8BitSize) -> Self {
         match value {
-            Uvint8BitSize::Four => { 0 }
-            Uvint8BitSize::Eight => { 1 }
+            Uvint8BitSize::Four => 0,
+            Uvint8BitSize::Eight => 1,
         }
     }
 }
@@ -143,10 +137,7 @@ impl VarInt for UVINT16 {
     type InnerType = u16;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -183,10 +174,7 @@ impl From<u16> for UVINT16 {
             16_384..=u16::MAX => Uvint16BitSize::Sixteen,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -203,10 +191,10 @@ impl Uvint16BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Uvint16BitSize::Eight => { 8 }
-            Uvint16BitSize::Eleven => { 11 }
-            Uvint16BitSize::Fourteen => { 14 }
-            Uvint16BitSize::Sixteen => { 16 }
+            Uvint16BitSize::Eight => 8,
+            Uvint16BitSize::Eleven => 11,
+            Uvint16BitSize::Fourteen => 14,
+            Uvint16BitSize::Sixteen => 16,
         }
     }
 }
@@ -225,10 +213,10 @@ impl From<u8> for Uvint16BitSize {
 impl From<Uvint16BitSize> for u8 {
     fn from(value: Uvint16BitSize) -> Self {
         match value {
-            Uvint16BitSize::Eight => { 0b00 }
-            Uvint16BitSize::Eleven => { 0b01 }
-            Uvint16BitSize::Fourteen => { 0b10 }
-            Uvint16BitSize::Sixteen => { 0b11 }
+            Uvint16BitSize::Eight => 0b00,
+            Uvint16BitSize::Eleven => 0b01,
+            Uvint16BitSize::Fourteen => 0b10,
+            Uvint16BitSize::Sixteen => 0b11,
         }
     }
 }
@@ -251,10 +239,7 @@ impl VarInt for UVINT32 {
     type InnerType = u32;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -291,10 +276,7 @@ impl From<u32> for UVINT32 {
             262_144..=u32::MAX => Uvint32BitSize::ThirtyTwo,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -312,10 +294,10 @@ impl Uvint32BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Uvint32BitSize::Eight => { 8 }
-            Uvint32BitSize::Fifteen => { 15 }
-            Uvint32BitSize::Eighteen => { 18 }
-            Uvint32BitSize::ThirtyTwo => { 32 }
+            Uvint32BitSize::Eight => 8,
+            Uvint32BitSize::Fifteen => 15,
+            Uvint32BitSize::Eighteen => 18,
+            Uvint32BitSize::ThirtyTwo => 32,
         }
     }
 }
@@ -334,10 +316,10 @@ impl From<u8> for Uvint32BitSize {
 impl From<Uvint32BitSize> for u8 {
     fn from(value: Uvint32BitSize) -> Self {
         match value {
-            Uvint32BitSize::Eight => { 0b00 }
-            Uvint32BitSize::Fifteen => { 0b01 }
-            Uvint32BitSize::Eighteen => { 0b10 }
-            Uvint32BitSize::ThirtyTwo => { 0b11 }
+            Uvint32BitSize::Eight => 0b00,
+            Uvint32BitSize::Fifteen => 0b01,
+            Uvint32BitSize::Eighteen => 0b10,
+            Uvint32BitSize::ThirtyTwo => 0b11,
         }
     }
 }
@@ -354,10 +336,7 @@ impl VarInt for SVINT12 {
     type InnerType = i16;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -392,13 +371,10 @@ impl From<i16> for SVINT12 {
             -32..=31 => Svint12BitSize::Six,
             -256..=255 => Svint12BitSize::Nine,
             -2_048..=2_047 => Svint12BitSize::Twelve,
-            _ => { Svint12BitSize::Twelve }
+            _ => Svint12BitSize::Twelve,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -416,29 +392,29 @@ impl Svint12BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Svint12BitSize::Three => { 3 }
-            Svint12BitSize::Six => { 6 }
-            Svint12BitSize::Nine => { 9 }
-            Svint12BitSize::Twelve => { 12 }
+            Svint12BitSize::Three => 3,
+            Svint12BitSize::Six => 6,
+            Svint12BitSize::Nine => 9,
+            Svint12BitSize::Twelve => 12,
         }
     }
 
     pub fn min_value(&self) -> i16 {
         match self {
-            Svint12BitSize::Three => { -4 }
-            Svint12BitSize::Six => { -32 }
-            Svint12BitSize::Nine => { -256 }
-            Svint12BitSize::Twelve => { -2_048 }
+            Svint12BitSize::Three => -4,
+            Svint12BitSize::Six => -32,
+            Svint12BitSize::Nine => -256,
+            Svint12BitSize::Twelve => -2_048,
         }
     }
 
     #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
-            Svint12BitSize::Three => { 3 }
-            Svint12BitSize::Six => { 31 }
-            Svint12BitSize::Nine => { 255 }
-            Svint12BitSize::Twelve => { 2_047 }
+            Svint12BitSize::Three => 3,
+            Svint12BitSize::Six => 31,
+            Svint12BitSize::Nine => 255,
+            Svint12BitSize::Twelve => 2_047,
         }
     }
 }
@@ -457,10 +433,10 @@ impl From<u8> for Svint12BitSize {
 impl From<Svint12BitSize> for u8 {
     fn from(value: Svint12BitSize) -> Self {
         match value {
-            Svint12BitSize::Three => { 0b00 }
-            Svint12BitSize::Six => { 0b01 }
-            Svint12BitSize::Nine => { 0b10 }
-            Svint12BitSize::Twelve => { 0b11 }
+            Svint12BitSize::Three => 0b00,
+            Svint12BitSize::Six => 0b01,
+            Svint12BitSize::Nine => 0b10,
+            Svint12BitSize::Twelve => 0b11,
         }
     }
 }
@@ -478,10 +454,7 @@ impl VarInt for SVINT13 {
     type InnerType = i16;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -515,13 +488,10 @@ impl From<i16> for SVINT13 {
             -64..=63 => Svint13BitSize::Seven,
             -512..=511 => Svint13BitSize::Ten,
             -4_096..=4_095 => Svint13BitSize::Thirteen,
-            _ => { Svint13BitSize::Thirteen }
+            _ => Svint13BitSize::Thirteen,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -539,29 +509,29 @@ impl Svint13BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Svint13BitSize::Five => { 5 }
-            Svint13BitSize::Seven => { 7 }
-            Svint13BitSize::Ten => { 10 }
-            Svint13BitSize::Thirteen => { 13 }
+            Svint13BitSize::Five => 5,
+            Svint13BitSize::Seven => 7,
+            Svint13BitSize::Ten => 10,
+            Svint13BitSize::Thirteen => 13,
         }
     }
 
     pub fn min_value(&self) -> i16 {
         match self {
-            Svint13BitSize::Five => { -16 }
-            Svint13BitSize::Seven => { -64 }
-            Svint13BitSize::Ten => { -512 }
-            Svint13BitSize::Thirteen => { -4_096 }
+            Svint13BitSize::Five => -16,
+            Svint13BitSize::Seven => -64,
+            Svint13BitSize::Ten => -512,
+            Svint13BitSize::Thirteen => -4_096,
         }
     }
 
     #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
-            Svint13BitSize::Five => { 15 }
-            Svint13BitSize::Seven => { 63 }
-            Svint13BitSize::Ten => { 511 }
-            Svint13BitSize::Thirteen => { 4_095 }
+            Svint13BitSize::Five => 15,
+            Svint13BitSize::Seven => 63,
+            Svint13BitSize::Ten => 511,
+            Svint13BitSize::Thirteen => 4_095,
         }
     }
 }
@@ -580,10 +550,10 @@ impl From<u8> for Svint13BitSize {
 impl From<Svint13BitSize> for u8 {
     fn from(value: Svint13BitSize) -> Self {
         match value {
-            Svint13BitSize::Five => { 0b00 }
-            Svint13BitSize::Seven => { 0b01 }
-            Svint13BitSize::Ten => { 0b10 }
-            Svint13BitSize::Thirteen => { 0b11 }
+            Svint13BitSize::Five => 0b00,
+            Svint13BitSize::Seven => 0b01,
+            Svint13BitSize::Ten => 0b10,
+            Svint13BitSize::Thirteen => 0b11,
         }
     }
 }
@@ -601,10 +571,7 @@ impl VarInt for SVINT14 {
     type InnerType = i16;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -638,13 +605,10 @@ impl From<i16> for SVINT14 {
             -64..=63 => Svint14BitSize::Seven,
             -256..=255 => Svint14BitSize::Nine,
             -8_192..=8_191 => Svint14BitSize::Fourteen,
-            _ => { Svint14BitSize::Fourteen }
+            _ => Svint14BitSize::Fourteen,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -662,29 +626,29 @@ impl Svint14BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Svint14BitSize::Four => { 4 }
-            Svint14BitSize::Seven => { 7 }
-            Svint14BitSize::Nine => { 9 }
-            Svint14BitSize::Fourteen => { 14 }
+            Svint14BitSize::Four => 4,
+            Svint14BitSize::Seven => 7,
+            Svint14BitSize::Nine => 9,
+            Svint14BitSize::Fourteen => 14,
         }
     }
 
     pub fn min_value(&self) -> i16 {
         match self {
-            Svint14BitSize::Four => { -8 }
-            Svint14BitSize::Seven => { -64 }
-            Svint14BitSize::Nine => { -256 }
-            Svint14BitSize::Fourteen => { -8_192 }
+            Svint14BitSize::Four => -8,
+            Svint14BitSize::Seven => -64,
+            Svint14BitSize::Nine => -256,
+            Svint14BitSize::Fourteen => -8_192,
         }
     }
 
     #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
-            Svint14BitSize::Four => { 7 }
-            Svint14BitSize::Seven => { 63 }
-            Svint14BitSize::Nine => { 255 }
-            Svint14BitSize::Fourteen => { 8_191 }
+            Svint14BitSize::Four => 7,
+            Svint14BitSize::Seven => 63,
+            Svint14BitSize::Nine => 255,
+            Svint14BitSize::Fourteen => 8_191,
         }
     }
 }
@@ -703,10 +667,10 @@ impl From<u8> for Svint14BitSize {
 impl From<Svint14BitSize> for u8 {
     fn from(value: Svint14BitSize) -> Self {
         match value {
-            Svint14BitSize::Four => { 0b00 }
-            Svint14BitSize::Seven => { 0b01 }
-            Svint14BitSize::Nine => { 0b10 }
-            Svint14BitSize::Fourteen => { 0b11 }
+            Svint14BitSize::Four => 0b00,
+            Svint14BitSize::Seven => 0b01,
+            Svint14BitSize::Nine => 0b10,
+            Svint14BitSize::Fourteen => 0b11,
         }
     }
 }
@@ -724,10 +688,7 @@ impl VarInt for SVINT16 {
     type InnerType = i16;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -763,10 +724,7 @@ impl From<i16> for SVINT16 {
             i16::MIN..=i16::MAX => Svint16BitSize::Sixteen,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -784,29 +742,29 @@ impl Svint16BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Svint16BitSize::Eight => { 8 }
-            Svint16BitSize::Twelve => { 12 }
-            Svint16BitSize::Thirteen => { 13 }
-            Svint16BitSize::Sixteen => { 16 }
+            Svint16BitSize::Eight => 8,
+            Svint16BitSize::Twelve => 12,
+            Svint16BitSize::Thirteen => 13,
+            Svint16BitSize::Sixteen => 16,
         }
     }
 
     pub fn min_value(&self) -> i16 {
         match self {
-            Svint16BitSize::Eight => { -128 }
-            Svint16BitSize::Twelve => { -2_048 }
-            Svint16BitSize::Thirteen => { -4_096 }
-            Svint16BitSize::Sixteen => { i16::MIN }
+            Svint16BitSize::Eight => -128,
+            Svint16BitSize::Twelve => -2_048,
+            Svint16BitSize::Thirteen => -4_096,
+            Svint16BitSize::Sixteen => i16::MIN,
         }
     }
 
     #[allow(dead_code)]
     pub fn max_value(&self) -> i16 {
         match self {
-            Svint16BitSize::Eight => { 127 }
-            Svint16BitSize::Twelve => { 2_047 }
-            Svint16BitSize::Thirteen => { 4_095 }
-            Svint16BitSize::Sixteen => { i16::MAX }
+            Svint16BitSize::Eight => 127,
+            Svint16BitSize::Twelve => 2_047,
+            Svint16BitSize::Thirteen => 4_095,
+            Svint16BitSize::Sixteen => i16::MAX,
         }
     }
 }
@@ -825,10 +783,10 @@ impl From<u8> for Svint16BitSize {
 impl From<Svint16BitSize> for u8 {
     fn from(value: Svint16BitSize) -> Self {
         match value {
-            Svint16BitSize::Eight => { 0b00 }
-            Svint16BitSize::Twelve => { 0b01 }
-            Svint16BitSize::Thirteen => { 0b10 }
-            Svint16BitSize::Sixteen => { 0b11 }
+            Svint16BitSize::Eight => 0b00,
+            Svint16BitSize::Twelve => 0b01,
+            Svint16BitSize::Thirteen => 0b10,
+            Svint16BitSize::Sixteen => 0b11,
         }
     }
 }
@@ -846,10 +804,7 @@ impl VarInt for SVINT24 {
     type InnerType = i32;
 
     fn new(bit_size: Self::BitSize, value: Self::InnerType) -> Self {
-        Self {
-            bit_size,
-            value,
-        }
+        Self { bit_size, value }
     }
 
     fn bit_size(&self) -> usize {
@@ -883,13 +838,10 @@ impl From<i32> for SVINT24 {
             -262_144..=262_143 => Svint24BitSize::Nineteen,
             -1_048_576..=1_048_575 => Svint24BitSize::TwentyOne,
             -8_388_608..=8_388_607 => Svint24BitSize::TwentyFour,
-            _ => { Svint24BitSize::TwentyFour }
+            _ => Svint24BitSize::TwentyFour,
         };
 
-        Self {
-            bit_size,
-            value
-        }
+        Self { bit_size, value }
     }
 }
 
@@ -907,29 +859,29 @@ impl Svint24BitSize {
 
     pub fn bit_size(&self) -> usize {
         match self {
-            Svint24BitSize::Sixteen => { 16 }
-            Svint24BitSize::Nineteen => { 19 }
-            Svint24BitSize::TwentyOne => { 21 }
-            Svint24BitSize::TwentyFour => { 24 }
+            Svint24BitSize::Sixteen => 16,
+            Svint24BitSize::Nineteen => 19,
+            Svint24BitSize::TwentyOne => 21,
+            Svint24BitSize::TwentyFour => 24,
         }
     }
 
     pub fn min_value(&self) -> i32 {
         match self {
-            Svint24BitSize::Sixteen => { -32_768 }
-            Svint24BitSize::Nineteen => { -262_144 }
-            Svint24BitSize::TwentyOne => { -1_048_576 }
-            Svint24BitSize::TwentyFour => { 8_388_608 }
+            Svint24BitSize::Sixteen => -32_768,
+            Svint24BitSize::Nineteen => -262_144,
+            Svint24BitSize::TwentyOne => -1_048_576,
+            Svint24BitSize::TwentyFour => 8_388_608,
         }
     }
 
     #[allow(dead_code)]
     pub fn max_value(&self) -> i32 {
         match self {
-            Svint24BitSize::Sixteen => { 32_767 }
-            Svint24BitSize::Nineteen => { 262_143 }
-            Svint24BitSize::TwentyOne => { 1_048_575 }
-            Svint24BitSize::TwentyFour => { 8_388_607 }
+            Svint24BitSize::Sixteen => 32_767,
+            Svint24BitSize::Nineteen => 262_143,
+            Svint24BitSize::TwentyOne => 1_048_575,
+            Svint24BitSize::TwentyFour => 8_388_607,
         }
     }
 }
@@ -948,10 +900,10 @@ impl From<u8> for Svint24BitSize {
 impl From<Svint24BitSize> for u8 {
     fn from(value: Svint24BitSize) -> Self {
         match value {
-            Svint24BitSize::Sixteen => { 0b00 }
-            Svint24BitSize::Nineteen => { 0b01 }
-            Svint24BitSize::TwentyOne => { 0b10 }
-            Svint24BitSize::TwentyFour => { 0b11 }
+            Svint24BitSize::Sixteen => 0b00,
+            Svint24BitSize::Nineteen => 0b01,
+            Svint24BitSize::TwentyOne => 0b10,
+            Svint24BitSize::TwentyFour => 0b11,
         }
     }
 }
@@ -978,6 +930,8 @@ pub(crate) trait CdisFloat {
     fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self;
     fn from_float(float: Self::InnerFloat) -> Self;
     fn to_float(&self) -> Self::InnerFloat;
-    fn parse(input: BitInput) -> IResult<BitInput, Self> where Self: Sized;
+    fn parse(input: BitInput) -> IResult<BitInput, Self>
+    where
+        Self: Sized;
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize;
 }

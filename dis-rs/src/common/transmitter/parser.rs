@@ -1,13 +1,22 @@
-use nom::bytes::complete::take;
-use nom::IResult;
-use nom::multi::count;
-use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
-use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
-use crate::enumerations::{TransmitterAntennaPatternType, TransmitterInputSource, TransmitterTransmitState, ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, VariableRecordType};
+use crate::common::transmitter::model::{
+    BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter,
+    VariableTransmitterParameter, BASE_VTP_RECORD_LENGTH,
+};
+use crate::enumerations::{
+    ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterAntennaPatternType,
+    TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation,
+    TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
+};
+use nom::bytes::complete::take;
+use nom::multi::count;
+use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
+use nom::IResult;
 
-pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn transmitter_body(
+    header: &PduHeader,
+) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         let (input, radio_reference_id) = entity_id(input)?;
         let (input, radio_number) = be_u16(input)?;
@@ -20,9 +29,9 @@ pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<
         let (input, number_of_vtp) = {
             let (input, number_of_vtp) = be_u16(input)?;
             match header.protocol_version {
-                ProtocolVersion::IEEE1278_12012 => { (input, number_of_vtp) }
+                ProtocolVersion::IEEE1278_12012 => (input, number_of_vtp),
                 ProtocolVersion::IEEE1278_1A1998 | _ => {
-                    (input, 0u16)  // set to zeroed padding to prevent parsing of not present Variable Transmitter Parameters
+                    (input, 0u16) // set to zeroed padding to prevent parsing of not present Variable Transmitter Parameters
                 }
             }
         };
@@ -45,11 +54,15 @@ pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<
         let (input, modulation_parameters) = if length_of_modulation_parameters > 0 {
             let (input, params) = take(length_of_modulation_parameters)(input)?;
             (input, Some(params))
-        } else { (input, None) };
+        } else {
+            (input, None)
+        };
         let (input, antenna_pattern) = if antenna_pattern_length > 0 {
             let (input, pattern) = beam_antenna_pattern(input)?;
             (input, Some(pattern))
-        } else { (input, None) };
+        } else {
+            (input, None)
+        };
 
         let (input, vt_params) =
             count(variable_transmitter_parameter, number_of_vtp.into())(input)?;
@@ -72,10 +85,14 @@ pub(crate) fn transmitter_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<
             .with_variable_transmitter_parameters(vt_params);
         let body = if let Some(antenna_pattern) = antenna_pattern {
             body.with_antenna_pattern(antenna_pattern)
-        } else { body };
+        } else {
+            body
+        };
         let body = if let Some(modulation_parameters) = modulation_parameters {
             body.with_modulation_parameters(modulation_parameters.to_vec())
-        } else { body };
+        } else {
+            body
+        };
         let body = body.build();
 
         Ok((input, body.into_pdu_body()))
@@ -86,14 +103,18 @@ fn modulation_type(input: &[u8]) -> IResult<&[u8], ModulationType> {
     let (input, spread_spectrum) = spread_spectrum(input)?;
     let (input, major_modulation) = be_u16(input)?;
     let (input, detail) = be_u16(input)?;
-    let major_modulation = TransmitterMajorModulation::new_from_bytes_with_detail(major_modulation, detail);
+    let major_modulation =
+        TransmitterMajorModulation::new_from_bytes_with_detail(major_modulation, detail);
     let (input, radio_system) = be_u16(input)?;
     let radio_system = TransmitterModulationTypeSystem::from(radio_system);
 
-    Ok((input, ModulationType::new()
-        .with_spread_spectrum(spread_spectrum)
-        .with_major_modulation(major_modulation)
-        .with_radio_system(radio_system)))
+    Ok((
+        input,
+        ModulationType::new()
+            .with_spread_spectrum(spread_spectrum)
+            .with_major_modulation(major_modulation)
+            .with_radio_system(radio_system),
+    ))
 }
 
 fn spread_spectrum(input: &[u8]) -> IResult<&[u8], SpreadSpectrum> {
@@ -121,14 +142,17 @@ fn beam_antenna_pattern(input: &[u8]) -> IResult<&[u8], BeamAntennaPattern> {
     let (input, phase) = be_f32(input)?;
     let (input, _padding) = be_u32(input)?;
 
-    Ok((input, BeamAntennaPattern::new()
-        .with_beam_direction(beam_direction)
-        .with_azimuth_beamwidth(azimuth_beamwidth)
-        .with_elevation_beamwidth(elevation_beamwidth)
-        .with_reference_system(reference_system)
-        .with_e_z(e_z)
-        .with_e_x(e_x)
-        .with_phase(phase)))
+    Ok((
+        input,
+        BeamAntennaPattern::new()
+            .with_beam_direction(beam_direction)
+            .with_azimuth_beamwidth(azimuth_beamwidth)
+            .with_elevation_beamwidth(elevation_beamwidth)
+            .with_reference_system(reference_system)
+            .with_e_z(e_z)
+            .with_e_x(e_x)
+            .with_phase(phase),
+    ))
 }
 
 fn variable_transmitter_parameter(input: &[u8]) -> IResult<&[u8], VariableTransmitterParameter> {
@@ -138,7 +162,10 @@ fn variable_transmitter_parameter(input: &[u8]) -> IResult<&[u8], VariableTransm
     let fields_length_bytes = record_length - BASE_VTP_RECORD_LENGTH;
     let (input, specific_fields) = take(fields_length_bytes)(input)?;
 
-    Ok((input, VariableTransmitterParameter::new()
-        .with_record_type(record_type)
-        .with_fields(specific_fields.to_vec())))
+    Ok((
+        input,
+        VariableTransmitterParameter::new()
+            .with_record_type(record_type)
+            .with_fields(specific_fields.to_vec()),
+    ))
 }

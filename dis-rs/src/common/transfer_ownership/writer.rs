@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
-use crate::{Serialize, SerializePdu, SupportedVersion};
 use crate::transfer_ownership::model::TransferOwnership;
+use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for TransferOwnership {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

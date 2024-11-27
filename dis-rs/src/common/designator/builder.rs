@@ -47,7 +47,10 @@ impl DesignatorBuilder {
         self
     }
 
-    pub fn with_spot_wrt_designated_entity(mut self, spot_wrt_designated_entity: VectorF32) -> Self {
+    pub fn with_spot_wrt_designated_entity(
+        mut self,
+        spot_wrt_designated_entity: VectorF32,
+    ) -> Self {
         self.0.spot_wrt_designated_entity = spot_wrt_designated_entity;
         self
     }
@@ -57,7 +60,10 @@ impl DesignatorBuilder {
         self
     }
 
-    pub fn with_dead_reckoning_algorithm(mut self, dead_reckoning_algorithm: DeadReckoningAlgorithm) -> Self {
+    pub fn with_dead_reckoning_algorithm(
+        mut self,
+        dead_reckoning_algorithm: DeadReckoningAlgorithm,
+    ) -> Self {
         self.0.dead_reckoning_algorithm = dead_reckoning_algorithm;
         self
     }

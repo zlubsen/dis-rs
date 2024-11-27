@@ -1,9 +1,9 @@
-use dis_rs::model::EventId;
 use crate::codec::Codec;
 use crate::collision::model::{Collision, CollisionUnits};
 use crate::records::codec::{decode_entity_coordinate_vector, encode_entity_coordinate_vector};
 use crate::records::model::{EntityId, LinearVelocity, UnitsMass};
 use crate::types::model::UVINT32;
+use dis_rs::model::EventId;
 
 use num_traits::FromPrimitive;
 
@@ -11,8 +11,7 @@ type Counterpart = dis_rs::collision::model::Collision;
 
 impl Collision {
     pub fn encode(item: &Counterpart) -> Self {
-        let (location, units_location) =
-            encode_entity_coordinate_vector(&item.location);
+        let (location, units_location) = encode_entity_coordinate_vector(&item.location);
         let (mass, units_mass) = encode_collision_mass(item.mass);
         let units = CollisionUnits {
             location_entity_coordinates: units_location,
@@ -39,7 +38,10 @@ impl Collision {
             .with_collision_type(self.collision_type)
             .with_velocity(self.velocity.decode())
             .with_mass(decode_collision_mass(self.mass.value, self.units.mass))
-            .with_location(decode_entity_coordinate_vector(&self.location, self.units.location_entity_coordinates))
+            .with_location(decode_entity_coordinate_vector(
+                &self.location,
+                self.units.location_entity_coordinates,
+            ))
             .build()
     }
 }
@@ -61,21 +63,21 @@ fn encode_collision_mass(mass: f32) -> (UVINT32, UnitsMass) {
 fn decode_collision_mass(mass: u32, unit: UnitsMass) -> f32 {
     let mass = f32::from_u32(mass).unwrap_or(0.0);
     match unit {
-        UnitsMass::Grams => { mass / 1000.0 }
-        UnitsMass::Kilograms => { mass }
+        UnitsMass::Grams => mass / 1000.0,
+        UnitsMass::Kilograms => mass,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use dis_rs::collision::builder::CollisionBuilder;
-    use dis_rs::enumerations::CollisionType;
-    use dis_rs::model::{EntityId as DisEntityId, EventId, PduBody, SimulationAddress};
-    use crate::{BodyProperties, CdisBody};
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::collision::model::{Collision, CollisionUnits};
     use crate::records::model::{UnitsMass, UnitsMeters};
     use crate::types::model::UVINT32;
+    use crate::{BodyProperties, CdisBody};
+    use dis_rs::collision::builder::CollisionBuilder;
+    use dis_rs::enumerations::CollisionType;
+    use dis_rs::model::{EntityId as DisEntityId, EventId, PduBody, SimulationAddress};
 
     fn create_basic_dis_collision_body() -> CollisionBuilder {
         use dis_rs::collision::model::Collision;
@@ -92,7 +94,8 @@ mod tests {
 
         let dis_body = create_basic_dis_collision_body()
             .with_mass(60.001)
-            .build().into_pdu_body();
+            .build()
+            .into_pdu_body();
 
         let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
 
@@ -119,7 +122,8 @@ mod tests {
             velocity: Default::default(),
             mass: UVINT32::from(60001),
             location: Default::default(),
-        }.into_cdis_body();
+        }
+        .into_cdis_body();
 
         let (dis_body, state_result) = cdis_body.decode(&mut state, &options);
 

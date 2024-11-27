@@ -1,12 +1,20 @@
-use std::str::FromStr;
+use crate::common::model::{
+    EntityId, EntityType, Location, Orientation, PduBody, VariableParameter, VectorF32,
+};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, EntityType, Location, Orientation, PduBody, VariableParameter, VectorF32};
 use crate::constants::{FOUR_OCTETS, TWELVE_OCTETS, VARIABLE_PARAMETER_RECORD_LENGTH};
-use crate::DisError;
 use crate::entity_state::builder::EntityStateBuilder;
-use crate::enumerations::{ForceId, EntityCapabilities, PduType, EntityMarkingCharacterSet, LandPlatformAppearance, AirPlatformAppearance, SurfacePlatformAppearance, SubsurfacePlatformAppearance, SpacePlatformAppearance, MunitionAppearance, LifeFormsAppearance, EnvironmentalAppearance, CulturalFeatureAppearance, RadioAppearance, ExpendableAppearance, SensorEmitterAppearance, SupplyAppearance, DeadReckoningAlgorithm, EntityKind, PlatformDomain};
+use crate::enumerations::{
+    AirPlatformAppearance, CulturalFeatureAppearance, DeadReckoningAlgorithm, EntityCapabilities,
+    EntityKind, EntityMarkingCharacterSet, EnvironmentalAppearance, ExpendableAppearance, ForceId,
+    LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, PduType, PlatformDomain,
+    RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance,
+    SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance,
+};
+use crate::DisError;
+use std::str::FromStr;
 
-const BASE_ENTITY_STATE_BODY_LENGTH : u16 = 132;
+const BASE_ENTITY_STATE_BODY_LENGTH: u16 = 132;
 
 // TODO sensible errors for EntityState
 #[allow(dead_code)]
@@ -19,17 +27,17 @@ pub enum EntityStateValidationError {
 /// 7.2.2 Entity State PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct EntityState {
-    pub entity_id : EntityId, // struct
-    pub force_id : ForceId, // enum
-    pub entity_type : EntityType, // struct
-    pub alternative_entity_type : EntityType, // struct
-    pub entity_linear_velocity : VectorF32, // struct
-    pub entity_location : Location, // struct
-    pub entity_orientation : Orientation, // struct
-    pub entity_appearance: EntityAppearance, // enum
-    pub dead_reckoning_parameters : DrParameters, // struct
-    pub entity_marking : EntityMarking, // struct
-    pub entity_capabilities : EntityCapabilities, // enum
+    pub entity_id: EntityId,                     // struct
+    pub force_id: ForceId,                       // enum
+    pub entity_type: EntityType,                 // struct
+    pub alternative_entity_type: EntityType,     // struct
+    pub entity_linear_velocity: VectorF32,       // struct
+    pub entity_location: Location,               // struct
+    pub entity_orientation: Orientation,         // struct
+    pub entity_appearance: EntityAppearance,     // enum
+    pub dead_reckoning_parameters: DrParameters, // struct
+    pub entity_marking: EntityMarking,           // struct
+    pub entity_capabilities: EntityCapabilities, // enum
     pub variable_parameters: Vec<VariableParameter>,
 }
 
@@ -49,7 +57,8 @@ impl EntityState {
 
 impl BodyInfo for EntityState {
     fn body_length(&self) -> u16 {
-        BASE_ENTITY_STATE_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
+        BASE_ENTITY_STATE_BODY_LENGTH
+            + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
     }
 
     fn body_type(&self) -> PduType {
@@ -83,7 +92,7 @@ pub enum EntityAppearance {
     Radio(RadioAppearance),
     Expendable(ExpendableAppearance),
     SensorEmitter(SensorEmitterAppearance),
-    Unspecified([u8;FOUR_OCTETS]),
+    Unspecified([u8; FOUR_OCTETS]),
 }
 
 impl Default for EntityAppearance {
@@ -96,20 +105,42 @@ impl EntityAppearance {
     pub fn from_bytes(appearance: u32, entity_type: &EntityType) -> Self {
         match (entity_type.kind, entity_type.domain) {
             (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
-            (EntityKind::Platform, PlatformDomain::Land) => EntityAppearance::LandPlatform(LandPlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Air) => EntityAppearance::AirPlatform(AirPlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Surface) => EntityAppearance::SurfacePlatform(SurfacePlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Subsurface) => EntityAppearance::SubsurfacePlatform(SubsurfacePlatformAppearance::from(appearance)),
-            (EntityKind::Platform, PlatformDomain::Space) => EntityAppearance::SpacePlatform(SpacePlatformAppearance::from(appearance)),
-            (EntityKind::Munition, _) => EntityAppearance::Munition(MunitionAppearance::from(appearance)),
-            (EntityKind::LifeForm, _) => EntityAppearance::LifeForms(LifeFormsAppearance::from(appearance)),
-            (EntityKind::Environmental, _) => EntityAppearance::Environmental(EnvironmentalAppearance::from(appearance)),
-            (EntityKind::CulturalFeature, _) => EntityAppearance::CulturalFeature(CulturalFeatureAppearance::from(appearance)),
+            (EntityKind::Platform, PlatformDomain::Land) => {
+                EntityAppearance::LandPlatform(LandPlatformAppearance::from(appearance))
+            }
+            (EntityKind::Platform, PlatformDomain::Air) => {
+                EntityAppearance::AirPlatform(AirPlatformAppearance::from(appearance))
+            }
+            (EntityKind::Platform, PlatformDomain::Surface) => {
+                EntityAppearance::SurfacePlatform(SurfacePlatformAppearance::from(appearance))
+            }
+            (EntityKind::Platform, PlatformDomain::Subsurface) => {
+                EntityAppearance::SubsurfacePlatform(SubsurfacePlatformAppearance::from(appearance))
+            }
+            (EntityKind::Platform, PlatformDomain::Space) => {
+                EntityAppearance::SpacePlatform(SpacePlatformAppearance::from(appearance))
+            }
+            (EntityKind::Munition, _) => {
+                EntityAppearance::Munition(MunitionAppearance::from(appearance))
+            }
+            (EntityKind::LifeForm, _) => {
+                EntityAppearance::LifeForms(LifeFormsAppearance::from(appearance))
+            }
+            (EntityKind::Environmental, _) => {
+                EntityAppearance::Environmental(EnvironmentalAppearance::from(appearance))
+            }
+            (EntityKind::CulturalFeature, _) => {
+                EntityAppearance::CulturalFeature(CulturalFeatureAppearance::from(appearance))
+            }
             (EntityKind::Supply, _) => EntityAppearance::Supply(SupplyAppearance::from(appearance)),
             (EntityKind::Radio, _) => EntityAppearance::Radio(RadioAppearance::from(appearance)),
-            (EntityKind::Expendable, _) => EntityAppearance::Expendable(ExpendableAppearance::from(appearance)),
-            (EntityKind::SensorEmitter, _) => EntityAppearance::SensorEmitter(SensorEmitterAppearance::from(appearance)),
-            (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes())
+            (EntityKind::Expendable, _) => {
+                EntityAppearance::Expendable(ExpendableAppearance::from(appearance))
+            }
+            (EntityKind::SensorEmitter, _) => {
+                EntityAppearance::SensorEmitter(SensorEmitterAppearance::from(appearance))
+            }
+            (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
         }
     }
     pub fn record_length(&self) -> u16 {
@@ -141,15 +172,15 @@ impl From<&EntityAppearance> for u32 {
 /// 6.2.29 Entity Marking record
 #[derive(Clone, Debug, PartialEq)]
 pub struct EntityMarking {
-    pub marking_character_set : EntityMarkingCharacterSet,
-    pub marking_string : String, // 11 byte String
+    pub marking_character_set: EntityMarkingCharacterSet,
+    pub marking_string: String, // 11 byte String
 }
 
 impl EntityMarking {
     pub fn new(marking: impl Into<String>, character_set: EntityMarkingCharacterSet) -> Self {
         Self {
             marking_character_set: character_set,
-            marking_string: marking.into()
+            marking_string: marking.into(),
         }
     }
 
@@ -183,10 +214,13 @@ impl FromStr for EntityMarking {
         if s.len() <= 11 {
             Ok(Self {
                 marking_character_set: EntityMarkingCharacterSet::ASCII,
-                marking_string: s.to_string()
+                marking_string: s.to_string(),
             })
         } else {
-            Err(DisError::ParseError(format!("String is too long for EntityMarking. Found {}, max 11 allowed.", s.len())))
+            Err(DisError::ParseError(format!(
+                "String is too long for EntityMarking. Found {}, max 11 allowed.",
+                s.len()
+            )))
         }
     }
 }
@@ -194,10 +228,10 @@ impl FromStr for EntityMarking {
 /// Custom defined record to group Dead Reckoning Parameters
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrParameters {
-    pub algorithm : DeadReckoningAlgorithm,
-    pub other_parameters : DrOtherParameters,
-    pub linear_acceleration : VectorF32,
-    pub angular_velocity : VectorF32,
+    pub algorithm: DeadReckoningAlgorithm,
+    pub other_parameters: DrOtherParameters,
+    pub linear_acceleration: VectorF32,
+    pub angular_velocity: VectorF32,
 }
 
 impl DrParameters {
@@ -232,16 +266,16 @@ pub enum DrOtherParameters {
 
 impl Default for DrOtherParameters {
     fn default() -> Self {
-        Self::None([0u8;15])
+        Self::None([0u8; 15])
     }
 }
 
 /// Identical to Table 58—Euler Angles record / 6.2.32 Euler Angles record (which is modeled as `VectorF32`)
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrEulerAngles {
-    pub local_yaw : f32,
-    pub local_pitch : f32,
-    pub local_roll : f32,
+    pub local_yaw: f32,
+    pub local_pitch: f32,
+    pub local_roll: f32,
 }
 
 impl DrEulerAngles {
@@ -264,7 +298,7 @@ impl DrEulerAngles {
 /// Table E.3—World Orientation Quaternion Dead Reckoning Parameters (E.8.2.3 Rotating DRM entities)
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct DrWorldOrientationQuaternion {
-    pub nil : u16,
+    pub nil: u16,
     pub x: f32,
     pub y: f32,
     pub z: f32,
@@ -290,5 +324,4 @@ impl DrWorldOrientationQuaternion {
         self.z = z;
         self
     }
-
 }

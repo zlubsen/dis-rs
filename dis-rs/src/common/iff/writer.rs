@@ -1,9 +1,22 @@
-use bytes::{BufMut, BytesMut};
-use crate::common::iff::model::{ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
-use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use crate::common::iff::model::{
+    ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code,
+    FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification,
+    IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence,
+    InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability,
+    MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus,
+    Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus,
+    Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData,
+    ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus,
+    OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData,
+    SystemStatus,
+};
 use crate::common::model::length_padded_to_num;
-use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS};
-use crate::{DisError};
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use crate::constants::{
+    EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS,
+};
+use crate::DisError;
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Iff {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -17,19 +30,31 @@ impl SerializePdu for Iff {
 
         let layer_2_bytes = if let Some(layer_2) = &self.layer_2 {
             layer_2.serialize(buf)
-        } else { 0 };
+        } else {
+            0
+        };
         let layer_3_bytes = if let Some(layer_3) = &self.layer_3 {
             layer_3.serialize(buf)
-        } else { 0 };
+        } else {
+            0
+        };
         let layer_4_bytes = if let Some(layer_4) = &self.layer_4 {
             layer_4.serialize(buf)
-        } else { 0 };
+        } else {
+            0
+        };
         let layer_5_bytes = if let Some(layer_5) = &self.layer_5 {
             layer_5.serialize(buf)
-        } else { 0 };
+        } else {
+            0
+        };
 
-        entity_id_bytes + event_id_bytes + antenna_location_bytes
-            + system_id_bytes + 2 + fundamental_data_bytes
+        entity_id_bytes
+            + event_id_bytes
+            + antenna_location_bytes
+            + system_id_bytes
+            + 2
+            + fundamental_data_bytes
             + layer_2_bytes
             + layer_3_bytes
             + layer_4_bytes
@@ -44,7 +69,8 @@ impl Serialize for IffLayer2 {
         buf.put_u8(self.operational_parameter_1);
         buf.put_u8(self.operational_parameter_2);
         buf.put_u16(self.iff_fundamental_parameters.len() as u16);
-        let params_bytes: u16 = self.iff_fundamental_parameters
+        let params_bytes: u16 = self
+            .iff_fundamental_parameters
             .iter()
             .map(|param| param.serialize(buf))
             .sum();
@@ -58,13 +84,17 @@ impl Serialize for IffLayer3 {
         let layer_header_bytes = self.layer_header.serialize(buf);
         let reporting_simulation_bytes = self.reporting_simulation.serialize(buf);
         let basic_data_bytes = match &self.mode_5_basic_data {
-            Mode5BasicData::Interrogator(data) => { data.serialize(buf) }
-            Mode5BasicData::Transponder(data) => { data.serialize(buf) }
+            Mode5BasicData::Interrogator(data) => data.serialize(buf),
+            Mode5BasicData::Transponder(data) => data.serialize(buf),
         };
         buf.put_u16(0u16);
         let iff_data_specification_bytes = self.data_records.serialize(buf);
 
-        layer_header_bytes + reporting_simulation_bytes + basic_data_bytes + 2 + iff_data_specification_bytes
+        layer_header_bytes
+            + reporting_simulation_bytes
+            + basic_data_bytes
+            + 2
+            + iff_data_specification_bytes
     }
 }
 
@@ -73,13 +103,17 @@ impl Serialize for IffLayer4 {
         let layer_header_bytes = self.layer_header.serialize(buf);
         let reporting_simulation_bytes = self.reporting_simulation.serialize(buf);
         let basic_data_bytes = match &self.mode_s_basic_data {
-            ModeSBasicData::Interrogator(data) => { data.serialize(buf) }
-            ModeSBasicData::Transponder(data) => { data.serialize(buf) }
+            ModeSBasicData::Interrogator(data) => data.serialize(buf),
+            ModeSBasicData::Transponder(data) => data.serialize(buf),
         };
         buf.put_u16(0u16);
         let iff_data_records_bytes = self.data_records.serialize(buf);
 
-        layer_header_bytes + reporting_simulation_bytes + basic_data_bytes + 2 + iff_data_records_bytes
+        layer_header_bytes
+            + reporting_simulation_bytes
+            + basic_data_bytes
+            + 2
+            + iff_data_records_bytes
     }
 }
 
@@ -93,13 +127,18 @@ impl Serialize for IffLayer5 {
         buf.put_u16(0u16);
         let data_records_bytes = self.data_records.serialize(buf);
 
-        layer_header_bytes + reporting_simulation_bytes + 2 + applicable_layers_bytes + 3 + data_records_bytes
+        layer_header_bytes
+            + reporting_simulation_bytes
+            + 2
+            + applicable_layers_bytes
+            + 3
+            + data_records_bytes
     }
 }
 
 impl Serialize for ChangeOptionsRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let byte : u8 = self.into();
+        let byte: u8 = self.into();
         buf.put_u8(byte);
 
         ONE_OCTET as u16
@@ -135,8 +174,8 @@ impl From<&ParameterCapable> for u8 {
 impl From<&OperationalStatus> for u8 {
     fn from(value: &OperationalStatus) -> Self {
         match value {
-            OperationalStatus::Operational => { 0 }
-            OperationalStatus::SystemFailed => { 1 }
+            OperationalStatus::Operational => 0,
+            OperationalStatus::SystemFailed => 1,
         }
     }
 }
@@ -144,17 +183,16 @@ impl From<&OperationalStatus> for u8 {
 impl From<&LayersPresenceApplicability> for u8 {
     fn from(value: &LayersPresenceApplicability) -> Self {
         match value {
-            LayersPresenceApplicability::NotPresentApplicable => { 0 }
-            LayersPresenceApplicability::PresentApplicable => { 1 }
+            LayersPresenceApplicability::NotPresentApplicable => 0,
+            LayersPresenceApplicability::PresentApplicable => 1,
         }
     }
 }
 
 impl Serialize for IffDataRecord {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let padded_record_lengths = length_padded_to_num(
-            SIX_OCTETS + self.record_specific_fields.len(),
-            FOUR_OCTETS);
+        let padded_record_lengths =
+            length_padded_to_num(SIX_OCTETS + self.record_specific_fields.len(), FOUR_OCTETS);
         let record_length_bytes = padded_record_lengths.record_length as u16;
 
         buf.put_u32(self.record_type.into());
@@ -169,7 +207,11 @@ impl Serialize for IffDataRecord {
 impl Serialize for IffDataSpecification {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u16(self.iff_data_records.len() as u16);
-        let records_bytes: u16 = self.iff_data_records.iter().map(|record| record.serialize(buf) ).sum();
+        let records_bytes: u16 = self
+            .iff_data_records
+            .iter()
+            .map(|record| record.serialize(buf))
+            .sum();
 
         2 + records_bytes
     }
@@ -241,14 +283,14 @@ impl Serialize for DapSource {
         let vertical_rate = u8::from(&self.vertical_rate);
 
         buf.put_u8(
-            indicated_air_speed |
-                mach_number |
-                ground_speed |
-                magnetic_heading |
-                track_angle_rate |
-                true_track_angle |
-                true_airspeed |
-                vertical_rate
+            indicated_air_speed
+                | mach_number
+                | ground_speed
+                | magnetic_heading
+                | track_angle_rate
+                | true_track_angle
+                | true_airspeed
+                | vertical_rate,
         );
 
         ONE_OCTET as u16
@@ -258,8 +300,8 @@ impl Serialize for DapSource {
 impl From<&DapValue> for u8 {
     fn from(value: &DapValue) -> Self {
         match value {
-            DapValue::ComputeLocally => { 0 }
-            DapValue::DataRecordAvailable => { 1 }
+            DapValue::ComputeLocally => 0,
+            DapValue::DataRecordAvailable => 1,
         }
     }
 }
@@ -323,8 +365,8 @@ impl Serialize for Mode5TransponderBasicData {
 impl From<&OnOffStatus> for u8 {
     fn from(value: &OnOffStatus) -> Self {
         match value {
-            OnOffStatus::Off => { 0 }
-            OnOffStatus::On => { 1 }
+            OnOffStatus::Off => 0,
+            OnOffStatus::On => 1,
         }
     }
 }
@@ -332,8 +374,8 @@ impl From<&OnOffStatus> for u8 {
 impl From<&DamageStatus> for u8 {
     fn from(value: &DamageStatus) -> Self {
         match value {
-            DamageStatus::NoDamage => { 0 }
-            DamageStatus::Damaged => { 1 }
+            DamageStatus::NoDamage => 0,
+            DamageStatus::Damaged => 1,
         }
     }
 }
@@ -341,8 +383,8 @@ impl From<&DamageStatus> for u8 {
 impl From<&MalfunctionStatus> for u8 {
     fn from(value: &MalfunctionStatus) -> Self {
         match value {
-            MalfunctionStatus::NoMalfunction => { 0 }
-            MalfunctionStatus::Malfunction => { 1 }
+            MalfunctionStatus::NoMalfunction => 0,
+            MalfunctionStatus::Malfunction => 1,
         }
     }
 }
@@ -350,8 +392,8 @@ impl From<&MalfunctionStatus> for u8 {
 impl From<&EnabledStatus> for u8 {
     fn from(value: &EnabledStatus) -> Self {
         match value {
-            EnabledStatus::NotEnabled => { 0 }
-            EnabledStatus::Enabled => { 1 }
+            EnabledStatus::NotEnabled => 0,
+            EnabledStatus::Enabled => 1,
         }
     }
 }
@@ -359,8 +401,8 @@ impl From<&EnabledStatus> for u8 {
 impl From<&LatLonAltSource> for u8 {
     fn from(value: &LatLonAltSource) -> Self {
         match value {
-            LatLonAltSource::ComputeLocally => { 0 }
-            LatLonAltSource::TransponderLocationDataRecordPresent => { 1 }
+            LatLonAltSource::ComputeLocally => 0,
+            LatLonAltSource::TransponderLocationDataRecordPresent => 1,
         }
     }
 }
@@ -421,8 +463,8 @@ impl Serialize for ModeSLevelsPresent {
 impl From<&IffPresence> for u32 {
     fn from(value: &IffPresence) -> Self {
         match value {
-            IffPresence::NotPresent => { 0 }
-            IffPresence::Present => { 1 }
+            IffPresence::NotPresent => 0,
+            IffPresence::Present => 1,
         }
     }
 }
@@ -430,8 +472,8 @@ impl From<&IffPresence> for u32 {
 impl From<&IffPresence> for u8 {
     fn from(value: &IffPresence) -> Self {
         match value {
-            IffPresence::NotPresent => { 0 }
-            IffPresence::Present => { 1 }
+            IffPresence::NotPresent => 0,
+            IffPresence::Present => 1,
         }
     }
 }
@@ -441,11 +483,14 @@ impl Serialize for ModeSTransponderBasicData {
         let _status_bytes = self.status.serialize(buf);
         let _levels_present_bytes = self.levels_present.serialize(buf);
         buf.put_u8(self.aircraft_present_domain.into());
-        let _aircraft_id =
-            match put_ascii_string_with_length(buf, &self.aircraft_identification, 8) {
-                Ok(bytes) => { bytes }
-                Err(_) => { buf.put_bytes(0u8, EIGHT_OCTETS); EIGHT_OCTETS as u16 }
-            };
+        let _aircraft_id = match put_ascii_string_with_length(buf, &self.aircraft_identification, 8)
+        {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                buf.put_bytes(0u8, EIGHT_OCTETS);
+                EIGHT_OCTETS as u16
+            }
+        };
         buf.put_u32(self.aircraft_address);
         buf.put_u8(self.aircraft_identification_type.into());
         self.dap_source.serialize(buf);
@@ -456,7 +501,11 @@ impl Serialize for ModeSTransponderBasicData {
     }
 }
 
-fn put_ascii_string_with_length(buf: &mut BytesMut, value: &str, length: usize) -> Result<u16, DisError> {
+fn put_ascii_string_with_length(
+    buf: &mut BytesMut,
+    value: &str,
+    length: usize,
+) -> Result<u16, DisError> {
     if value.len() > length {
         Err(DisError::StringTooLongError)
     } else if !value.is_ascii() {
@@ -477,12 +526,12 @@ impl Serialize for ModeSTransponderStatus {
         let airborne_vel_ri: u8 = u8::from(&self.airborne_velocity_report_indicator) << 1;
         let surface_pos_ri: u8 = u8::from(&self.surface_position_report_indicator);
         buf.put_u8(
-            squitter_status |
-                squitter_type |
-                squitter_record_source |
-                airborne_pos_ri |
-                airborne_vel_ri |
-                surface_pos_ri
+            squitter_status
+                | squitter_type
+                | squitter_record_source
+                | airborne_pos_ri
+                | airborne_vel_ri
+                | surface_pos_ri,
         );
 
         let ident_ri: u8 = u8::from(&self.identification_report_indicator) << 7;
@@ -490,13 +539,7 @@ impl Serialize for ModeSTransponderStatus {
         let on_off_status: u8 = u8::from(&self.on_off_status) << 2;
         let damage_status: u8 = u8::from(&self.damage_status) << 1;
         let malfunction_status: u8 = u8::from(&self.malfunction_status);
-        buf.put_u8(
-            ident_ri |
-                event_driven_ri |
-                on_off_status |
-                damage_status |
-                malfunction_status
-        );
+        buf.put_u8(ident_ri | event_driven_ri | on_off_status | damage_status | malfunction_status);
 
         TWO_OCTETS as u16
     }
@@ -505,8 +548,8 @@ impl Serialize for ModeSTransponderStatus {
 impl From<&SquitterStatus> for u8 {
     fn from(value: &SquitterStatus) -> Self {
         match value {
-            SquitterStatus::Off => { 0 }
-            SquitterStatus::On => { 1 }
+            SquitterStatus::Off => 0,
+            SquitterStatus::On => 1,
         }
     }
 }

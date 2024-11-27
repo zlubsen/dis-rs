@@ -1,6 +1,11 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, TWENTY_OCTETS};
-use crate::enumerations::{APAStatus, PduType, UAAcousticEmitterSystemFunction, UAAcousticSystemName, UAActiveEmissionParameterIndex, UAAdditionalPassiveActivityParameterIndex, UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAScanPattern, UAStateChangeUpdateIndicator};
+use crate::enumerations::{
+    APAStatus, PduType, UAAcousticEmitterSystemFunction, UAAcousticSystemName,
+    UAActiveEmissionParameterIndex, UAAdditionalPassiveActivityParameterIndex,
+    UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAScanPattern,
+    UAStateChangeUpdateIndicator,
+};
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::underwater_acoustic::builder::UnderwaterAcousticBuilder;
 
@@ -38,9 +43,17 @@ impl UnderwaterAcoustic {
 impl BodyInfo for UnderwaterAcoustic {
     fn body_length(&self) -> u16 {
         BASE_UA_BODY_LENGTH
-            + self.shafts.iter().map(|shaft| shaft.record_length() ).sum::<u16>()
-            + self.apas.iter().map(|apa| apa.record_length() ).sum::<u16>()
-            + self.emitter_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + self
+                .shafts
+                .iter()
+                .map(|shaft| shaft.record_length())
+                .sum::<u16>()
+            + self.apas.iter().map(|apa| apa.record_length()).sum::<u16>()
+            + self
+                .emitter_systems
+                .iter()
+                .map(|system| system.record_length())
+                .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {
@@ -151,7 +164,10 @@ pub struct UAEmitterSystem {
 }
 
 impl UAEmitterSystem {
-    pub fn with_acoustic_emitter_system(mut self, acoustic_emitter_system: AcousticEmitterSystem) -> Self {
+    pub fn with_acoustic_emitter_system(
+        mut self,
+        acoustic_emitter_system: AcousticEmitterSystem,
+    ) -> Self {
         self.acoustic_emitter_system = acoustic_emitter_system;
         self
     }
@@ -173,7 +189,11 @@ impl UAEmitterSystem {
 
     pub fn record_length(&self) -> u16 {
         TWENTY_OCTETS as u16
-            + self.beams.iter().map(|beam| beam.record_length() ).sum::<u16>()
+            + self
+                .beams
+                .iter()
+                .map(|beam| beam.record_length())
+                .sum::<u16>()
     }
 }
 
@@ -227,7 +247,10 @@ impl UABeam {
         self
     }
 
-    pub fn with_fundamental_parameters(mut self, fundamental_parameters: UAFundamentalParameterData) -> Self {
+    pub fn with_fundamental_parameters(
+        mut self,
+        fundamental_parameters: UAFundamentalParameterData,
+    ) -> Self {
         self.fundamental_parameters = fundamental_parameters;
         self
     }
@@ -249,7 +272,10 @@ pub struct UAFundamentalParameterData {
 }
 
 impl UAFundamentalParameterData {
-    pub fn with_active_emission_parameter_index(mut self, active_emission_parameter_index: UAActiveEmissionParameterIndex) -> Self {
+    pub fn with_active_emission_parameter_index(
+        mut self,
+        active_emission_parameter_index: UAActiveEmissionParameterIndex,
+    ) -> Self {
         self.active_emission_parameter_index = active_emission_parameter_index;
         self
     }
@@ -269,12 +295,18 @@ impl UAFundamentalParameterData {
         self
     }
 
-    pub fn with_beam_center_depression_elevation(mut self, beam_center_depression_elevation: f32) -> Self {
+    pub fn with_beam_center_depression_elevation(
+        mut self,
+        beam_center_depression_elevation: f32,
+    ) -> Self {
         self.beam_center_depression_elevation = beam_center_depression_elevation;
         self
     }
 
-    pub fn with_depression_elevation_beamwidth(mut self, depression_elevation_beamwidth: f32) -> Self {
+    pub fn with_depression_elevation_beamwidth(
+        mut self,
+        depression_elevation_beamwidth: f32,
+    ) -> Self {
         self.depression_elevation_beamwidth = depression_elevation_beamwidth;
         self
     }

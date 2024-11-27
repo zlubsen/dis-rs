@@ -1,7 +1,7 @@
-use crate::{BitBuffer, SerializeCdisPdu};
 use crate::start_resume::model::StartResume;
 use crate::types::writer::serialize_clock_time;
 use crate::writing::SerializeCdis;
+use crate::{BitBuffer, SerializeCdisPdu};
 
 impl SerializeCdisPdu for StartResume {
     #[allow(clippy::let_and_return)]

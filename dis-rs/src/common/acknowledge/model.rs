@@ -1,9 +1,9 @@
+use crate::common::acknowledge::builder::AcknowledgeBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::acknowledge::builder::AcknowledgeBuilder;
-use crate::enumerations::{AcknowledgeFlag, ResponseFlag, PduType};
+use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
 
-const ACKNOWLEDGE_BODY_LENGTH : u16 = 20;
+const ACKNOWLEDGE_BODY_LENGTH: u16 = 20;
 
 /// 5.6.5.6 Acknowledge PDU
 ///

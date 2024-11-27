@@ -1,4 +1,6 @@
-use crate::aggregate_state::model::{AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem};
+use crate::aggregate_state::model::{
+    AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem,
+};
 use crate::enumerations::{AggregateStateAggregateState, AggregateStateFormation, ForceId};
 use crate::model::{EntityId, Location, Orientation, VariableDatum, VectorF32};
 
@@ -87,12 +89,20 @@ impl AggregateStateBuilder {
         self
     }
 
-    pub fn with_silent_aggregate_system(mut self, silent_aggregate_system: SilentAggregateSystem) -> Self {
-        self.0.silent_aggregate_systems.push(silent_aggregate_system);
+    pub fn with_silent_aggregate_system(
+        mut self,
+        silent_aggregate_system: SilentAggregateSystem,
+    ) -> Self {
+        self.0
+            .silent_aggregate_systems
+            .push(silent_aggregate_system);
         self
     }
 
-    pub fn with_silent_aggregate_systems(mut self, silent_aggregate_systems: Vec<SilentAggregateSystem>) -> Self {
+    pub fn with_silent_aggregate_systems(
+        mut self,
+        silent_aggregate_systems: Vec<SilentAggregateSystem>,
+    ) -> Self {
         self.0.silent_aggregate_systems = silent_aggregate_systems;
         self
     }
@@ -102,7 +112,10 @@ impl AggregateStateBuilder {
         self
     }
 
-    pub fn with_silent_entity_systems(mut self, silent_entity_systems: Vec<SilentEntitySystem>) -> Self {
+    pub fn with_silent_entity_systems(
+        mut self,
+        silent_entity_systems: Vec<SilentEntitySystem>,
+    ) -> Self {
         self.0.silent_entity_systems = silent_entity_systems;
         self
     }

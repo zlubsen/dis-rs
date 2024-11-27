@@ -1,5 +1,5 @@
-use crate::enumerations::{EventType, RequiredReliabilityService};
 use crate::common::model::{EntityId, RecordSpecification};
+use crate::enumerations::{EventType, RequiredReliabilityService};
 use crate::record_r::model::RecordR;
 
 pub struct RecordRBuilder(RecordR);
@@ -32,7 +32,10 @@ impl RecordRBuilder {
         self
     }
 
-    pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
+    pub fn with_required_reliability_service(
+        mut self,
+        required_reliability_service: RequiredReliabilityService,
+    ) -> Self {
         self.0.required_reliability_service = required_reliability_service;
         self
     }

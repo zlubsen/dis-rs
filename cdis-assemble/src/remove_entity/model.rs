@@ -1,6 +1,6 @@
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::records::model::{CdisRecord, EntityId};
-use crate::types::model::{UVINT32, VarInt};
+use crate::types::model::{VarInt, UVINT32};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct RemoveEntity {

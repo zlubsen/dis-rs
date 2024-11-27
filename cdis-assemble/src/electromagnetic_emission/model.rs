@@ -1,12 +1,17 @@
-use nom::complete::take;
-use nom::IResult;
-use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{FOURTEEN_BITS, THREE_BITS};
 use crate::parsing::{take_signed, BitInput};
-use crate::records::model::{BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat};
+use crate::records::model::{
+    BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat,
+};
 use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
 use crate::writing::{write_value_signed, write_value_unsigned};
+use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::enumerations::{
+    ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName,
+    EmitterSystemFunction, HighDensityTrackJam,
+};
+use nom::complete::take;
+use nom::IResult;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct ElectromagneticEmission {
@@ -25,18 +30,36 @@ impl BodyProperties for ElectromagneticEmission {
     type FieldsPresentOutput = u8;
     const FIELDS_PRESENT_LENGTH: usize = 0;
 
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput { 0 }
+    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
+        0
+    }
 
     fn body_length_bits(&self) -> usize {
         const FIXED_FIELDS_BITS: usize = 18;
-        FIXED_FIELDS_BITS +
-            self.emitting_id.record_length() +
-            self.event_id.record_length() +
-            UVINT8::from(self.emitter_systems.len() as u8).record_length() +
-            self.fundamental_params.iter().map(|param| param.record_length()).sum::<usize>() +
-            self.beam_data.iter().map(|beam| beam.record_length()).sum::<usize>() +
-            self.site_app_pairs.iter().map(|pair| pair.record_length()).sum::<usize>() +
-            self.emitter_systems.iter().map(|system| system.record_length()).sum::<usize>()
+        FIXED_FIELDS_BITS
+            + self.emitting_id.record_length()
+            + self.event_id.record_length()
+            + UVINT8::from(self.emitter_systems.len() as u8).record_length()
+            + self
+                .fundamental_params
+                .iter()
+                .map(|param| param.record_length())
+                .sum::<usize>()
+            + self
+                .beam_data
+                .iter()
+                .map(|beam| beam.record_length())
+                .sum::<usize>()
+            + self
+                .site_app_pairs
+                .iter()
+                .map(|pair| pair.record_length())
+                .sum::<usize>()
+            + self
+                .emitter_systems
+                .iter()
+                .map(|system| system.record_length())
+                .sum::<usize>()
     }
 
     fn into_cdis_body(self) -> CdisBody {
@@ -78,8 +101,7 @@ pub struct SiteAppPair {
 
 impl SiteAppPair {
     fn record_length(&self) -> usize {
-        self.site.record_length() +
-            self.application.record_length()
+        self.site.record_length() + self.application.record_length()
     }
 }
 
@@ -95,12 +117,20 @@ pub struct EmitterSystem {
 impl EmitterSystem {
     fn record_length(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 7;
-        FIXED_LENGTH_BITS +
-            (if self.name.is_some() { 16 } else { 0 }) +
-            (if self.function.is_some() { 8 } else { 0 }) +
-            self.number.record_length() +
-            (if let Some(location) = self.location_with_respect_to_entity { location.record_length() } else { 0 }) +
-            self.emitter_beams.iter().map(|beam| beam.record_length()).sum::<usize>()
+        FIXED_LENGTH_BITS
+            + (if self.name.is_some() { 16 } else { 0 })
+            + (if self.function.is_some() { 8 } else { 0 })
+            + self.number.record_length()
+            + (if let Some(location) = self.location_with_respect_to_entity {
+                location.record_length()
+            } else {
+                0
+            })
+            + self
+                .emitter_beams
+                .iter()
+                .map(|beam| beam.record_length())
+                .sum::<usize>()
     }
 }
 
@@ -123,13 +153,33 @@ pub struct EmitterBeam {
 impl EmitterBeam {
     fn record_length(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 4 + 16 + 21;
-        FIXED_LENGTH_BITS +
-            self.beam_id.record_length() +
-            (if let Some(record) = self.jamming_technique_kind { record.record_length() } else { 0 }) +
-            (if let Some(record) = self.jamming_technique_category { record.record_length() } else { 0 }) +
-            (if let Some(record) = self.jamming_technique_subcategory { record.record_length() } else { 0 }) +
-            (if let Some(record) = self.jamming_technique_specific { record.record_length() } else { 0 }) +
-            self.track_jam.iter().map(|record| record.record_length()).sum::<usize>()
+        FIXED_LENGTH_BITS
+            + self.beam_id.record_length()
+            + (if let Some(record) = self.jamming_technique_kind {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = self.jamming_technique_category {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = self.jamming_technique_subcategory {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = self.jamming_technique_specific {
+                record.record_length()
+            } else {
+                0
+            })
+            + self
+                .track_jam
+                .iter()
+                .map(|record| record.record_length())
+                .sum::<usize>()
     }
 }
 
@@ -144,10 +194,18 @@ pub struct TrackJam {
 impl TrackJam {
     fn record_length(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 6;
-        FIXED_LENGTH_BITS +
-            self.entity_id.record_length() +
-            (if let Some(record) = self.emitter_number { record.record_length() } else { 0 }) +
-            (if let Some(record) = self.beam_number { record.record_length() } else { 0 })
+        FIXED_LENGTH_BITS
+            + self.entity_id.record_length()
+            + (if let Some(record) = self.emitter_number {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = self.beam_number {
+                record.record_length()
+            } else {
+                0
+            })
     }
 }
 
@@ -165,10 +223,7 @@ impl CdisFloat for PulseWidthFloat {
     const EXPONENT_BITS: usize = THREE_BITS;
 
     fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
-        Self {
-            mantissa,
-            exponent,
-        }
+        Self { mantissa, exponent }
     }
 
     fn from_float(float: Self::InnerFloat) -> Self {
@@ -195,10 +250,7 @@ impl CdisFloat for PulseWidthFloat {
         let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
 
         let exponent = exponent as Self::Exponent;
-        Ok((input, Self {
-            mantissa,
-            exponent
-        }))
+        Ok((input, Self { mantissa, exponent }))
     }
 
     #[allow(clippy::let_and_return)]

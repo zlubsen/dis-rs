@@ -1,12 +1,19 @@
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 use crate::aggregate_state::builder::AggregateStateBuilder;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, THIRTY_TWO_OCTETS, TWO_OCTETS};
-use crate::DisError;
 use crate::entity_state::model::EntityAppearance;
-use crate::enumerations::{ForceId, PduType, AggregateStateAggregateState, AggregateStateAggregateKind, PlatformDomain, Country, AggregateStateSubcategory, AggregateStateSpecific, AggregateStateFormation, EntityMarkingCharacterSet};
-use crate::model::{BASE_VARIABLE_DATUM_LENGTH, EntityId, EntityType, length_padded_to_num, Location, Orientation, PduBody, VariableDatum, VectorF32};
+use crate::enumerations::{
+    AggregateStateAggregateKind, AggregateStateAggregateState, AggregateStateFormation,
+    AggregateStateSpecific, AggregateStateSubcategory, Country, EntityMarkingCharacterSet, ForceId,
+    PduType, PlatformDomain,
+};
+use crate::model::{
+    length_padded_to_num, EntityId, EntityType, Location, Orientation, PduBody, VariableDatum,
+    VectorF32, BASE_VARIABLE_DATUM_LENGTH,
+};
+use crate::DisError;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 pub(crate) const BASE_AGGREGATE_STATE_BODY_LENGTH: u16 = 124;
 
@@ -32,7 +39,6 @@ pub struct AggregateState {
     pub variable_datums: Vec<VariableDatum>,
 }
 
-
 impl AggregateState {
     pub fn builder() -> AggregateStateBuilder {
         AggregateStateBuilder::new()
@@ -45,24 +51,27 @@ impl AggregateState {
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::AggregateState(self)
     }
-
 }
 
 /// Calculate the intermediate length and padding of an AggregateState PDU.
 ///
 /// Returns a tuple consisting of the intermediate length including the padding,
 /// and the length of the padding, in octets.
-pub(crate) fn aggregate_state_intermediate_length_padding(aggregates: &[EntityId], entities: &[EntityId]) -> (u16, u16) {
+pub(crate) fn aggregate_state_intermediate_length_padding(
+    aggregates: &[EntityId],
+    entities: &[EntityId],
+) -> (u16, u16) {
     let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
         + aggregates.iter().map(|id| id.record_length() ).sum::<u16>() // number of aggregate ids
-        + entities.iter().map(|id| id.record_length() ).sum::<u16>();  // number of entity ids
-    let padding_length = intermediate_length % (FOUR_OCTETS as u16);       // padding to 32-bits (4 octets) boundary
+        + entities.iter().map(|id| id.record_length() ).sum::<u16>(); // number of entity ids
+    let padding_length = intermediate_length % (FOUR_OCTETS as u16); // padding to 32-bits (4 octets) boundary
     (intermediate_length + padding_length, padding_length)
 }
 
 impl BodyInfo for AggregateState {
     fn body_length(&self) -> u16 {
-        let (intermediate_length, _padding_length) = aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
+        let (intermediate_length, _padding_length) =
+            aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
         intermediate_length
             // number of silent aggregate systems
             + self.silent_aggregate_systems.iter().map(|system| system.record_length() ).sum::<u16>()
@@ -95,15 +104,15 @@ impl Interaction for AggregateState {
 /// 6.2.4 Aggregate Marking record
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct AggregateMarking {
-    pub marking_character_set : EntityMarkingCharacterSet,
-    pub marking_string : String, // 31 byte String
+    pub marking_character_set: EntityMarkingCharacterSet,
+    pub marking_string: String, // 31 byte String
 }
 
 impl AggregateMarking {
     pub fn new(marking: String, character_set: EntityMarkingCharacterSet) -> Self {
         Self {
             marking_character_set: character_set,
-            marking_string: marking
+            marking_string: marking,
         }
     }
 
@@ -134,10 +143,13 @@ impl FromStr for AggregateMarking {
         if s.len() <= 31 {
             Ok(Self {
                 marking_character_set: EntityMarkingCharacterSet::ASCII,
-                marking_string: s.to_string()
+                marking_string: s.to_string(),
             })
         } else {
-            Err(DisError::ParseError(format!("String is too long for AggregateMarking. Found {}, max 31 allowed.", s.len())))
+            Err(DisError::ParseError(format!(
+                "String is too long for AggregateMarking. Found {}, max 31 allowed.",
+                s.len()
+            )))
         }
     }
 }
@@ -219,7 +231,9 @@ impl FromStr for AggregateType {
         const NUM_DIGITS: usize = 7;
         let ss = s.split(':').collect::<Vec<&str>>();
         if ss.len() != NUM_DIGITS {
-            return Err(DisError::ParseError(format!("Digits are not precisely {NUM_DIGITS}")));
+            return Err(DisError::ParseError(format!(
+                "Digits are not precisely {NUM_DIGITS}"
+            )));
         }
         Ok(Self {
             aggregate_kind: ss
@@ -261,7 +275,7 @@ impl FromStr for AggregateType {
                 .get(6)
                 .unwrap_or(&"0")
                 .parse::<u8>()
-                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
+                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?,
         })
     }
 }
@@ -337,9 +351,10 @@ impl SilentEntitySystem {
     pub fn record_length(&self) -> u16 {
         TWO_OCTETS as u16
             + self.entity_type.record_length()
-            + self.appearances.iter()
-            .map(|app| app.record_length() )
-            .sum::<u16>()
+            + self
+                .appearances
+                .iter()
+                .map(|app| app.record_length())
+                .sum::<u16>()
     }
 }
-

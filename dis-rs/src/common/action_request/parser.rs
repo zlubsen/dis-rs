@@ -1,9 +1,9 @@
-use nom::IResult;
-use nom::number::complete::be_u32;
-use crate::common::parser::{datum_specification, entity_id};
-use crate::enumerations::{ActionId};
 use crate::common::action_request::model::ActionRequest;
 use crate::common::model::PduBody;
+use crate::common::parser::{datum_specification, entity_id};
+use crate::enumerations::ActionId;
+use nom::number::complete::be_u32;
+use nom::IResult;
 
 pub(crate) fn action_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

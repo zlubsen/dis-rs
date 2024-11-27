@@ -1,13 +1,28 @@
+use crate::common::iff::model::{
+    ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code,
+    FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification,
+    IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence,
+    InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability,
+    MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus,
+    Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus,
+    Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData,
+    ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus,
+    OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData,
+    SystemStatus, BASE_IFF_DATA_RECORD_LENGTH_OCTETS,
+};
+use crate::common::model::PduBody;
+use crate::common::parser::{beam_data, entity_id, event_id, simulation_address, vec3_f32};
+use crate::common::DisError;
+use crate::constants::EIGHT_OCTETS;
+use crate::enumerations::{
+    AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory,
+    IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource,
+    VariableRecordType,
+};
 use nom::bytes::complete::take;
-use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::common::DisError;
-use crate::common::model::PduBody;
-use crate::common::iff::model::{BASE_IFF_DATA_RECORD_LENGTH_OCTETS, ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability, MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus, Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus, OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData, SystemStatus};
-use crate::common::parser::{beam_data, entity_id, event_id, simulation_address, vec3_f32};
-use crate::constants::{EIGHT_OCTETS};
-use crate::enumerations::{AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource, VariableRecordType};
+use nom::IResult;
 
 pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id) = entity_id(input)?;
@@ -20,26 +35,38 @@ pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
     let builder = Iff::builder();
 
-    let (input, builder) =
-        if fundamental_data.information_layers.layer_2 == LayersPresenceApplicability::PresentApplicable {
-            let (input, layer_2) = iff_layer_2(input)?;
-            (input, builder.with_layer_2(layer_2))
-        } else { (input, builder) };
-    let (input, builder) =
-        if fundamental_data.information_layers.layer_3 == LayersPresenceApplicability::PresentApplicable {
-            let (input, layer_3) = iff_layer_3(&system_id.system_type)(input)?;
-            (input, builder.with_layer_3(layer_3))
-        } else { (input, builder) };
-    let (input, builder) =
-        if fundamental_data.information_layers.layer_4 == LayersPresenceApplicability::PresentApplicable {
-            let (input, layer_4) = iff_layer_4(&system_id.system_type)(input)?;
-            (input, builder.with_layer_4(layer_4))
-        } else { (input, builder) };
-    let (input, builder) =
-        if fundamental_data.information_layers.layer_5 == LayersPresenceApplicability::PresentApplicable {
-            let (input, layer_5) = iff_layer_5(input)?;
-            (input, builder.with_layer_5(layer_5))
-        } else { (input, builder) };
+    let (input, builder) = if fundamental_data.information_layers.layer_2
+        == LayersPresenceApplicability::PresentApplicable
+    {
+        let (input, layer_2) = iff_layer_2(input)?;
+        (input, builder.with_layer_2(layer_2))
+    } else {
+        (input, builder)
+    };
+    let (input, builder) = if fundamental_data.information_layers.layer_3
+        == LayersPresenceApplicability::PresentApplicable
+    {
+        let (input, layer_3) = iff_layer_3(&system_id.system_type)(input)?;
+        (input, builder.with_layer_3(layer_3))
+    } else {
+        (input, builder)
+    };
+    let (input, builder) = if fundamental_data.information_layers.layer_4
+        == LayersPresenceApplicability::PresentApplicable
+    {
+        let (input, layer_4) = iff_layer_4(&system_id.system_type)(input)?;
+        (input, builder.with_layer_4(layer_4))
+    } else {
+        (input, builder)
+    };
+    let (input, builder) = if fundamental_data.information_layers.layer_5
+        == LayersPresenceApplicability::PresentApplicable
+    {
+        let (input, layer_5) = iff_layer_5(input)?;
+        (input, builder.with_layer_5(layer_5))
+    } else {
+        (input, builder)
+    };
 
     let builder = builder
         .with_emitting_entity_id(entity_id)
@@ -50,10 +77,7 @@ pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
         .with_system_specific_data(system_specific_data)
         .with_fundamental_operational_data(fundamental_data);
 
-    Ok((input, builder
-        .build()
-        .into_pdu_body()
-    ))
+    Ok((input, builder.build().into_pdu_body()))
 }
 
 fn iff_layer_2(input: &[u8]) -> IResult<&[u8], IffLayer2> {
@@ -65,13 +89,15 @@ fn iff_layer_2(input: &[u8]) -> IResult<&[u8], IffLayer2> {
     let (input, fundamental_parameters) =
         count(iff_fundamental_parameter_data, num_params.into())(input)?;
 
-    Ok((input, IffLayer2::builder()
-        .with_header(layer_header)
-        .with_beam_data(beam_data)
-        .with_operational_parameter_1(operational_parameter_1)
-        .with_operational_parameter_2(operational_parameter_2)
-        .with_iff_fundamental_parameters(fundamental_parameters)
-        .build()
+    Ok((
+        input,
+        IffLayer2::builder()
+            .with_header(layer_header)
+            .with_beam_data(beam_data)
+            .with_operational_parameter_1(operational_parameter_1)
+            .with_operational_parameter_2(operational_parameter_2)
+            .with_iff_fundamental_parameters(fundamental_parameters)
+            .build(),
     ))
 }
 
@@ -83,13 +109,17 @@ fn iff_layer_3(system_type: &IffSystemType) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let (input, _padding) = be_u16(input)?;
         let (input, data_specification) = iff_data_specification(input)?;
 
-        Ok((input, IffLayer3::builder()
-            .with_header(layer_header)
-            .with_reporting_simulation(reporting_simulation)
-            // TODO when we cannot match the system type, we insert the default Basic Data (transponder)
-            .with_mode_5_basic_data(basic_data.unwrap_or(Mode5BasicData::new_transponder(Mode5TransponderBasicData::default())))
-            .with_iff_data_specification(data_specification)
-            .build()
+        Ok((
+            input,
+            IffLayer3::builder()
+                .with_header(layer_header)
+                .with_reporting_simulation(reporting_simulation)
+                // TODO when we cannot match the system type, we insert the default Basic Data (transponder)
+                .with_mode_5_basic_data(basic_data.unwrap_or(Mode5BasicData::new_transponder(
+                    Mode5TransponderBasicData::default(),
+                )))
+                .with_iff_data_specification(data_specification)
+                .build(),
         ))
     }
 }
@@ -102,13 +132,17 @@ fn iff_layer_4(system_type: &IffSystemType) -> impl Fn(&[u8]) -> IResult<&[u8], 
         let (input, _padding) = be_u16(input)?;
         let (input, data_specification) = iff_data_specification(input)?;
 
-        Ok((input, IffLayer4::builder()
-            .with_header(layer_header)
-            .with_reporting_simulation(reporting_simulation)
-            // TODO when we cannot match the system type, we insert the default Basic Data (transponder)
-            .with_mode_s_basic_data(basic_data.unwrap_or(ModeSBasicData::Transponder(ModeSTransponderBasicData::default())))
-            .with_iff_data_specification(data_specification)
-            .build()
+        Ok((
+            input,
+            IffLayer4::builder()
+                .with_header(layer_header)
+                .with_reporting_simulation(reporting_simulation)
+                // TODO when we cannot match the system type, we insert the default Basic Data (transponder)
+                .with_mode_s_basic_data(basic_data.unwrap_or(ModeSBasicData::Transponder(
+                    ModeSTransponderBasicData::default(),
+                )))
+                .with_iff_data_specification(data_specification)
+                .build(),
         ))
     }
 }
@@ -123,13 +157,15 @@ fn iff_layer_5(input: &[u8]) -> IResult<&[u8], IffLayer5> {
     let (input, _padding) = be_u16(input)?;
     let (input, data_specification) = iff_data_specification(input)?;
 
-    Ok((input, IffLayer5::builder()
-        .with_header(layer_header)
-        .with_reporting_simulation(reporting_simulation)
-        .with_applicable_layers(applicable_layers)
-        .with_data_category(data_category)
-        .with_iff_data_specification(data_specification)
-        .build()
+    Ok((
+        input,
+        IffLayer5::builder()
+            .with_header(layer_header)
+            .with_reporting_simulation(reporting_simulation)
+            .with_applicable_layers(applicable_layers)
+            .with_data_category(data_category)
+            .with_iff_data_specification(data_specification)
+            .build(),
     ))
 }
 
@@ -151,18 +187,20 @@ fn fundamental_operational_data(input: &[u8]) -> IResult<&[u8], FundamentalOpera
     let (input, parameter_5) = be_u16(input)?;
     let (input, parameter_6) = be_u16(input)?;
 
-    Ok((input, FundamentalOperationalData::builder()
-        .with_system_status(system_status)
-        .with_data_field_1(data_field_1)
-        .with_information_layers(information_layers)
-        .with_data_field_2(data_field_2)
-        .with_parameter_1(parameter_1)
-        .with_parameter_2(parameter_2)
-        .with_parameter_3(parameter_3)
-        .with_parameter_4(parameter_4)
-        .with_parameter_5(parameter_5)
-        .with_parameter_6(parameter_6)
-        .build()
+    Ok((
+        input,
+        FundamentalOperationalData::builder()
+            .with_system_status(system_status)
+            .with_data_field_1(data_field_1)
+            .with_information_layers(information_layers)
+            .with_data_field_2(data_field_2)
+            .with_parameter_1(parameter_1)
+            .with_parameter_2(parameter_2)
+            .with_parameter_3(parameter_3)
+            .with_parameter_4(parameter_4)
+            .with_parameter_5(parameter_5)
+            .with_parameter_6(parameter_6)
+            .build(),
     ))
 }
 
@@ -170,23 +208,27 @@ fn iff_data_record(input: &[u8]) -> IResult<&[u8], IffDataRecord> {
     let (input, record_type) = be_u32(input)?;
     let record_type = VariableRecordType::from(record_type);
     let (input, record_length) = be_u16(input)?;
-    let (input, field) = take(record_length.saturating_sub(BASE_IFF_DATA_RECORD_LENGTH_OCTETS))(input)?;
+    let (input, field) =
+        take(record_length.saturating_sub(BASE_IFF_DATA_RECORD_LENGTH_OCTETS))(input)?;
 
-    Ok((input, IffDataRecord::builder()
-        .with_record_type(record_type)
-        .with_record_specific_field(field.to_vec())
-        .build()
+    Ok((
+        input,
+        IffDataRecord::builder()
+            .with_record_type(record_type)
+            .with_record_specific_field(field.to_vec())
+            .build(),
     ))
 }
 
 fn iff_data_specification(input: &[u8]) -> IResult<&[u8], IffDataSpecification> {
     let (input, num_records) = be_u16(input)?;
-    let (input, records) =
-        count(iff_data_record, num_records.into())(input)?;
+    let (input, records) = count(iff_data_record, num_records.into())(input)?;
 
-    Ok((input, IffDataSpecification::builder()
-        .with_iff_data_records(records)
-        .build()
+    Ok((
+        input,
+        IffDataSpecification::builder()
+            .with_iff_data_records(records)
+            .build(),
     ))
 }
 
@@ -206,15 +248,17 @@ fn iff_fundamental_parameter_data(input: &[u8]) -> IResult<&[u8], IffFundamental
     let applicable_modes = IffApplicableModes::from(applicable_modes);
     let (input, system_specific_data) = system_specific_data(input)?;
 
-    Ok((input, IffFundamentalParameterData::builder()
-        .with_erp(erp)
-        .with_frequency(frequency)
-        .with_pgrf(pgrf)
-        .with_pulse_width(pulse_width)
-        .with_burst_length(burst_length)
-        .with_applicable_modes(applicable_modes)
-        .with_system_specific_data(system_specific_data)
-        .build()
+    Ok((
+        input,
+        IffFundamentalParameterData::builder()
+            .with_erp(erp)
+            .with_frequency(frequency)
+            .with_pgrf(pgrf)
+            .with_pulse_width(pulse_width)
+            .with_burst_length(burst_length)
+            .with_applicable_modes(applicable_modes)
+            .with_system_specific_data(system_specific_data)
+            .build(),
     ))
 }
 
@@ -223,11 +267,13 @@ fn layer_header(input: &[u8]) -> IResult<&[u8], LayerHeader> {
     let (input, layer_specific_information) = be_u8(input)?;
     let (input, length) = be_u16(input)?;
 
-    Ok((input, LayerHeader::builder()
-        .with_layer_number(layer_number)
-        .with_layer_specific_information(layer_specific_information)
-        .with_length(length)
-        .build()
+    Ok((
+        input,
+        LayerHeader::builder()
+            .with_layer_number(layer_number)
+            .with_layer_specific_information(layer_specific_information)
+            .with_length(length)
+            .build(),
     ))
 }
 
@@ -236,11 +282,13 @@ fn system_specific_data(input: &[u8]) -> IResult<&[u8], SystemSpecificData> {
     let (input, part_2) = be_u8(input)?;
     let (input, part_3) = be_u8(input)?;
 
-    Ok((input, SystemSpecificData::builder()
-        .with_part_1(part_1)
-        .with_part_2(part_2)
-        .with_part_3(part_3)
-        .build()
+    Ok((
+        input,
+        SystemSpecificData::builder()
+            .with_part_1(part_1)
+            .with_part_2(part_2)
+            .with_part_3(part_3)
+            .build(),
     ))
 }
 
@@ -253,12 +301,14 @@ fn system_id(input: &[u8]) -> IResult<&[u8], SystemId> {
     let system_mode = IffSystemMode::from(system_mode);
     let (input, change_options_record) = change_options_record(input)?;
 
-    Ok((input, SystemId::builder()
-        .with_system_type(system_type)
-        .with_system_name(system_name)
-        .with_system_mode(system_mode)
-        .with_change_options(change_options_record)
-        .build()
+    Ok((
+        input,
+        SystemId::builder()
+            .with_system_type(system_type)
+            .with_system_name(system_name)
+            .with_system_mode(system_mode)
+            .with_change_options(change_options_record)
+            .build(),
     ))
 }
 
@@ -290,32 +340,34 @@ fn system_status(input: &[u8]) -> IResult<&[u8], SystemStatus> {
 }
 
 // TODO This bit of error handling the correct system type to parse is not that nice.
-fn mode_5_basic_data(system_type: &IffSystemType) -> impl Fn(&[u8]) -> IResult<&[u8], Result<Mode5BasicData,DisError>> + '_ {
-    move |input: &[u8]| {
-        match system_type {
-            IffSystemType::MarkXXIIATCRBSTransponder |
-            IffSystemType::SovietTransponder |
-            IffSystemType::RRBTransponder |
-            IffSystemType::MarkXIIATransponder |
-            IffSystemType::Mode5Transponder |
-            IffSystemType::ModeSTransponder => {
-                let (input, basic_data) = mode_5_transponder_basic_data(input)?;
-                Ok((input, Ok(Mode5BasicData::Transponder(basic_data))))
-            }
-            IffSystemType::MarkXXIIATCRBSInterrogator |
-            IffSystemType::SovietInterrogator |
-            IffSystemType::MarkXIIAInterrogator |
-            IffSystemType::Mode5Interrogator |
-            IffSystemType::ModeSInterrogator => {
-                let (input, basic_data) = mode_5_interrogator_basic_data(input)?;
-                Ok((input, Ok(Mode5BasicData::Interrogator(basic_data))))
-            }
-            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_ |
-            IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_ |
-            IffSystemType::TCASACASTransceiver => { Ok((input, Err(DisError::IffUndeterminedSystemType))) }
-            IffSystemType::NotUsed_InvalidValue_ => { Ok((input, Err(DisError::IffIncorrectSystemType))) }
-            IffSystemType::Unspecified(_) => { Ok((input, Err(DisError::IffIncorrectSystemType))) }
+fn mode_5_basic_data(
+    system_type: &IffSystemType,
+) -> impl Fn(&[u8]) -> IResult<&[u8], Result<Mode5BasicData, DisError>> + '_ {
+    move |input: &[u8]| match system_type {
+        IffSystemType::MarkXXIIATCRBSTransponder
+        | IffSystemType::SovietTransponder
+        | IffSystemType::RRBTransponder
+        | IffSystemType::MarkXIIATransponder
+        | IffSystemType::Mode5Transponder
+        | IffSystemType::ModeSTransponder => {
+            let (input, basic_data) = mode_5_transponder_basic_data(input)?;
+            Ok((input, Ok(Mode5BasicData::Transponder(basic_data))))
         }
+        IffSystemType::MarkXXIIATCRBSInterrogator
+        | IffSystemType::SovietInterrogator
+        | IffSystemType::MarkXIIAInterrogator
+        | IffSystemType::Mode5Interrogator
+        | IffSystemType::ModeSInterrogator => {
+            let (input, basic_data) = mode_5_interrogator_basic_data(input)?;
+            Ok((input, Ok(Mode5BasicData::Interrogator(basic_data))))
+        }
+        IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_
+        | IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_
+        | IffSystemType::TCASACASTransceiver => {
+            Ok((input, Err(DisError::IffUndeterminedSystemType)))
+        }
+        IffSystemType::NotUsed_InvalidValue_ => Ok((input, Err(DisError::IffIncorrectSystemType))),
+        IffSystemType::Unspecified(_) => Ok((input, Err(DisError::IffIncorrectSystemType))),
     }
 }
 
@@ -327,11 +379,13 @@ fn mode_5_interrogator_basic_data(input: &[u8]) -> IResult<&[u8], Mode5Interroga
     let (input, entity_id) = entity_id(input)?;
     let (input, _padding) = be_u16(input)?;
 
-    Ok((input, Mode5InterrogatorBasicData::builder()
-        .with_status(status)
-        .with_mode_5_message_formats_present(message_formats)
-        .with_interrogated_entity_id(entity_id)
-        .build()
+    Ok((
+        input,
+        Mode5InterrogatorBasicData::builder()
+            .with_status(status)
+            .with_mode_5_message_formats_present(message_formats)
+            .with_interrogated_entity_id(entity_id)
+            .build(),
     ))
 }
 
@@ -359,20 +413,24 @@ fn mode_5_transponder_basic_data(input: &[u8]) -> IResult<&[u8], Mode5Transponde
     let (input, figure_of_merit) = be_u8(input)?;
     let (input, _padding) = be_u8(input)?;
 
-    Ok((input, Mode5TransponderBasicData::builder()
-        .with_status(status)
-        .with_pin(pin)
-        .with_mode_5_message_formats_present(message_formats_present)
-        .with_enhanced_mode_1(enhanced_mode_1)
-        .with_national_origin(national_origin)
-        .with_supplemental_data(supplemental_data)
-        .with_navigation_source(navigation_source)
-        .with_figure_of_merit(figure_of_merit)
-        .build()
+    Ok((
+        input,
+        Mode5TransponderBasicData::builder()
+            .with_status(status)
+            .with_pin(pin)
+            .with_mode_5_message_formats_present(message_formats_present)
+            .with_enhanced_mode_1(enhanced_mode_1)
+            .with_national_origin(national_origin)
+            .with_supplemental_data(supplemental_data)
+            .with_navigation_source(navigation_source)
+            .with_figure_of_merit(figure_of_merit)
+            .build(),
     ))
 }
 
-fn mode_5_transponder_supplemental_data(input: &[u8]) -> IResult<&[u8], Mode5TransponderSupplementalData> {
+fn mode_5_transponder_supplemental_data(
+    input: &[u8],
+) -> IResult<&[u8], Mode5TransponderSupplementalData> {
     let (input, record) = be_u8(input)?;
 
     Ok((input, Mode5TransponderSupplementalData::from(record)))
@@ -391,32 +449,34 @@ fn mode_s_altitude(input: &[u8]) -> IResult<&[u8], ModeSAltitude> {
 }
 
 // TODO This bit of error handling the correct system type to parse is not that nice.
-fn mode_s_basic_data(system_type: &IffSystemType) -> impl Fn(&[u8]) -> IResult<&[u8], Result<ModeSBasicData, DisError>> + '_ {
-    move |input: &[u8]| {
-        match system_type {
-            IffSystemType::MarkXXIIATCRBSTransponder |
-            IffSystemType::SovietTransponder |
-            IffSystemType::RRBTransponder |
-            IffSystemType::MarkXIIATransponder |
-            IffSystemType::Mode5Transponder |
-            IffSystemType::ModeSTransponder => {
-                let (input, basic_data) = mode_s_transponder_basic_data(input)?;
-                Ok((input, Ok(ModeSBasicData::Transponder(basic_data))))
-            }
-            IffSystemType::MarkXXIIATCRBSInterrogator |
-            IffSystemType::SovietInterrogator |
-            IffSystemType::MarkXIIAInterrogator |
-            IffSystemType::Mode5Interrogator |
-            IffSystemType::ModeSInterrogator => {
-                let (input, basic_data) = mode_s_interrogator_basic_data(input)?;
-                Ok((input, Ok(ModeSBasicData::Interrogator(basic_data))))
-            }
-            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_ |
-            IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_ |
-            IffSystemType::TCASACASTransceiver => { Ok((input, Err(DisError::IffUndeterminedSystemType))) }
-            IffSystemType::NotUsed_InvalidValue_ => { Ok((input, Err(DisError::IffIncorrectSystemType))) }
-            IffSystemType::Unspecified(_) => { Ok((input, Err(DisError::IffIncorrectSystemType))) }
+fn mode_s_basic_data(
+    system_type: &IffSystemType,
+) -> impl Fn(&[u8]) -> IResult<&[u8], Result<ModeSBasicData, DisError>> + '_ {
+    move |input: &[u8]| match system_type {
+        IffSystemType::MarkXXIIATCRBSTransponder
+        | IffSystemType::SovietTransponder
+        | IffSystemType::RRBTransponder
+        | IffSystemType::MarkXIIATransponder
+        | IffSystemType::Mode5Transponder
+        | IffSystemType::ModeSTransponder => {
+            let (input, basic_data) = mode_s_transponder_basic_data(input)?;
+            Ok((input, Ok(ModeSBasicData::Transponder(basic_data))))
         }
+        IffSystemType::MarkXXIIATCRBSInterrogator
+        | IffSystemType::SovietInterrogator
+        | IffSystemType::MarkXIIAInterrogator
+        | IffSystemType::Mode5Interrogator
+        | IffSystemType::ModeSInterrogator => {
+            let (input, basic_data) = mode_s_interrogator_basic_data(input)?;
+            Ok((input, Ok(ModeSBasicData::Interrogator(basic_data))))
+        }
+        IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_
+        | IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_
+        | IffSystemType::TCASACASTransceiver => {
+            Ok((input, Err(DisError::IffUndeterminedSystemType)))
+        }
+        IffSystemType::NotUsed_InvalidValue_ => Ok((input, Err(DisError::IffIncorrectSystemType))),
+        IffSystemType::Unspecified(_) => Ok((input, Err(DisError::IffIncorrectSystemType))),
     }
 }
 
@@ -428,10 +488,12 @@ fn mode_s_interrogator_basic_data(input: &[u8]) -> IResult<&[u8], ModeSInterroga
     let (input, levels_present) = mode_s_levels_present(input)?;
     let (input, _padding_21_octets) = take(PAD_168_BITS_IN_OCTETS)(input)?;
 
-    Ok((input, ModeSInterrogatorBasicData::builder()
-        .with_mode_s_interrogator_status(status)
-        .with_mode_s_levels_present(levels_present)
-        .build()
+    Ok((
+        input,
+        ModeSInterrogatorBasicData::builder()
+            .with_mode_s_interrogator_status(status)
+            .with_mode_s_levels_present(levels_present)
+            .build(),
     ))
 }
 
@@ -453,31 +515,39 @@ fn mode_s_transponder_basic_data(input: &[u8]) -> IResult<&[u8], ModeSTransponde
     let (input, aircraft_present_domain) = be_u8(input)?;
     let aircraft_present_domain = AircraftPresentDomain::from(aircraft_present_domain);
 
-    let mut buf : [u8;EIGHT_OCTETS] = [0;EIGHT_OCTETS];
+    let mut buf: [u8; EIGHT_OCTETS] = [0; EIGHT_OCTETS];
     let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let mut aircraft_id = String::from_utf8_lossy(&buf[..]).into_owned();
-    aircraft_id.truncate(aircraft_id.trim_end().trim_end_matches(|c : char | !c.is_alphanumeric()).len());
+    aircraft_id.truncate(
+        aircraft_id
+            .trim_end()
+            .trim_end_matches(|c: char| !c.is_alphanumeric())
+            .len(),
+    );
 
     let (input, aircraft_address) = be_u32(input)?;
     let (input, aircraft_identification_type) = be_u8(input)?;
-    let aircraft_identification_type = AircraftIdentificationType::from(aircraft_identification_type);
+    let aircraft_identification_type =
+        AircraftIdentificationType::from(aircraft_identification_type);
     let (input, dap_source) = dap_source(input)?;
     let (input, altitude) = mode_s_altitude(input)?;
     let (input, capability_report) = be_u8(input)?;
     let capability_report = CapabilityReport::from(capability_report);
 
-    Ok((input, ModeSTransponderBasicData::builder()
-        .with_status(status)
-        .with_levels_present(levels_present)
-        .with_aircraft_present_domain(aircraft_present_domain)
-        .with_aircraft_identification(aircraft_id)
-        .with_aircraft_address(aircraft_address)
-        .with_aircraft_identification_type(aircraft_identification_type)
-        .with_dap_source(dap_source)
-        .with_altitude(altitude)
-        .with_capability_report(capability_report)
-        .build()
+    Ok((
+        input,
+        ModeSTransponderBasicData::builder()
+            .with_status(status)
+            .with_levels_present(levels_present)
+            .with_aircraft_present_domain(aircraft_present_domain)
+            .with_aircraft_identification(aircraft_id)
+            .with_aircraft_address(aircraft_address)
+            .with_aircraft_identification_type(aircraft_identification_type)
+            .with_dap_source(dap_source)
+            .with_altitude(altitude)
+            .with_capability_report(capability_report)
+            .build(),
     ))
 }
 
@@ -491,7 +561,7 @@ impl From<u8> for OnOffStatus {
     fn from(value: u8) -> Self {
         match value {
             0 => OnOffStatus::Off,
-            _ => OnOffStatus::On
+            _ => OnOffStatus::On,
         }
     }
 }

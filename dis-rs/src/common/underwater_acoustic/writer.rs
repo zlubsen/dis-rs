@@ -1,7 +1,10 @@
-use bytes::{BufMut, BytesMut};
-use crate::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::BodyInfo;
-use crate::underwater_acoustic::model::{AcousticEmitterSystem, APA, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem, UAFundamentalParameterData, UnderwaterAcoustic};
+use crate::underwater_acoustic::model::{
+    AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
+    UAFundamentalParameterData, UnderwaterAcoustic, APA,
+};
+use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for UnderwaterAcoustic {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -16,16 +19,18 @@ impl SerializePdu for UnderwaterAcoustic {
         buf.put_u8(self.apas.len() as u8);
         buf.put_u8(self.emitter_systems.len() as u8);
 
-        let _shafts = self.shafts.iter()
-            .map(|shaft| shaft.serialize(buf) )
+        let _shafts = self
+            .shafts
+            .iter()
+            .map(|shaft| shaft.serialize(buf))
             .sum::<u16>();
 
-        let _apas = self.apas.iter()
-            .map(|apa| apa.serialize(buf) )
-            .sum::<u16>();
+        let _apas = self.apas.iter().map(|apa| apa.serialize(buf)).sum::<u16>();
 
-        let _systems = self.emitter_systems.iter()
-            .map(|system| system.serialize(buf) )
+        let _systems = self
+            .emitter_systems
+            .iter()
+            .map(|system| system.serialize(buf))
             .sum::<u16>();
 
         self.body_length()
@@ -34,8 +39,8 @@ impl SerializePdu for UnderwaterAcoustic {
 
 impl Serialize for PropulsionPlantConfiguration {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let configuration : u8 = self.configuration.into();
-        let hull_mounted_masker_on : u8 = if self.hull_mounted_masker {1} else {0};
+        let configuration: u8 = self.configuration.into();
+        let hull_mounted_masker_on: u8 = if self.hull_mounted_masker { 1 } else { 0 };
         let final_field = (configuration << 1) | hull_mounted_masker_on;
         buf.put_u8(final_field);
 
@@ -72,7 +77,9 @@ impl Serialize for UAEmitterSystem {
         buf.put_u16(0u16);
         self.acoustic_emitter_system.serialize(buf);
         self.location.serialize(buf);
-        self.beams.iter().map(|beam| beam.serialize(buf) )
+        self.beams
+            .iter()
+            .map(|beam| beam.serialize(buf))
             .sum::<u16>();
 
         self.record_length()

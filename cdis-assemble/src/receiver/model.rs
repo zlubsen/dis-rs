@@ -1,7 +1,7 @@
-use dis_rs::enumerations::ReceiverState;
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::records::model::{CdisRecord, EntityId};
 use crate::types::model::{VarInt, UVINT16};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::enumerations::ReceiverState;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Receiver {
@@ -24,11 +24,11 @@ impl BodyProperties for Receiver {
 
     fn body_length_bits(&self) -> usize {
         const CONST_BIT_SIZE: usize = 11; // receiver state and power.
-        CONST_BIT_SIZE +
-            self.radio_reference_id.record_length() +
-            self.radio_number.record_length() +
-            self.transmitter_radio_reference_id.record_length() +
-            self.transmitter_radio_number.record_length()
+        CONST_BIT_SIZE
+            + self.radio_reference_id.record_length()
+            + self.radio_number.record_length()
+            + self.transmitter_radio_reference_id.record_length()
+            + self.transmitter_radio_number.record_length()
     }
 
     fn into_cdis_body(self) -> CdisBody {

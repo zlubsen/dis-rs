@@ -37,7 +37,10 @@ impl ReceiverBuilder {
         self
     }
 
-    pub fn with_transmitter_radio_reference_id(mut self, transmitter_radio_reference_id: EntityId) -> Self {
+    pub fn with_transmitter_radio_reference_id(
+        mut self,
+        transmitter_radio_reference_id: EntityId,
+    ) -> Self {
         self.0.transmitter_radio_reference_id = transmitter_radio_reference_id;
         self
     }

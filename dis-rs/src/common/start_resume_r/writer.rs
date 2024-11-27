@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::start_resume_r::model::StartResumeR;
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for StartResumeR {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

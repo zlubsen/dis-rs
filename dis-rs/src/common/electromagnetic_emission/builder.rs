@@ -27,7 +27,10 @@ impl ElectromagneticEmissionBuilder {
         self
     }
 
-    pub fn with_state_update_indicator(mut self, state_update_indicator: ElectromagneticEmissionStateUpdateIndicator) -> Self {
+    pub fn with_state_update_indicator(
+        mut self,
+        state_update_indicator: ElectromagneticEmissionStateUpdateIndicator,
+    ) -> Self {
         self.0.state_update_indicator = state_update_indicator;
         self
     }

@@ -72,11 +72,13 @@ impl EntityStateBuilder {
         self
     }
 
-    pub fn with_capabilities_flags(mut self,
-                                   ammunition_supply : bool,
-                                   fuel_supply : bool,
-                                   recovery : bool,
-                                   repair : bool) -> Self {
+    pub fn with_capabilities_flags(
+        mut self,
+        ammunition_supply: bool,
+        fuel_supply: bool,
+        recovery: bool,
+        repair: bool,
+    ) -> Self {
         use crate::v6::entity_state::model::EntityCapabilities as CapabilitiesV6;
         let v6_capabilities = CapabilitiesV6 {
             ammunition_supply,

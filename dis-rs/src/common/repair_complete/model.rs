@@ -3,7 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairCompleteRepair};
 use crate::repair_complete::builder::RepairCompleteBuilder;
 
-const REPAIR_COMPLETE_BASE_BODY_LENGTH : u16 = 16;
+const REPAIR_COMPLETE_BASE_BODY_LENGTH: u16 = 16;
 
 /// 5.5.9 Repair Complete PDU
 ///

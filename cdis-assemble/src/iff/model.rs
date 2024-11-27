@@ -1,11 +1,18 @@
-use dis_rs::enumerations::{DataCategory, IffApplicableModes};
-use dis_rs::iff::model::{IffDataRecord, InformationLayers, Mode5InterrogatorStatus, Mode5MessageFormats, Mode5TransponderBasicData, ModeSInterrogatorBasicData, ModeSTransponderBasicData, SystemId, SystemSpecificData, SystemStatus};
-use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::constants::{EIGHTY_SIX_BITS, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS, NINETY_EIGHT_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TWENTY_BITS, TWENTY_FOUR_BITS};
+use crate::constants::{
+    EIGHTY_SIX_BITS, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS,
+    NINETY_EIGHT_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TWENTY_BITS, TWENTY_FOUR_BITS,
+};
 use crate::records::model::FrequencyFloat;
 use crate::records::model::{BeamData, CdisRecord, LayerHeader};
 use crate::records::model::{EntityCoordinateVector, EntityId, UnitsMeters};
 use crate::types::model::{VarInt, UVINT16};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::enumerations::{DataCategory, IffApplicableModes};
+use dis_rs::iff::model::{
+    IffDataRecord, InformationLayers, Mode5InterrogatorStatus, Mode5MessageFormats,
+    Mode5TransponderBasicData, ModeSInterrogatorBasicData, ModeSTransponderBasicData, SystemId,
+    SystemSpecificData, SystemStatus,
+};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Iff {
@@ -30,33 +37,102 @@ impl BodyProperties for Iff {
     const FIELDS_PRESENT_LENGTH: usize = 12;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if self.event_id.is_some() { Self::FieldsPresent::EVENT_ID_BIT } else { 0 })
-        | (if self.relative_antenna_location.is_some() { Self::FieldsPresent::RELATIVE_ANTENNA_LOCATION_BIT } else { 0 })
-        | (if self.system_id.is_some() { Self::FieldsPresent::SYSTEM_ID_DETAILS_BIT } else { 0 })
-        | (if self.system_specific_data.is_some() { Self::FieldsPresent::SYSTEM_SPECIFIC_DATA_BIT } else { 0 })
-        | (if self.fundamental_operational_data.data_field_1.is_some() { Self::FieldsPresent::DATA_FIELD_1_BIT } else { 0 })
-        | (if self.fundamental_operational_data.data_field_2.is_some() { Self::FieldsPresent::DATA_FIELD_2_BIT } else { 0 })
-        | (if self.fundamental_operational_data.parameter_1.is_some() { Self::FieldsPresent::PARAMETER_1_BIT } else { 0 })
-        | (if self.fundamental_operational_data.parameter_2.is_some() { Self::FieldsPresent::PARAMETER_2_BIT } else { 0 })
-        | (if self.fundamental_operational_data.parameter_3.is_some() { Self::FieldsPresent::PARAMETER_3_BIT } else { 0 })
-        | (if self.fundamental_operational_data.parameter_4.is_some() { Self::FieldsPresent::PARAMETER_4_BIT } else { 0 })
-        | (if self.fundamental_operational_data.parameter_5.is_some() { Self::FieldsPresent::PARAMETER_5_BIT } else { 0 })
-        | (if self.fundamental_operational_data.parameter_6.is_some() { Self::FieldsPresent::PARAMETER_6_BIT } else { 0 })
+        (if self.event_id.is_some() {
+            Self::FieldsPresent::EVENT_ID_BIT
+        } else {
+            0
+        }) | (if self.relative_antenna_location.is_some() {
+            Self::FieldsPresent::RELATIVE_ANTENNA_LOCATION_BIT
+        } else {
+            0
+        }) | (if self.system_id.is_some() {
+            Self::FieldsPresent::SYSTEM_ID_DETAILS_BIT
+        } else {
+            0
+        }) | (if self.system_specific_data.is_some() {
+            Self::FieldsPresent::SYSTEM_SPECIFIC_DATA_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.data_field_1.is_some() {
+            Self::FieldsPresent::DATA_FIELD_1_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.data_field_2.is_some() {
+            Self::FieldsPresent::DATA_FIELD_2_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.parameter_1.is_some() {
+            Self::FieldsPresent::PARAMETER_1_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.parameter_2.is_some() {
+            Self::FieldsPresent::PARAMETER_2_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.parameter_3.is_some() {
+            Self::FieldsPresent::PARAMETER_3_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.parameter_4.is_some() {
+            Self::FieldsPresent::PARAMETER_4_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.parameter_5.is_some() {
+            Self::FieldsPresent::PARAMETER_5_BIT
+        } else {
+            0
+        }) | (if self.fundamental_operational_data.parameter_6.is_some() {
+            Self::FieldsPresent::PARAMETER_6_BIT
+        } else {
+            0
+        })
     }
 
     fn body_length_bits(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 14 + 8;
-        FIXED_LENGTH_BITS +
-            self.emitting_entity_id.record_length() +
-            (if let Some(record) = self.event_id { record.record_length() } else { 0 }) +
-            (if let Some(record) = self.relative_antenna_location { record.record_length() } else { 0 }) +
-            (if self.system_id.is_some() { TWENTY_BITS } else { 0 }) +
-            (if self.system_specific_data.is_some() { EIGHT_BITS } else { 0 }) +
-            (self.fundamental_operational_data.record_length()) +
-            (if let Some(record) = &self.layer_2 { record.record_length() } else { 0 }) +
-            (if let Some(record) = &self.layer_3 { record.record_length() } else { 0 }) +
-            (if let Some(record) = &self.layer_4 { record.record_length() } else { 0 }) +
-            (if let Some(record) = &self.layer_5 { record.record_length() } else { 0 })
+        FIXED_LENGTH_BITS
+            + self.emitting_entity_id.record_length()
+            + (if let Some(record) = self.event_id {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = self.relative_antenna_location {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if self.system_id.is_some() {
+                TWENTY_BITS
+            } else {
+                0
+            })
+            + (if self.system_specific_data.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + (self.fundamental_operational_data.record_length())
+            + (if let Some(record) = &self.layer_2 {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = &self.layer_3 {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = &self.layer_4 {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = &self.layer_5 {
+                record.record_length()
+            } else {
+                0
+            })
     }
 
     fn into_cdis_body(self) -> CdisBody {
@@ -107,15 +183,47 @@ pub struct CdisFundamentalOperationalData {
 
 impl CdisRecord for CdisFundamentalOperationalData {
     fn record_length(&self) -> usize {
-        SIXTEEN_BITS +
-            (if self.data_field_1.is_some() { EIGHT_BITS } else { 0 }) +
-            (if self.data_field_2.is_some() { EIGHT_BITS } else { 0 }) +
-            (if self.parameter_1.is_some() { SIXTEEN_BITS } else { 0 }) +
-            (if self.parameter_2.is_some() { SIXTEEN_BITS } else { 0 }) +
-            (if self.parameter_3.is_some() { SIXTEEN_BITS } else { 0 }) +
-            (if self.parameter_4.is_some() { SIXTEEN_BITS } else { 0 }) +
-            (if self.parameter_5.is_some() { SIXTEEN_BITS } else { 0 }) +
-            (if self.parameter_6.is_some() { SIXTEEN_BITS } else { 0 })
+        SIXTEEN_BITS
+            + (if self.data_field_1.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + (if self.data_field_2.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + (if self.parameter_1.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.parameter_2.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.parameter_3.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.parameter_4.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.parameter_5.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.parameter_6.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
     }
 }
 
@@ -130,11 +238,15 @@ pub struct IffLayer2 {
 
 impl CdisRecord for IffLayer2 {
     fn record_length(&self) -> usize {
-        ONE_BIT + self.layer_header.record_length() +
-            self.beam_data.record_length() +
-            TWENTY_FOUR_BITS +
-            self.iff_fundamental_parameters.iter()
-                .map(|record| record.record_length()).sum::<usize>()
+        ONE_BIT
+            + self.layer_header.record_length()
+            + self.beam_data.record_length()
+            + TWENTY_FOUR_BITS
+            + self
+                .iff_fundamental_parameters
+                .iter()
+                .map(|record| record.record_length())
+                .sum::<usize>()
     }
 }
 
@@ -166,13 +278,21 @@ pub struct IffLayer3 {
 
 impl CdisRecord for IffLayer3 {
     fn record_length(&self) -> usize {
-        ONE_BIT +
-            self.layer_header.record_length() +
-            self.reporting_simulation_site.record_length() +
-            self.reporting_simulation_application.record_length() +
-            self.mode_5_basic_data.record_length() +
-            if self.iff_data_records.is_empty() { 0 } else { FIVE_BITS } +
-            self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
+        ONE_BIT
+            + self.layer_header.record_length()
+            + self.reporting_simulation_site.record_length()
+            + self.reporting_simulation_application.record_length()
+            + self.mode_5_basic_data.record_length()
+            + if self.iff_data_records.is_empty() {
+                0
+            } else {
+                FIVE_BITS
+            }
+            + self
+                .iff_data_records
+                .iter()
+                .map(|record| record.record_length())
+                .sum::<usize>()
     }
 }
 
@@ -193,12 +313,16 @@ pub struct IffLayer4 {
 
 impl CdisRecord for IffLayer4 {
     fn record_length(&self) -> usize {
-        SIX_BITS +
-        self.layer_header.record_length() +
-            self.reporting_simulation_site.record_length() +
-            self.reporting_simulation_application.record_length() +
-            self.mode_s_basic_data.record_length() +
-            self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
+        SIX_BITS
+            + self.layer_header.record_length()
+            + self.reporting_simulation_site.record_length()
+            + self.reporting_simulation_application.record_length()
+            + self.mode_s_basic_data.record_length()
+            + self
+                .iff_data_records
+                .iter()
+                .map(|record| record.record_length())
+                .sum::<usize>()
     }
 }
 
@@ -214,18 +338,22 @@ pub struct IffLayer5 {
 
 impl CdisRecord for IffLayer5 {
     fn record_length(&self) -> usize {
-        FIFTEEN_BITS +
-            self.layer_header.record_length() +
-            self.reporting_simulation_site.record_length() +
-            self.reporting_simulation_application.record_length() +
-            self.iff_data_records.iter().map(|record| record.record_length()).sum::<usize>()
+        FIFTEEN_BITS
+            + self.layer_header.record_length()
+            + self.reporting_simulation_site.record_length()
+            + self.reporting_simulation_application.record_length()
+            + self
+                .iff_data_records
+                .iter()
+                .map(|record| record.record_length())
+                .sum::<usize>()
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Mode5BasicData {
     Interrogator(Mode5InterrogatorBasicData),
-    Transponder(Mode5TransponderBasicData)
+    Transponder(Mode5TransponderBasicData),
 }
 
 impl Default for Mode5BasicData {
@@ -237,8 +365,8 @@ impl Default for Mode5BasicData {
 impl CdisRecord for Mode5BasicData {
     fn record_length(&self) -> usize {
         match self {
-            Mode5BasicData::Interrogator(basic_data) => { basic_data.record_length() }
-            Mode5BasicData::Transponder(basic_data) => { basic_data.record_length() }
+            Mode5BasicData::Interrogator(basic_data) => basic_data.record_length(),
+            Mode5BasicData::Transponder(basic_data) => basic_data.record_length(),
         }
     }
 }
@@ -252,8 +380,7 @@ pub struct Mode5InterrogatorBasicData {
 
 impl CdisRecord for Mode5InterrogatorBasicData {
     fn record_length(&self) -> usize {
-        FORTY_BITS +
-            self.interrogated_entity_id.record_length()
+        FORTY_BITS + self.interrogated_entity_id.record_length()
     }
 }
 
@@ -266,7 +393,7 @@ impl CdisRecord for Mode5TransponderBasicData {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ModeSBasicData {
     Interrogator(ModeSInterrogatorBasicData),
-    Transponder(ModeSTransponderBasicData)
+    Transponder(ModeSTransponderBasicData),
 }
 
 impl Default for ModeSBasicData {
@@ -278,8 +405,8 @@ impl Default for ModeSBasicData {
 impl CdisRecord for ModeSBasicData {
     fn record_length(&self) -> usize {
         match self {
-            ModeSBasicData::Interrogator(basic_data) => { basic_data.record_length() }
-            ModeSBasicData::Transponder(basic_data) => { basic_data.record_length() }
+            ModeSBasicData::Interrogator(basic_data) => basic_data.record_length(),
+            ModeSBasicData::Transponder(basic_data) => basic_data.record_length(),
         }
     }
 }
@@ -292,7 +419,6 @@ impl CdisRecord for ModeSInterrogatorBasicData {
 
 impl CdisRecord for ModeSTransponderBasicData {
     fn record_length(&self) -> usize {
-        NINETY_EIGHT_BITS +
-            (self.aircraft_identification.len() * EIGHT_BITS)
+        NINETY_EIGHT_BITS + (self.aircraft_identification.len() * EIGHT_BITS)
     }
 }

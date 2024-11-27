@@ -22,12 +22,18 @@ impl IsGroupOfBuilder {
         self
     }
 
-    pub fn with_grouped_entity_category(mut self, grouped_entity_category: IsGroupOfGroupedEntityCategory) -> Self {
+    pub fn with_grouped_entity_category(
+        mut self,
+        grouped_entity_category: IsGroupOfGroupedEntityCategory,
+    ) -> Self {
         self.0.grouped_entity_category = grouped_entity_category;
         self
     }
 
-    pub fn with_group_reference_point(mut self, group_reference_point: GroupReferencePoint) -> Self {
+    pub fn with_group_reference_point(
+        mut self,
+        group_reference_point: GroupReferencePoint,
+    ) -> Self {
         self.0.group_reference_point = group_reference_point;
         self
     }

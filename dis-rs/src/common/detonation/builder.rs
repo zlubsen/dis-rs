@@ -1,5 +1,8 @@
 use crate::common::detonation::model::Detonation;
-use crate::common::model::{DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor, VariableParameter, VectorF32};
+use crate::common::model::{
+    DescriptorRecord, EntityId, EntityType, EventId, Location, MunitionDescriptor,
+    VariableParameter, VectorF32,
+};
 use crate::enumerations::{DetonationResult, ExplosiveMaterialCategories};
 
 pub struct DetonationBuilder(Detonation);
@@ -52,7 +55,11 @@ impl DetonationBuilder {
         self
     }
 
-    pub fn with_munition_descriptor(mut self, entity_type: EntityType, munition: MunitionDescriptor) -> Self {
+    pub fn with_munition_descriptor(
+        mut self,
+        entity_type: EntityType,
+        munition: MunitionDescriptor,
+    ) -> Self {
         self.0.descriptor = DescriptorRecord::new_munition(entity_type, munition);
         self
     }
@@ -62,11 +69,14 @@ impl DetonationBuilder {
         self
     }
 
-    pub fn with_explosion_descriptor(mut self,
-                                     entity_type: EntityType,
-                                     explosive_material: ExplosiveMaterialCategories,
-                                     explosive_force: f32) -> Self {
-        self.0.descriptor = DescriptorRecord::new_explosion(entity_type, explosive_material, explosive_force);
+    pub fn with_explosion_descriptor(
+        mut self,
+        entity_type: EntityType,
+        explosive_material: ExplosiveMaterialCategories,
+        explosive_force: f32,
+    ) -> Self {
+        self.0.descriptor =
+            DescriptorRecord::new_explosion(entity_type, explosive_material, explosive_force);
         self
     }
 

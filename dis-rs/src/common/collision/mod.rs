@@ -1,16 +1,16 @@
-pub mod parser;
-pub mod model;
-pub mod writer;
 pub mod builder;
+pub mod model;
+pub mod parser;
+pub mod writer;
 
 #[cfg(test)]
 mod tests {
-    use bytes::BytesMut;
     use crate::common::collision::model::Collision;
-    use crate::enumerations::{PduType, CollisionType};
+    use crate::common::model::DisTimeStamp;
     use crate::common::model::{EntityId, EventId, Pdu, PduHeader, SimulationAddress};
     use crate::common::parser::parse_pdu;
-    use crate::common::model::{DisTimeStamp};
+    use crate::enumerations::{CollisionType, PduType};
+    use bytes::BytesMut;
 
     #[test]
     fn collision_internal_consistency() {
@@ -23,7 +23,8 @@ mod tests {
             .with_event_id(EventId::new(SimulationAddress::new(10, 10), 43))
             .build()
             .into_pdu_body();
-        let original_pdu = Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
+        let original_pdu =
+            Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
         let pdu_length = original_pdu.header.pdu_length;
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);

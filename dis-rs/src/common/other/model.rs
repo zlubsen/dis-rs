@@ -1,6 +1,6 @@
-use crate::common::{BodyInfo, Interaction};
-use crate::common::other::builder::OtherBuilder;
 use crate::common::model::{EntityId, PduBody};
+use crate::common::other::builder::OtherBuilder;
+use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 
 /// A PduBody implementation that contains the body of the PDU as raw bytes, in a vec.
@@ -12,8 +12,8 @@ use crate::enumerations::PduType;
 /// This struct is used to provide access to the received data in not (yet) supported PDUs.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Other {
-    pub originating_entity_id : Option<EntityId>,
-    pub receiving_entity_id : Option<EntityId>,
+    pub originating_entity_id: Option<EntityId>,
+    pub receiving_entity_id: Option<EntityId>,
     pub body: Vec<u8>,
 }
 
@@ -45,12 +45,16 @@ impl Interaction for Other {
     fn originator(&self) -> Option<&EntityId> {
         if let Some(entity) = &self.originating_entity_id {
             Some(entity)
-        } else { None }
+        } else {
+            None
+        }
     }
 
     fn receiver(&self) -> Option<&EntityId> {
         if let Some(entity) = &self.receiving_entity_id {
             Some(entity)
-        } else { None }
+        } else {
+            None
+        }
     }
 }

@@ -21,7 +21,6 @@ pub struct IsGroupOf {
     pub descriptions: Vec<GroupEntityDescription>,
 }
 
-
 impl IsGroupOf {
     pub fn builder() -> IsGroupOfBuilder {
         IsGroupOfBuilder::new()
@@ -39,9 +38,11 @@ impl IsGroupOf {
 impl BodyInfo for IsGroupOf {
     fn body_length(&self) -> u16 {
         BASE_IS_GROUP_OF_BODY_LENGTH
-            + self.descriptions.iter()
-            .map(|ged|ged.record_length())
-            .sum::<u16>()
+            + self
+                .descriptions
+                .iter()
+                .map(|ged| ged.record_length())
+                .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {
@@ -98,16 +99,16 @@ pub enum GroupEntityDescription {
 impl GroupEntityDescription {
     pub const fn record_length(&self) -> u16 {
         match self {
-            GroupEntityDescription::Undefined => { 0 }
-            GroupEntityDescription::BasicGroundCombatVehicle(ged) => { ged.record_length() }
-            GroupEntityDescription::EnhancedGroundCombatVehicle(ged) => { ged.record_length() }
-            GroupEntityDescription::BasicGroundCombatSoldier(ged) => { ged.record_length() }
-            GroupEntityDescription::EnhancedGroundCombatSoldier(ged) => { ged.record_length() }
-            GroupEntityDescription::BasicRotorWingAircraft(ged) => { ged.record_length() }
-            GroupEntityDescription::EnhancedRotorWingAircraft(ged) => { ged.record_length() }
-            GroupEntityDescription::BasicFixedWingAircraft(ged) => { ged.record_length() }
-            GroupEntityDescription::EnhancedFixedWingAircraft(ged) => { ged.record_length() }
-            GroupEntityDescription::GroundLogisticsVehicle(ged) => { ged.record_length() }
+            GroupEntityDescription::Undefined => 0,
+            GroupEntityDescription::BasicGroundCombatVehicle(ged) => ged.record_length(),
+            GroupEntityDescription::EnhancedGroundCombatVehicle(ged) => ged.record_length(),
+            GroupEntityDescription::BasicGroundCombatSoldier(ged) => ged.record_length(),
+            GroupEntityDescription::EnhancedGroundCombatSoldier(ged) => ged.record_length(),
+            GroupEntityDescription::BasicRotorWingAircraft(ged) => ged.record_length(),
+            GroupEntityDescription::EnhancedRotorWingAircraft(ged) => ged.record_length(),
+            GroupEntityDescription::BasicFixedWingAircraft(ged) => ged.record_length(),
+            GroupEntityDescription::EnhancedFixedWingAircraft(ged) => ged.record_length(),
+            GroupEntityDescription::GroundLogisticsVehicle(ged) => ged.record_length(),
         }
     }
 }
@@ -154,9 +155,7 @@ pub struct GEDRecord1 {
 
 impl GEDRecord1 {
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length()
-            + self.orientation.record_length()
-            + 11
+        self.location.record_length() + self.orientation.record_length() + 11
     }
 }
 
@@ -172,8 +171,7 @@ pub struct GEDRecord2 {
 
 impl GEDRecord2 {
     pub const fn record_length(&self) -> u16 {
-        self.basic_ground_combat_vehicle.record_length()
-            + 4
+        self.basic_ground_combat_vehicle.record_length() + 4
     }
 }
 
@@ -193,9 +191,7 @@ pub struct GEDRecord3 {
 
 impl GEDRecord3 {
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length()
-            + self.orientation.record_length()
-            + 11
+        self.location.record_length() + self.orientation.record_length() + 11
     }
 }
 
@@ -211,8 +207,7 @@ pub struct GEDRecord4 {
 
 impl GEDRecord4 {
     pub const fn record_length(&self) -> u16 {
-        self.basic_ground_combat_soldier.record_length()
-            + 4
+        self.basic_ground_combat_soldier.record_length() + 4
     }
 }
 
@@ -235,9 +230,7 @@ pub struct GEDRecord5 {
 
 impl GEDRecord5 {
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length()
-            + self.orientation.record_length()
-            + 15
+        self.location.record_length() + self.orientation.record_length() + 15
     }
 }
 
@@ -253,8 +246,7 @@ pub struct GEDRecord6 {
 
 impl GEDRecord6 {
     pub const fn record_length(&self) -> u16 {
-        self.basic_rotor_wing_aircraft.record_length()
-            + 4
+        self.basic_rotor_wing_aircraft.record_length() + 4
     }
 }
 
@@ -273,9 +265,7 @@ pub struct GEDRecord7 {
 
 impl GEDRecord7 {
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length()
-            + self.orientation.record_length()
-            + 11
+        self.location.record_length() + self.orientation.record_length() + 11
     }
 }
 
@@ -291,8 +281,7 @@ pub struct GEDRecord8 {
 
 impl GEDRecord8 {
     pub const fn record_length(&self) -> u16 {
-        self.basic_fixed_wing_aircraft.record_length()
-            + 4
+        self.basic_fixed_wing_aircraft.record_length() + 4
     }
 }
 
@@ -308,8 +297,6 @@ pub struct GEDRecord9 {
 
 impl GEDRecord9 {
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length()
-            + self.orientation.record_length()
-            + 8
+        self.location.record_length() + self.orientation.record_length() + 8
     }
 }

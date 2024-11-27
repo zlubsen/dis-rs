@@ -1,16 +1,17 @@
-use nom::IResult;
-use nom::number::complete::{be_u32, be_u8};
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, record_specification};
 use crate::enumerations::{EventType, RequiredReliabilityService};
 use crate::record_r::model::RecordR;
+use nom::number::complete::{be_u32, be_u8};
+use nom::IResult;
 
 pub(crate) fn record_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;
     let (input, required_reliability_service) = be_u8(input)?;
-    let required_reliability_service = RequiredReliabilityService::from(required_reliability_service);
+    let required_reliability_service =
+        RequiredReliabilityService::from(required_reliability_service);
     let (input, _padding) = be_u8(input)?;
     let (input, event_type) = be_u32(input)?;
     let event_type = EventType::from(event_type);

@@ -1,85 +1,89 @@
-use nom::IResult;
-use nom::bits::complete::take;
-use nom::complete::bool;
-use dis_rs::model::ClockTime;
 use crate::constants::{ONE_BIT, THIRTY_TWO_BITS, TWO_BITS};
 use crate::parsing::BitInput;
-use crate::types::model::{SVINT12, Svint12BitSize, SVINT13, Svint13BitSize, SVINT14, Svint14BitSize, SVINT16, Svint16BitSize, SVINT24, Svint24BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+use crate::types::model::{
+    Svint12BitSize, Svint13BitSize, Svint14BitSize, Svint16BitSize, Svint24BitSize, Uvint16BitSize,
+    Uvint32BitSize, Uvint8BitSize, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32,
+    UVINT8,
+};
+use dis_rs::model::ClockTime;
+use nom::bits::complete::take;
+use nom::complete::bool;
+use nom::IResult;
 
 pub(crate) fn uvint8(input: BitInput) -> IResult<BitInput, UVINT8> {
-    let (input, flag_bits):(BitInput, u8) = take(ONE_BIT)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(ONE_BIT)(input)?;
     let num_bits_to_parse = Uvint8BitSize::from(flag_bits).bit_size();
-    let (input, field_value):(BitInput, u8) = take(num_bits_to_parse)(input)?;
+    let (input, field_value): (BitInput, u8) = take(num_bits_to_parse)(input)?;
 
     Ok((input, UVINT8::from(field_value)))
 }
 
 pub(crate) fn uvint16(input: BitInput) -> IResult<BitInput, UVINT16> {
-    let (input, flag_bits):(BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let num_bits_to_parse = Uvint16BitSize::from(flag_bits).bit_size();
-    let (input, field_value):(BitInput, u16) = take(num_bits_to_parse)(input)?;
+    let (input, field_value): (BitInput, u16) = take(num_bits_to_parse)(input)?;
 
     Ok((input, UVINT16::from(field_value)))
 }
 
 pub(crate) fn uvint32(input: BitInput) -> IResult<BitInput, UVINT32> {
-    let (input, flag_bits):(BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let num_bits_to_parse = Uvint32BitSize::from(flag_bits).bit_size();
-    let (input, field_value):(BitInput, u32) = take(num_bits_to_parse)(input)?;
+    let (input, field_value): (BitInput, u32) = take(num_bits_to_parse)(input)?;
 
     Ok((input, UVINT32::from(field_value)))
 }
 
 pub(crate) fn svint12(input: BitInput) -> IResult<BitInput, SVINT12> {
-    let (input, flag_bits) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let bit_size = Svint12BitSize::from(flag_bits);
     let num_bits_to_parse = bit_size.bit_size() - 1;
-    let (input, sign_bit) : (BitInput, bool) = bool(input)?;
-    let (input, field_value) : (BitInput, i16) = take(num_bits_to_parse)(input)?;
+    let (input, sign_bit): (BitInput, bool) = bool(input)?;
+    let (input, field_value): (BitInput, i16) = take(num_bits_to_parse)(input)?;
     let field_value = if sign_bit { bit_size.min_value() } else { 0 } + field_value;
 
     Ok((input, SVINT12::from(field_value)))
 }
 
 pub(crate) fn svint13(input: BitInput) -> IResult<BitInput, SVINT13> {
-    let (input, flag_bits) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let bit_size = Svint13BitSize::from(flag_bits);
     let num_bits_to_parse = bit_size.bit_size() - 1;
-    let (input, sign_bit) : (BitInput, bool) = bool(input)?;
-    let (input, field_value) : (BitInput, i16) = take(num_bits_to_parse)(input)?;
+    let (input, sign_bit): (BitInput, bool) = bool(input)?;
+    let (input, field_value): (BitInput, i16) = take(num_bits_to_parse)(input)?;
     let field_value = if sign_bit { bit_size.min_value() } else { 0 } + field_value;
 
     Ok((input, SVINT13::from(field_value)))
 }
 
 pub(crate) fn svint14(input: BitInput) -> IResult<BitInput, SVINT14> {
-    let (input, flag_bits) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let bit_size = Svint14BitSize::from(flag_bits);
     let num_bits_to_parse = bit_size.bit_size() - 1;
-    let (input, sign_bit) : (BitInput, bool) = bool(input)?;
-    let (input, field_value) : (BitInput, i16) = take(num_bits_to_parse)(input)?;
+    let (input, sign_bit): (BitInput, bool) = bool(input)?;
+    let (input, field_value): (BitInput, i16) = take(num_bits_to_parse)(input)?;
     let field_value = if sign_bit { bit_size.min_value() } else { 0 } + field_value;
 
     Ok((input, SVINT14::from(field_value)))
 }
 
 pub(crate) fn svint16(input: BitInput) -> IResult<BitInput, SVINT16> {
-    let (input, flag_bits) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let bit_size = Svint16BitSize::from(flag_bits);
     let num_bits_to_parse = bit_size.bit_size() - 1;
-    let (input, sign_bit) : (BitInput, bool) = bool(input)?;
-    let (input, field_value) : (BitInput, i16) = take(num_bits_to_parse)(input)?;
+    let (input, sign_bit): (BitInput, bool) = bool(input)?;
+    let (input, field_value): (BitInput, i16) = take(num_bits_to_parse)(input)?;
     let field_value = if sign_bit { bit_size.min_value() } else { 0 } + field_value;
 
     Ok((input, SVINT16::from(field_value)))
 }
 
 pub(crate) fn svint24(input: BitInput) -> IResult<BitInput, SVINT24> {
-    let (input, flag_bits) : (BitInput, u8) = take(TWO_BITS)(input)?;
+    let (input, flag_bits): (BitInput, u8) = take(TWO_BITS)(input)?;
     let bit_size = Svint24BitSize::from(flag_bits);
     let num_bits_to_parse = bit_size.bit_size() - 1;
-    let (input, sign_bit) : (BitInput, bool) = bool(input)?;
-    let (input, field_value) : (BitInput, i32) = take(num_bits_to_parse)(input)?;
+    let (input, sign_bit): (BitInput, bool) = bool(input)?;
+    let (input, field_value): (BitInput, i32) = take(num_bits_to_parse)(input)?;
     let field_value = if sign_bit { bit_size.min_value() } else { 0 } + field_value;
 
     Ok((input, SVINT24::from(field_value)))
@@ -87,8 +91,8 @@ pub(crate) fn svint24(input: BitInput) -> IResult<BitInput, SVINT24> {
 
 /// Parses a C-DIS Clock Time Record (11.4).
 pub(crate) fn clock_time(input: BitInput) -> IResult<BitInput, ClockTime> {
-    let (input, hour) : (BitInput, i32) = take(THIRTY_TWO_BITS)(input)?;
-    let (input, time_past_hour) : (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
+    let (input, hour): (BitInput, i32) = take(THIRTY_TWO_BITS)(input)?;
+    let (input, time_past_hour): (BitInput, u32) = take(THIRTY_TWO_BITS)(input)?;
 
     let time = ClockTime::new(hour, time_past_hour);
     Ok((input, time))
@@ -96,14 +100,17 @@ pub(crate) fn clock_time(input: BitInput) -> IResult<BitInput, ClockTime> {
 
 #[cfg(test)]
 mod tests {
-    use nom::IResult;
-    use crate::BitBuffer;
     use crate::constants::{FOURTEEN_BITS, THREE_BITS};
-    use crate::parsing::{BitInput, take_signed};
-    use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
-    use crate::types::model::{CdisFloat, SVINT12, Svint12BitSize, UVINT16, Uvint16BitSize, UVINT32, Uvint32BitSize, UVINT8, Uvint8BitSize};
+    use crate::parsing::{take_signed, BitInput};
     use crate::types::model::VarInt;
+    use crate::types::model::{
+        CdisFloat, Svint12BitSize, Uvint16BitSize, Uvint32BitSize, Uvint8BitSize, SVINT12, UVINT16,
+        UVINT32, UVINT8,
+    };
+    use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
     use crate::writing::write_value_signed;
+    use crate::BitBuffer;
+    use nom::IResult;
 
     #[test]
     fn parse_uvint8_bit_flag_zero() {
@@ -209,10 +216,7 @@ mod tests {
         const EXPONENT_BITS: usize = THREE_BITS;
 
         fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
-            Self {
-                mantissa,
-                exponent,
-            }
+            Self { mantissa, exponent }
         }
 
         fn from_float(float: Self::InnerFloat) -> Self {
@@ -238,10 +242,13 @@ mod tests {
             let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
             let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
 
-            Ok((input, Self {
-                mantissa: mantissa as Self::Mantissa,
-                exponent: exponent as Self::Exponent,
-            }))
+            Ok((
+                input,
+                Self {
+                    mantissa: mantissa as Self::Mantissa,
+                    exponent: exponent as Self::Exponent,
+                },
+            ))
         }
 
         #[allow(clippy::let_and_return)]

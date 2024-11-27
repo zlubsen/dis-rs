@@ -1,6 +1,6 @@
-use crate::model::EntityId;
 use crate::common::remove_entity_r::model::RemoveEntityR;
 use crate::enumerations::RequiredReliabilityService;
+use crate::model::EntityId;
 
 pub struct RemoveEntityRBuilder(RemoveEntityR);
 
@@ -27,7 +27,10 @@ impl RemoveEntityRBuilder {
         self
     }
 
-    pub fn with_required_reliability_service(mut self, required_reliability_service: RequiredReliabilityService) -> Self {
+    pub fn with_required_reliability_service(
+        mut self,
+        required_reliability_service: RequiredReliabilityService,
+    ) -> Self {
         self.0.required_reliability_service = required_reliability_service;
         self
     }

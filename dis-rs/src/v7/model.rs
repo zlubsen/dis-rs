@@ -1,4 +1,8 @@
-use crate::enumerations::{TransferredEntityIndicator, LvcIndicator, CoupledExtensionIndicator, FireTypeIndicator, DetonationTypeIndicator, RadioAttachedIndicator, IntercomAttachedIndicator, IffSimulationMode, ActiveInterrogationIndicator};
+use crate::enumerations::{
+    ActiveInterrogationIndicator, CoupledExtensionIndicator, DetonationTypeIndicator,
+    FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator,
+    RadioAttachedIndicator, TransferredEntityIndicator,
+};
 
 /// 5.2.7 PDU status record
 ///
@@ -6,14 +10,14 @@ use crate::enumerations::{TransferredEntityIndicator, LvcIndicator, CoupledExten
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct PduStatus {
     pub transferred_entity_indicator: Option<TransferredEntityIndicator>,
-    pub lvc_indicator : Option<LvcIndicator>,
-    pub coupled_extension_indicator : Option<CoupledExtensionIndicator>,
-    pub fire_type_indicator : Option<FireTypeIndicator>,
-    pub detonation_type_indicator : Option<DetonationTypeIndicator>,
-    pub radio_attached_indicator : Option<RadioAttachedIndicator>,
-    pub intercom_attached_indicator : Option<IntercomAttachedIndicator>,
-    pub iff_simulation_mode : Option<IffSimulationMode>,
-    pub active_interrogation_indicator : Option<ActiveInterrogationIndicator>,
+    pub lvc_indicator: Option<LvcIndicator>,
+    pub coupled_extension_indicator: Option<CoupledExtensionIndicator>,
+    pub fire_type_indicator: Option<FireTypeIndicator>,
+    pub detonation_type_indicator: Option<DetonationTypeIndicator>,
+    pub radio_attached_indicator: Option<RadioAttachedIndicator>,
+    pub intercom_attached_indicator: Option<IntercomAttachedIndicator>,
+    pub iff_simulation_mode: Option<IffSimulationMode>,
+    pub active_interrogation_indicator: Option<ActiveInterrogationIndicator>,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -74,7 +78,10 @@ impl PduStatus {
         self
     }
 
-    pub fn with_active_interrogation_indicator(mut self, aii: ActiveInterrogationIndicator) -> Self {
+    pub fn with_active_interrogation_indicator(
+        mut self,
+        aii: ActiveInterrogationIndicator,
+    ) -> Self {
         self.active_interrogation_indicator = Some(aii);
         self
     }

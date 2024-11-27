@@ -1,9 +1,9 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
-use crate::enumerations::{PduType, RequiredReliabilityService};
 use crate::common::remove_entity_r::builder::RemoveEntityRBuilder;
+use crate::common::{BodyInfo, Interaction};
+use crate::enumerations::{PduType, RequiredReliabilityService};
 
-const REMOVE_ENTITY_R_BODY_LENGTH : u16 = 20;
+const REMOVE_ENTITY_R_BODY_LENGTH: u16 = 20;
 
 /// 5.12.4.3 Remove Entity-R PDU
 ///

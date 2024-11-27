@@ -1,11 +1,11 @@
 use bytes::{Bytes, BytesMut};
 use tracing::error;
 
-use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Implemented, SerializeCdisPdu, Supported};
 use cdis_assemble::codec::{CodecOptions, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
+use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Implemented, SerializeCdisPdu, Supported};
 use dis_rs::model::Pdu;
-use dis_rs::{DisError, parse};
+use dis_rs::{parse, DisError};
 
 use crate::config::Config;
 use crate::Event;
@@ -22,8 +22,8 @@ impl Encoder {
     pub fn new(config: &Config, event_tx: tokio::sync::mpsc::Sender<Event>) -> Self {
         let codec_options = CodecOptions {
             update_mode: match config.mode.0 {
-                CodecUpdateMode::FullUpdate => { CodecUpdateMode::FullUpdate }
-                CodecUpdateMode::PartialUpdate => { CodecUpdateMode::PartialUpdate }
+                CodecUpdateMode::FullUpdate => CodecUpdateMode::FullUpdate,
+                CodecUpdateMode::PartialUpdate => CodecUpdateMode::PartialUpdate,
             },
             optimize_mode: config.optimization.0,
             federation_parameters: config.federation_parameters,
@@ -43,25 +43,31 @@ impl Encoder {
     }
 
     fn writing(&mut self, cdis_pdus: Vec<CdisPdu>) -> Vec<u8> {
-        let (total_bits, _cursor) = cdis_pdus.iter()
-            .fold((0usize, 0usize),
-                  | (total_bits, cursor), pdu| {
-                      ( total_bits + pdu.pdu_length(), pdu.serialize(&mut self.cdis_buffer, cursor) )
-                  });
+        let (total_bits, _cursor) =
+            cdis_pdus
+                .iter()
+                .fold((0usize, 0usize), |(total_bits, cursor), pdu| {
+                    (
+                        total_bits + pdu.pdu_length(),
+                        pdu.serialize(&mut self.cdis_buffer, cursor),
+                    )
+                });
 
         let total_bytes = total_bits.div_ceil(8);
         let cdis_wire: Vec<u8> = Vec::from(&self.cdis_buffer.data[0..total_bytes]);
-        self.event_tx.try_send(Event::SentCDis(total_bytes)).expect("Event transmit channel failed in Encoder::writing.");
+        self.event_tx
+            .try_send(Event::SentCDis(total_bytes))
+            .expect("Event transmit channel failed in Encoder::writing.");
         cdis_wire
     }
 
     pub fn encode_buffer(&mut self, bytes_in: Bytes) -> Vec<u8> {
-        self.event_tx.try_send(Event::ReceivedBytesDis(bytes_in.len())).expect("Event TX channel failed in Encoder::encode_buffer.");
+        self.event_tx
+            .try_send(Event::ReceivedBytesDis(bytes_in.len()))
+            .expect("Event TX channel failed in Encoder::encode_buffer.");
         let pdus = self.parsing(bytes_in);
         let cdis_pdus = match pdus {
-            Ok(pdus) => {
-                self.encode_pdus(&pdus)
-            }
+            Ok(pdus) => self.encode_pdus(&pdus),
             Err(err) => {
                 error!("{:?}", err);
                 Vec::new()
@@ -105,11 +111,11 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    pub fn new(config: &Config, event_tx: tokio::sync::mpsc::Sender<Event>,) -> Self {
+    pub fn new(config: &Config, event_tx: tokio::sync::mpsc::Sender<Event>) -> Self {
         let codec_options = CodecOptions {
             update_mode: match config.mode.0 {
-                CodecUpdateMode::FullUpdate => { CodecUpdateMode::FullUpdate }
-                CodecUpdateMode::PartialUpdate => { CodecUpdateMode::PartialUpdate }
+                CodecUpdateMode::FullUpdate => CodecUpdateMode::FullUpdate,
+                CodecUpdateMode::PartialUpdate => CodecUpdateMode::PartialUpdate,
             },
             optimize_mode: config.optimization.0,
             federation_parameters: config.federation_parameters,
@@ -134,24 +140,26 @@ impl Decoder {
         self.dis_buffer = BytesMut::with_capacity(MTU_BYTES);
 
         // number_of_bytes not used in creating the slice to put in the vec.
-        let number_of_bytes: usize = dis_pdus.iter()
-            .map(| pdu| {
-                pdu.serialize(&mut self.dis_buffer).unwrap() as usize
-            } ).sum();
+        let number_of_bytes: usize = dis_pdus
+            .iter()
+            .map(|pdu| pdu.serialize(&mut self.dis_buffer).unwrap() as usize)
+            .sum();
 
-        self.event_tx.try_send(Event::SentDis(number_of_bytes)).expect("Event TX channel failed in Decoder::writing.");
+        self.event_tx
+            .try_send(Event::SentDis(number_of_bytes))
+            .expect("Event TX channel failed in Decoder::writing.");
         // TODO perhaps replace Vec with Bytes, but unsure how to assign the latter
         // E.g., Bytes::from_iter(&self.dis_buffer[..].iter()), or Bytes::from(&self.dis_buffer[..])?
         Vec::from(&self.dis_buffer[..])
     }
 
     pub fn decode_buffer(&mut self, bytes_in: Bytes) -> Vec<u8> {
-        self.event_tx.try_send(Event::ReceivedBytesCDis(bytes_in.len())).expect("Event TX channel failed in Decoder::decode_buffer.");
+        self.event_tx
+            .try_send(Event::ReceivedBytesCDis(bytes_in.len()))
+            .expect("Event TX channel failed in Decoder::decode_buffer.");
         let cdis_pdus = self.parsing(bytes_in);
         let pdus = match cdis_pdus {
-            Ok(pdus) => {
-                self.decode_pdus(&pdus)
-            }
+            Ok(pdus) => self.decode_pdus(&pdus),
             Err(err) => {
                 error!("{}", err); // TODO tracing or Result return value
                 Vec::new()
