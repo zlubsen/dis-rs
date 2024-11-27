@@ -141,7 +141,7 @@ impl TryFrom<&EndPointSpec> for UdpEndpoint {
         let block_own_socket = value.block_own_socket.unwrap_or(DEFAULT_BLOCK_OWN_SOCKET);
 
         let interface = value.interface.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
-        let address = value.interface.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
+        let address = value.uri.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.uri));
 
         Ok(Self {
             mode,
@@ -311,7 +311,6 @@ impl TryFrom<&FederationSpec> for FederationAgreement {
 pub struct ConfigSpec {
     pub metadata : Option<MetaData>,
     pub update_mode : Option<String>,
-    pub block_host : Option<bool>,
     pub dis: EndPointSpec,
     pub cdis: EndPointSpec,
     pub site: Option<SiteSpec>,

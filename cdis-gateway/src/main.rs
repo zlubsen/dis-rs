@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io;
 use std::io::Read;
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
@@ -115,8 +115,8 @@ fn cli_print_config(config: &Config, config_spec: &ConfigSpec) {
         info!("Configuration `{}` - {} - {}", meta.name, meta.version, meta.author);
     }
     info!("Running in {} mode.", config.mode);
-    info!("Encoder options - use guise: {} - {}", config.use_guise, config.optimization);
-    info!("Hosting templates at port {}.", config.site_host);
+    info!("Encoder options - {}", config.optimization);
+    info!("Hosting information site at http://localhost:{}.", config.site_host);
     info!("DIS socket: {:?}.", config.dis_socket);
     info!("C-DIS socket: {:?}.", config.cdis_socket);
 }
@@ -142,12 +142,12 @@ async fn start_gateway(config: Config) {
     let cdis_socket = create_udp_socket(&config.cdis_socket).await;
 
     let dis_read_socket = reader_socket(
-        dis_socket.clone(), dis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
+        dis_socket.clone(), config.dis_socket.block_own_socket, dis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
     let dis_write_socket = writer_socket(
         dis_socket.clone(), config.dis_socket.address, dis_socket_in_rx,
         cmd_tx.subscribe(), event_tx.clone());
     let cdis_read_socket = reader_socket(
-        cdis_socket.clone(), cdis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
+        cdis_socket.clone(), config.cdis_socket.block_own_socket, cdis_socket_out_tx, cmd_tx.subscribe(), event_tx.clone());
     let cdis_write_socket = writer_socket(
         cdis_socket.clone(), config.cdis_socket.address, cdis_socket_in_rx,
         cmd_tx.subscribe(), event_tx.clone());
@@ -253,11 +253,15 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
 /// Task that runs an UdpSocket for reading UDP packets from the network.
 /// Received packets will be send to the encoder/decoder task to which the `to_codec` channel is connected to.
 async fn reader_socket(socket: Arc<UdpSocket>,
+                       block_own_host: bool,
                        to_codec: tokio::sync::mpsc::Sender<Bytes>,
                        mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
                        _event_tx: tokio::sync::mpsc::Sender<Event>) {
     let mut buf = BytesMut::with_capacity(READER_SOCKET_BUFFER_SIZE_BYTES);
     buf.resize(READER_SOCKET_BUFFER_SIZE_BYTES, 0);
+
+    let default_own_socketaddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
+    let local_address = socket.local_addr().unwrap_or(default_own_socketaddr);
 
     #[derive(Debug)]
     enum Action {
@@ -280,9 +284,11 @@ async fn reader_socket(socket: Arc<UdpSocket>,
             received = socket.recv_from(&mut buf) => {
                 match received {
                     Ok((bytes_received, from_address)) => {
-                        if socket.local_addr().unwrap_or_default() != from_address {
+                        if block_own_host && (local_address == from_address) {
+                            Action::BlockedPacket
+                        } else {
                             Action::ReceivedPacket(Bytes::copy_from_slice(&buf[..bytes_received]), from_address)
-                        } else { Action::BlockedPacket }
+                        }
                     }
                     Err(err) => { Action::Error(err) }
                 }
