@@ -1,6 +1,6 @@
 [package]
 name = "cdis-assemble"
-version = "0.1.1"
+version = "0.3.0"
 authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 An implementation of the Compressed-Distributed Interactive Simulation (SISO-STD-023-2024) protocol in Rust.
