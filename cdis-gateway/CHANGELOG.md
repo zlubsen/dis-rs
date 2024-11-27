@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.3.0] - 2024-11-27
+
+### Added
+
 - New PDUs (aligned with `cdis-assemble`):
   - `Electromagnetic Emission`
   - `Designator`
@@ -18,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Signal`
   - `Receiver`
   - `IFF`
+- Proper implementation of `block_own_host` and uri `EndPointSpec` configuration options ([#36](https://github.com/zlubsen/dis-rs/issues/36) and [#37](https://github.com/zlubsen/dis-rs/issues/37))
 
 ### Changed
 
