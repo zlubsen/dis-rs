@@ -34,7 +34,7 @@ fn main() -> Result<(), GatewayError> {
     tracing_subscriber::fmt()
         .pretty()
         // enable everything
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(Level::TRACE)
         // sets this to be the default, global collector for this application.
         .init();
 

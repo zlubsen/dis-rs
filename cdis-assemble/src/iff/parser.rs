@@ -77,7 +77,7 @@ pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, layer_3) = if fundamental_operational_data.information_layers.layer_3
         == LayersPresenceApplicability::PresentApplicable
     {
-        let system_type = system_id.clone().unwrap_or_default().system_type;
+        let system_type = system_id.unwrap_or_default().system_type;
         let (input, layer_3) = iff_layer_3(&system_type)(input)?;
         (input, Some(layer_3))
     } else {
@@ -86,7 +86,7 @@ pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, layer_4) = if fundamental_operational_data.information_layers.layer_4
         == LayersPresenceApplicability::PresentApplicable
     {
-        let system_type = system_id.clone().unwrap_or_default().system_type;
+        let system_type = system_id.unwrap_or_default().system_type;
         let (input, layer_4) = iff_layer_4(&system_type)(input)?;
         (input, Some(layer_4))
     } else {

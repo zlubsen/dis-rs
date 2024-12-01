@@ -18,6 +18,7 @@ impl BodyProperties for Receiver {
     type FieldsPresentOutput = ();
     const FIELDS_PRESENT_LENGTH: usize = 0;
 
+    #[allow(clippy::unused_unit)]
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
         ()
     }

@@ -686,7 +686,7 @@ impl From<u8> for DapSource {
         let mach_number = DapValue::from((record & BIT_1_IN_BYTE) >> 6);
         let ground_speed = DapValue::from((record & BIT_2_IN_BYTE) >> 5);
         let magnetic_heading = DapValue::from((record & BIT_3_IN_BYTE) >> 4);
-        let track_angle_rate = DapValue::from((BIT_4_IN_BYTE & BIT_4_IN_BYTE) >> 3);
+        let track_angle_rate = DapValue::from((record & BIT_4_IN_BYTE) >> 3);
         let true_track_angle = DapValue::from((record & BIT_5_IN_BYTE) >> 2);
         let true_airspeed = DapValue::from((record & BIT_6_IN_BYTE) >> 1);
         let vertical_rate = DapValue::from(record & BIT_7_IN_BYTE);
@@ -1349,7 +1349,7 @@ impl From<u8> for ModeSInterrogatorStatus {
         let on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
         let transmit_state = ModeSTransmitState::from((record & BITS_1_3) >> 4);
         let damage_status = DamageStatus::from((record & BIT_4_IN_BYTE) >> 3);
-        let malfunction_status = MalfunctionStatus::from((BIT_5_IN_BYTE & BIT_5_IN_BYTE) >> 2);
+        let malfunction_status = MalfunctionStatus::from((record & BIT_5_IN_BYTE) >> 2);
 
         ModeSInterrogatorStatus::builder()
             .with_on_off_status(on_off_status)
@@ -1397,7 +1397,7 @@ impl From<u8> for ModeSLevelsPresent {
         let level_2_els = IffPresence::from((record & BIT_2_IN_BYTE) >> 5);
         let level_2_ehs = IffPresence::from((record & BIT_3_IN_BYTE) >> 4);
         let level_3 = IffPresence::from((record & BIT_4_IN_BYTE) >> 3);
-        let level_4 = IffPresence::from((BIT_5_IN_BYTE & BIT_5_IN_BYTE) >> 2);
+        let level_4 = IffPresence::from((record & BIT_5_IN_BYTE) >> 2);
 
         ModeSLevelsPresent::builder()
             .with_level_1(level_1)

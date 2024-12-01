@@ -89,7 +89,7 @@ impl DecoderStateIff {
     pub fn new(pdu: &Counterpart) -> Self {
         Self {
             heartbeat: Instant::now(),
-            system_id: pdu.system_id.clone(),
+            system_id: pdu.system_id,
         }
     }
 }
@@ -136,7 +136,7 @@ fn encode_iff_relative_antenna_location(
     {
         (None, UnitsMeters::default())
     } else {
-        let (location, units) = encode_entity_coordinate_vector(&vector);
+        let (location, units) = encode_entity_coordinate_vector(vector);
         (Some(location), units)
     }
 }
@@ -345,7 +345,7 @@ impl Codec for IffLayer2 {
             iff_fundamental_parameters: item
                 .iff_fundamental_parameters
                 .iter()
-                .map(|param| IffFundamentalParameterData::encode(param))
+                .map(IffFundamentalParameterData::encode)
                 .collect(),
         };
 

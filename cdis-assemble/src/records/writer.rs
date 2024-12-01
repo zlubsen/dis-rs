@@ -319,6 +319,7 @@ impl SerializeCdis for VariableDatum {
 }
 
 impl SerializeCdis for EncodingScheme {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let (encoding_class, encoding_type) = match self {
             EncodingScheme::EncodedAudio {
@@ -417,6 +418,7 @@ impl SerializeCdis for BeamData {
 }
 
 impl LayerHeader {
+    #[allow(clippy::let_and_return)]
     pub fn serialize_with_length(
         &self,
         body_length: usize,

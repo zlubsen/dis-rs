@@ -308,31 +308,31 @@ impl Implemented for PduType {
     /// - There is a serializer, and it is called in the `SerializeCdisPdu` trait impl for `CdisBody` in `crate::writing`.
     /// - The codec implementations are present, and are called in `crate::codec` in the `CdisBody::encode` and `CdisBody::decode` implementations.
     fn is_implemented(&self) -> bool {
-        match self {
+        matches!(
+            self,
             PduType::EntityState
-            | PduType::Fire
-            | PduType::Detonation
-            | PduType::Collision
-            | PduType::CreateEntity
-            | PduType::RemoveEntity
-            | PduType::StartResume
-            | PduType::StopFreeze
-            | PduType::Acknowledge
-            | PduType::ActionRequest
-            | PduType::ActionResponse
-            | PduType::DataQuery
-            | PduType::SetData
-            | PduType::Data
-            | PduType::EventReport
-            | PduType::Comment
-            | PduType::ElectromagneticEmission
-            | PduType::Designator
-            | PduType::Transmitter
-            | PduType::Signal
-            | PduType::Receiver
-            | PduType::IFF => true,
-            _ => false,
-        }
+                | PduType::Fire
+                | PduType::Detonation
+                | PduType::Collision
+                | PduType::CreateEntity
+                | PduType::RemoveEntity
+                | PduType::StartResume
+                | PduType::StopFreeze
+                | PduType::Acknowledge
+                | PduType::ActionRequest
+                | PduType::ActionResponse
+                | PduType::DataQuery
+                | PduType::SetData
+                | PduType::Data
+                | PduType::EventReport
+                | PduType::Comment
+                | PduType::ElectromagneticEmission
+                | PduType::Designator
+                | PduType::Transmitter
+                | PduType::Signal
+                | PduType::Receiver
+                | PduType::IFF
+        )
     }
 }
 

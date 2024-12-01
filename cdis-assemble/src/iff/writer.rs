@@ -16,6 +16,7 @@ use dis_rs::iff::model::{
 };
 
 impl SerializeCdisPdu for Iff {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(
             buf,
@@ -73,6 +74,7 @@ impl SerializeCdisPdu for Iff {
 }
 
 impl SerializeCdis for SystemId {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u16>(buf, cursor, FOUR_BITS, self.system_type.into());
         let cursor = write_value_unsigned::<u16>(buf, cursor, FIVE_BITS, self.system_name.into());
@@ -85,6 +87,7 @@ impl SerializeCdis for SystemId {
 }
 
 impl SerializeCdis for CdisFundamentalOperationalData {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor =
             write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, u8::from(&self.system_status));
@@ -166,6 +169,7 @@ impl SerializeCdis for IffLayer2 {
 }
 
 impl SerializeCdis for IffFundamentalParameterData {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.erp);
         let cursor = self.frequency.serialize(buf, cursor);
@@ -287,6 +291,7 @@ impl SerializeCdis for Mode5BasicData {
 }
 
 impl SerializeCdis for Mode5InterrogatorBasicData {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor =
             write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.interrogator_status));
@@ -303,6 +308,7 @@ impl SerializeCdis for Mode5InterrogatorBasicData {
 }
 
 impl SerializeCdis for Mode5TransponderBasicData {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, u16::from(&self.status));
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, self.pin);
@@ -360,6 +366,7 @@ impl SerializeCdis for ModeSBasicData {
 }
 
 impl SerializeCdis for ModeSInterrogatorBasicData {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(
             buf,
@@ -379,6 +386,7 @@ impl SerializeCdis for ModeSInterrogatorBasicData {
 }
 
 impl SerializeCdis for ModeSTransponderBasicData {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, u16::from(&self.status));
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, u8::from(&self.levels_present));

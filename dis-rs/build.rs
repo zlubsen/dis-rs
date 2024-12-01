@@ -343,7 +343,7 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
                 // Empty string
                 None => "".to_string(),
                 // Uppercase character and concatenate
-                Some(char) => format!("{}{}", char.to_uppercase().to_string(), chars.as_str()),
+                Some(char) => format!("{}{}", char.to_uppercase(), chars.as_str()),
             }
         })
         .collect();
@@ -912,6 +912,7 @@ mod generation {
         data_size: usize,
         postfix_items: bool,
     ) -> Vec<TokenStream> {
+        #[allow(clippy::unnecessary_filter_map)]
         let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
             match item {
                 EnumItem::Basic(item) => {

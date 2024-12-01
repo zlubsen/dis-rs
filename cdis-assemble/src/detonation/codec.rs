@@ -92,6 +92,7 @@ impl Detonation {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn encode_detonation_descriptor(
     item: &DescriptorRecord,
 ) -> (

@@ -30,6 +30,7 @@ pub(crate) struct Config {
 impl TryFrom<&ConfigSpec> for Config {
     type Error = ConfigError;
 
+    #[allow(clippy::let_and_return)]
     fn try_from(value: &ConfigSpec) -> Result<Self, Self::Error> {
         let mode = if let Some(mode) = &value.update_mode {
             GatewayMode::try_from(mode.as_str())?
@@ -52,11 +53,10 @@ impl TryFrom<&ConfigSpec> for Config {
         let federation_parameters = set_federation_parameters(&value.federation);
 
         let optimization = if let Some(encoder) = &value.encoder {
-            let optimization = encoder.optimization.as_ref().map_or(
+            encoder.optimization.as_ref().map_or(
                 Ok(EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)),
                 |val| EncoderOptimization::try_from(val.as_str()),
-            )?;
-            optimization
+            )?
         } else {
             EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)
         };

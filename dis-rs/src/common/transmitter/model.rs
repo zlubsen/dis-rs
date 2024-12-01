@@ -212,6 +212,7 @@ impl From<&SpreadSpectrum> for u16 {
         } else {
             spectrum
         };
+        #[allow(clippy::let_and_return)]
         spectrum
     }
 }
@@ -427,7 +428,7 @@ impl TransmitterMajorModulation {
                 (7, (*detail).into())
             }
             TransmitterMajorModulation::SATCOM(detail) => (8, (*detail).into()),
-            TransmitterMajorModulation::Unspecified(detail) => (9, (*detail).into()),
+            TransmitterMajorModulation::Unspecified(detail) => (9, *detail),
         }
     }
 }

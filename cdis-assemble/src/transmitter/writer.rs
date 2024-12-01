@@ -124,6 +124,7 @@ impl SerializeCdis for Transmitter {
 }
 
 impl SerializeCdis for BeamAntennaPattern {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_psi);
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_theta);
