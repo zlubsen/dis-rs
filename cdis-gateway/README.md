@@ -1,7 +1,8 @@
 # cdis-gateway
 
 The `C-DIS Gateway` implements a functional Encoder/Decoder pair for the C-DIS protocol (SISO-STD-023-2024).
-The gateway reads regular DIS PDUs from an UDP network socket, converts the PDU to C-DIS and sends it out over the network via another UDP socket.
+The gateway reads regular DIS PDUs from an UDP network socket, converts the PDU to C-DIS and sends it out over the
+network via another UDP socket.
 
 ## Basic Usage
 
@@ -19,7 +20,13 @@ And similarly using `cargo run -- <PATH_TO_FILE>`.
 The gateway is configured via a configuration file.
 The main point of the configuration is for network sockets (interface, port, unicast/broadcast/multicast modes)
 
-See [config/sample_config.toml](./config/sample_config.toml) for details and explanation of the various configuration items.
+See [config/sample_config.toml](./config/sample_config.toml) for details and explanation of the various configuration
+items.
+
+### Logging
+
+The log level of the gateway defaults to `INFO`, outputting the initial settings and not much more. This can be
+overwritten by setting the `RUST_LOG` environment variable.
 
 ### Web UI
 

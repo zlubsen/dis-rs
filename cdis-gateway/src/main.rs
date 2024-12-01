@@ -6,6 +6,10 @@ use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
+use crate::codec::{Decoder, Encoder};
+use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
+use crate::site::run_site;
+use crate::stats::{run_stats, SseStat};
 use bytes::{Bytes, BytesMut};
 use clap::Parser;
 use dis_rs::enumerations::PduType;
@@ -13,11 +17,8 @@ use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::log::trace;
 use tracing::{error, event, info, Level};
-
-use crate::codec::{Decoder, Encoder};
-use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
-use crate::site::run_site;
-use crate::stats::{run_stats, SseStat};
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
 mod codec;
 mod config;
@@ -33,8 +34,12 @@ const READER_SOCKET_BUFFER_SIZE_BYTES: usize = 1500;
 fn main() -> Result<(), GatewayError> {
     tracing_subscriber::fmt()
         .pretty()
-        // enable everything
-        .with_max_level(Level::TRACE)
+        // set logging level using environment variable; defaults to ERROR
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
         // sets this to be the default, global collector for this application.
         .init();
 
