@@ -32,3 +32,8 @@ overwritten by setting the `RUST_LOG` environment variable.
 
 The gateway hosts a basic web interface to monitor the functioning of the gateway.
 The port at which the application is available can be configured in the config file, it defaults to port `8080`.
+
+### Building
+
+The gateway web interface depends on `bun` and `tailwindcss` at build time.
+See https://bun.sh and https://tailwindcss.com for installation details. 
