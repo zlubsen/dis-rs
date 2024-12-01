@@ -1,20 +1,19 @@
 [package]
 name = "cdis-gateway"
 version = "0.3.0"
-authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 A gateway for the Compressed-Distributed Interactive Simulation protocol.
 
 The gateway encodes/decodes DIS PDUs to/from C-DIS.
 """
-edition = "2021"
-license = "MIT"
 readme = "README.md"
-repository = "https://github.com/zlubsen/dis-rs"
-categories = ["network-programming"]
 keywords = ["simulation", "DIS", "C-DIS", "gateway", "CLI"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
 
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum"] }
@@ -38,3 +37,12 @@ tower-http = { version = "0.5.0", features = ["fs", "trace"] }
 serde = "1.0.163"
 serde_derive = "1.0.163"
 socket2 = "0.5.3"
+
+[profile.dev.build-override]
+debug = true
+
+[profile.release]
+panic = "unwind"
+codegen-units = 1
+lto = true
+strip = true

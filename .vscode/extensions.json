@@ -1,5 +1,6 @@
 {
     "recommendations": [
+        "bierner.markdown-emoji",
         "EditorConfig.EditorConfig",
         "fill-labs.dependi",
         "Gruntfuggly.todo-tree",
