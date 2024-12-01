@@ -939,46 +939,46 @@ impl FromStr for EntityType {
         let ss = s.split(':').collect::<Vec<&str>>();
         if ss.len() != NUM_DIGITS {
             return Err(DisError::ParseError(format!(
-                "Digits are not precisely {NUM_DIGITS}"
+                "EntityType string pattern does contain not precisely {NUM_DIGITS} digits"
             )));
         }
         Ok(Self {
             kind: ss
                 .get(0)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
                 .into(),
             domain: ss
                 .get(1)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
                 .into(),
             country: ss
                 .get(2)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u16>()
                 .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
                 .into(),
             category: ss
                 .get(3)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
             subcategory: ss
                 .get(4)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?,
             specific: ss
                 .get(5)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?,
             extra: ss
                 .get(6)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?,
         })
@@ -1713,6 +1713,7 @@ mod tests {
     const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
     const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
     const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
+    const ENTITY_TYPE_STR_NOT_SEVEN_DIGITS: &'static str = "0:1:2:3:4:5";
     const ENTITY_TYPE: EntityType = EntityType {
         kind: EntityKind::Other,
         domain: PlatformDomain::Land,
@@ -1734,11 +1735,25 @@ mod tests {
         let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID);
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityType string pattern does contain not precisely 7 digits"
+        );
         let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID_EXTRA);
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn entity_type_from_str_not_seven_digits() {
+        let err = EntityType::from_str(ENTITY_TYPE_STR_NOT_SEVEN_DIGITS);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityType string pattern does contain not precisely 7 digits"
+        );
     }
 
     #[test]
@@ -1750,7 +1765,10 @@ mod tests {
         let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID);
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityType string pattern does contain not precisely 7 digits"
+        );
         let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA);
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
@@ -1766,7 +1784,10 @@ mod tests {
         let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID.to_string());
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
-        assert_eq!(err.unwrap_err().to_string(), "Digits are not precisely 7");
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityType string pattern does contain not precisely 7 digits"
+        );
         let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA.to_string());
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));

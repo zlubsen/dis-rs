@@ -232,48 +232,48 @@ impl FromStr for AggregateType {
         let ss = s.split(':').collect::<Vec<&str>>();
         if ss.len() != NUM_DIGITS {
             return Err(DisError::ParseError(format!(
-                "Digits are not precisely {NUM_DIGITS}"
+                "AggregateType string pattern does contain not precisely {NUM_DIGITS} digits"
             )));
         }
         Ok(Self {
             aggregate_kind: ss
                 .get(0)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
                 .into(),
             domain: ss
                 .get(1)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
                 .into(),
             country: ss
                 .get(2)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u16>()
                 .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
                 .into(),
             category: ss
                 .get(3)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
             subcategory: ss
                 .get(4)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?
                 .into(),
             specific: ss
                 .get(5)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?
                 .into(),
             extra: ss
                 .get(6)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?,
         })
