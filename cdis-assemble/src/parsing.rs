@@ -98,7 +98,7 @@ pub(crate) fn parse_field_when_present<'a, O, T, F>(
     fields_present: T,
     mask: T,
     f: F,
-) -> impl Fn(BitInput<'a>) -> IResult<BitInput, Option<O>>
+) -> impl Fn(BitInput<'a>) -> IResult<BitInput<'a>, Option<O>>
 where
     O: std::fmt::Debug,
     T: Copy + BitAnd + PartialEq + Default,
