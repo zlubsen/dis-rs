@@ -71,6 +71,7 @@ jobs:
                   components: clippy, rustfmt
             
             - name: Setup Tarpaulin
+              if: matrix.toolchain == 'stable'
               run: cargo install cargo-tarpaulin
 
             - name: Setup Bun
@@ -95,9 +96,11 @@ jobs:
               run: cargo test --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
 
             - name: Coverage
+              if: matrix.toolchain == 'stable'
               run: cargo tarpaulin --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace --out xml
 
             - name: Upload coverage
+              if: matrix.toolchain == 'stable'
               uses: codecov/codecov-action@v4
               with:
                   fail_ci_if_error: true
