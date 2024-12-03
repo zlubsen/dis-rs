@@ -68,7 +68,10 @@ jobs:
               uses: dtolnay/rust-toolchain@master
               with:
                   toolchain: ${{ matrix.toolchain }}
-                  components: clippy, rustfmt, tarpaulin
+                  components: clippy, rustfmt
+            
+            - name: Setup Tarpaulin
+              run: cargo install cargo-tarpaulin
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
