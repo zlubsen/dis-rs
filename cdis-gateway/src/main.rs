@@ -250,6 +250,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             endpoint.address, err
         );
     }
+    #[cfg(all(target_family = "unix", not(any(target_os = "solaris", target_os = "illumos"))))]
     if let Err(err) = socket.set_reuse_port(true) {
         error!(
             "Failed to set SO_REUSEPORT for endpoint address {} - {}.",
