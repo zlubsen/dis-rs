@@ -108,7 +108,7 @@ fn aggregate_marking(input: &[u8]) -> IResult<&[u8], AggregateMarking> {
     let mut buf: [u8; 31] = [0; 31];
     let (input, marking_character_set) = be_u8(input)?;
     let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
-    let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let marking_string = sanitize_marking(&buf[..]);
 

@@ -89,6 +89,7 @@ pub struct DecoderStateDesignator {
 }
 
 impl DecoderStateDesignator {
+    #[must_use]
     pub fn new(body: &Counterpart) -> Self {
         Self {
             heartbeat: Instant::now(),

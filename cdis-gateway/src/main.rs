@@ -233,6 +233,7 @@ async fn start_gateway(config: Config) {
 /// Creates an UDP socket based on the settings contained in `endpoint`.
 /// The created `tokio::net::udp::UdpSocket` is returned wrapped in an `Arc`
 /// so that it can be used by multiple tasks (i.e., for both writing and sending).
+#[allow(clippy::too_many_lines)]
 async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     use socket2::{Domain, Protocol, Socket, Type};
 
@@ -250,7 +251,10 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             endpoint.address, err
         );
     }
-    #[cfg(all(target_family = "unix", not(any(target_os = "solaris", target_os = "illumos"))))]
+    #[cfg(all(
+        target_family = "unix",
+        not(any(target_os = "solaris", target_os = "illumos"))
+    ))]
     if let Err(err) = socket.set_reuse_port(true) {
         error!(
             "Failed to set SO_REUSEPORT for endpoint address {} - {}.",

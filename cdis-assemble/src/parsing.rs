@@ -250,7 +250,7 @@ mod tests {
         let actual = parse_field_when_present(fields, mask, entity_identification)((&input, 0));
 
         assert!(actual.is_ok());
-        assert!(actual.unwrap().1.is_none())
+        assert!(actual.unwrap().1.is_none());
     }
 
     #[test]

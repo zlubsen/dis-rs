@@ -8,6 +8,7 @@ use crate::types::model::{UVINT16, UVINT32};
 type Counterpart = dis_rs::signal::model::Signal;
 
 impl Signal {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let (sample_rate, samples) =
             if let DisEncodingScheme::EncodedAudio { .. } = item.encoding_scheme {
@@ -30,6 +31,7 @@ impl Signal {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         let sample_rate = if let Some(sample_rate) = self.sample_rate {
             sample_rate.value

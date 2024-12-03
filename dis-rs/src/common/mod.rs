@@ -95,7 +95,7 @@ pub trait Interaction {
     fn receiver(&self) -> Option<&model::EntityId>;
 }
 
-/// Trait that implements writing a PduBody to a buffer
+/// Trait that implements writing a `PduBody` to a buffer
 /// based on the protocol version of the PDU.
 /// Returns the number of bytes written to the buffer.
 pub trait SerializePdu {

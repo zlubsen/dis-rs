@@ -22,14 +22,17 @@ pub struct StopFreezeR {
 }
 
 impl StopFreezeR {
+    #[must_use]
     pub fn builder() -> StopFreezeRBuilder {
         StopFreezeRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> StopFreezeRBuilder {
         StopFreezeRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::StopFreezeR(self)
     }

@@ -5,9 +5,9 @@ use crate::model::{EntityId, PduBody, VectorF32};
 
 const IS_PART_OF_BODY_LENGTH: u16 = 40;
 
-/// 5.9.5 IsPartOf PDU
+/// 5.9.5 `IsPartOf` PDU
 ///
-/// 7.8.5 IsPartOf PDU
+/// 7.8.5 `IsPartOf` PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct IsPartOf {
     pub originating_simulation_id: EntityId,
@@ -18,14 +18,17 @@ pub struct IsPartOf {
 }
 
 impl IsPartOf {
+    #[must_use]
     pub fn builder() -> IsPartOfBuilder {
         IsPartOfBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> IsPartOfBuilder {
         IsPartOfBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::IsPartOf(self)
     }
@@ -59,11 +62,13 @@ pub struct Relationship {
 }
 
 impl Relationship {
+    #[must_use]
     pub fn with_nature(mut self, nature: IsPartOfNature) -> Self {
         self.nature = nature;
         self
     }
 
+    #[must_use]
     pub fn with_position(mut self, position: IsPartOfPosition) -> Self {
         self.position = position;
         self
@@ -78,11 +83,13 @@ pub struct NamedLocationId {
 }
 
 impl NamedLocationId {
+    #[must_use]
     pub fn with_station_name(mut self, station_name: StationName) -> Self {
         self.station_name = station_name;
         self
     }
 
+    #[must_use]
     pub fn with_station_number(mut self, station_number: u16) -> Self {
         self.station_number = station_number;
         self

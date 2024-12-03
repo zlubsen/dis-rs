@@ -102,9 +102,9 @@ impl Codec for LinearVelocity {
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::default()
-            .with_first(self.x.value as f32 / Self::CONVERSION)
-            .with_second(self.y.value as f32 / Self::CONVERSION)
-            .with_third(self.z.value as f32 / Self::CONVERSION)
+            .with_first(f32::from(self.x.value) / Self::CONVERSION)
+            .with_second(f32::from(self.y.value) / Self::CONVERSION)
+            .with_third(f32::from(self.z.value) / Self::CONVERSION)
     }
 }
 
@@ -128,9 +128,9 @@ impl Codec for Orientation {
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::new(
-            self.psi as f32 / Self::SCALING,
-            self.theta as f32 / Self::SCALING,
-            self.phi as f32 / Self::SCALING,
+            f32::from(self.psi) / Self::SCALING,
+            f32::from(self.theta) / Self::SCALING,
+            f32::from(self.phi) / Self::SCALING,
         )
     }
 }
@@ -146,7 +146,7 @@ fn normalize_radians_to_plusminus_pi(radians: f32) -> f32 {
     }
 }
 
-/// Encode a DIS LayerHeader into CDIS LayerHeader, providing the new layer length in CDIS bits.
+/// Encode a DIS `LayerHeader` into CDIS `LayerHeader`, providing the new layer length in CDIS bits.
 pub(crate) fn encode_layer_header_with_length(
     header: &dis_rs::iff::model::LayerHeader,
     layer_length_bits: u16,
@@ -158,7 +158,7 @@ pub(crate) fn encode_layer_header_with_length(
     }
 }
 
-/// Decode a CDIS LayerHeader into DIS LayerHeader, providing the new layer length in DIS bytes.
+/// Decode a CDIS `LayerHeader` into DIS `LayerHeader`, providing the new layer length in DIS bytes.
 pub(crate) fn decode_layer_header_with_length(
     header: &LayerHeader,
     layer_length_bytes: u16,
@@ -189,9 +189,9 @@ impl Codec for LinearAcceleration {
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::new(
-            self.x.value as f32 / Self::CONVERSION,
-            self.y.value as f32 / Self::CONVERSION,
-            self.z.value as f32 / Self::CONVERSION,
+            f32::from(self.x.value) / Self::CONVERSION,
+            f32::from(self.y.value) / Self::CONVERSION,
+            f32::from(self.z.value) / Self::CONVERSION,
         )
     }
 }
@@ -224,9 +224,9 @@ impl Codec for AngularVelocity {
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::new(
-            self.x.value as f32 / Self::SCALING / Self::CONVERSION,
-            self.y.value as f32 / Self::SCALING / Self::CONVERSION,
-            self.z.value as f32 / Self::SCALING / Self::CONVERSION,
+            f32::from(self.x.value) / Self::SCALING / Self::CONVERSION,
+            f32::from(self.y.value) / Self::SCALING / Self::CONVERSION,
+            f32::from(self.z.value) / Self::SCALING / Self::CONVERSION,
         )
     }
 }
@@ -281,7 +281,7 @@ impl Codec for EncodingScheme {
                 nr_of_messages,
             } => Self::Counterpart::RawBinaryData {
                 encoding_class: *encoding_class,
-                nr_of_messages: *nr_of_messages as u16,
+                nr_of_messages: u16::from(*nr_of_messages),
             },
             EncodingScheme::Unspecified { encoding_class, .. } => Self::Counterpart::Unspecified {
                 encoding_class: *encoding_class,
@@ -293,7 +293,7 @@ impl Codec for EncodingScheme {
 /// Encode DIS `VectorF32` representing an Entity Coordinate Vector (DIS 6.2.96a)
 /// to C-DIS `EntityCoordinateVector` (11.10).
 ///
-/// The VectorF32 is in meters.
+/// The `VectorF32` is in meters.
 /// The encoded `EntityCoordinateVector` will be in centimeters, or meters when
 /// _at least one encoded component value of the vector_ cannot fit in +32 767, -32 768 cm.
 /// Values outside of those bounds are placed at the boundary.
@@ -457,7 +457,7 @@ pub(crate) fn decode_world_coordinates(
     let lat = lla_location.latitude / ((2.0_f32.powi(30) - 1.0) / std::f32::consts::FRAC_PI_2);
     let lon = lla_location.longitude / ((2.0_f32.powi(31) - 1.0) / std::f32::consts::PI);
 
-    let (x, y, z) = geodetic_lla_to_ecef(lat as f64, lon as f64, alt as f64);
+    let (x, y, z) = geodetic_lla_to_ecef(f64::from(lat), f64::from(lon), f64::from(alt));
     Location::new(x, y, z)
 }
 
@@ -634,11 +634,11 @@ impl Codec for BeamData {
 
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::default()
-            .with_azimuth_center(self.az_center.value as f32 / Self::SCALING)
-            .with_azimuth_sweep(self.az_sweep.value as f32 / Self::SCALING)
-            .with_elevation_center(self.el_center.value as f32 / Self::SCALING)
-            .with_elevation_sweep(self.el_sweep.value as f32 / Self::SCALING)
-            .with_sweep_sync(self.sweep_sync as f32 / Self::SCALING_2)
+            .with_azimuth_center(f32::from(self.az_center.value) / Self::SCALING)
+            .with_azimuth_sweep(f32::from(self.az_sweep.value) / Self::SCALING)
+            .with_elevation_center(f32::from(self.el_center.value) / Self::SCALING)
+            .with_elevation_sweep(f32::from(self.el_sweep.value) / Self::SCALING)
+            .with_sweep_sync(f32::from(self.sweep_sync) / Self::SCALING_2)
     }
 }
 
@@ -711,7 +711,7 @@ mod tests {
         assert_eq!(dis.pdu_type, PduType::Acknowledge);
         assert_eq!(dis.time_stamp, cdis_to_dis_u32_timestamp(20000));
         assert!(dis.pdu_status.is_some());
-        assert!(dis.pdu_status.unwrap().fire_type_indicator.is_none())
+        assert!(dis.pdu_status.unwrap().fire_type_indicator.is_none());
     }
 
     #[test]
@@ -741,7 +741,7 @@ mod tests {
 
         assert_eq!(cdis.x.value, 10);
         assert_eq!(cdis.y.value, -8192);
-        assert_eq!(cdis.z.value, 0)
+        assert_eq!(cdis.z.value, 0);
     }
 
     #[test]
@@ -756,7 +756,7 @@ mod tests {
 
     #[test]
     fn angular_velocity_encode() {
-        const ANGULAR_VELOCITY_SCALE: f32 = (2 ^ 11 - 1) as f32 / (4.0 * std::f32::consts::PI);
+        const ANGULAR_VELOCITY_SCALE: f32 = (2 ^ (11 - 1)) as f32 / (4.0 * std::f32::consts::PI);
         let dis = VectorF32::new(1.0, 4.0 * std::f32::consts::PI, -std::f32::consts::PI);
         let cdis = AngularVelocity::encode(&dis);
 
@@ -764,9 +764,13 @@ mod tests {
         assert_eq!(cdis.y.value, (720f32 * ANGULAR_VELOCITY_SCALE) as i16);
         assert_eq!(cdis.z.value, (-180f32 * ANGULAR_VELOCITY_SCALE) as i16);
 
-        assert!((56.5f32..57.0f32).contains(&(cdis.x.value as f32 / AngularVelocity::SCALING)));
-        assert!((719.4f32..720.0f32).contains(&(cdis.y.value as f32 / AngularVelocity::SCALING)));
-        assert!((-180.35f32..-179.0f32).contains(&(cdis.z.value as f32 / AngularVelocity::SCALING)));
+        assert!((56.5f32..57.0f32).contains(&(f32::from(cdis.x.value) / AngularVelocity::SCALING)));
+        assert!(
+            (719.4f32..720.0f32).contains(&(f32::from(cdis.y.value) / AngularVelocity::SCALING))
+        );
+        assert!(
+            (-180.35f32..-179.0f32).contains(&(f32::from(cdis.z.value) / AngularVelocity::SCALING))
+        );
 
         let back_to_dis = cdis.decode();
         assert!((0.95f32..1.0f32).contains(&back_to_dis.first_vector_component));

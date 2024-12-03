@@ -98,6 +98,7 @@ impl Pdu {
         }
     }
 
+    #[must_use]
     pub fn pdu_length(&self) -> u16 {
         PDU_HEADER_LEN_BYTES + self.body.body_length()
     }
@@ -127,6 +128,7 @@ pub struct PduHeader {
 }
 
 impl PduHeader {
+    #[must_use]
     pub fn new(protocol_version: ProtocolVersion, exercise_id: u8, pdu_type: PduType) -> Self {
         let protocol_family = pdu_type.into();
         Self {
@@ -141,14 +143,17 @@ impl PduHeader {
         }
     }
 
+    #[must_use]
     pub fn new_v6(exercise_id: u8, pdu_type: PduType) -> Self {
         PduHeader::new(ProtocolVersion::IEEE1278_1A1998, exercise_id, pdu_type)
     }
 
+    #[must_use]
     pub fn new_v7(exercise_id: u8, pdu_type: PduType) -> Self {
         PduHeader::new(ProtocolVersion::IEEE1278_12012, exercise_id, pdu_type)
     }
 
+    #[must_use]
     pub fn with_pdu_type(mut self, pdu_type: PduType) -> Self {
         self.protocol_family = pdu_type.into();
         self.pdu_type = pdu_type;
@@ -161,11 +166,13 @@ impl PduHeader {
         self
     }
 
+    #[must_use]
     pub fn with_length(mut self, body_length: u16) -> Self {
         self.pdu_length = PDU_HEADER_LEN_BYTES + body_length;
         self
     }
 
+    #[must_use]
     pub fn with_pdu_status(mut self, pdu_status: PduStatus) -> Self {
         self.pdu_status = Some(pdu_status);
         self
@@ -658,6 +665,7 @@ pub struct SimulationAddress {
 }
 
 impl SimulationAddress {
+    #[must_use]
     pub fn new(site_id: u16, application_id: u16) -> Self {
         SimulationAddress {
             site_id,
@@ -703,6 +711,7 @@ impl Display for EntityId {
 }
 
 impl EntityId {
+    #[must_use]
     pub fn new(site_id: u16, application_id: u16, entity_id: u16) -> Self {
         Self {
             simulation_address: SimulationAddress {
@@ -713,6 +722,7 @@ impl EntityId {
         }
     }
 
+    #[must_use]
     pub fn new_sim_address(simulation_address: SimulationAddress, entity_id: u16) -> Self {
         Self {
             simulation_address,
@@ -720,6 +730,7 @@ impl EntityId {
         }
     }
 
+    #[must_use]
     pub fn new_simulation_identifier(simulation_address: SimulationAddress) -> Self {
         Self {
             simulation_address,
@@ -727,6 +738,7 @@ impl EntityId {
         }
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         SIX_OCTETS as u16
     }
@@ -739,6 +751,7 @@ pub struct EventId {
 }
 
 impl EventId {
+    #[must_use]
     pub fn new(simulation_address: SimulationAddress, event_id: u16) -> Self {
         Self {
             simulation_address,
@@ -746,6 +759,7 @@ impl EventId {
         }
     }
 
+    #[must_use]
     pub fn new_sim_address(simulation_address: SimulationAddress, event_id: u16) -> Self {
         Self {
             simulation_address,
@@ -773,6 +787,7 @@ pub struct VectorF32 {
 }
 
 impl VectorF32 {
+    #[must_use]
     pub fn new(first: f32, second: f32, third: f32) -> Self {
         VectorF32 {
             first_vector_component: first,
@@ -781,16 +796,19 @@ impl VectorF32 {
         }
     }
 
+    #[must_use]
     pub fn with_first(mut self, first: f32) -> Self {
         self.first_vector_component = first;
         self
     }
 
+    #[must_use]
     pub fn with_second(mut self, second: f32) -> Self {
         self.second_vector_component = second;
         self
     }
 
+    #[must_use]
     pub fn with_third(mut self, third: f32) -> Self {
         self.third_vector_component = third;
         self
@@ -807,6 +825,7 @@ pub struct Location {
 }
 
 impl Location {
+    #[must_use]
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Location {
             x_coordinate: x,
@@ -815,16 +834,19 @@ impl Location {
         }
     }
 
+    #[must_use]
     pub fn with_x(mut self, x: f64) -> Self {
         self.x_coordinate = x;
         self
     }
 
+    #[must_use]
     pub fn with_y(mut self, y: f64) -> Self {
         self.y_coordinate = y;
         self
     }
 
+    #[must_use]
     pub fn with_z(mut self, z: f64) -> Self {
         self.z_coordinate = z;
         self
@@ -841,20 +863,24 @@ pub struct Orientation {
 }
 
 impl Orientation {
+    #[must_use]
     pub fn new(psi: f32, theta: f32, phi: f32) -> Self {
         Orientation { psi, theta, phi }
     }
 
+    #[must_use]
     pub fn with_psi(mut self, psi: f32) -> Self {
         self.psi = psi;
         self
     }
 
+    #[must_use]
     pub fn with_theta(mut self, theta: f32) -> Self {
         self.theta = theta;
         self
     }
 
+    #[must_use]
     pub fn with_phi(mut self, phi: f32) -> Self {
         self.phi = phi;
         self
@@ -874,41 +900,49 @@ pub struct EntityType {
 }
 
 impl EntityType {
+    #[must_use]
     pub fn with_kind(mut self, kind: EntityKind) -> Self {
         self.kind = kind;
         self
     }
 
+    #[must_use]
     pub fn with_domain(mut self, domain: PlatformDomain) -> Self {
         self.domain = domain;
         self
     }
 
+    #[must_use]
     pub fn with_country(mut self, country: Country) -> Self {
         self.country = country;
         self
     }
 
+    #[must_use]
     pub fn with_category(mut self, category: u8) -> Self {
         self.category = category;
         self
     }
 
+    #[must_use]
     pub fn with_subcategory(mut self, subcategory: u8) -> Self {
         self.subcategory = subcategory;
         self
     }
 
+    #[must_use]
     pub fn with_specific(mut self, specific: u8) -> Self {
         self.specific = specific;
         self
     }
 
+    #[must_use]
     pub fn with_extra(mut self, extra: u8) -> Self {
         self.extra = extra;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         EIGHT_OCTETS as u16
     }
@@ -1020,6 +1054,7 @@ pub enum DescriptorRecord {
 }
 
 impl DescriptorRecord {
+    #[must_use]
     pub fn new_munition(entity_type: EntityType, munition: MunitionDescriptor) -> Self {
         DescriptorRecord::Munition {
             entity_type,
@@ -1027,10 +1062,12 @@ impl DescriptorRecord {
         }
     }
 
+    #[must_use]
     pub fn new_expendable(entity_type: EntityType) -> Self {
         DescriptorRecord::Expendable { entity_type }
     }
 
+    #[must_use]
     pub fn new_explosion(
         entity_type: EntityType,
         explosive_material: ExplosiveMaterialCategories,
@@ -1060,21 +1097,25 @@ pub struct MunitionDescriptor {
 }
 
 impl MunitionDescriptor {
+    #[must_use]
     pub fn with_warhead(mut self, warhead: MunitionDescriptorWarhead) -> Self {
         self.warhead = warhead;
         self
     }
 
+    #[must_use]
     pub fn with_fuse(mut self, fuse: MunitionDescriptorFuse) -> Self {
         self.fuse = fuse;
         self
     }
 
+    #[must_use]
     pub fn with_quantity(mut self, quantity: u16) -> Self {
         self.quantity = quantity;
         self
     }
 
+    #[must_use]
     pub fn with_rate(mut self, rate: u16) -> Self {
         self.rate = rate;
         self
@@ -1097,6 +1138,7 @@ pub struct TimeStamp {
 }
 
 impl TimeStamp {
+    #[must_use]
     pub fn new(raw_timestamp: u32) -> Self {
         Self { raw_timestamp }
     }
@@ -1153,6 +1195,7 @@ pub enum DisTimeStamp {
 }
 
 impl DisTimeStamp {
+    #[must_use]
     pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
         let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
         let units_past_the_hour =
@@ -1163,6 +1206,7 @@ impl DisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
         let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
         let units_past_the_hour =
@@ -1173,6 +1217,7 @@ impl DisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
         Self::Absolute {
             units_past_the_hour,
@@ -1180,6 +1225,7 @@ impl DisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
         Self::Relative {
             units_past_the_hour,
@@ -1243,6 +1289,7 @@ pub struct ClockTime {
 }
 
 impl ClockTime {
+    #[must_use]
     pub fn new(hour: i32, time_past_hour: u32) -> Self {
         Self {
             hour,
@@ -1259,6 +1306,7 @@ pub struct DatumSpecification {
 }
 
 impl DatumSpecification {
+    #[must_use]
     pub fn new(
         fixed_datum_records: Vec<FixedDatum>,
         variable_datum_records: Vec<VariableDatum>,
@@ -1281,6 +1329,7 @@ pub struct FixedDatum {
 }
 
 impl FixedDatum {
+    #[must_use]
     pub fn new(datum_id: VariableRecordType, datum_value: u32) -> Self {
         Self {
             datum_id,
@@ -1297,6 +1346,7 @@ pub struct VariableDatum {
 }
 
 impl VariableDatum {
+    #[must_use]
     pub fn new(datum_id: VariableRecordType, datum_value: Vec<u8>) -> Self {
         Self {
             datum_id,
@@ -1315,6 +1365,7 @@ pub struct PaddedRecordLengths {
 }
 
 impl PaddedRecordLengths {
+    #[must_use]
     pub fn new(
         data_length_bytes: usize,
         padding_length_bytes: usize,
@@ -1345,9 +1396,7 @@ pub(crate) fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> Pad
     assert_eq!(
         record_length % pad_to_num,
         NO_REMAINDER,
-        "The length for the data record is not aligned to {} octets. Data length is {} octets.",
-        pad_to_num,
-        data_length
+        "The length for the data record is not aligned to {pad_to_num} octets. Data length is {data_length} octets."
     );
 
     PaddedRecordLengths::new(data_length, padding_num, record_length)
@@ -1375,31 +1424,37 @@ pub struct ArticulatedPart {
 }
 
 impl ArticulatedPart {
+    #[must_use]
     pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
         self.change_indicator = change_indicator;
         self
     }
 
+    #[must_use]
     pub fn with_attachment_id(mut self, attachment_id: u16) -> Self {
         self.attachment_id = attachment_id;
         self
     }
 
+    #[must_use]
     pub fn with_type_metric(mut self, type_metric: ArticulatedPartsTypeMetric) -> Self {
         self.type_metric = type_metric;
         self
     }
 
+    #[must_use]
     pub fn with_type_class(mut self, type_class: ArticulatedPartsTypeClass) -> Self {
         self.type_class = type_class;
         self
     }
 
+    #[must_use]
     pub fn with_parameter_value(mut self, parameter_value: f32) -> Self {
         self.parameter_value = parameter_value;
         self
     }
 
+    #[must_use]
     pub fn to_variable_parameter(self) -> VariableParameter {
         VariableParameter::Articulated(self)
     }
@@ -1415,6 +1470,7 @@ pub struct AttachedPart {
 }
 
 impl AttachedPart {
+    #[must_use]
     pub fn with_detached_indicator(
         mut self,
         detached_indicator: AttachedPartDetachedIndicator,
@@ -1423,21 +1479,25 @@ impl AttachedPart {
         self
     }
 
+    #[must_use]
     pub fn with_attachment_id(mut self, attachment_id: u16) -> Self {
         self.attachment_id = attachment_id;
         self
     }
 
+    #[must_use]
     pub fn with_parameter_type(mut self, parameter_type: AttachedParts) -> Self {
         self.parameter_type = parameter_type;
         self
     }
 
+    #[must_use]
     pub fn with_attached_part_type(mut self, attached_part_type: EntityType) -> Self {
         self.attached_part_type = attached_part_type;
         self
     }
 
+    #[must_use]
     pub fn to_variable_parameter(self) -> VariableParameter {
         VariableParameter::Attached(self)
     }
@@ -1454,11 +1514,13 @@ pub struct SeparationParameter {
 }
 
 impl SeparationParameter {
+    #[must_use]
     pub fn with_reason(mut self, reason: SeparationReasonForSeparation) -> Self {
         self.reason = reason;
         self
     }
 
+    #[must_use]
     pub fn with_pre_entity_indicator(
         mut self,
         pre_entity_indicator: SeparationPreEntityIndicator,
@@ -1467,21 +1529,25 @@ impl SeparationParameter {
         self
     }
 
+    #[must_use]
     pub fn with_parent_entity_id(mut self, parent_entity_id: EntityId) -> Self {
         self.parent_entity_id = parent_entity_id;
         self
     }
 
+    #[must_use]
     pub fn with_station_name(mut self, station_name: StationName) -> Self {
         self.station_name = station_name;
         self
     }
 
+    #[must_use]
     pub fn with_station_number(mut self, station_number: u16) -> Self {
         self.station_number = station_number;
         self
     }
 
+    #[must_use]
     pub fn to_variable_parameter(self) -> VariableParameter {
         VariableParameter::Separation(self)
     }
@@ -1495,16 +1561,19 @@ pub struct EntityTypeParameter {
 }
 
 impl EntityTypeParameter {
+    #[must_use]
     pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
         self.change_indicator = change_indicator;
         self
     }
 
+    #[must_use]
     pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
         self.entity_type = entity_type;
         self
     }
 
+    #[must_use]
     pub fn to_variable_parameter(self) -> VariableParameter {
         VariableParameter::EntityType(self)
     }
@@ -1524,11 +1593,13 @@ pub struct EntityAssociationParameter {
 }
 
 impl EntityAssociationParameter {
+    #[must_use]
     pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
         self.change_indicator = change_indicator;
         self
     }
 
+    #[must_use]
     pub fn with_association_status(
         mut self,
         association_status: EntityAssociationAssociationStatus,
@@ -1537,6 +1608,7 @@ impl EntityAssociationParameter {
         self
     }
 
+    #[must_use]
     pub fn with_association_type(
         mut self,
         association_type: EntityAssociationPhysicalAssociationType,
@@ -1545,16 +1617,19 @@ impl EntityAssociationParameter {
         self
     }
 
+    #[must_use]
     pub fn with_entity_id(mut self, entity_id: EntityId) -> Self {
         self.entity_id = entity_id;
         self
     }
 
+    #[must_use]
     pub fn with_own_station_location(mut self, own_station_location: StationName) -> Self {
         self.own_station_location = own_station_location;
         self
     }
 
+    #[must_use]
     pub fn with_physical_connection_type(
         mut self,
         physical_connection_type: EntityAssociationPhysicalConnectionType,
@@ -1563,6 +1638,7 @@ impl EntityAssociationParameter {
         self
     }
 
+    #[must_use]
     pub fn with_group_member_type(
         mut self,
         group_member_type: EntityAssociationGroupMemberType,
@@ -1571,11 +1647,13 @@ impl EntityAssociationParameter {
         self
     }
 
+    #[must_use]
     pub fn with_group_number(mut self, group_number: u16) -> Self {
         self.group_number = group_number;
         self
     }
 
+    #[must_use]
     pub fn to_variable_parameter(self) -> VariableParameter {
         VariableParameter::EntityAssociation(self)
     }
@@ -1592,30 +1670,36 @@ pub struct BeamData {
 }
 
 impl BeamData {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_azimuth_center(mut self, azimuth_center: f32) -> Self {
         self.azimuth_center = azimuth_center;
         self
     }
 
+    #[must_use]
     pub fn with_azimuth_sweep(mut self, azimuth_sweep: f32) -> Self {
         self.azimuth_sweep = azimuth_sweep;
         self
     }
 
+    #[must_use]
     pub fn with_elevation_center(mut self, elevation_center: f32) -> Self {
         self.elevation_center = elevation_center;
         self
     }
 
+    #[must_use]
     pub fn with_elevation_sweep(mut self, elevation_sweep: f32) -> Self {
         self.elevation_sweep = elevation_sweep;
         self
     }
 
+    #[must_use]
     pub fn with_sweep_sync(mut self, sweep_sync: f32) -> Self {
         self.sweep_sync = sweep_sync;
         self
@@ -1632,11 +1716,13 @@ pub struct SupplyQuantity {
 }
 
 impl SupplyQuantity {
+    #[must_use]
     pub fn with_supply_type(mut self, supply_type: EntityType) -> Self {
         self.supply_type = supply_type;
         self
     }
 
+    #[must_use]
     pub fn with_quantity(mut self, quantity: f32) -> Self {
         self.quantity = quantity;
         self
@@ -1652,11 +1738,13 @@ pub struct RecordSpecification {
 }
 
 impl RecordSpecification {
+    #[must_use]
     pub fn with_record_set(mut self, record: RecordSet) -> Self {
         self.record_sets.push(record);
         self
     }
 
+    #[must_use]
     pub fn with_record_sets(mut self, records: Vec<RecordSet>) -> Self {
         self.record_sets = records;
         self
@@ -1673,28 +1761,32 @@ pub struct RecordSet {
 }
 
 impl RecordSet {
+    #[must_use]
     pub fn with_record_id(mut self, record_id: VariableRecordType) -> Self {
         self.record_id = record_id;
         self
     }
 
+    #[must_use]
     pub fn with_record_serial_number(mut self, record_serial_number: u32) -> Self {
         self.record_serial_number = record_serial_number;
         self
     }
 
-    /// Adds `record` to be the Record Values in this RecordSet.
-    /// It is specified in the DIS standard that all Record Values in a RecordSet are of the same length.
+    /// Adds `record` to be the Record Values in this `RecordSet`.
+    /// It is specified in the DIS standard that all Record Values in a `RecordSet` are of the same length.
     /// It is up to the caller of the function to ensure only Record Values of same length are added,
     /// the length of the last added value is assumed for all previously added.
+    #[must_use]
     pub fn with_record(mut self, record: Vec<u8>) -> Self {
         self.record_length_bytes = record.len() as u16;
         self.records.push(record);
         self
     }
 
-    /// Sets `records` to be the records in this RecordSet.
-    /// It is specified in the DIS standard that all Record Values in a RecordSet are of the same length (i.e., the inner `Vec`).
+    /// Sets `records` to be the records in this `RecordSet`.
+    /// It is specified in the DIS standard that all Record Values in a `RecordSet` are of the same length (i.e., the inner `Vec`).
+    #[must_use]
     pub fn with_records(mut self, records: Vec<Vec<u8>>) -> Self {
         self.record_length_bytes = if let Some(record) = records.first() {
             record.len()
@@ -1710,10 +1802,10 @@ impl RecordSet {
 mod tests {
     use super::*;
 
-    const ENTITY_TYPE_STR: &'static str = "0:1:2:3:4:5:6";
-    const ENTITY_TYPE_STR_INVALID: &'static str = "0,1,2,3,4,5,6";
-    const ENTITY_TYPE_STR_INVALID_EXTRA: &'static str = "0:1:2:3:4:5:six";
-    const ENTITY_TYPE_STR_NOT_SEVEN_DIGITS: &'static str = "0:1:2:3:4:5";
+    const ENTITY_TYPE_STR: &str = "0:1:2:3:4:5:6";
+    const ENTITY_TYPE_STR_INVALID: &str = "0,1,2,3,4,5,6";
+    const ENTITY_TYPE_STR_INVALID_EXTRA: &str = "0:1:2:3:4:5:six";
+    const ENTITY_TYPE_STR_NOT_SEVEN_DIGITS: &str = "0:1:2:3:4:5";
     const ENTITY_TYPE: EntityType = EntityType {
         kind: EntityKind::Other,
         domain: PlatformDomain::Land,

@@ -40,20 +40,23 @@ pub struct AggregateState {
 }
 
 impl AggregateState {
+    #[must_use]
     pub fn builder() -> AggregateStateBuilder {
         AggregateStateBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> AggregateStateBuilder {
         AggregateStateBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::AggregateState(self)
     }
 }
 
-/// Calculate the intermediate length and padding of an AggregateState PDU.
+/// Calculate the intermediate length and padding of an `AggregateState` PDU.
 ///
 /// Returns a tuple consisting of the intermediate length including the padding,
 /// and the length of the padding, in octets.
@@ -62,8 +65,8 @@ pub(crate) fn aggregate_state_intermediate_length_padding(
     entities: &[EntityId],
 ) -> (u16, u16) {
     let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
-        + aggregates.iter().map(|id| id.record_length() ).sum::<u16>() // number of aggregate ids
-        + entities.iter().map(|id| id.record_length() ).sum::<u16>(); // number of entity ids
+        + aggregates.iter().map(crate::model::EntityId::record_length ).sum::<u16>() // number of aggregate ids
+        + entities.iter().map(crate::model::EntityId::record_length ).sum::<u16>(); // number of entity ids
     let padding_length = intermediate_length % (FOUR_OCTETS as u16); // padding to 32-bits (4 octets) boundary
     (intermediate_length + padding_length, padding_length)
 }
@@ -74,9 +77,9 @@ impl BodyInfo for AggregateState {
             aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
         intermediate_length
             // number of silent aggregate systems
-            + self.silent_aggregate_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + self.silent_aggregate_systems.iter().map(SilentAggregateSystem::record_length ).sum::<u16>()
             // number of silent entity systems
-            + self.silent_entity_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + self.silent_entity_systems.iter().map(SilentEntitySystem::record_length ).sum::<u16>()
             // number of variable datum records
             + (self.variable_datums.iter().map(|datum| {
                 let padded_record = length_padded_to_num(
@@ -109,6 +112,7 @@ pub struct AggregateMarking {
 }
 
 impl AggregateMarking {
+    #[must_use]
     pub fn new(marking: String, character_set: EntityMarkingCharacterSet) -> Self {
         Self {
             marking_character_set: character_set,
@@ -125,6 +129,7 @@ impl AggregateMarking {
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         THIRTY_TWO_OCTETS as u16
     }
@@ -167,41 +172,49 @@ pub struct AggregateType {
 }
 
 impl AggregateType {
+    #[must_use]
     pub fn with_aggregate_kind(mut self, aggregate_kind: AggregateStateAggregateKind) -> Self {
         self.aggregate_kind = aggregate_kind;
         self
     }
 
+    #[must_use]
     pub fn with_domain(mut self, domain: PlatformDomain) -> Self {
         self.domain = domain;
         self
     }
 
+    #[must_use]
     pub fn with_country(mut self, country: Country) -> Self {
         self.country = country;
         self
     }
 
+    #[must_use]
     pub fn with_category(mut self, category: u8) -> Self {
         self.category = category;
         self
     }
 
+    #[must_use]
     pub fn with_subcategory(mut self, subcategory: AggregateStateSubcategory) -> Self {
         self.subcategory = subcategory;
         self
     }
 
+    #[must_use]
     pub fn with_specific(mut self, specific: AggregateStateSpecific) -> Self {
         self.specific = specific;
         self
     }
 
+    #[must_use]
     pub fn with_extra(mut self, extra: u8) -> Self {
         self.extra = extra;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         EIGHT_OCTETS as u16
     }
@@ -304,16 +317,19 @@ pub struct SilentAggregateSystem {
 }
 
 impl SilentAggregateSystem {
+    #[must_use]
     pub fn with_number_of_aggregates(mut self, number_of_aggregates: u16) -> Self {
         self.number_of_aggregates = number_of_aggregates;
         self
     }
 
+    #[must_use]
     pub fn with_aggregate_type(mut self, aggregate_type: AggregateType) -> Self {
         self.aggregate_type = aggregate_type;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16 + self.aggregate_type.record_length()
     }
@@ -328,33 +344,38 @@ pub struct SilentEntitySystem {
 }
 
 impl SilentEntitySystem {
+    #[must_use]
     pub fn with_number_of_entities(mut self, number_of_entities: u16) -> Self {
         self.number_of_entities = number_of_entities;
         self
     }
 
+    #[must_use]
     pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
         self.entity_type = entity_type;
         self
     }
 
+    #[must_use]
     pub fn with_appearance(mut self, appearance: EntityAppearance) -> Self {
         self.appearances.push(appearance);
         self
     }
 
+    #[must_use]
     pub fn with_appearances(mut self, appearances: Vec<EntityAppearance>) -> Self {
         self.appearances = appearances;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         TWO_OCTETS as u16
             + self.entity_type.record_length()
             + self
                 .appearances
                 .iter()
-                .map(|app| app.record_length())
+                .map(crate::entity_state::model::EntityAppearance::record_length)
                 .sum::<u16>()
     }
 }

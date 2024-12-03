@@ -103,7 +103,7 @@ mod tests {
             assert_eq!(collision.location.z, SVINT16::from(1));
             assert_eq!(collision.mass, UVINT32::from(100));
         } else {
-            assert!(false)
+            assert!(false);
         }
     }
 }

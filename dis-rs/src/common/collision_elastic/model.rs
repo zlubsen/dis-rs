@@ -27,14 +27,17 @@ pub struct CollisionElastic {
 }
 
 impl CollisionElastic {
+    #[must_use]
     pub fn builder() -> CollisionElasticBuilder {
         CollisionElasticBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> CollisionElasticBuilder {
         CollisionElasticBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::CollisionElastic(self)
     }

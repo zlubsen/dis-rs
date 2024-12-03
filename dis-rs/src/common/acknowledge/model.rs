@@ -18,14 +18,17 @@ pub struct Acknowledge {
 }
 
 impl Acknowledge {
+    #[must_use]
     pub fn builder() -> AcknowledgeBuilder {
         AcknowledgeBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> AcknowledgeBuilder {
         AcknowledgeBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Acknowledge(self)
     }

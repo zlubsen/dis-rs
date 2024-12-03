@@ -52,14 +52,17 @@ pub struct Iff {
 }
 
 impl Iff {
+    #[must_use]
     pub fn builder() -> IffBuilder {
         IffBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> IffBuilder {
         IffBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::IFF(self)
     }
@@ -107,7 +110,7 @@ impl Interaction for Iff {
 
 /// 7.6.5.3 Layer 2 emissions data
 ///
-/// The Secondary Operational Data record (6.2.76) has been flattened in the IffLayer2 struct, as it only
+/// The Secondary Operational Data record (6.2.76) has been flattened in the `IffLayer2` struct, as it only
 /// contains two 8-bit records.
 #[derive(Clone, Debug, PartialEq)]
 pub struct IffLayer2 {
@@ -134,10 +137,12 @@ impl Default for IffLayer2 {
 }
 
 impl IffLayer2 {
+    #[must_use]
     pub fn builder() -> IffLayer2Builder {
         IffLayer2Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_2_BASE_DATA_LENGTH_OCTETS: u16 = 28;
         const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
@@ -146,6 +151,7 @@ impl IffLayer2 {
                 * IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS)
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -178,15 +184,18 @@ impl Default for IffLayer3 {
 }
 
 impl IffLayer3 {
+    #[must_use]
     pub fn builder() -> IffLayer3Builder {
         IffLayer3Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_3_BASE_DATA_LENGTH_OCTETS: u16 = 26;
         LAYER_3_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -208,10 +217,12 @@ impl Default for Mode5BasicData {
 }
 
 impl Mode5BasicData {
+    #[must_use]
     pub fn new_interrogator(basic_data: Mode5InterrogatorBasicData) -> Self {
         Self::Interrogator(basic_data)
     }
 
+    #[must_use]
     pub fn new_transponder(basic_data: Mode5TransponderBasicData) -> Self {
         Self::Transponder(basic_data)
     }
@@ -241,15 +252,18 @@ impl Default for IffLayer4 {
 }
 
 impl IffLayer4 {
+    #[must_use]
     pub fn builder() -> IffLayer4Builder {
         IffLayer4Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_4_BASE_DATA_LENGTH_OCTETS: u16 = 34;
         LAYER_4_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -271,10 +285,12 @@ impl Default for ModeSBasicData {
 }
 
 impl ModeSBasicData {
+    #[must_use]
     pub fn new_interrogator(basic_data: ModeSInterrogatorBasicData) -> Self {
         Self::Interrogator(basic_data)
     }
 
+    #[must_use]
     pub fn new_transponder(basic_data: ModeSTransponderBasicData) -> Self {
         Self::Transponder(basic_data)
     }
@@ -306,15 +322,18 @@ impl Default for IffLayer5 {
 }
 
 impl IffLayer5 {
+    #[must_use]
     pub fn builder() -> IffLayer5Builder {
         IffLayer5Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_5_BASE_DATA_LENGTH_OCTETS: u16 = 14;
         LAYER_5_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -335,6 +354,7 @@ pub struct ChangeOptionsRecord {
 }
 
 impl ChangeOptionsRecord {
+    #[must_use]
     pub fn builder() -> ChangeOptionsRecordBuilder {
         ChangeOptionsRecordBuilder::new()
     }
@@ -442,6 +462,7 @@ pub struct FundamentalOperationalData {
 }
 
 impl FundamentalOperationalData {
+    #[must_use]
     pub fn builder() -> FundamentalOperationalDataBuilder {
         FundamentalOperationalDataBuilder::new()
     }
@@ -482,14 +503,17 @@ pub struct IffDataRecord {
 }
 
 impl IffDataRecord {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn builder() -> IffDataRecordBuilder {
         IffDataRecordBuilder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         length_padded_to_num(SIX_OCTETS + self.record_specific_fields.len(), FOUR_OCTETS)
             .record_length as u16
@@ -503,22 +527,25 @@ pub struct IffDataSpecification {
 }
 
 impl IffDataSpecification {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             iff_data_records: vec![],
         }
     }
 
+    #[must_use]
     pub fn builder() -> IffDataSpecificationBuilder {
         IffDataSpecificationBuilder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const NUMBER_OF_DATA_RECORDS_OCTETS: u16 = 2;
         let iff_data_records_data_length: u16 = self
             .iff_data_records
             .iter()
-            .map(|record| record.data_length())
+            .map(IffDataRecord::data_length)
             .sum();
         NUMBER_OF_DATA_RECORDS_OCTETS + iff_data_records_data_length
     }
@@ -537,6 +564,7 @@ pub struct InformationLayers {
 }
 
 impl InformationLayers {
+    #[must_use]
     pub fn builder() -> InformationLayersBuilder {
         InformationLayersBuilder::new()
     }
@@ -596,6 +624,7 @@ pub struct IffFundamentalParameterData {
 }
 
 impl IffFundamentalParameterData {
+    #[must_use]
     pub fn builder() -> IffFundamentalParameterDataBuilder {
         IffFundamentalParameterDataBuilder::new()
     }
@@ -610,10 +639,12 @@ pub struct LayerHeader {
 }
 
 impl LayerHeader {
+    #[must_use]
     pub fn new() -> Self {
         LayerHeader::default()
     }
 
+    #[must_use]
     pub fn builder() -> LayerHeaderBuilder {
         LayerHeaderBuilder::new()
     }
@@ -628,10 +659,12 @@ pub struct SystemSpecificData {
 }
 
 impl SystemSpecificData {
+    #[must_use]
     pub fn new() -> Self {
         SystemSpecificData::default()
     }
 
+    #[must_use]
     pub fn builder() -> SystemSpecificDataBuilder {
         SystemSpecificDataBuilder::new()
     }
@@ -647,10 +680,12 @@ pub struct SystemId {
 }
 
 impl SystemId {
+    #[must_use]
     pub fn new() -> Self {
         SystemId::default()
     }
 
+    #[must_use]
     pub fn builder() -> SystemIdBuilder {
         SystemIdBuilder::new()
     }
@@ -671,10 +706,12 @@ pub struct DapSource {
 }
 
 impl DapSource {
+    #[must_use]
     pub fn new() -> Self {
         DapSource::default()
     }
 
+    #[must_use]
     pub fn builder() -> DapSourceBuilder {
         DapSourceBuilder::new()
     }
@@ -747,10 +784,12 @@ pub struct EnhancedMode1Code {
 }
 
 impl EnhancedMode1Code {
+    #[must_use]
     pub fn new() -> Self {
         EnhancedMode1Code::default()
     }
 
+    #[must_use]
     pub fn builder() -> EnhancedMode1CodeBuilder {
         EnhancedMode1CodeBuilder::new()
     }
@@ -792,9 +831,9 @@ impl From<&EnhancedMode1Code> for u16 {
         let code_element_2: u16 = value.code_element_2_c << 10;
         let code_element_3: u16 = value.code_element_3_b << 7;
         let code_element_4: u16 = value.code_element_4_a << 4;
-        let on_off_status: u16 = (u8::from(&value.on_off_status) as u16) << 2;
-        let damage_status: u16 = (u8::from(&value.damage_status) as u16) << 1;
-        let malfunction_status: u16 = u8::from(&value.malfunction_status) as u16;
+        let on_off_status: u16 = u16::from(u8::from(&value.on_off_status)) << 2;
+        let damage_status: u16 = u16::from(u8::from(&value.damage_status)) << 1;
+        let malfunction_status: u16 = u16::from(u8::from(&value.malfunction_status));
 
         code_element_1
             | code_element_2
@@ -815,10 +854,12 @@ pub struct Mode5InterrogatorBasicData {
 }
 
 impl Mode5InterrogatorBasicData {
+    #[must_use]
     pub fn new() -> Self {
         Mode5InterrogatorBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5InterrogatorBasicDataBuilder {
         Mode5InterrogatorBasicDataBuilder::new()
     }
@@ -835,10 +876,12 @@ pub struct Mode5InterrogatorStatus {
 }
 
 impl Mode5InterrogatorStatus {
+    #[must_use]
     pub fn new() -> Self {
         Mode5InterrogatorStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5InterrogatorStatusBuilder {
         Mode5InterrogatorStatusBuilder::new()
     }
@@ -914,10 +957,12 @@ pub struct Mode5MessageFormats {
 }
 
 impl Mode5MessageFormats {
+    #[must_use]
     pub fn new() -> Self {
         Mode5MessageFormats::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5MessageFormatsBuilder {
         Mode5MessageFormatsBuilder::new()
     }
@@ -1078,10 +1123,12 @@ pub struct Mode5TransponderBasicData {
 }
 
 impl Mode5TransponderBasicData {
+    #[must_use]
     pub fn new() -> Self {
         Mode5TransponderBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5TransponderBasicDataBuilder {
         Mode5TransponderBasicDataBuilder::new()
     }
@@ -1137,10 +1184,12 @@ pub struct Mode5TransponderSupplementalData {
 }
 
 impl Mode5TransponderSupplementalData {
+    #[must_use]
     pub fn new() -> Self {
         Mode5TransponderSupplementalData::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5TransponderSupplementalDataBuilder {
         Mode5TransponderSupplementalDataBuilder::new()
     }
@@ -1188,10 +1237,12 @@ pub struct Mode5TransponderStatus {
 }
 
 impl Mode5TransponderStatus {
+    #[must_use]
     pub fn new() -> Self {
         Mode5TransponderStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5TransponderStatusBuilder {
         Mode5TransponderStatusBuilder::new()
     }
@@ -1263,7 +1314,7 @@ impl From<&Mode5TransponderStatus> for u16 {
             | damage_status
             | malfunction_status;
 
-        ((byte_1 as u16) << 8) | (byte_2 as u16)
+        (u16::from(byte_1) << 8) | u16::from(byte_2)
     }
 }
 
@@ -1275,10 +1326,12 @@ pub struct ModeSAltitude {
 }
 
 impl ModeSAltitude {
+    #[must_use]
     pub fn new() -> Self {
         ModeSAltitude::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSAltitudeBuilder {
         ModeSAltitudeBuilder::new()
     }
@@ -1301,7 +1354,7 @@ impl From<u16> for ModeSAltitude {
 impl From<&ModeSAltitude> for u16 {
     fn from(value: &ModeSAltitude) -> Self {
         let resolution: u8 = value.resolution.into();
-        let resolution: u16 = resolution as u16;
+        let resolution: u16 = u16::from(resolution);
 
         (value.altitude << 5) | (resolution << 4)
     }
@@ -1315,10 +1368,12 @@ pub struct ModeSInterrogatorBasicData {
 }
 
 impl ModeSInterrogatorBasicData {
+    #[must_use]
     pub fn new() -> Self {
         ModeSInterrogatorBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSInterrogatorBasicDataBuilder {
         ModeSInterrogatorBasicDataBuilder::new()
     }
@@ -1334,10 +1389,12 @@ pub struct ModeSInterrogatorStatus {
 }
 
 impl ModeSInterrogatorStatus {
+    #[must_use]
     pub fn new() -> Self {
         ModeSInterrogatorStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSInterrogatorStatusBuilder {
         ModeSInterrogatorStatusBuilder::new()
     }
@@ -1382,10 +1439,12 @@ pub struct ModeSLevelsPresent {
 }
 
 impl ModeSLevelsPresent {
+    #[must_use]
     pub fn new() -> Self {
         ModeSLevelsPresent::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSLevelsPresentBuilder {
         ModeSLevelsPresentBuilder::new()
     }
@@ -1444,10 +1503,12 @@ pub struct ModeSTransponderBasicData {
 }
 
 impl ModeSTransponderBasicData {
+    #[must_use]
     pub fn new() -> Self {
         ModeSTransponderBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSTransponderBasicDataBuilder {
         ModeSTransponderBasicDataBuilder::new()
     }
@@ -1470,10 +1531,12 @@ pub struct ModeSTransponderStatus {
 }
 
 impl ModeSTransponderStatus {
+    #[must_use]
     pub fn new() -> Self {
         ModeSTransponderStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSTransponderStatusBuilder {
         ModeSTransponderStatusBuilder::new()
     }
@@ -1530,27 +1593,29 @@ impl From<&ModeSTransponderStatus> for u16 {
         let airborne_pos_ri: u8 = u8::from(&value.airborne_position_report_indicator) << 2;
         let airborne_vel_ri: u8 = u8::from(&value.airborne_velocity_report_indicator) << 1;
         let surface_pos_ri: u8 = u8::from(&value.surface_position_report_indicator);
-        let byte_1 = (squitter_status
-            | squitter_type
-            | squitter_record_source
-            | airborne_pos_ri
-            | airborne_vel_ri
-            | surface_pos_ri) as u16;
+        let byte_1 = u16::from(
+            squitter_status
+                | squitter_type
+                | squitter_record_source
+                | airborne_pos_ri
+                | airborne_vel_ri
+                | surface_pos_ri,
+        );
 
         let ident_ri: u8 = u8::from(&value.identification_report_indicator) << 7;
         let event_driven_ri: u8 = u8::from(&value.event_driven_report_indicator) << 6;
         let on_off_status: u8 = u8::from(&value.on_off_status) << 2;
         let damage_status: u8 = u8::from(&value.damage_status) << 1;
         let malfunction_status: u8 = u8::from(&value.malfunction_status);
-        let byte_2 =
-            (ident_ri | event_driven_ri | on_off_status | damage_status | malfunction_status)
-                as u16;
+        let byte_2 = u16::from(
+            ident_ri | event_driven_ri | on_off_status | damage_status | malfunction_status,
+        );
 
         (byte_1 << 8) | byte_2
     }
 }
 
-/// Custom defined enum to model the SquitterStatus
+/// Custom defined enum to model the `SquitterStatus`
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum SquitterStatus {
     #[default]
@@ -1572,10 +1637,12 @@ pub struct SystemStatus {
 }
 
 impl SystemStatus {
+    #[must_use]
     pub fn new() -> Self {
         SystemStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> SystemStatusBuilder {
         SystemStatusBuilder::new()
     }

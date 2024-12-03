@@ -17,7 +17,8 @@ impl EcefToGeoConstants {
 /// ECEF input parameters are in meters.
 /// Return value of consists of a tuple `(lat, lon, alt)`, where the ``lat`` and ``lon`` are in radians, ``altitude`` is in meters (MSL).
 ///
-/// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
+/// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
+#[must_use]
 pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64, f64) {
     // TODO handle special case for centre of earth, where lat/lon are ignored (CDIS 7.1 ad. c).
     let zp = ecef_z.abs();
@@ -69,7 +70,8 @@ pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64,
 /// Geodetic input parameters are in meters.
 /// Return value of consists of a tuple `(lat, lon, alt)`, where the ``lat`` and ``lon`` are in _radians_, ``altitude`` is in _meters_ (MSL).
 ///
-/// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
+/// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
+#[must_use]
 pub fn geodetic_lla_to_ecef(latitude: f64, longitude: f64, altitude_msl: f64) -> (f64, f64, f64) {
     let n = EcefToGeoConstants::WGS_84_SEMI_MAJOR_AXIS
         / (1.0 - EcefToGeoConstants::E2 * latitude.sin() * latitude.sin()).sqrt();

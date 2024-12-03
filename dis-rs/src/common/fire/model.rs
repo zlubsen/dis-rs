@@ -22,14 +22,17 @@ pub struct Fire {
 }
 
 impl Fire {
+    #[must_use]
     pub fn builder() -> FireBuilder {
         FireBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> FireBuilder {
         FireBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Fire(self)
     }

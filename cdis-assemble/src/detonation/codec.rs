@@ -62,6 +62,7 @@ impl Detonation {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_source_entity_id(self.source_entity_id.decode())
@@ -85,7 +86,7 @@ impl Detonation {
             .with_variable_parameters(
                 self.variable_parameters
                     .iter()
-                    .map(|vp| vp.decode())
+                    .map(crate::codec::Codec::decode)
                     .collect(),
             )
             .build()
@@ -114,12 +115,12 @@ fn encode_detonation_descriptor(
             let quantity = if munition.quantity.is_zero() {
                 None
             } else {
-                Some(munition.quantity.min(u8::MAX as u16) as u8)
+                Some(munition.quantity.min(u16::from(u8::MAX)) as u8)
             };
             let rate = if munition.rate.is_zero() {
                 None
             } else {
-                Some(munition.rate.min(u8::MAX as u16) as u8)
+                Some(munition.rate.min(u16::from(u8::MAX)) as u8)
             };
             (
                 EntityType::encode(entity_type),
@@ -174,8 +175,12 @@ fn decode_detonation_descriptor(
                 .with_fuse(MunitionDescriptorFuse::from(
                     detonation_body.descriptor_fuze.unwrap_or_default(),
                 ))
-                .with_quantity(detonation_body.descriptor_quantity.unwrap_or_default() as u16)
-                .with_rate(detonation_body.descriptor_rate.unwrap_or_default() as u16),
+                .with_quantity(u16::from(
+                    detonation_body.descriptor_quantity.unwrap_or_default(),
+                ))
+                .with_rate(u16::from(
+                    detonation_body.descriptor_rate.unwrap_or_default(),
+                )),
         ),
         EntityKind::Expendable => DescriptorRecord::new_expendable(entity_type),
         _ => {
@@ -378,7 +383,7 @@ mod tests {
                 assert_eq!(munition.quantity, 1);
                 assert_eq!(munition.rate, 0);
             } else {
-                assert!(false)
+                assert!(false);
             };
             assert_eq!(
                 detonation
@@ -399,7 +404,7 @@ mod tests {
                 0.10
             );
         } else {
-            assert!(false)
+            assert!(false);
         };
     }
 
@@ -487,7 +492,7 @@ mod tests {
                 10.0
             );
         } else {
-            assert!(false)
+            assert!(false);
         };
     }
 }

@@ -17,14 +17,17 @@ pub struct Collision {
 }
 
 impl Collision {
+    #[must_use]
     pub fn builder() -> CollisionBuilder {
         CollisionBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> CollisionBuilder {
         CollisionBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Collision(self)
     }

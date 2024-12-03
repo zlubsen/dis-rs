@@ -21,14 +21,17 @@ pub struct Attribute {
 }
 
 impl Attribute {
+    #[must_use]
     pub fn builder() -> AttributeBuilder {
         AttributeBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> AttributeBuilder {
         AttributeBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Attribute(self)
     }
@@ -83,6 +86,7 @@ impl Default for AttributeRecordSet {
 }
 
 impl AttributeRecordSet {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             entity_id: Default::default(),
@@ -90,16 +94,19 @@ impl AttributeRecordSet {
         }
     }
 
+    #[must_use]
     pub fn with_entity_id(mut self, entity_id: EntityId) -> Self {
         self.entity_id = entity_id;
         self
     }
 
+    #[must_use]
     pub fn with_attribute_records(mut self, attribute_records: Vec<AttributeRecord>) -> Self {
         self.attribute_records = attribute_records;
         self
     }
 
+    #[must_use]
     pub fn with_attribute_record(mut self, attribute_record: AttributeRecord) -> Self {
         self.attribute_records.push(attribute_record);
         self
@@ -120,6 +127,7 @@ impl Default for AttributeRecord {
 }
 
 impl AttributeRecord {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             record_type: Default::default(),
@@ -127,11 +135,13 @@ impl AttributeRecord {
         }
     }
 
+    #[must_use]
     pub fn with_record_type(mut self, record_type: VariableRecordType) -> Self {
         self.record_type = record_type;
         self
     }
 
+    #[must_use]
     pub fn with_specific_fields(mut self, specific_fields: Vec<u8>) -> Self {
         self.specific_fields = specific_fields;
         self

@@ -11,6 +11,7 @@ pub(crate) mod parser;
 
 /// Helper function to convert the V7 on-wire format bytes (as u32) to an `EntityCapabilities` struct
 /// based on the `EntityType` of the entity.
+#[must_use]
 pub fn entity_capabilities_from_bytes(
     capabilities: u32,
     entity_type: &EntityType,

@@ -545,7 +545,7 @@ pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingSche
     let encoding_scheme = match encoding_scheme_class {
         SignalEncodingClass::EncodedAudio => EncodingScheme::EncodedAudio {
             encoding_class: encoding_scheme_class,
-            encoding_type: SignalEncodingType::from(encoding_scheme_type.value as u16),
+            encoding_type: SignalEncodingType::from(u16::from(encoding_scheme_type.value)),
         },
         SignalEncodingClass::RawBinaryData => EncodingScheme::RawBinaryData {
             encoding_class: encoding_scheme_class,
@@ -596,33 +596,6 @@ pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAnt
     ))
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::records::model::CdisProtocolVersion;
-    use crate::records::parser::cdis_header;
-    use crate::types::model::UVINT8;
-    use dis_rs::enumerations::PduType;
-
-    #[test]
-    fn parse_cdis_header() {
-        let input = [
-            0b01001110, 0b00000010, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
-            0b00000000,
-        ];
-
-        let (_input, header) = cdis_header((&input, 0)).unwrap();
-
-        assert_eq!(header.protocol_version, CdisProtocolVersion::SISO_023_2023);
-        assert_eq!(header.exercise_id, UVINT8::from(7));
-        assert_eq!(header.pdu_type, PduType::EntityState);
-        assert_eq!(
-            header.timestamp,
-            dis_rs::model::TimeStamp { raw_timestamp: 0 }
-        );
-        assert_eq!(header.length, 0);
-    }
-}
-
 pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
     let (input, az_center) = svint13(input)?;
     let (input, az_sweep) = svint13(input)?;
@@ -655,4 +628,31 @@ pub fn layer_header(input: BitInput) -> IResult<BitInput, LayerHeader> {
             length,
         },
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::records::model::CdisProtocolVersion;
+    use crate::records::parser::cdis_header;
+    use crate::types::model::UVINT8;
+    use dis_rs::enumerations::PduType;
+
+    #[test]
+    fn parse_cdis_header() {
+        let input = [
+            0b01001110, 0b00000010, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
+            0b00000000,
+        ];
+
+        let (_input, header) = cdis_header((&input, 0)).unwrap();
+
+        assert_eq!(header.protocol_version, CdisProtocolVersion::SISO_023_2023);
+        assert_eq!(header.exercise_id, UVINT8::from(7));
+        assert_eq!(header.pdu_type, PduType::EntityState);
+        assert_eq!(
+            header.timestamp,
+            dis_rs::model::TimeStamp { raw_timestamp: 0 }
+        );
+        assert_eq!(header.length, 0);
+    }
 }

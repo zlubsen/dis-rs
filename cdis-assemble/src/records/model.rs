@@ -99,6 +99,7 @@ pub enum CdisTimeStamp {
 }
 
 impl CdisTimeStamp {
+    #[must_use]
     pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
         let nanoseconds_past_the_hour =
             CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
@@ -110,6 +111,7 @@ impl CdisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
         let nanoseconds_past_the_hour =
             CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
@@ -121,6 +123,7 @@ impl CdisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
         Self::Absolute {
             units_past_the_hour,
@@ -128,6 +131,7 @@ impl CdisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
         Self::Relative {
             units_past_the_hour,
@@ -246,10 +250,12 @@ impl From<CdisTimeStamp> for DisTimeStamp {
     }
 }
 
+#[must_use]
 pub fn dis_to_cdis_u32_timestamp(dis_u32: u32) -> u32 {
     TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(dis_u32))).raw_timestamp
 }
 
+#[must_use]
 pub fn cdis_to_dis_u32_timestamp(cdis_u32: u32) -> u32 {
     TimeStamp::from(DisTimeStamp::from(CdisTimeStamp::from(TimeStamp::from(
         cdis_u32,
@@ -267,6 +273,7 @@ pub struct AngularVelocity {
 }
 
 impl AngularVelocity {
+    #[must_use]
     pub fn new(x: SVINT12, y: SVINT12, z: SVINT12) -> Self {
         Self { x, y, z }
     }
@@ -330,12 +337,12 @@ impl CdisRecord for DatumSpecification {
             + self
                 .fixed_datum_records
                 .iter()
-                .map(|datum| datum.record_length())
+                .map(CdisRecord::record_length)
                 .sum::<usize>()
             + self
                 .variable_datum_records
                 .iter()
-                .map(|datum| datum.record_length())
+                .map(CdisRecord::record_length)
                 .sum::<usize>()
     }
 }
@@ -406,6 +413,7 @@ pub struct EntityCoordinateVector {
 }
 
 impl EntityCoordinateVector {
+    #[must_use]
     pub fn new(x: SVINT16, y: SVINT16, z: SVINT16) -> Self {
         Self { x, y, z }
     }
@@ -425,6 +433,7 @@ pub struct EntityId {
     pub entity: UVINT16,
 }
 impl EntityId {
+    #[must_use]
     pub fn new(site: UVINT16, application: UVINT16, entity: UVINT16) -> Self {
         Self {
             site,
@@ -443,8 +452,8 @@ impl From<&EntityId> for dis_rs::model::EntityId {
     }
 }
 
-/// Convert (and thus encode) a dis-rs EventId to cdis-assemble EntityId,
-/// because the cdis library does not model the EventId record explicitly.
+/// Convert (and thus encode) a dis-rs `EventId` to cdis-assemble `EntityId`,
+/// because the cdis library does not model the `EventId` record explicitly.
 impl From<&EventId> for EntityId {
     fn from(value: &EventId) -> Self {
         Self::new(
@@ -455,8 +464,8 @@ impl From<&EventId> for EntityId {
     }
 }
 
-/// Convert (and thus decode) a cdis-assemble EntityId to dis-rs EventId,
-/// because the cdis library does not model the EventId record explicitly.
+/// Convert (and thus decode) a cdis-assemble `EntityId` to dis-rs `EventId`,
+/// because the cdis library does not model the `EventId` record explicitly.
 impl From<&EntityId> for EventId {
     fn from(value: &EntityId) -> Self {
         Self::new(
@@ -485,6 +494,7 @@ pub struct EntityType {
 }
 
 impl EntityType {
+    #[must_use]
     pub fn new(
         kind: u8,
         domain: u8,
@@ -540,6 +550,7 @@ pub struct LinearAcceleration {
 }
 
 impl LinearAcceleration {
+    #[must_use]
     pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
         Self { x, y, z }
     }
@@ -560,6 +571,7 @@ pub struct LinearVelocity {
 }
 
 impl LinearVelocity {
+    #[must_use]
     pub fn new(x: SVINT16, y: SVINT16, z: SVINT16) -> Self {
         Self { x, y, z }
     }
@@ -580,6 +592,7 @@ pub struct Orientation {
 }
 
 impl Orientation {
+    #[must_use]
     pub fn new(psi: i16, theta: i16, phi: i16) -> Self {
         Self { psi, theta, phi }
     }
@@ -681,6 +694,7 @@ pub struct CdisEntityMarking {
 }
 
 impl CdisEntityMarking {
+    #[must_use]
     pub fn new(marking: String) -> Self {
         const MAX_MARKING_LENGTH: usize = 11;
         let marking = if marking.len() > MAX_MARKING_LENGTH {
@@ -707,7 +721,7 @@ impl CdisEntityMarking {
             .chars()
             .any(|char| LEAST_USED_CHARS_MORSE.contains(&char)); // and it should not contain the five least used characters
 
-        if has_only_ascii_alphanumeric & !contains_least_used_char_morse {
+        if has_only_ascii_alphanumeric && !contains_least_used_char_morse {
             CdisMarkingCharEncoding::FiveBit
         } else {
             CdisMarkingCharEncoding::SixBit
@@ -758,6 +772,7 @@ pub enum CdisMarkingCharEncoding {
 }
 
 impl CdisMarkingCharEncoding {
+    #[must_use]
     pub fn new(char_bit_size: u8) -> Self {
         if char_bit_size == 0 {
             Self::FiveBit
@@ -766,6 +781,7 @@ impl CdisMarkingCharEncoding {
         }
     }
 
+    #[must_use]
     pub fn bit_size(&self) -> usize {
         match self {
             CdisMarkingCharEncoding::FiveBit => 5,
@@ -773,6 +789,7 @@ impl CdisMarkingCharEncoding {
         }
     }
 
+    #[must_use]
     pub fn encoding(&self) -> u8 {
         match self {
             CdisMarkingCharEncoding::FiveBit => 0,
@@ -781,6 +798,7 @@ impl CdisMarkingCharEncoding {
     }
 
     #[allow(clippy::wildcard_in_or_patterns)]
+    #[must_use]
     pub fn char_from_code(&self, code: u8) -> char {
         match self {
             CdisMarkingCharEncoding::FiveBit => match code {
@@ -888,6 +906,7 @@ impl CdisMarkingCharEncoding {
     }
 
     #[allow(clippy::wildcard_in_or_patterns)]
+    #[must_use]
     pub fn u8_from_char(&self, c: char) -> u8 {
         match self {
             CdisMarkingCharEncoding::FiveBit => match c {
@@ -1004,6 +1023,7 @@ pub struct WorldCoordinates {
 }
 
 impl WorldCoordinates {
+    #[must_use]
     pub fn new(latitude: f32, longitude: f32, altitude_msl: SVINT24) -> Self {
         Self {
             latitude,
@@ -1023,15 +1043,15 @@ impl CdisRecord for WorldCoordinates {
 impl From<WorldCoordinates> for Location {
     /// Applies Geo to ECEF conversion
     ///
-    /// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
+    /// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
     fn from(value: WorldCoordinates) -> Self {
         // TODO account for the scaling of lat
         // TODO account for the scaling of lon
         // TODO use of the Units flag - correct calculation of Altitude MSL
         let (ecef_x, ecef_y, ecef_z) = dis_rs::utils::geodetic_lla_to_ecef(
-            value.latitude as f64,
-            value.longitude as f64,
-            value.altitude_msl.value as f64,
+            f64::from(value.latitude),
+            f64::from(value.longitude),
+            f64::from(value.altitude_msl.value),
         );
 
         Self {
@@ -1050,6 +1070,7 @@ pub struct ParameterValueFloat {
 }
 
 impl ParameterValueFloat {
+    #[must_use]
     pub fn new_uncompressed(float: f32) -> Self {
         Self {
             mantissa: 0,
@@ -1091,7 +1112,7 @@ impl CdisFloat for ParameterValueFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -1342,7 +1363,7 @@ impl CdisFloat for FrequencyFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {

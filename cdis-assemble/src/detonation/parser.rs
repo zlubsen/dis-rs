@@ -217,9 +217,9 @@ mod tests {
             assert_eq!(
                 detonation.detonation_results,
                 UVINT8::from(u8::from(DetonationResult::Detonation))
-            )
+            );
         } else {
-            assert!(false)
+            assert!(false);
         }
     }
 }

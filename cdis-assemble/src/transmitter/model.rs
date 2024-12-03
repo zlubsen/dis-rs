@@ -225,7 +225,7 @@ impl CdisFloat for TransmitterFrequencyFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f64 * 10f64.powf(self.exponent as f64)
+        f64::from(self.mantissa) * 10f64.powf(f64::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -277,7 +277,7 @@ impl CdisFloat for TransmitFrequencyBandwidthFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -324,12 +324,12 @@ impl From<&ModulationType> for dis_rs::transmitter::model::ModulationType {
         Self::default()
             .with_spread_spectrum(SpreadSpectrum::from(&value.spread_spectrum))
             .with_major_modulation(TransmitterMajorModulation::new_from_bytes_with_detail(
-                value.major_modulation as u16,
-                value.detail as u16,
+                u16::from(value.major_modulation),
+                u16::from(value.detail),
             ))
-            .with_radio_system(TransmitterModulationTypeSystem::from(
-                value.radio_system as u16,
-            ))
+            .with_radio_system(TransmitterModulationTypeSystem::from(u16::from(
+                value.radio_system,
+            )))
     }
 }
 

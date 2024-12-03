@@ -15,14 +15,17 @@ pub struct ResupplyCancel {
 }
 
 impl ResupplyCancel {
+    #[must_use]
     pub fn builder() -> ResupplyCancelBuilder {
         ResupplyCancelBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ResupplyCancelBuilder {
         ResupplyCancelBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ResupplyCancel(self)
     }

@@ -794,7 +794,7 @@ pub(crate) fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
     ))
 }
 
-/// Parses the RecordSpecification record (6.2.73)
+/// Parses the `RecordSpecification` record (6.2.73)
 pub(crate) fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecification> {
     let (input, number_of_records) = be_u32(input)?;
     let (input, record_sets) = count(record_set, number_of_records as usize)(input)?;
@@ -805,7 +805,7 @@ pub(crate) fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecifi
     ))
 }
 
-/// Parses a Record Set as part of a RecordSpecification record (6.2.73).
+/// Parses a Record Set as part of a `RecordSpecification` record (6.2.73).
 ///
 /// Parsing will always consider record values to be byte-aligned.
 /// Record length is defined in bits, but this function always rounds up to the next full byte.
@@ -880,7 +880,7 @@ mod tests {
             ProtocolFamily::EntityInformationInteraction
         );
         assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
+        assert_eq!(header.pdu_length, { PDU_HEADER_LEN_BYTES }); // only the header, 0-bytes pdu body
     }
 
     #[test]
@@ -910,7 +910,7 @@ mod tests {
             ProtocolFamily::EntityInformationInteraction
         );
         assert_eq!(header.time_stamp, 1323973472);
-        assert_eq!(header.pdu_length, PDU_HEADER_LEN_BYTES as u16); // only the header, 0-bytes pdu body
+        assert_eq!(header.pdu_length, { PDU_HEADER_LEN_BYTES }); // only the header, 0-bytes pdu body
     }
 
     #[test]
@@ -954,7 +954,7 @@ mod tests {
         assert!(headers.is_ok());
         let headers = headers.unwrap();
         assert_eq!(headers.len(), 1);
-        let header = headers.get(0).unwrap();
+        let header = headers.first().unwrap();
         assert_ne!(header.padding, 0); // padding is not zero, because first byte of the next headers is there
     }
 

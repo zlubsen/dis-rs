@@ -40,14 +40,17 @@ pub struct Transmitter {
 }
 
 impl Transmitter {
+    #[must_use]
     pub fn builder() -> TransmitterBuilder {
         TransmitterBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> TransmitterBuilder {
         TransmitterBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Transmitter(self)
     }
@@ -106,6 +109,7 @@ impl Default for ModulationType {
 }
 
 impl ModulationType {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             spread_spectrum: Default::default(),
@@ -114,16 +118,19 @@ impl ModulationType {
         }
     }
 
+    #[must_use]
     pub fn with_spread_spectrum(mut self, spread_spectrum: SpreadSpectrum) -> Self {
         self.spread_spectrum = spread_spectrum;
         self
     }
 
+    #[must_use]
     pub fn with_major_modulation(mut self, major_modulation: TransmitterMajorModulation) -> Self {
         self.major_modulation = major_modulation;
         self
     }
 
+    #[must_use]
     pub fn with_radio_system(mut self, radio_system: TransmitterModulationTypeSystem) -> Self {
         self.radio_system = radio_system;
         self
@@ -144,6 +151,7 @@ impl Default for SpreadSpectrum {
 }
 
 impl SpreadSpectrum {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             frequency_hopping: Default::default(),
@@ -152,6 +160,7 @@ impl SpreadSpectrum {
         }
     }
 
+    #[must_use]
     pub fn new_with_values(
         frequency_hopping: bool,
         pseudo_noise: bool,
@@ -164,16 +173,19 @@ impl SpreadSpectrum {
         }
     }
 
+    #[must_use]
     pub fn with_frequency_hopping(mut self) -> Self {
         self.frequency_hopping = true;
         self
     }
 
+    #[must_use]
     pub fn with_pseudo_noise(mut self) -> Self {
         self.pseudo_noise = true;
         self
     }
 
+    #[must_use]
     pub fn with_time_hopping(mut self) -> Self {
         self.time_hopping = true;
         self
@@ -294,6 +306,7 @@ impl Default for BeamAntennaPattern {
 }
 
 impl BeamAntennaPattern {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             beam_direction: Default::default(),
@@ -306,21 +319,25 @@ impl BeamAntennaPattern {
         }
     }
 
+    #[must_use]
     pub fn with_beam_direction(mut self, beam_direction: Orientation) -> Self {
         self.beam_direction = beam_direction;
         self
     }
 
+    #[must_use]
     pub fn with_azimuth_beamwidth(mut self, azimuth_beamwidth: f32) -> Self {
         self.azimuth_beamwidth = azimuth_beamwidth;
         self
     }
 
+    #[must_use]
     pub fn with_elevation_beamwidth(mut self, elevation_beamwidth: f32) -> Self {
         self.elevation_beamwidth = elevation_beamwidth;
         self
     }
 
+    #[must_use]
     pub fn with_reference_system(
         mut self,
         reference_system: TransmitterAntennaPatternReferenceSystem,
@@ -329,16 +346,19 @@ impl BeamAntennaPattern {
         self
     }
 
+    #[must_use]
     pub fn with_e_z(mut self, e_z: f32) -> Self {
         self.e_z = e_z;
         self
     }
 
+    #[must_use]
     pub fn with_e_x(mut self, e_x: f32) -> Self {
         self.e_x = e_x;
         self
     }
 
+    #[must_use]
     pub fn with_phase(mut self, phase: f32) -> Self {
         self.phase = phase;
         self
@@ -358,6 +378,7 @@ impl Default for VariableTransmitterParameter {
 }
 
 impl VariableTransmitterParameter {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             record_type: Default::default(),
@@ -365,11 +386,13 @@ impl VariableTransmitterParameter {
         }
     }
 
+    #[must_use]
     pub fn with_record_type(mut self, record_type: VariableRecordType) -> Self {
         self.record_type = record_type;
         self
     }
 
+    #[must_use]
     pub fn with_fields(mut self, fields: Vec<u8>) -> Self {
         self.fields = fields;
         self
@@ -377,6 +400,7 @@ impl VariableTransmitterParameter {
 }
 
 impl TransmitterMajorModulation {
+    #[must_use]
     pub fn new_from_bytes_with_detail(major_modulation: u16, detail: u16) -> Self {
         let major_modulation = TransmitterMajorModulation::from(major_modulation);
         match major_modulation {
@@ -415,6 +439,7 @@ impl TransmitterMajorModulation {
         }
     }
 
+    #[must_use]
     pub fn to_bytes_with_detail(&self) -> (u16, u16) {
         match self {
             TransmitterMajorModulation::NoStatement => (0, 0),

@@ -17,14 +17,17 @@ pub struct ResupplyOffer {
 }
 
 impl ResupplyOffer {
+    #[must_use]
     pub fn builder() -> ResupplyOfferBuilder {
         ResupplyOfferBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ResupplyOfferBuilder {
         ResupplyOfferBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ResupplyOffer(self)
     }

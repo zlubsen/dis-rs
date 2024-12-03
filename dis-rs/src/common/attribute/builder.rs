@@ -5,18 +5,22 @@ use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, Variabl
 pub struct AttributeBuilder(Attribute);
 
 impl AttributeBuilder {
+    #[must_use]
     pub fn new() -> Self {
         AttributeBuilder(Attribute::default())
     }
 
+    #[must_use]
     pub fn new_from_body(body: Attribute) -> Self {
         AttributeBuilder(body)
     }
 
+    #[must_use]
     pub fn build(self) -> Attribute {
         self.0
     }
 
+    #[must_use]
     pub fn with_originating_simulation_address(
         mut self,
         originating_simulation_address: SimulationAddress,
@@ -25,11 +29,13 @@ impl AttributeBuilder {
         self
     }
 
+    #[must_use]
     pub fn with_record_pdu_type(mut self, record_pdu_type: PduType) -> Self {
         self.0.record_pdu_type = record_pdu_type;
         self
     }
 
+    #[must_use]
     pub fn with_record_protocol_version(
         mut self,
         record_protocol_version: ProtocolVersion,
@@ -38,6 +44,7 @@ impl AttributeBuilder {
         self
     }
 
+    #[must_use]
     pub fn with_master_attribute_record_type(
         mut self,
         master_attribute_record_type: VariableRecordType,
@@ -46,16 +53,19 @@ impl AttributeBuilder {
         self
     }
 
+    #[must_use]
     pub fn with_action_code(mut self, action_code: AttributeActionCode) -> Self {
         self.0.action_code = action_code;
         self
     }
 
+    #[must_use]
     pub fn with_attribute_record_set(mut self, attribute_record_set: AttributeRecordSet) -> Self {
         self.0.attribute_record_sets.push(attribute_record_set);
         self
     }
 
+    #[must_use]
     pub fn with_attribute_record_sets(
         mut self,
         attribute_record_sets: Vec<AttributeRecordSet>,

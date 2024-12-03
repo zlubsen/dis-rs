@@ -62,7 +62,7 @@ impl Serialize for APA {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let parameter: u16 = self.parameter.into();
         let parameter_status: u8 = self.status.into();
-        let parameter_index = (parameter << 2) & (parameter_status as u16);
+        let parameter_index = (parameter << 2) & u16::from(parameter_status);
         buf.put_u16(parameter_index);
         buf.put_i16(self.value);
 

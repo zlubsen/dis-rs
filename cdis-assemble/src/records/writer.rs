@@ -347,6 +347,40 @@ impl SerializeCdis for EncodingScheme {
     }
 }
 
+impl SerializeCdis for BeamData {
+    #[allow(clippy::let_and_return)]
+    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = self.az_center.serialize(buf, cursor);
+        let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.sweep_sync);
+
+        cursor
+    }
+}
+
+impl LayerHeader {
+    #[allow(clippy::let_and_return)]
+    pub fn serialize_with_length(
+        &self,
+        body_length: usize,
+        buf: &mut BitBuffer,
+        cursor: usize,
+    ) -> usize {
+        let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.layer_number);
+        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.layer_specific_information);
+        let cursor = write_value_unsigned(
+            buf,
+            cursor,
+            FOURTEEN_BITS,
+            self.record_length() + body_length,
+        );
+
+        cursor
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisRecord};
@@ -401,39 +435,5 @@ mod tests {
 
         assert_eq!(next_cursor, header.record_length());
         assert_eq!(buf.data[..64][..8], expected);
-    }
-}
-
-impl SerializeCdis for BeamData {
-    #[allow(clippy::let_and_return)]
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = self.az_center.serialize(buf, cursor);
-        let cursor = write_value_unsigned(buf, cursor, TEN_BITS, self.sweep_sync);
-
-        cursor
-    }
-}
-
-impl LayerHeader {
-    #[allow(clippy::let_and_return)]
-    pub fn serialize_with_length(
-        &self,
-        body_length: usize,
-        buf: &mut BitBuffer,
-        cursor: usize,
-    ) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.layer_number);
-        let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.layer_specific_information);
-        let cursor = write_value_unsigned(
-            buf,
-            cursor,
-            FOURTEEN_BITS,
-            self.record_length() + body_length,
-        );
-
-        cursor
     }
 }

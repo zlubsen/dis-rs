@@ -139,7 +139,7 @@ mod tests {
             assert!(designator.dr_algorithm.is_none());
             assert!(designator.dr_entity_linear_acceleration.is_none());
         } else {
-            assert!(false)
+            assert!(false);
         }
     }
 }

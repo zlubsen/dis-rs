@@ -166,7 +166,7 @@ impl BodyProperties for EntityState {
             + self
                 .variable_parameters
                 .iter()
-                .map(|vp| vp.record_length())
+                .map(crate::records::model::CdisRecord::record_length)
                 .sum::<usize>()
     }
 
@@ -186,7 +186,7 @@ impl CdisInteraction for EntityState {
 }
 
 /// The Entity Appearance field is not explicitly modeled because the interpretation of the on-wire value
-/// depends on the EntityType, which is not yet known when that field is not
+/// depends on the `EntityType`, which is not yet known when that field is not
 /// present in the received C-DIS PDU.
 /// This struct wraps the type in the wire format.
 #[derive(Clone, Debug, PartialEq)]
@@ -199,7 +199,7 @@ impl From<&EntityAppearance> for CdisEntityAppearance {
 }
 
 /// The Capabilities field is not explicitly modeled because the interpretation of the on-wire value
-/// depends on the EntityType, which is not yet known when that field is not
+/// depends on the `EntityType`, which is not yet known when that field is not
 /// present in the received C-DIS PDU.
 /// This struct wraps the type in the wire format.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -212,6 +212,7 @@ pub struct CdisEntityCapabilities(pub UVINT32);
 pub struct CdisDRParametersOther(pub u128);
 
 impl CdisDRParametersOther {
+    #[must_use]
     pub fn decode(&self, algorithm: DeadReckoningAlgorithm) -> DrOtherParameters {
         let other: [u8; 15] = self.0.to_be_bytes()[1..16]
             .as_ref()

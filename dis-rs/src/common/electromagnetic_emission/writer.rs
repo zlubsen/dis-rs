@@ -281,6 +281,6 @@ mod tests {
             0x00, 0x47, 0x00, 0x00,
         ];
 
-        assert_eq!(buf.as_ref(), expected.as_ref())
+        assert_eq!(buf.as_ref(), expected.as_ref());
     }
 }

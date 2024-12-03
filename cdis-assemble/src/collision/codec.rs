@@ -10,6 +10,7 @@ use num_traits::FromPrimitive;
 type Counterpart = dis_rs::collision::model::Collision;
 
 impl Collision {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let (location, units_location) = encode_entity_coordinate_vector(&item.location);
         let (mass, units_mass) = encode_collision_mass(item.mass);
@@ -30,6 +31,7 @@ impl Collision {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_issuing_entity_id(self.issuing_entity_id.decode())
@@ -48,7 +50,7 @@ impl Collision {
 
 /// Encode DIS mass field to C-DIS mass type and units.
 ///
-/// DIS has a f32 value in Kilograms. C-DIS has a UVINT32 in either Grams or Kilograms as indicated by the UnitsMeters enum.
+/// DIS has a f32 value in Kilograms. C-DIS has a UVINT32 in either Grams or Kilograms as indicated by the `UnitsMeters` enum.
 fn encode_collision_mass(mass: f32) -> (UVINT32, UnitsMass) {
     const MAX_NUMBER_AS_GRAMS_IN_KG: f32 = 65.535;
     if mass <= MAX_NUMBER_AS_GRAMS_IN_KG {
@@ -101,7 +103,7 @@ mod tests {
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         if let CdisBody::Collision(collision) = cdis_body {
-            assert_eq!(collision.mass, UVINT32::from(60001))
+            assert_eq!(collision.mass, UVINT32::from(60001));
         }
     }
 

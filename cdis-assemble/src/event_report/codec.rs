@@ -8,6 +8,7 @@ use dis_rs::model::DatumSpecification;
 type Counterpart = dis_rs::event_report::model::EventReport;
 
 impl EventReport {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let event_type: u32 = item.event_type.into();
         Self {
@@ -21,6 +22,7 @@ impl EventReport {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())

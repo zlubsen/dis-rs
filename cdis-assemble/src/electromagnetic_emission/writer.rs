@@ -76,13 +76,13 @@ impl SerializeCdis for EmitterSystem {
             buf,
             cursor,
             ONE_BIT,
-            (self.name.is_some() && self.function.is_some()) as u8,
+            u8::from(self.name.is_some() && self.function.is_some()),
         );
         let cursor = write_value_unsigned(
             buf,
             cursor,
             ONE_BIT,
-            self.location_with_respect_to_entity.is_some() as u8,
+            u8::from(self.location_with_respect_to_entity.is_some()),
         );
 
         let cursor = write_value_unsigned(buf, cursor, FIVE_BITS, self.emitter_beams.len() as u8);
@@ -124,22 +124,26 @@ impl SerializeCdis for EmitterBeam {
             buf,
             cursor,
             ONE_BIT,
-            self.fundamental_params_index.is_some() as u8,
+            u8::from(self.fundamental_params_index.is_some()),
         );
-        let cursor =
-            write_value_unsigned(buf, cursor, ONE_BIT, self.beam_data_index.is_some() as u8);
         let cursor = write_value_unsigned(
             buf,
             cursor,
             ONE_BIT,
-            self.jamming_technique_kind.is_some() as u8,
+            u8::from(self.beam_data_index.is_some()),
+        );
+        let cursor = write_value_unsigned(
+            buf,
+            cursor,
+            ONE_BIT,
+            u8::from(self.jamming_technique_kind.is_some()),
         );
         let track_jam_flag = if let Some(track_jam) = self.track_jam.first() {
             track_jam.beam_number.is_some() & track_jam.emitter_number.is_some()
         } else {
             false
         };
-        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, track_jam_flag as u8);
+        let cursor = write_value_unsigned(buf, cursor, ONE_BIT, u8::from(track_jam_flag));
 
         let cursor = self.beam_id.serialize(buf, cursor);
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, self.beam_parameter_index);
@@ -159,7 +163,7 @@ impl SerializeCdis for EmitterBeam {
         let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, self.track_jam.len());
         let cursor =
             write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.high_density_track_jam.into());
-        let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.beam_status as u8);
+        let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, u8::from(self.beam_status));
 
         let cursor = if let Some(kind) = self.jamming_technique_kind {
             kind.serialize(buf, cursor)

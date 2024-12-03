@@ -8,6 +8,7 @@ use std::any::type_name;
 
 pub type BitBuffer = BitArray<[u8; MTU_BITS], Msb0>;
 
+#[must_use]
 pub fn create_bit_buffer() -> BitBuffer {
     let buf: BitBuffer = BitArray::ZERO;
     buf
@@ -64,7 +65,7 @@ impl SerializeCdisPdu for CdisBody {
     }
 }
 
-/// Write `value` to the BitBuffer `buf`, at the position of `cursor` with length `bit_size`.
+/// Write `value` to the `BitBuffer` `buf`, at the position of `cursor` with length `bit_size`.
 /// This is an internal function, to write 'whole sequences of bits' of positive values.
 /// Use ``write_value_unsigned`` and ``write_value_signed``.
 /// C-DIS negative values in 2's complement have to be written manually, consisting of a sign bit and the value bits.
@@ -81,7 +82,7 @@ fn write_value_with_length<T: Integral>(
     next_cursor
 }
 
-/// Write an unsigned value to the BitBuffer `buf`, at the position of the `cursor`, with `bit_size` bits in length.
+/// Write an unsigned value to the `BitBuffer` `buf`, at the position of the `cursor`, with `bit_size` bits in length.
 pub(crate) fn write_value_unsigned<T: num::Unsigned + Integral>(
     buf: &mut BitBuffer,
     cursor: usize,

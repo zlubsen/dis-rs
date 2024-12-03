@@ -24,14 +24,17 @@ pub struct RecordQueryR {
 }
 
 impl RecordQueryR {
+    #[must_use]
     pub fn builder() -> RecordQueryRBuilder {
         RecordQueryRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RecordQueryRBuilder {
         RecordQueryRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RecordQueryR(self)
     }
@@ -65,11 +68,13 @@ pub struct RecordQuerySpecification {
 }
 
 impl RecordQuerySpecification {
+    #[must_use]
     pub fn with_record_id(mut self, record_id: VariableRecordType) -> Self {
         self.record_ids.push(record_id);
         self
     }
 
+    #[must_use]
     pub fn with_record_ids(mut self, record_ids: Vec<VariableRecordType>) -> Self {
         self.record_ids = record_ids;
         self

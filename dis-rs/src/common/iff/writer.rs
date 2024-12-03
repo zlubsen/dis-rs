@@ -483,13 +483,13 @@ impl Serialize for ModeSTransponderBasicData {
         let _status_bytes = self.status.serialize(buf);
         let _levels_present_bytes = self.levels_present.serialize(buf);
         buf.put_u8(self.aircraft_present_domain.into());
-        let _aircraft_id = match put_ascii_string_with_length(buf, &self.aircraft_identification, 8)
+        let _aircraft_id = if let Ok(bytes) =
+            put_ascii_string_with_length(buf, &self.aircraft_identification, 8)
         {
-            Ok(bytes) => bytes,
-            Err(_) => {
-                buf.put_bytes(0u8, EIGHT_OCTETS);
-                EIGHT_OCTETS as u16
-            }
+            bytes
+        } else {
+            buf.put_bytes(0u8, EIGHT_OCTETS);
+            EIGHT_OCTETS as u16
         };
         buf.put_u32(self.aircraft_address);
         buf.put_u8(self.aircraft_identification_type.into());

@@ -42,14 +42,17 @@ pub struct EntityState {
 }
 
 impl EntityState {
+    #[must_use]
     pub fn builder() -> EntityStateBuilder {
         EntityStateBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> EntityStateBuilder {
         EntityStateBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::EntityState(self)
     }
@@ -102,6 +105,7 @@ impl Default for EntityAppearance {
 }
 
 impl EntityAppearance {
+    #[must_use]
     pub fn from_bytes(appearance: u32, entity_type: &EntityType) -> Self {
         match (entity_type.kind, entity_type.domain) {
             (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
@@ -143,6 +147,7 @@ impl EntityAppearance {
             (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
         }
     }
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
     }
@@ -193,6 +198,7 @@ impl EntityMarking {
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         TWELVE_OCTETS as u16
     }
@@ -235,21 +241,25 @@ pub struct DrParameters {
 }
 
 impl DrParameters {
+    #[must_use]
     pub fn with_algorithm(mut self, algorithm: DeadReckoningAlgorithm) -> Self {
         self.algorithm = algorithm;
         self
     }
 
+    #[must_use]
     pub fn with_parameters(mut self, parameters: DrOtherParameters) -> Self {
         self.other_parameters = parameters;
         self
     }
 
+    #[must_use]
     pub fn with_linear_acceleration(mut self, linear_acceleration: VectorF32) -> Self {
         self.linear_acceleration = linear_acceleration;
         self
     }
 
+    #[must_use]
     pub fn with_angular_velocity(mut self, angular_velocity: VectorF32) -> Self {
         self.angular_velocity = angular_velocity;
         self
@@ -279,16 +289,19 @@ pub struct DrEulerAngles {
 }
 
 impl DrEulerAngles {
+    #[must_use]
     pub fn with_local_yaw(mut self, local_yaw: f32) -> Self {
         self.local_yaw = local_yaw;
         self
     }
 
+    #[must_use]
     pub fn with_local_pitch(mut self, local_pitch: f32) -> Self {
         self.local_pitch = local_pitch;
         self
     }
 
+    #[must_use]
     pub fn with_local_roll(mut self, local_roll: f32) -> Self {
         self.local_roll = local_roll;
         self
@@ -305,21 +318,25 @@ pub struct DrWorldOrientationQuaternion {
 }
 
 impl DrWorldOrientationQuaternion {
+    #[must_use]
     pub fn with_nil(mut self, nil: u16) -> Self {
         self.nil = nil;
         self
     }
 
+    #[must_use]
     pub fn with_x(mut self, x: f32) -> Self {
         self.x = x;
         self
     }
 
+    #[must_use]
     pub fn with_y(mut self, y: f32) -> Self {
         self.y = y;
         self
     }
 
+    #[must_use]
     pub fn with_z(mut self, z: f32) -> Self {
         self.z = z;
         self

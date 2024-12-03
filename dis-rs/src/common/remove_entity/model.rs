@@ -16,14 +16,17 @@ pub struct RemoveEntity {
 }
 
 impl RemoveEntity {
+    #[must_use]
     pub fn builder() -> RemoveEntityBuilder {
         RemoveEntityBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RemoveEntityBuilder {
         RemoveEntityBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RemoveEntity(self)
     }

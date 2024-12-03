@@ -17,14 +17,17 @@ pub struct CreateEntityR {
 }
 
 impl CreateEntityR {
+    #[must_use]
     pub fn builder() -> CreateEntityRBuilder {
         CreateEntityRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> CreateEntityRBuilder {
         CreateEntityRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::CreateEntityR(self)
     }

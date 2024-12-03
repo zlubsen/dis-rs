@@ -7,6 +7,7 @@ use dis_rs::model::{DisTimeStamp, TimeStamp};
 type Counterpart = dis_rs::data_query::model::DataQuery;
 
 impl DataQuery {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let time_interval = CdisTimeStamp::from(DisTimeStamp::from(item.time_interval));
         Self {
@@ -19,6 +20,7 @@ impl DataQuery {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         let time_interval =
             cdis_to_dis_u32_timestamp(TimeStamp::from(self.time_interval).raw_timestamp);

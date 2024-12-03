@@ -5,73 +5,88 @@ use crate::model::{EntityId, EntityType, Location, Orientation, VariableParamete
 pub struct EntityStateBuilder(EntityState);
 
 impl EntityStateBuilder {
+    #[must_use]
     pub fn new() -> Self {
         EntityStateBuilder(EntityState::default())
     }
 
+    #[must_use]
     pub fn new_from_body(body: EntityState) -> Self {
         EntityStateBuilder(body)
     }
 
+    #[must_use]
     pub fn build(self) -> EntityState {
         self.0
     }
 
+    #[must_use]
     pub fn with_entity_id(mut self, entity_id: EntityId) -> Self {
         self.0.entity_id = entity_id;
         self
     }
 
+    #[must_use]
     pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
         self.0.entity_type = entity_type;
         self
     }
 
+    #[must_use]
     pub fn with_force_id(mut self, force_id: ForceId) -> Self {
         self.0.force_id = force_id;
         self
     }
 
+    #[must_use]
     pub fn with_alternative_entity_type(mut self, entity_type: EntityType) -> Self {
         self.0.alternative_entity_type = entity_type;
         self
     }
 
+    #[must_use]
     pub fn with_velocity(mut self, velocity: VectorF32) -> Self {
         self.0.entity_linear_velocity = velocity;
         self
     }
 
+    #[must_use]
     pub fn with_location(mut self, location: Location) -> Self {
         self.0.entity_location = location;
         self
     }
 
+    #[must_use]
     pub fn with_orientation(mut self, orientation: Orientation) -> Self {
         self.0.entity_orientation = orientation;
         self
     }
 
+    #[must_use]
     pub fn with_appearance(mut self, appearance: EntityAppearance) -> Self {
         self.0.entity_appearance = appearance;
         self
     }
 
+    #[must_use]
     pub fn with_dead_reckoning_parameters(mut self, parameters: DrParameters) -> Self {
         self.0.dead_reckoning_parameters = parameters;
         self
     }
 
+    #[must_use]
     pub fn with_marking(mut self, marking: EntityMarking) -> Self {
         self.0.entity_marking = marking;
         self
     }
 
+    #[must_use]
     pub fn with_capabilities(mut self, capabilities: EntityCapabilities) -> Self {
         self.0.entity_capabilities = capabilities;
         self
     }
 
+    #[must_use]
     pub fn with_capabilities_flags(
         mut self,
         ammunition_supply: bool,
@@ -90,11 +105,13 @@ impl EntityStateBuilder {
         self
     }
 
+    #[must_use]
     pub fn with_variable_parameter(mut self, parameter: VariableParameter) -> Self {
         self.0.variable_parameters.push(parameter);
         self
     }
 
+    #[must_use]
     pub fn with_variable_parameters(mut self, parameters: Vec<VariableParameter>) -> Self {
         self.0.variable_parameters = parameters;
         self

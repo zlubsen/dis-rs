@@ -29,7 +29,7 @@ impl Serialize for PduHeader {
                     ));
                     buf.put_u8(0u8);
                 } else {
-                    buf.put_u16(0u16)
+                    buf.put_u16(0u16);
                 }
             }
             _ => buf.put_u16(0u16),

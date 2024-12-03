@@ -7,6 +7,7 @@ use dis_rs::model::DatumSpecification;
 type Counterpart = dis_rs::data::model::Data;
 
 impl Data {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         Self {
             originating_id: EntityId::encode(&item.originating_id),
@@ -19,6 +20,7 @@ impl Data {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())
