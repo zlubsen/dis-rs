@@ -1,0 +1,100 @@
+name: check
+
+on:
+    push:
+        branches:
+            - development
+            - master
+        tags:
+            - v*
+    pull_request:
+        branches:
+            - development
+            - master
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+env:
+    RUSTFLAGS: "-Dwarnings"
+
+jobs:
+    semver:
+        name: Semantic Versioning
+        if: startsWith(github.ref_name, 'v')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Git tag is Semantic Versioning
+              env:
+                  DIS_RS_REF_NAME: ${{ github.ref_name }}
+              run: |
+                  _tag="$DIS_RS_REF_NAME"
+                  if ! printf "%s\n" "$_tag" | grep -q -P '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$'; then
+                    printf '[ERROR]: Git tag (%s) wrong format\n' "$_tag"
+                    exit 1
+                  fi
+
+    check:
+        name: Build & Format & Lint & Test & Coverage
+        needs: semver
+        if: always() && (needs.semver.result == 'success' || needs.semver.result == 'skipped')
+        strategy:
+            fail-fast: true
+            matrix:
+                os:
+                    - macos-latest
+                    - ubuntu-latest
+                    - windows-latest
+                toolchain:
+                    - "1.74"
+                    - stable
+                profile:
+                    - dev
+                    - release
+        runs-on: ${{ matrix.os }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: ${{ matrix.toolchain }}
+                  components: clippy, rustfmt, tarpaulin
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+
+            - name: Install Bun dependencies
+              working-directory: ./cdis-gateway
+              run: bun install
+
+            - name: Build
+              run: cargo build --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
+
+            - name: Format
+              run: cargo fmt --verbose --check --all
+
+            - name: Lint
+              run: cargo clippy --profile ${{ matrix.profile }} --verbose --all-features --all-targets --all
+
+            - name: Test
+              run: cargo test --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
+
+            - name: Coverage
+              run: cargo tarpaulin --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace --out xml
+
+            - name: Upload coverage
+              uses: codecov/codecov-action@v4
+              with:
+                  fail_ci_if_error: true
