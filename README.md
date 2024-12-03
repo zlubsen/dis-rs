@@ -1,5 +1,7 @@
 # DIS for Rust
 
+[![release](https://github.com/zlubsen/dis-rs/actions/workflows/release.yml/badge.svg)](https://github.com/zlubsen/dis-rs/actions/workflows/release.yml)
+
 `dis-rs` is a suite of libraries and applications centered around the Distributed Interactive Simulation protocol (IEEE 1278.1), implemented in the Rust programming language and for use in Rust-based simulation applications.
 
 This repository hosts a number of sub-projects, each located in a specific directory:
