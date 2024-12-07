@@ -49,6 +49,7 @@ impl Fire {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         let entity_type = self.descriptor_entity_type.decode();
         let fire_mission_index = {
@@ -89,12 +90,12 @@ fn encode_fire_descriptor(
             let quantity = if munition.quantity.is_zero() {
                 None
             } else {
-                Some(munition.quantity.min(u8::MAX as u16) as u8)
+                Some(munition.quantity.min(u16::from(u8::MAX)) as u8)
             };
             let rate = if munition.rate.is_zero() {
                 None
             } else {
-                Some(munition.rate.min(u8::MAX as u16) as u8)
+                Some(munition.rate.min(u16::from(u8::MAX)) as u8)
             };
             (
                 EntityType::encode(entity_type),
@@ -132,8 +133,8 @@ fn decode_fire_descriptor(
                 .with_fuse(MunitionDescriptorFuse::from(
                     fire_body.descriptor_fuze.unwrap_or_default(),
                 ))
-                .with_quantity(fire_body.descriptor_quantity.unwrap_or_default() as u16)
-                .with_rate(fire_body.descriptor_rate.unwrap_or_default() as u16),
+                .with_quantity(u16::from(fire_body.descriptor_quantity.unwrap_or_default()))
+                .with_rate(u16::from(fire_body.descriptor_rate.unwrap_or_default())),
         ),
         EntityKind::Expendable => DescriptorRecord::new_expendable(entity_type),
         _ => {
@@ -421,10 +422,10 @@ mod tests {
                 assert_eq!(munition.quantity, 1);
                 assert_eq!(munition.rate, 0);
             } else {
-                assert!(false)
+                assert!(false);
             };
         } else {
-            assert!(false)
+            assert!(false);
         };
     }
 
@@ -492,7 +493,7 @@ mod tests {
                 assert_eq!(entity_type.domain, PlatformDomain::Air);
                 assert_eq!(entity_type.category, 0);
             } else {
-                assert!(false)
+                assert!(false);
             };
         }
     }

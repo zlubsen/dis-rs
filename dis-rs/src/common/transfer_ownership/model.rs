@@ -23,14 +23,17 @@ pub struct TransferOwnership {
 }
 
 impl TransferOwnership {
+    #[must_use]
     pub fn builder() -> TransferOwnershipBuilder {
         TransferOwnershipBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> TransferOwnershipBuilder {
         TransferOwnershipBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::TransferOwnership(self)
     }

@@ -32,7 +32,7 @@ impl SerializePdu for Transmitter {
         if let Some(modulation_parameters) = &self.modulation_parameters {
             buf.put_u8(modulation_parameters.len() as u8);
         } else {
-            buf.put_u8(ZERO_OCTETS as u8)
+            buf.put_u8(ZERO_OCTETS as u8);
         }
         buf.put_u8(0u8);
         buf.put_u16(0u16);

@@ -16,14 +16,17 @@ pub struct RepairResponse {
 }
 
 impl RepairResponse {
+    #[must_use]
     pub fn builder() -> RepairResponseBuilder {
         RepairResponseBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RepairResponseBuilder {
         RepairResponseBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RepairResponse(self)
     }

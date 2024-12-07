@@ -22,14 +22,15 @@ pub fn parse_pdu_status(pdu_type: PduType) -> impl Fn(&[u8]) -> IResult<&[u8], (
         let (input, padding) = be_u8(input)?;
         Ok((
             input,
-            (parse_pdu_status_fields(type_u8, status), padding as u16),
+            (parse_pdu_status_fields(type_u8, status), u16::from(padding)),
         ))
     }
 }
 
-/// Parses the pdu status sub-fields into a PduStatus struct, depending on the PduType
+/// Parses the pdu status sub-fields into a `PduStatus` struct, depending on the `PduType`
 ///
 /// Note: parser should not be fed input that is consumed, but a copy of the pdu status byte (as it is already parsed earlier)
+#[must_use]
 pub fn parse_pdu_status_fields(pdu_type: u8, input: u8) -> PduStatus {
     let tei = status_tei(input);
     let lvc = status_lvc(input);

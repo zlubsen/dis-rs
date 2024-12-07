@@ -23,14 +23,17 @@ pub struct EntityStateUpdate {
 }
 
 impl EntityStateUpdate {
+    #[must_use]
     pub fn builder() -> EntityStateUpdateBuilder {
         EntityStateUpdateBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> EntityStateUpdateBuilder {
         EntityStateUpdateBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::EntityStateUpdate(self)
     }

@@ -245,7 +245,7 @@ impl CdisRecord for IffLayer2 {
             + self
                 .iff_fundamental_parameters
                 .iter()
-                .map(|record| record.record_length())
+                .map(crate::records::model::CdisRecord::record_length)
                 .sum::<usize>()
     }
 }
@@ -291,7 +291,7 @@ impl CdisRecord for IffLayer3 {
             + self
                 .iff_data_records
                 .iter()
-                .map(|record| record.record_length())
+                .map(crate::records::model::CdisRecord::record_length)
                 .sum::<usize>()
     }
 }
@@ -321,7 +321,7 @@ impl CdisRecord for IffLayer4 {
             + self
                 .iff_data_records
                 .iter()
-                .map(|record| record.record_length())
+                .map(crate::records::model::CdisRecord::record_length)
                 .sum::<usize>()
     }
 }
@@ -345,7 +345,7 @@ impl CdisRecord for IffLayer5 {
             + self
                 .iff_data_records
                 .iter()
-                .map(|record| record.record_length())
+                .map(crate::records::model::CdisRecord::record_length)
                 .sum::<usize>()
     }
 }

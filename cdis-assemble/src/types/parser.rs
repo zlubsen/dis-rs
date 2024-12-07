@@ -235,7 +235,7 @@ mod tests {
         }
 
         fn to_float(&self) -> Self::InnerFloat {
-            self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+            self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
         }
 
         fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -277,6 +277,6 @@ mod tests {
         let cdis_float = TestFloat::from_float(float);
 
         assert_eq!(cdis_float.mantissa, 12345);
-        assert_eq!(cdis_float.exponent, 2)
+        assert_eq!(cdis_float.exponent, 2);
     }
 }

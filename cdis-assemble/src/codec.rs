@@ -71,6 +71,7 @@ pub struct EncoderState {
 }
 
 impl EncoderState {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             entity_state: Default::default(),
@@ -92,6 +93,7 @@ pub struct DecoderState {
 }
 
 impl DecoderState {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             entity_state: Default::default(),
@@ -126,6 +128,7 @@ pub struct CodecOptions {
 }
 
 impl CodecOptions {
+    #[must_use]
     pub fn new_full_update() -> Self {
         Self {
             update_mode: Default::default(),
@@ -135,6 +138,7 @@ impl CodecOptions {
         }
     }
 
+    #[must_use]
     pub fn new_partial_update() -> Self {
         Self {
             update_mode: CodecUpdateMode::PartialUpdate,
@@ -144,16 +148,19 @@ impl CodecOptions {
         }
     }
 
+    #[must_use]
     pub fn optimize_bandwidth(mut self) -> Self {
         self.optimize_mode = CodecOptimizeMode::Bandwidth;
         self
     }
 
+    #[must_use]
     pub fn optimize_completeness(mut self) -> Self {
         self.optimize_mode = CodecOptimizeMode::Completeness;
         self
     }
 
+    #[must_use]
     pub fn with_federation_parameters(mut self, parameters: VariableParameters) -> Self {
         self.federation_parameters = parameters;
         self
@@ -797,7 +804,7 @@ mod tests {
             assert!(air_caps.recovery);
             assert!(!air_caps.repair);
         } else {
-            assert!(false)
+            assert!(false);
         };
     }
 }

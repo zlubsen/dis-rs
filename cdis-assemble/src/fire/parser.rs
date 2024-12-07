@@ -174,7 +174,7 @@ mod tests {
             assert!(fire.descriptor_warhead.is_none());
             assert!(fire.range.is_none());
         } else {
-            assert!(false)
+            assert!(false);
         }
     }
 }

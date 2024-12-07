@@ -43,22 +43,22 @@ impl BodyProperties for ElectromagneticEmission {
             + self
                 .fundamental_params
                 .iter()
-                .map(|param| param.record_length())
+                .map(FundamentalParameter::record_length)
                 .sum::<usize>()
             + self
                 .beam_data
                 .iter()
-                .map(|beam| beam.record_length())
+                .map(crate::records::model::CdisRecord::record_length)
                 .sum::<usize>()
             + self
                 .site_app_pairs
                 .iter()
-                .map(|pair| pair.record_length())
+                .map(SiteAppPair::record_length)
                 .sum::<usize>()
             + self
                 .emitter_systems
                 .iter()
-                .map(|system| system.record_length())
+                .map(EmitterSystem::record_length)
                 .sum::<usize>()
     }
 
@@ -129,7 +129,7 @@ impl EmitterSystem {
             + self
                 .emitter_beams
                 .iter()
-                .map(|beam| beam.record_length())
+                .map(EmitterBeam::record_length)
                 .sum::<usize>()
     }
 }
@@ -178,7 +178,7 @@ impl EmitterBeam {
             + self
                 .track_jam
                 .iter()
-                .map(|record| record.record_length())
+                .map(TrackJam::record_length)
                 .sum::<usize>()
     }
 }
@@ -242,7 +242,7 @@ impl CdisFloat for PulseWidthFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        f32::from(self.mantissa) * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {

@@ -16,14 +16,17 @@ pub struct RepairComplete {
 }
 
 impl RepairComplete {
+    #[must_use]
     pub fn builder() -> RepairCompleteBuilder {
         RepairCompleteBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RepairCompleteBuilder {
         RepairCompleteBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RepairComplete(self)
     }

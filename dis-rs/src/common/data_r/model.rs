@@ -23,14 +23,17 @@ pub struct DataR {
 }
 
 impl DataR {
+    #[must_use]
     pub fn builder() -> DataRBuilder {
         DataRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> DataRBuilder {
         DataRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::DataR(self)
     }

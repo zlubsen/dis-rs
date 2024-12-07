@@ -108,6 +108,7 @@ pub struct VariableParameters {
 }
 
 impl VariableParameters {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }

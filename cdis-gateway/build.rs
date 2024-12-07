@@ -37,11 +37,13 @@ fn main() {
         .expect("failed to run bun");
 
     // std::fs::remove_file("build/index.css").unwrap_or_default();
-    copy_files("public");
+    copy_files("templates");
 }
 
 fn copy_files(dir: &str) {
-    for entry in std::fs::read_dir(dir).expect("failed to read dir `public`") {
+    for entry in std::fs::read_dir(dir)
+        .unwrap_or_else(|err| panic!("failed to read directory `{dir}`: {err}"))
+    {
         let entry = entry.expect("failed to read entry");
 
         if entry.file_type().unwrap().is_dir() {
@@ -49,7 +51,7 @@ fn copy_files(dir: &str) {
         } else {
             let path = entry.path();
             let filename = path.file_name().unwrap().to_str().unwrap();
-            let dest = format!("build/{}", filename);
+            let dest = format!("build/{filename}");
 
             std::fs::copy(path, dest).expect("failed to copy file");
         }

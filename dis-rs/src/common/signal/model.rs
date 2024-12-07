@@ -24,14 +24,17 @@ pub struct Signal {
 }
 
 impl Signal {
+    #[must_use]
     pub fn builder() -> SignalBuilder {
         SignalBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> SignalBuilder {
         SignalBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Signal(self)
     }

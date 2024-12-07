@@ -86,6 +86,7 @@ pub struct DecoderStateIff {
 }
 
 impl DecoderStateIff {
+    #[must_use]
     pub fn new(pdu: &Counterpart) -> Self {
         Self {
             heartbeat: Instant::now(),
@@ -208,6 +209,7 @@ fn decode_iff_fundamental_operational_data(
 }
 
 impl Iff {
+    #[must_use]
     pub fn encode(
         item: &Counterpart,
         state: Option<&EncoderStateIff>,
@@ -256,6 +258,7 @@ impl Iff {
         )
     }
 
+    #[must_use]
     pub fn decode(
         &self,
         state: Option<&DecoderStateIff>,
@@ -363,7 +366,7 @@ impl Codec for IffLayer2 {
             .with_iff_fundamental_parameters(
                 self.iff_fundamental_parameters
                     .iter()
-                    .map(|param| param.decode())
+                    .map(crate::codec::Codec::decode)
                     .collect(),
             )
             .build();

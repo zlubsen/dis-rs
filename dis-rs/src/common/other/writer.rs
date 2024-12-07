@@ -5,7 +5,7 @@ use bytes::{BufMut, BytesMut};
 impl SerializePdu for Other {
     /// Serializes the Other PDU into a buffer.
     /// Assumes there is enough free space in the buffer and relies on the buffer's
-    /// behaviour for what happens if this is not the case (probably panics - BytesMut does)
+    /// behaviour for what happens if this is not the case (probably panics - `BytesMut` does)
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         buf.put(self.body.as_slice());
         self.body.len() as u16

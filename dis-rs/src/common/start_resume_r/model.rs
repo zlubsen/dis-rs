@@ -19,14 +19,17 @@ pub struct StartResumeR {
 }
 
 impl StartResumeR {
+    #[must_use]
     pub fn builder() -> StartResumeRBuilder {
         StartResumeRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> StartResumeRBuilder {
         StartResumeRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::StartResumeR(self)
     }

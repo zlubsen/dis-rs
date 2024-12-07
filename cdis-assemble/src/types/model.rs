@@ -914,7 +914,7 @@ impl From<Svint24BitSize> for u8 {
 /// The actual value is available through the `to_float()` method.
 ///
 /// Because some use cases (such as Variable Parameter Articulated Part record) can be encoded either
-/// as a CdisFloat or a regular 32-bit float, this struct allows to hold both variants.
+/// as a `CdisFloat` or a regular 32-bit float, this struct allows to hold both variants.
 /// There are two different constructor methods for this purpose (`new()` and `from_f64` respectively).
 ///
 /// The intended way of using this trait is to implement it on a custom struct.

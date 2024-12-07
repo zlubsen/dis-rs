@@ -22,14 +22,17 @@ pub struct RecordR {
 }
 
 impl RecordR {
+    #[must_use]
     pub fn builder() -> RecordRBuilder {
         RecordRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RecordRBuilder {
         RecordRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RecordR(self)
     }

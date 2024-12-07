@@ -18,14 +18,17 @@ pub struct ActionResponse {
 }
 
 impl ActionResponse {
+    #[must_use]
     pub fn builder() -> ActionResponseBuilder {
         ActionResponseBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ActionResponseBuilder {
         ActionResponseBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ActionResponse(self)
     }

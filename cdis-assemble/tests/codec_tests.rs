@@ -83,7 +83,7 @@ fn encode_dis_to_cdis_entity_state_full_mode() {
             es.entity_type.unwrap().country,
             u16::from(Country::Netherlands_NLD_)
         );
-        assert_eq!(es.entity_marking.as_ref().unwrap().marking.as_str(), "TEST")
+        assert_eq!(es.entity_marking.as_ref().unwrap().marking.as_str(), "TEST");
     } else {
         assert!(false);
     }

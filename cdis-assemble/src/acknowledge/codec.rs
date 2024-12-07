@@ -6,6 +6,7 @@ use crate::types::model::UVINT32;
 type Counterpart = dis_rs::acknowledge::model::Acknowledge;
 
 impl Acknowledge {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         Self {
             originating_id: EntityId::encode(&item.originating_id),
@@ -16,6 +17,7 @@ impl Acknowledge {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())

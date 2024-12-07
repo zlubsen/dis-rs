@@ -25,14 +25,17 @@ pub struct EventReport {
 }
 
 impl EventReport {
+    #[must_use]
     pub fn builder() -> EventReportBuilder {
         EventReportBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> EventReportBuilder {
         EventReportBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::EventReport(self)
     }

@@ -5,7 +5,9 @@ use crate::common::entity_state::model::{
 use crate::common::model::{EntityType, PduBody, PduHeader};
 use crate::common::parser;
 use crate::common::parser::{entity_id, entity_type, sanitize_marking, vec3_f32};
-use crate::enumerations::*;
+use crate::enumerations::{
+    DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion,
+};
 use crate::v6::entity_state::parser::entity_capabilities;
 use nom::bytes::complete::take;
 use nom::multi::count;
@@ -28,18 +30,16 @@ pub(crate) fn entity_state_body(
         let (input, dead_reckoning_parameters) = dr_parameters(input)?;
         let (input, entity_marking) = entity_marking(input)?;
         #[allow(clippy::wildcard_in_or_patterns)]
-        let (input, entity_capabilities) = match header.protocol_version {
-            ProtocolVersion::IEEE1278_12012 => {
+        let (input, entity_capabilities) =
+            if header.protocol_version == ProtocolVersion::IEEE1278_12012 {
                 crate::v7::entity_state::parser::entity_capabilities(entity_type_val)(input)?
-            }
-            ProtocolVersion::IEEE1278_1A1998 | _ => {
+            } else {
                 let (input, entity_capabilities) = entity_capabilities(input)?;
                 (
                     input,
                     crate::enumerations::EntityCapabilities::from(entity_capabilities),
                 )
-            }
-        };
+            };
         let (input, variable_parameters) = if variable_parameters_no > 0 {
             count(parser::variable_parameter, variable_parameters_no as usize)(input)?
         } else {
@@ -83,14 +83,14 @@ pub(crate) fn entity_appearance(
     }
 }
 
-/// Parses the marking portion of an EntityState PDU into an EntityMarking struct.
+/// Parses the marking portion of an `EntityState` PDU into an `EntityMarking` struct.
 /// It will convert the parsed bytes (always 11 bytes are present in the PDU) to UTF-8, and
 /// strip trailing whitespace and any trailing non-alphanumeric characters. In case the marking is less
 /// than 11 characters, the trailing bytes are typically 0x00 in the PDU, which in UTF-8 is a control character.
 pub(crate) fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     let mut buf: [u8; 11] = [0; 11];
     let (input, marking_character_set) = be_u8(input)?;
-    let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
     let marking_string = sanitize_marking(&buf[..]);
@@ -272,38 +272,38 @@ mod tests {
 
             if let EntityAppearance::AirPlatform(appearance) = pdu.entity_appearance {
                 assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-                assert_eq!(appearance.propulsion_killed, false);
+                assert!(!appearance.propulsion_killed);
                 assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-                assert_eq!(appearance.is_smoke_emanating, false);
-                assert_eq!(appearance.is_engine_emitting_smoke, false);
+                assert!(!appearance.is_smoke_emanating);
+                assert!(!appearance.is_engine_emitting_smoke);
                 assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
                 assert_eq!(
                     appearance.canopy_troop_door,
                     AppearanceCanopy::SingleCanopySingleTroopDoorOpen
                 );
-                assert_eq!(appearance.landing_lights_on, false);
-                assert_eq!(appearance.navigation_lights_on, false);
-                assert_eq!(appearance.anticollision_lights_on, false);
-                assert_eq!(appearance.is_flaming, false);
-                assert_eq!(appearance.afterburner_on, false);
-                assert_eq!(appearance.is_frozen, false);
-                assert_eq!(appearance.power_plant_on, false);
+                assert!(!appearance.landing_lights_on);
+                assert!(!appearance.navigation_lights_on);
+                assert!(!appearance.anticollision_lights_on);
+                assert!(!appearance.is_flaming);
+                assert!(!appearance.afterburner_on);
+                assert!(!appearance.is_frozen);
+                assert!(!appearance.power_plant_on);
                 assert_eq!(appearance.state, AppearanceEntityOrObjectState::Active);
             } else {
-                assert!(false)
+                assert!(false);
             }
 
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            let capabilities: EntityCapabilities = pdu.entity_capabilities.into();
+            let capabilities: EntityCapabilities = pdu.entity_capabilities;
             if let EntityCapabilities::AirPlatformEntityCapabilities(capabilities) = capabilities {
-                assert_eq!(capabilities.ammunition_supply, false);
-                assert_eq!(capabilities.fuel_supply, false);
-                assert_eq!(capabilities.recovery, false);
-                assert_eq!(capabilities.repair, false);
+                assert!(!capabilities.ammunition_supply);
+                assert!(!capabilities.fuel_supply);
+                assert!(!capabilities.recovery);
+                assert!(!capabilities.repair);
             }
             assert_eq!(pdu.variable_parameters.len(), 4);
-            let parameter_1 = pdu.variable_parameters.get(0).unwrap();
+            let parameter_1 = pdu.variable_parameters.first().unwrap();
             if let VariableParameter::Articulated(part) = parameter_1 {
                 assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
                 assert_eq!(part.attachment_id, 0u16);
@@ -314,7 +314,7 @@ mod tests {
                 assert!(false);
             }
         } else {
-            assert!(false)
+            assert!(false);
         }
     }
 
@@ -383,17 +383,17 @@ mod tests {
 
         if let EntityAppearance::AirPlatform(appearance) = appearance {
             assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-            assert_eq!(appearance.propulsion_killed, false);
+            assert!(!appearance.propulsion_killed);
             assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-            assert_eq!(appearance.is_smoke_emanating, false);
-            assert_eq!(appearance.is_engine_emitting_smoke, false);
+            assert!(!appearance.is_smoke_emanating);
+            assert!(!appearance.is_engine_emitting_smoke);
             assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
             assert_eq!(
                 appearance.canopy_troop_door,
                 AppearanceCanopy::NotApplicable
             );
-            assert_eq!(appearance.landing_lights_on, false);
-            assert_eq!(appearance.is_flaming, false);
+            assert!(!appearance.landing_lights_on);
+            assert!(!appearance.is_flaming);
         } else {
             assert!(false);
         }
@@ -412,8 +412,8 @@ mod tests {
         let (input, appearance) = res.expect("value is Ok");
 
         if let EntityAppearance::AirPlatform(appearance) = appearance {
-            assert_eq!(appearance.is_smoke_emanating, true);
-            assert_eq!(appearance.is_engine_emitting_smoke, true);
+            assert!(appearance.is_smoke_emanating);
+            assert!(appearance.is_engine_emitting_smoke);
         } else {
             assert!(false);
         }
@@ -465,7 +465,7 @@ mod tests {
                 ArticulatedPartsTypeMetric::Azimuth
             );
         } else {
-            assert!(false)
+            assert!(false);
         }
 
         assert!(input.is_empty());
@@ -501,7 +501,7 @@ mod tests {
             );
             assert_eq!(articulated_part.parameter_value, 1f32);
         } else {
-            assert!(false)
+            assert!(false);
         }
 
         assert!(input.is_empty());

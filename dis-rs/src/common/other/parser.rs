@@ -135,7 +135,7 @@ mod tests {
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {
             assert_eq!(pdu.body.len(), 10);
-            assert_eq!(*pdu.body.get(0).unwrap(), 1u8);
+            assert_eq!(*pdu.body.first().unwrap(), 1u8);
         }
         assert!(input.is_empty());
     }
@@ -154,7 +154,7 @@ mod tests {
                 assert_eq!(originating.simulation_address.application_id, 10);
                 assert_eq!(originating.entity_id, 1);
             } else {
-                assert!(pdu.originating_entity_id.is_some())
+                assert!(pdu.originating_entity_id.is_some());
             } // should fail
         }
         assert!(input.is_empty());
@@ -176,14 +176,14 @@ mod tests {
                 assert_eq!(originating.simulation_address.application_id, 10);
                 assert_eq!(originating.entity_id, 1);
             } else {
-                assert!(pdu.originating_entity_id.is_some())
+                assert!(pdu.originating_entity_id.is_some());
             } // should fail
             if let Some(receiving) = pdu.receiving_entity_id {
                 assert_eq!(receiving.simulation_address.site_id, 32);
                 assert_eq!(receiving.simulation_address.application_id, 11);
                 assert_eq!(receiving.entity_id, 8);
             } else {
-                assert!(pdu.receiving_entity_id.is_some())
+                assert!(pdu.receiving_entity_id.is_some());
             } // should fail
         }
         assert!(input.is_empty());

@@ -87,7 +87,7 @@ impl Serialize for DrOtherParameters {
         match self {
             DrOtherParameters::None(bytes) => {
                 for x in bytes {
-                    buf.put_u8(*x)
+                    buf.put_u8(*x);
                 }
                 15
             }
@@ -187,7 +187,7 @@ mod tests {
         let expected: [u8; 12] = [
             0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20,
         ];
-        assert_eq!(buf.as_ref(), expected.as_ref())
+        assert_eq!(buf.as_ref(), expected.as_ref());
     }
 
     #[test]
@@ -208,7 +208,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x01, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00,
         ];
-        assert_eq!(buf.as_ref(), expected.as_ref())
+        assert_eq!(buf.as_ref(), expected.as_ref());
     }
 
     #[test]

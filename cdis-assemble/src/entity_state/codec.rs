@@ -95,6 +95,7 @@ pub struct DecoderStateEntityState {
 }
 
 impl DecoderStateEntityState {
+    #[must_use]
     pub fn new(pdu: &Counterpart) -> Self {
         Self {
             heartbeat: Instant::now(),
@@ -218,6 +219,7 @@ impl EntityState {
         )
     }
 
+    #[must_use]
     pub fn decode(
         &self,
         state: Option<&DecoderStateEntityState>,
@@ -413,7 +415,7 @@ impl EntityState {
                 .with_variable_parameters(
                     self.variable_parameters
                         .iter()
-                        .map(|vp| vp.decode())
+                        .map(crate::codec::Codec::decode)
                         .collect(),
                 )
                 .build(),
@@ -449,6 +451,7 @@ fn encode_entity_capabilities(
 }
 
 /// Encodes the Dead Reckoning Parameters Other field, when the DR Algorithm requires it , and the DIS on-wire are non-zero.
+#[must_use]
 pub fn encode_dr_params_other(item: &Counterpart) -> Option<CdisDRParametersOther> {
     let other_params =
         CdisDRParametersOther::from(&item.dead_reckoning_parameters.other_parameters);
@@ -886,7 +889,7 @@ mod tests {
                         .with_type_metric(ArticulatedPartsTypeMetric::Azimuth)
                         .with_parameter_value(45.0)
                 )
-            )
+            );
         } else {
             assert!(false);
         }
@@ -1025,7 +1028,7 @@ mod tests {
                 DisEntityType::from_str("1:2:3:4:5:6:7").unwrap()
             );
             assert_eq!(es.force_id, ForceId::Friendly8);
-            assert_eq!(es.entity_marking.marking_string, "STATE15".to_string())
+            assert_eq!(es.entity_marking.marking_string, "STATE15".to_string());
         } else {
             assert!(false);
         }

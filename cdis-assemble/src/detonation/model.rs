@@ -108,7 +108,7 @@ impl BodyProperties for Detonation {
                     + self
                         .variable_parameters
                         .iter()
-                        .map(|vp| vp.record_length())
+                        .map(crate::records::model::CdisRecord::record_length)
                         .sum::<usize>()
             })
     }
@@ -167,6 +167,7 @@ pub struct ExplosiveForceFloat {
 }
 
 impl ExplosiveForceFloat {
+    #[must_use]
     pub fn record_length(&self) -> usize {
         Self::MANTISSA_BITS + Self::EXPONENT_BITS
     }
@@ -199,7 +200,7 @@ impl CdisFloat for ExplosiveForceFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        f32::from(self.mantissa) * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {

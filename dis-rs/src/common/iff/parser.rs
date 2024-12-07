@@ -516,7 +516,7 @@ fn mode_s_transponder_basic_data(input: &[u8]) -> IResult<&[u8], ModeSTransponde
     let aircraft_present_domain = AircraftPresentDomain::from(aircraft_present_domain);
 
     let mut buf: [u8; EIGHT_OCTETS] = [0; EIGHT_OCTETS];
-    let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let mut aircraft_id = String::from_utf8_lossy(&buf[..]).into_owned();
     aircraft_id.truncate(

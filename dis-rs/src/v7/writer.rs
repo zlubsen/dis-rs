@@ -1,9 +1,10 @@
 use crate::enumerations::PduType;
 use crate::v7::model::PduStatus;
 
-/// Serialization function for PduStatus. The function formats the 8-bit field for in the `PduHeader`.
-/// PduStatus needs the PduType to determine which combination of indicators in the status field to write to the buffer.
+/// Serialization function for `PduStatus`. The function formats the 8-bit field for in the `PduHeader`.
+/// `PduStatus` needs the `PduType` to determine which combination of indicators in the status field to write to the buffer.
 /// Therefore it uses a separate function instead of the `Serialize` trait.
+#[must_use]
 pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type: &PduType) -> u8 {
     let tei: u8 = if let Some(tei) = pdu_status.transferred_entity_indicator {
         u8::from(tei)

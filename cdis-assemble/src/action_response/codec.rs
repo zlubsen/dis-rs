@@ -8,6 +8,7 @@ use dis_rs::model::DatumSpecification;
 type Counterpart = dis_rs::action_response::model::ActionResponse;
 
 impl ActionResponse {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let request_status: u32 = item.request_status.into();
         Self {
@@ -22,6 +23,7 @@ impl ActionResponse {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())

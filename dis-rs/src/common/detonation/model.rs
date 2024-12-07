@@ -23,14 +23,17 @@ pub struct Detonation {
 }
 
 impl Detonation {
+    #[must_use]
     pub fn builder() -> DetonationBuilder {
         DetonationBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> DetonationBuilder {
         DetonationBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Detonation(self)
     }

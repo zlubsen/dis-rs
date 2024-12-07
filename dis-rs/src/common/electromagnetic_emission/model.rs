@@ -24,14 +24,17 @@ pub struct ElectromagneticEmission {
 }
 
 impl ElectromagneticEmission {
+    #[must_use]
     pub fn builder() -> ElectromagneticEmissionBuilder {
         ElectromagneticEmissionBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ElectromagneticEmissionBuilder {
         ElectromagneticEmissionBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ElectromagneticEmission(self)
     }
@@ -43,7 +46,7 @@ impl BodyInfo for ElectromagneticEmission {
             + self
                 .emitter_systems
                 .iter()
-                .map(|system| system.system_data_length_bytes())
+                .map(EmitterSystem::system_data_length_bytes)
                 .sum::<u16>()
     }
 
@@ -92,6 +95,7 @@ impl Default for EmitterSystem {
 }
 
 impl EmitterSystem {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             name: EmitterName::default(),
@@ -102,21 +106,25 @@ impl EmitterSystem {
         }
     }
 
+    #[must_use]
     pub fn with_name(mut self, name: EmitterName) -> Self {
         self.name = name;
         self
     }
 
+    #[must_use]
     pub fn with_function(mut self, function: EmitterSystemFunction) -> Self {
         self.function = function;
         self
     }
 
+    #[must_use]
     pub fn with_number(mut self, number: u8) -> Self {
         self.number = number;
         self
     }
 
+    #[must_use]
     pub fn with_location(mut self, location: VectorF32) -> Self {
         self.location = location;
         self
@@ -127,17 +135,19 @@ impl EmitterSystem {
         self
     }
 
+    #[must_use]
     pub fn with_beam(mut self, beam: Beam) -> Self {
         self.beams.push(beam);
         self
     }
 
+    #[must_use]
     pub fn system_data_length_bytes(&self) -> u16 {
         EMITTER_SYSTEM_BASE_LENGTH
             + self
                 .beams
                 .iter()
-                .map(|beam| beam.beam_data_length_bytes())
+                .map(Beam::beam_data_length_bytes)
                 .sum::<u16>()
     }
 }
@@ -156,6 +166,7 @@ pub struct Beam {
 }
 
 impl Beam {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             number: 0,
@@ -170,26 +181,31 @@ impl Beam {
         }
     }
 
+    #[must_use]
     pub fn with_number(mut self, number: u8) -> Self {
         self.number = number;
         self
     }
 
+    #[must_use]
     pub fn with_parameter_index(mut self, parameter_index: u16) -> Self {
         self.parameter_index = parameter_index;
         self
     }
 
+    #[must_use]
     pub fn with_parameter_data(mut self, parameter_data: FundamentalParameterData) -> Self {
         self.parameter_data = parameter_data;
         self
     }
 
+    #[must_use]
     pub fn with_beam_data(mut self, beam_data: BeamData) -> Self {
         self.beam_data = beam_data;
         self
     }
 
+    #[must_use]
     pub fn with_beam_function(
         mut self,
         beam_function: ElectromagneticEmissionBeamFunction,
@@ -198,6 +214,7 @@ impl Beam {
         self
     }
 
+    #[must_use]
     pub fn with_high_density_track_jam(
         mut self,
         high_density_track_jam: HighDensityTrackJam,
@@ -206,11 +223,13 @@ impl Beam {
         self
     }
 
+    #[must_use]
     pub fn with_beam_status(mut self, beam_status: BeamStatusBeamState) -> Self {
         self.beam_status = beam_status;
         self
     }
 
+    #[must_use]
     pub fn with_jamming_technique(mut self, jamming_technique: JammingTechnique) -> Self {
         self.jamming_technique = jamming_technique;
         self
@@ -221,11 +240,13 @@ impl Beam {
         self
     }
 
+    #[must_use]
     pub fn with_track_jam(mut self, track_jam_data: TrackJam) -> Self {
         self.track_jam_data.push(track_jam_data);
         self
     }
 
+    #[must_use]
     pub fn beam_data_length_bytes(&self) -> u16 {
         BEAM_BASE_LENGTH + (TRACK_JAM_BASE_LENGTH * self.track_jam_data.len() as u16)
     }
@@ -242,6 +263,7 @@ pub struct FundamentalParameterData {
 }
 
 impl FundamentalParameterData {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             frequency: 0.0,
@@ -252,26 +274,31 @@ impl FundamentalParameterData {
         }
     }
 
+    #[must_use]
     pub fn with_frequency(mut self, frequency: f32) -> Self {
         self.frequency = frequency;
         self
     }
 
+    #[must_use]
     pub fn with_frequency_range(mut self, frequency_range: f32) -> Self {
         self.frequency_range = frequency_range;
         self
     }
 
+    #[must_use]
     pub fn with_effective_power(mut self, effective_power: f32) -> Self {
         self.effective_power = effective_power;
         self
     }
 
+    #[must_use]
     pub fn with_pulse_repetition_frequency(mut self, pulse_repetition_frequency: f32) -> Self {
         self.pulse_repetition_frequency = pulse_repetition_frequency;
         self
     }
 
+    #[must_use]
     pub fn with_pulse_width(mut self, pulse_width: f32) -> Self {
         self.pulse_width = pulse_width;
         self
@@ -288,6 +315,7 @@ pub struct JammingTechnique {
 }
 
 impl JammingTechnique {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             kind: 0,
@@ -297,21 +325,25 @@ impl JammingTechnique {
         }
     }
 
+    #[must_use]
     pub fn with_kind(mut self, kind: u8) -> Self {
         self.kind = kind;
         self
     }
 
+    #[must_use]
     pub fn with_category(mut self, category: u8) -> Self {
         self.category = category;
         self
     }
 
+    #[must_use]
     pub fn with_subcategory(mut self, subcategory: u8) -> Self {
         self.subcategory = subcategory;
         self
     }
 
+    #[must_use]
     pub fn with_specific(mut self, specific: u8) -> Self {
         self.specific = specific;
         self
@@ -327,6 +359,7 @@ pub struct TrackJam {
 }
 
 impl TrackJam {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             entity_id: EntityId::default(),
@@ -335,16 +368,19 @@ impl TrackJam {
         }
     }
 
+    #[must_use]
     pub fn with_entity_id(mut self, entity_id: EntityId) -> Self {
         self.entity_id = entity_id;
         self
     }
 
+    #[must_use]
     pub fn with_emitter(mut self, emitter: u8) -> Self {
         self.emitter = emitter;
         self
     }
 
+    #[must_use]
     pub fn with_beam(mut self, beam: u8) -> Self {
         self.beam = beam;
         self

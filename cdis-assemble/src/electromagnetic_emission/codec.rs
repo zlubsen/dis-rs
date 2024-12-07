@@ -119,16 +119,16 @@ pub(crate) fn decode_electromagnetic_emission_body_and_update_state(
     (dis_body.into_pdu_body(), state_result)
 }
 
-/// Encoder maintained state for a given EntityId
-/// - Timestamp `heartbeat` for EE heartbeat for this EntityId.
+/// Encoder maintained state for a given `EntityId`
+/// - Timestamp `heartbeat` for EE heartbeat for this `EntityId`.
 /// - Previously send `FundamentalParameterData` for a specific (emitter system number, beam number) pair.
 /// - Previously send `BeamData` for a specific (emitter system number, beam number) pair.
 ///
-/// The `EncoderStateElectromagneticEmission` is initialised when a first EE PDU from an EntityId is received.
+/// The `EncoderStateElectromagneticEmission` is initialised when a first EE PDU from an `EntityId` is received.
 /// It is updated after receiving a DIS PDU and a full update to C-DIS is needed/send.
-/// The state of the FundamentalParameterData and (Dis)BeamData is used during construction of the
+/// The state of the `FundamentalParameterData` and (Dis)BeamData is used during construction of the
 /// fundamental params and beam data lists. When the data has not changed the param is left of the list,
-/// and consequently the index in the specific beam where the data is referenced will be left out of partial updates (as Option::None).
+/// and consequently the index in the specific beam where the data is referenced will be left out of partial updates (as `Option::None`).
 #[derive(Debug)]
 pub struct EncoderStateElectromagneticEmission {
     pub heartbeat: Instant,
@@ -162,13 +162,13 @@ impl Default for EncoderStateElectromagneticEmission {
     }
 }
 
-/// Decoder maintained state for a given EntityId:
-/// - Timestamp `heartbeat` of last received EE for this EntityId
+/// Decoder maintained state for a given `EntityId`:
+/// - Timestamp `heartbeat` of last received EE for this `EntityId`
 /// - Last received `FundamentalParameterData` for a specific (emitter system number, beam number) pair.
 /// - Last received `BeamData` for a specific (emitter system number, beam number) pair.
 /// - Last received fields for Emitter Systems: Name, Function, Location with respect to Entity.
 ///
-/// The `DecoderStateElectromagneticEmission` for an EntityId is initialised when a full update C-DIS PDU
+/// The `DecoderStateElectromagneticEmission` for an `EntityId` is initialised when a full update C-DIS PDU
 /// is received. The state is updated when new full update C-DIS PDUs are received.
 /// Fields in partial update PDUs are complemented from the state.
 #[derive(Debug)]
@@ -217,6 +217,7 @@ pub struct EmitterSystemPartialFields {
 }
 
 impl ElectromagneticEmission {
+    #[must_use]
     pub fn encode(
         item: &Counterpart,
         state: Option<&EncoderStateElectromagneticEmission>,
@@ -305,6 +306,7 @@ impl ElectromagneticEmission {
         )
     }
 
+    #[must_use]
     pub fn decode(
         &self,
         state: Option<&DecoderStateElectromagneticEmission>,
@@ -435,8 +437,7 @@ fn find_fundamental_param_index(
     list.iter()
         .enumerate()
         .find(|(_, param)| *param == item)
-        .map(|(index, _)| Some(index))
-        .unwrap_or(None)
+        .map(|(index, _)| index)
 }
 
 fn construct_beam_data_list_full(item: &Counterpart) -> Vec<BeamData> {
@@ -487,8 +488,7 @@ fn find_beam_data_index(list: &[BeamData], item: &BeamData) -> Option<usize> {
     list.iter()
         .enumerate()
         .find(|(_, beam_data)| *beam_data == item)
-        .map(|(index, _)| Some(index))
-        .unwrap_or(None)
+        .map(|(index, _)| index)
 }
 
 fn construct_site_app_pairs_list(item: &Counterpart) -> Vec<SiteAppPair> {
@@ -525,11 +525,11 @@ fn find_site_app_pair_index(list: &[SiteAppPair], item: &SiteAppPair) -> Option<
     list.iter()
         .enumerate()
         .find(|(_, pair)| *pair == item)
-        .map(|(index, _)| Some(index))
-        .unwrap_or(None)
+        .map(|(index, _)| index)
 }
 
 impl EmitterSystem {
+    #[must_use]
     pub fn encode_full_update(
         item: &EmitterSystemCounterpart,
         fundamental_params: &[FundamentalParameter],
@@ -560,6 +560,7 @@ impl EmitterSystem {
         }
     }
 
+    #[must_use]
     pub fn encode_partial_update(
         item: &EmitterSystemCounterpart,
         fundamental_params: &[FundamentalParameter],
@@ -588,6 +589,7 @@ impl EmitterSystem {
         }
     }
 
+    #[must_use]
     pub fn decode_full_update(
         &self,
         fundamental_params: &[FundamentalParameter],
@@ -612,6 +614,7 @@ impl EmitterSystem {
             .with_beams(&mut beams)
     }
 
+    #[must_use]
     pub fn decode_partial_update(
         &self,
         state: Option<&DecoderStateElectromagneticEmission>,
@@ -683,6 +686,7 @@ impl EmitterSystem {
 }
 
 impl EmitterBeam {
+    #[must_use]
     pub fn encode_full_update(
         item: &EmitterBeamCounterpart,
         fundamental_params: &[FundamentalParameter],
@@ -727,6 +731,7 @@ impl EmitterBeam {
         }
     }
 
+    #[must_use]
     pub fn encode_partial_update(
         item: &EmitterBeamCounterpart,
         fundamental_params: &[FundamentalParameter],
@@ -771,6 +776,7 @@ impl EmitterBeam {
         }
     }
 
+    #[must_use]
     pub fn decode_full_update(
         &self,
         fundamental_params: &[FundamentalParameter],
@@ -825,6 +831,7 @@ impl EmitterBeam {
             .with_track_jams(&mut tjs)
     }
 
+    #[must_use]
     pub fn decode_partial_update(
         &self,
         emitter_number: u8,
@@ -1041,7 +1048,7 @@ mod tests {
 
         assert_eq!(param_list.len(), 2);
         assert_eq!(
-            param_list.get(0).unwrap().frequency,
+            param_list.first().unwrap().frequency,
             FrequencyFloat::from_float(12.3)
         );
         assert_eq!(
@@ -1085,8 +1092,8 @@ mod tests {
         let beam_data_list = construct_beam_data_list_full(&body);
 
         assert_eq!(beam_data_list.len(), 2);
-        assert_eq!(beam_data_list.get(0).unwrap().az_center.value, 0);
-        assert_eq!(beam_data_list.get(0).unwrap().sweep_sync, 511);
+        assert_eq!(beam_data_list.first().unwrap().az_center.value, 0);
+        assert_eq!(beam_data_list.first().unwrap().sweep_sync, 511);
         assert_eq!(beam_data_list.get(1).unwrap().az_center.value, 83);
         assert_eq!(beam_data_list.get(1).unwrap().sweep_sync, 102);
     }
@@ -1113,8 +1120,8 @@ mod tests {
         let pairs = construct_site_app_pairs_list(&body);
 
         assert_eq!(pairs.len(), 3);
-        assert_eq!(pairs.get(0).unwrap().site.value, 1);
-        assert_eq!(pairs.get(0).unwrap().application.value, 1);
+        assert_eq!(pairs.first().unwrap().site.value, 1);
+        assert_eq!(pairs.first().unwrap().application.value, 1);
         assert_eq!(pairs.get(1).unwrap().site.value, 2);
         assert_eq!(pairs.get(1).unwrap().application.value, 2);
         assert_eq!(pairs.get(2).unwrap().site.value, 3);
@@ -1453,7 +1460,7 @@ mod tests {
                     .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
                     .with_track_jam(TrackJam::default().with_entity_id(EntityId::new(1, 2, 3))),
             );
-        assert_eq!(emitter_in, *emitter_out)
+        assert_eq!(emitter_in, *emitter_out);
     }
 
     #[test]
@@ -1534,7 +1541,7 @@ mod tests {
                     .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
                     .with_track_jam(TrackJam::default().with_entity_id(EntityId::new(1, 2, 3))),
             );
-        assert_eq!(emitter_in, *emitter_out)
+        assert_eq!(emitter_in, *emitter_out);
     }
 
     #[test]

@@ -22,14 +22,17 @@ pub struct ActionRequestR {
 }
 
 impl ActionRequestR {
+    #[must_use]
     pub fn builder() -> ActionRequestRBuilder {
         ActionRequestRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ActionRequestRBuilder {
         ActionRequestRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ActionRequestR(self)
     }

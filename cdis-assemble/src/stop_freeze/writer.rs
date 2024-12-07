@@ -21,7 +21,7 @@ impl SerializeCdisPdu for StopFreeze {
     }
 }
 
-/// Writes the StopFreezeFrozenBehavior bit field to the BitBuffer
+/// Writes the `StopFreezeFrozenBehavior` bit field to the `BitBuffer`
 #[allow(clippy::let_and_return)]
 fn serialize_frozen_behavior(
     buf: &mut BitBuffer,

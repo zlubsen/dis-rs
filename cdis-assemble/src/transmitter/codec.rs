@@ -74,6 +74,7 @@ pub(crate) fn decode_transmitter_body_and_update_state(
 }
 
 impl Transmitter {
+    #[must_use]
     pub fn encode(
         item: &Counterpart,
         state: Option<&EncoderStateTransmitter>,
@@ -185,6 +186,7 @@ impl Transmitter {
         )
     }
 
+    #[must_use]
     pub fn decode(
         &self,
         state: Option<&DecoderStateTransmitter>,
@@ -216,7 +218,7 @@ impl Transmitter {
                 self.transmit_frequency_bandwidth
                     .map(|tfb| tfb.to_float())
                     .unwrap_or_default(),
-                self.power.map(|power| power as f32).unwrap_or_default(),
+                self.power.map(f32::from).unwrap_or_default(),
                 dis_rs::transmitter::model::ModulationType::from(
                     &self.modulation_type.unwrap_or_default(),
                 ),
@@ -240,7 +242,7 @@ impl Transmitter {
                         self.transmit_frequency_bandwidth
                             .map(|tfb| tfb.to_float())
                             .unwrap_or_default(),
-                        self.power.map(|power| power as f32).unwrap_or_default(),
+                        self.power.map(f32::from).unwrap_or_default(),
                         dis_rs::transmitter::model::ModulationType::from(
                             &self.modulation_type.unwrap_or_default(),
                         ),
@@ -292,7 +294,7 @@ impl Transmitter {
                                     Default::default()
                                 }
                             }),
-                        self.power.map(|power| power as f32).unwrap_or_else(|| {
+                        self.power.map(f32::from).unwrap_or_else(|| {
                             if let Some(state) = state {
                                 state.power
                             } else {
@@ -368,6 +370,7 @@ pub struct DecoderStateTransmitter {
 }
 
 impl DecoderStateTransmitter {
+    #[must_use]
     pub fn new(pdu: &Counterpart) -> Self {
         Self {
             heartbeat: Instant::now(),
@@ -422,15 +425,15 @@ impl Codec for BeamAntennaPattern {
     fn decode(&self) -> Self::Counterpart {
         Self::Counterpart::default()
             .with_beam_direction(Orientation::new(
-                self.beam_direction_psi as f32 / Self::SCALING,
-                self.beam_direction_theta as f32 / Self::SCALING,
-                self.beam_direction_phi as f32 / Self::SCALING,
+                f32::from(self.beam_direction_psi) / Self::SCALING,
+                f32::from(self.beam_direction_theta) / Self::SCALING,
+                f32::from(self.beam_direction_phi) / Self::SCALING,
             ))
-            .with_azimuth_beamwidth(self.az_beamwidth as f32 / Self::SCALING)
-            .with_elevation_beamwidth(self.el_beamwidth as f32 / Self::SCALING)
+            .with_azimuth_beamwidth(f32::from(self.az_beamwidth) / Self::SCALING)
+            .with_elevation_beamwidth(f32::from(self.el_beamwidth) / Self::SCALING)
             .with_reference_system(self.reference_system)
-            .with_e_z(self.e_z as f32)
-            .with_e_x(self.e_x as f32)
-            .with_phase(self.phase as f32 / Self::SCALING)
+            .with_e_z(f32::from(self.e_z))
+            .with_e_x(f32::from(self.e_x))
+            .with_phase(f32::from(self.phase) / Self::SCALING)
     }
 }

@@ -20,7 +20,7 @@ impl BodyProperties for Receiver {
 
     #[allow(clippy::unused_unit)]
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        ()
+        ();
     }
 
     fn body_length_bits(&self) -> usize {
