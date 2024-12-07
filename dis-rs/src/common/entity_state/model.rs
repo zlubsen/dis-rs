@@ -106,6 +106,7 @@ impl Default for EntityAppearance {
 
 impl EntityAppearance {
     #[must_use]
+    #[allow(clippy::match_same_arms)]
     pub fn from_bytes(appearance: u32, entity_type: &EntityType) -> Self {
         match (entity_type.kind, entity_type.domain) {
             (EntityKind::Other, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
@@ -154,6 +155,7 @@ impl EntityAppearance {
 }
 
 impl From<&EntityAppearance> for u32 {
+    #[allow(clippy::match_same_arms)]
     fn from(value: &EntityAppearance) -> Self {
         match value {
             EntityAppearance::LandPlatform(appearance) => u32::from(*appearance),
@@ -193,6 +195,7 @@ impl EntityMarking {
         EntityMarking::new(marking.into(), EntityMarkingCharacterSet::ASCII)
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
         self.marking_string = marking.into();
         self

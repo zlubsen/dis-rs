@@ -147,6 +147,7 @@ pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     ))
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn dr_other_parameters(
     input: &[u8],
     algorithm: DeadReckoningAlgorithm,
@@ -169,7 +170,7 @@ pub fn dr_other_parameters(
         DeadReckoningAlgorithm::Other => {
             dr_other_parameters_none(input)?
         }
-        _ => {
+        DeadReckoningAlgorithm::Unspecified(_) => {
             dr_other_parameters_none(input)?
         }
     };

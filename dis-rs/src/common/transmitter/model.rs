@@ -112,9 +112,9 @@ impl ModulationType {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            spread_spectrum: Default::default(),
-            major_modulation: Default::default(),
-            radio_system: Default::default(),
+            spread_spectrum: SpreadSpectrum::default(),
+            major_modulation: TransmitterMajorModulation::default(),
+            radio_system: TransmitterModulationTypeSystem::default(),
         }
     }
 
@@ -281,9 +281,10 @@ impl Default for CryptoMode {
 
 impl From<bool> for CryptoMode {
     fn from(value: bool) -> Self {
-        match value {
-            true => CryptoMode::Diphase,
-            false => CryptoMode::Baseband,
+        if value {
+            CryptoMode::Diphase
+        } else {
+            CryptoMode::Baseband
         }
     }
 }
@@ -309,10 +310,10 @@ impl BeamAntennaPattern {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            beam_direction: Default::default(),
+            beam_direction: Orientation::default(),
             azimuth_beamwidth: 0.0,
             elevation_beamwidth: 0.0,
-            reference_system: Default::default(),
+            reference_system: TransmitterAntennaPatternReferenceSystem::default(),
             e_z: 0.0,
             e_x: 0.0,
             phase: 0.0,
@@ -381,7 +382,7 @@ impl VariableTransmitterParameter {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            record_type: Default::default(),
+            record_type: VariableRecordType::default(),
             fields: Vec::new(),
         }
     }

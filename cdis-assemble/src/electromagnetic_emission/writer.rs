@@ -9,6 +9,7 @@ use crate::{BitBuffer, SerializeCdisPdu};
 
 impl SerializeCdisPdu for ElectromagneticEmission {
     #[allow(clippy::let_and_return)]
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.full_update_flag.into());
         let cursor = write_value_unsigned(buf, cursor, FIVE_BITS, self.fundamental_params.len());
@@ -70,6 +71,7 @@ impl SerializeCdis for SiteAppPair {
 
 impl SerializeCdis for EmitterSystem {
     #[allow(clippy::let_and_return)]
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         // Emitter System Details flag: true when both name and function are present.
         let cursor = write_value_unsigned(

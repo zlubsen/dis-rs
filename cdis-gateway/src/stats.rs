@@ -70,6 +70,7 @@ pub(crate) struct CodecStats {
 }
 
 impl CodecStats {
+    #[allow(clippy::cast_precision_loss)]
     fn aggregate(&mut self) {
         const TO_PERCENT: f64 = 100.0;
         // FIXME: this calculates the ratio between ALL received bytes and the encoded/decoded output bytes, no taking into account the rejected, non-codec'ed PDUs.
@@ -90,53 +91,53 @@ pub(crate) struct GatewayStats {
 }
 
 impl GatewayStats {
-    fn handle_event(&mut self, event: Event) {
+    fn handle_event(&mut self, event: &Event) {
         match event {
             Event::ReceivedBytesDis(count) => {
-                self.dis.receive(count as u64, 1);
+                self.dis.receive(*count as u64, 1);
             }
             Event::ReceivedBytesCDis(count) => {
-                self.cdis.receive(count as u64, 1);
+                self.cdis.receive(*count as u64, 1);
             }
             Event::ReceivedDis(pdu_type, size) => {
                 self.encoder
                     .received_count
-                    .entry(pdu_type)
+                    .entry(*pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     })
-                    .or_insert((1, size));
+                    .or_insert((1, *size));
             }
             Event::ReceivedCDis(pdu_type, size) => {
                 self.decoder
                     .received_count
-                    .entry(pdu_type)
+                    .entry(*pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     })
-                    .or_insert((1, size));
+                    .or_insert((1, *size));
             }
             Event::EncodedPdu(pdu_type, size) => {
                 self.encoder
                     .codec_count
-                    .entry(pdu_type)
+                    .entry(*pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     })
-                    .or_insert((1, size));
+                    .or_insert((1, *size));
             }
             Event::DecodedPdu(pdu_type, size) => {
                 self.decoder
                     .codec_count
-                    .entry(pdu_type)
+                    .entry(*pdu_type)
                     .and_modify(|count| {
                         count.0 += 1;
                         count.1 += size;
                     })
-                    .or_insert((1, size));
+                    .or_insert((1, *size));
             }
             Event::RejectedUnsupportedDisPdu(_pdu_type, _size) => {
                 self.encoder.rejected_count += 1;
@@ -145,10 +146,10 @@ impl GatewayStats {
                 self.decoder.rejected_count += 1;
             }
             Event::SentDis(count) => {
-                self.dis.sent(count as u64, 1);
+                self.dis.sent(*count as u64, 1);
             }
             Event::SentCDis(count) => {
-                self.cdis.sent(count as u64, 1);
+                self.cdis.sent(*count as u64, 1);
             }
             Event::UnimplementedEncodedPdu(_pdu_type, size) => {
                 self.encoder.unimplemented_count += 1;
@@ -189,7 +190,7 @@ pub async fn run_stats(
             }
             event = event_rx.recv() => {
                 if let Some(event) = event {
-                    stats.handle_event(event);
+                    stats.handle_event(&event);
                 }
             }
             cmd = cmd_rx.recv() => {

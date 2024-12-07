@@ -89,7 +89,7 @@ impl AttributeRecordSet {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            entity_id: Default::default(),
+            entity_id: EntityId::default(),
             attribute_records: vec![],
         }
     }
@@ -130,7 +130,7 @@ impl AttributeRecord {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            record_type: Default::default(),
+            record_type: VariableRecordType::default(),
             specific_fields: vec![],
         }
     }

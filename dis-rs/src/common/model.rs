@@ -160,6 +160,7 @@ impl PduHeader {
         self
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_time_stamp(mut self, time_stamp: impl Into<u32>) -> Self {
         let time_stamp: u32 = time_stamp.into();
         self.time_stamp = time_stamp;
@@ -257,6 +258,7 @@ pub enum PduBody {
 }
 
 impl BodyInfo for PduBody {
+    #[allow(clippy::match_same_arms)]
     fn body_length(&self) -> u16 {
         match self {
             PduBody::Other(body) => body.body_length(),
@@ -415,6 +417,7 @@ impl BodyInfo for PduBody {
 }
 
 impl Interaction for PduBody {
+    #[allow(clippy::match_same_arms)]
     fn originator(&self) -> Option<&EntityId> {
         match self {
             PduBody::Other(body) => body.originator(),
@@ -493,6 +496,7 @@ impl Interaction for PduBody {
         }
     }
 
+    #[allow(clippy::match_same_arms)]
     fn receiver(&self) -> Option<&EntityId> {
         match self {
             PduBody::Other(body) => body.receiver(),
@@ -573,6 +577,7 @@ impl Interaction for PduBody {
 }
 
 impl From<PduType> for ProtocolFamily {
+    #[allow(clippy::match_same_arms)]
     fn from(pdu_type: PduType) -> Self {
         match pdu_type {
             PduType::Other => ProtocolFamily::Other,
@@ -739,6 +744,7 @@ impl EntityId {
     }
 
     #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn record_length(&self) -> u16 {
         SIX_OCTETS as u16
     }
@@ -864,6 +870,7 @@ pub struct Orientation {
 
 impl Orientation {
     #[must_use]
+    #[allow(clippy::similar_names)]
     pub fn new(psi: f32, theta: f32, phi: f32) -> Self {
         Orientation { psi, theta, phi }
     }
@@ -943,6 +950,7 @@ impl EntityType {
     }
 
     #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn record_length(&self) -> u16 {
         EIGHT_OCTETS as u16
     }
@@ -1239,10 +1247,12 @@ impl DisTimeStamp {
     }
 
     /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
+    #[allow(clippy::cast_possible_truncation)]
     fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
         (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn dis_time_units_to_nanoseconds(dis_time_units: u32) -> u32 {
         (dis_time_units as f32 * NANOSECONDS_PER_TIME_UNIT) as u32
     }
@@ -1778,6 +1788,7 @@ impl RecordSet {
     /// It is up to the caller of the function to ensure only Record Values of same length are added,
     /// the length of the last added value is assumed for all previously added.
     #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn with_record(mut self, record: Vec<u8>) -> Self {
         self.record_length_bytes = record.len() as u16;
         self.records.push(record);

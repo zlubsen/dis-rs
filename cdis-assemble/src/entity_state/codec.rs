@@ -113,12 +113,12 @@ impl Default for DecoderStateEntityState {
     fn default() -> Self {
         Self {
             heartbeat: Instant::now(),
-            force_id: Default::default(),
-            entity_type: Default::default(),
+            force_id: ForceId::default(),
+            entity_type: DisEntityType::default(),
             entity_location: DisLocation::default(),
-            entity_orientation: Default::default(),
-            entity_appearance: Default::default(),
-            entity_marking: Default::default(),
+            entity_orientation: DisOrientation::default(),
+            entity_appearance: EntityAppearance::default(),
+            entity_marking: EntityMarking::default(),
         }
     }
 }
@@ -220,6 +220,7 @@ impl EntityState {
     }
 
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn decode(
         &self,
         state: Option<&DecoderStateEntityState>,
@@ -501,6 +502,7 @@ fn evaluate_timeout_for_entity_type(
     options: &CodecOptions,
 ) -> bool {
     let elapsed = heartbeat.elapsed().as_secs_f32();
+    #[allow(clippy::match_same_arms)]
     let hbt_timeout = match (entity_type.kind, entity_type.domain) {
         (EntityKind::CulturalFeature, _) => {
             options

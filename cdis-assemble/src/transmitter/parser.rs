@@ -22,6 +22,7 @@ use nom::complete::take;
 use nom::multi::count;
 use nom::IResult;
 
+#[allow(clippy::too_many_lines)]
 pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present): (BitInput, u8) = take(EIGHT_BITS)(input)?;
     let (input, units): (BitInput, u8) = take(TWO_BITS)(input)?;

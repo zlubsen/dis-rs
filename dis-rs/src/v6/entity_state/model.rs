@@ -1,3 +1,4 @@
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct EntityCapabilities {
     pub ammunition_supply: bool,

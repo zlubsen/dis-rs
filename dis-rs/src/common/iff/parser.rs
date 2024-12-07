@@ -340,6 +340,7 @@ fn system_status(input: &[u8]) -> IResult<&[u8], SystemStatus> {
 }
 
 // TODO This bit of error handling the correct system type to parse is not that nice.
+#[allow(clippy::match_same_arms)]
 fn mode_5_basic_data(
     system_type: &IffSystemType,
 ) -> impl Fn(&[u8]) -> IResult<&[u8], Result<Mode5BasicData, DisError>> + '_ {
@@ -449,6 +450,7 @@ fn mode_s_altitude(input: &[u8]) -> IResult<&[u8], ModeSAltitude> {
 }
 
 // TODO This bit of error handling the correct system type to parse is not that nice.
+#[allow(clippy::match_same_arms)]
 fn mode_s_basic_data(
     system_type: &IffSystemType,
 ) -> impl Fn(&[u8]) -> IResult<&[u8], Result<ModeSBasicData, DisError>> + '_ {

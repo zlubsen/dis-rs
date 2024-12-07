@@ -106,11 +106,11 @@ impl Default for DecoderStateDesignator {
     fn default() -> Self {
         Self {
             heartbeat: Instant::now(),
-            code_name: Default::default(),
-            designator_code: Default::default(),
+            code_name: DesignatorSystemName::default(),
+            designator_code: DesignatorCode::default(),
             designator_power: 0.0,
             designator_wavelength: 0.0,
-            designator_spot_location: Default::default(),
+            designator_spot_location: Location::default(),
         }
     }
 }
@@ -238,7 +238,7 @@ impl Designator {
                     if let Some(state) = state {
                         state.code_name
                     } else {
-                        Default::default()
+                        DesignatorSystemName::default()
                     }
                 }),
                 self.designator_code
@@ -247,7 +247,7 @@ impl Designator {
                         if let Some(state) = state {
                             state.designator_code
                         } else {
-                            Default::default()
+                            DesignatorCode::default()
                         }
                     }),
                 self.designator_power
@@ -276,7 +276,7 @@ impl Designator {
                         if let Some(state) = state {
                             state.designator_spot_location
                         } else {
-                            Default::default()
+                            Location::default()
                         }
                     }),
                 CodecStateResult::StateUnaffected,

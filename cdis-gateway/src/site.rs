@@ -64,7 +64,7 @@ pub(crate) async fn run_site(
     let host_ip = format!("127.0.0.1:{}", config.site_host);
     let listener = tokio::net::TcpListener::bind(&host_ip)
         .await
-        .unwrap_or_else(|_| panic!("Failed to bind TCP socket for Web UI - {}", host_ip));
+        .unwrap_or_else(|_| panic!("Failed to bind TCP socket for Web UI - {host_ip}"));
     tracing::debug!("Site listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal(cmd_tx.clone()))
@@ -74,7 +74,7 @@ pub(crate) async fn run_site(
     match cmd_tx.send(Command::Quit) {
         Ok(_) => {}
         Err(_) => {
-            error!("Could not send Command::Quit.")
+            error!("Could not send Command::Quit.");
         }
     }
 }
@@ -99,8 +99,8 @@ async fn shutdown_signal(cmd_tx: tokio::sync::broadcast::Sender<Command>) {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        () = ctrl_c => {},
+        () = terminate => {},
     }
 
     // Send Command::Quit, resolving not stopping the axum server due to open (infinite) SSE connections.

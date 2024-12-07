@@ -337,6 +337,7 @@ fn ged_entity_location(input: &[u8]) -> IResult<&[u8], GEDEntityLocation> {
     ))
 }
 
+#[allow(clippy::similar_names)]
 fn ged_entity_orientation(input: &[u8]) -> IResult<&[u8], GEDEntityOrientation> {
     let (input, psi) = be_u8(input)?;
     let (input, theta) = be_u8(input)?;

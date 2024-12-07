@@ -93,7 +93,7 @@ pub(crate) enum Uvint8BitSize {
 impl Uvint8BitSize {
     pub const FLAG_BITS_SIZE: usize = ONE_BIT;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Uvint8BitSize::Four => FOUR_BITS,
             Uvint8BitSize::Eight => EIGHT_BITS,
@@ -189,7 +189,7 @@ pub(crate) enum Uvint16BitSize {
 impl Uvint16BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Uvint16BitSize::Eight => 8,
             Uvint16BitSize::Eleven => 11,
@@ -292,7 +292,7 @@ pub(crate) enum Uvint32BitSize {
 impl Uvint32BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Uvint32BitSize::Eight => 8,
             Uvint32BitSize::Fifteen => 15,
@@ -365,6 +365,7 @@ impl VarInt for SVINT12 {
 }
 
 impl From<i16> for SVINT12 {
+    #[allow(clippy::match_same_arms)]
     fn from(value: i16) -> Self {
         let bit_size = match value {
             -4..=3 => Svint12BitSize::Three,
@@ -390,7 +391,7 @@ pub(crate) enum Svint12BitSize {
 impl Svint12BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Svint12BitSize::Three => 3,
             Svint12BitSize::Six => 6,
@@ -399,7 +400,7 @@ impl Svint12BitSize {
         }
     }
 
-    pub fn min_value(&self) -> i16 {
+    pub fn min_value(self) -> i16 {
         match self {
             Svint12BitSize::Three => -4,
             Svint12BitSize::Six => -32,
@@ -409,7 +410,7 @@ impl Svint12BitSize {
     }
 
     #[allow(dead_code)]
-    pub fn max_value(&self) -> i16 {
+    pub fn max_value(self) -> i16 {
         match self {
             Svint12BitSize::Three => 3,
             Svint12BitSize::Six => 31,
@@ -482,6 +483,7 @@ impl VarInt for SVINT13 {
 }
 
 impl From<i16> for SVINT13 {
+    #[allow(clippy::match_same_arms)]
     fn from(value: i16) -> Self {
         let bit_size = match value {
             -16..=15 => Svint13BitSize::Five,
@@ -507,7 +509,7 @@ pub(crate) enum Svint13BitSize {
 impl Svint13BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Svint13BitSize::Five => 5,
             Svint13BitSize::Seven => 7,
@@ -516,7 +518,7 @@ impl Svint13BitSize {
         }
     }
 
-    pub fn min_value(&self) -> i16 {
+    pub fn min_value(self) -> i16 {
         match self {
             Svint13BitSize::Five => -16,
             Svint13BitSize::Seven => -64,
@@ -526,7 +528,7 @@ impl Svint13BitSize {
     }
 
     #[allow(dead_code)]
-    pub fn max_value(&self) -> i16 {
+    pub fn max_value(self) -> i16 {
         match self {
             Svint13BitSize::Five => 15,
             Svint13BitSize::Seven => 63,
@@ -599,6 +601,7 @@ impl VarInt for SVINT14 {
 }
 
 impl From<i16> for SVINT14 {
+    #[allow(clippy::match_same_arms)]
     fn from(value: i16) -> Self {
         let bit_size = match value {
             -8..=7 => Svint14BitSize::Four,
@@ -624,7 +627,7 @@ pub(crate) enum Svint14BitSize {
 impl Svint14BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Svint14BitSize::Four => 4,
             Svint14BitSize::Seven => 7,
@@ -633,7 +636,7 @@ impl Svint14BitSize {
         }
     }
 
-    pub fn min_value(&self) -> i16 {
+    pub fn min_value(self) -> i16 {
         match self {
             Svint14BitSize::Four => -8,
             Svint14BitSize::Seven => -64,
@@ -643,7 +646,7 @@ impl Svint14BitSize {
     }
 
     #[allow(dead_code)]
-    pub fn max_value(&self) -> i16 {
+    pub fn max_value(self) -> i16 {
         match self {
             Svint14BitSize::Four => 7,
             Svint14BitSize::Seven => 63,
@@ -740,7 +743,7 @@ pub(crate) enum Svint16BitSize {
 impl Svint16BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Svint16BitSize::Eight => 8,
             Svint16BitSize::Twelve => 12,
@@ -749,7 +752,7 @@ impl Svint16BitSize {
         }
     }
 
-    pub fn min_value(&self) -> i16 {
+    pub fn min_value(self) -> i16 {
         match self {
             Svint16BitSize::Eight => -128,
             Svint16BitSize::Twelve => -2_048,
@@ -759,7 +762,7 @@ impl Svint16BitSize {
     }
 
     #[allow(dead_code)]
-    pub fn max_value(&self) -> i16 {
+    pub fn max_value(self) -> i16 {
         match self {
             Svint16BitSize::Eight => 127,
             Svint16BitSize::Twelve => 2_047,
@@ -832,6 +835,7 @@ impl VarInt for SVINT24 {
 }
 
 impl From<i32> for SVINT24 {
+    #[allow(clippy::match_same_arms)]
     fn from(value: i32) -> Self {
         let bit_size = match value {
             -32_768..=32_767 => Svint24BitSize::Sixteen,
@@ -857,7 +861,7 @@ pub(crate) enum Svint24BitSize {
 impl Svint24BitSize {
     pub const FLAG_BITS_SIZE: usize = TWO_BITS;
 
-    pub fn bit_size(&self) -> usize {
+    pub fn bit_size(self) -> usize {
         match self {
             Svint24BitSize::Sixteen => 16,
             Svint24BitSize::Nineteen => 19,
@@ -866,7 +870,7 @@ impl Svint24BitSize {
         }
     }
 
-    pub fn min_value(&self) -> i32 {
+    pub fn min_value(self) -> i32 {
         match self {
             Svint24BitSize::Sixteen => -32_768,
             Svint24BitSize::Nineteen => -262_144,
@@ -876,7 +880,7 @@ impl Svint24BitSize {
     }
 
     #[allow(dead_code)]
-    pub fn max_value(&self) -> i32 {
+    pub fn max_value(self) -> i32 {
         match self {
             Svint24BitSize::Sixteen => 32_767,
             Svint24BitSize::Nineteen => 262_143,

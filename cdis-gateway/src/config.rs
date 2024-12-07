@@ -80,7 +80,7 @@ impl TryFrom<&ConfigSpec> for Config {
     }
 }
 
-/// Wrapper type for `CodecUpdateMode` from cdis_assemble crate
+/// Wrapper type for `CodecUpdateMode` from `cdis_assemble` crate
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) struct GatewayMode(pub(crate) CodecUpdateMode);
 
@@ -109,7 +109,7 @@ impl Display for GatewayMode {
     }
 }
 
-/// Wrapper type for `CodecOptimizeMode` from cdis_assemble crate
+/// Wrapper type for `CodecOptimizeMode` from `cdis_assemble` crate
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) struct EncoderOptimization(pub(crate) CodecOptimizeMode);
 
@@ -276,6 +276,7 @@ fn set_federation_parameters(spec: &Option<FederationSpec>) -> VariableParameter
 }
 
 #[allow(dead_code)]
+#[allow(clippy::struct_field_names)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct FederationAgreement {
     pub hbt_cdis_full_update_mplier: f32,     //Default: 2.4
@@ -380,6 +381,7 @@ pub struct EncoderSpec {
     pub optimization: Option<String>,
 }
 
+#[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct FederationSpec {
     pub hbt_cdis_full_update_mplier: Option<f32>,

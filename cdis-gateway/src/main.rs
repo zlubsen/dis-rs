@@ -83,16 +83,16 @@ impl Display for GatewayError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             GatewayError::ConfigFileLoad(err) => {
-                write!(f, "Error loading config file - {}.", err)
+                write!(f, "Error loading config file - {err}.")
             }
             GatewayError::ConfigFileRead(err) => {
-                write!(f, "Error reading config file contents - {}.", err)
+                write!(f, "Error reading config file contents - {err}.")
             }
             GatewayError::ConfigFileParse(err) => {
-                write!(f, "Error parsing config file - {}.", err)
+                write!(f, "Error parsing config file - {err}.")
             }
             GatewayError::ConfigInvalid(err) => {
-                write!(f, "{}", err)
+                write!(f, "{err}")
             }
             GatewayError::RuntimeStart => {
                 write!(f, "Error starting Tokio runtime.")
@@ -167,8 +167,8 @@ async fn start_gateway(config: Config) {
     let (stats_tx, _stats_rx) =
         tokio::sync::broadcast::channel::<SseStat>(STATS_CHANNEL_BUFFER_SIZE);
 
-    let dis_socket = create_udp_socket(&config.dis_socket).await;
-    let cdis_socket = create_udp_socket(&config.cdis_socket).await;
+    let dis_socket = create_udp_socket(&config.dis_socket);
+    let cdis_socket = create_udp_socket(&config.cdis_socket);
 
     let dis_read_socket = reader_socket(
         dis_socket.clone(),
@@ -234,7 +234,7 @@ async fn start_gateway(config: Config) {
 /// The created `tokio::net::udp::UdpSocket` is returned wrapped in an `Arc`
 /// so that it can be used by multiple tasks (i.e., for both writing and sending).
 #[allow(clippy::too_many_lines)]
-async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
+fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     use socket2::{Domain, Protocol, Socket, Type};
 
     // Create socket using socket2 crate, to be able to set required socket options (SO_REUSEADDR, SO_REUSEPORT, ...)
@@ -300,10 +300,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
                     socket
                         .join_multicast_v4(&ip_address_v4, &interface_v4)
                         .unwrap_or_else(|_| {
-                            panic!(
-                                "Failed to join multicast group {} using interface {}.",
-                                ip_address_v4, interface_v4
-                            )
+                            panic!("Failed to join multicast group {ip_address_v4} using interface {interface_v4}.")
                         });
                 }
             }
@@ -330,10 +327,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
                     socket
                         .join_multicast_v6(&ip_address_v6, 0)
                         .unwrap_or_else(|_| {
-                            panic!(
-                                "Failed to join multicast group {} using interface 0 ({}).",
-                                ip_address_v6, interface_v6
-                            )
+                            panic!("Failed to join multicast group {ip_address_v6} using interface 0 ({interface_v6}).")
                         });
                 }
             }
@@ -348,7 +342,7 @@ async fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
     Arc::new(socket)
 }
 
-/// Task that runs an UdpSocket for reading UDP packets from the network.
+/// Task that runs an `UdpSocket` for reading UDP packets from the network.
 /// Received packets will be send to the encoder/decoder task to which the `to_codec` channel is connected to.
 async fn reader_socket(
     socket: Arc<UdpSocket>,
@@ -357,12 +351,6 @@ async fn reader_socket(
     mut cmd_rx: tokio::sync::broadcast::Receiver<Command>,
     _event_tx: tokio::sync::mpsc::Sender<Event>,
 ) {
-    let mut buf = BytesMut::with_capacity(READER_SOCKET_BUFFER_SIZE_BYTES);
-    buf.resize(READER_SOCKET_BUFFER_SIZE_BYTES, 0);
-
-    let default_own_socketaddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
-    let local_address = socket.local_addr().unwrap_or(default_own_socketaddr);
-
     #[derive(Debug)]
     enum Action {
         NoOp,
@@ -371,6 +359,13 @@ async fn reader_socket(
         Error(io::Error),
         Quit,
     }
+
+    let mut buf = BytesMut::with_capacity(READER_SOCKET_BUFFER_SIZE_BYTES);
+
+    buf.resize(READER_SOCKET_BUFFER_SIZE_BYTES, 0);
+    let default_own_socketaddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
+
+    let local_address = socket.local_addr().unwrap_or(default_own_socketaddr);
 
     loop {
         let action = select! {
@@ -395,6 +390,7 @@ async fn reader_socket(
             }
         };
 
+        #[allow(clippy::match_same_arms)]
         match action {
             Action::NoOp => {}
             Action::ReceivedPacket(bytes, _from_address) => {
@@ -416,7 +412,7 @@ async fn reader_socket(
     }
 }
 
-/// Task that runs an UdpSocket for writing UDP packets to the network.
+/// Task that runs an `UdpSocket` for writing UDP packets to the network.
 /// Packets will be received from the encoder/decoder task to which the `to_codec` channel is connected to.
 async fn writer_socket(
     socket: Arc<UdpSocket>,
@@ -518,7 +514,7 @@ async fn encoder(
             }
             bytes = channel_in.recv() => {
                 if let Some(bytes) = bytes {
-                    let bytes = encoder.encode_buffer(bytes);
+                    let bytes = encoder.encode_buffer(&bytes);
                     channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
                 } else {
                     trace!("Encoder task received zero bytes through channel.");
@@ -552,7 +548,7 @@ async fn decoder(
             }
             bytes = channel_in.recv() => {
                 if let Some(bytes) = bytes {
-                    let bytes = decoder.decode_buffer(bytes);
+                    let bytes = decoder.decode_buffer(&bytes);
                     channel_out.send(bytes).await.expect("Error sending encoded bytes to socket.");
                 } else {
                     trace!("Decoder task received zero bytes through channel.");

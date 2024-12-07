@@ -10,7 +10,8 @@ use crate::records::codec::{
     encode_entity_coordinate_vector, encode_layer_header_with_length,
 };
 use crate::records::model::{
-    BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat, UnitsMeters,
+    BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat, LayerHeader,
+    UnitsMeters,
 };
 use crate::types::model::{CdisFloat, UVINT16};
 use crate::{BodyProperties, CdisBody};
@@ -99,7 +100,7 @@ impl Default for DecoderStateIff {
     fn default() -> Self {
         Self {
             heartbeat: Instant::now(),
-            system_id: Default::default(),
+            system_id: SystemId::default(),
         }
     }
 }
@@ -297,7 +298,7 @@ impl Iff {
                     self.relative_antenna_location_units,
                 )
             } else {
-                Default::default()
+                VectorF32::default()
             };
 
         let builder = Counterpart::builder()
@@ -341,7 +342,7 @@ impl Codec for IffLayer2 {
 
     fn encode(item: &Self::Counterpart) -> Self {
         let mut layer = Self {
-            layer_header: Default::default(),
+            layer_header: LayerHeader::default(),
             beam_data: BeamData::encode(&item.beam_data),
             operational_parameter_1: item.operational_parameter_1,
             operational_parameter_2: item.operational_parameter_2,
@@ -382,7 +383,7 @@ impl Codec for IffLayer3 {
 
     fn encode(item: &Self::Counterpart) -> Self {
         let mut layer = Self {
-            layer_header: Default::default(),
+            layer_header: LayerHeader::default(),
             reporting_simulation_site: UVINT16::from(item.reporting_simulation.site_id),
             reporting_simulation_application: UVINT16::from(
                 item.reporting_simulation.application_id,
@@ -422,7 +423,7 @@ impl Codec for IffLayer4 {
 
     fn encode(item: &Self::Counterpart) -> Self {
         let mut layer = Self {
-            layer_header: Default::default(),
+            layer_header: LayerHeader::default(),
             reporting_simulation_site: UVINT16::from(item.reporting_simulation.site_id),
             reporting_simulation_application: UVINT16::from(
                 item.reporting_simulation.application_id,
@@ -462,7 +463,7 @@ impl Codec for IffLayer5 {
 
     fn encode(item: &Self::Counterpart) -> Self {
         let mut layer = Self {
-            layer_header: Default::default(),
+            layer_header: LayerHeader::default(),
             reporting_simulation_site: UVINT16::from(item.reporting_simulation.site_id),
             reporting_simulation_application: UVINT16::from(
                 item.reporting_simulation.application_id,

@@ -10,7 +10,7 @@ impl SerializeCdisPdu for StopFreeze {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.originating_id.serialize(buf, cursor);
         let cursor = self.receiving_id.serialize(buf, cursor);
-        let cursor = serialize_clock_time(buf, cursor, &self.real_world_time);
+        let cursor = serialize_clock_time(buf, cursor, self.real_world_time);
 
         let cursor = write_value_unsigned::<u8>(buf, cursor, FOUR_BITS, self.reason.into());
         let cursor = serialize_frozen_behavior(buf, cursor, &self.frozen_behavior);

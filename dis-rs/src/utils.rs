@@ -2,7 +2,7 @@ struct EcefToGeoConstants;
 
 #[allow(clippy::excessive_precision)]
 impl EcefToGeoConstants {
-    const WGS_84_SEMI_MAJOR_AXIS: f64 = 6378137.0; //WGS-84 semi-major axis
+    const WGS_84_SEMI_MAJOR_AXIS: f64 = 6_378_137.0; //WGS-84 semi-major axis
     const E2: f64 = 6.694_379_990_137_799_7e-3; // WGS-84 first eccentricity squared
     const A1: f64 = 4.269_767_270_715_753_5e+4; //a1 = a*e2
     const A2: f64 = 1.823_091_254_607_545_5e+9; //a2 = a1*a1
@@ -19,6 +19,7 @@ impl EcefToGeoConstants {
 ///
 /// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
 #[must_use]
+#[allow(clippy::many_single_char_names)]
 pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64, f64) {
     // TODO handle special case for centre of earth, where lat/lon are ignored (CDIS 7.1 ad. c).
     let zp = ecef_z.abs();

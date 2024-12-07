@@ -124,6 +124,7 @@ impl AggregateMarking {
         AggregateMarking::new(marking.into(), EntityMarkingCharacterSet::ASCII)
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
         self.marking_string = marking.into();
         self

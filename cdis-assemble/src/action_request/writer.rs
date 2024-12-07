@@ -14,12 +14,16 @@ impl SerializeCdisPdu for ActionRequest {
         let cursor = self.request_id.serialize(buf, cursor);
         let cursor = self.action_id.serialize(buf, cursor);
 
+        #[allow(clippy::if_not_else)]
+        #[allow(clippy::cast_possible_truncation)]
         let cursor = if !self.datum_specification.fixed_datum_records.is_empty() {
             UVINT8::from(self.datum_specification.fixed_datum_records.len() as u8)
                 .serialize(buf, cursor)
         } else {
             cursor
         };
+        #[allow(clippy::if_not_else)]
+        #[allow(clippy::cast_possible_truncation)]
         let cursor = if !self.datum_specification.variable_datum_records.is_empty() {
             UVINT8::from(self.datum_specification.variable_datum_records.len() as u8)
                 .serialize(buf, cursor)

@@ -101,7 +101,7 @@ impl EmitterSystem {
             name: EmitterName::default(),
             function: EmitterSystemFunction::default(),
             number: 0,
-            location: Default::default(),
+            location: VectorF32::default(),
             beams: vec![],
         }
     }
@@ -130,6 +130,7 @@ impl EmitterSystem {
         self
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_beams(mut self, beams: &mut Vec<Beam>) -> Self {
         self.beams.append(beams);
         self
@@ -235,6 +236,7 @@ impl Beam {
         self
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_track_jams(mut self, track_jam_data: &mut Vec<TrackJam>) -> Self {
         self.track_jam_data.append(track_jam_data);
         self

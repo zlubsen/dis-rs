@@ -7,6 +7,7 @@ use crate::{Serialize, SerializePdu, SupportedVersion};
 use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for UnderwaterAcoustic {
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let _emitter_bytes = self.emitting_entity_id.serialize(buf);
         let _event_id_bytes = self.event_id.serialize(buf);
@@ -40,7 +41,7 @@ impl SerializePdu for UnderwaterAcoustic {
 impl Serialize for PropulsionPlantConfiguration {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let configuration: u8 = self.configuration.into();
-        let hull_mounted_masker_on: u8 = if self.hull_mounted_masker { 1 } else { 0 };
+        let hull_mounted_masker_on = u8::from(self.hull_mounted_masker);
         let final_field = (configuration << 1) | hull_mounted_masker_on;
         buf.put_u8(final_field);
 
@@ -71,6 +72,7 @@ impl Serialize for APA {
 }
 
 impl Serialize for UAEmitterSystem {
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.record_length() as u8);
         buf.put_u8(self.beams.len() as u8);

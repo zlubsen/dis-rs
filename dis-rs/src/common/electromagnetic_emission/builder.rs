@@ -41,6 +41,7 @@ impl ElectromagneticEmissionBuilder {
         self
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_emitter_systems(mut self, systems: &mut Vec<EmitterSystem>) -> Self {
         self.0.emitter_systems.append(systems);
         self

@@ -88,6 +88,7 @@ impl Codec for EntityType {
 
 /// DIS specifies linear velocity in meters/sec.
 /// C-DIS specifies linear velocity in decimeters/sec
+#[allow(clippy::cast_possible_truncation)]
 impl Codec for LinearVelocity {
     type Counterpart = VectorF32;
     const CONVERSION: f32 = DECIMETERS_IN_METER;
@@ -118,6 +119,7 @@ impl Codec for Orientation {
     type Counterpart = dis_rs::model::Orientation;
     const SCALING: f32 = 4095f32 / std::f32::consts::PI; // (2^12 - 1) = 4095
 
+    #[allow(clippy::cast_possible_truncation)]
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
             psi: (normalize_radians_to_plusminus_pi(item.psi) * Self::SCALING) as i16,
@@ -179,6 +181,7 @@ impl Codec for LinearAcceleration {
     type Counterpart = VectorF32;
     const CONVERSION: f32 = DECIMETERS_IN_METER;
 
+    #[allow(clippy::cast_possible_truncation)]
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
             x: SVINT14::from((item.first_vector_component * Self::CONVERSION) as i16),
@@ -202,6 +205,8 @@ impl Codec for LinearAcceleration {
 ///
 /// +-720 degrees per second max 0.35 degrees/sec resolution
 /// Scale = (2^11 - 1) / (4 * pi)
+#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::cast_possible_truncation)]
 impl Codec for AngularVelocity {
     type Counterpart = VectorF32;
     const SCALING: f32 = ((2 ^ 11) - 1) as f32 / (4.0 * std::f32::consts::PI);
@@ -234,6 +239,8 @@ impl Codec for AngularVelocity {
 impl Codec for EncodingScheme {
     type Counterpart = dis_rs::signal::model::EncodingScheme;
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::match_same_arms)]
     fn encode(item: &Self::Counterpart) -> Self {
         match item {
             Self::Counterpart::EncodedAudio {
@@ -430,6 +437,8 @@ pub(crate) fn encode_world_coordinates(
             (alt_meters / METER_PER_DEKAMETER, UnitsDekameters::Dekameter)
         };
 
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_precision_loss)]
         let world_coordinates =
             WorldCoordinates::new(lat as f32, lon as f32, SVINT24::from(alt as i32));
 
@@ -440,6 +449,7 @@ pub(crate) fn encode_world_coordinates(
 /// Decode C-DIS geodetic (LLA) ``WorldCoordinates`` to DIS geocentric (ECEF) ``Location``.
 /// DIS ECEF is in meters
 /// C-DIS LLA is in radians (lat/lon angles) and centimeters or dekameters depending on the Unit flag
+#[allow(clippy::cast_precision_loss)]
 pub(crate) fn decode_world_coordinates(
     lla_location: &WorldCoordinates,
     units: UnitsDekameters,
@@ -619,9 +629,12 @@ impl Codec for CdisEntityAssociationVP {
 impl Codec for BeamData {
     type Counterpart = dis_rs::model::BeamData;
 
+    #[allow(clippy::cast_precision_loss)]
     const SCALING: f32 = ((2 ^ 12) - 1) as f32 / std::f32::consts::PI;
     const SCALING_2: f32 = 1023f32 / 100.0;
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
             az_center: SVINT13::from((item.azimuth_center * Self::SCALING).round() as i16),

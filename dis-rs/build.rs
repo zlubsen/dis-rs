@@ -779,9 +779,15 @@ mod generation {
             }
         }
         quote!(
+            #[allow(clippy::default_trait_access)]
             #[allow(clippy::identity_op)]
-            #[allow(clippy::write_literal)]
+            #[allow(clippy::match_same_arms)]
             #[allow(clippy::match_single_binding)]
+            #[allow(clippy::struct_excessive_bools)]
+            #[allow(clippy::too_many_lines)]
+            #[allow(clippy::uninlined_format_args)]
+            #[allow(clippy::unreadable_literal)]
+            #[allow(clippy::write_literal)]
             pub mod enumerations {
                 use std::fmt::{Display, Formatter};
 
@@ -1255,7 +1261,7 @@ mod generation {
                 let xref_size_type = size_to_type(lookup_xref(xref).unwrap().size());
                 let xref_size_ident = format_ident!("{}", xref_size_type);
                 quote!(
-                    let #field_ident = (#xref_size_ident::from(value.#field_ident) as #field_size_ident) << #position_shift_literal;
+                    let #field_ident = #field_size_ident::from(#xref_size_ident::from(value.#field_ident)) << #position_shift_literal;
                 )
             } else {
                 quote!(
@@ -1279,6 +1285,7 @@ mod generation {
     }
 
     fn size_to_type(data_size: usize) -> &'static str {
+        #[allow(clippy::match_same_arms)]
         match data_size {
             64 => "u64",
             32 => "u32",
@@ -1289,6 +1296,8 @@ mod generation {
     }
 
     fn discriminant_literal(value: usize, data_size: usize) -> Literal {
+        #[allow(clippy::match_same_arms)]
+        #[allow(clippy::cast_possible_truncation)]
         match data_size {
             64 => Literal::u64_suffixed(value as u64),
             32 => Literal::u32_suffixed(value as u32),

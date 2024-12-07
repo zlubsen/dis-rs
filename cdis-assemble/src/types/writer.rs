@@ -95,7 +95,7 @@ impl SerializeCdis for SVINT24 {
 
 /// Serializes a C-DIS Clock Time Record (11.4).
 #[allow(clippy::let_and_return)]
-pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: &ClockTime) -> usize {
+pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: ClockTime) -> usize {
     let cursor = write_value_signed(buf, cursor, THIRTY_TWO_BITS, time.hour);
     let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, time.time_past_hour);
 

@@ -52,6 +52,7 @@ pub fn serialize_pdu_status(pdu_status: &PduStatus, pdu_type: &PduType) -> u8 {
         0u8
     };
 
+    #[allow(clippy::match_same_arms)]
     match u8::from(*pdu_type) {
         1 => combine_cei_lvc_tei(cei, lvc, tei),
         2 => combine_fti_cei_lvc(fti, cei, lvc),

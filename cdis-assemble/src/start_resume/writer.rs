@@ -8,8 +8,8 @@ impl SerializeCdisPdu for StartResume {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.originating_id.serialize(buf, cursor);
         let cursor = self.receiving_id.serialize(buf, cursor);
-        let cursor = serialize_clock_time(buf, cursor, &self.real_world_time);
-        let cursor = serialize_clock_time(buf, cursor, &self.simulation_time);
+        let cursor = serialize_clock_time(buf, cursor, self.real_world_time);
+        let cursor = serialize_clock_time(buf, cursor, self.simulation_time);
         let cursor = self.request_id.serialize(buf, cursor);
 
         cursor

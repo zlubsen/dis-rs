@@ -42,6 +42,7 @@ pub fn parse_pdu_status_fields(pdu_type: u8, input: u8) -> PduStatus {
     let ism = status_ism(input);
     let aii = status_aii(input);
 
+    #[allow(clippy::match_same_arms)]
     match pdu_type {
         1 => build_pdu_status_cei_lvc_tei(cei, lvc, tei),
         2 => build_pdu_status_fti_cei_lvc(fti, cei, lvc),

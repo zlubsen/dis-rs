@@ -168,6 +168,8 @@ pub(crate) fn linear_acceleration(input: BitInput) -> IResult<BitInput, LinearAc
     ))
 }
 
+#[allow(clippy::similar_names)]
+#[allow(clippy::cast_possible_truncation)]
 pub(crate) fn orientation(input: BitInput) -> IResult<BitInput, Orientation> {
     let (input, psi): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
     let (input, theta): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
@@ -190,9 +192,11 @@ pub(crate) fn entity_marking(input: BitInput) -> IResult<BitInput, CdisEntityMar
     Ok((input, marking))
 }
 
+#[allow(clippy::cast_precision_loss)]
 const WORLD_COORDINATES_LAT_SCALE: f32 = ((2 ^ 30) - 1) as f32 / (f32::PI / 2.0);
 const WORLD_COORDINATES_LON_SCALE: f32 = ((2 ^ 31) - 1) as f32 / (f32::PI);
 
+#[allow(clippy::cast_precision_loss)]
 pub(crate) fn world_coordinates(input: BitInput) -> IResult<BitInput, WorldCoordinates> {
     let (input, latitude): (BitInput, isize) = take_signed(THIRTY_ONE_BITS)(input)?;
     let latitude = latitude as f32 / WORLD_COORDINATES_LAT_SCALE;
@@ -537,6 +541,7 @@ pub(crate) fn variable_datum(input: BitInput) -> IResult<BitInput, VariableDatum
     Ok((input, VariableDatum::new(datum_id, datum_value)))
 }
 
+#[allow(clippy::match_same_arms)]
 pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingScheme> {
     let (input, encoding_scheme_class): (BitInput, u16) = take(TWO_BITS)(input)?;
     let encoding_scheme_class = SignalEncodingClass::from(encoding_scheme_class);
@@ -568,6 +573,7 @@ pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingSche
     Ok((input, encoding_scheme))
 }
 
+#[allow(clippy::similar_names)]
 pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAntennaPattern> {
     let (input, beam_direction_psi): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
     let (input, beam_direction_theta): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;

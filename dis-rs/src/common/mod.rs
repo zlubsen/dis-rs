@@ -114,6 +114,9 @@ pub trait Serialize {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// Assumes there will only be a single DIS version of PDUs in a buffer (packet).
+///
+/// # Errors
+/// Returns a `DisError` when parsing fails
 pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     parse_multiple_pdu(input)
 }
@@ -123,6 +126,9 @@ pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// This function will filter out any non-v6 PDUs in a buffer (packet).
+///
+/// # Errors
+/// Returns a `DisError` when parsing fails
 pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     let pdus = parse_multiple_pdu(input)?
         .into_iter()
@@ -136,6 +142,9 @@ pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// This function will filter out any non-v7 PDUs in a buffer (packet).
+///
+/// # Errors
+/// Returns a `DisError` when parsing fails
 pub fn parse_v7(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     let pdus = parse_multiple_pdu(input)?
         .into_iter()

@@ -74,11 +74,11 @@ impl EncoderState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            entity_state: Default::default(),
-            ee: Default::default(),
-            designator: Default::default(),
-            transmitter: Default::default(),
-            iff: Default::default(),
+            entity_state: HashMap::default(),
+            ee: HashMap::default(),
+            designator: HashMap::default(),
+            transmitter: HashMap::default(),
+            iff: HashMap::default(),
         }
     }
 }
@@ -96,11 +96,11 @@ impl DecoderState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            entity_state: Default::default(),
-            ee: Default::default(),
-            designator: Default::default(),
-            transmitter: Default::default(),
-            iff: Default::default(),
+            entity_state: HashMap::default(),
+            ee: HashMap::default(),
+            designator: HashMap::default(),
+            transmitter: HashMap::default(),
+            iff: HashMap::default(),
         }
     }
 }
@@ -131,9 +131,9 @@ impl CodecOptions {
     #[must_use]
     pub fn new_full_update() -> Self {
         Self {
-            update_mode: Default::default(),
-            optimize_mode: Default::default(),
-            federation_parameters: Default::default(),
+            update_mode: CodecUpdateMode::default(),
+            optimize_mode: CodecOptimizeMode::default(),
+            federation_parameters: VariableParameters::default(),
             hbt_cdis_full_update_mplier: DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER,
         }
     }
@@ -142,8 +142,8 @@ impl CodecOptions {
     pub fn new_partial_update() -> Self {
         Self {
             update_mode: CodecUpdateMode::PartialUpdate,
-            optimize_mode: Default::default(),
-            federation_parameters: Default::default(),
+            optimize_mode: CodecOptimizeMode::default(),
+            federation_parameters: VariableParameters::default(),
             hbt_cdis_full_update_mplier: DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER,
         }
     }
@@ -204,6 +204,8 @@ impl CdisPdu {
 }
 
 impl CdisBody {
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::match_same_arms)]
     pub fn encode(
         item: &PduBody,
         state: &mut EncoderState,

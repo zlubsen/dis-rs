@@ -128,7 +128,7 @@ impl Default for IffLayer2 {
                 layer_number: 2,
                 ..Default::default()
             },
-            beam_data: Default::default(),
+            beam_data: BeamData::default(),
             operational_parameter_1: 0,
             operational_parameter_2: 0,
             iff_fundamental_parameters: vec![IffFundamentalParameterData::default()],
@@ -244,8 +244,8 @@ impl Default for IffLayer4 {
                 layer_number: 4,
                 ..Default::default()
             },
-            reporting_simulation: Default::default(),
-            mode_s_basic_data: Default::default(),
+            reporting_simulation: SimulationAddress::default(),
+            mode_s_basic_data: ModeSBasicData::default(),
             data_records: IffDataSpecification::default(),
         }
     }
@@ -313,10 +313,10 @@ impl Default for IffLayer5 {
                 layer_number: 5,
                 ..Default::default()
             },
-            reporting_simulation: Default::default(),
-            applicable_layers: Default::default(),
-            data_category: Default::default(),
-            data_records: Default::default(),
+            reporting_simulation: SimulationAddress::default(),
+            applicable_layers: InformationLayers::default(),
+            data_category: DataCategory::default(),
+            data_records: IffDataSpecification::default(),
         }
     }
 }
@@ -341,6 +341,7 @@ impl IffLayer5 {
 }
 
 /// 6.2.13 Change/Options record
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ChangeOptionsRecord {
     pub change_indicator: bool,
@@ -969,6 +970,8 @@ impl Mode5MessageFormats {
 }
 
 impl From<u32> for Mode5MessageFormats {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::similar_names)]
     fn from(record: u32) -> Self {
         let format_0 = IffPresence::from(((record >> 31) as u8) & BIT_7_IN_BYTE);
         let format_1 = IffPresence::from(((record >> 30) as u8) & BIT_7_IN_BYTE);
@@ -1041,6 +1044,7 @@ impl From<u32> for Mode5MessageFormats {
 }
 
 impl From<&Mode5MessageFormats> for u32 {
+    #[allow(clippy::similar_names)]
     fn from(value: &Mode5MessageFormats) -> Self {
         let mf_0 = u32::from(&value.message_format_0) << 31;
         let mf_1 = u32::from(&value.message_format_1) << 30;
@@ -1451,6 +1455,7 @@ impl ModeSLevelsPresent {
 }
 
 impl From<u8> for ModeSLevelsPresent {
+    #[allow(clippy::similar_names)]
     fn from(record: u8) -> Self {
         let level_1 = IffPresence::from((record & BIT_1_IN_BYTE) >> 6);
         let level_2_els = IffPresence::from((record & BIT_2_IN_BYTE) >> 5);
@@ -1469,6 +1474,7 @@ impl From<u8> for ModeSLevelsPresent {
 }
 
 impl From<&ModeSLevelsPresent> for u8 {
+    #[allow(clippy::similar_names)]
     fn from(value: &ModeSLevelsPresent) -> Self {
         let level_1: u8 = u8::from(&value.level_1) << 6;
         let level_2_els: u8 = u8::from(&value.level_2_els) << 5;

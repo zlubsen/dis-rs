@@ -33,6 +33,9 @@ use nom::IResult;
 use std::ops::BitAnd;
 
 /// Attempts to parse the provided buffer for CDIS PDUs
+///
+/// # Errors
+/// Returns a `CdisError` when parsing fails.
 pub fn parse(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
     parse_multiple_cdis_pdu(input)
 }
@@ -151,6 +154,8 @@ where
 /// Parse a signed value from the bit stream, formatted in `count` bits.
 /// MSB is the sign bit, the remaining bits form the value.
 /// This function then converts these two components to a signed value of type `isize`.
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_wrap)]
 pub(crate) fn take_signed(count: usize) -> impl Fn(BitInput) -> IResult<BitInput, isize> {
     move |input| {
         let (input, sign_bit): (BitInput, isize) = take(ONE_BIT)(input)?;

@@ -43,6 +43,9 @@ impl Pdu {
     /// Serializes `self` into the buffer.
     ///
     /// Fails when the capacity of the buffer is smaller then the serialized length of the PDU (header + body).
+    ///
+    /// # Errors
+    /// Returns a `DisError` when parsing fails
     pub fn serialize(&self, buf: &mut BytesMut) -> Result<u16, DisError> {
         if self.pdu_length() as usize > buf.capacity() {
             return Err(DisError::InsufficientBufferSize(
@@ -242,6 +245,7 @@ impl Serialize for FixedDatum {
 }
 
 impl Serialize for VariableDatum {
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         const SIXTY_FOUR_BITS: usize = 64;
         let data_length_bits: usize = self.datum_value.len() * 8;

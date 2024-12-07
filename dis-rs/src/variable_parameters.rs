@@ -115,6 +115,7 @@ impl VariableParameters {
 }
 
 impl Default for VariableParameters {
+    #[allow(clippy::too_many_lines)]
     fn default() -> Self {
         Self {
             AGG_RESPONSE_DFLT: 10.0,              // s

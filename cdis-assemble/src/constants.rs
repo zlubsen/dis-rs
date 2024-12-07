@@ -1,3 +1,7 @@
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_precision_loss)]
+
 pub const ONE_BIT: usize = 1;
 pub const TWO_BITS: usize = 2;
 pub const THREE_BITS: usize = 3;

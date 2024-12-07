@@ -145,10 +145,16 @@ impl CdisTimeStamp {
     }
 
     /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_precision_loss)]
     fn nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
         (nanoseconds_past_the_hour as f32 / CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
     }
 
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn cdis_time_units_to_nanoseconds(cdis_time_units: u32) -> u32 {
         (cdis_time_units as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
     }
@@ -161,6 +167,9 @@ impl Default for CdisTimeStamp {
 }
 
 impl From<u32> for CdisTimeStamp {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from(value: u32) -> Self {
         let is_absolute_timestamp = (value & LEAST_SIGNIFICANT_BIT) == LEAST_SIGNIFICANT_BIT;
         let units_past_the_hour = value >> 1;
@@ -205,6 +214,9 @@ impl From<CdisTimeStamp> for TimeStamp {
 }
 
 impl From<DisTimeStamp> for CdisTimeStamp {
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     fn from(value: DisTimeStamp) -> Self {
         let dis_to_cdis_time_units =
             CDIS_TIME_UNITS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
@@ -228,6 +240,9 @@ impl From<DisTimeStamp> for CdisTimeStamp {
 }
 
 impl From<CdisTimeStamp> for DisTimeStamp {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from(value: CdisTimeStamp) -> Self {
         let cdis_to_dis_time_units =
             DIS_TIME_UNITS_PER_HOUR as f32 / CDIS_TIME_UNITS_PER_HOUR as f32;
@@ -387,6 +402,7 @@ impl Default for EncodingScheme {
 }
 
 impl CdisRecord for EncodingScheme {
+    #[allow(clippy::cast_possible_truncation)]
     fn record_length(&self) -> usize {
         TWO_BITS
             + match self {
@@ -593,6 +609,7 @@ pub struct Orientation {
 
 impl Orientation {
     #[must_use]
+    #[allow(clippy::similar_names)]
     pub fn new(psi: i16, theta: i16, phi: i16) -> Self {
         Self { psi, theta, phi }
     }
@@ -798,6 +815,7 @@ impl CdisMarkingCharEncoding {
     }
 
     #[allow(clippy::wildcard_in_or_patterns)]
+    #[allow(clippy::too_many_lines)]
     #[must_use]
     pub fn char_from_code(&self, code: u8) -> char {
         match self {
@@ -906,6 +924,7 @@ impl CdisMarkingCharEncoding {
     }
 
     #[allow(clippy::wildcard_in_or_patterns)]
+    #[allow(clippy::too_many_lines)]
     #[must_use]
     pub fn u8_from_char(&self, c: char) -> u8 {
         match self {
@@ -1095,6 +1114,9 @@ impl CdisFloat for ParameterValueFloat {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
         let mut mantissa = float;
         let mut exponent = 0i32;
@@ -1111,10 +1133,13 @@ impl CdisFloat for ParameterValueFloat {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn to_float(&self) -> Self::InnerFloat {
         self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
         let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
         let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
@@ -1347,6 +1372,10 @@ impl CdisFloat for FrequencyFloat {
         Self { mantissa, exponent }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
         let mut mantissa = float;
         let mut exponent = 0usize;
@@ -1362,6 +1391,7 @@ impl CdisFloat for FrequencyFloat {
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn to_float(&self) -> Self::InnerFloat {
         self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }

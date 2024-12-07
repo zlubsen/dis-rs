@@ -18,14 +18,14 @@ impl BodyProperties for ActionRequest {
     const FIELDS_PRESENT_LENGTH: usize = 2;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if !self.datum_specification.fixed_datum_records.is_empty() {
+        (if self.datum_specification.fixed_datum_records.is_empty() {
+            0
+        } else {
             Self::FieldsPresent::FIXED_DATUMS_BIT
-        } else {
+        }) | (if self.datum_specification.variable_datum_records.is_empty() {
             0
-        }) | (if !self.datum_specification.variable_datum_records.is_empty() {
+        } else {
             Self::FieldsPresent::VARIABLE_DATUMS_BIT
-        } else {
-            0
         })
     }
 

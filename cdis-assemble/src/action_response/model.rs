@@ -17,6 +17,7 @@ impl BodyProperties for ActionResponse {
     type FieldsPresentOutput = u8;
     const FIELDS_PRESENT_LENGTH: usize = 2;
 
+    #[allow(clippy::if_not_else)]
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
         (if !self.datum_specification.fixed_datum_records.is_empty() {
             Self::FieldsPresent::FIXED_DATUMS_BIT

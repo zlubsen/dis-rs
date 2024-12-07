@@ -26,6 +26,7 @@ impl SerializePdu for Signal {
 }
 
 impl Serialize for EncodingScheme {
+    #[allow(clippy::match_same_arms)]
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         match self {
             EncodingScheme::EncodedAudio {

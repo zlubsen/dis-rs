@@ -87,6 +87,7 @@ impl EntityStateBuilder {
     }
 
     #[must_use]
+    #[allow(clippy::fn_params_excessive_bools)]
     pub fn with_capabilities_flags(
         mut self,
         ammunition_supply: bool,
