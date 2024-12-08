@@ -674,7 +674,7 @@ mod tests {
     fn test_normalize_radians_to_plusminus_pi() {
         assert_eq!(
             normalize_radians_to_plusminus_pi(std::f32::consts::PI),
-            3.1415925f32
+            3.141_592_5f32
         ); // approx std::f32::consts::PI
         assert_eq!(
             normalize_radians_to_plusminus_pi(-std::f32::consts::PI),
@@ -682,11 +682,11 @@ mod tests {
         );
         assert_eq!(
             normalize_radians_to_plusminus_pi(0.5 * std::f32::consts::PI),
-            1.5707965
+            1.570_796_5
         ); // approx std::f32::consts::FRAC_PI_2
         assert_eq!(
             normalize_radians_to_plusminus_pi(3.5f32 * std::f32::consts::PI),
-            -1.570796
+            -1.570_796
         ); // approx -std::f32::consts::FRAC_PI_2
     }
 
