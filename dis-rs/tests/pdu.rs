@@ -28,7 +28,7 @@ fn test_pdu() {
 
     assert_eq!(pdus.len(), 1);
 
-    let s = if let PduBody::Signal(s) = &pdus.get(0).unwrap().body {
+    let s = if let PduBody::Signal(s) = &pdus.first().unwrap().body {
         Some(s)
     } else {
         None
@@ -98,5 +98,5 @@ fn test_insufficient_buffer_capacity() {
             pdu.pdu_length(),
             SOME_SMALL_AMOUNT_OF_BYTES
         ))
-    )
+    );
 }
