@@ -4,6 +4,12 @@ use crate::model::EntityId;
 
 pub struct IsGroupOfBuilder(IsGroupOf);
 
+impl Default for IsGroupOfBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IsGroupOfBuilder {
     #[must_use]
     pub fn new() -> Self {

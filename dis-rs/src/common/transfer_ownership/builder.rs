@@ -4,6 +4,12 @@ use crate::transfer_ownership::model::TransferOwnership;
 
 pub struct TransferOwnershipBuilder(TransferOwnership);
 
+impl Default for TransferOwnershipBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransferOwnershipBuilder {
     #[must_use]
     pub fn new() -> Self {

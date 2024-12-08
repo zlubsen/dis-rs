@@ -4,6 +4,12 @@ use crate::receiver::model::Receiver;
 
 pub struct ReceiverBuilder(Receiver);
 
+impl Default for ReceiverBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReceiverBuilder {
     #[must_use]
     pub fn new() -> Self {

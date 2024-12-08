@@ -4,6 +4,12 @@ use crate::model::{EntityId, EventId};
 
 pub struct ElectromagneticEmissionBuilder(ElectromagneticEmission);
 
+impl Default for ElectromagneticEmissionBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ElectromagneticEmissionBuilder {
     #[must_use]
     pub fn new() -> Self {

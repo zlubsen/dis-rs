@@ -4,6 +4,12 @@ use crate::repair_complete::model::RepairComplete;
 
 pub struct RepairCompleteBuilder(RepairComplete);
 
+impl Default for RepairCompleteBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RepairCompleteBuilder {
     #[must_use]
     pub fn new() -> Self {

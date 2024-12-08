@@ -4,6 +4,12 @@ use crate::enumerations::RequiredReliabilityService;
 
 pub struct DataRBuilder(DataR);
 
+impl Default for DataRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataRBuilder {
     #[must_use]
     pub fn new() -> Self {

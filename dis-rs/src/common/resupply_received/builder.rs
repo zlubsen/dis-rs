@@ -4,6 +4,12 @@ use crate::resupply_received::model::ResupplyReceived;
 
 pub struct ResupplyReceivedBuilder(ResupplyReceived);
 
+impl Default for ResupplyReceivedBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResupplyReceivedBuilder {
     #[must_use]
     pub fn new() -> Self {

@@ -22,6 +22,12 @@ use crate::enumerations::{
 
 pub struct IffBuilder(Iff);
 
+impl Default for IffBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -107,6 +113,12 @@ impl IffBuilder {
 
 pub struct IffLayer2Builder(IffLayer2);
 
+impl Default for IffLayer2Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffLayer2Builder {
     #[must_use]
     pub fn new() -> Self {
@@ -157,6 +169,12 @@ impl IffLayer2Builder {
 
 pub struct IffLayer3Builder(IffLayer3);
 
+impl Default for IffLayer3Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffLayer3Builder {
     #[must_use]
     pub fn new() -> Self {
@@ -195,6 +213,12 @@ impl IffLayer3Builder {
 
 pub struct IffLayer4Builder(IffLayer4);
 
+impl Default for IffLayer4Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffLayer4Builder {
     #[must_use]
     pub fn new() -> Self {
@@ -232,6 +256,12 @@ impl IffLayer4Builder {
 }
 
 pub struct IffLayer5Builder(IffLayer5);
+
+impl Default for IffLayer5Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl IffLayer5Builder {
     #[must_use]
@@ -276,6 +306,12 @@ impl IffLayer5Builder {
 }
 
 pub struct ChangeOptionsRecordBuilder(ChangeOptionsRecord);
+
+impl Default for ChangeOptionsRecordBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ChangeOptionsRecordBuilder {
     #[must_use]
@@ -338,6 +374,12 @@ impl ChangeOptionsRecordBuilder {
 }
 
 pub struct FundamentalOperationalDataBuilder(FundamentalOperationalData);
+
+impl Default for FundamentalOperationalDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl FundamentalOperationalDataBuilder {
     #[must_use]
@@ -413,6 +455,12 @@ impl FundamentalOperationalDataBuilder {
 
 pub struct IffDataRecordBuilder(IffDataRecord);
 
+impl Default for IffDataRecordBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffDataRecordBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -439,6 +487,12 @@ impl IffDataRecordBuilder {
 
 pub struct IffDataSpecificationBuilder(IffDataSpecification);
 
+impl Default for IffDataSpecificationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffDataSpecificationBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -464,6 +518,12 @@ impl IffDataSpecificationBuilder {
 }
 
 pub struct InformationLayersBuilder(InformationLayers);
+
+impl Default for InformationLayersBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl InformationLayersBuilder {
     #[must_use]
@@ -521,6 +581,12 @@ impl InformationLayersBuilder {
 
 pub struct IffFundamentalParameterDataBuilder(IffFundamentalParameterData);
 
+impl Default for IffFundamentalParameterDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IffFundamentalParameterDataBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -577,6 +643,12 @@ impl IffFundamentalParameterDataBuilder {
 
 pub struct LayerHeaderBuilder(LayerHeader);
 
+impl Default for LayerHeaderBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LayerHeaderBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -609,6 +681,12 @@ impl LayerHeaderBuilder {
 
 pub struct SystemSpecificDataBuilder(SystemSpecificData);
 
+impl Default for SystemSpecificDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SystemSpecificDataBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -640,6 +718,12 @@ impl SystemSpecificDataBuilder {
 }
 
 pub struct SystemIdBuilder(SystemId);
+
+impl Default for SystemIdBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SystemIdBuilder {
     #[must_use]
@@ -678,6 +762,12 @@ impl SystemIdBuilder {
 }
 
 pub struct DapSourceBuilder(DapSource);
+
+impl Default for DapSourceBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DapSourceBuilder {
     #[must_use]
@@ -741,6 +831,12 @@ impl DapSourceBuilder {
 
 pub struct EnhancedMode1CodeBuilder(EnhancedMode1Code);
 
+impl Default for EnhancedMode1CodeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EnhancedMode1CodeBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -797,6 +893,12 @@ impl EnhancedMode1CodeBuilder {
 
 pub struct Mode5InterrogatorBasicDataBuilder(Mode5InterrogatorBasicData);
 
+impl Default for Mode5InterrogatorBasicDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Mode5InterrogatorBasicDataBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -828,6 +930,12 @@ impl Mode5InterrogatorBasicDataBuilder {
 }
 
 pub struct Mode5InterrogatorStatusBuilder(Mode5InterrogatorStatus);
+
+impl Default for Mode5InterrogatorStatusBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Mode5InterrogatorStatusBuilder {
     #[must_use]
@@ -872,6 +980,12 @@ impl Mode5InterrogatorStatusBuilder {
 }
 
 pub struct Mode5MessageFormatsBuilder(Mode5MessageFormats);
+
+impl Default for Mode5MessageFormatsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Mode5MessageFormatsBuilder {
     #[must_use]
@@ -1079,6 +1193,12 @@ impl Mode5MessageFormatsBuilder {
 
 pub struct Mode5TransponderBasicDataBuilder(Mode5TransponderBasicData);
 
+impl Default for Mode5TransponderBasicDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Mode5TransponderBasicDataBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -1141,6 +1261,12 @@ impl Mode5TransponderBasicDataBuilder {
 
 pub struct Mode5TransponderSupplementalDataBuilder(Mode5TransponderSupplementalData);
 
+impl Default for Mode5TransponderSupplementalDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Mode5TransponderSupplementalDataBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -1172,6 +1298,12 @@ impl Mode5TransponderSupplementalDataBuilder {
 }
 
 pub struct Mode5TransponderStatusBuilder(Mode5TransponderStatus);
+
+impl Default for Mode5TransponderStatusBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Mode5TransponderStatusBuilder {
     #[must_use]
@@ -1253,6 +1385,12 @@ impl Mode5TransponderStatusBuilder {
 
 pub struct ModeSAltitudeBuilder(ModeSAltitude);
 
+impl Default for ModeSAltitudeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModeSAltitudeBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -1279,6 +1417,12 @@ impl ModeSAltitudeBuilder {
 
 pub struct ModeSInterrogatorBasicDataBuilder(ModeSInterrogatorBasicData);
 
+impl Default for ModeSInterrogatorBasicDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModeSInterrogatorBasicDataBuilder {
     #[must_use]
     pub fn new() -> Self {
@@ -1304,6 +1448,12 @@ impl ModeSInterrogatorBasicDataBuilder {
 }
 
 pub struct ModeSInterrogatorStatusBuilder(ModeSInterrogatorStatus);
+
+impl Default for ModeSInterrogatorStatusBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ModeSInterrogatorStatusBuilder {
     #[must_use]
@@ -1342,6 +1492,12 @@ impl ModeSInterrogatorStatusBuilder {
 }
 
 pub struct ModeSLevelsPresentBuilder(ModeSLevelsPresent);
+
+impl Default for ModeSLevelsPresentBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ModeSLevelsPresentBuilder {
     #[must_use]
@@ -1386,6 +1542,12 @@ impl ModeSLevelsPresentBuilder {
 }
 
 pub struct ModeSTransponderBasicDataBuilder(ModeSTransponderBasicData);
+
+impl Default for ModeSTransponderBasicDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ModeSTransponderBasicDataBuilder {
     #[must_use]
@@ -1454,6 +1616,12 @@ impl ModeSTransponderBasicDataBuilder {
 }
 
 pub struct ModeSTransponderStatusBuilder(ModeSTransponderStatus);
+
+impl Default for ModeSTransponderStatusBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ModeSTransponderStatusBuilder {
     #[must_use]
@@ -1534,6 +1702,12 @@ impl ModeSTransponderStatusBuilder {
 }
 
 pub struct SystemStatusBuilder(SystemStatus);
+
+impl Default for SystemStatusBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SystemStatusBuilder {
     #[must_use]

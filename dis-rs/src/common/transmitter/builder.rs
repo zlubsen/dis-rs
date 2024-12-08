@@ -9,6 +9,12 @@ use crate::transmitter::model::{
 
 pub struct TransmitterBuilder(Transmitter);
 
+impl Default for TransmitterBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransmitterBuilder {
     #[must_use]
     pub fn new() -> Self {

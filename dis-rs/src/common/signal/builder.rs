@@ -4,6 +4,12 @@ use crate::signal::model::{EncodingScheme, Signal};
 
 pub struct SignalBuilder(Signal);
 
+impl Default for SignalBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SignalBuilder {
     #[must_use]
     pub fn new() -> Self {

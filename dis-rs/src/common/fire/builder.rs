@@ -5,6 +5,12 @@ use crate::model::{
 
 pub struct FireBuilder(Fire);
 
+impl Default for FireBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FireBuilder {
     #[must_use]
     pub fn new() -> Self {

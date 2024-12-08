@@ -4,6 +4,12 @@ use crate::record_r::model::RecordR;
 
 pub struct RecordRBuilder(RecordR);
 
+impl Default for RecordRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecordRBuilder {
     #[must_use]
     pub fn new() -> Self {

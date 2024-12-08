@@ -3,6 +3,12 @@ use crate::model::EntityId;
 
 pub struct OtherBuilder(Other);
 
+impl Default for OtherBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OtherBuilder {
     #[must_use]
     pub fn new() -> Self {

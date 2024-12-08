@@ -4,6 +4,12 @@ use crate::repair_response::model::RepairResponse;
 
 pub struct RepairResponseBuilder(RepairResponse);
 
+impl Default for RepairResponseBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RepairResponseBuilder {
     #[must_use]
     pub fn new() -> Self {

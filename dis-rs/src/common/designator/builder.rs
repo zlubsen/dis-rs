@@ -4,6 +4,12 @@ use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSyst
 
 pub struct DesignatorBuilder(Designator);
 
+impl Default for DesignatorBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DesignatorBuilder {
     #[must_use]
     pub fn new() -> Self {

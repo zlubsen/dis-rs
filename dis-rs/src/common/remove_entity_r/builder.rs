@@ -4,6 +4,12 @@ use crate::model::EntityId;
 
 pub struct RemoveEntityRBuilder(RemoveEntityR);
 
+impl Default for RemoveEntityRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RemoveEntityRBuilder {
     #[must_use]
     pub fn new() -> Self {

@@ -7,6 +7,12 @@ use crate::enumerations::{DetonationResult, ExplosiveMaterialCategories};
 
 pub struct DetonationBuilder(Detonation);
 
+impl Default for DetonationBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DetonationBuilder {
     #[must_use]
     pub fn new() -> Self {

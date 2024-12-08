@@ -4,6 +4,12 @@ use crate::start_resume_r::model::StartResumeR;
 
 pub struct StartResumeRBuilder(StartResumeR);
 
+impl Default for StartResumeRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StartResumeRBuilder {
     #[must_use]
     pub fn new() -> Self {

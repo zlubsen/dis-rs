@@ -3,6 +3,12 @@ use crate::sees::model::{PropulsionSystemData, VectoringNozzleSystemData, SEES};
 
 pub struct SeesBuilder(SEES);
 
+impl Default for SeesBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SeesBuilder {
     #[must_use]
     pub fn new() -> Self {

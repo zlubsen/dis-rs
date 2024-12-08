@@ -4,6 +4,12 @@ use crate::stop_freeze::model::StopFreeze;
 
 pub struct StopFreezeBuilder(StopFreeze);
 
+impl Default for StopFreezeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StopFreezeBuilder {
     #[must_use]
     pub fn new() -> Self {

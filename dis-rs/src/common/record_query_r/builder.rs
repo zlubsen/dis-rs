@@ -5,6 +5,12 @@ use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
 
 pub struct RecordQueryRBuilder(RecordQueryR);
 
+impl Default for RecordQueryRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecordQueryRBuilder {
     #[must_use]
     pub fn new() -> Self {

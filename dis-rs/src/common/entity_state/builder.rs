@@ -4,6 +4,12 @@ use crate::model::{EntityId, EntityType, Location, Orientation, VariableParamete
 
 pub struct EntityStateBuilder(EntityState);
 
+impl Default for EntityStateBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EntityStateBuilder {
     #[must_use]
     pub fn new() -> Self {

@@ -4,6 +4,12 @@ use crate::set_data_r::model::SetDataR;
 
 pub struct SetDataRBuilder(SetDataR);
 
+impl Default for SetDataRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SetDataRBuilder {
     #[must_use]
     pub fn new() -> Self {

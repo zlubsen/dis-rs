@@ -4,6 +4,12 @@ use crate::enumerations::{RequiredReliabilityService, VariableRecordType};
 
 pub struct DataQueryRBuilder(DataQueryR);
 
+impl Default for DataQueryRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataQueryRBuilder {
     #[must_use]
     pub fn new() -> Self {

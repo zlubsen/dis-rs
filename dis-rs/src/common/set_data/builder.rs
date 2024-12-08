@@ -3,6 +3,12 @@ use crate::set_data::model::SetData;
 
 pub struct SetDataBuilder(SetData);
 
+impl Default for SetDataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SetDataBuilder {
     #[must_use]
     pub fn new() -> Self {

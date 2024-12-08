@@ -5,6 +5,12 @@ use crate::set_record_r::model::SetRecordR;
 
 pub struct SetRecordRBuilder(SetRecordR);
 
+impl Default for SetRecordRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SetRecordRBuilder {
     #[must_use]
     pub fn new() -> Self {

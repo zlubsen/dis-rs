@@ -4,6 +4,12 @@ use crate::model::{EntityId, Location, Orientation, VariableParameter, VectorF32
 
 pub struct EntityStateUpdateBuilder(EntityStateUpdate);
 
+impl Default for EntityStateUpdateBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EntityStateUpdateBuilder {
     #[must_use]
     pub fn new() -> Self {

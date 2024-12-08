@@ -6,6 +6,12 @@ use crate::underwater_acoustic::model::{
 
 pub struct UnderwaterAcousticBuilder(UnderwaterAcoustic);
 
+impl Default for UnderwaterAcousticBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UnderwaterAcousticBuilder {
     #[must_use]
     pub fn new() -> Self {

@@ -3,6 +3,12 @@ use crate::resupply_cancel::model::ResupplyCancel;
 
 pub struct ResupplyCancelBuilder(ResupplyCancel);
 
+impl Default for ResupplyCancelBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResupplyCancelBuilder {
     #[must_use]
     pub fn new() -> Self {

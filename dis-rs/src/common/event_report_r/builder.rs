@@ -4,6 +4,12 @@ use crate::model::{EntityId, FixedDatum, VariableDatum};
 
 pub struct EventReportRBuilder(EventReportR);
 
+impl Default for EventReportRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventReportRBuilder {
     #[must_use]
     pub fn new() -> Self {

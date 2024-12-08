@@ -3,6 +3,12 @@ use crate::model::{EntityId, VectorF32};
 
 pub struct IsPartOfBuilder(IsPartOf);
 
+impl Default for IsPartOfBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IsPartOfBuilder {
     #[must_use]
     pub fn new() -> Self {

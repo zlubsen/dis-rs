@@ -3,6 +3,12 @@ use crate::remove_entity::model::RemoveEntity;
 
 pub struct RemoveEntityBuilder(RemoveEntity);
 
+impl Default for RemoveEntityBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RemoveEntityBuilder {
     #[must_use]
     pub fn new() -> Self {

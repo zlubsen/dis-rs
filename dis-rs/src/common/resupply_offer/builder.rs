@@ -4,6 +4,12 @@ use crate::resupply_offer::model::ResupplyOffer;
 
 pub struct ResupplyOfferBuilder(ResupplyOffer);
 
+impl Default for ResupplyOfferBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResupplyOfferBuilder {
     #[must_use]
     pub fn new() -> Self {

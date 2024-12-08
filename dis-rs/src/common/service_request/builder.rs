@@ -5,6 +5,12 @@ use crate::enumerations::ServiceRequestServiceTypeRequested;
 
 pub struct ServiceRequestBuilder(ServiceRequest);
 
+impl Default for ServiceRequestBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServiceRequestBuilder {
     #[must_use]
     pub fn new() -> Self {
