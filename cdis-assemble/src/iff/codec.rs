@@ -110,14 +110,14 @@ fn evaluate_timeout_for_iff(last_heartbeat: &Instant, options: &CodecOptions) ->
     elapsed > (options.federation_parameters.HBT_PDU_IFF * options.hbt_cdis_full_update_mplier)
 }
 
-fn encode_iff_event_id(event_id: &EventId) -> Option<EntityId> {
+fn encode_iff_event_id(event_id: EventId) -> Option<EntityId> {
     if event_id.event_id == 0
         && event_id.simulation_address.application_id == 0
         && event_id.simulation_address.site_id == 0
     {
         None
     } else {
-        Some(EntityId::from(event_id))
+        Some(EntityId::from(&event_id))
     }
 }
 
@@ -230,7 +230,7 @@ impl Iff {
         // set these fields when their value is non-zero.
         let (relative_antenna_location, relative_antenna_location_units) =
             encode_iff_relative_antenna_location(&item.relative_antenna_location);
-        let event_id = encode_iff_event_id(&item.event_id);
+        let event_id = encode_iff_event_id(item.event_id);
         let system_specific_data = if item.system_specific_data == 0 {
             None
         } else {

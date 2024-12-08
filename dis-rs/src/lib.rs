@@ -1,5 +1,13 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    reason = "Parsing, writing, encoding, decoding PDUs uses many valid conversions"
+)]
+
 extern crate core;
-#[allow(clippy::new_without_default)]
+
 mod common;
 mod constants;
 mod fixed_parameters;

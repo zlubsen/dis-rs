@@ -3,6 +3,12 @@ use crate::common::model::EntityId;
 
 pub struct CreateEntityBuilder(CreateEntity);
 
+impl Default for CreateEntityBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CreateEntityBuilder {
     #[must_use]
     pub fn new() -> Self {

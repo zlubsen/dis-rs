@@ -1,3 +1,15 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    reason = "Parsing, writing, encoding, decoding PDUs uses many valid conversions"
+)]
+#![allow(
+    clippy::if_not_else,
+    reason = "Default case is more logical to be first"
+)]
+
 pub mod constants;
 pub mod records;
 pub mod types;

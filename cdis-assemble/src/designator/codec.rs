@@ -241,44 +241,46 @@ impl Designator {
                         DesignatorSystemName::default()
                     }
                 }),
-                self.designator_code
-                    .map(|record| DesignatorCode::from(record.value))
-                    .unwrap_or_else(|| {
+                self.designator_code.map_or_else(
+                    || {
                         if let Some(state) = state {
                             state.designator_code
                         } else {
                             DesignatorCode::default()
                         }
-                    }),
-                self.designator_power
-                    .map(|record| f32::from_u32(record.value).unwrap_or_default())
-                    .unwrap_or_else(|| {
+                    },
+                    |record| DesignatorCode::from(record.value),
+                ),
+                self.designator_power.map_or_else(
+                    || {
                         if let Some(state) = state {
                             state.designator_power
                         } else {
                             Default::default()
                         }
-                    }),
-                self.designator_wavelength
-                    .map(|record| f32::from_u32(record.value).unwrap_or_default())
-                    .unwrap_or_else(|| {
+                    },
+                    |record| f32::from_u32(record.value).unwrap_or_default(),
+                ),
+                self.designator_wavelength.map_or_else(
+                    || {
                         if let Some(state) = state {
                             state.designator_wavelength
                         } else {
                             Default::default()
                         }
-                    }),
-                self.designator_spot_location
-                    .map(|record| {
-                        decode_world_coordinates(&record, self.units.world_location_altitude)
-                    })
-                    .unwrap_or_else(|| {
+                    },
+                    |record| f32::from_u32(record.value).unwrap_or_default(),
+                ),
+                self.designator_spot_location.map_or_else(
+                    || {
                         if let Some(state) = state {
                             state.designator_spot_location
                         } else {
                             Location::default()
                         }
-                    }),
+                    },
+                    |record| decode_world_coordinates(&record, self.units.world_location_altitude),
+                ),
                 CodecStateResult::StateUnaffected,
             )
         };

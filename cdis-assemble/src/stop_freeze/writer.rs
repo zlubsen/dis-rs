@@ -13,7 +13,7 @@ impl SerializeCdisPdu for StopFreeze {
         let cursor = serialize_clock_time(buf, cursor, self.real_world_time);
 
         let cursor = write_value_unsigned::<u8>(buf, cursor, FOUR_BITS, self.reason.into());
-        let cursor = serialize_frozen_behavior(buf, cursor, &self.frozen_behavior);
+        let cursor = serialize_frozen_behavior(buf, cursor, self.frozen_behavior);
 
         let cursor = self.request_id.serialize(buf, cursor);
 
@@ -26,7 +26,7 @@ impl SerializeCdisPdu for StopFreeze {
 fn serialize_frozen_behavior(
     buf: &mut BitBuffer,
     cursor: usize,
-    frozen_behavior: &StopFreezeFrozenBehavior,
+    frozen_behavior: StopFreezeFrozenBehavior,
 ) -> usize {
     // C-DIS v1.0 spec states 2-bit field; StopFreezeFrozenBehavior expects 3 bit flags.
     // Decision here is to use 3 bits for StopFreezeFrozenBehavior

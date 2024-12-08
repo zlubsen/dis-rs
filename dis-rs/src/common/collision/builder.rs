@@ -4,6 +4,12 @@ use crate::enumerations::CollisionType;
 
 pub struct CollisionBuilder(Collision);
 
+impl Default for CollisionBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CollisionBuilder {
     #[must_use]
     pub fn new() -> Self {

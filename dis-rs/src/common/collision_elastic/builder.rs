@@ -3,6 +3,12 @@ use crate::common::model::{EntityId, EventId, VectorF32};
 
 pub struct CollisionElasticBuilder(CollisionElastic);
 
+impl Default for CollisionElasticBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CollisionElasticBuilder {
     #[must_use]
     pub fn new() -> Self {

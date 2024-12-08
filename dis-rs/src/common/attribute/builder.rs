@@ -4,6 +4,12 @@ use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, Variabl
 
 pub struct AttributeBuilder(Attribute);
 
+impl Default for AttributeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AttributeBuilder {
     #[must_use]
     pub fn new() -> Self {

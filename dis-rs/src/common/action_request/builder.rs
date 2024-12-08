@@ -4,6 +4,12 @@ use crate::enumerations::ActionId;
 
 pub struct ActionRequestBuilder(ActionRequest);
 
+impl Default for ActionRequestBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActionRequestBuilder {
     #[must_use]
     pub fn new() -> Self {

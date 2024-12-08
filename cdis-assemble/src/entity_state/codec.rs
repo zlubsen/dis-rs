@@ -298,69 +298,72 @@ impl EntityState {
                 } else {
                     // if in partial-update-mode, and receiving a partial update: fill present fields, else stateful fields from state cache, zeroed otherwise.
                     // TODO when no full update is yet received and no state has been build yet, discard? or init to zeroes?
-                    let entity_type = self
-                        .entity_type
-                        .map(|record| record.decode())
-                        .unwrap_or_else(|| {
+                    let entity_type = self.entity_type.map_or_else(
+                        || {
                             if let Some(state) = state {
                                 state.entity_type
                             } else {
                                 DisEntityType::default()
                             }
-                        });
+                        },
+                        |record| record.decode(),
+                    );
                     (
-                        self.force_id
-                            .map(|record| ForceId::from(record.value))
-                            .unwrap_or_else(|| {
+                        self.force_id.map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.force_id
                                 } else {
                                     ForceId::default()
                                 }
-                            }),
+                            },
+                            |record| ForceId::from(record.value),
+                        ),
                         entity_type,
-                        self.entity_location
-                            .map(|world_coordinates| {
-                                decode_world_coordinates(&world_coordinates, self.units)
-                            })
-                            .unwrap_or_else(|| {
+                        self.entity_location.map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.entity_location
                                 } else {
                                     DisLocation::default()
                                 }
-                            }),
-                        self.entity_orientation
-                            .map(|record| record.decode())
-                            .unwrap_or_else(|| {
+                            },
+                            |world_coordinates| {
+                                decode_world_coordinates(&world_coordinates, self.units)
+                            },
+                        ),
+                        self.entity_orientation.map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.entity_orientation
                                 } else {
                                     DisOrientation::default()
                                 }
-                            }),
-                        self.entity_appearance
-                            .as_ref()
-                            .map(|cdis| EntityAppearance::from_bytes(cdis.0, &entity_type))
-                            .unwrap_or_else(|| {
+                            },
+                            |record| record.decode(),
+                        ),
+                        self.entity_appearance.as_ref().map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.entity_appearance
                                 } else {
                                     EntityAppearance::default()
                                 }
-                            }),
-                        self.entity_marking
-                            .clone()
-                            .map(|record| {
-                                EntityMarking::new(record.marking, EntityMarkingCharacterSet::ASCII)
-                            })
-                            .unwrap_or_else(|| {
+                            },
+                            |cdis| EntityAppearance::from_bytes(cdis.0, &entity_type),
+                        ),
+                        self.entity_marking.clone().map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.entity_marking.clone()
                                 } else {
                                     EntityMarking::default()
                                 }
-                            }),
+                            },
+                            |record| {
+                                EntityMarking::new(record.marking, EntityMarkingCharacterSet::ASCII)
+                            },
+                        ),
                         CodecStateResult::StateUnaffected,
                     )
                 }

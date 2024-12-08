@@ -193,11 +193,7 @@ impl SerializeCdis for IffFundamentalParameterData {
 
 impl SerializeCdis for IffLayer3 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let data_records_present_value = if self.iff_data_records.is_empty() {
-            0u8
-        } else {
-            1u8
-        };
+        let data_records_present_value = u8::from(!self.iff_data_records.is_empty());
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, data_records_present_value);
         let cursor = self
             .layer_header
@@ -222,11 +218,7 @@ impl SerializeCdis for IffLayer3 {
 
 impl SerializeCdis for IffLayer4 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let data_records_present_value = if self.iff_data_records.is_empty() {
-            0u8
-        } else {
-            1u8
-        };
+        let data_records_present_value = u8::from(!self.iff_data_records.is_empty());
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, data_records_present_value);
         let cursor = self
             .layer_header
@@ -252,11 +244,7 @@ impl SerializeCdis for IffLayer4 {
 
 impl SerializeCdis for IffLayer5 {
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let data_records_present_value = if self.iff_data_records.is_empty() {
-            0u8
-        } else {
-            1u8
-        };
+        let data_records_present_value = u8::from(!self.iff_data_records.is_empty());
         let cursor = write_value_unsigned(buf, cursor, ONE_BIT, data_records_present_value);
         let cursor = self
             .layer_header

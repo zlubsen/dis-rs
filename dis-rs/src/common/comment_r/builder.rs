@@ -3,6 +3,12 @@ use crate::common::model::{EntityId, VariableDatum};
 
 pub struct CommentRBuilder(CommentR);
 
+impl Default for CommentRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommentRBuilder {
     #[must_use]
     pub fn new() -> Self {

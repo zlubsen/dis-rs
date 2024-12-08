@@ -4,6 +4,12 @@ use crate::enumerations::{AcknowledgeFlag, ResponseFlag};
 
 pub struct AcknowledgeRBuilder(AcknowledgeR);
 
+impl Default for AcknowledgeRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AcknowledgeRBuilder {
     #[must_use]
     pub fn new() -> Self {

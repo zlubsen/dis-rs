@@ -4,6 +4,12 @@ use crate::enumerations::RequestStatus;
 
 pub struct ActionResponseBuilder(ActionResponse);
 
+impl Default for ActionResponseBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActionResponseBuilder {
     #[must_use]
     pub fn new() -> Self {

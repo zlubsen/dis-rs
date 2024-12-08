@@ -308,6 +308,7 @@ fn iff_layer_3(
     }
 }
 
+#[allow(clippy::match_same_arms)]
 fn mode_5_basic_data(
     iff_system_type: &IffSystemType,
 ) -> impl Fn(BitInput) -> IResult<BitInput, Result<Mode5BasicData, DisError>> + '_ {
@@ -442,6 +443,7 @@ fn iff_layer_4(
     }
 }
 
+#[allow(clippy::match_same_arms)]
 fn mode_s_basic_data(
     iff_system_type: &IffSystemType,
 ) -> impl Fn(BitInput) -> IResult<BitInput, Result<ModeSBasicData, DisError>> + '_ {

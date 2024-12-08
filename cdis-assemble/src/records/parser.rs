@@ -602,6 +602,7 @@ pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAnt
     ))
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
     let (input, az_center) = svint13(input)?;
     let (input, az_sweep) = svint13(input)?;
@@ -621,6 +622,7 @@ pub fn beam_data(input: BitInput) -> IResult<BitInput, BeamData> {
     ))
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn layer_header(input: BitInput) -> IResult<BitInput, LayerHeader> {
     let (input, layer_number): (BitInput, u8) = take(FOUR_BITS)(input)?;
     let (input, layer_specific_information): (BitInput, u8) = take(EIGHT_BITS)(input)?;

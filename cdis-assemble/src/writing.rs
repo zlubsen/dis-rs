@@ -117,6 +117,7 @@ pub(crate) fn write_value_signed<T: num::FromPrimitive + num::Signed + num::Zero
 
 /// Helper function that checks if the provided `Option` is `Some`, and then serializes the contained value.
 /// Field must implement trait `SerializeCdis`.
+#[allow(clippy::ref_option)]
 pub(crate) fn serialize_when_present<I: SerializeCdis>(
     field: &Option<I>,
     buf: &mut BitBuffer,

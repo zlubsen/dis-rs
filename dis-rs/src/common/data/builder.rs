@@ -3,6 +3,12 @@ use crate::common::model::{EntityId, FixedDatum, VariableDatum};
 
 pub struct DataBuilder(Data);
 
+impl Default for DataBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataBuilder {
     #[must_use]
     pub fn new() -> Self {

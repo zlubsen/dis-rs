@@ -1195,6 +1195,7 @@ mod generation {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
             let position_shift_literal = Literal::usize_unsuffixed(data_size - field.length - field.bit_position);
+            #[allow(clippy::cast_possible_truncation)]
             let bitmask = Literal::usize_unsuffixed(2usize.pow(field.length as u32) - 1);
             if let Some(xref) = field.xref {
                 let xref = lookup_xref(xref).unwrap();

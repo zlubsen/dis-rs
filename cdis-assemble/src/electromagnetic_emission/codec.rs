@@ -217,6 +217,10 @@ pub struct EmitterSystemPartialFields {
 }
 
 impl ElectromagneticEmission {
+    #[allow(
+        clippy::missing_panics_doc,
+        reason = "Unwrap only occurs within an if statement that checks for Option::is_some()"
+    )]
     #[must_use]
     pub fn encode(
         item: &Counterpart,
@@ -795,14 +799,14 @@ impl EmitterBeam {
                 None => FundamentalParameterData::default(), // should be available in a full update
                 Some(index) => fundamental_params
                     .get(index as usize)
-                    .unwrap_or(&Default::default())
+                    .unwrap_or(&FundamentalParameter::default())
                     .decode(),
             })
             .with_beam_data(match self.beam_data_index {
                 None => DisBeamData::default(), // should be available in a full update
                 Some(index) => beam_data_list
                     .get(index as usize)
-                    .unwrap_or(&Default::default())
+                    .unwrap_or(&BeamData::default())
                     .decode(),
             })
             .with_beam_function(self.beam_function)
@@ -867,7 +871,7 @@ impl EmitterBeam {
                 }
                 Some(index) => fundamental_params
                     .get(index as usize)
-                    .unwrap_or(&Default::default())
+                    .unwrap_or(&FundamentalParameter::default())
                     .decode(),
             })
             .with_beam_data(match self.beam_data_index {
@@ -886,7 +890,7 @@ impl EmitterBeam {
                 }
                 Some(index) => beam_data_list
                     .get(index as usize)
-                    .unwrap_or(&Default::default())
+                    .unwrap_or(&BeamData::default())
                     .decode(),
             })
             .with_beam_function(self.beam_function)

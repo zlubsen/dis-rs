@@ -6,6 +6,12 @@ use crate::model::{EntityId, Location, Orientation, VariableDatum, VectorF32};
 
 pub struct AggregateStateBuilder(AggregateState);
 
+impl Default for AggregateStateBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AggregateStateBuilder {
     #[must_use]
     pub fn new() -> Self {

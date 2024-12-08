@@ -4,6 +4,12 @@ use crate::enumerations::{ActionId, RequiredReliabilityService};
 
 pub struct ActionRequestRBuilder(ActionRequestR);
 
+impl Default for ActionRequestRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActionRequestRBuilder {
     #[must_use]
     pub fn new() -> Self {

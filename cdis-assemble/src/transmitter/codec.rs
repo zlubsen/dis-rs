@@ -13,7 +13,9 @@ use crate::transmitter::model::{
 use crate::types::model::{CdisFloat, UVINT16, UVINT8};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{TransmitterCryptoSystem, TransmitterInputSource};
-use dis_rs::model::{EntityType as DisEntityType, Location as DisLocation, Orientation, PduBody};
+use dis_rs::model::{
+    EntityType as DisEntityType, Location as DisLocation, Location, Orientation, PduBody, VectorF32,
+};
 use std::time::Instant;
 
 type Counterpart = dis_rs::transmitter::model::Transmitter;
@@ -145,7 +147,7 @@ impl Transmitter {
         let modulation_parameters = if let Some(params) = &item.modulation_parameters {
             params.clone()
         } else {
-            Default::default()
+            Vec::default()
         };
 
         // include when antenna_pattern is not zeroed
@@ -187,6 +189,7 @@ impl Transmitter {
     }
 
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn decode(
         &self,
         state: Option<&DecoderStateTransmitter>,
@@ -250,66 +253,75 @@ impl Transmitter {
                     )
                 } else {
                     (
-                        self.radio_type.map(|rt| rt.decode()).unwrap_or_else(|| {
-                            if let Some(state) = state {
-                                state.radio_type
-                            } else {
-                                DisEntityType::default()
-                            }
-                        }),
-                        self.antenna_location
-                            .map(|loc| {
-                                decode_world_coordinates(&loc, self.units.world_location_altitude)
-                            })
-                            .unwrap_or_else(|| {
+                        self.radio_type.map_or_else(
+                            || {
+                                if let Some(state) = state {
+                                    state.radio_type
+                                } else {
+                                    DisEntityType::default()
+                                }
+                            },
+                            |rt| rt.decode(),
+                        ),
+                        self.antenna_location.map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.antenna_location
                                 } else {
-                                    Default::default()
+                                    Location::default()
                                 }
-                            }),
+                            },
+                            |loc| {
+                                decode_world_coordinates(&loc, self.units.world_location_altitude)
+                            },
+                        ),
                         self.relative_antenna_location
-                            .map(|ral| {
+                            .map_or_else(VectorF32::default, |ral| {
                                 decode_entity_coordinate_vector(
                                     &ral,
                                     self.units.relative_antenna_location,
                                 )
-                            })
-                            .unwrap_or_default(),
-                        self.frequency
-                            .map(|freq| freq.to_float() as u64)
-                            .unwrap_or_else(|| {
+                            }),
+                        self.frequency.map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.frequency
                                 } else {
                                     Default::default()
                                 }
-                            }),
-                        self.transmit_frequency_bandwidth
-                            .map(|tfb| tfb.to_float())
-                            .unwrap_or_else(|| {
+                            },
+                            |freq| freq.to_float() as u64,
+                        ),
+                        self.transmit_frequency_bandwidth.map_or_else(
+                            || {
                                 if let Some(state) = state {
                                     state.transmit_frequency_bandwidth
                                 } else {
                                     Default::default()
                                 }
-                            }),
-                        self.power.map(f32::from).unwrap_or_else(|| {
-                            if let Some(state) = state {
-                                state.power
-                            } else {
-                                Default::default()
-                            }
-                        }),
-                        self.modulation_type
-                            .map(|record| dis_rs::transmitter::model::ModulationType::from(&record))
-                            .unwrap_or_else(|| {
+                            },
+                            |tfb| tfb.to_float(),
+                        ),
+                        self.power.map_or_else(
+                            || {
                                 if let Some(state) = state {
-                                    state.modulation_type
+                                    state.power
                                 } else {
                                     Default::default()
                                 }
-                            }),
+                            },
+                            f32::from,
+                        ),
+                        self.modulation_type.map_or_else(
+                            || {
+                                if let Some(state) = state {
+                                    state.modulation_type
+                                } else {
+                                    dis_rs::transmitter::model::ModulationType::default()
+                                }
+                            },
+                            |record| dis_rs::transmitter::model::ModulationType::from(&record),
+                        ),
                         CodecStateResult::StateUnaffected,
                     )
                 }
@@ -388,12 +400,12 @@ impl Default for DecoderStateTransmitter {
     fn default() -> Self {
         Self {
             heartbeat: Instant::now(),
-            radio_type: Default::default(),
-            antenna_location: Default::default(),
+            radio_type: DisEntityType::default(),
+            antenna_location: DisLocation::default(),
             frequency: 0,
             transmit_frequency_bandwidth: 0.0,
             power: 0.0,
-            modulation_type: Default::default(),
+            modulation_type: dis_rs::transmitter::model::ModulationType::default(),
         }
     }
 }

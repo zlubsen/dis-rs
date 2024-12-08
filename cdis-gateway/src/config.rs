@@ -208,6 +208,7 @@ pub struct Arguments {
     pub config: PathBuf,
 }
 
+#[allow(clippy::ref_option)]
 fn set_federation_parameters(spec: &Option<FederationSpec>) -> VariableParameters {
     let mut parameters = VariableParameters::default();
     if let Some(spec) = spec {

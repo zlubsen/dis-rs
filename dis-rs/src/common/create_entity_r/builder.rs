@@ -4,6 +4,12 @@ use crate::enumerations::RequiredReliabilityService;
 
 pub struct CreateEntityRBuilder(CreateEntityR);
 
+impl Default for CreateEntityRBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CreateEntityRBuilder {
     #[must_use]
     pub fn new() -> Self {
