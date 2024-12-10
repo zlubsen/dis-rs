@@ -1,6 +1,3 @@
-use std::fmt::Display;
-use std::str::FromStr;
-
 use crate::acknowledge_r::model::AcknowledgeR;
 use crate::action_request_r::model::ActionRequestR;
 use crate::action_response_r::model::ActionResponseR;
@@ -73,6 +70,9 @@ use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
 use crate::DisError;
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+use std::str::FromStr;
 
 pub use crate::v7::model::PduStatus;
 
@@ -664,6 +664,7 @@ impl From<PduType> for ProtocolFamily {
 
 /// 6.2.80 Simulation Address record
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[cfg_attr(feature = "serde-support", derive(Serialize, Deserialize))]
 pub struct SimulationAddress {
     pub site_id: u16,
     pub application_id: u16,
@@ -691,6 +692,7 @@ impl Default for SimulationAddress {
 /// 6.2.28 Entity Identifier record
 /// 6.2.81 Simulation Identifier record
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde-support", derive(Serialize, Deserialize))]
 pub struct EntityId {
     pub simulation_address: SimulationAddress,
     pub entity_id: u16,

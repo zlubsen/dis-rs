@@ -790,6 +790,7 @@ mod generation {
             #[allow(clippy::write_literal)]
             pub mod enumerations {
                 use std::fmt::{Display, Formatter};
+                use serde::{Deserialize, Serialize};
 
                 #(#generated_items)*
             }
@@ -836,6 +837,7 @@ mod generation {
         quote!(
             #[doc = #uid_doc_comment]
             #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+            #[cfg_attr(feature = "serde-support", derive(Serialize, Deserialize))]
             #[allow(non_camel_case_types)]
             pub enum #name_ident {
                 #(#arms),*
@@ -1121,6 +1123,7 @@ mod generation {
         quote!(
             #[doc = #uid_doc_comment]
             #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+            #[cfg_attr(feature = "serde-support", derive(Serialize, Deserialize))]
             pub struct #name_ident {
                 #(#fields),*
             }
