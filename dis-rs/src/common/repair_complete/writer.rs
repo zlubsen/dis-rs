@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::repair_complete::model::RepairComplete;
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for RepairComplete {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

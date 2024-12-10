@@ -1,9 +1,13 @@
-use bytes::{BufMut, BytesMut};
-use crate::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::BodyInfo;
-use crate::underwater_acoustic::model::{AcousticEmitterSystem, APA, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem, UAFundamentalParameterData, UnderwaterAcoustic};
+use crate::underwater_acoustic::model::{
+    AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
+    UAFundamentalParameterData, UnderwaterAcoustic, APA,
+};
+use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for UnderwaterAcoustic {
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
         let _emitter_bytes = self.emitting_entity_id.serialize(buf);
         let _event_id_bytes = self.event_id.serialize(buf);
@@ -16,16 +20,18 @@ impl SerializePdu for UnderwaterAcoustic {
         buf.put_u8(self.apas.len() as u8);
         buf.put_u8(self.emitter_systems.len() as u8);
 
-        let _shafts = self.shafts.iter()
-            .map(|shaft| shaft.serialize(buf) )
+        let _shafts = self
+            .shafts
+            .iter()
+            .map(|shaft| shaft.serialize(buf))
             .sum::<u16>();
 
-        let _apas = self.apas.iter()
-            .map(|apa| apa.serialize(buf) )
-            .sum::<u16>();
+        let _apas = self.apas.iter().map(|apa| apa.serialize(buf)).sum::<u16>();
 
-        let _systems = self.emitter_systems.iter()
-            .map(|system| system.serialize(buf) )
+        let _systems = self
+            .emitter_systems
+            .iter()
+            .map(|system| system.serialize(buf))
             .sum::<u16>();
 
         self.body_length()
@@ -34,8 +40,8 @@ impl SerializePdu for UnderwaterAcoustic {
 
 impl Serialize for PropulsionPlantConfiguration {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        let configuration : u8 = self.configuration.into();
-        let hull_mounted_masker_on : u8 = if self.hull_mounted_masker {1} else {0};
+        let configuration: u8 = self.configuration.into();
+        let hull_mounted_masker_on = u8::from(self.hull_mounted_masker);
         let final_field = (configuration << 1) | hull_mounted_masker_on;
         buf.put_u8(final_field);
 
@@ -57,7 +63,7 @@ impl Serialize for APA {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let parameter: u16 = self.parameter.into();
         let parameter_status: u8 = self.status.into();
-        let parameter_index = (parameter << 2) & (parameter_status as u16);
+        let parameter_index = (parameter << 2) & u16::from(parameter_status);
         buf.put_u16(parameter_index);
         buf.put_i16(self.value);
 
@@ -66,13 +72,16 @@ impl Serialize for APA {
 }
 
 impl Serialize for UAEmitterSystem {
+    #[allow(clippy::cast_possible_truncation)]
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.record_length() as u8);
         buf.put_u8(self.beams.len() as u8);
         buf.put_u16(0u16);
         self.acoustic_emitter_system.serialize(buf);
         self.location.serialize(buf);
-        self.beams.iter().map(|beam| beam.serialize(buf) )
+        self.beams
+            .iter()
+            .map(|beam| beam.serialize(buf))
             .sum::<u16>();
 
         self.record_length()

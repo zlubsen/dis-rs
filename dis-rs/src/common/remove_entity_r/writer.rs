@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::remove_entity_r::model::RemoveEntityR;
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for RemoveEntityR {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

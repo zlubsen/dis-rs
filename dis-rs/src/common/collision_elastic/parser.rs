@@ -1,9 +1,10 @@
-use nom::IResult;
-use nom::number::complete::{be_f32, be_u16};
 use crate::common::collision_elastic::model::CollisionElastic;
-use crate::common::parser::{entity_id, event_id, vec3_f32};
 use crate::common::model::PduBody;
+use crate::common::parser::{entity_id, event_id, vec3_f32};
+use nom::number::complete::{be_f32, be_u16};
+use nom::IResult;
 
+#[allow(clippy::similar_names)]
 pub(crate) fn collision_elastic_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, issuing_entity_id) = entity_id(input)?;
     let (input, colliding_entity_id) = entity_id(input)?;

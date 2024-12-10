@@ -1,6 +1,11 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, TWENTY_OCTETS};
-use crate::enumerations::{APAStatus, PduType, UAAcousticEmitterSystemFunction, UAAcousticSystemName, UAActiveEmissionParameterIndex, UAAdditionalPassiveActivityParameterIndex, UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAScanPattern, UAStateChangeUpdateIndicator};
+use crate::enumerations::{
+    APAStatus, PduType, UAAcousticEmitterSystemFunction, UAAcousticSystemName,
+    UAActiveEmissionParameterIndex, UAAdditionalPassiveActivityParameterIndex,
+    UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAScanPattern,
+    UAStateChangeUpdateIndicator,
+};
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::underwater_acoustic::builder::UnderwaterAcousticBuilder;
 
@@ -22,14 +27,17 @@ pub struct UnderwaterAcoustic {
 }
 
 impl UnderwaterAcoustic {
+    #[must_use]
     pub fn builder() -> UnderwaterAcousticBuilder {
         UnderwaterAcousticBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> UnderwaterAcousticBuilder {
         UnderwaterAcousticBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::UnderwaterAcoustic(self)
     }
@@ -38,9 +46,13 @@ impl UnderwaterAcoustic {
 impl BodyInfo for UnderwaterAcoustic {
     fn body_length(&self) -> u16 {
         BASE_UA_BODY_LENGTH
-            + self.shafts.iter().map(|shaft| shaft.record_length() ).sum::<u16>()
-            + self.apas.iter().map(|apa| apa.record_length() ).sum::<u16>()
-            + self.emitter_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + self.shafts.iter().map(Shaft::record_length).sum::<u16>()
+            + self.apas.iter().map(APA::record_length).sum::<u16>()
+            + self
+                .emitter_systems
+                .iter()
+                .map(UAEmitterSystem::record_length)
+                .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {
@@ -66,16 +78,19 @@ pub struct PropulsionPlantConfiguration {
 }
 
 impl PropulsionPlantConfiguration {
+    #[must_use]
     pub fn with_configuration(mut self, configuration: UAPropulsionPlantConfiguration) -> Self {
         self.configuration = configuration;
         self
     }
 
+    #[must_use]
     pub fn with_hull_mounted_masker(mut self, masker_on: bool) -> Self {
         self.hull_mounted_masker = masker_on;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         ONE_OCTET as u16
     }
@@ -92,21 +107,25 @@ pub struct Shaft {
 }
 
 impl Shaft {
+    #[must_use]
     pub fn with_current_rpm(mut self, rpm: i16) -> Self {
         self.current_rpm = rpm;
         self
     }
 
+    #[must_use]
     pub fn with_ordered_rpm(mut self, rpm: i16) -> Self {
         self.ordered_rpm = rpm;
         self
     }
 
+    #[must_use]
     pub fn with_rpm_rate_of_change(mut self, rate_of_change: i32) -> Self {
         self.rpm_rate_of_change = rate_of_change;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         EIGHT_OCTETS as u16
     }
@@ -123,20 +142,24 @@ pub struct APA {
 }
 
 impl APA {
+    #[must_use]
     pub fn with_parameter(mut self, parameter: UAAdditionalPassiveActivityParameterIndex) -> Self {
         self.parameter = parameter;
         self
     }
 
+    #[must_use]
     pub fn with_status(mut self, status: APAStatus) -> Self {
         self.status = status;
         self
     }
+    #[must_use]
     pub fn with_value(mut self, value: i16) -> Self {
         self.value = value;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
     }
@@ -151,29 +174,36 @@ pub struct UAEmitterSystem {
 }
 
 impl UAEmitterSystem {
-    pub fn with_acoustic_emitter_system(mut self, acoustic_emitter_system: AcousticEmitterSystem) -> Self {
+    #[must_use]
+    pub fn with_acoustic_emitter_system(
+        mut self,
+        acoustic_emitter_system: AcousticEmitterSystem,
+    ) -> Self {
         self.acoustic_emitter_system = acoustic_emitter_system;
         self
     }
 
+    #[must_use]
     pub fn with_location(mut self, location: VectorF32) -> Self {
         self.location = location;
         self
     }
 
+    #[must_use]
     pub fn with_beam(mut self, beam: UABeam) -> Self {
         self.beams.push(beam);
         self
     }
 
+    #[must_use]
     pub fn with_beams(mut self, beams: Vec<UABeam>) -> Self {
         self.beams = beams;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
-        TWENTY_OCTETS as u16
-            + self.beams.iter().map(|beam| beam.record_length() ).sum::<u16>()
+        TWENTY_OCTETS as u16 + self.beams.iter().map(UABeam::record_length).sum::<u16>()
     }
 }
 
@@ -186,21 +216,25 @@ pub struct AcousticEmitterSystem {
 }
 
 impl AcousticEmitterSystem {
+    #[must_use]
     pub fn with_acoustic_system_name(mut self, acoustic_system_name: UAAcousticSystemName) -> Self {
         self.acoustic_system_name = acoustic_system_name;
         self
     }
 
+    #[must_use]
     pub fn with_function(mut self, function: UAAcousticEmitterSystemFunction) -> Self {
         self.function = function;
         self
     }
 
+    #[must_use]
     pub fn with_acoustic_id_number(mut self, acoustic_id_number: u8) -> Self {
         self.acoustic_id_number = acoustic_id_number;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
     }
@@ -217,21 +251,28 @@ pub struct UABeam {
 }
 
 impl UABeam {
+    #[must_use]
     pub fn with_beam_data_length(mut self, beam_data_length: u8) -> Self {
         self.beam_data_length = beam_data_length;
         self
     }
 
+    #[must_use]
     pub fn with_beam_id_number(mut self, beam_id_number: u8) -> Self {
         self.beam_id_number = beam_id_number;
         self
     }
 
-    pub fn with_fundamental_parameters(mut self, fundamental_parameters: UAFundamentalParameterData) -> Self {
+    #[must_use]
+    pub fn with_fundamental_parameters(
+        mut self,
+        fundamental_parameters: UAFundamentalParameterData,
+    ) -> Self {
         self.fundamental_parameters = fundamental_parameters;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16 + self.fundamental_parameters.record_length()
     }
@@ -249,35 +290,51 @@ pub struct UAFundamentalParameterData {
 }
 
 impl UAFundamentalParameterData {
-    pub fn with_active_emission_parameter_index(mut self, active_emission_parameter_index: UAActiveEmissionParameterIndex) -> Self {
+    #[must_use]
+    pub fn with_active_emission_parameter_index(
+        mut self,
+        active_emission_parameter_index: UAActiveEmissionParameterIndex,
+    ) -> Self {
         self.active_emission_parameter_index = active_emission_parameter_index;
         self
     }
 
+    #[must_use]
     pub fn with_scan_pattern(mut self, scan_pattern: UAScanPattern) -> Self {
         self.scan_pattern = scan_pattern;
         self
     }
 
+    #[must_use]
     pub fn with_beam_center_azimuth(mut self, beam_center_azimuth: f32) -> Self {
         self.beam_center_azimuth = beam_center_azimuth;
         self
     }
 
+    #[must_use]
     pub fn with_azimuthal_beamwidth(mut self, azimuthal_beamwidth: f32) -> Self {
         self.azimuthal_beamwidth = azimuthal_beamwidth;
         self
     }
 
-    pub fn with_beam_center_depression_elevation(mut self, beam_center_depression_elevation: f32) -> Self {
+    #[must_use]
+    pub fn with_beam_center_depression_elevation(
+        mut self,
+        beam_center_depression_elevation: f32,
+    ) -> Self {
         self.beam_center_depression_elevation = beam_center_depression_elevation;
         self
     }
 
-    pub fn with_depression_elevation_beamwidth(mut self, depression_elevation_beamwidth: f32) -> Self {
+    #[must_use]
+    pub fn with_depression_elevation_beamwidth(
+        mut self,
+        depression_elevation_beamwidth: f32,
+    ) -> Self {
         self.depression_elevation_beamwidth = depression_elevation_beamwidth;
         self
     }
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         TWENTY_OCTETS as u16
     }

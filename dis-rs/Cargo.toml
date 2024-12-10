@@ -1,24 +1,20 @@
 [package]
 name = "dis-rs"
 version = "0.10.0"
-authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 An implementation of the Distributed Interactive Simulation protocol in Rust.
 
 This main crate contains PDU implementations and facilities to read/write PDUs
 from Rust data structures to the wire format and vice versa.
 """
-edition = "2021"
-license = "MIT"
 readme = "README.md"
-repository = "https://github.com/zlubsen/dis-rs"
-categories = ["network-programming"]
 keywords = ["simulation", "DIS"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-default = []
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
 
 [dependencies]
 bytes = "1.4.0"
@@ -31,3 +27,6 @@ quick-xml = "0.28.0"
 proc-macro2 = "1.0.52"
 prettyplease = "0.2.19"
 syn = "2.0.60"
+
+[lints]
+workspace = true

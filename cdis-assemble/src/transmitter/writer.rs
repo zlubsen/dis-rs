@@ -1,25 +1,40 @@
-use dis_rs::transmitter::model::VariableTransmitterParameter;
-use crate::{BitBuffer, BodyProperties};
-use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS};
+use crate::constants::{
+    EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_TWO_BITS,
+    THREE_BITS, TWO_BITS,
+};
 use crate::records::model::{BeamAntennaPattern, CdisRecord};
 use crate::transmitter::model::Transmitter;
 use crate::types::model::{CdisFloat, UVINT8};
-use crate::writing::{serialize_when_present, write_value_signed, write_value_unsigned, SerializeCdis};
+use crate::writing::{
+    serialize_when_present, write_value_signed, write_value_unsigned, SerializeCdis,
+};
+use crate::{BitBuffer, BodyProperties};
+use dis_rs::transmitter::model::VariableTransmitterParameter;
 
 impl SerializeCdis for Transmitter {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.fields_present_field());
 
-        let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.units.world_location_altitude.into());
-        let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.units.relative_antenna_location.into());
+        let cursor = write_value_unsigned::<u8>(
+            buf,
+            cursor,
+            ONE_BIT,
+            self.units.world_location_altitude.into(),
+        );
+        let cursor = write_value_unsigned::<u8>(
+            buf,
+            cursor,
+            ONE_BIT,
+            self.units.relative_antenna_location.into(),
+        );
         let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.full_update_flag.into());
 
         let cursor = self.radio_reference_id.serialize(buf, cursor);
         let cursor = self.radio_number.serialize(buf, cursor);
         let cursor = serialize_when_present(&self.radio_type, buf, cursor);
 
-        let transmit_state : u8 = self.transmit_state.into();
+        let transmit_state: u8 = self.transmit_state.into();
         let cursor = write_value_unsigned(buf, cursor, TWO_BITS, transmit_state);
         let cursor = self.input_source.serialize(buf, cursor);
 
@@ -35,17 +50,25 @@ impl SerializeCdis for Transmitter {
         let cursor = if let Some(antenna_pattern_type) = self.antenna_pattern_type {
             let antenna_pattern_type: u16 = antenna_pattern_type.into();
             write_value_unsigned(buf, cursor, THREE_BITS, antenna_pattern_type)
-        } else { cursor };
+        } else {
+            cursor
+        };
         let cursor = if let Some(pattern) = self.antenna_pattern {
             write_value_unsigned(buf, cursor, TEN_BITS, pattern.record_length())
-        } else { cursor };
+        } else {
+            cursor
+        };
 
         let cursor = if let Some(frequency) = self.frequency {
             frequency.serialize(buf, cursor)
-        } else { cursor };
+        } else {
+            cursor
+        };
         let cursor = if let Some(bandwidth) = self.transmit_frequency_bandwidth {
             bandwidth.serialize(buf, cursor)
-        } else { cursor };
+        } else {
+            cursor
+        };
 
         let cursor = serialize_when_present(&self.power, buf, cursor);
         let cursor = if let Some(modulation) = &self.modulation_type {
@@ -54,35 +77,54 @@ impl SerializeCdis for Transmitter {
             let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.detail);
             let cursor = write_value_unsigned(buf, cursor, FOUR_BITS, modulation.radio_system);
             cursor
-        } else { cursor };
+        } else {
+            cursor
+        };
 
         let cursor = if let Some(crypto_system) = self.crypto_system {
             let crypto_system: u16 = crypto_system.into();
             write_value_unsigned(buf, cursor, FOUR_BITS, crypto_system)
-        } else { cursor };
+        } else {
+            cursor
+        };
         let cursor = if let Some(crypto_key_id) = self.crypto_key_id {
             let crypto_key_id: u16 = crypto_key_id.into();
             write_value_unsigned(buf, cursor, SIXTEEN_BITS, crypto_key_id)
-        } else { cursor };
+        } else {
+            cursor
+        };
 
         let cursor = if !self.modulation_parameters.is_empty() {
-            let cursor = write_value_unsigned(buf, cursor, EIGHT_BITS, self.modulation_parameters.len());
-            let cursor = self.modulation_parameters.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
+            let cursor =
+                write_value_unsigned(buf, cursor, EIGHT_BITS, self.modulation_parameters.len());
+            let cursor = self
+                .modulation_parameters
+                .iter()
+                .fold(cursor, |cursor, byte| {
+                    write_value_unsigned(buf, cursor, EIGHT_BITS, *byte)
+                });
             cursor
-        } else { cursor};
+        } else {
+            cursor
+        };
 
         let cursor = if let Some(pattern) = self.antenna_pattern {
             pattern.serialize(buf, cursor)
-        } else { cursor };
+        } else {
+            cursor
+        };
 
-        let cursor = self.variable_transmitter_parameters.iter()
-            .fold(cursor, |cursor, param| { param.serialize(buf, cursor) });
+        let cursor = self
+            .variable_transmitter_parameters
+            .iter()
+            .fold(cursor, |cursor, param| param.serialize(buf, cursor));
 
         cursor
     }
 }
 
 impl SerializeCdis for BeamAntennaPattern {
+    #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_psi);
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.beam_direction_theta);
@@ -90,7 +132,7 @@ impl SerializeCdis for BeamAntennaPattern {
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.az_beamwidth);
         let cursor = write_value_signed(buf, cursor, THIRTEEN_BITS, self.el_beamwidth);
 
-        let reference_system : u8 = self.reference_system.into();
+        let reference_system: u8 = self.reference_system.into();
         let cursor = write_value_unsigned(buf, cursor, TWO_BITS, reference_system);
         let cursor = write_value_signed(buf, cursor, SIXTEEN_BITS, self.e_z);
         let cursor = write_value_signed(buf, cursor, SIXTEEN_BITS, self.e_x);
@@ -107,7 +149,9 @@ impl SerializeCdis for VariableTransmitterParameter {
         let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, record_type);
         let record_length = self.fields.len() + SIX_OCTETS;
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, record_length);
-        let cursor = self.fields.iter().fold(cursor, |cursor, byte| write_value_unsigned(buf, cursor, EIGHT_BITS, *byte));
+        let cursor = self.fields.iter().fold(cursor, |cursor, byte| {
+            write_value_unsigned(buf, cursor, EIGHT_BITS, *byte)
+        });
         cursor
     }
 }

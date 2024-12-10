@@ -1,12 +1,19 @@
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 use crate::aggregate_state::builder::AggregateStateBuilder;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, THIRTY_TWO_OCTETS, TWO_OCTETS};
-use crate::DisError;
 use crate::entity_state::model::EntityAppearance;
-use crate::enumerations::{ForceId, PduType, AggregateStateAggregateState, AggregateStateAggregateKind, PlatformDomain, Country, AggregateStateSubcategory, AggregateStateSpecific, AggregateStateFormation, EntityMarkingCharacterSet};
-use crate::model::{BASE_VARIABLE_DATUM_LENGTH, EntityId, EntityType, length_padded_to_num, Location, Orientation, PduBody, VariableDatum, VectorF32};
+use crate::enumerations::{
+    AggregateStateAggregateKind, AggregateStateAggregateState, AggregateStateFormation,
+    AggregateStateSpecific, AggregateStateSubcategory, Country, EntityMarkingCharacterSet, ForceId,
+    PduType, PlatformDomain,
+};
+use crate::model::{
+    length_padded_to_num, EntityId, EntityType, Location, Orientation, PduBody, VariableDatum,
+    VectorF32, BASE_VARIABLE_DATUM_LENGTH,
+};
+use crate::DisError;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 pub(crate) const BASE_AGGREGATE_STATE_BODY_LENGTH: u16 = 124;
 
@@ -32,42 +39,47 @@ pub struct AggregateState {
     pub variable_datums: Vec<VariableDatum>,
 }
 
-
 impl AggregateState {
+    #[must_use]
     pub fn builder() -> AggregateStateBuilder {
         AggregateStateBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> AggregateStateBuilder {
         AggregateStateBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::AggregateState(self)
     }
-
 }
 
-/// Calculate the intermediate length and padding of an AggregateState PDU.
+/// Calculate the intermediate length and padding of an `AggregateState` PDU.
 ///
 /// Returns a tuple consisting of the intermediate length including the padding,
 /// and the length of the padding, in octets.
-pub(crate) fn aggregate_state_intermediate_length_padding(aggregates: &[EntityId], entities: &[EntityId]) -> (u16, u16) {
+pub(crate) fn aggregate_state_intermediate_length_padding(
+    aggregates: &[EntityId],
+    entities: &[EntityId],
+) -> (u16, u16) {
     let intermediate_length = BASE_AGGREGATE_STATE_BODY_LENGTH
-        + aggregates.iter().map(|id| id.record_length() ).sum::<u16>() // number of aggregate ids
-        + entities.iter().map(|id| id.record_length() ).sum::<u16>();  // number of entity ids
-    let padding_length = intermediate_length % (FOUR_OCTETS as u16);       // padding to 32-bits (4 octets) boundary
+        + aggregates.iter().map(crate::model::EntityId::record_length ).sum::<u16>() // number of aggregate ids
+        + entities.iter().map(crate::model::EntityId::record_length ).sum::<u16>(); // number of entity ids
+    let padding_length = intermediate_length % (FOUR_OCTETS as u16); // padding to 32-bits (4 octets) boundary
     (intermediate_length + padding_length, padding_length)
 }
 
 impl BodyInfo for AggregateState {
     fn body_length(&self) -> u16 {
-        let (intermediate_length, _padding_length) = aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
+        let (intermediate_length, _padding_length) =
+            aggregate_state_intermediate_length_padding(&self.aggregates, &self.entities);
         intermediate_length
             // number of silent aggregate systems
-            + self.silent_aggregate_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + self.silent_aggregate_systems.iter().map(SilentAggregateSystem::record_length ).sum::<u16>()
             // number of silent entity systems
-            + self.silent_entity_systems.iter().map(|system| system.record_length() ).sum::<u16>()
+            + self.silent_entity_systems.iter().map(SilentEntitySystem::record_length ).sum::<u16>()
             // number of variable datum records
             + (self.variable_datums.iter().map(|datum| {
                 let padded_record = length_padded_to_num(
@@ -95,15 +107,16 @@ impl Interaction for AggregateState {
 /// 6.2.4 Aggregate Marking record
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct AggregateMarking {
-    pub marking_character_set : EntityMarkingCharacterSet,
-    pub marking_string : String, // 31 byte String
+    pub marking_character_set: EntityMarkingCharacterSet,
+    pub marking_string: String, // 31 byte String
 }
 
 impl AggregateMarking {
+    #[must_use]
     pub fn new(marking: String, character_set: EntityMarkingCharacterSet) -> Self {
         Self {
             marking_character_set: character_set,
-            marking_string: marking
+            marking_string: marking,
         }
     }
 
@@ -111,11 +124,13 @@ impl AggregateMarking {
         AggregateMarking::new(marking.into(), EntityMarkingCharacterSet::ASCII)
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn with_marking<S: Into<String>>(mut self, marking: S) -> Self {
         self.marking_string = marking.into();
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         THIRTY_TWO_OCTETS as u16
     }
@@ -134,10 +149,13 @@ impl FromStr for AggregateMarking {
         if s.len() <= 31 {
             Ok(Self {
                 marking_character_set: EntityMarkingCharacterSet::ASCII,
-                marking_string: s.to_string()
+                marking_string: s.to_string(),
             })
         } else {
-            Err(DisError::ParseError(format!("String is too long for AggregateMarking. Found {}, max 31 allowed.", s.len())))
+            Err(DisError::ParseError(format!(
+                "String is too long for AggregateMarking. Found {}, max 31 allowed.",
+                s.len()
+            )))
         }
     }
 }
@@ -155,41 +173,49 @@ pub struct AggregateType {
 }
 
 impl AggregateType {
+    #[must_use]
     pub fn with_aggregate_kind(mut self, aggregate_kind: AggregateStateAggregateKind) -> Self {
         self.aggregate_kind = aggregate_kind;
         self
     }
 
+    #[must_use]
     pub fn with_domain(mut self, domain: PlatformDomain) -> Self {
         self.domain = domain;
         self
     }
 
+    #[must_use]
     pub fn with_country(mut self, country: Country) -> Self {
         self.country = country;
         self
     }
 
+    #[must_use]
     pub fn with_category(mut self, category: u8) -> Self {
         self.category = category;
         self
     }
 
+    #[must_use]
     pub fn with_subcategory(mut self, subcategory: AggregateStateSubcategory) -> Self {
         self.subcategory = subcategory;
         self
     }
 
+    #[must_use]
     pub fn with_specific(mut self, specific: AggregateStateSpecific) -> Self {
         self.specific = specific;
         self
     }
 
+    #[must_use]
     pub fn with_extra(mut self, extra: u8) -> Self {
         self.extra = extra;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         EIGHT_OCTETS as u16
     }
@@ -219,49 +245,51 @@ impl FromStr for AggregateType {
         const NUM_DIGITS: usize = 7;
         let ss = s.split(':').collect::<Vec<&str>>();
         if ss.len() != NUM_DIGITS {
-            return Err(DisError::ParseError(format!("Digits are not precisely {NUM_DIGITS}")));
+            return Err(DisError::ParseError(format!(
+                "AggregateType string pattern does contain not precisely {NUM_DIGITS} digits"
+            )));
         }
         Ok(Self {
             aggregate_kind: ss
                 .get(0)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid kind digit".to_string()))?
                 .into(),
             domain: ss
                 .get(1)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
                 .into(),
             country: ss
                 .get(2)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u16>()
                 .map_err(|_| DisError::ParseError("Invalid country digit".to_string()))?
                 .into(),
             category: ss
                 .get(3)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid category digit".to_string()))?,
             subcategory: ss
                 .get(4)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid subcategory digit".to_string()))?
                 .into(),
             specific: ss
                 .get(5)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
                 .map_err(|_| DisError::ParseError("Invalid specific digit".to_string()))?
                 .into(),
             extra: ss
                 .get(6)
-                .unwrap_or(&"0")
+                .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
-                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?
+                .map_err(|_| DisError::ParseError("Invalid extra digit".to_string()))?,
         })
     }
 }
@@ -290,16 +318,19 @@ pub struct SilentAggregateSystem {
 }
 
 impl SilentAggregateSystem {
+    #[must_use]
     pub fn with_number_of_aggregates(mut self, number_of_aggregates: u16) -> Self {
         self.number_of_aggregates = number_of_aggregates;
         self
     }
 
+    #[must_use]
     pub fn with_aggregate_type(mut self, aggregate_type: AggregateType) -> Self {
         self.aggregate_type = aggregate_type;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16 + self.aggregate_type.record_length()
     }
@@ -314,32 +345,38 @@ pub struct SilentEntitySystem {
 }
 
 impl SilentEntitySystem {
+    #[must_use]
     pub fn with_number_of_entities(mut self, number_of_entities: u16) -> Self {
         self.number_of_entities = number_of_entities;
         self
     }
 
+    #[must_use]
     pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
         self.entity_type = entity_type;
         self
     }
 
+    #[must_use]
     pub fn with_appearance(mut self, appearance: EntityAppearance) -> Self {
         self.appearances.push(appearance);
         self
     }
 
+    #[must_use]
     pub fn with_appearances(mut self, appearances: Vec<EntityAppearance>) -> Self {
         self.appearances = appearances;
         self
     }
 
+    #[must_use]
     pub fn record_length(&self) -> u16 {
         TWO_OCTETS as u16
             + self.entity_type.record_length()
-            + self.appearances.iter()
-            .map(|app| app.record_length() )
-            .sum::<u16>()
+            + self
+                .appearances
+                .iter()
+                .map(crate::entity_state::model::EntityAppearance::record_length)
+                .sum::<u16>()
     }
 }
-

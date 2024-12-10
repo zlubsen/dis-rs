@@ -1,24 +1,29 @@
-use dis_rs::enumerations::ActionId;
-use dis_rs::model::DatumSpecification;
 use crate::action_request::model::ActionRequest;
 use crate::codec::Codec;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
+use dis_rs::enumerations::ActionId;
+use dis_rs::model::DatumSpecification;
 
 type Counterpart = dis_rs::action_request::model::ActionRequest;
 
 impl ActionRequest {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
-        let action_id : u32 = item.action_id.into();
+        let action_id: u32 = item.action_id.into();
         Self {
             originating_id: EntityId::encode(&item.originating_id),
             receiving_id: EntityId::encode(&item.receiving_id),
             request_id: UVINT32::from(item.request_id),
             action_id: UVINT32::from(action_id),
-            datum_specification: DatumSpecification::new(item.fixed_datum_records.clone(), item.variable_datum_records.clone())
+            datum_specification: DatumSpecification::new(
+                item.fixed_datum_records.clone(),
+                item.variable_datum_records.clone(),
+            ),
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())

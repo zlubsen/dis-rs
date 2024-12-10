@@ -1,16 +1,21 @@
-use nom::IResult;
-use nom::multi::count;
-use nom::number::complete::{be_u16, be_u8};
-use crate::enumerations::{DetonationResult, DetonationTypeIndicator};
-use crate::common::model::{PduBody, PduHeader};
 use crate::common::detonation::model::Detonation;
+use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser::variable_parameter;
 use crate::common::parser::{descriptor_record_dti, entity_id, event_id, location, vec3_f32};
+use crate::enumerations::{DetonationResult, DetonationTypeIndicator};
+use nom::multi::count;
+use nom::number::complete::{be_u16, be_u8};
+use nom::IResult;
 
-pub(crate) fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn detonation_body(
+    header: &PduHeader,
+) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
-        let dti = header.pdu_status.unwrap_or_default()
-            .detonation_type_indicator.unwrap_or(DetonationTypeIndicator::Munition);
+        let dti = header
+            .pdu_status
+            .unwrap_or_default()
+            .detonation_type_indicator
+            .unwrap_or(DetonationTypeIndicator::Munition);
         let (input, source_entity_id) = entity_id(input)?;
         let (input, target_entity_id) = entity_id(input)?;
         let (input, exploding_entity_id) = entity_id(input)?;
@@ -24,7 +29,9 @@ pub(crate) fn detonation_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&
         let (input, _padding) = be_u16(input)?;
         let (input, articulation_parameters) = if variable_parameters_no > 0 {
             count(variable_parameter, variable_parameters_no as usize)(input)?
-        } else { (input, vec![]) };
+        } else {
+            (input, vec![])
+        };
 
         let body = Detonation::builder()
             .with_source_entity_id(source_entity_id)

@@ -1,7 +1,9 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::EntityId;
+use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
-use crate::enumerations::{PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType};
+use crate::enumerations::{
+    PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType,
+};
 use crate::model::{PduBody, TimeStamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
 
@@ -22,14 +24,17 @@ pub struct RecordQueryR {
 }
 
 impl RecordQueryR {
+    #[must_use]
     pub fn builder() -> RecordQueryRBuilder {
         RecordQueryRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RecordQueryRBuilder {
         RecordQueryRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RecordQueryR(self)
     }
@@ -37,8 +42,8 @@ impl RecordQueryR {
 
 impl BodyInfo for RecordQueryR {
     fn body_length(&self) -> u16 {
-        BASE_RECORD_QUERY_R_BODY_LENGTH +
-            (self.record_query_specification.record_ids.len() * FOUR_OCTETS) as u16
+        BASE_RECORD_QUERY_R_BODY_LENGTH
+            + (self.record_query_specification.record_ids.len() * FOUR_OCTETS) as u16
     }
 
     fn body_type(&self) -> PduType {
@@ -63,11 +68,13 @@ pub struct RecordQuerySpecification {
 }
 
 impl RecordQuerySpecification {
+    #[must_use]
     pub fn with_record_id(mut self, record_id: VariableRecordType) -> Self {
         self.record_ids.push(record_id);
         self
     }
 
+    #[must_use]
     pub fn with_record_ids(mut self, record_ids: Vec<VariableRecordType>) -> Self {
         self.record_ids = record_ids;
         self

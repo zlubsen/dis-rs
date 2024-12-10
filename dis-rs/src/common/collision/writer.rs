@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
-use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::collision::model::Collision;
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Collision {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -13,8 +13,12 @@ impl SerializePdu for Collision {
         buf.put_f32(self.mass);
         let location_bytes = self.location.serialize(buf);
 
-        issuing_id_bytes + colliding_id_bytes + event_id_bytes
-            + 2 + velocity_bytes
-            + 4 + location_bytes
+        issuing_id_bytes
+            + colliding_id_bytes
+            + event_id_bytes
+            + 2
+            + velocity_bytes
+            + 4
+            + location_bytes
     }
 }

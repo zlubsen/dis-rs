@@ -1,9 +1,9 @@
+use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, ClockTime, PduBody};
 use crate::enumerations::PduType;
 use crate::start_resume::builder::StartResumeBuilder;
 
-const START_RESUME_BODY_LENGTH : u16 = 32;
+const START_RESUME_BODY_LENGTH: u16 = 32;
 
 /// 5.6.5.4 Start/Resume PDU
 ///
@@ -18,14 +18,17 @@ pub struct StartResume {
 }
 
 impl StartResume {
+    #[must_use]
     pub fn builder() -> StartResumeBuilder {
         StartResumeBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> StartResumeBuilder {
         StartResumeBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::StartResume(self)
     }

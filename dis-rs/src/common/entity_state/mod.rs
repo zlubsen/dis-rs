@@ -1,16 +1,22 @@
-pub mod parser;
-pub mod model;
-pub mod writer;
 pub mod builder;
 mod compatibility;
+pub mod model;
+pub mod parser;
+pub mod writer;
 
 #[cfg(test)]
 mod tests {
-    use bytes::BytesMut;
-    use crate::common::entity_state::model::{DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance, EntityMarking, EntityState};
-    use crate::enumerations::{*};
-    use crate::common::model::{ArticulatedPart, EntityId, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32, EntityType, VariableParameter};
+    use crate::common::entity_state::model::{
+        DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
+        EntityMarking, EntityState,
+    };
+    use crate::common::model::{
+        ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader,
+        SimulationAddress, VariableParameter, VectorF32,
+    };
     use crate::common::parser::parse_pdu;
+    use crate::enumerations::*;
+    use bytes::BytesMut;
 
     #[test]
     fn entity_state_internal_consistency() {
@@ -57,7 +63,7 @@ mod tests {
                 is_blinking: false,
                 is_frozen: false,
                 power_plant_on: false,
-                state: AppearanceEntityorObjectState::Active,
+                state: AppearanceEntityOrObjectState::Active,
                 formation_lights_on: false,
                 landing_gear_extended: false,
                 cargo_doors_opened: false,
@@ -68,7 +74,7 @@ mod tests {
                 weightonwheels: false,
             }))
             .with_dead_reckoning_parameters(DrParameters {
-                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation,
+                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
                 other_parameters: DrOtherParameters::WorldOrientationQuaternion(
                     DrWorldOrientationQuaternion::default()),
                 linear_acceleration: VectorF32 {

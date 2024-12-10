@@ -1,6 +1,6 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::data_query::builder::DataQueryBuilder;
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{PduType, VariableRecordType};
 
@@ -17,14 +17,17 @@ pub struct DataQuery {
 }
 
 impl DataQuery {
+    #[must_use]
     pub fn builder() -> DataQueryBuilder {
         DataQueryBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> DataQueryBuilder {
         DataQueryBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::DataQuery(self)
     }
@@ -32,9 +35,9 @@ impl DataQuery {
 
 impl BodyInfo for DataQuery {
     fn body_length(&self) -> u16 {
-        BASE_DATA_QUERY_BODY_LENGTH +
-            (FOUR_OCTETS * self.fixed_datum_records.len()) as u16 +
-            (FOUR_OCTETS * self.variable_datum_records.len()) as u16
+        BASE_DATA_QUERY_BODY_LENGTH
+            + (FOUR_OCTETS * self.fixed_datum_records.len()) as u16
+            + (FOUR_OCTETS * self.variable_datum_records.len()) as u16
     }
 
     fn body_type(&self) -> PduType {

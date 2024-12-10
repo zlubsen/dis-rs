@@ -1,22 +1,44 @@
-use crate::v6::entity_state::model::{EntityCapabilities};
-use crate::enumerations::{EntityCapabilities as EntityCapabilitiesV7, LandPlatformCapabilities, AirPlatformCapabilities, SurfacePlatformCapabilities, SubsurfacePlatformCapabilities, SpacePlatformCapabilities, MunitionCapabilities, LifeFormsCapabilities, EnvironmentalCapabilities, CulturalFeatureCapabilities, SupplyCapabilities, RadioCapabilities, ExpendableCapabilities, SensorEmitterCapabilities};
+use crate::enumerations::{
+    AirPlatformCapabilities, CulturalFeatureCapabilities,
+    EntityCapabilities as EntityCapabilitiesV7, EnvironmentalCapabilities, ExpendableCapabilities,
+    LandPlatformCapabilities, LifeFormsCapabilities, MunitionCapabilities, RadioCapabilities,
+    SensorEmitterCapabilities, SpacePlatformCapabilities, SubsurfacePlatformCapabilities,
+    SupplyCapabilities, SurfacePlatformCapabilities,
+};
+use crate::v6::entity_state::model::EntityCapabilities;
 
 impl From<EntityCapabilitiesV7> for EntityCapabilities {
     fn from(value: EntityCapabilitiesV7) -> Self {
         match value {
-            EntityCapabilitiesV7::LandPlatformEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::AirPlatformEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::SurfacePlatformEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::SubsurfacePlatformEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::SpacePlatformEntityCapabilities(capabilities) => capabilities.into(),
+            EntityCapabilitiesV7::LandPlatformEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
+            EntityCapabilitiesV7::AirPlatformEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
+            EntityCapabilitiesV7::SurfacePlatformEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
+            EntityCapabilitiesV7::SubsurfacePlatformEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
+            EntityCapabilitiesV7::SpacePlatformEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
             EntityCapabilitiesV7::MunitionEntityCapabilities(capabilities) => capabilities.into(),
             EntityCapabilitiesV7::LifeFormsEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::EnvironmentalEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::CulturalFeatureEntityCapabilities(capabilities) => capabilities.into(),
+            EntityCapabilitiesV7::EnvironmentalEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
+            EntityCapabilitiesV7::CulturalFeatureEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
             EntityCapabilitiesV7::SupplyEntityCapabilities(capabilities) => capabilities.into(),
             EntityCapabilitiesV7::RadioEntityCapabilities(capabilities) => capabilities.into(),
             EntityCapabilitiesV7::ExpendableEntityCapabilities(capabilities) => capabilities.into(),
-            EntityCapabilitiesV7::SensorEmitterEntityCapabilities(capabilities) => capabilities.into(),
+            EntityCapabilitiesV7::SensorEmitterEntityCapabilities(capabilities) => {
+                capabilities.into()
+            }
             EntityCapabilitiesV7::Unspecified(_unspecified_value) => EntityCapabilities::default(),
         }
     }

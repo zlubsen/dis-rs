@@ -1,5 +1,5 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ReceiverState};
 use crate::receiver::builder::ReceiverBuilder;
 
@@ -16,14 +16,17 @@ pub struct Receiver {
 }
 
 impl Receiver {
+    #[must_use]
     pub fn builder() -> ReceiverBuilder {
         ReceiverBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ReceiverBuilder {
         ReceiverBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Receiver(self)
     }

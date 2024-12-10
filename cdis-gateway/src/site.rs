@@ -1,24 +1,27 @@
-use std::convert::Infallible;
-use std::sync::Arc;
-use std::time::Duration;
+use crate::config::Config;
+use crate::site::templates::{
+    CodecStatsTemplate, CodecStatsValues, ConfigMetaTemplate, ConfigTemplate, HomeTemplate,
+    SocketStatsTemplate, SocketStatsValues, UdpEndpointValues,
+};
+use crate::stats::SseStat;
+use crate::Command;
 use askama::Template;
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use axum::response::sse::{Event as SseEvent, Sse};
-use axum::Router;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
+use axum::Router;
 use axum_extra::{headers, TypedHeader};
 use futures::stream::Stream;
+use std::convert::Infallible;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::signal;
 use tower_http::trace::TraceLayer;
-use tracing::{debug, error};
 use tracing::log::trace;
-use crate::{Command};
-use crate::config::Config;
-use crate::site::templates::{CodecStatsTemplate, CodecStatsValues, ConfigMetaTemplate, ConfigTemplate, HomeTemplate, SocketStatsTemplate, SocketStatsValues, UdpEndpointValues};
-use crate::stats::SseStat;
+use tracing::{debug, error};
 
 // const ASSETS_DIR: &str = "templates";
 
@@ -28,9 +31,11 @@ pub(crate) struct SiteState {
     cmd_tx: tokio::sync::broadcast::Sender<Command>,
 }
 
-pub(crate) async fn run_site(config: Config,
-                      stats_tx: tokio::sync::broadcast::Sender<SseStat>,
-                      cmd_tx: tokio::sync::broadcast::Sender<Command>) {
+pub(crate) async fn run_site(
+    config: Config,
+    stats_tx: tokio::sync::broadcast::Sender<SseStat>,
+    cmd_tx: tokio::sync::broadcast::Sender<Command>,
+) {
     // let assets_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(ASSETS_DIR);
     // let static_files_service = ServeDir::new(assets_dir).append_index_html_on_directories(true);
 
@@ -59,7 +64,7 @@ pub(crate) async fn run_site(config: Config,
     let host_ip = format!("127.0.0.1:{}", config.site_host);
     let listener = tokio::net::TcpListener::bind(&host_ip)
         .await
-        .unwrap_or_else(|_| panic!("Failed to bind TCP socket for Web UI - {}", host_ip));
+        .unwrap_or_else(|_| panic!("Failed to bind TCP socket for Web UI - {host_ip}"));
     tracing::debug!("Site listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal(cmd_tx.clone()))
@@ -68,7 +73,9 @@ pub(crate) async fn run_site(config: Config,
 
     match cmd_tx.send(Command::Quit) {
         Ok(_) => {}
-        Err(_) => { error!("Could not send Command::Quit.") }
+        Err(_) => {
+            error!("Could not send Command::Quit.");
+        }
     }
 }
 
@@ -81,7 +88,7 @@ async fn shutdown_signal(cmd_tx: tokio::sync::broadcast::Sender<Command>) {
     };
 
     #[cfg(unix)]
-        let terminate = async {
+    let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
@@ -89,15 +96,17 @@ async fn shutdown_signal(cmd_tx: tokio::sync::broadcast::Sender<Command>) {
     };
 
     #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
+    let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        () = ctrl_c => {},
+        () = terminate => {},
     }
 
     // Send Command::Quit, resolving not stopping the axum server due to open (infinite) SSE connections.
-    cmd_tx.send(Command::Quit).expect("Failed to send Command:Quit after receiving shutdown signal");
+    cmd_tx
+        .send(Command::Quit)
+        .expect("Failed to send Command:Quit after receiving shutdown signal");
 }
 
 async fn sse_handler(
@@ -173,8 +182,12 @@ pub(crate) async fn styles() -> Result<impl IntoResponse, Response> {
         .body(include_str!("../build/styles.css").to_owned());
 
     match response {
-        Ok(response) => { Ok(response) }
-        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+        Ok(response) => Ok(response),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("HTTP error: {e}"),
+        )
+            .into_response()),
     }
 }
 
@@ -185,8 +198,12 @@ pub(crate) async fn scripts() -> Result<impl IntoResponse, Response> {
         .body(include_str!("../build/index.js").to_owned());
 
     match response {
-        Ok(response) => { Ok(response) }
-        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+        Ok(response) => Ok(response),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("HTTP error: {e}"),
+        )
+            .into_response()),
     }
 }
 
@@ -198,8 +215,12 @@ pub(crate) async fn favicon() -> Result<impl IntoResponse, Response> {
         .body(Body::from(bytes));
 
     match response {
-        Ok(response) => { Ok(response) }
-        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+        Ok(response) => Ok(response),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("HTTP error: {e}"),
+        )
+            .into_response()),
     }
 }
 
@@ -210,8 +231,12 @@ pub(crate) async fn script_htmx() -> Result<impl IntoResponse, Response> {
         .body(include_str!("../assets/scripts/htmx-1.9.12-min.js").to_owned());
 
     match response {
-        Ok(response) => { Ok(response) }
-        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+        Ok(response) => Ok(response),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("HTTP error: {e}"),
+        )
+            .into_response()),
     }
 }
 
@@ -222,8 +247,12 @@ pub(crate) async fn script_htmx_sse() -> Result<impl IntoResponse, Response> {
         .body(include_str!("../assets/scripts/htmx-1.9.12-ext-sse.js").to_owned());
 
     match response {
-        Ok(response) => { Ok(response) }
-        Err(e) => { Err((StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP error: {e}")).into_response()) }
+        Ok(response) => Ok(response),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("HTTP error: {e}"),
+        )
+            .into_response()),
     }
 }
 
@@ -249,17 +278,17 @@ pub async fn clicked() -> impl IntoResponse {
 
 pub(crate) async fn home(State(state): State<Arc<SiteState>>) -> impl IntoResponse {
     HomeTemplate {
-        config: state.config.clone()
+        config: state.config.clone(),
     }
 }
 
 mod templates {
-    use askama_axum::Template;
-    use cdis_assemble::codec::CodecUpdateMode;
-    use dis_rs::enumerations::PduType;
-    use bytesize::ByteSize;
     use crate::config::{Config, UdpEndpoint, UdpMode};
     use crate::stats::{CodecStats, SocketStats};
+    use askama_axum::Template;
+    use bytesize::ByteSize;
+    use cdis_assemble::codec::CodecUpdateMode;
+    use dis_rs::enumerations::PduType;
 
     #[derive(Template)]
     #[template(path = "index.html")]
@@ -324,9 +353,9 @@ mod templates {
     impl From<&UdpEndpoint> for UdpEndpointValues {
         fn from(endpoint: &UdpEndpoint) -> Self {
             let mode = match endpoint.mode {
-                UdpMode::UniCast => { "Unicast".to_string() }
-                UdpMode::BroadCast => { "Broadcast".to_string() }
-                UdpMode::MultiCast => { "Multicast".to_string() }
+                UdpMode::UniCast => "Unicast".to_string(),
+                UdpMode::BroadCast => "Broadcast".to_string(),
+                UdpMode::MultiCast => "Multicast".to_string(),
             };
             let interface = format!("{}:{}", endpoint.interface.ip(), endpoint.interface.port());
             let address = format!("{}:{}", endpoint.address.ip(), endpoint.address.port());
@@ -384,7 +413,12 @@ mod templates {
             }
 
             Self {
-                received_count: stats.received_count.values().map(|val| val.0).sum::<u64>().saturating_sub(stats.rejected_count),
+                received_count: stats
+                    .received_count
+                    .values()
+                    .map(|val| val.0)
+                    .sum::<u64>()
+                    .saturating_sub(stats.rejected_count),
                 es_count: count_for_pdu_type(stats, PduType::EntityState),
                 fire_count: count_for_pdu_type(stats, PduType::Fire),
                 detonation_count: count_for_pdu_type(stats, PduType::Detonation),

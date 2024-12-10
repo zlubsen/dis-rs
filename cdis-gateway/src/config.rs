@@ -1,10 +1,12 @@
+use cdis_assemble::codec::{
+    CodecOptimizeMode, CodecUpdateMode, DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER,
+};
+use clap::Parser;
+use dis_rs::VariableParameters;
+use serde_derive::Deserialize;
 use std::fmt::{Debug, Display, Formatter};
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use serde_derive::Deserialize;
-use clap::Parser;
-use cdis_assemble::codec::{CodecOptimizeMode, CodecUpdateMode, DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER};
-use dis_rs::VariableParameters;
 
 const DEFAULT_TTL: u16 = 1;
 const DEFAULT_ENDPOINT_MODE: UdpMode = UdpMode::UniCast;
@@ -28,6 +30,7 @@ pub(crate) struct Config {
 impl TryFrom<&ConfigSpec> for Config {
     type Error = ConfigError;
 
+    #[allow(clippy::let_and_return)]
     fn try_from(value: &ConfigSpec) -> Result<Self, Self::Error> {
         let mode = if let Some(mode) = &value.update_mode {
             GatewayMode::try_from(mode.as_str())?
@@ -38,22 +41,31 @@ impl TryFrom<&ConfigSpec> for Config {
         let dis_socket = UdpEndpoint::try_from(&value.dis)?;
         let cdis_socket = UdpEndpoint::try_from(&value.cdis)?;
 
-        let site_host = value.site.map_or(DEFAULT_SITE_HOST_PORT, | spec | spec.port );
+        let site_host = value.site.map_or(DEFAULT_SITE_HOST_PORT, |spec| spec.port);
 
         let hbt_cdis_full_update_mplier = if let Some(fed_spec) = &value.federation {
-            fed_spec.hbt_cdis_full_update_mplier.unwrap_or(DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER)
-        } else { DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER };
+            fed_spec
+                .hbt_cdis_full_update_mplier
+                .unwrap_or(DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER)
+        } else {
+            DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER
+        };
         let federation_parameters = set_federation_parameters(&value.federation);
 
         let optimization = if let Some(encoder) = &value.encoder {
-            let optimization = encoder.optimization.as_ref()
-                .map_or(Ok(EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)), |val| EncoderOptimization::try_from(val.as_str()) )?;
-            optimization
-        } else { EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION) };
+            encoder.optimization.as_ref().map_or(
+                Ok(EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)),
+                |val| EncoderOptimization::try_from(val.as_str()),
+            )?
+        } else {
+            EncoderOptimization(DEFAULT_ENCODER_OPTIMIZATION)
+        };
 
         let meta = if let Some(meta) = &value.metadata {
             meta.clone()
-        } else { MetaData::default() };
+        } else {
+            MetaData::default()
+        };
 
         Ok(Self {
             dis_socket,
@@ -63,12 +75,12 @@ impl TryFrom<&ConfigSpec> for Config {
             federation_parameters,
             hbt_cdis_full_update_mplier,
             optimization,
-            meta
+            meta,
         })
     }
 }
 
-/// Wrapper type for `CodecUpdateMode` from cdis_assemble crate
+/// Wrapper type for `CodecUpdateMode` from `cdis_assemble` crate
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) struct GatewayMode(pub(crate) CodecUpdateMode);
 
@@ -79,22 +91,25 @@ impl TryFrom<&str> for GatewayMode {
         match value.to_lowercase().as_str() {
             "full_update" => Ok(GatewayMode(CodecUpdateMode::FullUpdate)),
             "partial_update" => Ok(GatewayMode(CodecUpdateMode::PartialUpdate)),
-            _ => Err(ConfigError::GatewayMode)
+            _ => Err(ConfigError::GatewayMode),
         }
-
     }
 }
 
 impl Display for GatewayMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.0 {
-            CodecUpdateMode::FullUpdate => { write!(f, "Full Update") }
-            CodecUpdateMode::PartialUpdate => { write!(f, "Partial Update") }
+            CodecUpdateMode::FullUpdate => {
+                write!(f, "Full Update")
+            }
+            CodecUpdateMode::PartialUpdate => {
+                write!(f, "Partial Update")
+            }
         }
     }
 }
 
-/// Wrapper type for `CodecOptimizeMode` from cdis_assemble crate
+/// Wrapper type for `CodecOptimizeMode` from `cdis_assemble` crate
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub(crate) struct EncoderOptimization(pub(crate) CodecOptimizeMode);
 
@@ -105,7 +120,7 @@ impl TryFrom<&str> for EncoderOptimization {
         match value.to_lowercase().as_str() {
             "bandwidth" => Ok(Self(CodecOptimizeMode::Bandwidth)),
             "completeness" => Ok(Self(CodecOptimizeMode::Completeness)),
-            _ => Err(ConfigError::OptimizationMode)
+            _ => Err(ConfigError::OptimizationMode),
         }
     }
 }
@@ -113,8 +128,12 @@ impl TryFrom<&str> for EncoderOptimization {
 impl Display for EncoderOptimization {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.0 {
-            CodecOptimizeMode::Bandwidth => { write!(f, "Bandwidth optimization") }
-            CodecOptimizeMode::Completeness => { write!(f, "Completeness optimization") }
+            CodecOptimizeMode::Bandwidth => {
+                write!(f, "Bandwidth optimization")
+            }
+            CodecOptimizeMode::Completeness => {
+                write!(f, "Completeness optimization")
+            }
         }
     }
 }
@@ -140,8 +159,14 @@ impl TryFrom<&EndPointSpec> for UdpEndpoint {
         let ttl = value.ttl.unwrap_or(DEFAULT_TTL);
         let block_own_socket = value.block_own_socket.unwrap_or(DEFAULT_BLOCK_OWN_SOCKET);
 
-        let interface = value.interface.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
-        let address = value.interface.parse().unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
+        let interface = value
+            .interface
+            .parse()
+            .unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.interface));
+        let address = value
+            .uri
+            .parse()
+            .unwrap_or_else(|_| panic!("Cannot parse socket address {}", value.uri));
 
         Ok(Self {
             mode,
@@ -170,9 +195,8 @@ impl TryFrom<&str> for UdpMode {
             "unicast" => Ok(Self::UniCast),
             "broadcast" => Ok(Self::BroadCast),
             "multicast" => Ok(Self::MultiCast),
-            _ => Err(ConfigError::UdpMode)
+            _ => Err(ConfigError::UdpMode),
         }
-
     }
 }
 
@@ -184,6 +208,7 @@ pub struct Arguments {
     pub config: PathBuf,
 }
 
+#[allow(clippy::ref_option)]
 fn set_federation_parameters(spec: &Option<FederationSpec>) -> VariableParameters {
     let mut parameters = VariableParameters::default();
     if let Some(spec) = spec {
@@ -252,29 +277,30 @@ fn set_federation_parameters(spec: &Option<FederationSpec>) -> VariableParameter
 }
 
 #[allow(dead_code)]
+#[allow(clippy::struct_field_names)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct FederationAgreement {
-    pub hbt_cdis_full_update_mplier: f32, //Default: 2.4
+    pub hbt_cdis_full_update_mplier: f32,     //Default: 2.4
     pub hbt_espdu_kind_cultural_feature: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_environmental: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_expendable: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_life_form: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_munition: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_radio: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_sensor: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_emitter: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_supply: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_air: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_land: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_space: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_subsurface: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_surface: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_pdu_designator: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_pdu_ee: f32, //Default: 5 s Tolerance: ±10%
-    pub hbt_pdu_iff: f32, //Default: 10 s Tolerance: ±10%
-    pub hbt_pdu_transmitter: f32, //Default: 2 s Tolerance: ±10%
-    pub hbt_stationary: f32, //Default: 1 min Tolerance: ±10%
-    pub hbt_timeout_mplier: f32, //Default: 2.4 (see NOTE 2)
+    pub hbt_espdu_kind_environmental: f32,    //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_expendable: f32,       //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_life_form: f32,        //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_munition: f32,         //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_radio: f32,            //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_sensor: f32,           //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_emitter: f32,          //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_supply: f32,           //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_air: f32,          //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_land: f32,         //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_space: f32,        //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_subsurface: f32,   //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_surface: f32,      //Default: 5 s Tolerance: ±10%
+    pub hbt_pdu_designator: f32,              //Default: 5 s Tolerance: ±10%
+    pub hbt_pdu_ee: f32,                      //Default: 5 s Tolerance: ±10%
+    pub hbt_pdu_iff: f32,                     //Default: 10 s Tolerance: ±10%
+    pub hbt_pdu_transmitter: f32,             //Default: 2 s Tolerance: ±10%
+    pub hbt_stationary: f32,                  //Default: 1 min Tolerance: ±10%
+    pub hbt_timeout_mplier: f32,              //Default: 2.4 (see NOTE 2)
 }
 
 impl TryFrom<&FederationSpec> for FederationAgreement {
@@ -282,7 +308,9 @@ impl TryFrom<&FederationSpec> for FederationAgreement {
 
     fn try_from(value: &FederationSpec) -> Result<Self, Self::Error> {
         Ok(Self {
-            hbt_cdis_full_update_mplier: value.hbt_cdis_full_update_mplier.unwrap_or(DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER),
+            hbt_cdis_full_update_mplier: value
+                .hbt_cdis_full_update_mplier
+                .unwrap_or(DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER),
             hbt_espdu_kind_cultural_feature: value.hbt_espdu_kind_cultural_feature.unwrap_or(5.0),
             hbt_espdu_kind_environmental: value.hbt_espdu_kind_environmental.unwrap_or(5.0),
             hbt_espdu_kind_expendable: value.hbt_espdu_kind_expendable.unwrap_or(5.0),
@@ -309,9 +337,8 @@ impl TryFrom<&FederationSpec> for FederationAgreement {
 
 #[derive(Debug, Deserialize)]
 pub struct ConfigSpec {
-    pub metadata : Option<MetaData>,
-    pub update_mode : Option<String>,
-    pub block_host : Option<bool>,
+    pub metadata: Option<MetaData>,
+    pub update_mode: Option<String>,
     pub dis: EndPointSpec,
     pub cdis: EndPointSpec,
     pub site: Option<SiteSpec>,
@@ -321,9 +348,9 @@ pub struct ConfigSpec {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct MetaData {
-    pub name : String,
-    pub author : String,
-    pub version : String,
+    pub name: String,
+    pub author: String,
+    pub version: String,
 }
 
 impl Default for MetaData {
@@ -355,29 +382,30 @@ pub struct EncoderSpec {
     pub optimization: Option<String>,
 }
 
+#[allow(clippy::struct_field_names)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct FederationSpec {
     pub hbt_cdis_full_update_mplier: Option<f32>,
     pub hbt_espdu_kind_cultural_feature: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_environmental: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_expendable: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_life_form: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_munition: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_radio: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_sensor: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_emitter: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_kind_supply: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_air: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_land: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_space: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_subsurface: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_espdu_platform_surface: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_pdu_designator: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_pdu_ee: Option<f32>, //Default: 5 s Tolerance: ±10%
-    pub hbt_pdu_iff: Option<f32>, //Default: 10 s Tolerance: ±10%
-    pub hbt_pdu_transmitter: Option<f32>, //Default: 2 s Tolerance: ±10%
-    pub hbt_stationary: Option<f32>, //Default: 1 min Tolerance: ±10%
-    pub hbt_timeout_mplier: Option<f32>, //Default: 2.4 (see NOTE 2)
+    pub hbt_espdu_kind_environmental: Option<f32>,    //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_expendable: Option<f32>,       //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_life_form: Option<f32>,        //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_munition: Option<f32>,         //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_radio: Option<f32>,            //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_sensor: Option<f32>,           //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_emitter: Option<f32>,          //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_kind_supply: Option<f32>,           //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_air: Option<f32>,          //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_land: Option<f32>,         //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_space: Option<f32>,        //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_subsurface: Option<f32>,   //Default: 5 s Tolerance: ±10%
+    pub hbt_espdu_platform_surface: Option<f32>,      //Default: 5 s Tolerance: ±10%
+    pub hbt_pdu_designator: Option<f32>,              //Default: 5 s Tolerance: ±10%
+    pub hbt_pdu_ee: Option<f32>,                      //Default: 5 s Tolerance: ±10%
+    pub hbt_pdu_iff: Option<f32>,                     //Default: 10 s Tolerance: ±10%
+    pub hbt_pdu_transmitter: Option<f32>,             //Default: 2 s Tolerance: ±10%
+    pub hbt_stationary: Option<f32>,                  //Default: 1 min Tolerance: ±10%
+    pub hbt_timeout_mplier: Option<f32>,              //Default: 2.4 (see NOTE 2)
 }
 
 #[allow(clippy::enum_variant_names)]
@@ -391,9 +419,15 @@ pub enum ConfigError {
 impl Display for ConfigError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConfigError::GatewayMode => { write!(f, "Configured Gateway mode is invalid. Valid values are 'full_update', and 'partial_update'.") }
-            ConfigError::UdpMode => { write!(f, "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'.") }
-            ConfigError::OptimizationMode => { write!(f, "Configured encoder Optimization mode is invalid. Valid values are 'bandwidth' and 'completeness'.") }
+            ConfigError::GatewayMode => {
+                write!(f, "Configured Gateway mode is invalid. Valid values are 'full_update', and 'partial_update'.")
+            }
+            ConfigError::UdpMode => {
+                write!(f, "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'.")
+            }
+            ConfigError::OptimizationMode => {
+                write!(f, "Configured encoder Optimization mode is invalid. Valid values are 'bandwidth' and 'completeness'.")
+            }
         }
     }
 }

@@ -1,16 +1,33 @@
-use nom::IResult;
-use dis_rs::enumerations::{ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator, AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus, EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType, EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator, SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName, TransmitterAntennaPatternReferenceSystem};
-use dis_rs::model::{DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum};
-use dis_rs::model::TimeStamp;
-use crate::constants::{CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT, SEVENTEEN_BITS, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{
+    CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS,
+    FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT,
+    SEVENTEEN_BITS, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS,
+    TWENTY_SIX_BITS, TWO_BITS,
+};
 use crate::records::model::CdisProtocolVersion::{Reserved, StandardDis, SISO_023_2023};
-use crate::types::model::{CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
+use crate::types::model::{
+    CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8,
+};
+use dis_rs::enumerations::{
+    ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator,
+    AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus,
+    EntityAssociationGroupMemberType, EntityAssociationPhysicalAssociationType,
+    EntityAssociationPhysicalConnectionType, PduType, SeparationPreEntityIndicator,
+    SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName,
+    TransmitterAntennaPatternReferenceSystem,
+};
+use dis_rs::model::TimeStamp;
+use dis_rs::model::{
+    DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress,
+    VariableDatum,
+};
+use nom::IResult;
 
-use num_traits::FromPrimitive;
-use nom::complete::take;
-use crate::BitBuffer;
 use crate::parsing::{take_signed, BitInput};
 use crate::writing::{write_value_signed, write_value_unsigned};
+use crate::BitBuffer;
+use nom::complete::take;
+use num_traits::FromPrimitive;
 
 pub(crate) trait CdisRecord {
     fn record_length(&self) -> usize;
@@ -29,7 +46,7 @@ pub struct CdisHeader {
 
 impl CdisRecord for CdisHeader {
     fn record_length(&self) -> usize {
-        const ALWAYS_PRESENT_FIELDS_LENGTH : usize = 58;
+        const ALWAYS_PRESENT_FIELDS_LENGTH: usize = 58;
         ALWAYS_PRESENT_FIELDS_LENGTH + self.exercise_id.record_length()
     }
 }
@@ -55,9 +72,9 @@ impl From<u8> for CdisProtocolVersion {
 impl From<CdisProtocolVersion> for u8 {
     fn from(value: CdisProtocolVersion) -> Self {
         match value {
-            StandardDis => { 0 }
-            SISO_023_2023 => { 1 }
-            Reserved(reserved) => { reserved }
+            StandardDis => 0,
+            SISO_023_2023 => 1,
+            Reserved(reserved) => reserved,
         }
     }
 }
@@ -71,29 +88,42 @@ impl From<CdisProtocolVersion> for u8 {
 /// nanoseconds past the hour.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum CdisTimeStamp {
-    Absolute { units_past_the_hour: u32, nanoseconds_past_the_hour: u32 },
-    Relative { units_past_the_hour: u32, nanoseconds_past_the_hour: u32 },
+    Absolute {
+        units_past_the_hour: u32,
+        nanoseconds_past_the_hour: u32,
+    },
+    Relative {
+        units_past_the_hour: u32,
+        nanoseconds_past_the_hour: u32,
+    },
 }
 
 impl CdisTimeStamp {
+    #[must_use]
     pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
+        let nanoseconds_past_the_hour =
+            CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour =
+            CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
         Self::Absolute {
             units_past_the_hour,
-            nanoseconds_past_the_hour
+            nanoseconds_past_the_hour,
         }
     }
 
+    #[must_use]
     pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour = CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
+        let nanoseconds_past_the_hour =
+            CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
+        let units_past_the_hour =
+            CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
         Self::Relative {
             units_past_the_hour,
-            nanoseconds_past_the_hour
+            nanoseconds_past_the_hour,
         }
     }
 
+    #[must_use]
     pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
         Self::Absolute {
             units_past_the_hour,
@@ -101,6 +131,7 @@ impl CdisTimeStamp {
         }
     }
 
+    #[must_use]
     pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
         Self::Relative {
             units_past_the_hour,
@@ -114,10 +145,16 @@ impl CdisTimeStamp {
     }
 
     /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_precision_loss)]
     fn nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
         (nanoseconds_past_the_hour as f32 / CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
     }
 
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn cdis_time_units_to_nanoseconds(cdis_time_units: u32) -> u32 {
         (cdis_time_units as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
     }
@@ -130,15 +167,25 @@ impl Default for CdisTimeStamp {
 }
 
 impl From<u32> for CdisTimeStamp {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from(value: u32) -> Self {
         let is_absolute_timestamp = (value & LEAST_SIGNIFICANT_BIT) == LEAST_SIGNIFICANT_BIT;
         let units_past_the_hour = value >> 1;
-        let nanoseconds_past_the_hour = (units_past_the_hour as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32;
+        let nanoseconds_past_the_hour =
+            (units_past_the_hour as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32;
 
         if is_absolute_timestamp {
-            Self::Absolute { units_past_the_hour, nanoseconds_past_the_hour }
+            Self::Absolute {
+                units_past_the_hour,
+                nanoseconds_past_the_hour,
+            }
         } else {
-            Self::Relative { units_past_the_hour, nanoseconds_past_the_hour }
+            Self::Relative {
+                units_past_the_hour,
+                nanoseconds_past_the_hour,
+            }
         }
     }
 }
@@ -152,12 +199,14 @@ impl From<TimeStamp> for CdisTimeStamp {
 impl From<CdisTimeStamp> for TimeStamp {
     fn from(value: CdisTimeStamp) -> Self {
         let raw_timestamp = match value {
-            CdisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
-                (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT
-            }
-            CdisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
-                units_past_the_hour << 1
-            }
+            CdisTimeStamp::Absolute {
+                units_past_the_hour,
+                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
+            } => (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT,
+            CdisTimeStamp::Relative {
+                units_past_the_hour,
+                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
+            } => units_past_the_hour << 1,
         };
 
         Self { raw_timestamp }
@@ -165,14 +214,24 @@ impl From<CdisTimeStamp> for TimeStamp {
 }
 
 impl From<DisTimeStamp> for CdisTimeStamp {
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
     fn from(value: DisTimeStamp) -> Self {
-        let dis_to_cdis_time_units = CDIS_TIME_UNITS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
+        let dis_to_cdis_time_units =
+            CDIS_TIME_UNITS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
         match value {
-            DisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
+            DisTimeStamp::Absolute {
+                units_past_the_hour,
+                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
+            } => {
                 let units_past_the_hour = units_past_the_hour as f32 * dis_to_cdis_time_units;
                 CdisTimeStamp::new_absolute_from_units(units_past_the_hour.round() as u32)
             }
-            DisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
+            DisTimeStamp::Relative {
+                units_past_the_hour,
+                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
+            } => {
                 let units_past_the_hour = units_past_the_hour as f32 * dis_to_cdis_time_units;
                 CdisTimeStamp::new_relative_from_units(units_past_the_hour.round() as u32)
             }
@@ -181,14 +240,24 @@ impl From<DisTimeStamp> for CdisTimeStamp {
 }
 
 impl From<CdisTimeStamp> for DisTimeStamp {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from(value: CdisTimeStamp) -> Self {
-        let cdis_to_dis_time_units = DIS_TIME_UNITS_PER_HOUR as f32 / CDIS_TIME_UNITS_PER_HOUR as f32;
+        let cdis_to_dis_time_units =
+            DIS_TIME_UNITS_PER_HOUR as f32 / CDIS_TIME_UNITS_PER_HOUR as f32;
         match value {
-            CdisTimeStamp::Absolute { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
+            CdisTimeStamp::Absolute {
+                units_past_the_hour,
+                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
+            } => {
                 let units_past_the_hour = units_past_the_hour as f32 * cdis_to_dis_time_units;
                 DisTimeStamp::new_absolute_from_units(units_past_the_hour.round() as u32)
             }
-            CdisTimeStamp::Relative { units_past_the_hour, nanoseconds_past_the_hour: _nanoseconds_past_the_hour } => {
+            CdisTimeStamp::Relative {
+                units_past_the_hour,
+                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
+            } => {
                 let units_past_the_hour = units_past_the_hour as f32 * cdis_to_dis_time_units;
                 DisTimeStamp::new_relative_from_units(units_past_the_hour.round() as u32)
             }
@@ -196,12 +265,17 @@ impl From<CdisTimeStamp> for DisTimeStamp {
     }
 }
 
+#[must_use]
 pub fn dis_to_cdis_u32_timestamp(dis_u32: u32) -> u32 {
     TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(dis_u32))).raw_timestamp
 }
 
+#[must_use]
 pub fn cdis_to_dis_u32_timestamp(cdis_u32: u32) -> u32 {
-    TimeStamp::from(DisTimeStamp::from(CdisTimeStamp::from(TimeStamp::from(cdis_u32)))).raw_timestamp
+    TimeStamp::from(DisTimeStamp::from(CdisTimeStamp::from(TimeStamp::from(
+        cdis_u32,
+    ))))
+    .raw_timestamp
 }
 
 /// 11.1 Angular Velocity
@@ -214,20 +288,15 @@ pub struct AngularVelocity {
 }
 
 impl AngularVelocity {
+    #[must_use]
     pub fn new(x: SVINT12, y: SVINT12, z: SVINT12) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+        Self { x, y, z }
     }
 }
 
 impl CdisRecord for AngularVelocity {
     fn record_length(&self) -> usize {
-        self.x.record_length()
-            + self.y.record_length()
-            + self.z.record_length()
+        self.x.record_length() + self.y.record_length() + self.z.record_length()
     }
 }
 
@@ -265,21 +334,31 @@ pub struct BeamData {
 impl CdisRecord for BeamData {
     fn record_length(&self) -> usize {
         const FIXED_LENGTH_BITS: usize = 10;
-        FIXED_LENGTH_BITS +
-            self.az_center.record_length() +
-            self.az_sweep.record_length() +
-            self.el_center.record_length() +
-            self.el_sweep.record_length()
+        FIXED_LENGTH_BITS
+            + self.az_center.record_length()
+            + self.az_sweep.record_length()
+            + self.el_center.record_length()
+            + self.el_sweep.record_length()
     }
 }
 
 /// 11.6 Datum Specification Record
 impl CdisRecord for DatumSpecification {
     fn record_length(&self) -> usize {
-        UVINT8::from(u8::from_usize(self.fixed_datum_records.len()).unwrap_or(u8::MAX)).record_length()
-        + UVINT8::from(u8::from_usize(self.variable_datum_records.len()).unwrap_or(u8::MAX)).record_length()
-        + self.fixed_datum_records.iter().map(|datum| datum.record_length() ).sum::<usize>()
-        + self.variable_datum_records.iter().map(|datum| datum.record_length() ).sum::<usize>()
+        UVINT8::from(u8::from_usize(self.fixed_datum_records.len()).unwrap_or(u8::MAX))
+            .record_length()
+            + UVINT8::from(u8::from_usize(self.variable_datum_records.len()).unwrap_or(u8::MAX))
+                .record_length()
+            + self
+                .fixed_datum_records
+                .iter()
+                .map(CdisRecord::record_length)
+                .sum::<usize>()
+            + self
+                .variable_datum_records
+                .iter()
+                .map(CdisRecord::record_length)
+                .sum::<usize>()
     }
 }
 
@@ -293,41 +372,51 @@ impl CdisRecord for FixedDatum {
 /// DIS v7 6.2.93
 impl CdisRecord for VariableDatum {
     fn record_length(&self) -> usize {
-        THIRTY_TWO_BITS + FOURTEEN_BITS
-            + self.datum_value.len() * EIGHT_BITS
+        THIRTY_TWO_BITS + FOURTEEN_BITS + self.datum_value.len() * EIGHT_BITS
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum EncodingScheme {
-    EncodedAudio { encoding_class: SignalEncodingClass, encoding_type: SignalEncodingType },
-    RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u8 },
-    Unspecified { encoding_class: SignalEncodingClass, encoding_type: u8 },
+    EncodedAudio {
+        encoding_class: SignalEncodingClass,
+        encoding_type: SignalEncodingType,
+    },
+    RawBinaryData {
+        encoding_class: SignalEncodingClass,
+        nr_of_messages: u8,
+    },
+    Unspecified {
+        encoding_class: SignalEncodingClass,
+        encoding_type: u8,
+    },
 }
 
 impl Default for EncodingScheme {
     fn default() -> Self {
         Self::EncodedAudio {
-            encoding_class: SignalEncodingClass::Encodedaudio,
-            encoding_type: SignalEncodingType::_8bitmulaw_ITUTG_711_1,
+            encoding_class: SignalEncodingClass::EncodedAudio,
+            encoding_type: SignalEncodingType::_8bitMulaw_ITUTG_711_1,
         }
     }
 }
 
 impl CdisRecord for EncodingScheme {
+    #[allow(clippy::cast_possible_truncation)]
     fn record_length(&self) -> usize {
-        TWO_BITS + match self {
-            EncodingScheme::EncodedAudio { encoding_type, .. } => {
-                let value: u16 = (*encoding_type).into();
-                UVINT8::from(value as u8).record_length()
+        TWO_BITS
+            + match self {
+                EncodingScheme::EncodedAudio { encoding_type, .. } => {
+                    let value: u16 = (*encoding_type).into();
+                    UVINT8::from(value as u8).record_length()
+                }
+                EncodingScheme::RawBinaryData { nr_of_messages, .. } => {
+                    UVINT8::from(*nr_of_messages).record_length()
+                }
+                EncodingScheme::Unspecified { encoding_type, .. } => {
+                    UVINT8::from(*encoding_type).record_length()
+                }
             }
-            EncodingScheme::RawBinaryData { nr_of_messages, .. } => {
-                UVINT8::from(*nr_of_messages).record_length()
-            }
-            EncodingScheme::Unspecified { encoding_type, .. } => {
-                UVINT8::from(*encoding_type).record_length()
-            }
-        }
     }
 }
 
@@ -340,20 +429,15 @@ pub struct EntityCoordinateVector {
 }
 
 impl EntityCoordinateVector {
+    #[must_use]
     pub fn new(x: SVINT16, y: SVINT16, z: SVINT16) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+        Self { x, y, z }
     }
 }
 
 impl CdisRecord for EntityCoordinateVector {
     fn record_length(&self) -> usize {
-        self.x.record_length()
-            + self.y.record_length()
-            + self.z.record_length()
+        self.x.record_length() + self.y.record_length() + self.z.record_length()
     }
 }
 
@@ -365,6 +449,7 @@ pub struct EntityId {
     pub entity: UVINT16,
 }
 impl EntityId {
+    #[must_use]
     pub fn new(site: UVINT16, application: UVINT16, entity: UVINT16) -> Self {
         Self {
             site,
@@ -377,15 +462,14 @@ impl EntityId {
 impl From<&EntityId> for dis_rs::model::EntityId {
     fn from(value: &EntityId) -> Self {
         Self {
-            simulation_address: SimulationAddress::new(
-                value.site.value, value.application.value),
+            simulation_address: SimulationAddress::new(value.site.value, value.application.value),
             entity_id: value.entity.value,
         }
     }
 }
 
-/// Convert (and thus encode) a dis-rs EventId to cdis-assemble EntityId,
-/// because the cdis library does not model the EventId record explicitly.
+/// Convert (and thus encode) a dis-rs `EventId` to cdis-assemble `EntityId`,
+/// because the cdis library does not model the `EventId` record explicitly.
 impl From<&EventId> for EntityId {
     fn from(value: &EventId) -> Self {
         Self::new(
@@ -396,22 +480,20 @@ impl From<&EventId> for EntityId {
     }
 }
 
-/// Convert (and thus decode) a cdis-assemble EntityId to dis-rs EventId,
-/// because the cdis library does not model the EventId record explicitly.
+/// Convert (and thus decode) a cdis-assemble `EntityId` to dis-rs `EventId`,
+/// because the cdis library does not model the `EventId` record explicitly.
 impl From<&EntityId> for EventId {
     fn from(value: &EntityId) -> Self {
         Self::new(
             SimulationAddress::new(value.site.value, value.application.value),
-            value.entity.value
+            value.entity.value,
         )
     }
 }
 
 impl CdisRecord for EntityId {
     fn record_length(&self) -> usize {
-        self.site.record_length()
-            + self.application.record_length()
-            + self.entity.record_length()
+        self.site.record_length() + self.application.record_length() + self.entity.record_length()
     }
 }
 
@@ -428,7 +510,16 @@ pub struct EntityType {
 }
 
 impl EntityType {
-    pub fn new(kind: u8, domain: u8, country: u16, category: UVINT8, subcategory: UVINT8, specific: UVINT8, extra: UVINT8) -> Self {
+    #[must_use]
+    pub fn new(
+        kind: u8,
+        domain: u8,
+        country: u16,
+        category: UVINT8,
+        subcategory: UVINT8,
+        specific: UVINT8,
+        extra: UVINT8,
+    ) -> Self {
         Self {
             kind,
             domain,
@@ -475,20 +566,15 @@ pub struct LinearAcceleration {
 }
 
 impl LinearAcceleration {
+    #[must_use]
     pub fn new(x: SVINT14, y: SVINT14, z: SVINT14) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+        Self { x, y, z }
     }
 }
 
 impl CdisRecord for LinearAcceleration {
     fn record_length(&self) -> usize {
-        self.x.record_length()
-            + self.y.record_length()
-            + self.z.record_length()
+        self.x.record_length() + self.y.record_length() + self.z.record_length()
     }
 }
 
@@ -501,20 +587,15 @@ pub struct LinearVelocity {
 }
 
 impl LinearVelocity {
+    #[must_use]
     pub fn new(x: SVINT16, y: SVINT16, z: SVINT16) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+        Self { x, y, z }
     }
 }
 
 impl CdisRecord for LinearVelocity {
     fn record_length(&self) -> usize {
-        self.x.record_length()
-            + self.y.record_length()
-            + self.z.record_length()
+        self.x.record_length() + self.y.record_length() + self.z.record_length()
     }
 }
 
@@ -527,12 +608,10 @@ pub struct Orientation {
 }
 
 impl Orientation {
+    #[must_use]
+    #[allow(clippy::similar_names)]
     pub fn new(psi: i16, theta: i16, phi: i16) -> Self {
-        Self {
-            psi,
-            theta,
-            phi,
-        }
+        Self { psi, theta, phi }
     }
 }
 
@@ -632,13 +711,16 @@ pub struct CdisEntityMarking {
 }
 
 impl CdisEntityMarking {
+    #[must_use]
     pub fn new(marking: String) -> Self {
         const MAX_MARKING_LENGTH: usize = 11;
         let marking = if marking.len() > MAX_MARKING_LENGTH {
             let mut marking = marking;
             marking.truncate(MAX_MARKING_LENGTH);
             marking
-        } else { marking };
+        } else {
+            marking
+        };
 
         Self {
             char_encoding: Self::check_char_encoding(&marking),
@@ -648,13 +730,15 @@ impl CdisEntityMarking {
 
     fn check_char_encoding(marking: &str) -> CdisMarkingCharEncoding {
         const LEAST_USED_CHARS_MORSE: [char; 5] = ['J', 'K', 'Q', 'X', 'Z'];
-        let has_only_ascii_alphanumeric = marking.chars()
-            .filter(|&char| char != '\0')       // filter the NUL control character, as it is allowed
-            .all(|char| char.is_ascii_alphanumeric());              // only ASCII alphanumeric characters fit in C-DIS 5-bit encoding
-        let contains_least_used_char_morse = marking.chars()
+        let has_only_ascii_alphanumeric = marking
+            .chars()
+            .filter(|&char| char != '\0') // filter the NUL control character, as it is allowed
+            .all(|char| char.is_ascii_alphanumeric()); // only ASCII alphanumeric characters fit in C-DIS 5-bit encoding
+        let contains_least_used_char_morse = marking
+            .chars()
             .any(|char| LEAST_USED_CHARS_MORSE.contains(&char)); // and it should not contain the five least used characters
 
-        if has_only_ascii_alphanumeric & !contains_least_used_char_morse {
+        if has_only_ascii_alphanumeric && !contains_least_used_char_morse {
             CdisMarkingCharEncoding::FiveBit
         } else {
             CdisMarkingCharEncoding::SixBit
@@ -674,17 +758,17 @@ impl Default for CdisEntityMarking {
 impl CdisRecord for CdisEntityMarking {
     fn record_length(&self) -> usize {
         const ALWAYS_PRESENT_FIELDS_LENGTH: usize = FIVE_BITS;
-        ALWAYS_PRESENT_FIELDS_LENGTH
-            + (self.marking.len() * self.char_encoding.bit_size())
+        ALWAYS_PRESENT_FIELDS_LENGTH + (self.marking.len() * self.char_encoding.bit_size())
     }
 }
 
 impl From<(&[u8], CdisMarkingCharEncoding)> for CdisEntityMarking {
     fn from((chars, encoding): (&[u8], CdisMarkingCharEncoding)) -> Self {
         let mut marking = String::with_capacity(11);
-        chars.iter()
-            .map(|code| encoding.char_from_code(*code) )
-            .for_each(|ch| marking.push(ch) );
+        chars
+            .iter()
+            .map(|code| encoding.char_from_code(*code))
+            .for_each(|ch| marking.push(ch));
         Self {
             char_encoding: encoding,
             marking,
@@ -705,6 +789,7 @@ pub enum CdisMarkingCharEncoding {
 }
 
 impl CdisMarkingCharEncoding {
+    #[must_use]
     pub fn new(char_bit_size: u8) -> Self {
         if char_bit_size == 0 {
             Self::FiveBit
@@ -713,239 +798,237 @@ impl CdisMarkingCharEncoding {
         }
     }
 
+    #[must_use]
     pub fn bit_size(&self) -> usize {
         match self {
-            CdisMarkingCharEncoding::FiveBit => { 5 }
-            CdisMarkingCharEncoding::SixBit => { 6 }
+            CdisMarkingCharEncoding::FiveBit => 5,
+            CdisMarkingCharEncoding::SixBit => 6,
         }
     }
 
+    #[must_use]
     pub fn encoding(&self) -> u8 {
         match self {
-            CdisMarkingCharEncoding::FiveBit => { 0 }
-            CdisMarkingCharEncoding::SixBit => { 1 }
+            CdisMarkingCharEncoding::FiveBit => 0,
+            CdisMarkingCharEncoding::SixBit => 1,
         }
     }
 
     #[allow(clippy::wildcard_in_or_patterns)]
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
     pub fn char_from_code(&self, code: u8) -> char {
         match self {
-            CdisMarkingCharEncoding::FiveBit => {
-                match code {
-                    0 => '\0',
-                    1 => 'A',
-                    2 => 'B',
-                    3 => 'C',
-                    4 => 'D',
-                    5 => 'E',
-                    6 => 'F',
-                    7 => 'G',
-                    8 => 'H',
-                    9 => 'I',
-                    10 => 'L',
-                    11 => 'M',
-                    12 => 'N',
-                    13 => 'O',
-                    14 => 'P',
-                    15 => 'R',
-                    16 => 'S',
-                    17 => 'T',
-                    18 => 'U',
-                    19 => 'V',
-                    20 => 'W',
-                    21 => 'Y',
-                    22 => '0',
-                    23 => '1',
-                    24 => '2',
-                    25 => '3',
-                    26 => '4',
-                    27 => '5',
-                    28 => '6',
-                    29 => '7',
-                    30 => '8',
-                    31 => '9',
-                    _ => '*',
-                }
-            }
-            CdisMarkingCharEncoding::SixBit => {
-                match code {
-                    0 => '\0',
-                    1 => 'A',
-                    2 => 'B',
-                    3 => 'C',
-                    4 => 'D',
-                    5 => 'E',
-                    6 => 'F',
-                    7 => 'G',
-                    8 => 'H',
-                    9 => 'I',
-                    10 => 'J',
-                    11 => 'K',
-                    12 => 'L',
-                    13 => 'M',
-                    14 => 'N',
-                    15 => 'O',
-                    16 => 'P',
-                    17 => 'Q',
-                    18 => 'R',
-                    19 => 'S',
-                    20 => 'T',
-                    21 => 'U',
-                    22 => 'V',
-                    23 => 'W',
-                    24 => 'X',
-                    25 => 'Y',
-                    26 => 'Z',
-                    27 => '.',
-                    28 => '?',
-                    29 => '!',
-                    30 => '0',
-                    31 => '1',
-                    32 => '2',
-                    33 => '3',
-                    34 => '4',
-                    35 => '5',
-                    36 => '6',
-                    37 => '7',
-                    38 => '8',
-                    39 => '9',
-                    40 => ' ',
-                    41 => '[',
-                    42 => ']',
-                    43 => '(',
-                    44 => ')',
-                    45 => '{',
-                    46 => '}',
-                    47 => '+',
-                    48 => '-',
-                    49 => '_',
-                    50 => '@',
-                    51 => '&',
-                    52 => '"',
-                    53 => '\'',
-                    54 => ':',
-                    55 => ';',
-                    56 => ',',
-                    57 => '~',
-                    58 => '\\',
-                    59 => '/',
-                    60 => '%',
-                    61 => '#',
-                    62 => '$',
-                    63 | _ => '*',
-                }
-            }
+            CdisMarkingCharEncoding::FiveBit => match code {
+                0 => '\0',
+                1 => 'A',
+                2 => 'B',
+                3 => 'C',
+                4 => 'D',
+                5 => 'E',
+                6 => 'F',
+                7 => 'G',
+                8 => 'H',
+                9 => 'I',
+                10 => 'L',
+                11 => 'M',
+                12 => 'N',
+                13 => 'O',
+                14 => 'P',
+                15 => 'R',
+                16 => 'S',
+                17 => 'T',
+                18 => 'U',
+                19 => 'V',
+                20 => 'W',
+                21 => 'Y',
+                22 => '0',
+                23 => '1',
+                24 => '2',
+                25 => '3',
+                26 => '4',
+                27 => '5',
+                28 => '6',
+                29 => '7',
+                30 => '8',
+                31 => '9',
+                _ => '*',
+            },
+            CdisMarkingCharEncoding::SixBit => match code {
+                0 => '\0',
+                1 => 'A',
+                2 => 'B',
+                3 => 'C',
+                4 => 'D',
+                5 => 'E',
+                6 => 'F',
+                7 => 'G',
+                8 => 'H',
+                9 => 'I',
+                10 => 'J',
+                11 => 'K',
+                12 => 'L',
+                13 => 'M',
+                14 => 'N',
+                15 => 'O',
+                16 => 'P',
+                17 => 'Q',
+                18 => 'R',
+                19 => 'S',
+                20 => 'T',
+                21 => 'U',
+                22 => 'V',
+                23 => 'W',
+                24 => 'X',
+                25 => 'Y',
+                26 => 'Z',
+                27 => '.',
+                28 => '?',
+                29 => '!',
+                30 => '0',
+                31 => '1',
+                32 => '2',
+                33 => '3',
+                34 => '4',
+                35 => '5',
+                36 => '6',
+                37 => '7',
+                38 => '8',
+                39 => '9',
+                40 => ' ',
+                41 => '[',
+                42 => ']',
+                43 => '(',
+                44 => ')',
+                45 => '{',
+                46 => '}',
+                47 => '+',
+                48 => '-',
+                49 => '_',
+                50 => '@',
+                51 => '&',
+                52 => '"',
+                53 => '\'',
+                54 => ':',
+                55 => ';',
+                56 => ',',
+                57 => '~',
+                58 => '\\',
+                59 => '/',
+                60 => '%',
+                61 => '#',
+                62 => '$',
+                63 | _ => '*',
+            },
         }
     }
 
     #[allow(clippy::wildcard_in_or_patterns)]
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
     pub fn u8_from_char(&self, c: char) -> u8 {
         match self {
-            CdisMarkingCharEncoding::FiveBit => {
-                match c {
-                    '\0' => 0,
-                    'A' => 1,
-                    'B' => 2,
-                    'C' => 3,
-                    'D' => 4,
-                    'E' => 5,
-                    'F' => 6,
-                    'G' => 7,
-                    'H' => 8,
-                    'I' => 9,
-                    'L' => 10,
-                    'M' => 11,
-                    'N' => 12,
-                    'O' => 13,
-                    'P' => 14,
-                    'R' => 15,
-                    'S' => 16,
-                    'T' => 17,
-                    'U' => 18,
-                    'V' => 19,
-                    'W' => 20,
-                    'X' => 21,
-                    '0' => 22,
-                    '1' => 23,
-                    '2' => 24,
-                    '3' => 25,
-                    '4' => 26,
-                    '5' => 27,
-                    '6' => 28,
-                    '7' => 29,
-                    '8' => 30,
-                    '9' => 31,
-                    '*' | _ => 63,
-                }
-            }
-            CdisMarkingCharEncoding::SixBit => {
-                match c {
-                    '\0' => 0,
-                    'A' => 1,
-                    'B' => 2,
-                    'C' => 3,
-                    'D' => 4,
-                    'E' => 5,
-                    'F' => 6,
-                    'G' => 7,
-                    'H' => 8,
-                    'I' => 9,
-                    'J' => 10,
-                    'K' => 11,
-                    'L' => 12,
-                    'M' => 13,
-                    'N' => 14,
-                    'O' => 15,
-                    'P' => 16,
-                    'Q' => 17,
-                    'R' => 18,
-                    'S' => 19,
-                    'T' => 20,
-                    'U' => 21,
-                    'V' => 22,
-                    'W' => 23,
-                    'X' => 24,
-                    'Y' => 25,
-                    'Z' => 26,
-                    '.' => 27,
-                    '?' => 28,
-                    '!' => 29,
-                    '0' => 30,
-                    '1' => 31,
-                    '2' => 32,
-                    '3' => 33,
-                    '4' => 34,
-                    '5' => 35,
-                    '6' => 36,
-                    '7' => 37,
-                    '8' => 38,
-                    '9' => 39,
-                    ' ' => 40,
-                    '[' => 41,
-                    ']' => 42,
-                    '(' => 43,
-                    ')' => 44,
-                    '{' => 45,
-                    '}' => 46,
-                    '+' => 47,
-                    '-' => 48,
-                    '_' => 49,
-                    '@' => 50,
-                    '&' => 51,
-                    '"' => 52,
-                    '\'' => 53,
-                    ':' => 54,
-                    ';' => 55,
-                    ',' => 56,
-                    '~' => 57,
-                    '\\' => 58,
-                    '/' => 59,
-                    '%' => 60,
-                    '#' => 61,
-                    '$' => 62,
-                    '*' | _ => 63,
-                }
-            }
+            CdisMarkingCharEncoding::FiveBit => match c {
+                '\0' => 0,
+                'A' => 1,
+                'B' => 2,
+                'C' => 3,
+                'D' => 4,
+                'E' => 5,
+                'F' => 6,
+                'G' => 7,
+                'H' => 8,
+                'I' => 9,
+                'L' => 10,
+                'M' => 11,
+                'N' => 12,
+                'O' => 13,
+                'P' => 14,
+                'R' => 15,
+                'S' => 16,
+                'T' => 17,
+                'U' => 18,
+                'V' => 19,
+                'W' => 20,
+                'X' => 21,
+                '0' => 22,
+                '1' => 23,
+                '2' => 24,
+                '3' => 25,
+                '4' => 26,
+                '5' => 27,
+                '6' => 28,
+                '7' => 29,
+                '8' => 30,
+                '9' => 31,
+                '*' | _ => 63,
+            },
+            CdisMarkingCharEncoding::SixBit => match c {
+                '\0' => 0,
+                'A' => 1,
+                'B' => 2,
+                'C' => 3,
+                'D' => 4,
+                'E' => 5,
+                'F' => 6,
+                'G' => 7,
+                'H' => 8,
+                'I' => 9,
+                'J' => 10,
+                'K' => 11,
+                'L' => 12,
+                'M' => 13,
+                'N' => 14,
+                'O' => 15,
+                'P' => 16,
+                'Q' => 17,
+                'R' => 18,
+                'S' => 19,
+                'T' => 20,
+                'U' => 21,
+                'V' => 22,
+                'W' => 23,
+                'X' => 24,
+                'Y' => 25,
+                'Z' => 26,
+                '.' => 27,
+                '?' => 28,
+                '!' => 29,
+                '0' => 30,
+                '1' => 31,
+                '2' => 32,
+                '3' => 33,
+                '4' => 34,
+                '5' => 35,
+                '6' => 36,
+                '7' => 37,
+                '8' => 38,
+                '9' => 39,
+                ' ' => 40,
+                '[' => 41,
+                ']' => 42,
+                '(' => 43,
+                ')' => 44,
+                '{' => 45,
+                '}' => 46,
+                '+' => 47,
+                '-' => 48,
+                '_' => 49,
+                '@' => 50,
+                '&' => 51,
+                '"' => 52,
+                '\'' => 53,
+                ':' => 54,
+                ';' => 55,
+                ',' => 56,
+                '~' => 57,
+                '\\' => 58,
+                '/' => 59,
+                '%' => 60,
+                '#' => 61,
+                '$' => 62,
+                '*' | _ => 63,
+            },
         }
     }
 }
@@ -959,6 +1042,7 @@ pub struct WorldCoordinates {
 }
 
 impl WorldCoordinates {
+    #[must_use]
     pub fn new(latitude: f32, longitude: f32, altitude_msl: SVINT24) -> Self {
         Self {
             latitude,
@@ -978,15 +1062,16 @@ impl CdisRecord for WorldCoordinates {
 impl From<WorldCoordinates> for Location {
     /// Applies Geo to ECEF conversion
     ///
-    /// Adapted from https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html
+    /// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
     fn from(value: WorldCoordinates) -> Self {
         // TODO account for the scaling of lat
         // TODO account for the scaling of lon
         // TODO use of the Units flag - correct calculation of Altitude MSL
         let (ecef_x, ecef_y, ecef_z) = dis_rs::utils::geodetic_lla_to_ecef(
-            value.latitude as f64,
-            value.longitude as f64,
-            value.altitude_msl.value as f64);
+            f64::from(value.latitude),
+            f64::from(value.longitude),
+            f64::from(value.altitude_msl.value),
+        );
 
         Self {
             x_coordinate: ecef_x,
@@ -1004,6 +1089,7 @@ pub struct ParameterValueFloat {
 }
 
 impl ParameterValueFloat {
+    #[must_use]
     pub fn new_uncompressed(float: f32) -> Self {
         Self {
             mantissa: 0,
@@ -1028,6 +1114,9 @@ impl CdisFloat for ParameterValueFloat {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
         let mut mantissa = float;
         let mut exponent = 0i32;
@@ -1044,10 +1133,13 @@ impl CdisFloat for ParameterValueFloat {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
         let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
         let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
@@ -1084,14 +1176,15 @@ pub enum CdisVariableParameter {
 impl CdisRecord for CdisVariableParameter {
     fn record_length(&self) -> usize {
         // TODO currently always compresses Variable Parameters; how to decide how to encode?
-        FOUR_BITS + match self {
-            CdisVariableParameter::ArticulatedPart(vp) => { vp.record_length() }
-            CdisVariableParameter::AttachedPart(vp) => { vp.record_length() }
-            CdisVariableParameter::EntitySeparation(vp) => { vp.record_length() }
-            CdisVariableParameter::EntityType(vp) => { vp.record_length() }
-            CdisVariableParameter::EntityAssociation(vp) => { vp.record_length() }
-            CdisVariableParameter::Unspecified => { 0 }
-        }
+        FOUR_BITS
+            + match self {
+                CdisVariableParameter::ArticulatedPart(vp) => vp.record_length(),
+                CdisVariableParameter::AttachedPart(vp) => vp.record_length(),
+                CdisVariableParameter::EntitySeparation(vp) => vp.record_length(),
+                CdisVariableParameter::EntityType(vp) => vp.record_length(),
+                CdisVariableParameter::EntityAssociation(vp) => vp.record_length(),
+                CdisVariableParameter::Unspecified => 0,
+            }
     }
 }
 
@@ -1124,8 +1217,7 @@ pub struct CdisAttachedPartVP {
 impl CdisRecord for CdisAttachedPartVP {
     fn record_length(&self) -> usize {
         const CONST_BIT_SIZE: usize = 22;
-        CONST_BIT_SIZE
-            + self.attached_part_type.record_length()
+        CONST_BIT_SIZE + self.attached_part_type.record_length()
     }
 }
 
@@ -1142,8 +1234,7 @@ pub struct CdisEntitySeparationVP {
 impl CdisRecord for CdisEntitySeparationVP {
     fn record_length(&self) -> usize {
         const CONST_BIT_SIZE: usize = 24;
-        CONST_BIT_SIZE
-            + self.parent_entity_id.record_length()
+        CONST_BIT_SIZE + self.parent_entity_id.record_length()
     }
 }
 
@@ -1156,8 +1247,7 @@ pub struct CdisEntityTypeVP {
 
 impl CdisRecord for CdisEntityTypeVP {
     fn record_length(&self) -> usize {
-        ONE_BIT
-            + self.attached_part_type.record_length()
+        ONE_BIT + self.attached_part_type.record_length()
     }
 }
 
@@ -1177,8 +1267,7 @@ pub struct CdisEntityAssociationVP {
 impl CdisRecord for CdisEntityAssociationVP {
     fn record_length(&self) -> usize {
         const CONST_BIT_SIZE: usize = 44;
-        CONST_BIT_SIZE
-            + self.entity_id.record_length()
+        CONST_BIT_SIZE + self.entity_id.record_length()
     }
 }
 
@@ -1249,7 +1338,7 @@ mod tests {
 
     #[test]
     fn cdis_marking_from_vec_u8_five_bit_codes() {
-        let input: [u8; 5] = [1,2,3,4,5];
+        let input: [u8; 5] = [1, 2, 3, 4, 5];
         let actual = CdisEntityMarking::from((&input[..], CdisMarkingCharEncoding::FiveBit));
 
         assert_eq!(String::from("ABCDE"), actual.marking.as_str());
@@ -1258,7 +1347,7 @@ mod tests {
 
     #[test]
     fn cdis_marking_from_vec_u8_six_bit_codes() {
-        let input: [u8; 5] = [10,11,12,13,14];
+        let input: [u8; 5] = [10, 11, 12, 13, 14];
         let actual = CdisEntityMarking::from((&input[..], CdisMarkingCharEncoding::SixBit));
 
         assert_eq!(String::from("JKLMN"), actual.marking.as_str());
@@ -1280,12 +1369,13 @@ impl CdisFloat for FrequencyFloat {
     const EXPONENT_BITS: usize = FOUR_BITS;
 
     fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
-        Self {
-            mantissa,
-            exponent,
-        }
+        Self { mantissa, exponent }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
         let mut mantissa = float;
         let mut exponent = 0usize;
@@ -1301,18 +1391,16 @@ impl CdisFloat for FrequencyFloat {
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
         let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
         let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
 
-        Ok((input, Self {
-            mantissa,
-            exponent
-        }))
+        Ok((input, Self { mantissa, exponent }))
     }
 
     #[allow(clippy::let_and_return)]

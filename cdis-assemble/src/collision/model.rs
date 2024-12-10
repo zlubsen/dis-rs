@@ -1,7 +1,9 @@
-use dis_rs::enumerations::CollisionType;
+use crate::records::model::{
+    CdisRecord, EntityCoordinateVector, EntityId, LinearVelocity, UnitsMass, UnitsMeters,
+};
+use crate::types::model::{VarInt, UVINT32};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
-use crate::records::model::{CdisRecord, EntityCoordinateVector, EntityId, LinearVelocity, UnitsMass, UnitsMeters};
-use crate::types::model::{UVINT32, VarInt};
+use dis_rs::enumerations::CollisionType;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Collision {
@@ -64,7 +66,9 @@ impl From<u8> for CollisionUnits {
         pub const LOCATION_IN_ENTITY_COORDINATES_BIT: u8 = 0x02;
         pub const MASS_BIT: u8 = 0x01;
         Self {
-            location_entity_coordinates: UnitsMeters::from((value & LOCATION_IN_ENTITY_COORDINATES_BIT) >> 1),
+            location_entity_coordinates: UnitsMeters::from(
+                (value & LOCATION_IN_ENTITY_COORDINATES_BIT) >> 1,
+            ),
             mass: UnitsMass::from(value & MASS_BIT),
         }
     }

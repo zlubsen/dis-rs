@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
-use crate::{Serialize, SerializePdu, SupportedVersion};
 use crate::set_record_r::model::SetRecordR;
+use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for SetRecordR {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

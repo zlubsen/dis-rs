@@ -3,7 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairResponseRepairResult};
 use crate::repair_response::builder::RepairResponseBuilder;
 
-const REPAIR_RESPONSE_BASE_BODY_LENGTH : u16 = 16;
+const REPAIR_RESPONSE_BASE_BODY_LENGTH: u16 = 16;
 
 /// 5.5.10 Repair Response PDU
 ///
@@ -16,14 +16,17 @@ pub struct RepairResponse {
 }
 
 impl RepairResponse {
+    #[must_use]
     pub fn builder() -> RepairResponseBuilder {
         RepairResponseBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RepairResponseBuilder {
         RepairResponseBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RepairResponse(self)
     }

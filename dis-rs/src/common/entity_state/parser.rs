@@ -1,15 +1,22 @@
-use nom::bytes::complete::take;
-use nom::IResult;
-use nom::multi::count;
-use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use crate::common::entity_state::model::{EntityState, DrOtherParameters, DrParameters, EntityMarking, DrEulerAngles, DrWorldOrientationQuaternion, EntityAppearance};
+use crate::common::entity_state::model::{
+    DrEulerAngles, DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
+    EntityMarking, EntityState,
+};
 use crate::common::model::{EntityType, PduBody, PduHeader};
 use crate::common::parser;
 use crate::common::parser::{entity_id, entity_type, sanitize_marking, vec3_f32};
-use crate::enumerations::*;
+use crate::enumerations::{
+    DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion,
+};
 use crate::v6::entity_state::parser::entity_capabilities;
+use nom::bytes::complete::take;
+use nom::multi::count;
+use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
+use nom::IResult;
 
-pub(crate) fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+pub(crate) fn entity_state_body(
+    header: &PduHeader,
+) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
         let (input, entity_id_val) = entity_id(input)?;
         let (input, force_id_val) = force_id(input)?;
@@ -23,18 +30,21 @@ pub(crate) fn entity_state_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult
         let (input, dead_reckoning_parameters) = dr_parameters(input)?;
         let (input, entity_marking) = entity_marking(input)?;
         #[allow(clippy::wildcard_in_or_patterns)]
-        let (input, entity_capabilities) = match header.protocol_version {
-            ProtocolVersion::IEEE1278_12012 => {
+        let (input, entity_capabilities) =
+            if header.protocol_version == ProtocolVersion::IEEE1278_12012 {
                 crate::v7::entity_state::parser::entity_capabilities(entity_type_val)(input)?
-            }
-            ProtocolVersion::IEEE1278_1A1998 | _ => {
+            } else {
                 let (input, entity_capabilities) = entity_capabilities(input)?;
-                (input, crate::enumerations::EntityCapabilities::from(entity_capabilities))
-            }
-        };
+                (
+                    input,
+                    crate::enumerations::EntityCapabilities::from(entity_capabilities),
+                )
+            };
         let (input, variable_parameters) = if variable_parameters_no > 0 {
             count(parser::variable_parameter, variable_parameters_no as usize)(input)?
-        } else { (input, vec![]) };
+        } else {
+            (input, vec![])
+        };
 
         let body = EntityState::builder()
             .with_entity_id(entity_id_val)
@@ -60,30 +70,38 @@ pub(crate) fn force_id(input: &[u8]) -> IResult<&[u8], ForceId> {
     Ok((input, ForceId::from(force_id)))
 }
 
-pub(crate) fn entity_appearance(entity_type: EntityType) -> impl Fn(&[u8]) -> IResult<&[u8], EntityAppearance> {
+pub(crate) fn entity_appearance(
+    entity_type: EntityType,
+) -> impl Fn(&[u8]) -> IResult<&[u8], EntityAppearance> {
     move |input: &[u8]| {
         let (input, appearance) = be_u32(input)?;
 
-        Ok((input, EntityAppearance::from_bytes(appearance, &entity_type)))
+        Ok((
+            input,
+            EntityAppearance::from_bytes(appearance, &entity_type),
+        ))
     }
 }
 
-/// Parses the marking portion of an EntityState PDU into an EntityMarking struct.
+/// Parses the marking portion of an `EntityState` PDU into an `EntityMarking` struct.
 /// It will convert the parsed bytes (always 11 bytes are present in the PDU) to UTF-8, and
 /// strip trailing whitespace and any trailing non-alphanumeric characters. In case the marking is less
 /// than 11 characters, the trailing bytes are typically 0x00 in the PDU, which in UTF-8 is a control character.
 pub(crate) fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
-    let mut buf : [u8;11] = [0;11];
+    let mut buf: [u8; 11] = [0; 11];
     let (input, marking_character_set) = be_u8(input)?;
-    let (input, _) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
 
     let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
     let marking_string = sanitize_marking(&buf[..]);
 
-    Ok((input, EntityMarking{
-        marking_character_set,
-        marking_string,
-    }))
+    Ok((
+        input,
+        EntityMarking {
+            marking_character_set,
+            marking_string,
+        },
+    ))
 }
 
 pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
@@ -118,34 +136,41 @@ pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let (input, acceleration) = vec3_f32(input)?;
     let (input, velocity) = vec3_f32(input)?;
 
-    Ok((input, DrParameters {
-        algorithm,
-        other_parameters,
-        linear_acceleration: acceleration,
-        angular_velocity: velocity,
-    }))
+    Ok((
+        input,
+        DrParameters {
+            algorithm,
+            other_parameters,
+            linear_acceleration: acceleration,
+            angular_velocity: velocity,
+        },
+    ))
 }
 
-pub fn dr_other_parameters(input: &[u8], algorithm: DeadReckoningAlgorithm) -> IResult<&[u8], DrOtherParameters> {
+#[allow(clippy::missing_errors_doc)]
+pub fn dr_other_parameters(
+    input: &[u8],
+    algorithm: DeadReckoningAlgorithm,
+) -> IResult<&[u8], DrOtherParameters> {
     // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
     let (input, other_parameters) = match algorithm {
         DeadReckoningAlgorithm::StaticNonmovingEntity |
         DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
-        DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
-        DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity |
+        DeadReckoningAlgorithm::DRM_FPB_SimilarToFPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWExceptInBodyCoordinates => {
             dr_other_parameters_euler(input)?
         }
-        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
-        DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RPB_SimilarToRPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
         DeadReckoningAlgorithm::Other => {
             dr_other_parameters_none(input)?
         }
-        _ => {
+        DeadReckoningAlgorithm::Unspecified(_) => {
             dr_other_parameters_none(input)?
         }
     };
@@ -164,11 +189,14 @@ pub(crate) fn dr_other_parameters_euler(input: &[u8]) -> IResult<&[u8], DrOtherP
     let (input, local_yaw) = be_f32(input)?;
     let (input, local_pitch) = be_f32(input)?;
     let (input, local_roll) = be_f32(input)?;
-    Ok((input, DrOtherParameters::LocalEulerAngles(DrEulerAngles {
-        local_yaw,
-        local_pitch,
-        local_roll,
-    })))
+    Ok((
+        input,
+        DrOtherParameters::LocalEulerAngles(DrEulerAngles {
+            local_yaw,
+            local_pitch,
+            local_roll,
+        }),
+    ))
 }
 
 pub(crate) fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrOtherParameters> {
@@ -177,40 +205,46 @@ pub(crate) fn dr_other_parameters_quaternion(input: &[u8]) -> IResult<&[u8], DrO
     let (input, x) = be_f32(input)?;
     let (input, y) = be_f32(input)?;
     let (input, z) = be_f32(input)?;
-    Ok((input, DrOtherParameters::WorldOrientationQuaternion(DrWorldOrientationQuaternion {
-        nil,
-        x,
-        y,
-        z,
-    })))
+    Ok((
+        input,
+        DrOtherParameters::WorldOrientationQuaternion(DrWorldOrientationQuaternion {
+            nil,
+            x,
+            y,
+            z,
+        }),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::common::entity_state::parser::{entity_appearance, entity_marking};
-    use crate::common::parser::{location, parse_pdu, variable_parameter};
     use crate::common::entity_state::model::EntityAppearance;
-    use crate::enumerations::{*};
-    use crate::common::model::{EntityType, PduBody};
+    use crate::common::entity_state::parser::{entity_appearance, entity_marking};
     use crate::common::model::VariableParameter;
+    use crate::common::model::{EntityType, PduBody};
+    use crate::common::parser::{location, parse_pdu, variable_parameter};
+    use crate::enumerations::*;
     use crate::v6::entity_state::parser::entity_capabilities;
 
     #[test]
     fn parse_pdu_entity_state() {
-        let bytes : [u8;208] =
-            [0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4, 0x03, 0x84,
-                0x00, 0x0e, 0x01, 0x04, 0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00, 0x01, 0x02, 0x00, 0x99,
-                0x32, 0x04, 0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50, 0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d,
-                0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78, 0xbf, 0x3e, 0xdd, 0xfa, 0x3e, 0x2e, 0x36, 0xdd,
-                0x3f, 0xe6, 0x27, 0xc9, 0x00, 0x40, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x01, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x4d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let bytes: [u8; 208] = [
+            0x06, 0x01, 0x01, 0x01, 0x4e, 0xea, 0x3b, 0x60, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4,
+            0x03, 0x84, 0x00, 0x0e, 0x01, 0x04, 0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00,
+            0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc,
+            0x41, 0x50, 0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d, 0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a,
+            0x16, 0x78, 0xbf, 0x3e, 0xdd, 0xfa, 0x3e, 0x2e, 0x36, 0xdd, 0x3f, 0xe6, 0x27, 0xc9,
+            0x00, 0x40, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x01, 0x3f, 0x80,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x0b,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x10, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x11, 0x4d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
 
         let pdu = parse_pdu(&bytes);
         assert!(pdu.is_ok());
@@ -224,47 +258,53 @@ mod tests {
             assert_eq!(pdu.force_id, ForceId::Friendly);
             assert!(!pdu.variable_parameters.is_empty());
             assert_eq!(pdu.variable_parameters.len(), 4usize);
-            assert_eq!(pdu.entity_type, EntityType {
-                kind: EntityKind::Platform,
-                domain: PlatformDomain::Air,
-                country: Country::Netherlands_NLD_,
-                category: 50,
-                subcategory: 4,
-                specific: 4,
-                extra: 0
-            });
+            assert_eq!(
+                pdu.entity_type,
+                EntityType {
+                    kind: EntityKind::Platform,
+                    domain: PlatformDomain::Air,
+                    country: Country::Netherlands_NLD_,
+                    category: 50,
+                    subcategory: 4,
+                    specific: 4,
+                    extra: 0
+                }
+            );
 
             if let EntityAppearance::AirPlatform(appearance) = pdu.entity_appearance {
                 assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-                assert_eq!(appearance.propulsion_killed, false);
+                assert!(!appearance.propulsion_killed);
                 assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-                assert_eq!(appearance.is_smoke_emanating, false);
-                assert_eq!(appearance.is_engine_emitting_smoke, false);
+                assert!(!appearance.is_smoke_emanating);
+                assert!(!appearance.is_engine_emitting_smoke);
                 assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
-                assert_eq!(appearance.canopy_troop_door, AppearanceCanopy::SingleCanopySingleTroopDoorOpen);
-                assert_eq!(appearance.landing_lights_on, false);
-                assert_eq!(appearance.navigation_lights_on, false);
-                assert_eq!(appearance.anticollision_lights_on, false);
-                assert_eq!(appearance.is_flaming, false);
-                assert_eq!(appearance.afterburner_on, false);
-                assert_eq!(appearance.is_frozen, false);
-                assert_eq!(appearance.power_plant_on, false);
-                assert_eq!(appearance.state, AppearanceEntityorObjectState::Active);
+                assert_eq!(
+                    appearance.canopy_troop_door,
+                    AppearanceCanopy::SingleCanopySingleTroopDoorOpen
+                );
+                assert!(!appearance.landing_lights_on);
+                assert!(!appearance.navigation_lights_on);
+                assert!(!appearance.anticollision_lights_on);
+                assert!(!appearance.is_flaming);
+                assert!(!appearance.afterburner_on);
+                assert!(!appearance.is_frozen);
+                assert!(!appearance.power_plant_on);
+                assert_eq!(appearance.state, AppearanceEntityOrObjectState::Active);
             } else {
-                assert!(false)
+                assert!(false);
             }
 
-            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation);
+            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
-            let capabilities : EntityCapabilities = pdu.entity_capabilities.into();
+            let capabilities: EntityCapabilities = pdu.entity_capabilities;
             if let EntityCapabilities::AirPlatformEntityCapabilities(capabilities) = capabilities {
-                assert_eq!(capabilities.ammunition_supply, false);
-                assert_eq!(capabilities.fuel_supply, false);
-                assert_eq!(capabilities.recovery, false);
-                assert_eq!(capabilities.repair, false);
+                assert!(!capabilities.ammunition_supply);
+                assert!(!capabilities.fuel_supply);
+                assert!(!capabilities.recovery);
+                assert!(!capabilities.repair);
             }
             assert_eq!(pdu.variable_parameters.len(), 4);
-            let parameter_1 = pdu.variable_parameters.get(0).unwrap();
+            let parameter_1 = pdu.variable_parameters.first().unwrap();
             if let VariableParameter::Articulated(part) = parameter_1 {
                 assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
                 assert_eq!(part.attachment_id, 0u16);
@@ -274,13 +314,17 @@ mod tests {
             } else {
                 assert!(false);
             }
-        } else { assert!(false) }
+        } else {
+            assert!(false);
+        }
     }
 
     #[test]
     fn parse_entity_location() {
-        let bytes: [u8; 24] = [0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50,
-            0xc9, 0xfa, 0x13, 0x3c, 0xf0, 0x5d, 0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78];
+        let bytes: [u8; 24] = [
+            0x41, 0x50, 0xc4, 0x1a, 0xde, 0xa4, 0xbe, 0xcc, 0x41, 0x50, 0xc9, 0xfa, 0x13, 0x3c,
+            0xf0, 0x5d, 0x41, 0x35, 0x79, 0x16, 0x9e, 0x7a, 0x16, 0x78,
+        ];
 
         let location = location(&bytes);
         assert!(location.is_ok());
@@ -293,12 +337,17 @@ mod tests {
 
     #[test]
     fn parse_marking_ascii() {
-        let bytes: [u8; 12] = [0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20];
+        let bytes: [u8; 12] = [
+            0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20,
+        ];
 
         let marking = entity_marking(&bytes);
         assert!(marking.is_ok());
         let (input, marking) = marking.unwrap();
-        assert_eq!(marking.marking_character_set, EntityMarkingCharacterSet::ASCII);
+        assert_eq!(
+            marking.marking_character_set,
+            EntityMarkingCharacterSet::ASCII
+        );
         assert_eq!(marking.marking_string, "EYE 10");
 
         assert!(input.is_empty());
@@ -306,12 +355,17 @@ mod tests {
 
     #[test]
     fn parse_marking_trailing_control_chars() {
-        let bytes: [u8; 12] = [0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let bytes: [u8; 12] = [
+            0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
 
         let marking = entity_marking(&bytes);
         assert!(marking.is_ok());
         let (input, marking) = marking.unwrap();
-        assert_eq!(marking.marking_character_set, EntityMarkingCharacterSet::ASCII);
+        assert_eq!(
+            marking.marking_character_set,
+            EntityMarkingCharacterSet::ASCII
+        );
         assert_eq!(marking.marking_string, "EYE 10");
 
         assert!(input.is_empty());
@@ -319,8 +373,10 @@ mod tests {
 
     #[test]
     fn parse_appearance_none() {
-        let input : [u8;4] = [0x00,0x00,0x00,0x00];
-        let entity_type = EntityType::default().with_kind(EntityKind::Platform).with_domain(PlatformDomain::Air);
+        let input: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
+        let entity_type = EntityType::default()
+            .with_kind(EntityKind::Platform)
+            .with_domain(PlatformDomain::Air);
 
         let res = entity_appearance(entity_type)(&input);
         assert!(res.is_ok());
@@ -328,14 +384,17 @@ mod tests {
 
         if let EntityAppearance::AirPlatform(appearance) = appearance {
             assert_eq!(appearance.paint_scheme, AppearancePaintScheme::UniformColor);
-            assert_eq!(appearance.propulsion_killed, false);
+            assert!(!appearance.propulsion_killed);
             assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
-            assert_eq!(appearance.is_smoke_emanating, false);
-            assert_eq!(appearance.is_engine_emitting_smoke, false);
+            assert!(!appearance.is_smoke_emanating);
+            assert!(!appearance.is_engine_emitting_smoke);
             assert_eq!(appearance.trailing_effects, AppearanceTrailingEffects::None);
-            assert_eq!(appearance.canopy_troop_door , AppearanceCanopy::NotApplicable);
-            assert_eq!(appearance.landing_lights_on, false);
-            assert_eq!(appearance.is_flaming, false);
+            assert_eq!(
+                appearance.canopy_troop_door,
+                AppearanceCanopy::NotApplicable
+            );
+            assert!(!appearance.landing_lights_on);
+            assert!(!appearance.is_flaming);
         } else {
             assert!(false);
         }
@@ -344,16 +403,18 @@ mod tests {
 
     #[test]
     fn parse_appearance_emitting_engine_smoke() {
-        let input : [u8;4] = [0x06,0x00,0x00,0x00];
-        let entity_type = EntityType::default().with_kind(EntityKind::Platform).with_domain(PlatformDomain::Air);
+        let input: [u8; 4] = [0x06, 0x00, 0x00, 0x00];
+        let entity_type = EntityType::default()
+            .with_kind(EntityKind::Platform)
+            .with_domain(PlatformDomain::Air);
 
         let res = entity_appearance(entity_type)(&input);
         assert!(res.is_ok());
         let (input, appearance) = res.expect("value is Ok");
 
         if let EntityAppearance::AirPlatform(appearance) = appearance {
-            assert_eq!(appearance.is_smoke_emanating, true);
-            assert_eq!(appearance.is_engine_emitting_smoke, true);
+            assert!(appearance.is_smoke_emanating);
+            assert!(appearance.is_engine_emitting_smoke);
         } else {
             assert!(false);
         }
@@ -362,7 +423,7 @@ mod tests {
 
     #[test]
     fn parse_entity_capabilities_none() {
-        let input : [u8;4] = [0x00,0x00,0x00,0x00];
+        let input: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 
         let res = entity_capabilities(&input);
         assert!(res.is_ok());
@@ -377,48 +438,72 @@ mod tests {
 
     #[test]
     fn parse_articulated_parameter_gun1_azimuth() {
-        let input : [u8;16] =
-            [0x00,  // u8; type articulated
-                0x00,   // u8; no change
-                0x00,0x00,  // u16; 0 value attachment id
-                0x00,0x00,  // u32; type variant metric - 11 - azimuth
-                0x10,0x0b,  // type variant high bits - 4096 - primary gun 1
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]; // f64 - value 0
+        let input: [u8; 16] = [
+            0x00, // u8; type articulated
+            0x00, // u8; no change
+            0x00, 0x00, // u16; 0 value attachment id
+            0x00, 0x00, // u32; type variant metric - 11 - azimuth
+            0x10, 0x0b, // type variant high bits - 4096 - primary gun 1
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ]; // f64 - value 0
 
         let parameter = variable_parameter(&input);
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
 
         if let VariableParameter::Articulated(articulated_part) = parameter {
-            assert_eq!(articulated_part.change_indicator, ChangeIndicator::from(0u8));
+            assert_eq!(
+                articulated_part.change_indicator,
+                ChangeIndicator::from(0u8)
+            );
             assert_eq!(articulated_part.attachment_id, 0);
-            assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::PrimaryTurretNumber1);
-            assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Azimuth);
-        } else { assert!(false) }
+            assert_eq!(
+                articulated_part.type_class,
+                ArticulatedPartsTypeClass::PrimaryTurretNumber1
+            );
+            assert_eq!(
+                articulated_part.type_metric,
+                ArticulatedPartsTypeMetric::Azimuth
+            );
+        } else {
+            assert!(false);
+        }
 
         assert!(input.is_empty());
     }
 
     #[test]
     fn parse_articulated_parameter_landing_gear_down() {
-        let input : [u8;16] =
-            [0x00,  // u8; type articulated
-                0x00,   // u8; no change
-                0x00,0x00,  // u16; 0 value attachment id
-                0x00,0x00,  // u32; type variant metric - 11 - position
-                0x0C,0x01,  // type variant high bits - 3072 - landing gear
-                0x3F,0x80,0x00,0x00,0x00,0x00,0x00,0x00]; // f32 - value '1' and 4 bytes padding
+        let input: [u8; 16] = [
+            0x00, // u8; type articulated
+            0x00, // u8; no change
+            0x00, 0x00, // u16; 0 value attachment id
+            0x00, 0x00, // u32; type variant metric - 11 - position
+            0x0C, 0x01, // type variant high bits - 3072 - landing gear
+            0x3F, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ]; // f32 - value '1' and 4 bytes padding
 
         let parameter = variable_parameter(&input);
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
         if let VariableParameter::Articulated(articulated_part) = parameter {
-            assert_eq!(articulated_part.change_indicator, ChangeIndicator::from(0u8));
+            assert_eq!(
+                articulated_part.change_indicator,
+                ChangeIndicator::from(0u8)
+            );
             assert_eq!(articulated_part.attachment_id, 0);
-            assert_eq!(articulated_part.type_class, ArticulatedPartsTypeClass::LandingGear);
-            assert_eq!(articulated_part.type_metric, ArticulatedPartsTypeMetric::Position);
+            assert_eq!(
+                articulated_part.type_class,
+                ArticulatedPartsTypeClass::LandingGear
+            );
+            assert_eq!(
+                articulated_part.type_metric,
+                ArticulatedPartsTypeMetric::Position
+            );
             assert_eq!(articulated_part.parameter_value, 1f32);
-        } else { assert!(false) }
+        } else {
+            assert!(false);
+        }
 
         assert!(input.is_empty());
     }

@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::action_request::model::ActionRequest;
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for ActionRequest {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -10,10 +10,16 @@ impl SerializePdu for ActionRequest {
         buf.put_u32(self.action_id.into());
         buf.put_u32(self.fixed_datum_records.len() as u32);
         buf.put_u32(self.variable_datum_records.len() as u32);
-        let fixed_datum_bytes = self.fixed_datum_records.iter()
-            .map(|datum| datum.serialize(buf)).sum::<u16>();
-        let variable_datum_bytes = self.variable_datum_records.iter()
-            .map(|datum| datum.serialize(buf)).sum::<u16>();
+        let fixed_datum_bytes = self
+            .fixed_datum_records
+            .iter()
+            .map(|datum| datum.serialize(buf))
+            .sum::<u16>();
+        let variable_datum_bytes = self
+            .variable_datum_records
+            .iter()
+            .map(|datum| datum.serialize(buf))
+            .sum::<u16>();
 
         originating_bytes + receiving_bytes + 16 + fixed_datum_bytes + variable_datum_bytes
     }

@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::stop_freeze_r::model::StopFreezeR;
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for StopFreezeR {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

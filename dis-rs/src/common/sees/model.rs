@@ -20,14 +20,17 @@ pub struct SEES {
 }
 
 impl SEES {
+    #[must_use]
     pub fn builder() -> SeesBuilder {
         SeesBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> SeesBuilder {
         SeesBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::SupplementalEmissionEntityState(self)
     }
@@ -35,9 +38,9 @@ impl SEES {
 
 impl BodyInfo for SEES {
     fn body_length(&self) -> u16 {
-        BASE_SEES_BODY_LENGTH +
-            (BASE_SYSTEM_DATA_LENGTH * self.propulsion_systems.len() as u16) +
-            (BASE_SYSTEM_DATA_LENGTH * self.vectoring_nozzle_systems.len() as u16)
+        BASE_SEES_BODY_LENGTH
+            + (BASE_SYSTEM_DATA_LENGTH * self.propulsion_systems.len() as u16)
+            + (BASE_SYSTEM_DATA_LENGTH * self.vectoring_nozzle_systems.len() as u16)
     }
 
     fn body_type(&self) -> PduType {
@@ -63,11 +66,13 @@ pub struct PropulsionSystemData {
 }
 
 impl PropulsionSystemData {
+    #[must_use]
     pub fn with_power_setting(mut self, power_setting: f32) -> Self {
         self.power_setting = power_setting;
         self
     }
 
+    #[must_use]
     pub fn with_engine_rpm(mut self, engine_rpm: f32) -> Self {
         self.engine_rpm = engine_rpm;
         self
@@ -82,11 +87,13 @@ pub struct VectoringNozzleSystemData {
 }
 
 impl VectoringNozzleSystemData {
+    #[must_use]
     pub fn with_horizontal_deflection_angle(mut self, horizontal_deflection_angle: f32) -> Self {
         self.horizontal_deflection_angle = horizontal_deflection_angle;
         self
     }
 
+    #[must_use]
     pub fn with_vertical_deflection_angle(mut self, vertical_deflection_angle: f32) -> Self {
         self.vertical_deflection_angle = vertical_deflection_angle;
         self

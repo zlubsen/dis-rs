@@ -1,9 +1,9 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::create_entity_r::builder::CreateEntityRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
 
-const CREATE_ENTITY_R_BODY_LENGTH : u16 = 20;
+const CREATE_ENTITY_R_BODY_LENGTH: u16 = 20;
 
 /// 5.12.4.2 Create Entity-R PDU
 ///
@@ -17,14 +17,17 @@ pub struct CreateEntityR {
 }
 
 impl CreateEntityR {
+    #[must_use]
     pub fn builder() -> CreateEntityRBuilder {
         CreateEntityRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> CreateEntityRBuilder {
         CreateEntityRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::CreateEntityR(self)
     }

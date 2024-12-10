@@ -1,8 +1,31 @@
+use crate::common::iff::builder::{
+    ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder,
+    FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder,
+    IffDataSpecificationBuilder, IffFundamentalParameterDataBuilder, IffLayer2Builder,
+    IffLayer3Builder, IffLayer4Builder, IffLayer5Builder, InformationLayersBuilder,
+    LayerHeaderBuilder, Mode5InterrogatorBasicDataBuilder, Mode5InterrogatorStatusBuilder,
+    Mode5MessageFormatsBuilder, Mode5TransponderBasicDataBuilder, Mode5TransponderStatusBuilder,
+    Mode5TransponderSupplementalDataBuilder, ModeSAltitudeBuilder,
+    ModeSInterrogatorBasicDataBuilder, ModeSInterrogatorStatusBuilder, ModeSLevelsPresentBuilder,
+    ModeSTransponderBasicDataBuilder, ModeSTransponderStatusBuilder, SystemIdBuilder,
+    SystemSpecificDataBuilder, SystemStatusBuilder,
+};
+use crate::common::model::{
+    length_padded_to_num, BeamData, EntityId, EventId, PduBody, SimulationAddress, VectorF32,
+};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{BeamData, EntityId, EventId, VectorF32, SimulationAddress, length_padded_to_num, PduBody};
-use crate::constants::{BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE, BIT_6_IN_BYTE, BIT_7_IN_BYTE, FOUR_OCTETS, SIX_OCTETS};
-use crate::enumerations::{PduType, AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport, DataCategory, IffSystemType, IffSystemMode, IffSystemName, IffApplicableModes, NavigationSource, Mode5IffMission, Mode5MessageFormatsStatus, Mode5LocationErrors, Mode5LevelSelection, Mode5SAltitudeResolution, Mode5Reply, Mode5PlatformType, ModeSTransmitState, ModeSSquitterType, ModeSSquitterRecordSource, Level2SquitterStatus, VariableRecordType};
-use crate::common::iff::builder::{ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder, FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder, IffDataSpecificationBuilder, IffFundamentalParameterDataBuilder, IffLayer2Builder, IffLayer3Builder, IffLayer4Builder, IffLayer5Builder, InformationLayersBuilder, LayerHeaderBuilder, Mode5InterrogatorBasicDataBuilder, Mode5InterrogatorStatusBuilder, Mode5MessageFormatsBuilder, Mode5TransponderBasicDataBuilder, Mode5TransponderStatusBuilder, Mode5TransponderSupplementalDataBuilder, ModeSAltitudeBuilder, ModeSInterrogatorBasicDataBuilder, ModeSInterrogatorStatusBuilder, ModeSLevelsPresentBuilder, ModeSTransponderBasicDataBuilder, ModeSTransponderStatusBuilder, SystemIdBuilder, SystemSpecificDataBuilder, SystemStatusBuilder};
+use crate::constants::{
+    BIT_0_IN_BYTE, BIT_1_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_5_IN_BYTE,
+    BIT_6_IN_BYTE, BIT_7_IN_BYTE, FOUR_OCTETS, SIX_OCTETS,
+};
+use crate::enumerations::{
+    AircraftIdentificationType, AircraftPresentDomain, AntennaSelection, CapabilityReport,
+    DataCategory, IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType,
+    Level2SquitterStatus, Mode5IffMission, Mode5LevelSelection, Mode5LocationErrors,
+    Mode5MessageFormatsStatus, Mode5PlatformType, Mode5Reply, Mode5SAltitudeResolution,
+    ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduType,
+    VariableRecordType,
+};
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
 pub const BASE_IFF_DATA_RECORD_LENGTH_OCTETS: u16 = 6;
@@ -18,9 +41,9 @@ pub struct Iff {
     pub event_id: EventId,
     pub relative_antenna_location: VectorF32,
     pub system_id: SystemId,
-    pub system_designator: u8,                                      // See item d2) in 5.7.6.1.
-    pub system_specific_data: u8,   // 8-bit record defined by system type - See B.5
-    pub fundamental_operational_data: FundamentalOperationalData,   // see 6.2.39
+    pub system_designator: u8,    // See item d2) in 5.7.6.1.
+    pub system_specific_data: u8, // 8-bit record defined by system type - See B.5
+    pub fundamental_operational_data: FundamentalOperationalData, // see 6.2.39
     // Layer 1 up to here
     pub layer_2: Option<IffLayer2>, // 7.6.5.3 Layer 2 emissions data
     pub layer_3: Option<IffLayer3>, // Mode 5 Functional Data
@@ -29,14 +52,17 @@ pub struct Iff {
 }
 
 impl Iff {
+    #[must_use]
     pub fn builder() -> IffBuilder {
         IffBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> IffBuilder {
         IffBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::IFF(self)
     }
@@ -44,19 +70,27 @@ impl Iff {
 
 impl BodyInfo for Iff {
     fn body_length(&self) -> u16 {
-        IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS +
-            if let Some(layer_2) = &self.layer_2 {
+        IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS
+            + if let Some(layer_2) = &self.layer_2 {
                 layer_2.data_length()
-            } else { 0 } +
-            if let Some(layer_3) = &self.layer_3 {
+            } else {
+                0
+            }
+            + if let Some(layer_3) = &self.layer_3 {
                 layer_3.data_length()
-            } else { 0 } +
-            if let Some(layer_4) = &self.layer_4 {
+            } else {
+                0
+            }
+            + if let Some(layer_4) = &self.layer_4 {
                 layer_4.data_length()
-            } else { 0 } +
-            if let Some(layer_5) = &self.layer_5 {
+            } else {
+                0
+            }
+            + if let Some(layer_5) = &self.layer_5 {
                 layer_5.data_length()
-            } else { 0 }
+            } else {
+                0
+            }
     }
 
     fn body_type(&self) -> PduType {
@@ -76,7 +110,7 @@ impl Interaction for Iff {
 
 /// 7.6.5.3 Layer 2 emissions data
 ///
-/// The Secondary Operational Data record (6.2.76) has been flattened in the IffLayer2 struct, as it only
+/// The Secondary Operational Data record (6.2.76) has been flattened in the `IffLayer2` struct, as it only
 /// contains two 8-bit records.
 #[derive(Clone, Debug, PartialEq)]
 pub struct IffLayer2 {
@@ -90,8 +124,11 @@ pub struct IffLayer2 {
 impl Default for IffLayer2 {
     fn default() -> Self {
         Self {
-            layer_header: LayerHeader { layer_number: 2, ..Default::default() },
-            beam_data: Default::default(),
+            layer_header: LayerHeader {
+                layer_number: 2,
+                ..Default::default()
+            },
+            beam_data: BeamData::default(),
             operational_parameter_1: 0,
             operational_parameter_2: 0,
             iff_fundamental_parameters: vec![IffFundamentalParameterData::default()],
@@ -100,17 +137,21 @@ impl Default for IffLayer2 {
 }
 
 impl IffLayer2 {
+    #[must_use]
     pub fn builder() -> IffLayer2Builder {
         IffLayer2Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_2_BASE_DATA_LENGTH_OCTETS: u16 = 28;
         const IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS: u16 = 24;
         LAYER_2_BASE_DATA_LENGTH_OCTETS
-            + (self.iff_fundamental_parameters.len() as u16 * IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS)
+            + (self.iff_fundamental_parameters.len() as u16
+                * IFF_FUNDAMENTAL_PARAMETER_DATA_LENGTH_OCTETS)
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -125,13 +166,16 @@ pub struct IffLayer3 {
     pub layer_header: LayerHeader,
     pub reporting_simulation: SimulationAddress,
     pub mode_5_basic_data: Mode5BasicData,
-    pub data_records: IffDataSpecification,                // see 6.2.43 - page 299
+    pub data_records: IffDataSpecification, // see 6.2.43 - page 299
 }
 
 impl Default for IffLayer3 {
     fn default() -> Self {
         Self {
-            layer_header: LayerHeader { layer_number: 3, ..Default::default() },
+            layer_header: LayerHeader {
+                layer_number: 3,
+                ..Default::default()
+            },
             reporting_simulation: SimulationAddress::default(),
             mode_5_basic_data: Mode5BasicData::default(),
             data_records: IffDataSpecification::default(),
@@ -140,15 +184,18 @@ impl Default for IffLayer3 {
 }
 
 impl IffLayer3 {
+    #[must_use]
     pub fn builder() -> IffLayer3Builder {
         IffLayer3Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_3_BASE_DATA_LENGTH_OCTETS: u16 = 26;
         LAYER_3_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -159,8 +206,8 @@ impl IffLayer3 {
 /// Interrogator or a Transponder in an IFF Layer 3 Mode 5 PDU
 #[derive(Clone, Debug, PartialEq)]
 pub enum Mode5BasicData {
-    Interrogator(Mode5InterrogatorBasicData),                       // 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
-    Transponder(Mode5TransponderBasicData),                         // 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
+    Interrogator(Mode5InterrogatorBasicData), // 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
+    Transponder(Mode5TransponderBasicData),   // 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
 }
 
 impl Default for Mode5BasicData {
@@ -170,10 +217,12 @@ impl Default for Mode5BasicData {
 }
 
 impl Mode5BasicData {
+    #[must_use]
     pub fn new_interrogator(basic_data: Mode5InterrogatorBasicData) -> Self {
         Self::Interrogator(basic_data)
     }
 
+    #[must_use]
     pub fn new_transponder(basic_data: Mode5TransponderBasicData) -> Self {
         Self::Transponder(basic_data)
     }
@@ -185,30 +234,36 @@ pub struct IffLayer4 {
     pub layer_header: LayerHeader,
     pub reporting_simulation: SimulationAddress,
     pub mode_s_basic_data: ModeSBasicData,
-    pub data_records: IffDataSpecification,                // see 6.2.43 - page 299
+    pub data_records: IffDataSpecification, // see 6.2.43 - page 299
 }
 
 impl Default for IffLayer4 {
     fn default() -> Self {
         Self {
-            layer_header: LayerHeader { layer_number: 4, ..Default::default() },
-            reporting_simulation: Default::default(),
-            mode_s_basic_data: Default::default(),
+            layer_header: LayerHeader {
+                layer_number: 4,
+                ..Default::default()
+            },
+            reporting_simulation: SimulationAddress::default(),
+            mode_s_basic_data: ModeSBasicData::default(),
             data_records: IffDataSpecification::default(),
         }
     }
 }
 
 impl IffLayer4 {
+    #[must_use]
     pub fn builder() -> IffLayer4Builder {
         IffLayer4Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_4_BASE_DATA_LENGTH_OCTETS: u16 = 34;
         LAYER_4_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -219,8 +274,8 @@ impl IffLayer4 {
 /// Interrogator or a Transponder in an IFF Layer 4 Mode S PDU
 #[derive(Clone, Debug, PartialEq)]
 pub enum ModeSBasicData {
-    Interrogator(ModeSInterrogatorBasicData),                       // 7.6.5.5.2 Layer 4 Mode S Interrogator Format
-    Transponder(ModeSTransponderBasicData),                         // 7.6.5.5.3 Layer 4 Mode S Transponder Format
+    Interrogator(ModeSInterrogatorBasicData), // 7.6.5.5.2 Layer 4 Mode S Interrogator Format
+    Transponder(ModeSTransponderBasicData),   // 7.6.5.5.3 Layer 4 Mode S Transponder Format
 }
 
 impl Default for ModeSBasicData {
@@ -230,10 +285,12 @@ impl Default for ModeSBasicData {
 }
 
 impl ModeSBasicData {
+    #[must_use]
     pub fn new_interrogator(basic_data: ModeSInterrogatorBasicData) -> Self {
         Self::Interrogator(basic_data)
     }
 
+    #[must_use]
     pub fn new_transponder(basic_data: ModeSTransponderBasicData) -> Self {
         Self::Transponder(basic_data)
     }
@@ -252,25 +309,31 @@ pub struct IffLayer5 {
 impl Default for IffLayer5 {
     fn default() -> Self {
         Self {
-            layer_header: LayerHeader { layer_number: 5, ..Default::default() },
-            reporting_simulation: Default::default(),
-            applicable_layers: Default::default(),
-            data_category: Default::default(),
-            data_records: Default::default(),
+            layer_header: LayerHeader {
+                layer_number: 5,
+                ..Default::default()
+            },
+            reporting_simulation: SimulationAddress::default(),
+            applicable_layers: InformationLayers::default(),
+            data_category: DataCategory::default(),
+            data_records: IffDataSpecification::default(),
         }
     }
 }
 
 impl IffLayer5 {
+    #[must_use]
     pub fn builder() -> IffLayer5Builder {
         IffLayer5Builder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const LAYER_5_BASE_DATA_LENGTH_OCTETS: u16 = 14;
         LAYER_5_BASE_DATA_LENGTH_OCTETS + self.data_records.data_length()
     }
 
+    #[must_use]
     pub fn finalize_layer_header_length(mut self) -> Self {
         self.layer_header.length = self.data_length();
         self
@@ -278,6 +341,7 @@ impl IffLayer5 {
 }
 
 /// 6.2.13 Change/Options record
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ChangeOptionsRecord {
     pub change_indicator: bool,
@@ -291,6 +355,7 @@ pub struct ChangeOptionsRecord {
 }
 
 impl ChangeOptionsRecord {
+    #[must_use]
     pub fn builder() -> ChangeOptionsRecordBuilder {
         ChangeOptionsRecordBuilder::new()
     }
@@ -301,35 +366,51 @@ impl From<u8> for ChangeOptionsRecord {
         let builder = ChangeOptionsRecord::builder();
         let builder = if ((record & BIT_0_IN_BYTE) >> 7) != 0 {
             builder.set_change_indicator()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if ((record & BIT_1_IN_BYTE) >> 6) != 0 {
             builder.set_system_specific_field_1()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if ((record & BIT_2_IN_BYTE) >> 5) != 0 {
             builder.set_system_specific_field_2()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if ((record & BIT_3_IN_BYTE) >> 4) != 0 {
             builder.set_heartbeat_indicator()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if ((record & BIT_4_IN_BYTE) >> 3) != 0 {
             builder.set_transponder_interrogator_indicator()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if ((record & BIT_5_IN_BYTE) >> 2) != 0 {
             builder.set_simulation_mode()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if ((record & BIT_6_IN_BYTE) >> 1) != 0 {
             builder.set_interactive_capable()
-        } else { builder };
+        } else {
+            builder
+        };
 
         let builder = if (record & BIT_7_IN_BYTE) != 0 {
             builder.set_test_mode()
-        } else { builder };
+        } else {
+            builder
+        };
 
         builder.build()
     }
@@ -382,6 +463,7 @@ pub struct FundamentalOperationalData {
 }
 
 impl FundamentalOperationalData {
+    #[must_use]
     pub fn builder() -> FundamentalOperationalDataBuilder {
         FundamentalOperationalDataBuilder::new()
     }
@@ -410,30 +492,31 @@ pub enum OperationalStatus {
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub enum LayersPresenceApplicability {
     #[default]
-    NotPresentApplicable,   // 0
-    PresentApplicable,      // 1
+    NotPresentApplicable, // 0
+    PresentApplicable, // 1
 }
 
 /// 6.2.43 IFF Data Specification record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct IffDataRecord {
-    pub record_type: VariableRecordType,   // UID 66
+    pub record_type: VariableRecordType, // UID 66
     pub record_specific_fields: Vec<u8>,
 }
 
 impl IffDataRecord {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[must_use]
     pub fn builder() -> IffDataRecordBuilder {
         IffDataRecordBuilder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
-        length_padded_to_num(
-            SIX_OCTETS + self.record_specific_fields.len(),
-            FOUR_OCTETS)
+        length_padded_to_num(SIX_OCTETS + self.record_specific_fields.len(), FOUR_OCTETS)
             .record_length as u16
     }
 }
@@ -445,19 +528,26 @@ pub struct IffDataSpecification {
 }
 
 impl IffDataSpecification {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             iff_data_records: vec![],
         }
     }
 
+    #[must_use]
     pub fn builder() -> IffDataSpecificationBuilder {
         IffDataSpecificationBuilder::new()
     }
 
+    #[must_use]
     pub fn data_length(&self) -> u16 {
         const NUMBER_OF_DATA_RECORDS_OCTETS: u16 = 2;
-        let iff_data_records_data_length: u16 = self.iff_data_records.iter().map(|record|record.data_length()).sum();
+        let iff_data_records_data_length: u16 = self
+            .iff_data_records
+            .iter()
+            .map(IffDataRecord::data_length)
+            .sum();
         NUMBER_OF_DATA_RECORDS_OCTETS + iff_data_records_data_length
     }
 }
@@ -475,6 +565,7 @@ pub struct InformationLayers {
 }
 
 impl InformationLayers {
+    #[must_use]
     pub fn builder() -> InformationLayersBuilder {
         InformationLayersBuilder::new()
     }
@@ -484,19 +575,24 @@ impl From<u8> for InformationLayers {
     fn from(record: u8) -> Self {
         let builder = InformationLayers::builder()
             .with_layer_1(LayersPresenceApplicability::from(
-                (record & BIT_1_IN_BYTE) >> 6))
+                (record & BIT_1_IN_BYTE) >> 6,
+            ))
             .with_layer_2(LayersPresenceApplicability::from(
-                (record & BIT_2_IN_BYTE) >> 5))
+                (record & BIT_2_IN_BYTE) >> 5,
+            ))
             .with_layer_3(LayersPresenceApplicability::from(
-                (record & BIT_3_IN_BYTE) >> 4))
+                (record & BIT_3_IN_BYTE) >> 4,
+            ))
             .with_layer_4(LayersPresenceApplicability::from(
-                (record & BIT_4_IN_BYTE) >> 3))
+                (record & BIT_4_IN_BYTE) >> 3,
+            ))
             .with_layer_5(LayersPresenceApplicability::from(
-                (record & BIT_5_IN_BYTE) >> 2))
+                (record & BIT_5_IN_BYTE) >> 2,
+            ))
             .with_layer_6(LayersPresenceApplicability::from(
-                (record & BIT_6_IN_BYTE) >> 1))
-            .with_layer_7(LayersPresenceApplicability::from(
-                record & BIT_7_IN_BYTE));
+                (record & BIT_6_IN_BYTE) >> 1,
+            ))
+            .with_layer_7(LayersPresenceApplicability::from(record & BIT_7_IN_BYTE));
 
         builder.build()
     }
@@ -529,6 +625,7 @@ pub struct IffFundamentalParameterData {
 }
 
 impl IffFundamentalParameterData {
+    #[must_use]
     pub fn builder() -> IffFundamentalParameterDataBuilder {
         IffFundamentalParameterDataBuilder::new()
     }
@@ -543,10 +640,12 @@ pub struct LayerHeader {
 }
 
 impl LayerHeader {
+    #[must_use]
     pub fn new() -> Self {
         LayerHeader::default()
     }
 
+    #[must_use]
     pub fn builder() -> LayerHeaderBuilder {
         LayerHeaderBuilder::new()
     }
@@ -561,10 +660,12 @@ pub struct SystemSpecificData {
 }
 
 impl SystemSpecificData {
+    #[must_use]
     pub fn new() -> Self {
         SystemSpecificData::default()
     }
 
+    #[must_use]
     pub fn builder() -> SystemSpecificDataBuilder {
         SystemSpecificDataBuilder::new()
     }
@@ -580,10 +681,12 @@ pub struct SystemId {
 }
 
 impl SystemId {
+    #[must_use]
     pub fn new() -> Self {
         SystemId::default()
     }
 
+    #[must_use]
     pub fn builder() -> SystemIdBuilder {
         SystemIdBuilder::new()
     }
@@ -604,10 +707,12 @@ pub struct DapSource {
 }
 
 impl DapSource {
+    #[must_use]
     pub fn new() -> Self {
         DapSource::default()
     }
 
+    #[must_use]
     pub fn builder() -> DapSourceBuilder {
         DapSourceBuilder::new()
     }
@@ -619,7 +724,7 @@ impl From<u8> for DapSource {
         let mach_number = DapValue::from((record & BIT_1_IN_BYTE) >> 6);
         let ground_speed = DapValue::from((record & BIT_2_IN_BYTE) >> 5);
         let magnetic_heading = DapValue::from((record & BIT_3_IN_BYTE) >> 4);
-        let track_angle_rate = DapValue::from((BIT_4_IN_BYTE & BIT_4_IN_BYTE) >> 3);
+        let track_angle_rate = DapValue::from((record & BIT_4_IN_BYTE) >> 3);
         let true_track_angle = DapValue::from((record & BIT_5_IN_BYTE) >> 2);
         let true_airspeed = DapValue::from((record & BIT_6_IN_BYTE) >> 1);
         let vertical_rate = DapValue::from(record & BIT_7_IN_BYTE);
@@ -648,14 +753,14 @@ impl From<&DapSource> for u8 {
         let true_airspeed = u8::from(&value.true_airspeed) << 1;
         let vertical_rate = u8::from(&value.vertical_rate);
 
-        indicated_air_speed |
-            mach_number |
-            ground_speed |
-            magnetic_heading |
-            track_angle_rate |
-            true_track_angle |
-            true_airspeed |
-            vertical_rate
+        indicated_air_speed
+            | mach_number
+            | ground_speed
+            | magnetic_heading
+            | track_angle_rate
+            | true_track_angle
+            | true_airspeed
+            | vertical_rate
     }
 }
 
@@ -663,8 +768,8 @@ impl From<&DapSource> for u8 {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum DapValue {
     #[default]
-    ComputeLocally,         // 0
-    DataRecordAvailable,    // 1
+    ComputeLocally, // 0
+    DataRecordAvailable, // 1
 }
 
 /// B.2.9 Enhanced Mode 1 Code record
@@ -680,10 +785,12 @@ pub struct EnhancedMode1Code {
 }
 
 impl EnhancedMode1Code {
+    #[must_use]
     pub fn new() -> Self {
         EnhancedMode1Code::default()
     }
 
+    #[must_use]
     pub fn builder() -> EnhancedMode1CodeBuilder {
         EnhancedMode1CodeBuilder::new()
     }
@@ -703,12 +810,9 @@ impl From<u16> for EnhancedMode1Code {
         let code_element_2_c = (record & BITS_3_5) >> 10;
         let code_element_3_b = (record & BITS_6_8) >> 7;
         let code_element_4_a = (record & BITS_9_11) >> 4;
-        let on_off_status =
-            OnOffStatus::from(((record & BITS_13) >> 2) as u8);
-        let damage_status =
-            DamageStatus::from(((record & BITS_14) >> 1) as u8);
-        let malfunction_status =
-            MalfunctionStatus::from((record & BITS_15) as u8);
+        let on_off_status = OnOffStatus::from(((record & BITS_13) >> 2) as u8);
+        let damage_status = DamageStatus::from(((record & BITS_14) >> 1) as u8);
+        let malfunction_status = MalfunctionStatus::from((record & BITS_15) as u8);
 
         EnhancedMode1Code::builder()
             .with_code_element_1_d(code_element_1_d)
@@ -728,33 +832,35 @@ impl From<&EnhancedMode1Code> for u16 {
         let code_element_2: u16 = value.code_element_2_c << 10;
         let code_element_3: u16 = value.code_element_3_b << 7;
         let code_element_4: u16 = value.code_element_4_a << 4;
-        let on_off_status: u16 = (u8::from(&value.on_off_status) as u16) << 2;
-        let damage_status: u16 = (u8::from(&value.damage_status) as u16) << 1;
-        let malfunction_status: u16 = u8::from(&value.malfunction_status) as u16;
+        let on_off_status: u16 = u16::from(u8::from(&value.on_off_status)) << 2;
+        let damage_status: u16 = u16::from(u8::from(&value.damage_status)) << 1;
+        let malfunction_status: u16 = u16::from(u8::from(&value.malfunction_status));
 
-        code_element_1 |
-            code_element_2 |
-            code_element_3 |
-            code_element_4 |
-            on_off_status |
-            damage_status |
-            malfunction_status
+        code_element_1
+            | code_element_2
+            | code_element_3
+            | code_element_4
+            | on_off_status
+            | damage_status
+            | malfunction_status
     }
 }
 
 /// B.2.26 Mode 5 Interrogator Basic Data record
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Mode5InterrogatorBasicData {
-    pub status: Mode5InterrogatorStatus,                            // B.2.27 Mode 5 Interrogator Status record - page 592
-    pub mode_5_message_formats_present: Mode5MessageFormats,        // B.2.28 Mode 5 Message Formats record - page 592
+    pub status: Mode5InterrogatorStatus, // B.2.27 Mode 5 Interrogator Status record - page 592
+    pub mode_5_message_formats_present: Mode5MessageFormats, // B.2.28 Mode 5 Message Formats record - page 592
     pub interrogated_entity_id: EntityId,
 }
 
 impl Mode5InterrogatorBasicData {
+    #[must_use]
     pub fn new() -> Self {
         Mode5InterrogatorBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5InterrogatorBasicDataBuilder {
         Mode5InterrogatorBasicDataBuilder::new()
     }
@@ -771,10 +877,12 @@ pub struct Mode5InterrogatorStatus {
 }
 
 impl Mode5InterrogatorStatus {
+    #[must_use]
     pub fn new() -> Self {
         Mode5InterrogatorStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5InterrogatorStatusBuilder {
         Mode5InterrogatorStatusBuilder::new()
     }
@@ -784,13 +892,11 @@ impl From<u8> for Mode5InterrogatorStatus {
     fn from(record: u8) -> Self {
         const BITS_0_2: u8 = 0xE0;
         let iff_mission = Mode5IffMission::from((record & BITS_0_2) >> 5);
-        let mode_5_message_formats_status = Mode5MessageFormatsStatus::from((record & BIT_3_IN_BYTE) >> 4);
-        let on_off_status =
-            OnOffStatus::from((record & BIT_5_IN_BYTE) >> 2);
-        let damage_status =
-            DamageStatus::from((record & BIT_6_IN_BYTE) >> 1);
-        let malfunction_status =
-            MalfunctionStatus::from(record & BIT_7_IN_BYTE);
+        let mode_5_message_formats_status =
+            Mode5MessageFormatsStatus::from((record & BIT_3_IN_BYTE) >> 4);
+        let on_off_status = OnOffStatus::from((record & BIT_5_IN_BYTE) >> 2);
+        let damage_status = DamageStatus::from((record & BIT_6_IN_BYTE) >> 1);
+        let malfunction_status = MalfunctionStatus::from(record & BIT_7_IN_BYTE);
 
         Mode5InterrogatorStatus::builder()
             .with_iff_mission(iff_mission)
@@ -810,11 +916,7 @@ impl From<&Mode5InterrogatorStatus> for u8 {
         let damage_status: u8 = u8::from(&value.damage_status) << 1;
         let malfunction_status: u8 = u8::from(&value.malfunction_status);
 
-        iff_mission |
-            message_formats_status |
-            on_off_status |
-            damage_status |
-            malfunction_status
+        iff_mission | message_formats_status | on_off_status | damage_status | malfunction_status
     }
 }
 
@@ -856,16 +958,20 @@ pub struct Mode5MessageFormats {
 }
 
 impl Mode5MessageFormats {
+    #[must_use]
     pub fn new() -> Self {
         Mode5MessageFormats::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5MessageFormatsBuilder {
         Mode5MessageFormatsBuilder::new()
     }
 }
 
 impl From<u32> for Mode5MessageFormats {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::similar_names)]
     fn from(record: u32) -> Self {
         let format_0 = IffPresence::from(((record >> 31) as u8) & BIT_7_IN_BYTE);
         let format_1 = IffPresence::from(((record >> 30) as u8) & BIT_7_IN_BYTE);
@@ -938,6 +1044,7 @@ impl From<u32> for Mode5MessageFormats {
 }
 
 impl From<&Mode5MessageFormats> for u32 {
+    #[allow(clippy::similar_names)]
     fn from(value: &Mode5MessageFormats) -> Self {
         let mf_0 = u32::from(&value.message_format_0) << 31;
         let mf_1 = u32::from(&value.message_format_1) << 30;
@@ -972,13 +1079,37 @@ impl From<&Mode5MessageFormats> for u32 {
         let mf_30 = u32::from(&value.message_format_30) << 1;
         let mf_31 = u32::from(&value.message_format_31);
 
-        mf_0 | mf_1 | mf_2 | mf_3 | mf_4
-            | mf_5 | mf_6 | mf_7 | mf_8 | mf_9
-            | mf_10 | mf_11 | mf_12 | mf_13 | mf_14
-            | mf_15 | mf_16 | mf_17 | mf_18 | mf_19
-            | mf_20 | mf_21 | mf_22 | mf_23 | mf_24
-            | mf_25 | mf_26 | mf_27 | mf_28 | mf_29
-            | mf_30 | mf_31
+        mf_0 | mf_1
+            | mf_2
+            | mf_3
+            | mf_4
+            | mf_5
+            | mf_6
+            | mf_7
+            | mf_8
+            | mf_9
+            | mf_10
+            | mf_11
+            | mf_12
+            | mf_13
+            | mf_14
+            | mf_15
+            | mf_16
+            | mf_17
+            | mf_18
+            | mf_19
+            | mf_20
+            | mf_21
+            | mf_22
+            | mf_23
+            | mf_24
+            | mf_25
+            | mf_26
+            | mf_27
+            | mf_28
+            | mf_29
+            | mf_30
+            | mf_31
     }
 }
 
@@ -987,19 +1118,21 @@ impl From<&Mode5MessageFormats> for u32 {
 pub struct Mode5TransponderBasicData {
     pub status: Mode5TransponderStatus,
     pub pin: u16,
-    pub mode_5_message_formats_present: Mode5MessageFormats,        // B.2.28 Mode 5 Message Formats record
-    pub enhanced_mode_1: EnhancedMode1Code,                         // B.2.9 Enhanced Mode 1 Code record
-    pub national_origin: u16,                                       // 16-bit undefined enumeration
-    pub supplemental_data: Mode5TransponderSupplementalData,        // B.2.31 Mode 5 Transponder SD record
-    pub navigation_source: NavigationSource,                        // UID 359
-    pub figure_of_merit: u8,                                        // 8-bit uint between 0 and 31 decimal
+    pub mode_5_message_formats_present: Mode5MessageFormats, // B.2.28 Mode 5 Message Formats record
+    pub enhanced_mode_1: EnhancedMode1Code,                  // B.2.9 Enhanced Mode 1 Code record
+    pub national_origin: u16,                                // 16-bit undefined enumeration
+    pub supplemental_data: Mode5TransponderSupplementalData, // B.2.31 Mode 5 Transponder SD record
+    pub navigation_source: NavigationSource,                 // UID 359
+    pub figure_of_merit: u8,                                 // 8-bit uint between 0 and 31 decimal
 }
 
 impl Mode5TransponderBasicData {
+    #[must_use]
     pub fn new() -> Self {
         Mode5TransponderBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5TransponderBasicDataBuilder {
         Mode5TransponderBasicDataBuilder::new()
     }
@@ -1009,32 +1142,32 @@ impl Mode5TransponderBasicData {
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub enum OnOffStatus {
     #[default]
-    Off,            // 0
-    On,             // 1
+    Off, // 0
+    On, // 1
 }
 
 /// Custom defined enum to model a system being Not Damaged or Damaged.
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum DamageStatus {
     #[default]
-    NoDamage,       // 0
-    Damaged,        // 1
+    NoDamage, // 0
+    Damaged, // 1
 }
 
 /// Custom defined enum to model a system being Not Malfunctioning or Malfunctioning.
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum MalfunctionStatus {
     #[default]
-    NoMalfunction,  // 0
-    Malfunction,    // 1
+    NoMalfunction, // 0
+    Malfunction, // 1
 }
 
 /// Custom defined enum to model a system being Not Enabled or Enabled.
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum EnabledStatus {
     #[default]
-    NotEnabled,     // 0
-    Enabled,        // 1
+    NotEnabled, // 0
+    Enabled, // 1
 }
 
 /// Custom defined enum to model the source of
@@ -1042,8 +1175,8 @@ pub enum EnabledStatus {
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum LatLonAltSource {
     #[default]
-    ComputeLocally,                         // 0
-    TransponderLocationDataRecordPresent,   // 1
+    ComputeLocally, // 0
+    TransponderLocationDataRecordPresent, // 1
 }
 
 /// B.2.31 Mode 5 Transponder Supplemental Data (SD) record
@@ -1055,10 +1188,12 @@ pub struct Mode5TransponderSupplementalData {
 }
 
 impl Mode5TransponderSupplementalData {
+    #[must_use]
     pub fn new() -> Self {
         Mode5TransponderSupplementalData::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5TransponderSupplementalDataBuilder {
         Mode5TransponderSupplementalDataBuilder::new()
     }
@@ -1085,9 +1220,7 @@ impl From<&Mode5TransponderSupplementalData> for u8 {
         let level_2_squitter_status: u8 = u8::from(value.level_2_squitter_status) << 6;
         let iff_mission: u8 = u8::from(value.iff_mission) << 3;
 
-        squitter_status |
-            level_2_squitter_status |
-            iff_mission
+        squitter_status | level_2_squitter_status | iff_mission
     }
 }
 
@@ -1108,10 +1241,12 @@ pub struct Mode5TransponderStatus {
 }
 
 impl Mode5TransponderStatus {
+    #[must_use]
     pub fn new() -> Self {
         Mode5TransponderStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> Mode5TransponderStatusBuilder {
         Mode5TransponderStatusBuilder::new()
     }
@@ -1165,11 +1300,7 @@ impl From<&Mode5TransponderStatus> for u16 {
         let antenna_selection: u8 = u8::from(value.antenna_selection) << 1;
         let crypto_control: u8 = u32::from(&value.crypto_control) as u8;
 
-        let byte_1 =
-            mode_5_reply |
-                line_test |
-                antenna_selection |
-                crypto_control;
+        let byte_1 = mode_5_reply | line_test | antenna_selection | crypto_control;
 
         let lat_lon_alt_source: u8 = u8::from(&value.lat_lon_alt_source) << 7;
         let location_errors: u8 = u8::from(value.location_errors) << 6;
@@ -1179,16 +1310,15 @@ impl From<&Mode5TransponderStatus> for u16 {
         let damage_status: u8 = u8::from(&value.damage_status) << 1;
         let malfunction_status: u8 = (&value.malfunction_status).into();
 
-        let byte_2 =
-            lat_lon_alt_source |
-                location_errors |
-                platform_type |
-                mode_5_level_selection |
-                on_off_status |
-                damage_status |
-                malfunction_status;
+        let byte_2 = lat_lon_alt_source
+            | location_errors
+            | platform_type
+            | mode_5_level_selection
+            | on_off_status
+            | damage_status
+            | malfunction_status;
 
-        ((byte_1 as u16) << 8) | (byte_2 as u16)
+        (u16::from(byte_1) << 8) | u16::from(byte_2)
     }
 }
 
@@ -1200,10 +1330,12 @@ pub struct ModeSAltitude {
 }
 
 impl ModeSAltitude {
+    #[must_use]
     pub fn new() -> Self {
         ModeSAltitude::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSAltitudeBuilder {
         ModeSAltitudeBuilder::new()
     }
@@ -1214,8 +1346,7 @@ impl From<u16> for ModeSAltitude {
         const BITS_0_10: u16 = 0xFFE0;
         const BIT_11: u16 = 0x0010;
         let altitude = (record & BITS_0_10) >> 5;
-        let resolution =
-            Mode5SAltitudeResolution::from(((record & BIT_11) as u8) >> 4);
+        let resolution = Mode5SAltitudeResolution::from(((record & BIT_11) as u8) >> 4);
 
         ModeSAltitude::builder()
             .with_altitude(altitude)
@@ -1227,7 +1358,7 @@ impl From<u16> for ModeSAltitude {
 impl From<&ModeSAltitude> for u16 {
     fn from(value: &ModeSAltitude) -> Self {
         let resolution: u8 = value.resolution.into();
-        let resolution: u16 = resolution as u16;
+        let resolution: u16 = u16::from(resolution);
 
         (value.altitude << 5) | (resolution << 4)
     }
@@ -1241,10 +1372,12 @@ pub struct ModeSInterrogatorBasicData {
 }
 
 impl ModeSInterrogatorBasicData {
+    #[must_use]
     pub fn new() -> Self {
         ModeSInterrogatorBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSInterrogatorBasicDataBuilder {
         ModeSInterrogatorBasicDataBuilder::new()
     }
@@ -1260,10 +1393,12 @@ pub struct ModeSInterrogatorStatus {
 }
 
 impl ModeSInterrogatorStatus {
+    #[must_use]
     pub fn new() -> Self {
         ModeSInterrogatorStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSInterrogatorStatusBuilder {
         ModeSInterrogatorStatusBuilder::new()
     }
@@ -1275,7 +1410,7 @@ impl From<u8> for ModeSInterrogatorStatus {
         let on_off_status = OnOffStatus::from((record & BIT_0_IN_BYTE) >> 7);
         let transmit_state = ModeSTransmitState::from((record & BITS_1_3) >> 4);
         let damage_status = DamageStatus::from((record & BIT_4_IN_BYTE) >> 3);
-        let malfunction_status = MalfunctionStatus::from((BIT_5_IN_BYTE & BIT_5_IN_BYTE) >> 2);
+        let malfunction_status = MalfunctionStatus::from((record & BIT_5_IN_BYTE) >> 2);
 
         ModeSInterrogatorStatus::builder()
             .with_on_off_status(on_off_status)
@@ -1293,10 +1428,7 @@ impl From<&ModeSInterrogatorStatus> for u8 {
         let damage_status: u8 = u8::from(&value.damage_status) << 3;
         let malfunction_status: u8 = u8::from(&value.malfunction_status) << 2;
 
-        on_off_status |
-            transmit_state |
-            damage_status |
-            malfunction_status
+        on_off_status | transmit_state | damage_status | malfunction_status
     }
 }
 
@@ -1311,22 +1443,25 @@ pub struct ModeSLevelsPresent {
 }
 
 impl ModeSLevelsPresent {
+    #[must_use]
     pub fn new() -> Self {
         ModeSLevelsPresent::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSLevelsPresentBuilder {
         ModeSLevelsPresentBuilder::new()
     }
 }
 
 impl From<u8> for ModeSLevelsPresent {
+    #[allow(clippy::similar_names)]
     fn from(record: u8) -> Self {
         let level_1 = IffPresence::from((record & BIT_1_IN_BYTE) >> 6);
         let level_2_els = IffPresence::from((record & BIT_2_IN_BYTE) >> 5);
         let level_2_ehs = IffPresence::from((record & BIT_3_IN_BYTE) >> 4);
         let level_3 = IffPresence::from((record & BIT_4_IN_BYTE) >> 3);
-        let level_4 = IffPresence::from((BIT_5_IN_BYTE & BIT_5_IN_BYTE) >> 2);
+        let level_4 = IffPresence::from((record & BIT_5_IN_BYTE) >> 2);
 
         ModeSLevelsPresent::builder()
             .with_level_1(level_1)
@@ -1339,6 +1474,7 @@ impl From<u8> for ModeSLevelsPresent {
 }
 
 impl From<&ModeSLevelsPresent> for u8 {
+    #[allow(clippy::similar_names)]
     fn from(value: &ModeSLevelsPresent) -> Self {
         let level_1: u8 = u8::from(&value.level_1) << 6;
         let level_2_els: u8 = u8::from(&value.level_2_els) << 5;
@@ -1346,11 +1482,7 @@ impl From<&ModeSLevelsPresent> for u8 {
         let level_3: u8 = u8::from(&value.level_3) << 3;
         let level_4: u8 = u8::from(&value.level_4) << 2;
 
-        level_1 |
-            level_2_els |
-            level_2_ehs |
-            level_3 |
-            level_4
+        level_1 | level_2_els | level_2_ehs | level_3 | level_4
     }
 }
 
@@ -1359,7 +1491,7 @@ impl From<&ModeSLevelsPresent> for u8 {
 pub enum IffPresence {
     #[default]
     NotPresent, // 0
-    Present,    // 1
+    Present, // 1
 }
 
 /// B.2.41 Mode S Transponder Basic Data record
@@ -1368,19 +1500,21 @@ pub struct ModeSTransponderBasicData {
     pub status: ModeSTransponderStatus,
     pub levels_present: ModeSLevelsPresent,
     pub aircraft_present_domain: AircraftPresentDomain,
-    pub aircraft_identification: String,        // B.2.35 - String of length 8, in ASCII.
+    pub aircraft_identification: String, // B.2.35 - String of length 8, in ASCII.
     pub aircraft_address: u32,
     pub aircraft_identification_type: AircraftIdentificationType,
-    pub dap_source: DapSource,                  // B.2.6
-    pub altitude: ModeSAltitude,                // B.2.36
+    pub dap_source: DapSource,   // B.2.6
+    pub altitude: ModeSAltitude, // B.2.36
     pub capability_report: CapabilityReport,
 }
 
 impl ModeSTransponderBasicData {
+    #[must_use]
     pub fn new() -> Self {
         ModeSTransponderBasicData::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSTransponderBasicDataBuilder {
         ModeSTransponderBasicDataBuilder::new()
     }
@@ -1403,10 +1537,12 @@ pub struct ModeSTransponderStatus {
 }
 
 impl ModeSTransponderStatus {
+    #[must_use]
     pub fn new() -> Self {
         ModeSTransponderStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> ModeSTransponderStatusBuilder {
         ModeSTransponderStatusBuilder::new()
     }
@@ -1428,7 +1564,8 @@ impl From<u16> for ModeSTransponderStatus {
 
         let squitter_status = SquitterStatus::from(((record & BIT_0) >> 15) as u8);
         let squitter_type = ModeSSquitterType::from(((record & BITS_1_3) >> 12) as u8);
-        let squitter_record_source = ModeSSquitterRecordSource::from(((record & BIT_4) >> 11) as u8);
+        let squitter_record_source =
+            ModeSSquitterRecordSource::from(((record & BIT_4) >> 11) as u8);
         let airborne_pos_ri = IffPresence::from(((record & BIT_5) >> 10) as u8);
         let airborne_vel_ri = IffPresence::from(((record & BIT_6) >> 9) as u8);
         let surface_pos_ri = IffPresence::from(((record & BIT_7) >> 8) as u8);
@@ -1462,34 +1599,34 @@ impl From<&ModeSTransponderStatus> for u16 {
         let airborne_pos_ri: u8 = u8::from(&value.airborne_position_report_indicator) << 2;
         let airborne_vel_ri: u8 = u8::from(&value.airborne_velocity_report_indicator) << 1;
         let surface_pos_ri: u8 = u8::from(&value.surface_position_report_indicator);
-        let byte_1 = (squitter_status |
-            squitter_type |
-            squitter_record_source |
-            airborne_pos_ri |
-            airborne_vel_ri |
-            surface_pos_ri) as u16;
+        let byte_1 = u16::from(
+            squitter_status
+                | squitter_type
+                | squitter_record_source
+                | airborne_pos_ri
+                | airborne_vel_ri
+                | surface_pos_ri,
+        );
 
         let ident_ri: u8 = u8::from(&value.identification_report_indicator) << 7;
         let event_driven_ri: u8 = u8::from(&value.event_driven_report_indicator) << 6;
         let on_off_status: u8 = u8::from(&value.on_off_status) << 2;
         let damage_status: u8 = u8::from(&value.damage_status) << 1;
         let malfunction_status: u8 = u8::from(&value.malfunction_status);
-        let byte_2 = (ident_ri |
-            event_driven_ri |
-            on_off_status |
-            damage_status |
-            malfunction_status) as u16;
+        let byte_2 = u16::from(
+            ident_ri | event_driven_ri | on_off_status | damage_status | malfunction_status,
+        );
 
         (byte_1 << 8) | byte_2
     }
 }
 
-/// Custom defined enum to model the SquitterStatus
+/// Custom defined enum to model the `SquitterStatus`
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum SquitterStatus {
     #[default]
-    Off,    // 0
-    On,     // 1
+    Off, // 0
+    On, // 1
 }
 
 /// B.2.52 System Status record
@@ -1506,10 +1643,12 @@ pub struct SystemStatus {
 }
 
 impl SystemStatus {
+    #[must_use]
     pub fn new() -> Self {
         SystemStatus::default()
     }
 
+    #[must_use]
     pub fn builder() -> SystemStatusBuilder {
         SystemStatusBuilder::new()
     }
@@ -1550,7 +1689,13 @@ impl From<&SystemStatus> for u8 {
         let parameter_6 = u8::from(&value.parameter_6_capable) << 1;
         let operational_status = u8::from(&value.operational_status);
 
-        system_on_off_status | parameter_1 | parameter_2 | parameter_3 | parameter_4 | parameter_5 | parameter_6 | operational_status
+        system_on_off_status
+            | parameter_1
+            | parameter_2
+            | parameter_3
+            | parameter_4
+            | parameter_5
+            | parameter_6
+            | operational_status
     }
 }
-

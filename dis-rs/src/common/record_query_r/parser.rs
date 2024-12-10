@@ -1,18 +1,19 @@
-use nom::IResult;
-use nom::multi::count;
-use nom::number::complete::{be_u16, be_u32, be_u8};
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService, VariableRecordType};
 use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
+use nom::multi::count;
+use nom::number::complete::{be_u16, be_u32, be_u8};
+use nom::IResult;
 
 pub(crate) fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;
     let (input, required_reliability_service) = be_u8(input)?;
-    let required_reliability_service = RequiredReliabilityService::from(required_reliability_service);
+    let required_reliability_service =
+        RequiredReliabilityService::from(required_reliability_service);
     let (input, _padding) = be_u8(input)?;
     let (input, event_type) = be_u16(input)?;
     let event_type = RecordQueryREventType::from(event_type);
@@ -36,7 +37,13 @@ pub(crate) fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 pub(crate) fn record_query_specification(input: &[u8]) -> IResult<&[u8], RecordQuerySpecification> {
     let (input, record_count) = be_u32(input)?;
     let (input, records) = count(be_u32, record_count as usize)(input)?;
-    let records = records.iter().map(|record| VariableRecordType::from(*record)).collect();
+    let records = records
+        .iter()
+        .map(|record| VariableRecordType::from(*record))
+        .collect();
 
-    Ok((input, RecordQuerySpecification::default().with_record_ids(records)))
+    Ok((
+        input,
+        RecordQuerySpecification::default().with_record_ids(records),
+    ))
 }

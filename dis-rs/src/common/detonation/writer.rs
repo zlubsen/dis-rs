@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::detonation::model::Detonation;
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Detonation {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -15,12 +15,21 @@ impl SerializePdu for Detonation {
         buf.put_u8(self.detonation_result.into());
         buf.put_u8(self.variable_parameters.len() as u8);
         buf.put_u16(0u16);
-        let variable_params_bytes : u16 = self.variable_parameters.iter()
+        let variable_params_bytes: u16 = self
+            .variable_parameters
+            .iter()
             .map(|param| param.serialize(buf))
             .sum();
 
-        source_entity_id_bytes + target_entity_id_bytes + exploding_entity_id_bytes
-            + event_id_bytes + velocity_bytes + world_location_bytes + descriptor_bytes
-            + entity_location_bytes + 4 + variable_params_bytes
+        source_entity_id_bytes
+            + target_entity_id_bytes
+            + exploding_entity_id_bytes
+            + event_id_bytes
+            + velocity_bytes
+            + world_location_bytes
+            + descriptor_bytes
+            + entity_location_bytes
+            + 4
+            + variable_params_bytes
     }
 }

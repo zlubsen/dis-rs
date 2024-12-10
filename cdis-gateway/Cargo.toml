@@ -1,20 +1,19 @@
 [package]
 name = "cdis-gateway"
-version = "0.2.0"
-authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
+version = "0.3.0"
 description = """
 A gateway for the Compressed-Distributed Interactive Simulation protocol.
 
 The gateway encodes/decodes DIS PDUs to/from C-DIS.
 """
-edition = "2021"
-license = "MIT"
 readme = "README.md"
-repository = "https://github.com/zlubsen/dis-rs"
-categories = ["network-programming"]
 keywords = ["simulation", "DIS", "C-DIS", "gateway", "CLI"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
 
 [dependencies]
 askama = { version = "0.12.1", features = ["with-axum"] }
@@ -29,8 +28,8 @@ clap = { version = "4.5.4", features = ["derive"] }
 clap_derive = "4.2.0"
 dis-rs = { path = "../dis-rs" }
 futures = "0.3.30"
-tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tokio = { version = "1.28.1", features = ["full"] }
 tokio-stream = "0.1.15"
 toml = "0.7.3"
@@ -38,3 +37,15 @@ tower-http = { version = "0.5.0", features = ["fs", "trace"] }
 serde = "1.0.163"
 serde_derive = "1.0.163"
 socket2 = "0.5.3"
+
+[profile.dev.build-override]
+debug = true
+
+[profile.release]
+panic = "unwind"
+codegen-units = 1
+lto = true
+strip = true
+
+[lints]
+workspace = true

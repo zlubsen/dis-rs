@@ -1,5 +1,5 @@
+use crate::common::model::{EntityId, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{BASE_RECORD_SPEC_RECORD_LENGTH, EntityId, RecordSpecification};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{EventType, PduType, RequiredReliabilityService};
 use crate::model::{length_padded_to_num, PduBody};
@@ -22,14 +22,17 @@ pub struct RecordR {
 }
 
 impl RecordR {
+    #[must_use]
     pub fn builder() -> RecordRBuilder {
         RecordRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RecordRBuilder {
         RecordRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RecordR(self)
     }
@@ -37,13 +40,19 @@ impl RecordR {
 
 impl BodyInfo for RecordR {
     fn body_length(&self) -> u16 {
-        BASE_RECORD_R_BODY_LENGTH +
-            (self.record_specification.record_sets.iter()
+        BASE_RECORD_R_BODY_LENGTH
+            + (self
+                .record_specification
+                .record_sets
+                .iter()
                 .map(|record| {
-                    let data_length_bytes = record.records.iter()
-                        .map(|rec| rec.len() as u16 )
+                    let data_length_bytes = record
+                        .records
+                        .iter()
+                        .map(|rec| rec.len() as u16)
                         .sum::<u16>();
-                    let padded_record = length_padded_to_num(data_length_bytes.into(), EIGHT_OCTETS);
+                    let padded_record =
+                        length_padded_to_num(data_length_bytes.into(), EIGHT_OCTETS);
                     BASE_RECORD_SPEC_RECORD_LENGTH + padded_record.record_length as u16
                 })
                 .sum::<u16>())

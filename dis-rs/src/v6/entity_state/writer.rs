@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::Serialize;
 use crate::v6::entity_state::model::EntityCapabilities;
+use bytes::{BufMut, BytesMut};
 
 impl Serialize for EntityCapabilities {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {

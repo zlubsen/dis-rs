@@ -1,9 +1,9 @@
-use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
-use crate::enumerations::PduType;
-use crate::common::{BodyInfo, Interaction};
 use crate::common::collision_elastic::builder::CollisionElasticBuilder;
+use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
+use crate::common::{BodyInfo, Interaction};
+use crate::enumerations::PduType;
 
-const COLLISION_ELASTIC_BODY_LENGTH : u16 = 88;
+const COLLISION_ELASTIC_BODY_LENGTH: u16 = 88;
 
 /// 5.3.4 Collision-Elastic PDU
 ///
@@ -27,14 +27,17 @@ pub struct CollisionElastic {
 }
 
 impl CollisionElastic {
+    #[must_use]
     pub fn builder() -> CollisionElasticBuilder {
         CollisionElasticBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> CollisionElasticBuilder {
         CollisionElasticBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::CollisionElastic(self)
     }

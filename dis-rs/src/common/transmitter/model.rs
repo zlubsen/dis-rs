@@ -1,7 +1,17 @@
-use crate::common::model::{EntityId, Location, EntityType, length_padded_to_num, Orientation, PduBody, VectorF32};
-use crate::enumerations::{PduType, VariableRecordType, TransmitterTransmitState, TransmitterInputSource, TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation, TransmitterModulationTypeSystem, TransmitterAntennaPatternReferenceSystem, TransmitterDetailAmplitudeModulation, TransmitterDetailAmplitudeAngleModulation, TransmitterDetailAngleModulation, TransmitterDetailCombinationModulation, TransmitterDetailPulseModulation, TransmitterDetailUnmodulatedModulation, TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailSATCOMModulation};
+use crate::common::model::{
+    length_padded_to_num, EntityId, EntityType, Location, Orientation, PduBody, VectorF32,
+};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
+use crate::enumerations::{
+    PduType, TransmitterAntennaPatternReferenceSystem, TransmitterAntennaPatternType,
+    TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation,
+    TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation,
+    TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation,
+    TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation,
+    TransmitterDetailUnmodulatedModulation, TransmitterInputSource, TransmitterMajorModulation,
+    TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
+};
 use crate::transmitter::builder::TransmitterBuilder;
 
 const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
@@ -30,14 +40,17 @@ pub struct Transmitter {
 }
 
 impl Transmitter {
+    #[must_use]
     pub fn builder() -> TransmitterBuilder {
         TransmitterBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> TransmitterBuilder {
         TransmitterBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Transmitter(self)
     }
@@ -45,14 +58,26 @@ impl Transmitter {
 
 impl BodyInfo for Transmitter {
     fn body_length(&self) -> u16 {
-        BASE_TRANSMITTER_BODY_LENGTH +
-            self.modulation_parameters.as_ref().map_or(ZERO_OCTETS as u16, |params|params.len() as u16) +
-            self.antenna_pattern.as_ref().map_or(ZERO_OCTETS as u16, |_| BEAM_ANTENNA_PATTERN_OCTETS) +
-            self.variable_transmitter_parameters.iter().map(|vtp|
-                length_padded_to_num(
-                    BASE_VTP_RECORD_LENGTH as usize + vtp.fields.len(),
-                    EIGHT_OCTETS).record_length as u16
-            ).sum::<u16>()
+        BASE_TRANSMITTER_BODY_LENGTH
+            + self
+                .modulation_parameters
+                .as_ref()
+                .map_or(ZERO_OCTETS as u16, |params| params.len() as u16)
+            + self
+                .antenna_pattern
+                .as_ref()
+                .map_or(ZERO_OCTETS as u16, |_| BEAM_ANTENNA_PATTERN_OCTETS)
+            + self
+                .variable_transmitter_parameters
+                .iter()
+                .map(|vtp| {
+                    length_padded_to_num(
+                        BASE_VTP_RECORD_LENGTH as usize + vtp.fields.len(),
+                        EIGHT_OCTETS,
+                    )
+                    .record_length as u16
+                })
+                .sum::<u16>()
     }
 
     fn body_type(&self) -> PduType {
@@ -74,7 +99,7 @@ impl Interaction for Transmitter {
 pub struct ModulationType {
     pub spread_spectrum: SpreadSpectrum,
     pub major_modulation: TransmitterMajorModulation,
-    pub radio_system: TransmitterModulationTypeSystem
+    pub radio_system: TransmitterModulationTypeSystem,
 }
 
 impl Default for ModulationType {
@@ -84,24 +109,28 @@ impl Default for ModulationType {
 }
 
 impl ModulationType {
+    #[must_use]
     pub fn new() -> Self {
         Self {
-            spread_spectrum: Default::default(),
-            major_modulation: Default::default(),
-            radio_system: Default::default(),
+            spread_spectrum: SpreadSpectrum::default(),
+            major_modulation: TransmitterMajorModulation::default(),
+            radio_system: TransmitterModulationTypeSystem::default(),
         }
     }
 
+    #[must_use]
     pub fn with_spread_spectrum(mut self, spread_spectrum: SpreadSpectrum) -> Self {
         self.spread_spectrum = spread_spectrum;
         self
     }
 
+    #[must_use]
     pub fn with_major_modulation(mut self, major_modulation: TransmitterMajorModulation) -> Self {
         self.major_modulation = major_modulation;
         self
     }
 
+    #[must_use]
     pub fn with_radio_system(mut self, radio_system: TransmitterModulationTypeSystem) -> Self {
         self.radio_system = radio_system;
         self
@@ -112,7 +141,7 @@ impl ModulationType {
 pub struct SpreadSpectrum {
     pub frequency_hopping: bool,
     pub pseudo_noise: bool,
-    pub time_hopping: bool
+    pub time_hopping: bool,
 }
 
 impl Default for SpreadSpectrum {
@@ -122,6 +151,7 @@ impl Default for SpreadSpectrum {
 }
 
 impl SpreadSpectrum {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             frequency_hopping: Default::default(),
@@ -130,7 +160,12 @@ impl SpreadSpectrum {
         }
     }
 
-    pub fn new_with_values(frequency_hopping: bool, pseudo_noise: bool, time_hopping: bool) -> Self {
+    #[must_use]
+    pub fn new_with_values(
+        frequency_hopping: bool,
+        pseudo_noise: bool,
+        time_hopping: bool,
+    ) -> Self {
         Self {
             frequency_hopping,
             pseudo_noise,
@@ -138,16 +173,19 @@ impl SpreadSpectrum {
         }
     }
 
+    #[must_use]
     pub fn with_frequency_hopping(mut self) -> Self {
         self.frequency_hopping = true;
         self
     }
 
+    #[must_use]
     pub fn with_pseudo_noise(mut self) -> Self {
         self.pseudo_noise = true;
         self
     }
 
+    #[must_use]
     pub fn with_time_hopping(mut self) -> Self {
         self.time_hopping = true;
         self
@@ -173,13 +211,20 @@ impl From<&SpreadSpectrum> for u16 {
         let spectrum = 0u16;
         let spectrum = if value.frequency_hopping {
             spectrum | BIT_0
-        } else { spectrum };
+        } else {
+            spectrum
+        };
         let spectrum = if value.pseudo_noise {
             spectrum | BIT_1
-        } else { spectrum };
+        } else {
+            spectrum
+        };
         let spectrum = if value.time_hopping {
             spectrum | BIT_2
-        } else { spectrum };
+        } else {
+            spectrum
+        };
+        #[allow(clippy::let_and_return)]
         spectrum
     }
 }
@@ -215,8 +260,8 @@ impl From<u16> for CryptoKeyId {
 impl From<CryptoKeyId> for u16 {
     fn from(value: CryptoKeyId) -> Self {
         let crypto_mode = match value.crypto_mode {
-            CryptoMode::Baseband => { 0u16 }
-            CryptoMode::Diphase => { 1u16 }
+            CryptoMode::Baseband => 0u16,
+            CryptoMode::Diphase => 1u16,
         };
         (value.pseudo_crypto_key << 1) + crypto_mode
     }
@@ -236,9 +281,10 @@ impl Default for CryptoMode {
 
 impl From<bool> for CryptoMode {
     fn from(value: bool) -> Self {
-        match value {
-            true => { CryptoMode::Diphase }
-            false => { CryptoMode::Baseband }
+        if value {
+            CryptoMode::Diphase
+        } else {
+            CryptoMode::Baseband
         }
     }
 }
@@ -261,48 +307,59 @@ impl Default for BeamAntennaPattern {
 }
 
 impl BeamAntennaPattern {
+    #[must_use]
     pub fn new() -> Self {
         Self {
-            beam_direction: Default::default(),
+            beam_direction: Orientation::default(),
             azimuth_beamwidth: 0.0,
             elevation_beamwidth: 0.0,
-            reference_system: Default::default(),
+            reference_system: TransmitterAntennaPatternReferenceSystem::default(),
             e_z: 0.0,
             e_x: 0.0,
             phase: 0.0,
         }
     }
 
+    #[must_use]
     pub fn with_beam_direction(mut self, beam_direction: Orientation) -> Self {
         self.beam_direction = beam_direction;
         self
     }
 
+    #[must_use]
     pub fn with_azimuth_beamwidth(mut self, azimuth_beamwidth: f32) -> Self {
         self.azimuth_beamwidth = azimuth_beamwidth;
         self
     }
 
+    #[must_use]
     pub fn with_elevation_beamwidth(mut self, elevation_beamwidth: f32) -> Self {
         self.elevation_beamwidth = elevation_beamwidth;
         self
     }
 
-    pub fn with_reference_system(mut self, reference_system: TransmitterAntennaPatternReferenceSystem) -> Self {
+    #[must_use]
+    pub fn with_reference_system(
+        mut self,
+        reference_system: TransmitterAntennaPatternReferenceSystem,
+    ) -> Self {
         self.reference_system = reference_system;
         self
     }
 
+    #[must_use]
     pub fn with_e_z(mut self, e_z: f32) -> Self {
         self.e_z = e_z;
         self
     }
 
+    #[must_use]
     pub fn with_e_x(mut self, e_x: f32) -> Self {
         self.e_x = e_x;
         self
     }
 
+    #[must_use]
     pub fn with_phase(mut self, phase: f32) -> Self {
         self.phase = phase;
         self
@@ -322,18 +379,21 @@ impl Default for VariableTransmitterParameter {
 }
 
 impl VariableTransmitterParameter {
+    #[must_use]
     pub fn new() -> Self {
         Self {
-            record_type: Default::default(),
+            record_type: VariableRecordType::default(),
             fields: Vec::new(),
         }
     }
 
+    #[must_use]
     pub fn with_record_type(mut self, record_type: VariableRecordType) -> Self {
         self.record_type = record_type;
         self
     }
 
+    #[must_use]
     pub fn with_fields(mut self, fields: Vec<u8>) -> Self {
         self.fields = fields;
         self
@@ -341,64 +401,60 @@ impl VariableTransmitterParameter {
 }
 
 impl TransmitterMajorModulation {
+    #[must_use]
     pub fn new_from_bytes_with_detail(major_modulation: u16, detail: u16) -> Self {
         let major_modulation = TransmitterMajorModulation::from(major_modulation);
         match major_modulation {
-            TransmitterMajorModulation::NoStatement =>
-                { TransmitterMajorModulation::NoStatement }
-            TransmitterMajorModulation::Amplitude(_) =>
-                { TransmitterMajorModulation::Amplitude(TransmitterDetailAmplitudeModulation::from(detail)) }
-            TransmitterMajorModulation::AmplitudeandAngle(_) =>
-                { TransmitterMajorModulation::AmplitudeandAngle(TransmitterDetailAmplitudeAngleModulation::from(detail)) }
-            TransmitterMajorModulation::Angle(_) =>
-                { TransmitterMajorModulation::Angle(TransmitterDetailAngleModulation::from(detail)) }
-            TransmitterMajorModulation::Combination(_) =>
-                { TransmitterMajorModulation::Combination(TransmitterDetailCombinationModulation::from(detail)) }
-            TransmitterMajorModulation::Pulse(_) =>
-                { TransmitterMajorModulation::Pulse(TransmitterDetailPulseModulation::from(detail)) }
-            TransmitterMajorModulation::Unmodulated(_) =>
-                { TransmitterMajorModulation::Unmodulated(TransmitterDetailUnmodulatedModulation::from(detail)) }
-            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(_) =>
-                { TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(TransmitterDetailCarrierPhaseShiftModulation::from(detail)) }
-            TransmitterMajorModulation::SATCOM(_) =>
-                { TransmitterMajorModulation::SATCOM(TransmitterDetailSATCOMModulation::from(detail)) }
-            TransmitterMajorModulation::Unspecified(_) =>
-                { TransmitterMajorModulation::Unspecified(detail) }
+            TransmitterMajorModulation::NoStatement => TransmitterMajorModulation::NoStatement,
+            TransmitterMajorModulation::Amplitude(_) => TransmitterMajorModulation::Amplitude(
+                TransmitterDetailAmplitudeModulation::from(detail),
+            ),
+            TransmitterMajorModulation::AmplitudeAndAngle(_) => {
+                TransmitterMajorModulation::AmplitudeAndAngle(
+                    TransmitterDetailAmplitudeAngleModulation::from(detail),
+                )
+            }
+            TransmitterMajorModulation::Angle(_) => {
+                TransmitterMajorModulation::Angle(TransmitterDetailAngleModulation::from(detail))
+            }
+            TransmitterMajorModulation::Combination(_) => TransmitterMajorModulation::Combination(
+                TransmitterDetailCombinationModulation::from(detail),
+            ),
+            TransmitterMajorModulation::Pulse(_) => {
+                TransmitterMajorModulation::Pulse(TransmitterDetailPulseModulation::from(detail))
+            }
+            TransmitterMajorModulation::Unmodulated(_) => TransmitterMajorModulation::Unmodulated(
+                TransmitterDetailUnmodulatedModulation::from(detail),
+            ),
+            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(_) => {
+                TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(
+                    TransmitterDetailCarrierPhaseShiftModulation::from(detail),
+                )
+            }
+            TransmitterMajorModulation::SATCOM(_) => {
+                TransmitterMajorModulation::SATCOM(TransmitterDetailSATCOMModulation::from(detail))
+            }
+            TransmitterMajorModulation::Unspecified(_) => {
+                TransmitterMajorModulation::Unspecified(detail)
+            }
         }
     }
 
+    #[must_use]
     pub fn to_bytes_with_detail(&self) -> (u16, u16) {
         match self {
-            TransmitterMajorModulation::NoStatement => {
-                (0, 0)
-            }
-            TransmitterMajorModulation::Amplitude(detail) => {
-                (1, (*detail).into())
-            }
-            TransmitterMajorModulation::AmplitudeandAngle(detail) => {
-                (2, (*detail).into())
-            }
-            TransmitterMajorModulation::Angle(detail) => {
-                (3, (*detail).into())
-            }
-            TransmitterMajorModulation::Combination(detail) => {
-                (4, (*detail).into())
-            }
-            TransmitterMajorModulation::Pulse(detail) => {
-                (5, (*detail).into())
-            }
-            TransmitterMajorModulation::Unmodulated(detail) => {
-                (6, (*detail).into())
-            }
+            TransmitterMajorModulation::NoStatement => (0, 0),
+            TransmitterMajorModulation::Amplitude(detail) => (1, (*detail).into()),
+            TransmitterMajorModulation::AmplitudeAndAngle(detail) => (2, (*detail).into()),
+            TransmitterMajorModulation::Angle(detail) => (3, (*detail).into()),
+            TransmitterMajorModulation::Combination(detail) => (4, (*detail).into()),
+            TransmitterMajorModulation::Pulse(detail) => (5, (*detail).into()),
+            TransmitterMajorModulation::Unmodulated(detail) => (6, (*detail).into()),
             TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(detail) => {
                 (7, (*detail).into())
             }
-            TransmitterMajorModulation::SATCOM(detail) => {
-                (8, (*detail).into())
-            }
-            TransmitterMajorModulation::Unspecified(detail) => {
-                (9, (*detail).into())
-            }
+            TransmitterMajorModulation::SATCOM(detail) => (8, (*detail).into()),
+            TransmitterMajorModulation::Unspecified(detail) => (9, *detail),
         }
     }
 }
