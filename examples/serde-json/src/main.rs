@@ -4,6 +4,7 @@ use dis_rs::enumerations::PduType;
 use dis_rs::model::{EntityType, MunitionDescriptor, Pdu, PduHeader, TimeStamp};
 
 fn main() {
+    // Serialise a PduBody
     let acknowledge_pdu = Acknowledge::builder().build();
 
     let acknowledge_json = serde_json::to_string_pretty(&acknowledge_pdu).unwrap();
@@ -32,6 +33,8 @@ fn main() {
 
     assert_eq!(acknowledge_json.as_str(), acknowledge_expected);
 
+    // And a more complex PduBody
+    // Note the format of the DescriptorRecord
     let detonation_pdu_body = Detonation::builder()
         .with_munition_descriptor(
             EntityType::try_from("1:2:3:4:5:6:7").unwrap(),
@@ -110,6 +113,7 @@ fn main() {
 
     assert_eq!(detonation_json.as_str(), detonation_expected);
 
+    // Serialise a PDU complete with a PduHeader
     let detonation_header = PduHeader::new_v7(1, PduType::Detonation);
     let detonation_pdu = Pdu::finalize_from_parts(
         detonation_header,
@@ -201,4 +205,9 @@ fn main() {
         detonation_full_expected,
         serde_json::to_string_pretty(&detonation_pdu).unwrap()
     );
+
+    // And deserialise back again into a PDU
+    let deserialised_detonation = ::serde_json::from_str(&detonation_full_expected).unwrap();
+
+    assert_eq!(detonation_pdu, deserialised_detonation);
 }
