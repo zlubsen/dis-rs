@@ -1,5 +1,3 @@
 # Serialise PDUs to JSON
 
-Use the feature flag "serde-support".
-
-TODO
+This example demonstrates the use of the feature flag "serde", to serialise PDUs to JSON using `serde-json`.
