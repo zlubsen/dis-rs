@@ -6,6 +6,7 @@ use crate::enumerations::{
     SignalUserProtocolIdentificationNumber,
 };
 use crate::signal::builder::SignalBuilder;
+use serde::{Deserialize, Serialize};
 
 pub const BASE_SIGNAL_BODY_LENGTH: u16 = 20;
 
@@ -13,6 +14,7 @@ pub const BASE_SIGNAL_BODY_LENGTH: u16 = 20;
 ///
 /// 7.7.3 Signal PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Signal {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,
@@ -65,6 +67,8 @@ impl Interaction for Signal {
 ///
 /// 5.8.4.3.2 Field-specific requirements
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[serde(rename_all = "snake_case")]
 pub enum EncodingScheme {
     EncodedAudio {
         encoding_class: SignalEncodingClass,

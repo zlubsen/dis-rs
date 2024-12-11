@@ -4,6 +4,7 @@ use crate::enumerations::{
     PduType, RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason,
 };
 use crate::stop_freeze_r::builder::StopFreezeRBuilder;
+use serde::{Deserialize, Serialize};
 
 const STOP_FREEZE_R_BODY_LENGTH: u16 = 28;
 
@@ -11,6 +12,7 @@ const STOP_FREEZE_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.5 Stop/Freeze-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StopFreezeR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

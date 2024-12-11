@@ -2,6 +2,7 @@ use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze::builder::StopFreezeBuilder;
+use serde::{Deserialize, Serialize};
 
 const STOP_FREEZE_BODY_LENGTH: u16 = 28;
 
@@ -9,6 +10,7 @@ const STOP_FREEZE_BODY_LENGTH: u16 = 28;
 ///
 /// 7.5.5 Stop/Freeze PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StopFreeze {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

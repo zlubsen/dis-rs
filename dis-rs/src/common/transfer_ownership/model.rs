@@ -5,6 +5,7 @@ use crate::model::{
     length_padded_to_num, EntityId, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
 };
 use crate::transfer_ownership::builder::TransferOwnershipBuilder;
+use serde::{Deserialize, Serialize};
 
 const BASE_TRANSFER_OWNERSHIP_BODY_LENGTH: u16 = 28;
 
@@ -12,6 +13,7 @@ const BASE_TRANSFER_OWNERSHIP_BODY_LENGTH: u16 = 28;
 ///
 /// 7.8.4 Transfer Ownership (TO) PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TransferOwnership {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

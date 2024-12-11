@@ -6,6 +6,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
 use crate::set_data::builder::SetDataBuilder;
+use serde::{Deserialize, Serialize};
 
 const BASE_SET_DATA_BODY_LENGTH: u16 = 28;
 
@@ -13,6 +14,7 @@ const BASE_SET_DATA_BODY_LENGTH: u16 = 28;
 ///
 /// 7.5.10 Set Data PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SetData {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

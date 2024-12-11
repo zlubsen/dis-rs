@@ -17,7 +17,7 @@ repository.workspace = true
 categories.workspace = true
 
 [features]
-serde-support = ["dep:serde"]
+serde = ["dep:serde"]
 
 [dependencies]
 bytes = "1.4.0"

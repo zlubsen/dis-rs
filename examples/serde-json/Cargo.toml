@@ -5,5 +5,5 @@ edition = "2021"
 publish = false
 
 [dependencies]
-dis-rs = { path = "../../dis-rs", features = ["serde-support"] }
+dis-rs = { path = "../../dis-rs", features = ["serde"] }
 serde_json = "1.0"

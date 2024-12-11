@@ -4,6 +4,7 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{ActionId, PduType, RequiredReliabilityService};
+use serde::{Deserialize, Serialize};
 
 pub const BASE_ACTION_REQUEST_R_BODY_LENGTH: u16 = 36;
 
@@ -11,6 +12,7 @@ pub const BASE_ACTION_REQUEST_R_BODY_LENGTH: u16 = 36;
 ///
 /// 7.11.7 Action Request-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ActionRequestR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

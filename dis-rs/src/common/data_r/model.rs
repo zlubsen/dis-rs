@@ -6,6 +6,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::data_r::builder::DataRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
+use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_R_BODY_LENGTH: u16 = 28;
 
@@ -13,6 +14,7 @@ pub const BASE_DATA_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.11 Data-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DataR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::data_query_r::builder::DataQueryRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService, VariableRecordType};
+use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_QUERY_R_BODY_LENGTH: u16 = 32;
 
@@ -10,6 +11,7 @@ pub const BASE_DATA_QUERY_R_BODY_LENGTH: u16 = 32;
 ///
 /// 7.11.9 Data Query-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DataQueryR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

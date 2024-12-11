@@ -10,7 +10,7 @@ const ACKNOWLEDGE_BODY_LENGTH: u16 = 20;
 ///
 /// 7.5.6 Acknowledge PDU
 #[derive(Clone, Debug, Default, PartialEq)]
-#[cfg_attr(feature = "serde-support", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Acknowledge {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

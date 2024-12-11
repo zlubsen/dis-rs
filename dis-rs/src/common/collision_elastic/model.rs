@@ -2,6 +2,7 @@ use crate::common::collision_elastic::builder::CollisionElasticBuilder;
 use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+use serde::{Deserialize, Serialize};
 
 const COLLISION_ELASTIC_BODY_LENGTH: u16 = 88;
 
@@ -9,6 +10,7 @@ const COLLISION_ELASTIC_BODY_LENGTH: u16 = 88;
 ///
 /// 7.2.4 Collision-Elastic PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CollisionElastic {
     pub issuing_entity_id: EntityId,
     pub colliding_entity_id: EntityId,
