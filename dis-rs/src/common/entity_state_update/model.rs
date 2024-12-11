@@ -6,6 +6,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::entity_state_update::builder::EntityStateUpdateBuilder;
 use crate::enumerations::PduType;
+use serde::{Deserialize, Serialize};
 
 const BASE_ENTITY_STATE_UPDATE_BODY_LENGTH: u16 = 60;
 
@@ -13,6 +14,7 @@ const BASE_ENTITY_STATE_UPDATE_BODY_LENGTH: u16 = 60;
 ///
 /// 7.2.5 Entity State Update PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EntityStateUpdate {
     pub entity_id: EntityId,
     pub entity_linear_velocity: VectorF32,

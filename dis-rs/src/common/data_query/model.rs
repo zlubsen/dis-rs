@@ -3,10 +3,12 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{PduType, VariableRecordType};
+use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_QUERY_BODY_LENGTH: u16 = 28;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DataQuery {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

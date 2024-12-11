@@ -2,10 +2,12 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ReceiverState};
 use crate::receiver::builder::ReceiverBuilder;
+use serde::{Deserialize, Serialize};
 
 const RECEIVER_BODY_LENGTH: u16 = 24;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Receiver {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,

@@ -2,6 +2,7 @@ use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RequiredReliabilityService};
 use crate::start_resume_r::builder::StartResumeRBuilder;
+use serde::{Deserialize, Serialize};
 
 const START_RESUME_R_BODY_LENGTH: u16 = 36;
 
@@ -9,6 +10,7 @@ const START_RESUME_R_BODY_LENGTH: u16 = 36;
 ///
 /// 7.11.4 Start/Resume-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StartResumeR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

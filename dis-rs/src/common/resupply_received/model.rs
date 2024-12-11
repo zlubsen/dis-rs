@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
 use crate::resupply_received::builder::ResupplyReceivedBuilder;
+use serde::{Deserialize, Serialize};
 
 const RESUPPLY_RECEIVED_BASE_BODY_LENGTH: u16 = 28;
 
@@ -10,6 +11,7 @@ const RESUPPLY_RECEIVED_BASE_BODY_LENGTH: u16 = 28;
 ///
 /// 7.4.4 Resupply Received PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ResupplyReceived {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,

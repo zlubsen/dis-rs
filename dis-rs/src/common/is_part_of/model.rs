@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, PduType, StationName};
 use crate::is_part_of::builder::IsPartOfBuilder;
 use crate::model::{EntityId, PduBody, VectorF32};
+use serde::{Deserialize, Serialize};
 
 const IS_PART_OF_BODY_LENGTH: u16 = 40;
 
@@ -9,6 +10,7 @@ const IS_PART_OF_BODY_LENGTH: u16 = 40;
 ///
 /// 7.8.5 `IsPartOf` PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct IsPartOf {
     pub originating_simulation_id: EntityId,
     pub receiving_entity_id: EntityId,
@@ -56,6 +58,7 @@ impl Interaction for IsPartOf {
 
 /// 6.2.74 Relationship record
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Relationship {
     pub nature: IsPartOfNature,
     pub position: IsPartOfPosition,
@@ -77,6 +80,7 @@ impl Relationship {
 
 /// 6.2.62 Named Location Identification record
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct NamedLocationId {
     pub station_name: StationName,
     pub station_number: u16,

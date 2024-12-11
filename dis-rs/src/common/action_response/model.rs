@@ -4,10 +4,12 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{PduType, RequestStatus};
+use serde::{Deserialize, Serialize};
 
 pub const BASE_ACTION_RESPONSE_BODY_LENGTH: u16 = 28;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ActionResponse {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

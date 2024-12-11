@@ -6,10 +6,12 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
+use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_BODY_LENGTH: u16 = 28;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Data {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
