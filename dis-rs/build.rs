@@ -300,7 +300,7 @@ pub struct BitfieldItem {
 
 fn main() {
     let mut reader = Reader::from_file(Path::new(SISO_REF_FILE)).unwrap();
-    reader.trim_text(true);
+    reader.config_mut().trim_text(true);
 
     // Extract enums and bitfields from the source file
     let generation_items = extraction::extract(&mut reader);

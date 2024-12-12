@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The log level of the gateway defaults to INFO. Use RUST_LOG environment variable to override.
+- Updated dependencies
 
 ### Deprecated
 
@@ -28,12 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New PDUs (aligned with `cdis-assemble`):
-  - `Electromagnetic Emission`
-  - `Designator`
-  - `Transmitter`
-  - `Signal`
-  - `Receiver`
-  - `IFF`
+    - `Electromagnetic Emission`
+    - `Designator`
+    - `Transmitter`
+    - `Signal`
+    - `Receiver`
+    - `IFF`
 - Proper implementation of `block_own_host` and uri `EndPointSpec` configuration
   options ([#36](https://github.com/zlubsen/dis-rs/issues/36) and [#37](https://github.com/zlubsen/dis-rs/issues/37))
 
@@ -52,19 +53,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New PDUs (aligned with `cdis-assemble`):
-  - `Collision`
-  - `Detonation`
-  - `CreateEntity`
-  - `RemoveEntity`
-  - `StartResume`
-  - `StopFreeze`
-  - `Acknowledge`
-  - `ActionRequest`
-  - `DataQuery`
-  - `SetData`
-  - `Data`
-  - `EventReport`
-  - `Comment`
+    - `Collision`
+    - `Detonation`
+    - `CreateEntity`
+    - `RemoveEntity`
+    - `StartResume`
+    - `StopFreeze`
+    - `Acknowledge`
+    - `ActionRequest`
+    - `DataQuery`
+    - `SetData`
+    - `Data`
+    - `EventReport`
+    - `Comment`
 
 ## [0.1.1] - 2024-06-26
 
