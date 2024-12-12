@@ -1,12 +1,12 @@
+use crate::core::{NodeData, NodeOneData, NodeTwoData};
+use crate::error::InfraError;
 use std::any::Any;
 use std::ops::Add;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::signal;
-use tokio::task::{JoinSet};
+use tokio::task::JoinSet;
 use tokio::time::Instant;
-use crate::core::{NodeData, NodeOneData, NodeOneRunner, NodeRunner, NodeTwoData, NodeTwoRunner};
-use crate::error::InfraError;
 
 pub struct InfraRuntime {
     async_runtime: Runtime,
@@ -33,9 +33,17 @@ impl InfraRuntime {
     }
 
     pub fn run(&self) {
-        self.async_runtime.block_on( async {
-            let mut node_one_data: Box<dyn NodeData> = Box::new(NodeOneData::new(1, self.command_tx.subscribe(), self.event_tx.clone()));
-            let mut node_two_data: Box<dyn NodeData> = Box::new(NodeTwoData::new(2, self.command_tx.subscribe(), self.event_tx.clone()));
+        self.async_runtime.block_on(async {
+            let mut node_one_data: Box<dyn NodeData> = Box::new(NodeOneData::new(
+                1,
+                self.command_tx.subscribe(),
+                self.event_tx.clone(),
+            ));
+            let mut node_two_data: Box<dyn NodeData> = Box::new(NodeTwoData::new(
+                2,
+                self.command_tx.subscribe(),
+                self.event_tx.clone(),
+            ));
 
             // connect the nodes
             let node_one_receiver = node_one_data.request_subscription();
@@ -48,15 +56,25 @@ impl InfraRuntime {
 
             // connect the last node to an output channel, for testing
             let node_two_receiver = node_two_data.request_subscription();
-            let mut node_two_receiver = if let Ok(receiver) = node_two_receiver.downcast::<tokio::sync::broadcast::Receiver<u16>>() {
+            let mut node_two_receiver = if let Ok(receiver) =
+                node_two_receiver.downcast::<tokio::sync::broadcast::Receiver<u16>>()
+            {
                 *receiver
-            } else { panic!("Downcast error") };
+            } else {
+                panic!("Downcast error")
+            };
 
             let node_one = node_one_data.spawn_into_runner();
             let node_two = node_two_data.spawn_into_runner();
 
-            let mut timeout_interval = tokio::time::interval_at(Instant::now().add(Duration::from_secs(15)), Duration::from_secs(1));
-            let mut input_interval = tokio::time::interval_at(Instant::now().add(Duration::from_secs(3)), Duration::from_secs(3));
+            let mut timeout_interval = tokio::time::interval_at(
+                Instant::now().add(Duration::from_secs(15)),
+                Duration::from_secs(1),
+            );
+            let mut input_interval = tokio::time::interval_at(
+                Instant::now().add(Duration::from_secs(3)),
+                Duration::from_secs(3),
+            );
 
             loop {
                 tokio::select! {
@@ -85,7 +103,9 @@ impl InfraRuntime {
                 }
             }
 
-            self.command_tx.send(Command::Quit).expect("error sending kill signal");
+            self.command_tx
+                .send(Command::Quit)
+                .expect("error sending kill signal");
 
             println!("await join udp_node");
             // udp_node.await.expect("error awaiting udp_node");
@@ -95,7 +115,7 @@ impl InfraRuntime {
             node_two.await.expect("error awaiting filter_node");
 
             println!("done!");
-        } );
+        });
     }
 }
 
@@ -130,7 +150,8 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
-        .build().map_err(|err| InfraError::RuntimeCannotStart(err))?;
+        .build()
+        .map_err(|err| InfraError::RuntimeCannotStart(err))?;
     let _guard = runtime.enter();
 
     Ok(InfraRuntime::init(runtime))
@@ -138,10 +159,10 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
-    Quit
+    Quit,
 }
 
 #[derive(Clone)]
 pub enum Event {
-    SendStatistics
+    SendStatistics,
 }

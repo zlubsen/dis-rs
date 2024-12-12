@@ -1,12 +1,8 @@
-use std::any::Any;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-use std::sync::Arc;
-use std::time::Duration;
-use bytes::{Bytes, BytesMut};
-use tokio::net::UdpSocket;
-use tokio::task::JoinHandle;
 use crate::runtime::{Command, Event};
+use std::any::Any;
+use std::fmt::{Debug, Display};
+use std::time::Duration;
+use tokio::task::JoinHandle;
 
 pub type InstanceId = u64;
 
@@ -184,7 +180,11 @@ pub struct NodeOneRunner {
 }
 
 impl NodeOneData {
-    pub fn new(instance_id: u64, cmd_rx: tokio::sync::broadcast::Receiver<Command>, event_tx: tokio::sync::mpsc::Sender<Event>) -> Self {
+    pub fn new(
+        instance_id: u64,
+        cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+        event_tx: tokio::sync::mpsc::Sender<Event>,
+    ) -> Self {
         let (out_tx, _out_rx) = tokio::sync::broadcast::channel(100);
         Self {
             base: BaseNode {
@@ -223,9 +223,7 @@ impl NodeRunner for NodeOneRunner {
     type Data = NodeOneData;
 
     fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
-        let mut node_runner = Self {
-            data
-        };
+        let mut node_runner = Self { data };
         tokio::spawn(async move { node_runner.run().await })
     }
 
@@ -276,7 +274,11 @@ pub struct NodeTwoRunner {
 }
 
 impl NodeTwoData {
-    pub fn new(instance_id: u64, cmd_rx: tokio::sync::broadcast::Receiver<Command>, event_tx: tokio::sync::mpsc::Sender<Event>) -> Self {
+    pub fn new(
+        instance_id: u64,
+        cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+        event_tx: tokio::sync::mpsc::Sender<Event>,
+    ) -> Self {
         let (out_tx, _out_rx) = tokio::sync::broadcast::channel(100);
         Self {
             base: BaseNode {
@@ -315,9 +317,7 @@ impl NodeRunner for NodeTwoRunner {
     type Data = NodeTwoData;
 
     fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
-        let mut node_runner = Self {
-            data
-        };
+        let mut node_runner = Self { data };
         tokio::spawn(async move { node_runner.run().await })
     }
 

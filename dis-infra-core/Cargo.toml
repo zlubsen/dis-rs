@@ -1,18 +1,19 @@
 [package]
 name = "dis-infra-core"
 version = "0.1.0"
-authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 description = """
 Core infrastructure facilities and utilities for working with (DIS / C-DIS) data.
 
 Defines basic traits and implementations for handling packets creating UDP/TCP sockets, transforming and monitoring data flows.
 """
-edition = "2021"
-license = "MIT"
 readme = "README.md"
-repository = "https://github.com/zlubsen/dis-rs"
-categories = ["network-programming"]
 keywords = ["simulation", "DIS", "C-DIS", "gateway", "CLI"]
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
 
 
 [dependencies]
