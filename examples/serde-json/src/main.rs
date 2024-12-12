@@ -207,7 +207,7 @@ fn main() {
     );
 
     // And deserialise back again into a PDU
-    let deserialised_detonation = ::serde_json::from_str(&detonation_full_expected).unwrap();
+    let deserialised_detonation = ::serde_json::from_str(detonation_full_expected).unwrap();
 
     assert_eq!(detonation_pdu, deserialised_detonation);
 }

@@ -151,7 +151,7 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
         .enable_io()
         .enable_time()
         .build()
-        .map_err(|err| InfraError::RuntimeCannotStart(err))?;
+        .map_err(InfraError::RuntimeCannotStart)?;
     let _guard = runtime.enter();
 
     Ok(InfraRuntime::init(runtime))
