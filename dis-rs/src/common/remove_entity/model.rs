@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::remove_entity::builder::RemoveEntityBuilder;
+use serde::{Deserialize, Serialize};
 
 const REMOVE_ENTITY_BODY_LENGTH: u16 = 16;
 
@@ -9,6 +10,7 @@ const REMOVE_ENTITY_BODY_LENGTH: u16 = 16;
 ///
 /// 7.5.3 Remove Entity PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RemoveEntity {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

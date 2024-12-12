@@ -7,6 +7,7 @@ use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::EventType;
 use crate::enumerations::PduType;
 use crate::event_report_r::builder::EventReportRBuilder;
+use serde::{Deserialize, Serialize};
 
 pub const BASE_EVENT_REPORT_R_BODY_LENGTH: u16 = 28;
 
@@ -14,6 +15,7 @@ pub const BASE_EVENT_REPORT_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.12 Event Report-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EventReportR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

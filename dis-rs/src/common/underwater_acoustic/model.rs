@@ -8,6 +8,7 @@ use crate::enumerations::{
 };
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::underwater_acoustic::builder::UnderwaterAcousticBuilder;
+use serde::{Deserialize, Serialize};
 
 const BASE_UA_BODY_LENGTH: u16 = 20;
 
@@ -15,6 +16,7 @@ const BASE_UA_BODY_LENGTH: u16 = 20;
 ///
 /// 7.6.4 Underwater Acoustic (UA) PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UnderwaterAcoustic {
     pub emitting_entity_id: EntityId,
     pub event_id: EventId,
@@ -72,6 +74,7 @@ impl Interaction for UnderwaterAcoustic {
 
 /// Implementation of UID 149
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PropulsionPlantConfiguration {
     pub configuration: UAPropulsionPlantConfiguration,
     pub hull_mounted_masker: bool,
@@ -100,6 +103,7 @@ impl PropulsionPlantConfiguration {
 ///
 /// Table 164—UA PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Shaft {
     pub current_rpm: i16,
     pub ordered_rpm: i16,
@@ -135,6 +139,7 @@ impl Shaft {
 ///
 /// Table 163—APA Parameter Index record
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct APA {
     pub parameter: UAAdditionalPassiveActivityParameterIndex,
     pub status: APAStatus,
@@ -167,6 +172,7 @@ impl APA {
 
 /// Figure 50 — General form of emitter systems in the UA PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UAEmitterSystem {
     pub acoustic_emitter_system: AcousticEmitterSystem,
     pub location: VectorF32,
@@ -209,6 +215,7 @@ impl UAEmitterSystem {
 
 /// 6.2.2 Acoustic Emitter System record
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AcousticEmitterSystem {
     pub acoustic_system_name: UAAcousticSystemName,
     pub function: UAAcousticEmitterSystemFunction,
@@ -244,6 +251,7 @@ impl AcousticEmitterSystem {
 ///
 /// 7.6.4 Underwater Acoustic (UA) PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UABeam {
     pub beam_data_length: u8,
     pub beam_id_number: u8,
@@ -280,6 +288,7 @@ impl UABeam {
 
 /// 6.2.91 UA Fundamental Parameter Data record
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UAFundamentalParameterData {
     pub active_emission_parameter_index: UAActiveEmissionParameterIndex,
     pub scan_pattern: UAScanPattern,

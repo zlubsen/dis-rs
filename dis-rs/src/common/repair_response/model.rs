@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairResponseRepairResult};
 use crate::repair_response::builder::RepairResponseBuilder;
+use serde::{Deserialize, Serialize};
 
 const REPAIR_RESPONSE_BASE_BODY_LENGTH: u16 = 16;
 
@@ -9,6 +10,7 @@ const REPAIR_RESPONSE_BASE_BODY_LENGTH: u16 = 16;
 ///
 /// 7.4.7 Repair Response PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RepairResponse {
     pub receiving_id: EntityId,
     pub repairing_id: EntityId,

@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::create_entity_r::builder::CreateEntityRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
+use serde::{Deserialize, Serialize};
 
 const CREATE_ENTITY_R_BODY_LENGTH: u16 = 20;
 
@@ -9,6 +10,7 @@ const CREATE_ENTITY_R_BODY_LENGTH: u16 = 20;
 ///
 /// 7.11.2 Create Entity-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CreateEntityR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

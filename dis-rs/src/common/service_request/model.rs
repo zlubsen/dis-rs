@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody, SupplyQuantity, SUPPLY_QUANTITY_RE
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ServiceRequestServiceTypeRequested};
 use crate::service_request::builder::ServiceRequestBuilder;
+use serde::{Deserialize, Serialize};
 
 const SERVICE_REQUEST_BASE_BODY_LENGTH: u16 = 28;
 
@@ -9,6 +10,7 @@ const SERVICE_REQUEST_BASE_BODY_LENGTH: u16 = 28;
 ///
 /// 7.4.2 Service Request PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ServiceRequest {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,

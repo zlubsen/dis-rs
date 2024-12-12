@@ -2,6 +2,7 @@ use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, PduBod
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::fire::builder::FireBuilder;
+use serde::{Deserialize, Serialize};
 
 const FIRE_BODY_LENGTH: u16 = 28;
 
@@ -9,6 +10,7 @@ const FIRE_BODY_LENGTH: u16 = 28;
 ///
 /// 7.3.2 Fire PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Fire {
     pub firing_entity_id: EntityId,
     pub target_entity_id: EntityId,

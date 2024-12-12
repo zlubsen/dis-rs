@@ -3,6 +3,7 @@ use crate::entity_state::model::EntityAppearance;
 use crate::enumerations::{IsGroupOfGroupedEntityCategory, PduType};
 use crate::is_group_of::builder::IsGroupOfBuilder;
 use crate::model::{EntityId, PduBody};
+use serde::{Deserialize, Serialize};
 
 const BASE_IS_GROUP_OF_BODY_LENGTH: u16 = 28;
 
@@ -14,6 +15,7 @@ const BASE_IS_GROUP_OF_BODY_LENGTH: u16 = 28;
 /// same enum value as indicated by `grouped_entity_category`.
 /// This is not enforced and thus left up to the user.
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct IsGroupOf {
     pub group_id: EntityId,
     pub grouped_entity_category: IsGroupOfGroupedEntityCategory,
@@ -65,6 +67,7 @@ impl Interaction for IsGroupOf {
 
 /// Custom defined record.
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GroupReferencePoint {
     pub latitude: f64,
     pub longitude: f64,
@@ -87,6 +90,7 @@ impl GroupReferencePoint {
 /// Wrapper enum for UID 213 and the respective
 /// Group Entity Description (GED) records
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GroupEntityDescription {
     #[default]
     Undefined,
@@ -120,6 +124,7 @@ impl GroupEntityDescription {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDEntityLocation {
     pub x_offset: u16,
     pub y_offset: u16,
@@ -134,6 +139,7 @@ impl GEDEntityLocation {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDEntityOrientation {
     pub psi: u8,
     pub theta: u8,
@@ -149,6 +155,7 @@ impl GEDEntityOrientation {
 
 /// UID 215
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord1 {
     pub entity_id: u16,
     pub location: GEDEntityLocation,
@@ -170,6 +177,7 @@ impl GEDRecord1 {
 
 /// UID 216
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord2 {
     pub basic_ground_combat_vehicle: GEDRecord1,
     pub fuel_status: u8,
@@ -187,6 +195,7 @@ impl GEDRecord2 {
 
 /// UID 217
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord3 {
     pub entity_id: u16,
     pub location: GEDEntityLocation,
@@ -208,6 +217,7 @@ impl GEDRecord3 {
 
 /// UID 218
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord4 {
     pub basic_ground_combat_soldier: GEDRecord3,
     pub water_status: u8,
@@ -225,6 +235,7 @@ impl GEDRecord4 {
 
 /// UID 219
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord5 {
     pub entity_id: u16,
     pub location: GEDEntityLocation,
@@ -249,6 +260,7 @@ impl GEDRecord5 {
 
 /// UID 220
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord6 {
     pub basic_rotor_wing_aircraft: GEDRecord5,
     pub supplemental_fuel_status: u8,
@@ -266,6 +278,7 @@ impl GEDRecord6 {
 
 /// UID 221
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord7 {
     pub entity_id: u16,
     pub location: GEDEntityLocation,
@@ -286,6 +299,7 @@ impl GEDRecord7 {
 
 /// UID 222
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord8 {
     pub basic_fixed_wing_aircraft: GEDRecord7,
     pub supplemental_fuel_status: u8,
@@ -303,6 +317,7 @@ impl GEDRecord8 {
 
 /// UID 223
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GEDRecord9 {
     pub entity_id: u16,
     pub location: GEDEntityLocation,

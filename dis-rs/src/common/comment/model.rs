@@ -5,6 +5,7 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
+use serde::{Deserialize, Serialize};
 
 const BASE_COMMENT_BODY_LENGTH: u16 = 20;
 
@@ -12,6 +13,7 @@ const BASE_COMMENT_BODY_LENGTH: u16 = 20;
 ///
 /// 7.5.13 Comment PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Comment {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
