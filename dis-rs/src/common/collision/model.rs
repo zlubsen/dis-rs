@@ -2,10 +2,12 @@ use crate::common::collision::builder::CollisionBuilder;
 use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{CollisionType, PduType};
+use serde::{Deserialize, Serialize};
 
 const COLLISION_BODY_LENGTH: u16 = 60;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Collision {
     pub issuing_entity_id: EntityId,
     pub colliding_entity_id: EntityId,

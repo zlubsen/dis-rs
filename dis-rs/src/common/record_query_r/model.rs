@@ -6,6 +6,7 @@ use crate::enumerations::{
 };
 use crate::model::{PduBody, TimeStamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
+use serde::{Deserialize, Serialize};
 
 pub const BASE_RECORD_QUERY_R_BODY_LENGTH: u16 = 28;
 
@@ -13,6 +14,7 @@ pub const BASE_RECORD_QUERY_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.14 Record Query-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RecordQueryR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -63,6 +65,7 @@ impl Interaction for RecordQueryR {
 
 /// 6.2.72 Record Query Specification record
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RecordQuerySpecification {
     pub record_ids: Vec<VariableRecordType>,
 }

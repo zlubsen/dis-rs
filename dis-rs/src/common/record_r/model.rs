@@ -4,6 +4,7 @@ use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{EventType, PduType, RequiredReliabilityService};
 use crate::model::{length_padded_to_num, PduBody};
 use crate::record_r::builder::RecordRBuilder;
+use serde::{Deserialize, Serialize};
 
 pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;
 
@@ -11,6 +12,7 @@ pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.16 Record-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RecordR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

@@ -5,10 +5,12 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::enumerations::{DetonationResult, PduType};
+use serde::{Deserialize, Serialize};
 
 const BASE_DETONATION_BODY_LENGTH: u16 = 104;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Detonation {
     pub source_entity_id: EntityId,
     pub target_entity_id: EntityId,

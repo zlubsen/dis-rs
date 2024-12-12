@@ -5,13 +5,15 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::{FOUR_OCTETS, TWELVE_OCTETS, VARIABLE_PARAMETER_RECORD_LENGTH};
 use crate::entity_state::builder::EntityStateBuilder;
 use crate::enumerations::{
-    AirPlatformAppearance, CulturalFeatureAppearance, DeadReckoningAlgorithm, EntityCapabilities,
-    EntityKind, EntityMarkingCharacterSet, EnvironmentalAppearance, ExpendableAppearance, ForceId,
-    LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, PduType, PlatformDomain,
-    RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance,
-    SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance,
+    AirPlatformAppearance, AppearanceEntityOrObjectState, CulturalFeatureAppearance,
+    DeadReckoningAlgorithm, EntityCapabilities, EntityKind, EntityMarkingCharacterSet,
+    EnvironmentalAppearance, ExpendableAppearance, ForceId, LandPlatformAppearance,
+    LifeFormsAppearance, MunitionAppearance, PduType, PlatformDomain, RadioAppearance,
+    SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance,
+    SupplyAppearance, SurfacePlatformAppearance,
 };
 use crate::DisError;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 const BASE_ENTITY_STATE_BODY_LENGTH: u16 = 132;
@@ -26,6 +28,7 @@ pub enum EntityStateValidationError {
 ///
 /// 7.2.2 Entity State PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EntityState {
     pub entity_id: EntityId,                     // struct
     pub force_id: ForceId,                       // enum
@@ -81,6 +84,7 @@ impl Interaction for EntityState {
 
 /// 6.2.26 Entity Appearance record
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum EntityAppearance {
     LandPlatform(LandPlatformAppearance),
     AirPlatform(AirPlatformAppearance),
@@ -148,9 +152,50 @@ impl EntityAppearance {
             (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
         }
     }
+
     #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
+    }
+
+    #[must_use]
+    pub fn state(&self) -> Option<AppearanceEntityOrObjectState> {
+        match self {
+            EntityAppearance::LandPlatform(appearance) => Some(appearance.state),
+            EntityAppearance::AirPlatform(appearance) => Some(appearance.state),
+            EntityAppearance::SurfacePlatform(appearance) => Some(appearance.state),
+            EntityAppearance::SubsurfacePlatform(appearance) => Some(appearance.state),
+            EntityAppearance::SpacePlatform(appearance) => Some(appearance.state),
+            EntityAppearance::Munition(appearance) => Some(appearance.state),
+            EntityAppearance::LifeForms(appearance) => Some(appearance.state),
+            EntityAppearance::Environmental(appearance) => Some(appearance.state),
+            EntityAppearance::CulturalFeature(appearance) => Some(appearance.state),
+            EntityAppearance::Supply(appearance) => Some(appearance.state),
+            EntityAppearance::Radio(appearance) => Some(appearance.state),
+            EntityAppearance::Expendable(appearance) => Some(appearance.state),
+            EntityAppearance::SensorEmitter(appearance) => Some(appearance.state),
+            EntityAppearance::Unspecified(_) => None,
+        }
+    }
+
+    #[must_use]
+    pub fn is_frozen(&self) -> Option<bool> {
+        match self {
+            EntityAppearance::LandPlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::AirPlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SurfacePlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SubsurfacePlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SpacePlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Munition(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::LifeForms(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Environmental(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::CulturalFeature(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Supply(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Radio(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Expendable(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SensorEmitter(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Unspecified(_) => None,
+        }
     }
 }
 
@@ -178,6 +223,7 @@ impl From<&EntityAppearance> for u32 {
 
 /// 6.2.29 Entity Marking record
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EntityMarking {
     pub marking_character_set: EntityMarkingCharacterSet,
     pub marking_string: String, // 11 byte String
@@ -236,6 +282,7 @@ impl FromStr for EntityMarking {
 
 /// Custom defined record to group Dead Reckoning Parameters
 #[derive(Clone, Default, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DrParameters {
     pub algorithm: DeadReckoningAlgorithm,
     pub other_parameters: DrOtherParameters,
@@ -271,6 +318,8 @@ impl DrParameters {
 
 /// E.8 Use of the Other Parameters field in Dead Reckoning Parameters
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[serde(rename_all = "snake_case")]
 pub enum DrOtherParameters {
     None([u8; 15]),
     LocalEulerAngles(DrEulerAngles),
@@ -285,6 +334,7 @@ impl Default for DrOtherParameters {
 
 /// Identical to Table 58—Euler Angles record / 6.2.32 Euler Angles record (which is modeled as `VectorF32`)
 #[derive(Clone, Default, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DrEulerAngles {
     pub local_yaw: f32,
     pub local_pitch: f32,
@@ -313,6 +363,7 @@ impl DrEulerAngles {
 
 /// Table E.3—World Orientation Quaternion Dead Reckoning Parameters (E.8.2.3 Rotating DRM entities)
 #[derive(Clone, Default, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DrWorldOrientationQuaternion {
     pub nil: u16,
     pub x: f32,

@@ -3,6 +3,7 @@ use crate::common::model::{EntityId, Location, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName};
+use serde::{Deserialize, Serialize};
 
 pub const DESIGNATOR_BODY_LENGTH: u16 = 76;
 
@@ -10,6 +11,7 @@ pub const DESIGNATOR_BODY_LENGTH: u16 = 76;
 ///
 /// 7.6.3 Designator PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Designator {
     pub designating_entity_id: EntityId,
     pub system_name: DesignatorSystemName,

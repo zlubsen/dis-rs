@@ -6,6 +6,7 @@ use crate::model::{
     length_padded_to_num, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
 };
 use crate::set_record_r::builder::SetRecordRBuilder;
+use serde::{Deserialize, Serialize};
 
 pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;
 
@@ -13,6 +14,7 @@ pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.15 Set Record-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SetRecordR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,

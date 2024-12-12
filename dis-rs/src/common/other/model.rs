@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::other::builder::OtherBuilder;
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+use serde::{Deserialize, Serialize};
 
 /// A `PduBody` implementation that contains the body of the PDU as raw bytes, in a vec.
 ///
@@ -11,6 +12,7 @@ use crate::enumerations::PduType;
 ///
 /// This struct is used to provide access to the received data in not (yet) supported PDUs.
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Other {
     pub originating_entity_id: Option<EntityId>,
     pub receiving_entity_id: Option<EntityId>,
