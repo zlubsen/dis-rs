@@ -26,6 +26,7 @@ use crate::enumerations::{
     ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduType,
     VariableRecordType,
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
@@ -210,7 +211,7 @@ impl IffLayer3 {
 /// Interrogator or a Transponder in an IFF Layer 3 Mode 5 PDU
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum Mode5BasicData {
     Interrogator(Mode5InterrogatorBasicData), // 7.6.5.4.2 Layer 3 Mode 5 Interrogator Format
     Transponder(Mode5TransponderBasicData),   // 7.6.5.4.3 Layer 3 Mode 5 Transponder Format
@@ -281,7 +282,7 @@ impl IffLayer4 {
 /// Interrogator or a Transponder in an IFF Layer 4 Mode S PDU
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum ModeSBasicData {
     Interrogator(ModeSInterrogatorBasicData), // 7.6.5.5.2 Layer 4 Mode S Interrogator Format
     Transponder(ModeSTransponderBasicData),   // 7.6.5.5.3 Layer 4 Mode S Transponder Format

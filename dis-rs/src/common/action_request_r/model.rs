@@ -4,6 +4,7 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{ActionId, PduType, RequiredReliabilityService};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_ACTION_REQUEST_R_BODY_LENGTH: u16 = 36;

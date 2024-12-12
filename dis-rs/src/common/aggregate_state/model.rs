@@ -12,6 +12,7 @@ use crate::model::{
     VectorF32, BASE_VARIABLE_DATUM_LENGTH,
 };
 use crate::DisError;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;

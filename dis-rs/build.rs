@@ -790,6 +790,7 @@ mod generation {
             #[allow(clippy::write_literal)]
             pub mod enumerations {
                 use std::fmt::{Display, Formatter};
+                #[cfg(feature = "serde")]
                 use serde::{Deserialize, Serialize};
 
                 #(#generated_items)*

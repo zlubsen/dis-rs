@@ -13,6 +13,7 @@ use crate::enumerations::{
     TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
 };
 use crate::transmitter::builder::TransmitterBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;

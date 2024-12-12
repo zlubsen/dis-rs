@@ -2,6 +2,7 @@ use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, PduBod
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::fire::builder::FireBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const FIRE_BODY_LENGTH: u16 = 28;

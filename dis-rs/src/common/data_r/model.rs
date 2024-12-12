@@ -6,6 +6,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::data_r::builder::DataRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_R_BODY_LENGTH: u16 = 28;

@@ -4,6 +4,7 @@ use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{EventType, PduType, RequiredReliabilityService};
 use crate::model::{length_padded_to_num, PduBody};
 use crate::record_r::builder::RecordRBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;

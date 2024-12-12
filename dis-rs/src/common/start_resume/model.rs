@@ -2,6 +2,7 @@ use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::start_resume::builder::StartResumeBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const START_RESUME_BODY_LENGTH: u16 = 32;

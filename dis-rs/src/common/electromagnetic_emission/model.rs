@@ -6,6 +6,7 @@ use crate::enumerations::{
     ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
     HighDensityTrackJam, PduType,
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const EMISSION_BASE_BODY_LENGTH: u16 = 16;

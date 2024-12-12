@@ -5,6 +5,7 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::enumerations::{DetonationResult, PduType};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const BASE_DETONATION_BODY_LENGTH: u16 = 104;

@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, PduType, StationName};
 use crate::is_part_of::builder::IsPartOfBuilder;
 use crate::model::{EntityId, PduBody, VectorF32};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const IS_PART_OF_BODY_LENGTH: u16 = 40;

@@ -3,6 +3,7 @@ use crate::entity_state::model::EntityAppearance;
 use crate::enumerations::{IsGroupOfGroupedEntityCategory, PduType};
 use crate::is_group_of::builder::IsGroupOfBuilder;
 use crate::model::{EntityId, PduBody};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const BASE_IS_GROUP_OF_BODY_LENGTH: u16 = 28;

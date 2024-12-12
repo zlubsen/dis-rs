@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{EntityId, PduBody};
 use crate::sees::builder::SeesBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const BASE_SEES_BODY_LENGTH: u16 = 16;

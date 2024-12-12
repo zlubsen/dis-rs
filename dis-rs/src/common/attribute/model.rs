@@ -2,6 +2,7 @@ use crate::common::attribute::builder::AttributeBuilder;
 use crate::common::model::{EntityId, PduBody, SimulationAddress};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, VariableRecordType};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_ATTRIBUTE_BODY_LENGTH: u16 = 20;

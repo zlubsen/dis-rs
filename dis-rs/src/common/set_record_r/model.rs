@@ -6,6 +6,7 @@ use crate::model::{
     length_padded_to_num, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
 };
 use crate::set_record_r::builder::SetRecordRBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_RECORD_R_BODY_LENGTH: u16 = 28;

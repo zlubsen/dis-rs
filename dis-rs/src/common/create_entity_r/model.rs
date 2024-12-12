@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::create_entity_r::builder::CreateEntityRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const CREATE_ENTITY_R_BODY_LENGTH: u16 = 20;

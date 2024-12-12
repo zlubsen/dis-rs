@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
 use crate::resupply_received::builder::ResupplyReceivedBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const RESUPPLY_RECEIVED_BASE_BODY_LENGTH: u16 = 28;

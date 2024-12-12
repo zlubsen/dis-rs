@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody, SupplyQuantity, SUPPLY_QUANTITY_RE
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ServiceRequestServiceTypeRequested};
 use crate::service_request::builder::ServiceRequestBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const SERVICE_REQUEST_BASE_BODY_LENGTH: u16 = 28;

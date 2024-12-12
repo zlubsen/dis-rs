@@ -13,6 +13,7 @@ use crate::enumerations::{
     SupplyAppearance, SurfacePlatformAppearance,
 };
 use crate::DisError;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -319,7 +320,7 @@ impl DrParameters {
 /// E.8 Use of the Other Parameters field in Dead Reckoning Parameters
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum DrOtherParameters {
     None([u8; 15]),
     LocalEulerAngles(DrEulerAngles),

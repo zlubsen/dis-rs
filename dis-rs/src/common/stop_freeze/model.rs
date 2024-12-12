@@ -2,6 +2,7 @@ use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze::builder::StopFreezeBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const STOP_FREEZE_BODY_LENGTH: u16 = 28;

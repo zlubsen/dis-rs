@@ -7,6 +7,7 @@ use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::EventType;
 use crate::enumerations::PduType;
 use crate::event_report_r::builder::EventReportRBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_EVENT_REPORT_R_BODY_LENGTH: u16 = 28;

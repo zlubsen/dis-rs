@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairResponseRepairResult};
 use crate::repair_response::builder::RepairResponseBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const REPAIR_RESPONSE_BASE_BODY_LENGTH: u16 = 16;

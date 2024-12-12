@@ -70,6 +70,7 @@ use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
 use crate::DisError;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
@@ -184,8 +185,8 @@ impl PduHeader {
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[serde(rename_all = "snake_case")]
-#[serde(tag = "type")]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(tag = "type"))]
 pub enum PduBody {
     Other(Other),
     EntityState(EntityState),
@@ -1060,16 +1061,16 @@ impl TryFrom<String> for EntityType {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DescriptorRecord {
     /// 6.2.19.2 Munition Descriptor record
-    #[serde(rename = "munition")]
+    #[cfg_attr(feature = "serde", serde(rename = "munition"))]
     Munition {
         entity_type: EntityType,
         munition: MunitionDescriptor,
     },
     /// 6.2.19.4 Expendable Descriptor record
-    #[serde(rename = "expendable")]
+    #[cfg_attr(feature = "serde", serde(rename = "expendable"))]
     Expendable { entity_type: EntityType },
     /// 6.2.19.3 Explosion Descriptor record
-    #[serde(rename = "explosion")]
+    #[cfg_attr(feature = "serde", serde(rename = "explosion"))]
     Explosion {
         entity_type: EntityType,
         explosive_material: ExplosiveMaterialCategories,

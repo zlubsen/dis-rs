@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::other::builder::OtherBuilder;
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// A `PduBody` implementation that contains the body of the PDU as raw bytes, in a vec.

@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::data_query_r::builder::DataQueryRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService, VariableRecordType};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_QUERY_R_BODY_LENGTH: u16 = 32;

@@ -3,6 +3,7 @@ use crate::enumerations::{
     FireTypeIndicator, IffSimulationMode, IntercomAttachedIndicator, LvcIndicator,
     RadioAttachedIndicator, TransferredEntityIndicator,
 };
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// 5.2.7 PDU status record

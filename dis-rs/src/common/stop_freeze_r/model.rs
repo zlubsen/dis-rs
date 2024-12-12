@@ -4,6 +4,7 @@ use crate::enumerations::{
     PduType, RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason,
 };
 use crate::stop_freeze_r::builder::StopFreezeRBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const STOP_FREEZE_R_BODY_LENGTH: u16 = 28;

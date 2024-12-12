@@ -6,6 +6,7 @@ use crate::enumerations::{
 };
 use crate::model::{PduBody, TimeStamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub const BASE_RECORD_QUERY_R_BODY_LENGTH: u16 = 28;

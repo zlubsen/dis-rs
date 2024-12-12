@@ -2,6 +2,7 @@ use crate::common::acknowledge::builder::AcknowledgeBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const ACKNOWLEDGE_BODY_LENGTH: u16 = 20;

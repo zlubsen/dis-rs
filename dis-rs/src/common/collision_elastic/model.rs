@@ -2,6 +2,7 @@ use crate::common::collision_elastic::builder::CollisionElasticBuilder;
 use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const COLLISION_ELASTIC_BODY_LENGTH: u16 = 88;

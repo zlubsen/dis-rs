@@ -5,6 +5,7 @@ use crate::model::{
     length_padded_to_num, EntityId, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
 };
 use crate::transfer_ownership::builder::TransferOwnershipBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const BASE_TRANSFER_OWNERSHIP_BODY_LENGTH: u16 = 28;

@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ReceiverState};
 use crate::receiver::builder::ReceiverBuilder;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 const RECEIVER_BODY_LENGTH: u16 = 24;
