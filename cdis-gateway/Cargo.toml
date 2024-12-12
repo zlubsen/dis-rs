@@ -38,14 +38,16 @@ serde = "1.0.216"
 serde_derive = "1.0.216"
 socket2 = "0.5.8"
 
-[profile.dev.build-override]
-debug = true
+# these profiles produce a warning that they are ignored
 
-[profile.release]
-panic = "unwind"
-codegen-units = 1
-lto = true
-strip = true
+#[profile.dev.build-override]
+#debug = true
+
+#[profile.release]
+#panic = "unwind"
+#codegen-units = 1
+#lto = true
+#strip = true
 
 [lints]
 workspace = true
