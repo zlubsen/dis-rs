@@ -5,11 +5,12 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::{FOUR_OCTETS, TWELVE_OCTETS, VARIABLE_PARAMETER_RECORD_LENGTH};
 use crate::entity_state::builder::EntityStateBuilder;
 use crate::enumerations::{
-    AirPlatformAppearance, CulturalFeatureAppearance, DeadReckoningAlgorithm, EntityCapabilities,
-    EntityKind, EntityMarkingCharacterSet, EnvironmentalAppearance, ExpendableAppearance, ForceId,
-    LandPlatformAppearance, LifeFormsAppearance, MunitionAppearance, PduType, PlatformDomain,
-    RadioAppearance, SensorEmitterAppearance, SpacePlatformAppearance,
-    SubsurfacePlatformAppearance, SupplyAppearance, SurfacePlatformAppearance,
+    AirPlatformAppearance, AppearanceEntityOrObjectState, CulturalFeatureAppearance,
+    DeadReckoningAlgorithm, EntityCapabilities, EntityKind, EntityMarkingCharacterSet,
+    EnvironmentalAppearance, ExpendableAppearance, ForceId, LandPlatformAppearance,
+    LifeFormsAppearance, MunitionAppearance, PduType, PlatformDomain, RadioAppearance,
+    SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance,
+    SupplyAppearance, SurfacePlatformAppearance,
 };
 use crate::DisError;
 use std::str::FromStr;
@@ -148,9 +149,50 @@ impl EntityAppearance {
             (_, _) => EntityAppearance::Unspecified(appearance.to_be_bytes()),
         }
     }
+
     #[must_use]
     pub fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
+    }
+
+    #[must_use]
+    pub fn state(&self) -> Option<AppearanceEntityOrObjectState> {
+        match self {
+            EntityAppearance::LandPlatform(appearance) => Some(appearance.state),
+            EntityAppearance::AirPlatform(appearance) => Some(appearance.state),
+            EntityAppearance::SurfacePlatform(appearance) => Some(appearance.state),
+            EntityAppearance::SubsurfacePlatform(appearance) => Some(appearance.state),
+            EntityAppearance::SpacePlatform(appearance) => Some(appearance.state),
+            EntityAppearance::Munition(appearance) => Some(appearance.state),
+            EntityAppearance::LifeForms(appearance) => Some(appearance.state),
+            EntityAppearance::Environmental(appearance) => Some(appearance.state),
+            EntityAppearance::CulturalFeature(appearance) => Some(appearance.state),
+            EntityAppearance::Supply(appearance) => Some(appearance.state),
+            EntityAppearance::Radio(appearance) => Some(appearance.state),
+            EntityAppearance::Expendable(appearance) => Some(appearance.state),
+            EntityAppearance::SensorEmitter(appearance) => Some(appearance.state),
+            EntityAppearance::Unspecified(_) => None,
+        }
+    }
+
+    #[must_use]
+    pub fn is_frozen(&self) -> Option<bool> {
+        match self {
+            EntityAppearance::LandPlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::AirPlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SurfacePlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SubsurfacePlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SpacePlatform(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Munition(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::LifeForms(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Environmental(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::CulturalFeature(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Supply(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Radio(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Expendable(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::SensorEmitter(appearance) => Some(appearance.is_frozen),
+            EntityAppearance::Unspecified(_) => None,
+        }
     }
 }
 
