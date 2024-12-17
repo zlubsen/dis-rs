@@ -1,158 +1,9 @@
 use crate::runtime::{Command, Event};
 use std::any::Any;
-use std::fmt::{Debug, Display};
 use std::time::Duration;
 use tokio::task::JoinHandle;
 
 pub type InstanceId = u64;
-
-pub(crate) struct BaseNode {
-    pub(crate) instance_id: InstanceId,
-    pub(crate) cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-    pub(crate) event_tx: tokio::sync::mpsc::Sender<Event>,
-}
-
-// pub trait NodeTrait {
-//     async fn init(instance_id: u64, cmd_rx: Receiver<u8>, event_tx: Sender<u8>) -> (JoinHandle<()>, impl Fn() -> u8);
-//     async fn run(&mut self);
-//     fn subscribe(&self) -> u8;
-// }
-//
-// pub(crate) struct TestUdpNode {
-//     base: BaseNode,
-//     socket: UdpSocket,
-//     buf: BytesMut,
-//     incoming: Option<tokio::sync::mpsc::Receiver<u8>>,
-//     outgoing: tokio::sync::broadcast::Sender<u8>,
-// }
-//
-// impl TestUdpNode {
-//     pub async fn new(instance_id: u64, cmd_rx: Receiver<Command>, event_tx: Sender<Event>) -> Self {
-//         let mut buf = BytesMut::with_capacity(32768);
-//         buf.resize(32768, 0);
-//
-//         let socket = UdpSocket::bind("0.0.0.0:3000").await.unwrap();
-//
-//         let (out_tx, _out_rx) = tokio::sync::broadcast::channel(100);
-//         Self {
-//             base: BaseNode {
-//                 instance_id,
-//                 cmd_rx,
-//                 event_tx
-//             },
-//             socket,
-//             buf,
-//             incoming: None,
-//             outgoing: out_tx,
-//         }
-//     }
-// }
-//
-// impl NodeTrait for TestUdpNode {
-//     async fn init(instance_id: u64, cmd_rx: Receiver<u8>, event_tx: Sender<u8>) -> (JoinHandle<()>, impl Fn() -> u8) {
-//         println!("Initialising TestUdpNode");
-//         let mut node = TestUdpNode::new(instance_id, cmd_rx, event_tx).await;
-//
-//         let callback = || node.subscribe();
-//         let handle = tokio::spawn( async move { node.run().await } );
-//
-//         (handle, callback)
-//     }
-//
-//     async fn run(&mut self) {
-//         println!("Running TestUdpNode");
-//         let mut interval = tokio::time::interval(Duration::from_secs(3));
-//
-//         loop {
-//             tokio::select! {
-//                 Ok(cmd) = self.base.cmd_rx.recv() => {
-//                     println!("TestUdpNode cmd_rx");
-//                     if cmd == Command::Quit { break; }
-//                     ()
-//                 },
-//                 Ok(aa) = self.socket.recv_from(&mut self.buf) => {
-//                     println!("TestUdpNode socket.recv_from");
-//                     ()
-//                 }
-//                 _ = interval.tick() => {
-//                     println!("TestUdpNode tick");
-//                     ()
-//                 }
-//             }
-//         }
-//     }
-//
-//     fn subscribe(&self) -> u8 {
-//         println!("TestUdpNode subscribe");
-//         1
-//     }
-// }
-//
-// pub(crate) struct TestFilterNode {
-//     base: BaseNode,
-//     incoming: Option<tokio::sync::mpsc::Receiver<u8>>,
-//     outgoing: tokio::sync::broadcast::Sender<u8>,
-// }
-//
-// impl TestFilterNode {
-//     pub fn new(instance_id: u64, cmd_rx: Receiver<u8>, event_tx: Sender<u8>) -> Self {
-//         let (out_tx, _out_rx) = tokio::sync::broadcast::channel(100);
-//         Self {
-//             base: BaseNode {
-//                 instance_id,
-//                 cmd_rx,
-//                 event_tx
-//             },
-//             incoming: None,
-//             outgoing: out_tx,
-//
-//         }
-//     }
-// }
-//
-// impl NodeTrait for TestFilterNode {
-//     async fn init(instance_id: u64, cmd_rx: Receiver<u8>, event_tx: Sender<u8>) -> (JoinHandle<()>, impl Fn() -> u8) {
-//         println!("Initialising TestUdpNode");
-//         let mut node = TestFilterNode::new(instance_id, cmd_rx, event_tx);
-//
-//         let callback = || node.subscribe();
-//         let handle = tokio::spawn( async move { node.run().await } );
-//
-//         (handle, callback)
-//     }
-//
-//     async fn run(&mut self) {
-//         println!("Running TestUdpNode");
-//
-//         let mut interval = tokio::time::interval(Duration::from_secs(2));
-//
-//         loop {
-//             tokio::select! {
-//                 Ok(cmd) = self.base.cmd_rx.recv() => {
-//                     println!("TestFilterNode cmd_rx");
-//                     if cmd == 8 { break; }
-//                     ()
-//                 },
-//
-//                 _ = interval.tick() => {
-//                     println!("TestFilterNode tick");
-//                     ()
-//                 }
-//             }
-//         }
-//     }
-//
-//     fn subscribe(&self) -> u8 {
-//         println!("TestFilterNode subscribe");
-//         2
-//     }
-// }
-
-////
-
-pub enum InfraError {
-    SubscribeToChannelError { instance_id: InstanceId },
-}
 
 pub trait NodeData {
     fn request_subscription(&self) -> Box<dyn Any>;
@@ -167,6 +18,18 @@ pub trait NodeRunner {
     fn spawn_with_data(data: Self::Data) -> JoinHandle<()>;
     async fn run(&mut self);
 }
+
+pub(crate) struct BaseNode {
+    pub(crate) instance_id: InstanceId,
+    pub(crate) cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+    pub(crate) event_tx: tokio::sync::mpsc::Sender<Event>,
+}
+
+pub enum InfraError {
+    SubscribeToChannelError { instance_id: InstanceId },
+}
+
+////
 
 pub struct NodeOneData {
     base: BaseNode,

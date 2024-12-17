@@ -343,7 +343,7 @@ fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
 }
 
 /// Task that runs an `UdpSocket` for reading UDP packets from the network.
-/// Received packets will be send to the encoder/decoder task to which the `to_codec` channel is connected to.
+/// Received packets will be sent to the encoder/decoder task to which the `to_codec` channel is connected to.
 async fn reader_socket(
     socket: Arc<UdpSocket>,
     block_own_host: bool,
