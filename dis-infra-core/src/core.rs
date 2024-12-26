@@ -1,3 +1,4 @@
+use crate::error::InfraError;
 use crate::runtime::{Command, Event};
 use std::any::Any;
 use std::time::Duration;
@@ -7,7 +8,7 @@ pub type InstanceId = u64;
 
 pub trait NodeData {
     fn request_subscription(&self) -> Box<dyn Any>;
-    fn register_subscription(&mut self, receiver: Box<dyn Any>);
+    fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError>;
 
     fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()>;
 }
@@ -25,8 +26,18 @@ pub(crate) struct BaseNode {
     pub(crate) event_tx: tokio::sync::mpsc::Sender<Event>,
 }
 
-pub enum InfraError {
-    SubscribeToChannelError { instance_id: InstanceId },
+impl BaseNode {
+    pub fn new(
+        instance_id: u64,
+        cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+        event_tx: tokio::sync::mpsc::Sender<Event>,
+    ) -> Self {
+        Self {
+            instance_id,
+            cmd_rx,
+            event_tx,
+        }
+    }
 }
 
 ////
@@ -68,12 +79,16 @@ impl NodeData for NodeOneData {
         Box::new(client)
     }
 
-    fn register_subscription(&mut self, receiver: Box<dyn Any>) {
+    fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
         if let Ok(receiver) = receiver.downcast::<tokio::sync::broadcast::Receiver<u8>>() {
             self.incoming = Some(*receiver);
             println!("Registered incoming channel for NodeOne");
+            Ok(())
         } else {
             println!("Could not downcast");
+            Err(InfraError::SubscribeToChannel {
+                instance_id: self.base.instance_id,
+            })
         }
     }
 
@@ -162,12 +177,16 @@ impl NodeData for NodeTwoData {
         Box::new(client)
     }
 
-    fn register_subscription(&mut self, receiver: Box<dyn Any>) {
+    fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
         if let Ok(receiver) = receiver.downcast::<tokio::sync::broadcast::Receiver<u8>>() {
             self.incoming = Some(*receiver);
             println!("Registered incoming channel for NodeTwo");
+            Ok(())
         } else {
             println!("Could not downcast");
+            Err(InfraError::SubscribeToChannel {
+                instance_id: self.base.instance_id,
+            })
         }
     }
 

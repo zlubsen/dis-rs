@@ -1,29 +1,34 @@
-const COMMAND_CHANNEL_CAPACITY: usize = 50;
-const EVENT_CHANNEL_CAPACITY: usize = 50;
 const NODE_CHANNEL_CAPACITY: usize = 50;
 const SOCKET_BUFFER_CAPACITY: usize = 32_768;
 
 pub mod network {
     use crate::core::{BaseNode, NodeData, NodeRunner};
+    use crate::error::InfraError;
     use crate::infra::{NODE_CHANNEL_CAPACITY, SOCKET_BUFFER_CAPACITY};
     use crate::runtime::{Command, Event};
     use bytes::{Bytes, BytesMut};
+    use serde_derive::Deserialize;
     use std::any::Any;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::Duration;
-    use serde_derive::Deserialize;
     use tokio::net::UdpSocket;
     use tokio::select;
     use tokio::sync::broadcast::{Receiver, Sender};
     use tokio::task::JoinHandle;
     use tracing::error;
 
+    const DEFAULT_TTL: u32 = 1;
+    const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
+    const DEFAULT_AGGREGATE_STATS_INTERVAL_MS: u64 = 1000;
+    const DEFAULT_OWN_ADDRESS: SocketAddr =
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
+
     #[derive(Debug, Deserialize)]
-    pub struct UdpEndPointSpec {
+    pub struct UdpNodeSpec {
         pub uri: String,
         pub interface: String,
         pub mode: Option<String>,
-        pub ttl: Option<u16>,
+        pub ttl: Option<u32>,
         pub block_own_socket: Option<bool>,
     }
 
@@ -33,7 +38,7 @@ pub mod network {
         mode: UdpMode,
         interface: SocketAddr,
         address: SocketAddr,
-        ttl: u16,
+        ttl: u32,
         block_own_socket: bool,
         incoming: Option<Receiver<Bytes>>,
         outgoing: Sender<Bytes>,
@@ -42,6 +47,38 @@ pub mod network {
     pub struct UdpNodeRunner {
         data: UdpNodeData,
         socket: UdpSocket,
+        statistics: UdpNodeStatistics,
+    }
+
+    #[derive(Debug)]
+    enum UdpNodeAction {
+        NoOp,
+        ReceivedPacket(Bytes),
+        BlockedPacket,
+        ReceivedIncoming(Bytes),
+        SocketError(std::io::Error),
+        OutputStatistics,
+        Quit,
+    }
+
+    #[derive(Copy, Clone, Debug, Default)]
+    struct UdpNodeStatistics {
+        total: UdpNodeStatisticsItems,
+        running_interval: UdpNodeStatisticsItems,
+        latest_interval: UdpNodeStatisticsItems,
+    }
+
+    #[derive(Copy, Clone, Debug, Default)]
+    struct UdpNodeStatisticsItems {
+        messages_in: u64,
+        messages_out: u64,
+        packets_socket_in: u64,
+        packets_socket_in_blocked: u64,
+        packets_socket_out: u64,
+        bytes_in: u64,
+        bytes_out: u64,
+        bytes_socket_in: u64,
+        bytes_socket_out: u64,
     }
 
     #[allow(clippy::enum_variant_names)]
@@ -53,32 +90,71 @@ pub mod network {
         MultiCast,
     }
 
+    impl TryFrom<&str> for UdpMode {
+        type Error = InfraError;
+
+        fn try_from(value: &str) -> Result<Self, Self::Error> {
+            match value.to_lowercase().as_str() {
+                "unicast" => Ok(Self::UniCast),
+                "broadcast" => Ok(Self::BroadCast),
+                "multicast" => Ok(Self::MultiCast),
+                _ => Err(InfraError::InvalidSpec { message: "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'.".to_string() }),
+            }
+        }
+    }
+
     impl UdpNodeData {
         pub fn new(
             instance_id: u64,
             cmd_rx: Receiver<Command>,
             event_tx: tokio::sync::mpsc::Sender<Event>,
-        ) -> Self {
+            node_spec: &UdpNodeSpec,
+        ) -> Result<Self, InfraError> {
             let (out_tx, _out_rx) = tokio::sync::broadcast::channel(NODE_CHANNEL_CAPACITY);
 
             let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
             buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
 
-            Self {
-                base: BaseNode {
-                    instance_id,
-                    cmd_rx,
-                    event_tx,
-                },
+            let mode = if let Some(mode) = &node_spec.mode {
+                UdpMode::try_from(mode.as_str())
+            } else {
+                Ok(UdpMode::default())
+            }?;
+            let ttl = node_spec.ttl.unwrap_or(DEFAULT_TTL);
+            let block_own_socket = node_spec
+                .block_own_socket
+                .unwrap_or(DEFAULT_BLOCK_OWN_SOCKET);
+
+            let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
+                InfraError::InvalidSpec {
+                    message: format!(
+                        "Node {instance_id} - Cannot parse socket address for interface {}",
+                        node_spec.interface
+                    ),
+                }
+            })?;
+            let address =
+                node_spec
+                    .uri
+                    .parse::<SocketAddr>()
+                    .map_err(|_err| InfraError::InvalidSpec {
+                        message: format!(
+                            "Node {instance_id} - Cannot parse socket address for uri {}",
+                            node_spec.uri
+                        ),
+                    })?;
+
+            Ok(Self {
+                base: BaseNode::new(instance_id, cmd_rx, event_tx),
                 buffer,
-                mode: Default::default(),
-                interface: "127.0.0.1:3000".parse().unwrap(),
-                address: "127.0.0.1:3001".parse().unwrap(),
-                ttl: 0,
-                block_own_socket: false,
+                mode,
+                interface,
+                address,
+                ttl,
+                block_own_socket,
                 incoming: None,
                 outgoing: out_tx,
-            }
+            })
         }
     }
 
@@ -88,12 +164,14 @@ pub mod network {
             Box::new(client)
         }
 
-        fn register_subscription(&mut self, receiver: Box<dyn Any>) {
+        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
             if let Ok(receiver) = receiver.downcast::<Receiver<Bytes>>() {
                 self.incoming = Some(*receiver);
-                // Ok(())
+                Ok(())
             } else {
-                // Err(InfraError::SubscribeToChannelError)
+                Err(InfraError::SubscribeToChannel {
+                    instance_id: self.base.instance_id,
+                })
             }
         }
 
@@ -110,65 +188,172 @@ pub mod network {
             let mut node_runner = Self {
                 data,
                 socket,
+                statistics: UdpNodeStatistics::default(),
             };
 
             tokio::spawn(async move { node_runner.run().await })
         }
 
         async fn run(&mut self) {
-            const ONE_SECOND: u64 = 1;
-            const DEFAULT_OWN_ADDRESS: SocketAddr =
-                SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
+            let mut aggregate_stats_interval =
+                tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
 
-            let mut collect_stats_interval = tokio::time::interval(Duration::from_secs(ONE_SECOND));
-
-            let socket = UdpSocket::bind(self.data.address)
-                .await
-                .unwrap();
+            let socket = UdpSocket::bind(self.data.interface).await.unwrap();
 
             let default_own_socketaddr = DEFAULT_OWN_ADDRESS;
             let local_address = socket.local_addr().unwrap_or(default_own_socketaddr);
 
             loop {
-                select! {
+                let action: UdpNodeAction = select! {
                     // receiving commands
                     Ok(cmd) = self.data.base.cmd_rx.recv() => {
-                        if cmd == Command::Quit { break; }
-                    },
+                        self.handle_command(&cmd)
+                    }
                     // receiving from the incoming channel
-                    Some(incoming_data) = async {
-                        match &mut self.data.incoming {
-                            Some(channel) => channel.recv().await.ok(),
-                            None => None,
-                        }} => {
-                            match socket.send_to(&incoming_data, "127.0.0.1:3000").await {
-                                Ok(bytes_send) => { } // TODO (stats) did sent bytes over socket
-                                Err(_) => { }  // TODO (event) failed to send bytes over socket
-                        }
-                    },
+                    Some(incoming_data) = self.receive_incoming_channel() => {
+                        UdpNodeAction::ReceivedIncoming(incoming_data)
+                    }
                     // receiving from the socket
                     Ok((bytes_received, from_address)) = socket.recv_from(&mut self.data.buffer) => {
-                        if self.data.block_own_host && (local_address == from_address) {
-                            // Action::BlockedPacket
+                        if self.data.block_own_socket && (local_address == from_address) {
+                            UdpNodeAction::BlockedPacket
                         } else {
-                            self.
-                            Bytes::copy_from_slice(&self.data.buffer[..bytes_received];
-                            // Action::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]), from_address)
+                            Bytes::copy_from_slice(&self.data.buffer[..bytes_received]);
+                            UdpNodeAction::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]))
                         }
-                        // Err(err) => { Action::Error(err) }
-                        //     if let Ok(num_receivers) = self.data.outgoing.send(self.data.buffer[..bytes_received]) {
-                        //         // TODO sending bytes to next nodes succeeded
-                        //     } else {
-                        //         // TODO sending bytes to next nodes failed
-                        //     };
-                        // }
                     }
-                    _ = collect_stats_interval.tick() => {
-                        // TODO collect/aggregate statistics each given time interval
-                        ()
+                    // aggregate statistics for the interval
+                    _ = aggregate_stats_interval.tick() => {
+                        self.aggregate_statistics();
+                        UdpNodeAction::OutputStatistics
+                    }
+                };
+
+                match action {
+                    UdpNodeAction::NoOp => {}
+                    UdpNodeAction::ReceivedPacket(bytes) => {
+                        if let Ok(_num_receivers) = self.data.outgoing.send(bytes) {
+                        } else {
+                            if let Err(err) = self
+                                .data
+                                .base
+                                .event_tx
+                                .send(Event::NodeError(InfraError::RuntimeNode {
+                                    instance_id: self.data.base.instance_id,
+                                    message: "Outgoing channel send failed".to_string(),
+                                }))
+                                .await
+                            {
+                                error!("{err}");
+                                break;
+                            }
+                        };
+                    }
+                    UdpNodeAction::BlockedPacket => {}
+                    UdpNodeAction::ReceivedIncoming(incoming_data) => {
+                        match socket.send_to(&incoming_data, self.data.address).await {
+                            Ok(_bytes_send) => {}
+                            Err(err) => {
+                                if let Err(err) = self
+                                    .data
+                                    .base
+                                    .event_tx
+                                    .send(Event::NodeError(InfraError::RuntimeNode {
+                                        instance_id: self.data.base.instance_id,
+                                        message: err.to_string(),
+                                    }))
+                                    .await
+                                {
+                                    error!("{err}");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    UdpNodeAction::SocketError(err) => {
+                        if let Err(err) = self
+                            .data
+                            .base
+                            .event_tx
+                            .send(Event::NodeError(InfraError::RuntimeNode {
+                                instance_id: self.data.base.instance_id,
+                                message: err.to_string(),
+                            }))
+                            .await
+                        {
+                            error!("{err}");
+                            break;
+                        }
+                    }
+                    UdpNodeAction::OutputStatistics => {
+                        // TODO send statistics out
+                    }
+                    UdpNodeAction::Quit => {
+                        break;
                     }
                 }
             }
+        }
+    }
+
+    impl UdpNodeRunner {
+        fn handle_command(&self, command: &Command) -> UdpNodeAction {
+            match command {
+                Command::Quit => UdpNodeAction::Quit,
+            }
+        }
+
+        async fn receive_incoming_channel(&mut self) -> Option<Bytes> {
+            match &mut self.data.incoming {
+                Some(channel) => channel
+                    .recv()
+                    .await
+                    .inspect_err(|err| {
+                        self.data
+                            .base
+                            .event_tx
+                            .send(Event::NodeError(InfraError::RuntimeNode {
+                                instance_id: self.data.base.instance_id,
+                                message: err.to_string(),
+                            }));
+                    })
+                    .ok(),
+                None => None,
+            }
+        }
+
+        fn collect_statistics(&mut self, action: &UdpNodeAction) {
+            match action {
+                UdpNodeAction::NoOp => {}
+                UdpNodeAction::ReceivedPacket(bytes) => {
+                    self.statistics.total.packets_socket_in += 1;
+                    self.statistics.total.bytes_socket_in += bytes.len() as u64;
+                    self.statistics.running_interval.packets_socket_in += 1;
+                    self.statistics.running_interval.bytes_socket_in += bytes.len() as u64;
+                    self.statistics.total.messages_out += 1;
+                    self.statistics.running_interval.messages_out += 1;
+                }
+                UdpNodeAction::BlockedPacket => {
+                    self.statistics.total.packets_socket_in_blocked += 1;
+                    self.statistics.running_interval.packets_socket_in_blocked += 1;
+                }
+                UdpNodeAction::ReceivedIncoming(bytes) => {
+                    self.statistics.total.packets_socket_out += 1;
+                    self.statistics.total.bytes_socket_out += bytes.len() as u64;
+                    self.statistics.running_interval.packets_socket_out += 1;
+                    self.statistics.running_interval.bytes_socket_out += bytes.len() as u64;
+                    self.statistics.total.messages_in += 1;
+                    self.statistics.running_interval.messages_in += 1;
+                }
+                UdpNodeAction::SocketError(_) => {}
+                UdpNodeAction::OutputStatistics => {}
+                UdpNodeAction::Quit => {}
+            }
+        }
+
+        fn aggregate_statistics(&mut self) {
+            self.statistics.latest_interval = self.statistics.running_interval;
+            self.statistics.running_interval = UdpNodeStatisticsItems::default();
         }
     }
 
@@ -189,9 +374,9 @@ pub mod network {
 
         if let Err(err) = socket.set_reuse_address(true) {
             error!(
-            "Failed to set SO_REUSEADDR for endpoint address {} - {}.",
-            endpoint.address, err
-        );
+                "Failed to set SO_REUSEADDR for endpoint address {} - {}.",
+                endpoint.address, err
+            );
         }
         #[cfg(all(
             target_family = "unix",
@@ -199,37 +384,40 @@ pub mod network {
         ))]
         if let Err(err) = socket.set_reuse_port(true) {
             error!(
-            "Failed to set SO_REUSEPORT for endpoint address {} - {}.",
-            endpoint.address, err
-        );
+                "Failed to set SO_REUSEPORT for endpoint address {} - {}.",
+                endpoint.address, err
+            );
         }
         if let Err(err) = socket.set_nonblocking(true) {
             error!(
-            "Failed to set nonblocking mode for endpoint address {} - {}",
-            endpoint.address, err
-        );
+                "Failed to set nonblocking mode for endpoint address {} - {}",
+                endpoint.address, err
+            );
         }
 
         match (is_ipv4, endpoint.mode) {
             (true, UdpMode::UniCast) => {
                 if let Err(err) = socket.bind(&endpoint.interface.into()) {
                     error!(
-                    "Failed to bind to IPv4 address {:?} - {}",
-                    endpoint.address, err);
+                        "Failed to bind to IPv4 address {:?} - {}",
+                        endpoint.address, err
+                    );
                 }
             }
             (true, UdpMode::BroadCast) => {
                 if let Err(err) = socket.set_broadcast(true) {
                     error!(
-                    "Failed to set SO_BROADCAST for endpoint address {} - {}.",
-                    endpoint.interface, err);
+                        "Failed to set SO_BROADCAST for endpoint address {} - {}.",
+                        endpoint.interface, err
+                    );
                 }
                 if let Err(err) = socket.bind(&endpoint.interface.into()) {
                     error!(
-                    "Failed to bind to IPv4 address {:?} - {}",
-                    endpoint.address, err);
+                        "Failed to bind to IPv4 address {:?} - {}",
+                        endpoint.address, err
+                    );
                 }
-                if let Err(err) = socket.set_ttl(1) {
+                if let Err(err) = socket.set_ttl(endpoint.ttl) {
                     error!("Failed to set TTL - {err}.");
                 }
             }

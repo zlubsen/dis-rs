@@ -8,6 +8,9 @@ use tokio::signal;
 use tokio::task::JoinSet;
 use tokio::time::Instant;
 
+const COMMAND_CHANNEL_CAPACITY: usize = 50;
+const EVENT_CHANNEL_CAPACITY: usize = 50;
+
 pub struct InfraRuntime {
     async_runtime: Runtime,
     join_set: JoinSet<()>,
@@ -19,8 +22,8 @@ pub struct InfraRuntime {
 
 impl InfraRuntime {
     pub fn init(runtime: Runtime) -> Self {
-        let (command_tx, command_rx) = tokio::sync::broadcast::channel(100);
-        let (event_tx, event_rx) = tokio::sync::mpsc::channel(100);
+        let (command_tx, command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
+        let (event_tx, event_rx) = tokio::sync::mpsc::channel(EVENT_CHANNEL_CAPACITY);
 
         Self {
             async_runtime: runtime,
@@ -47,12 +50,12 @@ impl InfraRuntime {
 
             // connect the nodes
             let node_one_receiver = node_one_data.request_subscription();
-            node_two_data.register_subscription(node_one_receiver);
+            let _ = node_two_data.register_subscription(node_one_receiver);
 
             // connect the first node to an input channel, for testing
             let (node_one_input_tx, node_one_input_rx) = tokio::sync::broadcast::channel::<u8>(10);
             let dyn_tx: Box<dyn Any> = Box::new(node_one_input_rx);
-            node_one_data.register_subscription(dyn_tx);
+            let _ = node_one_data.register_subscription(dyn_tx);
 
             // connect the last node to an output channel, for testing
             let node_two_receiver = node_two_data.request_subscription();
@@ -151,7 +154,7 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
         .enable_io()
         .enable_time()
         .build()
-        .map_err(InfraError::RuntimeCannotStart)?;
+        .map_err(|_err| InfraError::CannotStartRuntime)?;
     let _guard = runtime.enter();
 
     Ok(InfraRuntime::init(runtime))
@@ -164,5 +167,6 @@ pub enum Command {
 
 #[derive(Clone)]
 pub enum Event {
+    NodeError(InfraError),
     SendStatistics,
 }
