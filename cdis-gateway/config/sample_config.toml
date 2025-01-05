@@ -1,5 +1,4 @@
-
-# Metadata allows the user to specify
+# Metadata allows the user to specify a name and versioning for the configuration
 [metadata]
 name = "Sample Gateway Configuration - FZ16"
 author = "zlubsen"
@@ -16,7 +15,7 @@ uri = "192.168.178.255:3000"
 interface = "192.168.178.11:3000"
 # `mode` specifies the type of connection, being `unicast`, `broadcast`, or `multicast`. Optional value, defaults to `unicast`.
 mode = "broadcast"
-# `ttl` specifies the time-to-live of packets send by the gateway via this endpoint.
+# `ttl` specifies the time-to-live of packets send by the gateway via this endpoint. Optional value, defaults to 1.
 ttl = 1
 # 'block_own_host' specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
 block_own_host = true
@@ -34,7 +33,8 @@ ttl = 1
 # 'block_own_host' specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
 block_own_host = true
 
-# The `templates` entry specifies where the monitoring dashboard of the gateway is hosted.
+# The `site` entry specifies where the monitoring dashboard of the gateway is hosted.
 [site]
-# `port` specifies the port on the host where the templates is hosted.
+# `port` specifies the port on the host where the templates is hosted. It defaults to port 8080.
 port = 8080
+

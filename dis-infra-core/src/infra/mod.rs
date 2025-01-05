@@ -1,5 +1,44 @@
+use crate::core::NodeData;
+use crate::error::InfraError;
+use crate::infra::network::UdpNodeData;
+use crate::runtime::{Command, Event};
+use tokio::sync::broadcast::Receiver;
+use toml::Value;
+
 const NODE_CHANNEL_CAPACITY: usize = 50;
 const SOCKET_BUFFER_CAPACITY: usize = 32_768;
+
+pub fn spec_to_node_data(
+    instance_id: u64,
+    cmd_rx: Receiver<Command>,
+    event_tx: tokio::sync::mpsc::Sender<Event>,
+    spec: &toml::Table,
+) -> Result<Box<dyn NodeData>, InfraError> {
+    if !spec.contains_key("type") {
+        return Err(InfraError::InvalidSpec {
+            message: "Node specification does not contain the 'type' of the node.".to_string(),
+        });
+    }
+
+    match &spec["type"] {
+        Value::String(value) => match value.as_str() {
+            "udp" => {
+                let spec: network::UdpNodeSpec = toml::from_str(&spec.to_string()).unwrap();
+                let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
+                Ok(node)
+            }
+            "dis" => Err(InfraError::InvalidSpec {
+                message: "Unimplemented".to_string(),
+            }),
+            unknown_value => Err(InfraError::InvalidSpec {
+                message: format!("Node type is not known '{unknown_value}'"),
+            }),
+        },
+        _ => Err(InfraError::InvalidSpec {
+            message: "Node type is of an invalid data type".to_string(),
+        }),
+    }
+}
 
 pub mod network {
     use crate::core::{BaseNode, NodeData, NodeRunner};
@@ -7,13 +46,15 @@ pub mod network {
     use crate::infra::{NODE_CHANNEL_CAPACITY, SOCKET_BUFFER_CAPACITY};
     use crate::runtime::{Command, Event};
     use bytes::{Bytes, BytesMut};
-    use serde_derive::Deserialize;
+    use serde_derive::{Deserialize, Serialize};
     use std::any::Any;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::Duration;
     use tokio::net::UdpSocket;
     use tokio::select;
+    use tokio::sync::broadcast::error::RecvError;
     use tokio::sync::broadcast::{Receiver, Sender};
+    use tokio::sync::mpsc::error::SendError;
     use tokio::task::JoinHandle;
     use tracing::error;
 
@@ -23,7 +64,7 @@ pub mod network {
     const DEFAULT_OWN_ADDRESS: SocketAddr =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize)]
     pub struct UdpNodeSpec {
         pub uri: String,
         pub interface: String,
@@ -32,6 +73,7 @@ pub mod network {
         pub block_own_socket: Option<bool>,
     }
 
+    #[derive(Debug)]
     pub struct UdpNodeData {
         base: BaseNode,
         buffer: BytesMut,
@@ -51,12 +93,15 @@ pub mod network {
     }
 
     #[derive(Debug)]
-    enum UdpNodeAction {
-        NoOp,
+    enum UdpNodeEvent {
+        NoEvent,
         ReceivedPacket(Bytes),
         BlockedPacket,
         ReceivedIncoming(Bytes),
         SocketError(std::io::Error),
+        ReceiveIncomingError(RecvError),
+        SendOutgoingChannelError,
+        SendEventChannelError,
         OutputStatistics,
         Quit,
     }
@@ -198,40 +243,48 @@ pub mod network {
             let mut aggregate_stats_interval =
                 tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
 
-            let socket = UdpSocket::bind(self.data.interface).await.unwrap();
-
             let default_own_socketaddr = DEFAULT_OWN_ADDRESS;
-            let local_address = socket.local_addr().unwrap_or(default_own_socketaddr);
+            let local_address = self.socket.local_addr().unwrap_or(default_own_socketaddr);
 
             loop {
-                let action: UdpNodeAction = select! {
+                let event: UdpNodeEvent = select! {
                     // receiving commands
                     Ok(cmd) = self.data.base.cmd_rx.recv() => {
-                        self.handle_command(&cmd)
+                        map_command_to_event(&cmd)
                     }
                     // receiving from the incoming channel
-                    Some(incoming_data) = self.receive_incoming_channel() => {
-                        UdpNodeAction::ReceivedIncoming(incoming_data)
-                    }
+                    incoming = async {
+                        match &mut self.data.incoming {
+                            Some(channel) => match channel
+                                .recv()
+                                .await {
+                                    Ok(received) => { UdpNodeEvent::ReceivedIncoming(received) }
+                                    Err(err) => {
+                                        UdpNodeEvent::ReceiveIncomingError(err)
+                                }
+                            }
+                            None => UdpNodeEvent::NoEvent
+                        }
+                    } => { incoming }
                     // receiving from the socket
-                    Ok((bytes_received, from_address)) = socket.recv_from(&mut self.data.buffer) => {
+                    Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.data.buffer) => {
                         if self.data.block_own_socket && (local_address == from_address) {
-                            UdpNodeAction::BlockedPacket
+                            UdpNodeEvent::BlockedPacket
                         } else {
                             Bytes::copy_from_slice(&self.data.buffer[..bytes_received]);
-                            UdpNodeAction::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]))
+                            UdpNodeEvent::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]))
                         }
                     }
                     // aggregate statistics for the interval
                     _ = aggregate_stats_interval.tick() => {
                         self.aggregate_statistics();
-                        UdpNodeAction::OutputStatistics
+                        UdpNodeEvent::OutputStatistics
                     }
                 };
 
-                match action {
-                    UdpNodeAction::NoOp => {}
-                    UdpNodeAction::ReceivedPacket(bytes) => {
+                match event {
+                    UdpNodeEvent::NoEvent => {}
+                    UdpNodeEvent::ReceivedPacket(bytes) => {
                         if let Ok(_num_receivers) = self.data.outgoing.send(bytes) {
                         } else {
                             if let Err(err) = self
@@ -249,9 +302,9 @@ pub mod network {
                             }
                         };
                     }
-                    UdpNodeAction::BlockedPacket => {}
-                    UdpNodeAction::ReceivedIncoming(incoming_data) => {
-                        match socket.send_to(&incoming_data, self.data.address).await {
+                    UdpNodeEvent::BlockedPacket => {}
+                    UdpNodeEvent::ReceivedIncoming(incoming_data) => {
+                        match self.socket.send_to(&incoming_data, self.data.address).await {
                             Ok(_bytes_send) => {}
                             Err(err) => {
                                 if let Err(err) = self
@@ -270,7 +323,7 @@ pub mod network {
                             }
                         }
                     }
-                    UdpNodeAction::SocketError(err) => {
+                    UdpNodeEvent::SocketError(err) => {
                         if let Err(err) = self
                             .data
                             .base
@@ -285,47 +338,32 @@ pub mod network {
                             break;
                         }
                     }
-                    UdpNodeAction::OutputStatistics => {
+                    UdpNodeEvent::OutputStatistics => {
                         // TODO send statistics out
                     }
-                    UdpNodeAction::Quit => {
+                    UdpNodeEvent::Quit => {
                         break;
                     }
+                    UdpNodeEvent::ReceiveIncomingError(_) => {}
+                    UdpNodeEvent::SendOutgoingChannelError => {}
+                    UdpNodeEvent::SendEventChannelError => {}
                 }
             }
         }
     }
 
+    fn map_command_to_event(command: &Command) -> UdpNodeEvent {
+        match command {
+            Command::Quit => UdpNodeEvent::Quit,
+        }
+    }
+
     impl UdpNodeRunner {
-        fn handle_command(&self, command: &Command) -> UdpNodeAction {
-            match command {
-                Command::Quit => UdpNodeAction::Quit,
-            }
-        }
-
-        async fn receive_incoming_channel(&mut self) -> Option<Bytes> {
-            match &mut self.data.incoming {
-                Some(channel) => channel
-                    .recv()
-                    .await
-                    .inspect_err(|err| {
-                        self.data
-                            .base
-                            .event_tx
-                            .send(Event::NodeError(InfraError::RuntimeNode {
-                                instance_id: self.data.base.instance_id,
-                                message: err.to_string(),
-                            }));
-                    })
-                    .ok(),
-                None => None,
-            }
-        }
-
-        fn collect_statistics(&mut self, action: &UdpNodeAction) {
-            match action {
-                UdpNodeAction::NoOp => {}
-                UdpNodeAction::ReceivedPacket(bytes) => {
+        fn collect_statistics(&mut self, event: &UdpNodeEvent) {
+            // TODO
+            match event {
+                UdpNodeEvent::NoEvent => {}
+                UdpNodeEvent::ReceivedPacket(bytes) => {
                     self.statistics.total.packets_socket_in += 1;
                     self.statistics.total.bytes_socket_in += bytes.len() as u64;
                     self.statistics.running_interval.packets_socket_in += 1;
@@ -333,11 +371,11 @@ pub mod network {
                     self.statistics.total.messages_out += 1;
                     self.statistics.running_interval.messages_out += 1;
                 }
-                UdpNodeAction::BlockedPacket => {
+                UdpNodeEvent::BlockedPacket => {
                     self.statistics.total.packets_socket_in_blocked += 1;
                     self.statistics.running_interval.packets_socket_in_blocked += 1;
                 }
-                UdpNodeAction::ReceivedIncoming(bytes) => {
+                UdpNodeEvent::ReceivedIncoming(bytes) => {
                     self.statistics.total.packets_socket_out += 1;
                     self.statistics.total.bytes_socket_out += bytes.len() as u64;
                     self.statistics.running_interval.packets_socket_out += 1;
@@ -345,9 +383,12 @@ pub mod network {
                     self.statistics.total.messages_in += 1;
                     self.statistics.running_interval.messages_in += 1;
                 }
-                UdpNodeAction::SocketError(_) => {}
-                UdpNodeAction::OutputStatistics => {}
-                UdpNodeAction::Quit => {}
+                UdpNodeEvent::SocketError(_) => {}
+                UdpNodeEvent::OutputStatistics => {}
+                UdpNodeEvent::Quit => {}
+                UdpNodeEvent::ReceiveIncomingError(_) => {}
+                UdpNodeEvent::SendOutgoingChannelError => {}
+                UdpNodeEvent::SendEventChannelError => {}
             }
         }
 
@@ -467,5 +508,25 @@ pub mod network {
             .expect("Failed to convert std::net::UdpSocket to tokio::net::UdpSocket.");
 
         socket
+    }
+}
+
+pub mod dis {
+    use crate::core::BaseNode;
+    use serde_derive::{Deserialize, Serialize};
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct DisNodeSpec {
+        exercise_id: u8,
+        dis_version: u8,
+    }
+
+    #[derive(Debug)]
+    pub struct DisNodeData {
+        base_node: BaseNode,
+    }
+
+    pub struct DisNodeRunner {
+        data: DisNodeData,
     }
 }

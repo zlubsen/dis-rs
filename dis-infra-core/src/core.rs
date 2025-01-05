@@ -6,9 +6,19 @@ use tokio::task::JoinHandle;
 
 pub type InstanceId = u64;
 
-pub trait NodeData {
+pub trait NodeData
+where
+    Self: 'static,
+{
     fn request_subscription(&self) -> Box<dyn Any>;
     fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError>;
+
+    fn to_dyn(self) -> Box<dyn NodeData>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 
     fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()>;
 }
@@ -20,6 +30,7 @@ pub trait NodeRunner {
     async fn run(&mut self);
 }
 
+#[derive(Debug)]
 pub(crate) struct BaseNode {
     pub(crate) instance_id: InstanceId,
     pub(crate) cmd_rx: tokio::sync::broadcast::Receiver<Command>,
