@@ -8,7 +8,7 @@ use toml::Value;
 const NODE_CHANNEL_CAPACITY: usize = 50;
 const SOCKET_BUFFER_CAPACITY: usize = 32_768;
 
-pub fn spec_to_node_data(
+pub fn node_data_from_spec(
     instance_id: u64,
     cmd_rx: Receiver<Command>,
     event_tx: tokio::sync::mpsc::Sender<Event>,
@@ -34,10 +34,59 @@ pub fn spec_to_node_data(
                 message: format!("Node type is not known '{unknown_value}'"),
             }),
         },
-        _ => Err(InfraError::InvalidSpec {
-            message: "Node type is of an invalid data type".to_string(),
+        invalid_value => Err(InfraError::InvalidSpec {
+            message: format!(
+                "Node type is of an invalid data type ('{}')",
+                invalid_value.to_string()
+            ),
         }),
     }
+}
+
+pub fn register_channel_from_spec(
+    spec: &toml::Table,
+    nodes: &mut Vec<Box<dyn NodeData>>,
+) -> Result<(), InfraError> {
+    let from = spec
+        .get("from")
+        .ok_or(InfraError::InvalidSpec {
+            message: "Channel spec misses field 'from'.".to_string(),
+        })?
+        .as_str()
+        .ok_or(InfraError::InvalidSpec {
+            message: "Channel spec field 'from' is not a string value.".to_string(),
+        })?;
+    let to = spec
+        .get("to")
+        .ok_or(InfraError::InvalidSpec {
+            message: "Channel spec misses field 'to'.".to_string(),
+        })?
+        .as_str()
+        .ok_or(InfraError::InvalidSpec {
+            message: "Channel spec field 'to' is not a string value.".to_string(),
+        })?;
+
+    let from_id = nodes
+        .iter()
+        .find(|node| node.name() == from)
+        .ok_or(InfraError::InvalidSpec {
+            message: format!("Invalid channel spec, no node with name '{from}' is defined."),
+        })?
+        .id();
+    let to_id = nodes
+        .iter()
+        .find(|node| node.name() == to)
+        .ok_or(InfraError::InvalidSpec {
+            message: format!("Invalid channel spec, no node with name '{to}' is defined."),
+        })?
+        .id();
+
+    let from_node = nodes.get(from_id as usize).unwrap();
+    let sub = from_node.request_subscription();
+    let to_node = nodes.get_mut(to_id as usize).unwrap();
+    to_node.register_subscription(sub)?;
+
+    Ok(())
 }
 
 pub mod network {
@@ -54,7 +103,6 @@ pub mod network {
     use tokio::select;
     use tokio::sync::broadcast::error::RecvError;
     use tokio::sync::broadcast::{Receiver, Sender};
-    use tokio::sync::mpsc::error::SendError;
     use tokio::task::JoinHandle;
     use tracing::error;
 
@@ -66,6 +114,7 @@ pub mod network {
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct UdpNodeSpec {
+        pub name: String,
         pub uri: String,
         pub interface: String,
         pub mode: Option<String>,
@@ -190,7 +239,7 @@ pub mod network {
                     })?;
 
             Ok(Self {
-                base: BaseNode::new(instance_id, cmd_rx, event_tx),
+                base: BaseNode::new(instance_id, node_spec.name.clone(), cmd_rx, event_tx),
                 buffer,
                 mode,
                 interface,
@@ -218,6 +267,14 @@ pub mod network {
                     instance_id: self.base.instance_id,
                 })
             }
+        }
+
+        fn id(&self) -> u64 {
+            self.base.instance_id
+        }
+
+        fn name(&self) -> &str {
+            self.base.name.as_str()
         }
 
         fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {

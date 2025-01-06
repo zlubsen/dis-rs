@@ -1,172 +1,181 @@
 use crate::core::NodeData;
 use crate::error::InfraError;
-use crate::infra::spec_to_node_data;
+use crate::infra::{node_data_from_spec, register_channel_from_spec};
+use futures::stream::FuturesUnordered;
 use std::fs::read_to_string;
 use std::future::Future;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
-use tokio::task::{JoinHandle, JoinSet};
 use toml::Value;
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
 const EVENT_CHANNEL_CAPACITY: usize = 50;
 
+/// The `InfraRuntime` is used to construct a specific infrastructure using composable Nodes, connected through Channels.
+/// `InfraRuntime` wraps a tokio async Runtime, and manages the generic communication channels for the infrastructure.
 pub struct InfraRuntime {
     async_runtime: Runtime,
-    join_set: JoinSet<()>,
     command_tx: tokio::sync::broadcast::Sender<Command>,
-    command_rx: tokio::sync::broadcast::Receiver<Command>,
     event_tx: tokio::sync::mpsc::Sender<Event>,
-    event_rx: tokio::sync::mpsc::Receiver<Event>,
+    event_rx: Option<tokio::sync::mpsc::Receiver<Event>>,
 }
 
 impl InfraRuntime {
+    /// Initialise a `InfraRuntime` environment, using the provided `tokio::Runtime`.
+    /// The needed communication channels are created using this function.
     pub fn init(runtime: Runtime) -> Self {
-        let (command_tx, command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
+        let (command_tx, _command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(EVENT_CHANNEL_CAPACITY);
 
         Self {
             async_runtime: runtime,
-            join_set: JoinSet::new(),
             command_tx,
-            command_rx,
             event_tx,
-            event_rx,
+            event_rx: Some(event_rx),
         }
     }
 
-    pub fn run_with_spec(&self, path: &Path) -> Result<(), InfraError> {
+    /// Construct nodes and channels based on a specification, and run the infrastructure
+    pub fn run_with_spec(&mut self, path: &Path) -> Result<(), InfraError> {
         let contents = read_to_string(path).map_err(|err| InfraError::InvalidSpec {
             message: err.to_string(),
         })?;
         self.run_with_spec_string(&contents)
     }
 
-    pub fn run_with_spec_string(&self, spec: &str) -> Result<(), InfraError> {
-        // 1. Read the meta info of the config, if any
-        // 2. Get a list of all the nodes
-        // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
-        // 4. Get a list of all the edges (channels)
-        // 5. Construct all edges by getting the nodes from the vec.
-        // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a JoinSet(?)
-        // 7. Wait for all tasks to finish (try_join)
+    pub fn run_with_spec_string(&mut self, spec: &str) -> Result<(), InfraError> {
+        // TODO (1. Read the meta info of the config, if any)
+
+        // We use replace here because we cannot move event_rx out of the runtime struct normally.
+        let event_rx =
+            std::mem::replace(&mut self.event_rx, None).ok_or(InfraError::CannotStartRuntime)?;
+
         self.async_runtime.block_on(async {
             let contents: toml::Table =
                 toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
                     message: err.to_string(),
                 })?;
 
-            let nodes: Vec<Box<dyn NodeData>> = if let Value::Array(array) = &contents["nodes"] {
-                array.iter().enumerate()
+            // 2. Get a list of all the nodes
+            // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
+            let mut nodes: Vec<Box<dyn NodeData>> = if let Value::Array(array) = &contents["nodes"]
+            {
+                array
+                    .iter()
+                    .enumerate()
                     .map(|(id, node)| {
                         if let Value::Table(spec) = node {
-                            match spec_to_node_data(id as u64, self.command_tx.subscribe(), self.event_tx.clone(), spec) {
-                                Ok(node) => { Ok(node) }
-                                Err(err) => { return Err(err) }
+                            match node_data_from_spec(
+                                id as u64,
+                                self.command_tx.subscribe(),
+                                self.event_tx.clone(),
+                                spec,
+                            ) {
+                                Ok(node) => Ok(node),
+                                Err(err) => return Err(err),
                             }
-                        } else { return Err(InfraError::InvalidSpec { message: format!("Invalid node spec for index {id}") }); }
+                        } else {
+                            return Err(InfraError::InvalidSpec {
+                                message: format!("Invalid node spec for index {id}"),
+                            });
+                        }
                     })
-                    .filter(Result::is_ok).map(|node| node.unwrap())
+                    .filter(Result::is_ok)
+                    .map(|node| node.expect("We did check 'is_ok()'."))
                     .collect()
-            } else { return Err(InfraError::InvalidSpec { message: "A spec file must consist of a list of nodes and a list of edges between those nodes".to_string() }) };
+            } else {
+                return Err(InfraError::InvalidSpec {
+                    message:
+                        "A spec file must contain a non-empty list of 'nodes', which is missing"
+                            .to_string(),
+                });
+            };
 
-            // TODO - have a runner return the run function/future, and then spawn using the JoinSet
-            let handles: Vec<JoinHandle<()>> = nodes.into_iter().map(|node| node.spawn_into_runner()).collect();
+            // 4. Get a list of all the edges (channels)
+            // 5. Construct all edges by getting the nodes from the vec.
+            if let Value::Array(array) = &contents["channels"] {
+                for channel in array {
+                    if let Value::Table(spec) = channel {
+                        if let Err(err) = register_channel_from_spec(spec, &mut nodes) {
+                            return Err(err);
+                        }
+                    }
+                }
+            } else {
+                return Err(InfraError::InvalidSpec {
+                    message:
+                        "A spec file must contain a non-empty list of 'channels', which is missing"
+                            .to_string(),
+                });
+            };
 
+            // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a JoinSet(?)
+            let handles = nodes
+                .into_iter()
+                .map(|node| node.spawn_into_runner())
+                .collect::<FuturesUnordered<_>>();
+
+            // Coordination: shutdown signal and error even listeners
+            handles.push(tokio::spawn(shutdown_signal(self.command_tx.clone())));
+
+            handles.push(tokio::spawn(event_listener(
+                event_rx,
+                self.command_tx.clone(),
+            )));
+            println!(
+                "Spec successfully constructed. Joining on all tasks ({}).",
+                handles.len()
+            );
+            // 7. Wait for all tasks to finish
+            let _ = futures::future::join_all(handles).await;
+            println!("Runtime terminated.");
             Ok(())
         })
     }
+}
 
-    pub fn run(&self, f: impl Future) {
-        self.async_runtime.block_on(f);
-        // self.async_runtime.block_on(async {
-        //     let mut node_one_data: Box<dyn NodeData> = Box::new(NodeOneData::new(
-        //         1,
-        //         self.command_tx.subscribe(),
-        //         self.event_tx.clone(),
-        //     ));
-        //     let mut node_two_data: Box<dyn NodeData> = Box::new(NodeTwoData::new(
-        //         2,
-        //         self.command_tx.subscribe(),
-        //         self.event_tx.clone(),
-        //     ));
-        //
-        //     // connect the nodes
-        //     let node_one_receiver = node_one_data.request_subscription();
-        //     let _ = node_two_data.register_subscription(node_one_receiver);
-        //
-        //     // connect the first node to an input channel, for testing
-        //     let (node_one_input_tx, node_one_input_rx) = tokio::sync::broadcast::channel::<u8>(10);
-        //     let dyn_tx: Box<dyn Any> = Box::new(node_one_input_rx);
-        //     let _ = node_one_data.register_subscription(dyn_tx);
-        //
-        //     // connect the last node to an output channel, for testing
-        //     let node_two_receiver = node_two_data.request_subscription();
-        //     let mut node_two_receiver = if let Ok(receiver) =
-        //         node_two_receiver.downcast::<tokio::sync::broadcast::Receiver<u16>>()
-        //     {
-        //         *receiver
-        //     } else {
-        //         panic!("Downcast error")
-        //     };
-        //
-        //     let node_one = node_one_data.spawn_into_runner();
-        //     let node_two = node_two_data.spawn_into_runner();
-        //
-        //     let mut timeout_interval = tokio::time::interval_at(
-        //         Instant::now().add(Duration::from_secs(15)),
-        //         Duration::from_secs(1),
-        //     );
-        //     let mut input_interval = tokio::time::interval_at(
-        //         Instant::now().add(Duration::from_secs(3)),
-        //         Duration::from_secs(3),
-        //     );
-        //
-        //     loop {
-        //         tokio::select! {
-        //             _ = shutdown_signal() => {
-        //                 println!("\nReceived shutdown signal from terminal");
-        //                 break;
-        //             }
-        //             _ = timeout_interval.tick() => {
-        //                 println!("Timeout, shutting down");
-        //                 break;
-        //             }
-        //             _ = input_interval.tick() => {
-        //                 match node_one_input_tx.send(123) {
-        //                     Ok(_num_receivers) => {
-        //                         println!("Sent input to NodeOne (123)");
-        //                     }
-        //                     Err(err) => {
-        //                         println!("{err}");
-        //                     }
-        //                 };
-        //                 ()
-        //             }
-        //             Ok(output) = node_two_receiver.recv() => {
-        //                 println!("NodeTwo output: {output}");
-        //             }
-        //         }
-        //     }
-        //
-        //     self.command_tx
-        //         .send(Command::Quit)
-        //         .expect("error sending kill signal");
-        //
-        //     println!("await join udp_node");
-        //     // udp_node.await.expect("error awaiting udp_node");
-        //     node_one.await.expect("error awaiting udp_node");
-        //     println!("await join filter_node");
-        //     // filter_node.await.expect("error awaiting filter_node");
-        //     node_two.await.expect("error awaiting filter_node");
-        //
-        //     println!("done!");
-        // });
+/// General task that listens to emitted `Event`s.
+///
+/// This task is responsible for outputting any errors, and cleaning up the Runtime in such a case.
+async fn event_listener(
+    mut event_rx: tokio::sync::mpsc::Receiver<Event>,
+    command_tx: tokio::sync::broadcast::Sender<Command>,
+) {
+    let mut command_rx = command_tx.subscribe();
+    loop {
+        tokio::select! {
+            Some(event) = event_rx.recv() => {
+                match event {
+                    Event::NodeError(err) => {
+                        println!("{err}");
+                        let _ = command_tx.send(Command::Quit);
+                    }
+                    Event::SendStatistics => {
+                        // TODO
+                    }
+                }
+            }
+            command = command_rx.recv() => {
+                match command {
+                    Ok(command) => {
+                        if command == Command::Quit {
+                            break;
+                        }
+                    }
+                    Err(err) => {
+                        println!("{err}");
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
-async fn shutdown_signal() {
+/// General task that is spawned to listen for `Ctrl+C` and shutdown signals from the OS.
+/// When a shutdown signal is detected, a `Command::Quit` command will be issued to all tasks listening for `Command`s.
+async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -188,6 +197,9 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+
+    println!("Shutdown signal detected, stopping");
+    let _ = cmd.send(Command::Quit);
 }
 
 /// Creates a default tokio runtime.
@@ -204,11 +216,13 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
     Ok(InfraRuntime::init(runtime))
 }
 
+/// Enum of Commands that the Runtime can send to Nodes
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     Quit,
 }
 
+/// Enum of Events that the Runtime and Nodes can emit
 #[derive(Clone)]
 pub enum Event {
     NodeError(InfraError),
