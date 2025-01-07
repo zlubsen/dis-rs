@@ -9,7 +9,7 @@ use dis_infra_core::runtime::default_runtime;
 fn main() {
     let spec = r#"
         [[ nodes ]]
-        type = "udp1"
+        type = "udp"
         name = "UDP 1"
         uri = "192.168.178.11:3000"
         interface = "192.168.178.11:3000"

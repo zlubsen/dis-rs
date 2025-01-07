@@ -58,69 +58,11 @@ impl InfraRuntime {
 
             // 2. Get a list of all the nodes
             // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
-            let mut nodes: Vec<Box<dyn NodeData>> = if let Value::Array(array) = &contents["nodes"]
-            {
-                let nodes: Vec<Result<Box<dyn NodeData>, InfraError>> = array
-                    .iter()
-                    .enumerate()
-                    .map(|(id, node)| {
-                        if let Value::Table(spec) = node {
-                            let factory = self
-                                .lookup_node_constructor(spec["type"].as_str().unwrap_or_default());
-                            println!("factory: {:?}", factory);
-                            let factory = factory?;
-                            match factory(
-                                id as u64,
-                                self.command_tx.subscribe(),
-                                self.event_tx.clone(),
-                                spec,
-                            ) {
-                                Ok(node) => Ok(node),
-                                Err(err) => Err(err),
-                            }
-                        } else {
-                            Err(InfraError::InvalidSpec {
-                                message: format!("Invalid node spec for index {id}"),
-                            })
-                        }
-                    })
-                    .collect();
-                nodes.into_iter().collect()
-                // if let Some(err) = nodes.into_iter().find(Result::is_err) {
-                //     if let Err(err) = err {
-                //         Err(err)
-                //     }
-                // } else {
-                //     nodes
-                //         .iter()
-                //         .map(|node| node.expect("We did check 'is_ok()'."))
-                //         .collect()
-                // }
-            } else {
-                return Err(InfraError::InvalidSpec {
-                    message:
-                        "A spec file must contain a non-empty list of 'nodes', which is missing"
-                            .to_string(),
-                });
-            };
+            let mut nodes: Vec<Box<dyn NodeData>> = self.construct_nodes_from_spec(&contents)?;
 
             // 4. Get a list of all the edges (channels)
             // 5. Construct all edges by getting the nodes from the vec.
-            if let Value::Array(array) = &contents["channels"] {
-                for channel in array {
-                    if let Value::Table(spec) = channel {
-                        if let Err(err) = register_channel_from_spec(spec, &mut nodes) {
-                            return Err(err);
-                        }
-                    }
-                }
-            } else {
-                return Err(InfraError::InvalidSpec {
-                    message:
-                        "A spec file must contain a non-empty list of 'channels', which is missing"
-                            .to_string(),
-                });
-            };
+            Self::register_channels_for_nodes(&contents, &mut nodes)?;
 
             // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a JoinSet(?)
             let handles = nodes
@@ -135,19 +77,15 @@ impl InfraRuntime {
                 self.event_tx.subscribe(),
                 self.command_tx.clone(),
             )));
-            println!(
-                "Spec successfully constructed. Joining on all tasks ({}).",
-                handles.len()
-            );
+
             // 7. Wait for all tasks to finish
             let _ = futures::future::join_all(handles).await;
-            println!("Runtime terminated.");
+
             Ok(())
         })
     }
 
     fn lookup_node_constructor(&self, node_type: &str) -> Result<NodeConstructor, InfraError> {
-        println!("lookup constructor for '{node_type}'");
         self.node_factories
             .iter()
             .find(|&&tup| tup.0 == node_type)
@@ -155,6 +93,68 @@ impl InfraRuntime {
                 message: format!("Node type {node_type} is not known."),
             })
             .map(|tup| tup.1)
+    }
+
+    fn construct_nodes_from_spec(
+        &self,
+        contents: &toml::Table,
+    ) -> Result<Vec<Box<dyn NodeData>>, InfraError> {
+        if let Value::Array(array) = &contents["nodes"] {
+            let nodes: Vec<Result<Box<dyn NodeData>, InfraError>> = array
+                .iter()
+                .enumerate()
+                .map(|(id, node)| {
+                    if let Value::Table(spec) = node {
+                        let factory =
+                            self.lookup_node_constructor(spec["type"].as_str().unwrap_or_default());
+
+                        let factory = factory?;
+                        match factory(
+                            id as u64,
+                            self.command_tx.subscribe(),
+                            self.event_tx.clone(),
+                            spec,
+                        ) {
+                            Ok(node) => Ok(node),
+                            Err(err) => Err(err),
+                        }
+                    } else {
+                        Err(InfraError::InvalidSpec {
+                            message: format!("Invalid node spec for index {id}"),
+                        })
+                    }
+                })
+                .collect();
+            let nodes: Result<Vec<Box<dyn NodeData>>, InfraError> = nodes.into_iter().collect();
+            nodes
+        } else {
+            Err(InfraError::InvalidSpec {
+                message: "A spec file must contain a non-empty list of 'nodes', which is missing"
+                    .to_string(),
+            })
+        }
+    }
+
+    fn register_channels_for_nodes(
+        contents: &toml::Table,
+        nodes: &mut Vec<Box<dyn NodeData>>,
+    ) -> Result<(), InfraError> {
+        if let Value::Array(array) = &contents["channels"] {
+            for channel in array {
+                if let Value::Table(spec) = channel {
+                    if let Err(err) = register_channel_from_spec(spec, nodes) {
+                        return Err(err);
+                    }
+                }
+            }
+        } else {
+            return Err(InfraError::InvalidSpec {
+                message:
+                    "A spec file must contain a non-empty list of 'channels', which is missing"
+                        .to_string(),
+            });
+        };
+        Ok(())
     }
 }
 
@@ -221,7 +221,6 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
         _ = terminate => {},
     }
 
-    println!("Shutdown signal detected, stopping.");
     let _ = cmd.send(Command::Quit);
 }
 

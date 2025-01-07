@@ -29,13 +29,13 @@ pub fn node_data_from_spec(
             message: "Node specification does not contain the 'type' of the node.".to_string(),
         });
     }
-    println!("creating node for {:?}", &spec["type"].as_str());
+
     match &spec["type"] {
         Value::String(value) => match value.as_str() {
             "udp" => {
                 let spec: network::UdpNodeSpec = toml::from_str(&spec.to_string()).unwrap();
                 let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
-                println!("constructed an UDP node");
+
                 Ok(node)
             }
             "dis" => Err(InfraError::InvalidSpec {
