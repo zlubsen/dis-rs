@@ -4,12 +4,13 @@ use std::any::Any;
 use tokio::task::JoinHandle;
 
 pub type InstanceId = u64;
+pub type GenericNode = Box<dyn NodeData>;
 pub type NodeConstructor = fn(
     u64,
     tokio::sync::broadcast::Receiver<Command>,
     tokio::sync::broadcast::Sender<Event>,
     &toml::Table,
-) -> Result<Box<dyn NodeData>, InfraError>;
+) -> Result<GenericNode, InfraError>;
 
 pub trait NodeData
 where

@@ -1,4 +1,4 @@
-use crate::core::{NodeConstructor, NodeData};
+use crate::core::{GenericNode, NodeConstructor, NodeData};
 use crate::error::InfraError;
 use crate::infra::{builtin_nodes, register_channel_from_spec};
 use futures::stream::FuturesUnordered;
@@ -58,7 +58,7 @@ impl InfraRuntime {
 
             // 2. Get a list of all the nodes
             // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
-            let mut nodes: Vec<Box<dyn NodeData>> = self.construct_nodes_from_spec(&contents)?;
+            let mut nodes: Vec<GenericNode> = self.construct_nodes_from_spec(&contents)?;
 
             // 4. Get a list of all the edges (channels)
             // 5. Construct all edges by getting the nodes from the vec.
@@ -98,9 +98,9 @@ impl InfraRuntime {
     fn construct_nodes_from_spec(
         &self,
         contents: &toml::Table,
-    ) -> Result<Vec<Box<dyn NodeData>>, InfraError> {
+    ) -> Result<Vec<GenericNode>, InfraError> {
         if let Value::Array(array) = &contents["nodes"] {
-            let nodes: Vec<Result<Box<dyn NodeData>, InfraError>> = array
+            let nodes: Vec<Result<GenericNode, InfraError>> = array
                 .iter()
                 .enumerate()
                 .map(|(id, node)| {
@@ -125,7 +125,7 @@ impl InfraRuntime {
                     }
                 })
                 .collect();
-            let nodes: Result<Vec<Box<dyn NodeData>>, InfraError> = nodes.into_iter().collect();
+            let nodes: Result<Vec<GenericNode>, InfraError> = nodes.into_iter().collect();
             nodes
         } else {
             Err(InfraError::InvalidSpec {
@@ -137,7 +137,7 @@ impl InfraRuntime {
 
     fn register_channels_for_nodes(
         contents: &toml::Table,
-        nodes: &mut Vec<Box<dyn NodeData>>,
+        nodes: &mut Vec<GenericNode>,
     ) -> Result<(), InfraError> {
         if let Value::Array(array) = &contents["channels"] {
             for channel in array {

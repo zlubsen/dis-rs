@@ -1,4 +1,4 @@
-use crate::core::{NodeConstructor, NodeData};
+use crate::core::{GenericNode, NodeConstructor, NodeData};
 use crate::error::InfraError;
 use crate::infra::network::UdpNodeData;
 use crate::runtime::{Command, Event};
@@ -23,7 +23,7 @@ pub fn node_data_from_spec(
     cmd_rx: tokio::sync::broadcast::Receiver<Command>,
     event_tx: tokio::sync::broadcast::Sender<Event>,
     spec: &toml::Table,
-) -> Result<Box<dyn NodeData>, InfraError> {
+) -> Result<GenericNode, InfraError> {
     if !spec.contains_key("type") {
         return Err(InfraError::InvalidSpec {
             message: "Node specification does not contain the 'type' of the node.".to_string(),
@@ -54,9 +54,10 @@ pub fn node_data_from_spec(
     }
 }
 
+/// Reads a 'channel' part of a spec (in TOML), checks
 pub fn register_channel_from_spec(
     spec: &toml::Table,
-    nodes: &mut Vec<Box<dyn NodeData>>,
+    nodes: &mut Vec<GenericNode>,
 ) -> Result<(), InfraError> {
     let from = spec
         .get("from")
