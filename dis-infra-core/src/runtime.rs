@@ -1,6 +1,6 @@
-use crate::core::NodeData;
+use crate::core::{NodeConstructor, NodeData};
 use crate::error::InfraError;
-use crate::infra::{node_data_from_spec, register_channel_from_spec};
+use crate::infra::{builtin_nodes, register_channel_from_spec};
 use futures::stream::FuturesUnordered;
 use std::fs::read_to_string;
 use std::future::Future;
@@ -17,8 +17,8 @@ const EVENT_CHANNEL_CAPACITY: usize = 50;
 pub struct InfraRuntime {
     async_runtime: Runtime,
     command_tx: tokio::sync::broadcast::Sender<Command>,
-    event_tx: tokio::sync::mpsc::Sender<Event>,
-    event_rx: Option<tokio::sync::mpsc::Receiver<Event>>,
+    event_tx: tokio::sync::broadcast::Sender<Event>,
+    node_factories: Vec<(&'static str, NodeConstructor)>,
 }
 
 impl InfraRuntime {
@@ -26,13 +26,16 @@ impl InfraRuntime {
     /// The needed communication channels are created using this function.
     pub fn init(runtime: Runtime) -> Self {
         let (command_tx, _command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
-        let (event_tx, event_rx) = tokio::sync::mpsc::channel(EVENT_CHANNEL_CAPACITY);
+        let (event_tx, _event_rx) = tokio::sync::broadcast::channel(EVENT_CHANNEL_CAPACITY);
+
+        let mut node_factory = Vec::new();
+        node_factory.extend(builtin_nodes());
 
         Self {
             async_runtime: runtime,
             command_tx,
             event_tx,
-            event_rx: Some(event_rx),
+            node_factories: node_factory,
         }
     }
 
@@ -47,10 +50,6 @@ impl InfraRuntime {
     pub fn run_with_spec_string(&mut self, spec: &str) -> Result<(), InfraError> {
         // TODO (1. Read the meta info of the config, if any)
 
-        // We use replace here because we cannot move event_rx out of the runtime struct normally.
-        let event_rx =
-            std::mem::replace(&mut self.event_rx, None).ok_or(InfraError::CannotStartRuntime)?;
-
         self.async_runtime.block_on(async {
             let contents: toml::Table =
                 toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
@@ -61,29 +60,42 @@ impl InfraRuntime {
             // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
             let mut nodes: Vec<Box<dyn NodeData>> = if let Value::Array(array) = &contents["nodes"]
             {
-                array
+                let nodes: Vec<Result<Box<dyn NodeData>, InfraError>> = array
                     .iter()
                     .enumerate()
                     .map(|(id, node)| {
                         if let Value::Table(spec) = node {
-                            match node_data_from_spec(
+                            let factory = self
+                                .lookup_node_constructor(spec["type"].as_str().unwrap_or_default());
+                            println!("factory: {:?}", factory);
+                            let factory = factory?;
+                            match factory(
                                 id as u64,
                                 self.command_tx.subscribe(),
                                 self.event_tx.clone(),
                                 spec,
                             ) {
                                 Ok(node) => Ok(node),
-                                Err(err) => return Err(err),
+                                Err(err) => Err(err),
                             }
                         } else {
-                            return Err(InfraError::InvalidSpec {
+                            Err(InfraError::InvalidSpec {
                                 message: format!("Invalid node spec for index {id}"),
-                            });
+                            })
                         }
                     })
-                    .filter(Result::is_ok)
-                    .map(|node| node.expect("We did check 'is_ok()'."))
-                    .collect()
+                    .collect();
+                nodes.into_iter().collect()
+                // if let Some(err) = nodes.into_iter().find(Result::is_err) {
+                //     if let Err(err) = err {
+                //         Err(err)
+                //     }
+                // } else {
+                //     nodes
+                //         .iter()
+                //         .map(|node| node.expect("We did check 'is_ok()'."))
+                //         .collect()
+                // }
             } else {
                 return Err(InfraError::InvalidSpec {
                     message:
@@ -120,7 +132,7 @@ impl InfraRuntime {
             handles.push(tokio::spawn(shutdown_signal(self.command_tx.clone())));
 
             handles.push(tokio::spawn(event_listener(
-                event_rx,
+                self.event_tx.subscribe(),
                 self.command_tx.clone(),
             )));
             println!(
@@ -133,19 +145,30 @@ impl InfraRuntime {
             Ok(())
         })
     }
+
+    fn lookup_node_constructor(&self, node_type: &str) -> Result<NodeConstructor, InfraError> {
+        println!("lookup constructor for '{node_type}'");
+        self.node_factories
+            .iter()
+            .find(|&&tup| tup.0 == node_type)
+            .ok_or(InfraError::InvalidSpec {
+                message: format!("Node type {node_type} is not known."),
+            })
+            .map(|tup| tup.1)
+    }
 }
 
 /// General task that listens to emitted `Event`s.
 ///
 /// This task is responsible for outputting any errors, and cleaning up the Runtime in such a case.
 async fn event_listener(
-    mut event_rx: tokio::sync::mpsc::Receiver<Event>,
+    mut event_rx: tokio::sync::broadcast::Receiver<Event>,
     command_tx: tokio::sync::broadcast::Sender<Command>,
 ) {
     let mut command_rx = command_tx.subscribe();
     loop {
         tokio::select! {
-            Some(event) = event_rx.recv() => {
+            Ok(event) = event_rx.recv() => {
                 match event {
                     Event::NodeError(err) => {
                         println!("{err}");
@@ -198,7 +221,7 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
         _ = terminate => {},
     }
 
-    println!("Shutdown signal detected, stopping");
+    println!("Shutdown signal detected, stopping.");
     let _ = cmd.send(Command::Quit);
 }
 

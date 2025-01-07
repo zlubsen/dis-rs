@@ -4,6 +4,12 @@ use std::any::Any;
 use tokio::task::JoinHandle;
 
 pub type InstanceId = u64;
+pub type NodeConstructor = fn(
+    u64,
+    tokio::sync::broadcast::Receiver<Command>,
+    tokio::sync::broadcast::Sender<Event>,
+    &toml::Table,
+) -> Result<Box<dyn NodeData>, InfraError>;
 
 pub trait NodeData
 where
@@ -37,7 +43,7 @@ pub(crate) struct BaseNode {
     pub(crate) instance_id: InstanceId,
     pub(crate) name: String,
     pub(crate) cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-    pub(crate) event_tx: tokio::sync::mpsc::Sender<Event>,
+    pub(crate) event_tx: tokio::sync::broadcast::Sender<Event>,
 }
 
 impl BaseNode {
@@ -45,7 +51,7 @@ impl BaseNode {
         instance_id: u64,
         name: String,
         cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-        event_tx: tokio::sync::mpsc::Sender<Event>,
+        event_tx: tokio::sync::broadcast::Sender<Event>,
     ) -> Self {
         Self {
             instance_id,

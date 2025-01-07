@@ -1,17 +1,27 @@
-use crate::core::NodeData;
+use crate::core::{NodeConstructor, NodeData};
 use crate::error::InfraError;
 use crate::infra::network::UdpNodeData;
 use crate::runtime::{Command, Event};
-use tokio::sync::broadcast::Receiver;
 use toml::Value;
 
 const NODE_CHANNEL_CAPACITY: usize = 50;
 const SOCKET_BUFFER_CAPACITY: usize = 32_768;
 
+pub fn builtin_nodes() -> Vec<(&'static str, NodeConstructor)> {
+    let udp_func_ptr: NodeConstructor = node_data_from_spec;
+
+    let mut items = Vec::new();
+    let mod_udp = ("udp", udp_func_ptr);
+    let mod_dis = ("dis", udp_func_ptr); // FIXME actual function
+    items.push(mod_udp);
+    items.push(mod_dis);
+    items
+}
+
 pub fn node_data_from_spec(
     instance_id: u64,
-    cmd_rx: Receiver<Command>,
-    event_tx: tokio::sync::mpsc::Sender<Event>,
+    cmd_rx: tokio::sync::broadcast::Receiver<Command>,
+    event_tx: tokio::sync::broadcast::Sender<Event>,
     spec: &toml::Table,
 ) -> Result<Box<dyn NodeData>, InfraError> {
     if !spec.contains_key("type") {
@@ -19,12 +29,13 @@ pub fn node_data_from_spec(
             message: "Node specification does not contain the 'type' of the node.".to_string(),
         });
     }
-
+    println!("creating node for {:?}", &spec["type"].as_str());
     match &spec["type"] {
         Value::String(value) => match value.as_str() {
             "udp" => {
                 let spec: network::UdpNodeSpec = toml::from_str(&spec.to_string()).unwrap();
                 let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
+                println!("constructed an UDP node");
                 Ok(node)
             }
             "dis" => Err(InfraError::InvalidSpec {
@@ -70,14 +81,18 @@ pub fn register_channel_from_spec(
         .iter()
         .find(|node| node.name() == from)
         .ok_or(InfraError::InvalidSpec {
-            message: format!("Invalid channel spec, no node with name '{from}' is defined."),
+            message: format!(
+                "Invalid channel spec, no correct (from) node with name '{from}' is defined."
+            ),
         })?
         .id();
     let to_id = nodes
         .iter()
         .find(|node| node.name() == to)
         .ok_or(InfraError::InvalidSpec {
-            message: format!("Invalid channel spec, no node with name '{to}' is defined."),
+            message: format!(
+                "Invalid channel spec, no correct (to) node with name '{to}' is defined."
+            ),
         })?
         .id();
 
@@ -102,7 +117,7 @@ pub mod network {
     use tokio::net::UdpSocket;
     use tokio::select;
     use tokio::sync::broadcast::error::RecvError;
-    use tokio::sync::broadcast::{Receiver, Sender};
+    use tokio::sync::broadcast::{channel, Receiver, Sender};
     use tokio::task::JoinHandle;
     use tracing::error;
 
@@ -201,10 +216,10 @@ pub mod network {
         pub fn new(
             instance_id: u64,
             cmd_rx: Receiver<Command>,
-            event_tx: tokio::sync::mpsc::Sender<Event>,
+            event_tx: Sender<Event>,
             node_spec: &UdpNodeSpec,
         ) -> Result<Self, InfraError> {
-            let (out_tx, _out_rx) = tokio::sync::broadcast::channel(NODE_CHANNEL_CAPACITY);
+            let (out_tx, _out_rx) = channel(NODE_CHANNEL_CAPACITY);
 
             let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
             buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
@@ -344,16 +359,12 @@ pub mod network {
                     UdpNodeEvent::ReceivedPacket(bytes) => {
                         if let Ok(_num_receivers) = self.data.outgoing.send(bytes) {
                         } else {
-                            if let Err(err) = self
-                                .data
-                                .base
-                                .event_tx
-                                .send(Event::NodeError(InfraError::RuntimeNode {
+                            if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
+                                InfraError::RuntimeNode {
                                     instance_id: self.data.base.instance_id,
                                     message: "Outgoing channel send failed".to_string(),
-                                }))
-                                .await
-                            {
+                                },
+                            )) {
                                 error!("{err}");
                                 break;
                             }
@@ -364,16 +375,12 @@ pub mod network {
                         match self.socket.send_to(&incoming_data, self.data.address).await {
                             Ok(_bytes_send) => {}
                             Err(err) => {
-                                if let Err(err) = self
-                                    .data
-                                    .base
-                                    .event_tx
-                                    .send(Event::NodeError(InfraError::RuntimeNode {
+                                if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
+                                    InfraError::RuntimeNode {
                                         instance_id: self.data.base.instance_id,
                                         message: err.to_string(),
-                                    }))
-                                    .await
-                                {
+                                    },
+                                )) {
                                     error!("{err}");
                                     break;
                                 }
@@ -381,16 +388,12 @@ pub mod network {
                         }
                     }
                     UdpNodeEvent::SocketError(err) => {
-                        if let Err(err) = self
-                            .data
-                            .base
-                            .event_tx
-                            .send(Event::NodeError(InfraError::RuntimeNode {
+                        if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
+                            InfraError::RuntimeNode {
                                 instance_id: self.data.base.instance_id,
                                 message: err.to_string(),
-                            }))
-                            .await
-                        {
+                            },
+                        )) {
                             error!("{err}");
                             break;
                         }
@@ -574,8 +577,9 @@ pub mod dis {
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct DisNodeSpec {
-        exercise_id: u8,
-        dis_version: u8,
+        exercise_id: Option<u8>,
+        dis_version: Option<u8>,
+        // add DIS federation parameters
     }
 
     #[derive(Debug)]
