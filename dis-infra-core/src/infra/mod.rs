@@ -1,40 +1,3 @@
-// pub fn node_data_from_spec(
-//     instance_id: u64,
-//     cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-//     event_tx: tokio::sync::broadcast::Sender<Event>,
-//     type_value: &str,
-//     spec: &toml::Table,
-// ) -> Result<GenericNode, InfraError> {
-//     if !spec.contains_key("type") {
-//         return Err(InfraError::InvalidSpec {
-//             message: "Node specification does not contain the 'type' of the node.".to_string(),
-//         });
-//     }
-//
-//     match &spec["type"] {
-//         Value::String(value) => match value.as_str() {
-//             "udp" => {
-//                 let spec: network::UdpNodeSpec = toml::from_str(&spec.to_string()).unwrap();
-//                 let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
-//
-//                 Ok(node)
-//             }
-//             "dis" => Err(InfraError::InvalidSpec {
-//                 message: "Unimplemented".to_string(),
-//             }),
-//             unknown_value => Err(InfraError::InvalidSpec {
-//                 message: format!("Node type is not known '{unknown_value}'"),
-//             }),
-//         },
-//         invalid_value => Err(InfraError::InvalidSpec {
-//             message: format!(
-//                 "Node type is of an invalid data type ('{}')",
-//                 invalid_value.to_string()
-//             ),
-//         }),
-//     }
-// }
-
 pub mod network {
     use crate::core::{
         BaseNode, NodeConstructor, NodeData, NodeRunner, UntypedNode, DEFAULT_NODE_CHANNEL_CAPACITY,
@@ -400,8 +363,10 @@ pub mod network {
                 UdpNodeEvent::ReceivedPacket(bytes) => {
                     self.statistics.total.packets_socket_in += 1;
                     self.statistics.total.bytes_socket_in += bytes.len() as u64;
+                    self.statistics.total.bytes_out += bytes.len() as u64;
                     self.statistics.running_interval.packets_socket_in += 1;
                     self.statistics.running_interval.bytes_socket_in += bytes.len() as u64;
+                    self.statistics.running_interval.bytes_out += bytes.len() as u64;
                     self.statistics.total.messages_out += 1;
                     self.statistics.running_interval.messages_out += 1;
                 }
@@ -412,8 +377,10 @@ pub mod network {
                 UdpNodeEvent::ReceivedIncoming(bytes) => {
                     self.statistics.total.packets_socket_out += 1;
                     self.statistics.total.bytes_socket_out += bytes.len() as u64;
+                    self.statistics.total.bytes_in += bytes.len() as u64;
                     self.statistics.running_interval.packets_socket_out += 1;
                     self.statistics.running_interval.bytes_socket_out += bytes.len() as u64;
+                    self.statistics.running_interval.bytes_in += bytes.len() as u64;
                     self.statistics.total.messages_in += 1;
                     self.statistics.running_interval.messages_in += 1;
                 }
