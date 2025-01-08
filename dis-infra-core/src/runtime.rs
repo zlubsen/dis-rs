@@ -5,6 +5,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
+use tracing::trace;
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
 const EVENT_CHANNEL_CAPACITY: usize = 50;
@@ -150,6 +151,7 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
         _ = terminate => {},
     }
 
+    trace!("Shutdown signal detected, stopping the infrastructure.");
     let _ = cmd.send(Command::Quit);
 }
 

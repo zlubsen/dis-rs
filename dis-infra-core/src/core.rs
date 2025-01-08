@@ -1,9 +1,10 @@
 use crate::error::InfraError;
-use crate::infra::{dis, network};
+use crate::infra::{dis, network, util};
 use crate::runtime::{Command, Event};
 use std::any::Any;
 use tokio::task::JoinHandle;
 use toml::Value;
+use tracing::trace;
 
 pub type InstanceId = u64;
 pub type UntypedNode = Box<dyn NodeData>;
@@ -87,12 +88,44 @@ impl BaseNode {
     }
 }
 
+#[derive(Copy, Clone, Default, Debug)]
+pub struct BaseStatistics {
+    total: BaseStatisticsItems,
+    running_interval: BaseStatisticsItems,
+    latest_interval: BaseStatisticsItems,
+}
+
+impl BaseStatistics {
+    pub fn incoming_message(&mut self) {
+        self.total.messages_in += 1;
+        self.running_interval.messages_in += 1;
+    }
+
+    pub fn outgoing_message(&mut self) {
+        self.total.messages_out += 1;
+        self.running_interval.messages_out += 1;
+    }
+
+    pub fn aggregate_interval(&mut self) {
+        self.latest_interval = self.running_interval;
+        self.running_interval = Default::default();
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+struct BaseStatisticsItems {
+    messages_in: u64,
+    messages_out: u64,
+}
+
 /// Returns an inventory of all builtin Node types and their constructors,
 /// as a tuple consisting of the node type attribute and function pointer.
 pub(crate) fn builtin_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let mut items = Vec::new();
+    let mod_util = util::available_nodes();
     let mod_network = network::available_nodes();
     let mod_dis = dis::available_nodes();
+    items.extend(mod_util);
     items.extend(mod_network);
     items.extend(mod_dis);
     items
@@ -162,7 +195,10 @@ pub(crate) fn construct_nodes_from_spec(
                         &node_type_value,
                         spec,
                     ) {
-                        Ok(node) => Ok(node),
+                        Ok(node) => {
+                            trace!("Created node '{}' with id {} ", node.name(), node.id());
+                            Ok(node)
+                        }
                         Err(err) => Err(err),
                     }
                 } else {
@@ -228,7 +264,7 @@ pub(crate) fn register_channel_from_spec(
             ),
         })?;
     let to = spec
-        .get("to")
+        .get(SPEC_CHANNEL_TO_FIELD)
         .ok_or(InfraError::InvalidSpec {
             message: format!("Channel spec misses field '{}'.", SPEC_CHANNEL_TO_FIELD),
         })?
