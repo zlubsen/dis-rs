@@ -15,7 +15,7 @@ fn main() {
         // set logging level using environment variable; defaults to ERROR
         .with_env_filter(
             EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
+                .with_default_directive(LevelFilter::TRACE.into())
                 .from_env_lossy(),
         )
         // sets this to be the default, global collector for this application.

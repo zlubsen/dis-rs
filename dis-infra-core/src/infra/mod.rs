@@ -1,12 +1,14 @@
 pub mod util {
     use crate::core::{
-        BaseNode, BaseStatistics, NodeConstructor, NodeData, NodeRunner, UntypedNode,
-        DEFAULT_NODE_CHANNEL_CAPACITY,
+        BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner, UntypedNode,
+        DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+        DEFAULT_OUTPUT_STATS_INTERVAL_MS,
     };
     use crate::error::InfraError;
     use crate::runtime::{Command, Event};
     use bytes::Bytes;
     use std::any::Any;
+    use std::time::Duration;
     use tokio::sync::broadcast::{channel, Receiver, Sender};
     use tokio::task::JoinHandle;
 
@@ -21,7 +23,7 @@ pub mod util {
     }
 
     pub fn node_from_spec(
-        instance_id: u64,
+        instance_id: InstanceId,
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         type_value: &str,
@@ -59,7 +61,7 @@ pub mod util {
 
     impl PassThroughNodeData {
         pub fn new(
-            instance_id: u64,
+            instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
             node_name: &str,
@@ -96,7 +98,7 @@ pub mod util {
             }
         }
 
-        fn id(&self) -> u64 {
+        fn id(&self) -> InstanceId {
             self.base.instance_id
         }
 
@@ -128,6 +130,12 @@ pub mod util {
 
         async fn run(&mut self) {
             loop {
+                let mut aggregate_stats_interval = tokio::time::interval(Duration::from_millis(
+                    DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+                ));
+                let mut output_stats_interval =
+                    tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+
                 tokio::select! {
                     // receiving commands
                     Ok(cmd) = self.data.base.cmd_rx.recv() => {
@@ -145,6 +153,12 @@ pub mod util {
                             None => {}
                         }
                     } => { }
+                    _ = aggregate_stats_interval.tick() => {
+                        self.statistics.aggregate_interval();
+                    }
+                    _ = output_stats_interval.tick() => {
+                        // TODO
+                    }
                 }
             }
         }
@@ -159,8 +173,9 @@ pub mod util {
 
 pub mod network {
     use crate::core::{
-        BaseNode, BaseStatistics, NodeConstructor, NodeData, NodeRunner, UntypedNode,
-        DEFAULT_NODE_CHANNEL_CAPACITY,
+        BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner, UntypedNode,
+        DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+        DEFAULT_OUTPUT_STATS_INTERVAL_MS,
     };
     use crate::error::InfraError;
     use crate::runtime::{Command, Event};
@@ -179,8 +194,6 @@ pub mod network {
 
     const DEFAULT_TTL: u32 = 1;
     const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
-    const DEFAULT_AGGREGATE_STATS_INTERVAL_MS: u64 = 1000;
-    const DEFAULT_OUTPUT_STATS_INTERVAL_MS: u64 = 1000;
     const DEFAULT_OWN_ADDRESS: SocketAddr =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
 
@@ -198,7 +211,7 @@ pub mod network {
     }
 
     pub fn node_from_spec(
-        instance_id: u64,
+        instance_id: InstanceId,
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         type_value: &str,
@@ -308,7 +321,7 @@ pub mod network {
 
     impl UdpNodeData {
         pub fn new(
-            instance_id: u64,
+            instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
             node_spec: &UdpNodeSpec,
@@ -378,7 +391,7 @@ pub mod network {
             }
         }
 
-        fn id(&self) -> u64 {
+        fn id(&self) -> InstanceId {
             self.base.instance_id
         }
 
@@ -437,7 +450,7 @@ pub mod network {
                     // receiving from the socket
                     Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.data.buffer) => {
                         if self.data.block_own_socket && (local_address == from_address) {
-                            UdpNodeEvent::BlockedPacket(bytes_received);
+                            UdpNodeEvent::BlockedPacket(bytes_received)
                         } else {
                             Bytes::copy_from_slice(&self.data.buffer[..bytes_received]);
                             UdpNodeEvent::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]))
@@ -674,30 +687,223 @@ pub mod network {
 }
 
 pub mod dis {
-    use crate::core::{BaseNode, NodeConstructor};
+    use crate::core::{
+        BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner, UntypedNode,
+        DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+        DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    };
+    use crate::error::InfraError;
+    use crate::runtime::{Command, Event};
+    use bytes::Bytes;
+    use dis_rs::enumerations::ProtocolVersion;
+    use dis_rs::model::Pdu;
     use serde_derive::{Deserialize, Serialize};
+    use std::any::Any;
+    use std::time::Duration;
+    use tokio::sync::broadcast::{channel, Receiver, Sender};
+    use tokio::task::JoinHandle;
+    use tracing::trace;
+
+    const SPEC_DIS_RECEIVER_NODE_TYPE: &str = "dis_receiver";
+    const SPEC_DIS_SENDER_NODE_TYPE: &str = "dis_sender";
+
+    const DEFAULT_DIS_RECEIVE_VERSIONS: [ProtocolVersion; 2] = [
+        ProtocolVersion::IEEE1278_1A1998,
+        ProtocolVersion::IEEE1278_12012,
+    ];
+    const DEFAULT_DIS_SEND_VERSION: ProtocolVersion = ProtocolVersion::IEEE1278_12012;
 
     pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
-        // let dis_nodes_constructor: NodeConstructor = node_from_spec;
+        let dis_nodes_constructor: NodeConstructor = node_from_spec;
 
         let mut items = Vec::new();
-        // items.push(("dis", dis_nodes_constructor));
+        items.push((SPEC_DIS_RECEIVER_NODE_TYPE, dis_nodes_constructor));
+        items.push((SPEC_DIS_SENDER_NODE_TYPE, dis_nodes_constructor));
         items
     }
 
+    pub fn node_from_spec(
+        instance_id: InstanceId,
+        cmd_rx: Receiver<Command>,
+        event_tx: Sender<Event>,
+        type_value: &str,
+        spec: &toml::Table,
+    ) -> Result<UntypedNode, InfraError> {
+        match type_value {
+            SPEC_DIS_RECEIVER_NODE_TYPE => {
+                let spec: DisRxNodeSpec =
+                    toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                        message: err.to_string(),
+                    })?;
+
+                let node = DisRxNodeData::new(instance_id, cmd_rx, event_tx, &spec).to_dyn();
+
+                Ok(node)
+            }
+            // TODO
+            // SPEC_DIS_SENDER_NODE_TYPE => {
+            //     let spec: DisTxNodeSpec = toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+            //         message: err.to_string(),
+            //     })?;
+            //     let node = DisTxNodeData::new(instance_id, cmd_rx, event_tx, &spec).to_dyn();
+            //     Ok(node)
+            // }
+            unknown_value => Err(InfraError::InvalidSpec {
+                message: format!("Unknown node type '{unknown_value}' for module 'dis'"),
+            }),
+        }
+    }
+
     #[derive(Debug, Serialize, Deserialize)]
-    pub struct DisNodeSpec {
+    pub struct DisRxNodeSpec {
+        name: String,
         exercise_id: Option<u8>,
-        dis_version: Option<u8>,
+        allow_dis_versions: Option<Vec<u8>>,
         // add DIS federation parameters
     }
 
     #[derive(Debug)]
-    pub struct DisNodeData {
-        base_node: BaseNode,
+    pub struct DisRxNodeData {
+        base: BaseNode,
+        exercise_id: Option<u8>,
+        allow_dis_versions: Vec<ProtocolVersion>,
+        incoming: Option<Receiver<Bytes>>,
+        outgoing: Sender<Pdu>,
     }
 
-    pub struct DisNodeRunner {
-        data: DisNodeData,
+    pub struct DisRxNodeRunner {
+        data: DisRxNodeData,
+        statistics: DisStatistics,
+    }
+
+    #[derive(Copy, Clone, Debug, Default)]
+    pub struct DisStatistics {
+        base: BaseStatistics,
+    }
+
+    impl DisRxNodeData {
+        pub fn new(
+            instance_id: InstanceId,
+            cmd_rx: Receiver<Command>,
+            event_tx: Sender<Event>,
+            node_spec: &DisRxNodeSpec,
+        ) -> Self {
+            let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+            let allow_dis_versions = node_spec
+                .allow_dis_versions
+                .clone()
+                .map(|versions| {
+                    versions
+                        .iter()
+                        .map(|&version| ProtocolVersion::from(version))
+                        .collect()
+                })
+                .unwrap_or(dis_rs::supported_protocol_versions());
+
+            Self {
+                base: BaseNode {
+                    instance_id,
+                    name: node_spec.name.clone(),
+                    cmd_rx,
+                    event_tx,
+                },
+                exercise_id: node_spec.exercise_id,
+                allow_dis_versions,
+                incoming: None,
+                outgoing: out_tx,
+            }
+        }
+    }
+
+    impl NodeData for DisRxNodeData {
+        fn request_subscription(&self) -> Box<dyn Any> {
+            let client = self.outgoing.subscribe();
+            Box::new(client)
+        }
+
+        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
+            if let Ok(receiver) = receiver.downcast::<Receiver<Bytes>>() {
+                self.incoming = Some(*receiver);
+                Ok(())
+            } else {
+                Err(InfraError::SubscribeToChannel {
+                    instance_id: self.base.instance_id,
+                })
+            }
+        }
+
+        fn id(&self) -> InstanceId {
+            self.base.instance_id
+        }
+
+        fn name(&self) -> &str {
+            self.base.name.as_str()
+        }
+
+        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+            DisRxNodeRunner::spawn_with_data(*self)
+        }
+    }
+
+    impl NodeRunner for DisRxNodeRunner {
+        type Data = DisRxNodeData;
+
+        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+            let mut node_runner = Self {
+                data,
+                statistics: DisStatistics::default(),
+            };
+
+            tokio::spawn(async move { node_runner.run().await })
+        }
+
+        async fn run(&mut self) {
+            loop {
+                let mut aggregate_stats_interval = tokio::time::interval(Duration::from_millis(
+                    DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+                ));
+                let mut output_stats_interval =
+                    tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+
+                tokio::select! {
+                    // receiving commands
+                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                        if cmd == Command::Quit { break; }
+                    }
+                    // receiving from the incoming channel, parse into PDU
+                    _ = async {
+                        match &mut self.data.incoming {
+                            Some(channel) => match channel.recv().await {
+                                Ok(packet) => {
+                                    let pdus = match dis_rs::parse(&packet) {
+                                        Ok(vec) => { vec }
+                                        Err(err) => {
+                                            trace!("DIS parse error: {err}");
+                                            vec![]
+                                        }
+                                    };
+                                    pdus.into_iter()
+                                        .filter(|pdu| self.data.allow_dis_versions.contains(&pdu.header.protocol_version))
+                                        .filter(|pdu| self.data.exercise_id.is_none() || self.data.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
+                                        .for_each(|pdu| {
+                                            let _send_result = self.data.outgoing.send(pdu);
+                                            self.statistics.base.incoming_message();
+                                        });
+                                }
+                                Err(_err) => {}
+                            },
+                            None => {}
+                        }
+                    } => { }
+                    // aggregate statistics for the interval
+                    _ = aggregate_stats_interval.tick() => {
+                        self.statistics.base.aggregate_interval();
+                    }
+                    // output current state of the stats
+                    _ = output_stats_interval.tick() => {
+                    }
+                }
+            }
+        }
     }
 }

@@ -81,6 +81,14 @@ impl From<ProtocolVersion> for SupportedVersion {
     }
 }
 
+/// Returns a `Vec` of all `ProtocolVersion`s supported by the crate.
+pub fn supported_protocol_versions() -> Vec<ProtocolVersion> {
+    vec![
+        ProtocolVersion::IEEE1278_1A1998,
+        ProtocolVersion::IEEE1278_12012,
+    ]
+}
+
 /// Trait for PduBody-s to query basic information, typically used in the header
 pub trait BodyInfo {
     fn body_length(&self) -> u16;

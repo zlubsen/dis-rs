@@ -22,6 +22,7 @@ pub use common::entity_state::parser::dr_other_parameters as parse_dr_other_para
 pub use common::parse;
 pub use common::parse_v6 as parse_v6_pdus;
 pub use common::parse_v7 as parse_v7_pdus;
+pub use common::supported_protocol_versions;
 pub use common::Serialize;
 pub use v7::entity_state::entity_capabilities_from_bytes;
 pub use v7::parser::parse_pdu_status_fields;
@@ -33,16 +34,3 @@ pub use fixed_parameters::*;
 pub use variable_parameters::VariableParameters;
 
 pub use common::errors::*;
-
-/*
-TODO:
-- Common function for calculating body length based on header data (pdu_length - header_length); now at several places
-- Dead-reckoning algorithms
-
-TESTS:
-- Build Other PDU
-- Build EntityState PDU
-- Reading EntityState PDU
-- DIS v7 header, PduStatus fields
-
-*/

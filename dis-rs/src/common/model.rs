@@ -77,7 +77,7 @@ use std::str::FromStr;
 
 pub use crate::v7::model::PduStatus;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Pdu {
     pub header: PduHeader,

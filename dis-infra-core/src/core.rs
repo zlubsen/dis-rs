@@ -23,6 +23,8 @@ pub(crate) const SPEC_CHANNEL_FROM_FIELD: &str = "from";
 pub(crate) const SPEC_CHANNEL_TO_FIELD: &str = "to";
 
 pub const DEFAULT_NODE_CHANNEL_CAPACITY: usize = 50;
+pub const DEFAULT_AGGREGATE_STATS_INTERVAL_MS: u64 = 1000;
+pub const DEFAULT_OUTPUT_STATS_INTERVAL_MS: u64 = 1000;
 
 /// Trait that defines the basic operations that a Node should have when defining the node.
 pub trait NodeData
@@ -37,7 +39,7 @@ where
     /// returning an `InfraError::SubscribeToChannel` error.
     fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError>;
 
-    fn id(&self) -> u64;
+    fn id(&self) -> InstanceId;
     fn name(&self) -> &str;
 
     /// Convert the concrete node into a dynamic, opaque Node type.

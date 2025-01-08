@@ -20,12 +20,10 @@ categories.workspace = true
 bytes = "1.9.0"
 futures = "0.3.30"
 tracing = "0.1.41"
-#tracing-subscriber = "0.3.18"
 thiserror = "2.0"
 tokio = { version = "1.42.0", features = ["full"] }
-#tokio-stream = "0.1.15"
 toml = "0.8.19"
 serde = "1.0.217"
 serde_derive = "1.0.217"
 socket2 = "0.5.8"
-
+dis-rs = { path = "../dis-rs" }

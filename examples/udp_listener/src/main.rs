@@ -1,24 +1,43 @@
-#[tokio::main]
-async fn main() {
-    //// TODO This is old stuff; convert to smaller tests
+use dis_infra_core::runtime::default_runtime;
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
-    // let (command_tx, command_rx) = tokio::sync::broadcast::channel(10);
-    // let (event_tx, event_rx) = tokio::sync::mpsc::channel(10);
-    //
-    // let udp_node_spec = r#"
-    //     type = "udp"
-    //     uri = "192.168.178.11:4001"
-    //     interface = "192.168.178.11:4001"
-    //     mode = "broadcast"
-    //     ttl = 1
-    //     block_own_socket = true
-    //     "#;
-    // dbg!(udp_node_spec);
-    //
-    // let config = udp_node_spec.parse::<Table>().unwrap();
-    //
-    // let node = node_data_from_spec(1, command_rx, event_tx, &config).unwrap();
-    //
-    // let handle = node.spawn_into_runner();
-    // handle.await.expect("Error awaiting node JoinHandle");
+fn main() {
+    tracing_subscriber::fmt()
+        .pretty()
+        // set logging level using environment variable; defaults to ERROR
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::TRACE.into())
+                .from_env_lossy(),
+        )
+        // sets this to be the default, global collector for this application.
+        .init();
+
+    let spec = r#"
+        [[ nodes ]]
+        type = "udp"
+        name = "UDP listener"
+        uri = "127.0.0.1:3000"
+        interface = "127.0.0.1:3001"
+        mode = "broadcast"
+        ttl = 1
+        block_own_socket = true
+
+        [[ nodes ]]
+        type = "dis_receiver"
+        name = "DIS parser"
+        exercise_id = 1
+        allow_dis_versions = [6, 7]
+
+        [[ channels ]]
+        from = "UDP listener"
+        to = "DIS parser"
+        "#;
+
+    let mut runtime = default_runtime().unwrap();
+
+    if let Err(err) = runtime.run_with_spec_string(spec) {
+        println!("{err}");
+    }
 }
