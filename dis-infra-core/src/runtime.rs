@@ -1,13 +1,10 @@
-use crate::core::{GenericNode, NodeConstructor, NodeData};
+use crate::core::{NodeConstructor, UntypedNode};
 use crate::error::InfraError;
-use crate::infra::{builtin_nodes, register_channel_from_spec};
 use futures::stream::FuturesUnordered;
 use std::fs::read_to_string;
-use std::future::Future;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
-use toml::Value;
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
 const EVENT_CHANNEL_CAPACITY: usize = 50;
@@ -28,8 +25,7 @@ impl InfraRuntime {
         let (command_tx, _command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
         let (event_tx, _event_rx) = tokio::sync::broadcast::channel(EVENT_CHANNEL_CAPACITY);
 
-        let mut node_factory = Vec::new();
-        node_factory.extend(builtin_nodes());
+        let node_factory = crate::core::builtin_nodes();
 
         Self {
             async_runtime: runtime,
@@ -58,11 +54,16 @@ impl InfraRuntime {
 
             // 2. Get a list of all the nodes
             // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
-            let mut nodes: Vec<GenericNode> = self.construct_nodes_from_spec(&contents)?;
+            let mut nodes: Vec<UntypedNode> = crate::core::construct_nodes_from_spec(
+                &self.node_factories,
+                self.command_tx.clone(),
+                self.event_tx.clone(),
+                &contents,
+            )?;
 
             // 4. Get a list of all the edges (channels)
             // 5. Construct all edges by getting the nodes from the vec.
-            Self::register_channels_for_nodes(&contents, &mut nodes)?;
+            crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
             // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a JoinSet(?)
             let handles = nodes
@@ -83,78 +84,6 @@ impl InfraRuntime {
 
             Ok(())
         })
-    }
-
-    fn lookup_node_constructor(&self, node_type: &str) -> Result<NodeConstructor, InfraError> {
-        self.node_factories
-            .iter()
-            .find(|&&tup| tup.0 == node_type)
-            .ok_or(InfraError::InvalidSpec {
-                message: format!("Node type {node_type} is not known."),
-            })
-            .map(|tup| tup.1)
-    }
-
-    fn construct_nodes_from_spec(
-        &self,
-        contents: &toml::Table,
-    ) -> Result<Vec<GenericNode>, InfraError> {
-        if let Value::Array(array) = &contents["nodes"] {
-            let nodes: Vec<Result<GenericNode, InfraError>> = array
-                .iter()
-                .enumerate()
-                .map(|(id, node)| {
-                    if let Value::Table(spec) = node {
-                        let factory =
-                            self.lookup_node_constructor(spec["type"].as_str().unwrap_or_default());
-
-                        let factory = factory?;
-                        match factory(
-                            id as u64,
-                            self.command_tx.subscribe(),
-                            self.event_tx.clone(),
-                            spec,
-                        ) {
-                            Ok(node) => Ok(node),
-                            Err(err) => Err(err),
-                        }
-                    } else {
-                        Err(InfraError::InvalidSpec {
-                            message: format!("Invalid node spec for index {id}"),
-                        })
-                    }
-                })
-                .collect();
-            let nodes: Result<Vec<GenericNode>, InfraError> = nodes.into_iter().collect();
-            nodes
-        } else {
-            Err(InfraError::InvalidSpec {
-                message: "A spec file must contain a non-empty list of 'nodes', which is missing"
-                    .to_string(),
-            })
-        }
-    }
-
-    fn register_channels_for_nodes(
-        contents: &toml::Table,
-        nodes: &mut Vec<GenericNode>,
-    ) -> Result<(), InfraError> {
-        if let Value::Array(array) = &contents["channels"] {
-            for channel in array {
-                if let Value::Table(spec) = channel {
-                    if let Err(err) = register_channel_from_spec(spec, nodes) {
-                        return Err(err);
-                    }
-                }
-            }
-        } else {
-            return Err(InfraError::InvalidSpec {
-                message:
-                    "A spec file must contain a non-empty list of 'channels', which is missing"
-                        .to_string(),
-            });
-        };
-        Ok(())
     }
 }
 
