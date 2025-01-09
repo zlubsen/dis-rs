@@ -1,6 +1,7 @@
 use crate::error::InfraError;
 use crate::infra::{dis, network, util};
 use crate::runtime::{Command, Event};
+use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
 use tokio::task::JoinHandle;
 use toml::Value;
@@ -64,6 +65,12 @@ pub trait NodeRunner {
     /// The async method executed when spawned.
     #[allow(async_fn_in_trait)]
     async fn run(&mut self);
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BaseNodeSpec {
+    pub(crate) name: String,
 }
 
 #[derive(Debug)]

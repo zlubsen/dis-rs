@@ -31,6 +31,7 @@ pub mod util {
     ) -> Result<UntypedNode, InfraError> {
         match type_value {
             SPEC_PASS_THROUGH_NODE_TYPE => {
+                // TODO use `BaseNodeSpec` for consistency
                 let node_name = spec["name"].as_str().ok_or(InfraError::InvalidSpec {
                     message: format!(
                         "Field 'name' not specified for PassThroughNode with id {instance_id}."
@@ -694,7 +695,7 @@ pub mod dis {
     };
     use crate::error::InfraError;
     use crate::runtime::{Command, Event};
-    use bytes::Bytes;
+    use bytes::{Bytes, BytesMut};
     use dis_rs::enumerations::ProtocolVersion;
     use dis_rs::model::Pdu;
     use serde_derive::{Deserialize, Serialize};
@@ -712,6 +713,8 @@ pub mod dis {
         ProtocolVersion::IEEE1278_12012,
     ];
     const DEFAULT_DIS_SEND_VERSION: ProtocolVersion = ProtocolVersion::IEEE1278_12012;
+
+    const SERIALISE_BUFFER_CAPACITY: usize = 32_768;
 
     pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
         let dis_nodes_constructor: NodeConstructor = node_from_spec;
@@ -740,14 +743,14 @@ pub mod dis {
 
                 Ok(node)
             }
-            // TODO
-            // SPEC_DIS_SENDER_NODE_TYPE => {
-            //     let spec: DisTxNodeSpec = toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-            //         message: err.to_string(),
-            //     })?;
-            //     let node = DisTxNodeData::new(instance_id, cmd_rx, event_tx, &spec).to_dyn();
-            //     Ok(node)
-            // }
+            SPEC_DIS_SENDER_NODE_TYPE => {
+                let spec: DisTxNodeSpec =
+                    toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                        message: err.to_string(),
+                    })?;
+                let node = DisTxNodeData::new(instance_id, cmd_rx, event_tx, &spec).to_dyn();
+                Ok(node)
+            }
             unknown_value => Err(InfraError::InvalidSpec {
                 message: format!("Unknown node type '{unknown_value}' for module 'dis'"),
             }),
@@ -889,6 +892,156 @@ pub mod dis {
                                             let _send_result = self.data.outgoing.send(pdu);
                                             self.statistics.base.incoming_message();
                                         });
+                                }
+                                Err(_err) => {}
+                            },
+                            None => {}
+                        }
+                    } => { }
+                    // aggregate statistics for the interval
+                    _ = aggregate_stats_interval.tick() => {
+                        self.statistics.base.aggregate_interval();
+                    }
+                    // output current state of the stats
+                    _ = output_stats_interval.tick() => {
+                    }
+                }
+            }
+        }
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct DisTxNodeSpec {
+        name: String,
+        buffer_size: Option<usize>,
+    }
+
+    #[derive(Debug)]
+    pub struct DisTxNodeData {
+        base: BaseNode,
+        buffer: BytesMut,
+        incoming: Option<Receiver<Pdu>>,
+        outgoing: Sender<Bytes>,
+    }
+
+    pub struct DisTxNodeRunner {
+        data: DisTxNodeData,
+        statistics: DisStatistics,
+    }
+
+    impl DisTxNodeData {
+        pub fn new(
+            instance_id: InstanceId,
+            cmd_rx: Receiver<Command>,
+            event_tx: Sender<Event>,
+            node_spec: &DisTxNodeSpec,
+        ) -> Self {
+            let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+            let mut buffer = BytesMut::with_capacity(SERIALISE_BUFFER_CAPACITY);
+            buffer.resize(SERIALISE_BUFFER_CAPACITY, 0);
+
+            Self {
+                base: BaseNode {
+                    instance_id,
+                    name: node_spec.name.clone(),
+                    cmd_rx,
+                    event_tx,
+                },
+                buffer,
+                incoming: None,
+                outgoing: out_tx,
+            }
+        }
+    }
+
+    impl NodeData for DisTxNodeData {
+        fn request_subscription(&self) -> Box<dyn Any> {
+            let client = self.outgoing.subscribe();
+            Box::new(client)
+        }
+
+        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
+            if let Ok(receiver) = receiver.downcast::<Receiver<Pdu>>() {
+                self.incoming = Some(*receiver);
+                Ok(())
+            } else {
+                Err(InfraError::SubscribeToChannel {
+                    instance_id: self.base.instance_id,
+                })
+            }
+        }
+
+        fn id(&self) -> InstanceId {
+            self.base.instance_id
+        }
+
+        fn name(&self) -> &str {
+            self.base.name.as_str()
+        }
+
+        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+            DisTxNodeRunner::spawn_with_data(*self)
+        }
+    }
+
+    impl NodeRunner for DisTxNodeRunner {
+        type Data = DisTxNodeData;
+
+        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+            let mut node_runner = Self {
+                data,
+                statistics: DisStatistics::default(),
+            };
+
+            tokio::spawn(async move { node_runner.run().await })
+        }
+
+        async fn run(&mut self) {
+            loop {
+                let mut aggregate_stats_interval = tokio::time::interval(Duration::from_millis(
+                    DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+                ));
+                let mut output_stats_interval =
+                    tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+
+                tokio::select! {
+                    // receiving commands
+                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                        if cmd == Command::Quit { break; }
+                    }
+                    // receiving from the incoming channel, serialise PDU into Bytes
+                    _ = async {
+                        match &mut self.data.incoming {
+                            Some(channel) => match channel.recv().await {
+                                Ok(pdu) => {
+                                    self.statistics.base.incoming_message();
+                                    match pdu.serialize(&mut self.data.buffer) {
+                                        Ok(bytes_written) => {
+                                            let _send_result = self.data.outgoing
+                                            .send(self.data.buffer[0..(bytes_written as usize)])
+                                            .inspect(|bytes_send| self.statistics.base.outgoing_message() )
+                                            .inspect_err(|err| {
+                                                let _ = self.data.base.event_tx.send(
+                                                    Event::NodeError(
+                                                        InfraError::RuntimeNode {
+                                                            instance_id: self.data.base.instance_id,
+                                                            message: err.to_string()
+                                                        }
+                                                    )
+                                                );}
+                                            );
+                                        }
+                                        Err(err) => {
+                                            let _ = self.data.base.event_tx.send(
+                                                Event::NodeError(
+                                                    InfraError::RuntimeNode {
+                                                        instance_id: self.data.base.instance_id,
+                                                        message: err.to_string()
+                                                    }
+                                                )
+                                            );
+                                        }
+                                    }
                                 }
                                 Err(_err) => {}
                             },
