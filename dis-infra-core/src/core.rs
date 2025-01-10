@@ -3,6 +3,7 @@ use crate::infra::{dis, network, util};
 use crate::runtime::{Command, Event};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
+use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::task::JoinHandle;
 use toml::Value;
 use tracing::trace;
@@ -32,6 +33,17 @@ pub trait NodeData
 where
     Self: 'static,
 {
+    /// Create a new `NodeData` struct from the `spec`, hooking up the
+    /// required coordination channels and setting the issued `instance_id`.
+    ///
+    /// Returns an `InfraError::InvalidSpec` when the node cannot be constructed from the provided spec.
+    fn new(
+        instance_id: InstanceId,
+        cmd_rx: Receiver<Command>,
+        event_tx: Sender<Event>,
+        spec: &toml::Table,
+    ) -> Result<Self, InfraError>;
+
     /// Get a subscription to a Node's outgoing channel, with the specific (data) type made opaque.
     fn request_subscription(&self) -> Box<dyn Any>;
     /// Register an opaque subscription to a Node's data, to the incoming channel for this Node (`self`).
