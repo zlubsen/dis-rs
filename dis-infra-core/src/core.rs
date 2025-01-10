@@ -42,7 +42,9 @@ where
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError>;
+    ) -> Result<Self, InfraError>
+    where
+        Self: Sized;
 
     /// Get a subscription to a Node's outgoing channel, with the specific (data) type made opaque.
     fn request_subscription(&self) -> Box<dyn Any>;
