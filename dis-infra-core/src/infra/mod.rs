@@ -1,7 +1,7 @@
 pub mod util {
     use crate::core::{
-        BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner, UntypedNode,
-        DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+        BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner,
+        UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
         DEFAULT_OUTPUT_STATS_INTERVAL_MS,
     };
     use crate::error::InfraError;
@@ -31,15 +31,7 @@ pub mod util {
     ) -> Result<UntypedNode, InfraError> {
         match type_value {
             SPEC_PASS_THROUGH_NODE_TYPE => {
-                // TODO use `BaseNodeSpec` for consistency
-                let node_name = spec["name"].as_str().ok_or(InfraError::InvalidSpec {
-                    message: format!(
-                        "Field 'name' not specified for PassThroughNode with id {instance_id}."
-                    ),
-                })?;
-                let node =
-                    PassThroughNodeData::new(instance_id, cmd_rx, event_tx, node_name)?.to_dyn();
-
+                let node = PassThroughNodeData::new(instance_id, cmd_rx, event_tx, spec)?.to_dyn();
                 Ok(node)
             }
             unknown_value => Err(InfraError::InvalidSpec {
@@ -60,19 +52,24 @@ pub mod util {
         statistics: BaseStatistics,
     }
 
-    impl PassThroughNodeData {
-        pub fn new(
+    impl NodeData for PassThroughNodeData {
+        fn new(
             instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            node_name: &str,
+            spec: &toml::Table,
         ) -> Result<Self, InfraError> {
             let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+
+            let node_spec: BaseNodeSpec =
+                toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                    message: err.to_string(),
+                })?;
 
             Ok(Self {
                 base: BaseNode {
                     instance_id,
-                    name: node_name.to_string(),
+                    name: node_spec.name.clone(),
                     cmd_rx,
                     event_tx,
                 },
@@ -80,9 +77,7 @@ pub mod util {
                 outgoing: out_tx,
             })
         }
-    }
 
-    impl NodeData for PassThroughNodeData {
         fn request_subscription(&self) -> Box<dyn Any> {
             let client = self.outgoing.subscribe();
             Box::new(client)
@@ -168,7 +163,9 @@ pub mod util {
     #[cfg(test)]
     mod test {
         #[test]
-        fn ya_mom() {}
+        fn some_test() {
+            assert!(false);
+        }
     }
 }
 
@@ -220,9 +217,7 @@ pub mod network {
     ) -> Result<UntypedNode, InfraError> {
         match type_value {
             SPEC_UDP_NODE_TYPE => {
-                let spec: UdpNodeSpec = toml::from_str(&spec.to_string()).unwrap();
                 let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
-
                 Ok(node)
             }
             unknown_value => Err(InfraError::InvalidSpec {
@@ -320,13 +315,18 @@ pub mod network {
         }
     }
 
-    impl UdpNodeData {
-        pub fn new(
+    impl NodeData for UdpNodeData {
+        fn new(
             instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            node_spec: &UdpNodeSpec,
+            spec: &toml::Table,
         ) -> Result<Self, InfraError> {
+            let node_spec: UdpNodeSpec =
+                toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                    message: err.to_string(),
+                })?;
+
             let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
             let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
@@ -373,9 +373,7 @@ pub mod network {
                 outgoing: out_tx,
             })
         }
-    }
 
-    impl NodeData for UdpNodeData {
         fn request_subscription(&self) -> Box<dyn Any> {
             let client = self.outgoing.subscribe();
             Box::new(client)
@@ -734,21 +732,11 @@ pub mod dis {
     ) -> Result<UntypedNode, InfraError> {
         match type_value {
             SPEC_DIS_RECEIVER_NODE_TYPE => {
-                let spec: DisRxNodeSpec =
-                    toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                        message: err.to_string(),
-                    })?;
-
-                let node = DisRxNodeData::new(instance_id, cmd_rx, event_tx, &spec).to_dyn();
-
+                let node = DisRxNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
                 Ok(node)
             }
             SPEC_DIS_SENDER_NODE_TYPE => {
-                let spec: DisTxNodeSpec =
-                    toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                        message: err.to_string(),
-                    })?;
-                let node = DisTxNodeData::new(instance_id, cmd_rx, event_tx, &spec).to_dyn();
+                let node = DisTxNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
                 Ok(node)
             }
             unknown_value => Err(InfraError::InvalidSpec {
@@ -762,7 +750,6 @@ pub mod dis {
         name: String,
         exercise_id: Option<u8>,
         allow_dis_versions: Option<Vec<u8>>,
-        // add DIS federation parameters
     }
 
     #[derive(Debug)]
@@ -784,14 +771,20 @@ pub mod dis {
         base: BaseStatistics,
     }
 
-    impl DisRxNodeData {
-        pub fn new(
+    impl NodeData for DisRxNodeData {
+        fn new(
             instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            node_spec: &DisRxNodeSpec,
-        ) -> Self {
+            spec: &toml::Table,
+        ) -> Result<Self, InfraError> {
+            let node_spec: DisRxNodeSpec =
+                toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                    message: err.to_string(),
+                })?;
+
             let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+
             let allow_dis_versions = node_spec
                 .allow_dis_versions
                 .clone()
@@ -803,7 +796,7 @@ pub mod dis {
                 })
                 .unwrap_or(dis_rs::supported_protocol_versions());
 
-            Self {
+            Ok(Self {
                 base: BaseNode {
                     instance_id,
                     name: node_spec.name.clone(),
@@ -814,11 +807,9 @@ pub mod dis {
                 allow_dis_versions,
                 incoming: None,
                 outgoing: out_tx,
-            }
+            })
         }
-    }
 
-    impl NodeData for DisRxNodeData {
         fn request_subscription(&self) -> Box<dyn Any> {
             let client = self.outgoing.subscribe();
             Box::new(client)
@@ -929,18 +920,24 @@ pub mod dis {
         statistics: DisStatistics,
     }
 
-    impl DisTxNodeData {
-        pub fn new(
+    impl NodeData for DisTxNodeData {
+        fn new(
             instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            node_spec: &DisTxNodeSpec,
-        ) -> Self {
+            spec: &toml::Table,
+        ) -> Result<Self, InfraError> {
+            let node_spec: DisTxNodeSpec =
+                toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                    message: err.to_string(),
+                })?;
+
             let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+
             let mut buffer = BytesMut::with_capacity(SERIALISE_BUFFER_CAPACITY);
             buffer.resize(SERIALISE_BUFFER_CAPACITY, 0);
 
-            Self {
+            Ok(Self {
                 base: BaseNode {
                     instance_id,
                     name: node_spec.name.clone(),
@@ -950,11 +947,9 @@ pub mod dis {
                 buffer,
                 incoming: None,
                 outgoing: out_tx,
-            }
+            })
         }
-    }
 
-    impl NodeData for DisTxNodeData {
         fn request_subscription(&self) -> Box<dyn Any> {
             let client = self.outgoing.subscribe();
             Box::new(client)
@@ -1018,7 +1013,7 @@ pub mod dis {
                                     match pdu.serialize(&mut self.data.buffer) {
                                         Ok(bytes_written) => {
                                             let _send_result = self.data.outgoing
-                                            .send(self.data.buffer[0..(bytes_written as usize)])
+                                            .send(Bytes::copy_from_slice(&self.data.buffer[0..(bytes_written as usize)]))
                                             .inspect(|bytes_send| self.statistics.base.outgoing_message() )
                                             .inspect_err(|err| {
                                                 let _ = self.data.base.event_tx.send(
@@ -1054,6 +1049,7 @@ pub mod dis {
                     }
                     // output current state of the stats
                     _ = output_stats_interval.tick() => {
+                        // TODO
                     }
                 }
             }
