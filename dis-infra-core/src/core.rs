@@ -67,7 +67,7 @@ where
 
     /// This method must convert the NodeData to the associated NodeRunner by calling
     /// the `spawn_with_data()` method on the concrete Runner type to spawn the Node on the `InfraRuntime`.
-    fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()>;
+    fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError>;
 }
 
 /// Trait that defines a node at runtime. It connects the associated `NodeData` struct (as associated type `Data`) to the runtime logic.
@@ -75,7 +75,7 @@ pub trait NodeRunner {
     type Data;
 
     /// Spawns the actual node, given the associated `NodeData` type.
-    fn spawn_with_data(data: Self::Data) -> JoinHandle<()>;
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError>;
     /// The async method executed when spawned.
     #[allow(async_fn_in_trait)]
     async fn run(&mut self);

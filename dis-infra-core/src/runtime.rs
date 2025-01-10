@@ -66,15 +66,15 @@ impl InfraRuntime {
             // 5. Construct all edges by getting the nodes from the vec.
             crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
-            // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a JoinSet(?)
-            let handles = nodes
+            // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
+            let handles: Result<FuturesUnordered<_>, _> = nodes
                 .into_iter()
                 .map(|node| node.spawn_into_runner())
-                .collect::<FuturesUnordered<_>>();
+                .collect();
+            let handles = handles?; // Propagate any error
 
-            // Coordination: shutdown signal and error even listeners
+            // Coordination: shutdown signal and error event listeners
             handles.push(tokio::spawn(shutdown_signal(self.command_tx.clone())));
-
             handles.push(tokio::spawn(event_listener(
                 self.event_tx.subscribe(),
                 self.command_tx.clone(),

@@ -102,7 +102,7 @@ pub mod util {
             self.base.name.as_str()
         }
 
-        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
             PassThroughNodeRunner::spawn_with_data(*self)
         }
     }
@@ -115,13 +115,13 @@ pub mod util {
     impl NodeRunner for PassThroughNodeRunner {
         type Data = PassThroughNodeData;
 
-        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+        fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
                 data,
                 statistics: BaseStatistics::default(),
             };
 
-            tokio::spawn(async move { node_runner.run().await })
+            Ok(tokio::spawn(async move { node_runner.run().await }))
         }
 
         async fn run(&mut self) {
@@ -201,6 +201,8 @@ pub mod network {
     const SPEC_UDP_MODE_UNICAST: &str = "unicast";
     const SPEC_UDP_MODE_BROADCAST: &str = "broadcast";
     const SPEC_UDP_MODE_MULTICAST: &str = "multicast";
+    const SPEC_TCP_SERVER_NODE_TYPE: &str = "tcp_server";
+    const SPEC_TCP_CLIENT_NODE_TYPE: &str = "tcp_client";
 
     pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
         let network_nodes_constructor: NodeConstructor = node_from_spec;
@@ -222,6 +224,14 @@ pub mod network {
                 let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
                 Ok(node)
             }
+            SPEC_TCP_SERVER_NODE_TYPE => {
+                let node = TcpServerNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
+                Ok(node)
+            }
+            // SPEC_TCP_CLIENT_NODE_TYPE => {
+            //     let node = TcpServerNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
+            //     Ok(node)
+            // }
             unknown_value => Err(InfraError::InvalidSpec {
                 message: format!("Unknown node type '{unknown_value}' for module 'network'"),
             }),
@@ -400,7 +410,7 @@ pub mod network {
             self.base.name.as_str()
         }
 
-        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
             UdpNodeRunner::spawn_with_data(*self)
         }
     }
@@ -408,15 +418,16 @@ pub mod network {
     impl NodeRunner for UdpNodeRunner {
         type Data = UdpNodeData;
 
-        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
-            let socket = create_udp_socket(&data);
+        fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+            let socket = create_udp_socket(&data)?;
+
             let mut node_runner = Self {
                 data,
                 socket,
                 statistics: UdpNodeStatistics::default(),
             };
 
-            tokio::spawn(async move { node_runner.run().await })
+            Ok(tokio::spawn(async move { node_runner.run().await }))
         }
 
         async fn run(&mut self) {
@@ -577,7 +588,7 @@ pub mod network {
     /// The created `tokio::net::udp::UdpSocket` is returned wrapped in an `Arc`
     /// so that it can be used by multiple tasks (i.e., for both writing and sending).
     #[allow(clippy::too_many_lines)]
-    fn create_udp_socket(endpoint: &UdpNodeData) -> UdpSocket {
+    fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, InfraError> {
         // TODO make function fallible
         use socket2::{Domain, Protocol, Socket, Type};
 
@@ -615,54 +626,78 @@ pub mod network {
         match (is_ipv4, endpoint.mode) {
             (true, UdpMode::UniCast) => {
                 if let Err(err) = socket.bind(&endpoint.interface.into()) {
-                    error!(
-                        "Failed to bind to IPv4 address {:?} - {}",
-                        endpoint.address, err
-                    );
+                    return Err(InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: format!(
+                            "Failed to bind to IPv4 address {:?} - {}",
+                            endpoint.address, err
+                        ),
+                    });
                 }
             }
             (true, UdpMode::BroadCast) => {
                 if let Err(err) = socket.set_broadcast(true) {
-                    error!(
-                        "Failed to set SO_BROADCAST for endpoint address {} - {}.",
-                        endpoint.interface, err
-                    );
+                    return Err(InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: format!(
+                            "Failed to set SO_BROADCAST for endpoint address {} - {}.",
+                            endpoint.interface, err
+                        ),
+                    });
                 }
                 if let Err(err) = socket.bind(&endpoint.interface.into()) {
-                    error!(
-                        "Failed to bind to IPv4 address {:?} - {}",
-                        endpoint.address, err
-                    );
+                    return Err(InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: format!(
+                            "Failed to bind to IPv4 address {:?} - {}",
+                            endpoint.address, err
+                        ),
+                    });
                 }
                 if let Err(err) = socket.set_ttl(endpoint.ttl) {
-                    error!("Failed to set TTL - {err}.");
+                    return Err(InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: format!("Failed to set TTL - {err}."),
+                    });
                 }
             }
             (true, UdpMode::MultiCast) => {
                 if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
                     if let IpAddr::V4(interface_v4) = endpoint.interface.ip() {
-                        socket
-                            .join_multicast_v4(&ip_address_v4, &interface_v4)
-                            .unwrap_or_else(|_| {
-                                panic!("Failed to join multicast group {ip_address_v4} using interface {interface_v4}.")
+                        if let Err(_) = socket.join_multicast_v4(&ip_address_v4, &interface_v4) {
+                            return Err(InfraError::CreateNode {
+                                instance_id: endpoint.base.instance_id,
+                                message: format!("Failed to join multicast group {ip_address_v4} using interface {interface_v4}."),
                             });
+                        }
                     }
                 }
             }
             (false, UdpMode::UniCast) => {
-                // TODO use .inspect_err() ?
-                socket.bind(&endpoint.interface.into()).unwrap_or_else(|_| {
-                    panic!("Failed to bind to IPv6 address {:?}", endpoint.address)
-                });
+                if let Err(_) = socket.bind(&endpoint.interface.into()) {
+                    return Err(InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: format!("Failed to bind to IPv6 address {:?}", endpoint.address),
+                    });
+                }
             }
             (false, UdpMode::BroadCast) => {
                 socket
                     .set_broadcast(true)
-                    .expect("Failed to set SO_BROADCAST.");
-                socket.set_ttl(1).expect("Failed to set TTL.");
-                socket.bind(&endpoint.interface.into()).unwrap_or_else(|_| {
-                    panic!("Failed to bind to IPv6 address {:?}", endpoint.address)
-                });
+                    .map_err(|_| InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: "Failed to set SO_BROADCAST.".to_string(),
+                    })?;
+                socket.set_ttl(1).map_err(|_| InfraError::CreateNode {
+                    instance_id: endpoint.base.instance_id,
+                    message: "Failed to set TTL.".to_string(),
+                })?;
+                socket
+                    .bind(&endpoint.interface.into())
+                    .map_err(|_| InfraError::CreateNode {
+                        instance_id: endpoint.base.instance_id,
+                        message: format!("Failed to bind to IPv6 address {:?}", endpoint.address),
+                    })?;
             }
             (false, UdpMode::MultiCast) => {
                 if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
@@ -670,9 +705,10 @@ pub mod network {
                         // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
                         socket
                             .join_multicast_v6(&ip_address_v6, 0)
-                            .unwrap_or_else(|_| {
-                                panic!("Failed to join multicast group {ip_address_v6} using interface 0 ({interface_v6}).")
-                            });
+                            .map_err(|_| InfraError::CreateNode {
+                                instance_id: endpoint.base.instance_id,
+                                message: format!("Failed to join multicast group {ip_address_v6} using interface 0 ({interface_v6})."),
+                            })?;
                     }
                 }
             }
@@ -680,10 +716,12 @@ pub mod network {
 
         // Convert socket2::Socket to tokio::net::UdpSocket via std::net::UdpSocket
         let socket = std::net::UdpSocket::from(socket);
-        let socket = UdpSocket::try_from(socket)
-            .expect("Failed to convert std::net::UdpSocket to tokio::net::UdpSocket.");
+        let socket = UdpSocket::try_from(socket).map_err(|_| InfraError::CreateNode {
+            instance_id: endpoint.base.instance_id,
+            message: "Failed to convert std::net::UdpSocket to tokio::net::UdpSocket.".to_string(),
+        })?;
 
-        socket
+        Ok(socket)
     }
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -782,7 +820,7 @@ pub mod network {
             self.base.name.as_str()
         }
 
-        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
             TcpServerNodeRunner::spawn_with_data(*self)
         }
     }
@@ -790,13 +828,13 @@ pub mod network {
     impl NodeRunner for TcpServerNodeRunner {
         type Data = TcpServerNodeData;
 
-        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+        fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
                 data,
                 statistics: TcpNodeStatistics::default(),
             };
 
-            tokio::spawn(async move { node_runner.run().await })
+            Ok(tokio::spawn(async move { node_runner.run().await }))
         }
 
         async fn run(&mut self) {
@@ -809,9 +847,9 @@ pub mod network {
                     Ok(command) = self.data.base.cmd_rx.recv() => {
                         if command == Command::Quit { break; }
                     }
-                    // Ok((stream, addr)) = self.socket.accept() {
+                    // Ok((mut stream, addr)) = self.socket.accept() {
                     //
-                    //     // run the reader and write loops
+                    //     // TODO run the reader and write loops
                     // }
                 }
             }
@@ -968,7 +1006,7 @@ pub mod dis {
             self.base.name.as_str()
         }
 
-        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
             DisRxNodeRunner::spawn_with_data(*self)
         }
     }
@@ -976,13 +1014,13 @@ pub mod dis {
     impl NodeRunner for DisRxNodeRunner {
         type Data = DisRxNodeData;
 
-        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+        fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
                 data,
                 statistics: DisStatistics::default(),
             };
 
-            tokio::spawn(async move { node_runner.run().await })
+            Ok(tokio::spawn(async move { node_runner.run().await }))
         }
 
         async fn run(&mut self) {
@@ -1108,7 +1146,7 @@ pub mod dis {
             self.base.name.as_str()
         }
 
-        fn spawn_into_runner(self: Box<Self>) -> JoinHandle<()> {
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
             DisTxNodeRunner::spawn_with_data(*self)
         }
     }
@@ -1116,13 +1154,13 @@ pub mod dis {
     impl NodeRunner for DisTxNodeRunner {
         type Data = DisTxNodeData;
 
-        fn spawn_with_data(data: Self::Data) -> JoinHandle<()> {
+        fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
                 data,
                 statistics: DisStatistics::default(),
             };
 
-            tokio::spawn(async move { node_runner.run().await })
+            Ok(tokio::spawn(async move { node_runner.run().await }))
         }
 
         async fn run(&mut self) {
