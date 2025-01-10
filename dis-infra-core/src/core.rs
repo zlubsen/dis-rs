@@ -262,7 +262,7 @@ pub(crate) fn register_channels_for_nodes(
         }
     } else {
         return Err(InfraError::InvalidSpec {
-            message: "A spec file must contain a non-empty list of 'channels', which is missing."
+            message: "A spec file must contain a non-empty array of 'channels', which is missing."
                 .to_string(),
         });
     };
@@ -274,56 +274,74 @@ pub(crate) fn register_channel_from_spec(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,
 ) -> Result<(), InfraError> {
-    let from = spec
-        .get(SPEC_CHANNEL_FROM_FIELD)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!("Channel spec misses field '{}'.", SPEC_CHANNEL_FROM_FIELD),
-        })?
-        .as_str()
-        .ok_or(InfraError::InvalidSpec {
-            message: format!(
-                "Channel spec field '{}' is not a string value.",
-                SPEC_CHANNEL_FROM_FIELD
-            ),
-        })?;
-    let to = spec
-        .get(SPEC_CHANNEL_TO_FIELD)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!("Channel spec misses field '{}'.", SPEC_CHANNEL_TO_FIELD),
-        })?
-        .as_str()
-        .ok_or(InfraError::InvalidSpec {
-            message: format!(
-                "Channel spec field '{}' is not a string value.",
-                SPEC_CHANNEL_TO_FIELD
-            ),
-        })?;
+    let from = get_channel_name_from_spec(spec, SPEC_CHANNEL_FROM_FIELD)?;
+    let to = get_channel_name_from_spec(spec, SPEC_CHANNEL_TO_FIELD)?;
 
-    let from_id = nodes
-        .iter()
-        .find(|node| node.name() == from)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!(
-                "Invalid channel spec, no correct ({}) node with name '{from}' is defined.",
-                SPEC_CHANNEL_FROM_FIELD
-            ),
-        })?
-        .id();
-    let to_id = nodes
-        .iter()
-        .find(|node| node.name() == to)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!(
-                "Invalid channel spec, no correct ({}) node with name '{to}' is defined.",
-                SPEC_CHANNEL_TO_FIELD
-            ),
-        })?
-        .id();
+    let from_id = channel_name_to_instance_id(nodes, from, SPEC_CHANNEL_FROM_FIELD)?;
+    let to_id = channel_name_to_instance_id(nodes, to, SPEC_CHANNEL_TO_FIELD)?;
+    // let from_id = nodes
+    //     .iter()
+    //     .find(|node| node.name() == from)
+    //     .ok_or(InfraError::InvalidSpec {
+    //         message: format!(
+    //             "Invalid channel spec, no correct ({}) node with name '{from}' is defined.",
+    //             SPEC_CHANNEL_FROM_FIELD
+    //         ),
+    //     })?
+    //     .id();
+    // let to_id = nodes
+    //     .iter()
+    //     .find(|node| node.name() == to)
+    //     .ok_or(InfraError::InvalidSpec {
+    //         message: format!(
+    //             "Invalid channel spec, no correct ({}) node with name '{to}' is defined.",
+    //             SPEC_CHANNEL_TO_FIELD
+    //         ),
+    //     })?
+    //     .id();
 
-    let from_node = nodes.get(from_id as usize).unwrap();
+    let from_node = nodes
+        .get(from_id as usize)
+        .expect("Node with id is present");
     let sub = from_node.request_subscription();
-    let to_node = nodes.get_mut(to_id as usize).unwrap();
+    let to_node = nodes
+        .get_mut(to_id as usize)
+        .expect("Node with id is present");
     to_node.register_subscription(sub)?;
 
     Ok(())
+}
+
+/// Retrieve the node name from the spec for the provided field.
+fn get_channel_name_from_spec<'a>(
+    spec: &'a toml::Table,
+    field: &str,
+) -> Result<&'a str, InfraError> {
+    Ok(spec
+        .get(field)
+        .ok_or(InfraError::InvalidSpec {
+            message: format!("Channel spec misses field '{}'.", field),
+        })?
+        .as_str()
+        .ok_or(InfraError::InvalidSpec {
+            message: format!("Channel spec field '{}' is not a string value.", field),
+        })?)
+}
+
+/// Get the instance_id of the node based on the name
+fn channel_name_to_instance_id(
+    nodes: &mut Vec<UntypedNode>,
+    name: &str,
+    field: &str,
+) -> Result<InstanceId, InfraError> {
+    Ok(nodes
+        .iter()
+        .find(|node| node.name() == name)
+        .ok_or(InfraError::InvalidSpec {
+            message: format!(
+                "Invalid channel spec, no correct ({}) node with name '{name}' is defined.",
+                field
+            ),
+        })?
+        .id())
 }

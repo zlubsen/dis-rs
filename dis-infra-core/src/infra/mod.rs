@@ -228,10 +228,10 @@ pub mod network {
                 let node = TcpServerNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
                 Ok(node)
             }
-            // SPEC_TCP_CLIENT_NODE_TYPE => {
-            //     let node = TcpServerNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
-            //     Ok(node)
-            // }
+            SPEC_TCP_CLIENT_NODE_TYPE => {
+                let node = TcpClientNodeData::new(instance_id, cmd_rx, event_tx, &spec)?.to_dyn();
+                Ok(node)
+            }
             unknown_value => Err(InfraError::InvalidSpec {
                 message: format!("Unknown node type '{unknown_value}' for module 'network'"),
             }),
@@ -729,7 +729,6 @@ pub mod network {
         name: String,
         interface: String,
         max_connections: Option<usize>,
-        block_own_socket: Option<bool>,
     }
 
     #[derive(Debug)]
@@ -839,19 +838,179 @@ pub mod network {
 
         async fn run(&mut self) {
             let socket = TcpListener::bind(self.data.interface).await.unwrap();
-            // let (mut a,b) = self.socket.accept().await.unwrap();
-            // let (reader, writer) = a.split();
-            //
+            let (mut stream, addr) = socket.accept().await.unwrap();
+            let (reader, writer) = stream.into_split();
+
+            // TODO add semaphore for tracking max number of connections
+
+            // TODO
+            // decide: run accept loop here, or in separate future?
+            // have this loop/select go over 4 connection types:
+            // // 1 node incoming, 2 node outgoing, 3 tcp incoming, 4 tcp outgoing;
+            // (3 and 4 for each connected client, with broadcast channels to the main node)
             loop {
                 tokio::select! {
                     Ok(command) = self.data.base.cmd_rx.recv() => {
                         if command == Command::Quit { break; }
                     }
-                    // Ok((mut stream, addr)) = self.socket.accept() {
-                    //
-                    //     // TODO run the reader and write loops
-                    // }
+                    Ok((mut stream, addr)) = socket.accept() => {
+                        let (reader, writer) = stream.into_split();
+                        // TODO spawn the reader and write loops
+                    }
                 }
+            }
+        }
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct TcpClientNodeSpec {
+        name: String,
+        interface: String,
+        address: String,
+    }
+
+    #[derive(Debug)]
+    pub struct TcpClientNodeData {
+        base: BaseNode,
+        buffer: BytesMut,
+        interface: SocketAddr,
+        address: SocketAddr,
+        incoming: Option<Receiver<Bytes>>,
+        outgoing: Sender<Bytes>,
+    }
+
+    pub struct TcpClientNodeRunner {
+        data: TcpClientNodeData,
+        statistics: TcpNodeStatistics,
+    }
+
+    impl NodeData for TcpClientNodeData {
+        fn new(
+            instance_id: InstanceId,
+            cmd_rx: Receiver<Command>,
+            event_tx: Sender<Event>,
+            spec: &Table,
+        ) -> Result<Self, InfraError> {
+            let node_spec: TcpClientNodeSpec =
+                toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
+                    message: err.to_string(),
+                })?;
+
+            let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+
+            let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
+            buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
+
+            let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
+                InfraError::InvalidSpec {
+                    message: format!(
+                        "Node {} - Cannot parse socket address for interface {}",
+                        node_spec.name
+                        node_spec.interface
+                    ),
+                }
+            })?;
+            let address = node_spec.address.parse::<SocketAddr>().map_err(|_err| {
+                InfraError::InvalidSpec {
+                    message: format!(
+                        "Node {} - Cannot parse socket address for remote TCP server {}",
+                        node_spec.name
+                        node_spec.interface
+                    ),
+                }
+            })?;
+
+            Ok(Self {
+                base: BaseNode {
+                    instance_id,
+                    name: node_spec.name.clone(),
+                    cmd_rx,
+                    event_tx,
+                },
+                buffer,
+                interface,
+                address,
+                incoming: None,
+                outgoing: out_tx,
+            })
+        }
+
+        fn request_subscription(&self) -> Box<dyn Any> {
+            let client = self.outgoing.subscribe();
+            Box::new(client)
+        }
+
+        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
+            if let Ok(receiver) = receiver.downcast::<Receiver<Bytes>>() {
+                self.incoming = Some(*receiver);
+                Ok(())
+            } else {
+                Err(InfraError::SubscribeToChannel {
+                    instance_id: self.base.instance_id,
+                })
+            }
+        }
+
+        fn id(&self) -> InstanceId {
+            self.base.instance_id
+        }
+
+        fn name(&self) -> &str {
+            self.base.name.as_str()
+        }
+
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
+            TcpClientNodeRunner::spawn_with_data(*self)
+        }
+    }
+
+    impl NodeRunner for TcpClientNodeRunner {
+        type Data = TcpClientNodeData;
+
+        fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+            let mut node_runner = Self {
+                data,
+                statistics: TcpNodeStatistics::default(),
+            };
+
+            Ok(tokio::spawn(async move { node_runner.run().await }))
+        }
+
+        async fn run(&mut self) {
+            let mut aggregate_stats_interval =
+                tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
+            let mut output_stats_interval =
+                tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+
+            loop {
+                tokio::select! {
+                    // receiving commands
+                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                        if cmd == Command::Quit { break; }
+                    }
+                    // receiving from the incoming channel
+                    incoming = async {
+                        match &mut self.data.incoming {
+                            Some(channel) => match channel
+                                .recv()
+                                .await {
+                                    Ok(received) => {  } // TODO send received bytes over the TCP connection
+                                    Err(err) => {  } // TODO emit error event
+                            }
+                            None => { } // No Op
+                        }
+                    } => { incoming }
+                    // receiving from the socket
+                    // TODO receive over the TCP socket, out via outgoing channel
+                    // aggregate statistics for the interval
+                    _ = aggregate_stats_interval.tick() => {
+                        self.statistics.base.aggregate_interval();
+                    }
+                    // output current state of the stats
+                    _ = output_stats_interval.tick() => {
+                        // TODO
+                    }
+                };
             }
         }
     }
@@ -877,12 +1036,6 @@ pub mod dis {
 
     const SPEC_DIS_RECEIVER_NODE_TYPE: &str = "dis_receiver";
     const SPEC_DIS_SENDER_NODE_TYPE: &str = "dis_sender";
-
-    const DEFAULT_DIS_RECEIVE_VERSIONS: [ProtocolVersion; 2] = [
-        ProtocolVersion::IEEE1278_1A1998,
-        ProtocolVersion::IEEE1278_12012,
-    ];
-    const DEFAULT_DIS_SEND_VERSION: ProtocolVersion = ProtocolVersion::IEEE1278_12012;
 
     const SERIALISE_BUFFER_CAPACITY: usize = 32_768;
 

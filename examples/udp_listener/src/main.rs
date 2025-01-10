@@ -35,7 +35,7 @@ fn main() {
         to = "DIS parser"
         "#;
 
-    let mut runtime = default_runtime().unwrap();
+    let runtime = default_runtime().unwrap();
 
     if let Err(err) = runtime.run_with_spec_string(spec) {
         println!("{err}");

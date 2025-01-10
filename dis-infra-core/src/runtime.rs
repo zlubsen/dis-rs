@@ -37,54 +37,54 @@ impl InfraRuntime {
     }
 
     /// Construct nodes and channels based on a specification, and run the infrastructure
-    pub fn run_with_spec(&mut self, path: &Path) -> Result<(), InfraError> {
+    pub fn run_with_spec(&self, path: &Path) -> Result<(), InfraError> {
         let contents = read_to_string(path).map_err(|err| InfraError::InvalidSpec {
             message: err.to_string(),
         })?;
         self.run_with_spec_string(&contents)
     }
 
-    pub fn run_with_spec_string(&mut self, spec: &str) -> Result<(), InfraError> {
+    pub fn run_with_spec_string(&self, spec: &str) -> Result<(), InfraError> {
+        self.async_runtime.block_on(self.run_main(spec))
+    }
+
+    async fn run_main(&self, spec: &str) -> Result<(), InfraError> {
+        let contents: toml::Table =
+            toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
+                message: err.to_string(),
+            })?;
         // TODO (1. Read the meta info of the config, if any)
 
-        self.async_runtime.block_on(async {
-            let contents: toml::Table =
-                toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
-                    message: err.to_string(),
-                })?;
+        // 2a. Get a list of all the nodes
+        // 2b. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
+        let mut nodes: Vec<UntypedNode> = crate::core::construct_nodes_from_spec(
+            &self.node_factories,
+            self.command_tx.clone(),
+            self.event_tx.clone(),
+            &contents,
+        )?;
 
-            // 2. Get a list of all the nodes
-            // 3. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
-            let mut nodes: Vec<UntypedNode> = crate::core::construct_nodes_from_spec(
-                &self.node_factories,
-                self.command_tx.clone(),
-                self.event_tx.clone(),
-                &contents,
-            )?;
+        // 3. Construct all edges by getting the nodes from the spec.
+        crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
-            // 4. Get a list of all the edges (channels)
-            // 5. Construct all edges by getting the nodes from the vec.
-            crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
+        // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
+        let handles: Result<FuturesUnordered<_>, _> = nodes
+            .into_iter()
+            .map(|node| node.spawn_into_runner())
+            .collect();
+        let handles = handles?; // Propagate any error
 
-            // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
-            let handles: Result<FuturesUnordered<_>, _> = nodes
-                .into_iter()
-                .map(|node| node.spawn_into_runner())
-                .collect();
-            let handles = handles?; // Propagate any error
+        // Coordination: shutdown signal and error event listeners
+        handles.push(tokio::spawn(shutdown_signal(self.command_tx.clone())));
+        handles.push(tokio::spawn(event_listener(
+            self.event_tx.subscribe(),
+            self.command_tx.clone(),
+        )));
 
-            // Coordination: shutdown signal and error event listeners
-            handles.push(tokio::spawn(shutdown_signal(self.command_tx.clone())));
-            handles.push(tokio::spawn(event_listener(
-                self.event_tx.subscribe(),
-                self.command_tx.clone(),
-            )));
+        // 7. Wait for all tasks to finish
+        let _ = futures::future::join_all(handles).await;
 
-            // 7. Wait for all tasks to finish
-            let _ = futures::future::join_all(handles).await;
-
-            Ok(())
-        })
+        Ok(())
     }
 }
 
