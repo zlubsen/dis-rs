@@ -1,3 +1,5 @@
+use crate::core::NodeRunner;
+
 pub mod util {
     use crate::core::{
         BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner,
@@ -121,7 +123,7 @@ pub mod util {
                 statistics: BaseStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run().await }))
+            Ok(tokio::spawn(async move { node_runner.run() }))
         }
 
         async fn run(&mut self) {
@@ -178,11 +180,13 @@ pub mod network {
     use crate::error::InfraError;
     use crate::runtime::{Command, Event};
     use bytes::{Bytes, BytesMut};
+    use futures::TryFutureExt;
     use serde_derive::{Deserialize, Serialize};
     use std::any::Any;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::Duration;
-    use tokio::net::{TcpListener, UdpSocket};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::{TcpListener, TcpSocket, TcpStream, UdpSocket};
     use tokio::sync::broadcast::error::RecvError;
     use tokio::sync::broadcast::{channel, Receiver, Sender};
     use tokio::task::JoinHandle;
@@ -196,6 +200,7 @@ pub mod network {
     const DEFAULT_OWN_ADDRESS: SocketAddr =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
     const DEFAULT_TCP_MAX_CONNECTIONS: usize = 15;
+    const DEFAULT_TCP_CLIENT_CONNECT_TIMEOUT_MS: u64 = 5000;
 
     const SPEC_UDP_NODE_TYPE: &str = "udp";
     const SPEC_UDP_MODE_UNICAST: &str = "unicast";
@@ -264,7 +269,7 @@ pub mod network {
     pub struct UdpNodeRunner {
         data: UdpNodeData,
         socket: UdpSocket,
-        statistics: UdpNodeStatistics,
+        statistics: SocketStatistics,
     }
 
     #[derive(Debug)]
@@ -282,15 +287,15 @@ pub mod network {
     }
 
     #[derive(Copy, Clone, Debug, Default)]
-    struct UdpNodeStatistics {
+    struct SocketStatistics {
         base: BaseStatistics,
-        total: UdpNodeStatisticsItems,
-        running_interval: UdpNodeStatisticsItems,
-        latest_interval: UdpNodeStatisticsItems,
+        total: SocketStatisticsItems,
+        running_interval: SocketStatisticsItems,
+        latest_interval: SocketStatisticsItems,
     }
 
     #[derive(Copy, Clone, Debug, Default)]
-    struct UdpNodeStatisticsItems {
+    struct SocketStatisticsItems {
         packets_socket_in: u64,
         packets_socket_in_blocked: u64,
         packets_socket_out: u64,
@@ -298,6 +303,42 @@ pub mod network {
         bytes_socket_out: u64,
         bytes_in: u64,
         bytes_out: u64,
+    }
+
+    impl SocketStatistics {
+        fn received_packet(&mut self, number_of_bytes: usize) {
+            self.total.packets_socket_in += 1;
+            self.total.bytes_socket_in += number_of_bytes as u64;
+            self.total.bytes_out += number_of_bytes as u64;
+            self.running_interval.packets_socket_in += 1;
+            self.running_interval.bytes_socket_in += number_of_bytes as u64;
+            self.running_interval.bytes_out += number_of_bytes as u64;
+            self.base.outgoing_message();
+        }
+
+        fn blocked_packet(&mut self, number_of_bytes: usize) {
+            self.total.packets_socket_in += 1;
+            self.total.packets_socket_in_blocked += 1;
+            self.total.bytes_socket_in += number_of_bytes as u64;
+            self.running_interval.packets_socket_in += 1;
+            self.running_interval.packets_socket_in_blocked += 1;
+        }
+
+        fn received_incoming(&mut self, number_of_bytes: usize) {
+            self.total.packets_socket_out += 1;
+            self.total.bytes_socket_out += number_of_bytes as u64;
+            self.total.bytes_in += number_of_bytes as u64;
+            self.running_interval.packets_socket_out += 1;
+            self.running_interval.bytes_socket_out += number_of_bytes as u64;
+            self.running_interval.bytes_in += number_of_bytes as u64;
+            self.base.incoming_message();
+        }
+
+        fn aggregate_interval(&mut self) {
+            self.latest_interval = self.running_interval;
+            self.running_interval = Default::default();
+            self.base.aggregate_interval();
+        }
     }
 
     #[allow(clippy::enum_variant_names)]
@@ -424,7 +465,7 @@ pub mod network {
             let mut node_runner = Self {
                 data,
                 socket,
-                statistics: UdpNodeStatistics::default(),
+                statistics: SocketStatistics::default(),
             };
 
             Ok(tokio::spawn(async move { node_runner.run().await }))
@@ -451,7 +492,10 @@ pub mod network {
                             Some(channel) => match channel
                                 .recv()
                                 .await {
-                                    Ok(received) => { UdpNodeEvent::ReceivedIncoming(received) }
+                                    Ok(received) => {
+                                        self.statistics.received_incoming(received.len())
+                                        UdpNodeEvent::ReceivedIncoming(received)
+                                    }
                                     Err(err) => {
                                         UdpNodeEvent::ReceiveIncomingError(err)
                                 }
@@ -462,15 +506,17 @@ pub mod network {
                     // receiving from the socket
                     Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.data.buffer) => {
                         if self.data.block_own_socket && (local_address == from_address) {
+                            self.statistics.blocked_packet(bytes_received);
                             UdpNodeEvent::BlockedPacket(bytes_received)
                         } else {
+                            self.statistics.received_packet(bytes_received);
                             Bytes::copy_from_slice(&self.data.buffer[..bytes_received]);
                             UdpNodeEvent::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]))
                         }
                     }
                     // aggregate statistics for the interval
                     _ = aggregate_stats_interval.tick() => {
-                        self.aggregate_statistics_interval();
+                        self.statistics.aggregate_interval();
                         UdpNodeEvent::NoEvent
                     }
                     // output current state of the stats
@@ -478,8 +524,6 @@ pub mod network {
                         UdpNodeEvent::OutputStatistics
                     }
                 };
-
-                self.collect_statistics(&event);
 
                 match event {
                     UdpNodeEvent::NoEvent => {}
@@ -542,45 +586,6 @@ pub mod network {
     fn map_command_to_event(command: &Command) -> UdpNodeEvent {
         match command {
             Command::Quit => UdpNodeEvent::Quit,
-        }
-    }
-
-    impl UdpNodeRunner {
-        fn collect_statistics(&mut self, event: &UdpNodeEvent) {
-            match event {
-                UdpNodeEvent::ReceivedPacket(bytes) => {
-                    self.statistics.total.packets_socket_in += 1;
-                    self.statistics.total.bytes_socket_in += bytes.len() as u64;
-                    self.statistics.total.bytes_out += bytes.len() as u64;
-                    self.statistics.running_interval.packets_socket_in += 1;
-                    self.statistics.running_interval.bytes_socket_in += bytes.len() as u64;
-                    self.statistics.running_interval.bytes_out += bytes.len() as u64;
-                    self.statistics.base.outgoing_message();
-                }
-                UdpNodeEvent::BlockedPacket(num_bytes) => {
-                    self.statistics.total.packets_socket_in += 1;
-                    self.statistics.total.packets_socket_in_blocked += 1;
-                    self.statistics.total.bytes_socket_in += *num_bytes as u64;
-                    self.statistics.running_interval.packets_socket_in += 1;
-                    self.statistics.running_interval.packets_socket_in_blocked += 1;
-                }
-                UdpNodeEvent::ReceivedIncoming(bytes) => {
-                    self.statistics.total.packets_socket_out += 1;
-                    self.statistics.total.bytes_socket_out += bytes.len() as u64;
-                    self.statistics.total.bytes_in += bytes.len() as u64;
-                    self.statistics.running_interval.packets_socket_out += 1;
-                    self.statistics.running_interval.bytes_socket_out += bytes.len() as u64;
-                    self.statistics.running_interval.bytes_in += bytes.len() as u64;
-                    self.statistics.base.incoming_message();
-                }
-                _ => {}
-            }
-        }
-
-        fn aggregate_statistics_interval(&mut self) {
-            self.statistics.latest_interval = self.statistics.running_interval;
-            self.statistics.running_interval = Default::default();
-            self.statistics.base.aggregate_interval();
         }
     }
 
@@ -743,12 +748,7 @@ pub mod network {
 
     pub struct TcpServerNodeRunner {
         data: TcpServerNodeData,
-        statistics: TcpNodeStatistics,
-    }
-
-    #[derive(Copy, Clone, Default, Debug)]
-    pub struct TcpNodeStatistics {
-        base: BaseStatistics,
+        statistics: SocketStatistics,
     }
 
     impl NodeData for TcpServerNodeData {
@@ -881,7 +881,7 @@ pub mod network {
 
     pub struct TcpClientNodeRunner {
         data: TcpClientNodeData,
-        statistics: TcpNodeStatistics,
+        statistics: SocketStatistics,
     }
 
     impl NodeData for TcpClientNodeData {
@@ -905,8 +905,7 @@ pub mod network {
                 InfraError::InvalidSpec {
                     message: format!(
                         "Node {} - Cannot parse socket address for interface {}",
-                        node_spec.name
-                        node_spec.interface
+                        node_spec.name, node_spec.interface
                     ),
                 }
             })?;
@@ -914,8 +913,7 @@ pub mod network {
                 InfraError::InvalidSpec {
                     message: format!(
                         "Node {} - Cannot parse socket address for remote TCP server {}",
-                        node_spec.name
-                        node_spec.interface
+                        node_spec.name, node_spec.interface
                     ),
                 }
             })?;
@@ -970,10 +968,10 @@ pub mod network {
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
                 data,
-                statistics: TcpNodeStatistics::default(),
+                statistics: SocketStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run().await }))
+            Ok(tokio::spawn(async move { node_runner.run() }))
         }
 
         async fn run(&mut self) {
@@ -981,6 +979,48 @@ pub mod network {
                 tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
             let mut output_stats_interval =
                 tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+
+            let socket = if self.data.interface.is_ipv4() {
+                TcpSocket::new_v4()
+            } else {
+                TcpSocket::new_v6()
+            }
+            .inspect_err(|err| {
+                let _ = self
+                    .data
+                    .base
+                    .event_tx
+                    .send(Event::NodeError(InfraError::CreateNode {
+                        instance_id: self.data.base.instance_id,
+                        message: err.to_string(),
+                    }));
+            })?;
+            socket.set_reuseaddr(true)?;
+
+            match socket.bind(self.data.interface) {
+                Ok(_) => {}
+                Err(err) => {
+                    let _ =
+                        self.data
+                            .base
+                            .event_tx
+                            .send(Event::NodeError(InfraError::CreateNode {
+                                instance_id: self.data.base.instance_id,
+                                message: err.to_string(),
+                            }));
+                }
+            };
+            let mut tcp_stream = socket.connect(self.data.address).await.inspect_err(|err| {
+                let _ = self
+                    .data
+                    .base
+                    .event_tx
+                    .send(Event::NodeError(InfraError::CreateNode {
+                        instance_id: self.data.base.instance_id,
+                        message: err.to_string(),
+                    }));
+            })?;
+            let (mut reader, mut writer) = tcp_stream.split();
 
             loop {
                 tokio::select! {
@@ -991,17 +1031,44 @@ pub mod network {
                     // receiving from the incoming channel
                     incoming = async {
                         match &mut self.data.incoming {
-                            Some(channel) => match channel
-                                .recv()
-                                .await {
-                                    Ok(received) => {  } // TODO send received bytes over the TCP connection
-                                    Err(err) => {  } // TODO emit error event
-                            }
-                            None => { } // No Op
+                            Some(channel) => match channel.recv().await {
+                                Ok(message) => {
+                                    let _send_result = writer.write_all(&message).await;
+                                    self.statistics.received_incoming(message.len());
+                                }
+                                Err(_err) => {}
+                            },
+                            None => {}
                         }
                     } => { incoming }
                     // receiving from the socket
-                    // TODO receive over the TCP socket, out via outgoing channel
+                    Ok(bytes_received) = reader.read(&mut self.data.buffer) => {
+                        if bytes_received > 0 {
+                            let _ = self
+                                .data
+                                .base
+                                .event_tx
+                                .send(Event::NodeError(InfraError::RuntimeNode {
+                                    instance_id: self.data.base.instance_id,
+                                    message: "TCP client node disconnected.".to_string(),
+                                }));
+                        } else {
+                            if let Ok(_num_receivers) = self.data.outgoing
+                                .send(Bytes::copy_from_slice(&self.data.buffer[..bytes_received])) {
+                                self.statistics.received_packet(bytes_received);
+                            } else {
+                                if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
+                                    InfraError::RuntimeNode {
+                                        instance_id: self.data.base.instance_id,
+                                        message: "Outgoing channel send failed.".to_string(),
+                                    },
+                                )) {
+                                    error!("{err}");
+                                    break;
+                                }
+                            };
+                        }
+                    }
                     // aggregate statistics for the interval
                     _ = aggregate_stats_interval.tick() => {
                         self.statistics.base.aggregate_interval();
