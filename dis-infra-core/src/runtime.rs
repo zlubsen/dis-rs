@@ -13,42 +13,42 @@ const EVENT_CHANNEL_CAPACITY: usize = 50;
 /// The `InfraRuntime` is used to construct a specific infrastructure using composable Nodes, connected through Channels.
 /// `InfraRuntime` wraps a tokio async Runtime, and manages the generic communication channels for the infrastructure.
 pub struct InfraRuntime {
-    async_runtime: Runtime,
     command_tx: tokio::sync::broadcast::Sender<Command>,
     event_tx: tokio::sync::broadcast::Sender<Event>,
     node_factories: Vec<(&'static str, NodeConstructor)>,
 }
 
 impl InfraRuntime {
-    /// Initialise a `InfraRuntime` environment, using the provided `tokio::Runtime`.
+    /// Initialise a `InfraRuntime` environment.
     /// The needed communication channels are created using this function.
-    pub fn init(runtime: Runtime) -> Self {
+    pub fn init() -> Self {
         let (command_tx, _command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
         let (event_tx, _event_rx) = tokio::sync::broadcast::channel(EVENT_CHANNEL_CAPACITY);
 
         let node_factory = crate::core::builtin_nodes();
 
         Self {
-            async_runtime: runtime,
             command_tx,
             event_tx,
             node_factories: node_factory,
         }
     }
 
-    /// Construct nodes and channels based on a specification, and run the infrastructure
-    pub fn run_with_spec(&self, path: &Path) -> Result<(), InfraError> {
+    /// Executes an infra specification from a given `Path`
+    pub async fn run_from_path(&self, path: &Path) -> Result<(), InfraError> {
         let contents = read_to_string(path).map_err(|err| InfraError::InvalidSpec {
             message: err.to_string(),
         })?;
-        self.run_with_spec_string(&contents)
+        self.run_infra(&contents).await
     }
 
-    pub fn run_with_spec_string(&self, spec: &str) -> Result<(), InfraError> {
-        self.async_runtime.block_on(self.run_main(spec))
+    /// Executes an infra specification, provided as the bare content (TOML)
+    pub async fn run_from_str(&self, toml_spec: &str) -> Result<(), InfraError> {
+        self.run_infra(toml_spec).await
     }
 
-    async fn run_main(&self, spec: &str) -> Result<(), InfraError> {
+    /// Constructs and executes the provided specification.
+    async fn run_infra(&self, spec: &str) -> Result<(), InfraError> {
         let contents: toml::Table =
             toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
                 message: err.to_string(),
@@ -64,27 +64,41 @@ impl InfraRuntime {
             &contents,
         )?;
 
-        // 3. Construct all edges by getting the nodes from the spec.
+        // 3. Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
-        // 6. Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
+        // 4. Spawn the coordination tasks: shutdown signal and error event listeners
+        let shutdown_handle = tokio::spawn(shutdown_signal(self.command_tx.clone()));
+        let event_listener_handle = tokio::spawn(event_listener(
+            self.event_tx.subscribe(),
+            self.command_tx.clone(),
+        ));
+
+        // 5. Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
         let handles: Result<FuturesUnordered<_>, _> = nodes
             .into_iter()
             .map(|node| node.spawn_into_runner())
             .collect();
         let handles = handles?; // Propagate any error
 
-        // Coordination: shutdown signal and error event listeners
-        handles.push(tokio::spawn(shutdown_signal(self.command_tx.clone())));
-        handles.push(tokio::spawn(event_listener(
-            self.event_tx.subscribe(),
-            self.command_tx.clone(),
-        )));
+        // 6. Push coordination handles to the FuturesUnordered
+        handles.push(shutdown_handle);
+        handles.push(event_listener_handle);
 
         // 7. Wait for all tasks to finish
         let _ = futures::future::join_all(handles).await;
 
         Ok(())
+    }
+
+    /// Obtain a sender handle to the command channel.
+    pub fn command_channel(&self) -> tokio::sync::broadcast::Sender<Command> {
+        self.command_tx.clone()
+    }
+
+    /// Obtain a receiver handle to the event channel.
+    pub fn event_channel(&self) -> tokio::sync::broadcast::Receiver<Event> {
+        self.event_tx.subscribe()
     }
 }
 
@@ -158,7 +172,7 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
 /// Creates a default tokio runtime.
 ///
 /// The runtime is multithreaded, enables IO and Time features, and enters the runtime context.
-pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
+pub fn default_tokio_runtime() -> Result<Runtime, InfraError> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -166,7 +180,7 @@ pub fn default_runtime() -> Result<InfraRuntime, InfraError> {
         .map_err(|_err| InfraError::CannotStartRuntime)?;
     let _guard = runtime.enter();
 
-    Ok(InfraRuntime::init(runtime))
+    Ok(runtime)
 }
 
 /// Enum of Commands that the Runtime can send to Nodes

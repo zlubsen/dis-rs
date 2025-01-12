@@ -1,7 +1,7 @@
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
-use dis_infra_core::runtime::default_runtime;
+use dis_infra_core::runtime::{default_tokio_runtime, InfraRuntime};
 
 /// Demonstrates the basic use of the infrastructure
 /// through the use of a specification (config) file.
@@ -40,9 +40,11 @@ fn main() {
         to = "Simple pass"
     "#;
 
-    let mut runtime = default_runtime().unwrap();
+    let mut runtime =
+        default_tokio_runtime().expect("Expected tokio runtime to be created successfully.");
+    let infra_runtime = InfraRuntime::init();
 
-    if let Err(err) = runtime.run_with_spec_string(spec) {
+    if let Err(err) = runtime.block_on(infra_runtime.run_from_str(spec)) {
         println!("{err}");
     }
 }

@@ -1,5 +1,3 @@
-use crate::core::NodeRunner;
-
 pub mod util {
     use crate::core::{
         BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner,
@@ -50,7 +48,8 @@ pub mod util {
     }
 
     pub struct PassThroughNodeRunner {
-        data: PassThroughNodeData,
+        instance_id: InstanceId,
+        name: String,
         statistics: BaseStatistics,
     }
 
@@ -116,17 +115,43 @@ pub mod util {
 
     impl NodeRunner for PassThroughNodeRunner {
         type Data = PassThroughNodeData;
+        type Incoming = Bytes;
+        type Outgoing = Bytes;
+
+        fn id(&self) -> InstanceId {
+            self.instance_id
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
 
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
-                data,
+                instance_id: data.base.instance_id,
+                name: data.base.name,
                 statistics: BaseStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run() }))
+            Ok(tokio::spawn(async move {
+                node_runner
+                    .run(
+                        data.base.cmd_rx,
+                        data.base.event_tx,
+                        data.incoming,
+                        data.outgoing,
+                    )
+                    .await
+            }))
         }
 
-        async fn run(&mut self) {
+        async fn run(
+            &mut self,
+            mut cmd_rx: Receiver<Command>,
+            event_tx: Sender<Event>,
+            mut incoming: Option<Receiver<Self::Incoming>>,
+            outgoing: Sender<Self::Outgoing>,
+        ) {
             loop {
                 let mut aggregate_stats_interval = tokio::time::interval(Duration::from_millis(
                     DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
@@ -136,21 +161,12 @@ pub mod util {
 
                 tokio::select! {
                     // receiving commands
-                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                    Ok(cmd) = cmd_rx.recv() => {
                         if cmd == Command::Quit { break; }
                     }
-                    // receiving from the incoming channel
-                    _ = async {
-                        match &mut self.data.incoming {
-                            Some(channel) => match channel.recv().await {
-                                Ok(message) => {
-                                    let _send_result = self.data.outgoing.send(message);
-                                }
-                                Err(_err) => {}
-                            },
-                            None => {}
-                        }
-                    } => { }
+                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                        let _send_result = outgoing.send(message);
+                    }
                     _ = aggregate_stats_interval.tick() => {
                         self.statistics.aggregate_interval();
                     }
@@ -180,13 +196,12 @@ pub mod network {
     use crate::error::InfraError;
     use crate::runtime::{Command, Event};
     use bytes::{Bytes, BytesMut};
-    use futures::TryFutureExt;
     use serde_derive::{Deserialize, Serialize};
     use std::any::Any;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::Duration;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::{TcpListener, TcpSocket, TcpStream, UdpSocket};
+    use tokio::net::{TcpListener, TcpSocket, UdpSocket};
     use tokio::sync::broadcast::error::RecvError;
     use tokio::sync::broadcast::{channel, Receiver, Sender};
     use tokio::task::JoinHandle;
@@ -267,8 +282,12 @@ pub mod network {
     }
 
     pub struct UdpNodeRunner {
-        data: UdpNodeData,
+        instance_id: InstanceId,
+        name: String,
+        buffer: BytesMut,
+        address: SocketAddr,
         socket: UdpSocket,
+        block_own_socket: bool,
         statistics: SocketStatistics,
     }
 
@@ -458,20 +477,49 @@ pub mod network {
 
     impl NodeRunner for UdpNodeRunner {
         type Data = UdpNodeData;
+        type Incoming = Bytes;
+        type Outgoing = Bytes;
+
+        fn id(&self) -> InstanceId {
+            self.instance_id
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
 
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let socket = create_udp_socket(&data)?;
 
             let mut node_runner = Self {
-                data,
+                instance_id: data.base.instance_id,
+                name: data.base.name,
+                buffer: data.buffer,
+                address: data.address,
                 socket,
+                block_own_socket: data.block_own_socket,
                 statistics: SocketStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run().await }))
+            Ok(tokio::spawn(async move {
+                node_runner
+                    .run(
+                        data.base.cmd_rx,
+                        data.base.event_tx,
+                        data.incoming,
+                        data.outgoing,
+                    )
+                    .await
+            }))
         }
 
-        async fn run(&mut self) {
+        async fn run(
+            &mut self,
+            mut cmd_rx: Receiver<Command>,
+            event_tx: Sender<Event>,
+            mut incoming: Option<Receiver<Self::Incoming>>,
+            outgoing: Sender<Self::Outgoing>,
+        ) {
             let mut aggregate_stats_interval =
                 tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
             let mut output_stats_interval =
@@ -483,35 +531,23 @@ pub mod network {
             loop {
                 let event: UdpNodeEvent = tokio::select! {
                     // receiving commands
-                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                    Ok(cmd) = cmd_rx.recv() => {
                         map_command_to_event(&cmd)
                     }
                     // receiving from the incoming channel
-                    incoming = async {
-                        match &mut self.data.incoming {
-                            Some(channel) => match channel
-                                .recv()
-                                .await {
-                                    Ok(received) => {
-                                        self.statistics.received_incoming(received.len())
-                                        UdpNodeEvent::ReceivedIncoming(received)
-                                    }
-                                    Err(err) => {
-                                        UdpNodeEvent::ReceiveIncomingError(err)
-                                }
-                            }
-                            None => UdpNodeEvent::NoEvent
-                        }
-                    } => { incoming }
+                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                        self.statistics.received_incoming(message.len());
+                        UdpNodeEvent::ReceivedIncoming(message)
+                    }
                     // receiving from the socket
-                    Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.data.buffer) => {
-                        if self.data.block_own_socket && (local_address == from_address) {
+                    Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.buffer) => {
+                        if self.block_own_socket && (local_address == from_address) {
                             self.statistics.blocked_packet(bytes_received);
                             UdpNodeEvent::BlockedPacket(bytes_received)
                         } else {
                             self.statistics.received_packet(bytes_received);
-                            Bytes::copy_from_slice(&self.data.buffer[..bytes_received]);
-                            UdpNodeEvent::ReceivedPacket(Bytes::copy_from_slice(&self.data.buffer[..bytes_received]))
+                            Bytes::copy_from_slice(&self.buffer[..bytes_received]);
+                            UdpNodeEvent::ReceivedPacket(Bytes::copy_from_slice(&self.buffer[..bytes_received]))
                         }
                     }
                     // aggregate statistics for the interval
@@ -528,47 +564,37 @@ pub mod network {
                 match event {
                     UdpNodeEvent::NoEvent => {}
                     UdpNodeEvent::ReceivedPacket(bytes) => {
-                        if let Ok(_num_receivers) = self.data.outgoing.send(bytes) {
+                        if let Ok(_num_receivers) = outgoing.send(bytes) {
                         } else {
-                            if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
-                                InfraError::RuntimeNode {
-                                    instance_id: self.data.base.instance_id,
+                            Self::emit_event(
+                                &event_tx,
+                                Event::NodeError(InfraError::RuntimeNode {
+                                    instance_id: self.id(),
                                     message: "Outgoing channel send failed.".to_string(),
-                                },
-                            )) {
-                                error!("{err}");
-                                break;
-                            }
+                                }),
+                            );
                         };
                     }
                     UdpNodeEvent::BlockedPacket(_) => {}
                     UdpNodeEvent::ReceivedIncoming(incoming_data) => {
-                        match self.socket.send_to(&incoming_data, self.data.address).await {
+                        match self.socket.send_to(&incoming_data, self.address).await {
                             Ok(_bytes_send) => {}
-                            Err(err) => {
-                                if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
-                                    InfraError::RuntimeNode {
-                                        instance_id: self.data.base.instance_id,
-                                        message: err.to_string(),
-                                    },
-                                )) {
-                                    error!("{err}");
-                                    break;
-                                }
-                            }
+                            Err(err) => Self::emit_event(
+                                &event_tx,
+                                Event::NodeError(InfraError::RuntimeNode {
+                                    instance_id: self.id(),
+                                    message: err.to_string(),
+                                }),
+                            ),
                         }
                     }
-                    UdpNodeEvent::SocketError(err) => {
-                        if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
-                            InfraError::RuntimeNode {
-                                instance_id: self.data.base.instance_id,
-                                message: err.to_string(),
-                            },
-                        )) {
-                            error!("{err}");
-                            break;
-                        }
-                    }
+                    UdpNodeEvent::SocketError(err) => Self::emit_event(
+                        &event_tx,
+                        Event::NodeError(InfraError::RuntimeNode {
+                            instance_id: self.id(),
+                            message: err.to_string(),
+                        }),
+                    ),
                     UdpNodeEvent::OutputStatistics => {
                         // TODO send statistics out
                     }
@@ -747,7 +773,11 @@ pub mod network {
     }
 
     pub struct TcpServerNodeRunner {
-        data: TcpServerNodeData,
+        instance_id: InstanceId,
+        name: String,
+        buffer: BytesMut,
+        interface: SocketAddr,
+        max_connections: usize,
         statistics: SocketStatistics,
     }
 
@@ -826,18 +856,47 @@ pub mod network {
 
     impl NodeRunner for TcpServerNodeRunner {
         type Data = TcpServerNodeData;
+        type Incoming = Bytes;
+        type Outgoing = Bytes;
+
+        fn id(&self) -> InstanceId {
+            self.instance_id
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
 
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
-                data,
-                statistics: TcpNodeStatistics::default(),
+                instance_id: data.base.instance_id,
+                name: data.base.name,
+                buffer: data.buffer,
+                interface: data.interface,
+                max_connections: data.max_connections,
+                statistics: SocketStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run().await }))
+            Ok(tokio::spawn(async move {
+                node_runner
+                    .run(
+                        data.base.cmd_rx,
+                        data.base.event_tx,
+                        data.incoming,
+                        data.outgoing,
+                    )
+                    .await
+            }))
         }
 
-        async fn run(&mut self) {
-            let socket = TcpListener::bind(self.data.interface).await.unwrap();
+        async fn run(
+            &mut self,
+            mut cmd_rx: Receiver<Command>,
+            event_tx: Sender<Event>,
+            mut incoming: Option<Receiver<Self::Incoming>>,
+            outgoing: Sender<Self::Outgoing>,
+        ) {
+            let socket = TcpListener::bind(self.interface).await.unwrap();
             let (mut stream, addr) = socket.accept().await.unwrap();
             let (reader, writer) = stream.into_split();
 
@@ -850,12 +909,17 @@ pub mod network {
             // (3 and 4 for each connected client, with broadcast channels to the main node)
             loop {
                 tokio::select! {
-                    Ok(command) = self.data.base.cmd_rx.recv() => {
+                    Ok(command) = cmd_rx.recv() => {
                         if command == Command::Quit { break; }
                     }
                     Ok((mut stream, addr)) = socket.accept() => {
                         let (reader, writer) = stream.into_split();
                         // TODO spawn the reader and write loops
+                        // TODO reader loop to forward to outgoing channel
+                        // TODO whitelist/blacklist of remote addresses?
+                    }
+                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                        // TODO send out via socket write loop, could be multiple connected clients
                     }
                 }
             }
@@ -880,7 +944,11 @@ pub mod network {
     }
 
     pub struct TcpClientNodeRunner {
-        data: TcpClientNodeData,
+        instance_id: InstanceId,
+        name: String,
+        buffer: BytesMut,
+        interface: SocketAddr,
+        address: SocketAddr,
         statistics: SocketStatistics,
     }
 
@@ -964,108 +1032,128 @@ pub mod network {
 
     impl NodeRunner for TcpClientNodeRunner {
         type Data = TcpClientNodeData;
+        type Incoming = Bytes;
+        type Outgoing = Bytes;
+
+        fn id(&self) -> InstanceId {
+            self.instance_id
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
 
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
-                data,
+                instance_id: data.base.instance_id,
+                name: data.base.name,
+                buffer: data.buffer,
+                interface: data.interface,
+                address: data.address,
                 statistics: SocketStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run() }))
+            Ok(tokio::spawn(async move {
+                node_runner
+                    .run(
+                        data.base.cmd_rx,
+                        data.base.event_tx,
+                        data.incoming,
+                        data.outgoing,
+                    )
+                    .await
+            }))
         }
 
-        async fn run(&mut self) {
+        async fn run(
+            &mut self,
+            mut cmd_rx: Receiver<Command>,
+            mut event_tx: Sender<Event>,
+            mut incoming: Option<Receiver<Self::Incoming>>,
+            outgoing: Sender<Self::Outgoing>,
+        ) {
             let mut aggregate_stats_interval =
                 tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
             let mut output_stats_interval =
                 tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
 
-            let socket = if self.data.interface.is_ipv4() {
+            let socket = if self.interface.is_ipv4() {
                 TcpSocket::new_v4()
             } else {
                 TcpSocket::new_v6()
-            }
-            .inspect_err(|err| {
-                let _ = self
-                    .data
-                    .base
-                    .event_tx
-                    .send(Event::NodeError(InfraError::CreateNode {
-                        instance_id: self.data.base.instance_id,
-                        message: err.to_string(),
-                    }));
-            })?;
-            socket.set_reuseaddr(true)?;
-
-            match socket.bind(self.data.interface) {
-                Ok(_) => {}
+            };
+            let socket = match socket {
+                Ok(socket) => socket,
                 Err(err) => {
-                    let _ =
-                        self.data
-                            .base
-                            .event_tx
-                            .send(Event::NodeError(InfraError::CreateNode {
-                                instance_id: self.data.base.instance_id,
-                                message: err.to_string(),
-                            }));
+                    Self::emit_event(
+                        &event_tx,
+                        Event::NodeError(InfraError::CreateNode {
+                            instance_id: self.id(),
+                            message: err.to_string(),
+                        }),
+                    );
+                    return;
                 }
             };
-            let mut tcp_stream = socket.connect(self.data.address).await.inspect_err(|err| {
-                let _ = self
-                    .data
-                    .base
-                    .event_tx
-                    .send(Event::NodeError(InfraError::CreateNode {
-                        instance_id: self.data.base.instance_id,
-                        message: err.to_string(),
-                    }));
-            })?;
+
+            match socket.bind(self.interface) {
+                Ok(_) => {}
+                Err(err) => {
+                    Self::emit_event(
+                        &event_tx,
+                        Event::NodeError(InfraError::CreateNode {
+                            instance_id: self.id(),
+                            message: err.to_string(),
+                        }),
+                    );
+                }
+            };
+            let mut tcp_stream = match socket.connect(self.address).await {
+                Ok(stream) => stream,
+                Err(err) => {
+                    Self::emit_event(
+                        &event_tx,
+                        Event::NodeError(InfraError::CreateNode {
+                            instance_id: self.id(),
+                            message: err.to_string(),
+                        }),
+                    );
+                    return;
+                }
+            };
+
             let (mut reader, mut writer) = tcp_stream.split();
 
             loop {
                 tokio::select! {
                     // receiving commands
-                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                    Ok(cmd) = cmd_rx.recv() => {
                         if cmd == Command::Quit { break; }
                     }
                     // receiving from the incoming channel
-                    incoming = async {
-                        match &mut self.data.incoming {
-                            Some(channel) => match channel.recv().await {
-                                Ok(message) => {
-                                    let _send_result = writer.write_all(&message).await;
-                                    self.statistics.received_incoming(message.len());
-                                }
-                                Err(_err) => {}
-                            },
-                            None => {}
-                        }
-                    } => { incoming }
+                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                        let _send_result = writer.write_all(&message).await;
+                        self.statistics.received_incoming(message.len());
+                    }
                     // receiving from the socket
-                    Ok(bytes_received) = reader.read(&mut self.data.buffer) => {
+                    Ok(bytes_received) = reader.read(&mut self.buffer) => {
                         if bytes_received > 0 {
-                            let _ = self
-                                .data
-                                .base
-                                .event_tx
-                                .send(Event::NodeError(InfraError::RuntimeNode {
-                                    instance_id: self.data.base.instance_id,
-                                    message: "TCP client node disconnected.".to_string(),
-                                }));
+                            Self::emit_event(&event_tx, Event::NodeError(InfraError::RuntimeNode {
+                                instance_id: self.id(),
+                                message: "TCP client node disconnected.".to_string(),
+                            }));
                         } else {
-                            if let Ok(_num_receivers) = self.data.outgoing
-                                .send(Bytes::copy_from_slice(&self.data.buffer[..bytes_received])) {
+                            if let Ok(_num_receivers) = outgoing
+                                .send(Bytes::copy_from_slice(&self.buffer[..bytes_received])) {
                                 self.statistics.received_packet(bytes_received);
                             } else {
-                                if let Err(err) = self.data.base.event_tx.send(Event::NodeError(
+                                Self::emit_event(&event_tx, Event::NodeError(
                                     InfraError::RuntimeNode {
-                                        instance_id: self.data.base.instance_id,
+                                        instance_id: self.id(),
                                         message: "Outgoing channel send failed.".to_string(),
                                     },
-                                )) {
-                                    error!("{err}");
-                                    break;
-                                }
+                                ));
+                                break;
                             };
                         }
                     }
@@ -1154,7 +1242,10 @@ pub mod dis {
     }
 
     pub struct DisRxNodeRunner {
-        data: DisRxNodeData,
+        instance_id: InstanceId,
+        name: String,
+        exercise_id: Option<u8>,
+        allow_dis_versions: Vec<ProtocolVersion>,
         statistics: DisStatistics,
     }
 
@@ -1233,17 +1324,45 @@ pub mod dis {
 
     impl NodeRunner for DisRxNodeRunner {
         type Data = DisRxNodeData;
+        type Incoming = Bytes;
+        type Outgoing = Pdu;
+
+        fn id(&self) -> InstanceId {
+            self.instance_id
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
 
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
-                data,
+                instance_id: data.base.instance_id,
+                name: data.base.name,
+                exercise_id: data.exercise_id,
+                allow_dis_versions: data.allow_dis_versions,
                 statistics: DisStatistics::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run().await }))
+            Ok(tokio::spawn(async move {
+                node_runner
+                    .run(
+                        data.base.cmd_rx,
+                        data.base.event_tx,
+                        data.incoming,
+                        data.outgoing,
+                    )
+                    .await
+            }))
         }
 
-        async fn run(&mut self) {
+        async fn run(
+            &mut self,
+            mut cmd_rx: Receiver<Command>,
+            mut event_tx: Sender<Event>,
+            mut incoming: Option<Receiver<Self::Incoming>>,
+            outgoing: Sender<Self::Outgoing>,
+        ) {
             loop {
                 let mut aggregate_stats_interval = tokio::time::interval(Duration::from_millis(
                     DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
@@ -1253,34 +1372,26 @@ pub mod dis {
 
                 tokio::select! {
                     // receiving commands
-                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                    Ok(cmd) = cmd_rx.recv() => {
                         if cmd == Command::Quit { break; }
                     }
                     // receiving from the incoming channel, parse into PDU
-                    _ = async {
-                        match &mut self.data.incoming {
-                            Some(channel) => match channel.recv().await {
-                                Ok(packet) => {
-                                    let pdus = match dis_rs::parse(&packet) {
-                                        Ok(vec) => { vec }
-                                        Err(err) => {
-                                            trace!("DIS parse error: {err}");
-                                            vec![]
-                                        }
-                                    };
-                                    pdus.into_iter()
-                                        .filter(|pdu| self.data.allow_dis_versions.contains(&pdu.header.protocol_version))
-                                        .filter(|pdu| self.data.exercise_id.is_none() || self.data.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
-                                        .for_each(|pdu| {
-                                            let _send_result = self.data.outgoing.send(pdu);
-                                            self.statistics.base.incoming_message();
-                                        });
-                                }
-                                Err(_err) => {}
-                            },
-                            None => {}
-                        }
-                    } => { }
+                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                        let pdus = match dis_rs::parse(&message) {
+                            Ok(vec) => { vec }
+                            Err(err) => {
+                                trace!("DIS parse error: {err}");
+                                vec![]
+                            }
+                        };
+                        pdus.into_iter()
+                            .filter(|pdu| self.allow_dis_versions.contains(&pdu.header.protocol_version))
+                            .filter(|pdu| self.exercise_id.is_none() || self.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
+                            .for_each(|pdu| {
+                                let _send_result = outgoing.send(pdu);
+                                self.statistics.base.incoming_message();
+                            });
+                    }
                     // aggregate statistics for the interval
                     _ = aggregate_stats_interval.tick() => {
                         self.statistics.base.aggregate_interval();
@@ -1308,7 +1419,9 @@ pub mod dis {
     }
 
     pub struct DisTxNodeRunner {
-        data: DisTxNodeData,
+        instance_id: InstanceId,
+        name: String,
+        buffer: BytesMut,
         statistics: DisStatistics,
     }
 
@@ -1373,17 +1486,44 @@ pub mod dis {
 
     impl NodeRunner for DisTxNodeRunner {
         type Data = DisTxNodeData;
+        type Incoming = Pdu;
+        type Outgoing = Bytes;
+
+        fn id(&self) -> InstanceId {
+            self.instance_id
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
 
         fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
             let mut node_runner = Self {
-                data,
-                statistics: DisStatistics::default(),
+                instance_id: data.base.instance_id,
+                name: data.base.name,
+                buffer: data.buffer,
+                statistics: Default::default(),
             };
 
-            Ok(tokio::spawn(async move { node_runner.run().await }))
+            Ok(tokio::spawn(async move {
+                node_runner
+                    .run(
+                        data.base.cmd_rx,
+                        data.base.event_tx,
+                        data.incoming,
+                        data.outgoing,
+                    )
+                    .await
+            }))
         }
 
-        async fn run(&mut self) {
+        async fn run(
+            &mut self,
+            mut cmd_rx: Receiver<Command>,
+            mut event_tx: Sender<Event>,
+            mut incoming: Option<Receiver<Self::Incoming>>,
+            outgoing: Sender<Self::Outgoing>,
+        ) {
             loop {
                 let mut aggregate_stats_interval = tokio::time::interval(Duration::from_millis(
                     DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
@@ -1393,48 +1533,41 @@ pub mod dis {
 
                 tokio::select! {
                     // receiving commands
-                    Ok(cmd) = self.data.base.cmd_rx.recv() => {
+                    Ok(cmd) = cmd_rx.recv() => {
                         if cmd == Command::Quit { break; }
                     }
                     // receiving from the incoming channel, serialise PDU into Bytes
-                    _ = async {
-                        match &mut self.data.incoming {
-                            Some(channel) => match channel.recv().await {
-                                Ok(pdu) => {
-                                    self.statistics.base.incoming_message();
-                                    match pdu.serialize(&mut self.data.buffer) {
-                                        Ok(bytes_written) => {
-                                            let _send_result = self.data.outgoing
-                                            .send(Bytes::copy_from_slice(&self.data.buffer[0..(bytes_written as usize)]))
-                                            .inspect(|_bytes_send| self.statistics.base.outgoing_message() )
-                                            .inspect_err(|err| {
-                                                let _ = self.data.base.event_tx.send(
-                                                    Event::NodeError(
-                                                        InfraError::RuntimeNode {
-                                                            instance_id: self.data.base.instance_id,
-                                                            message: err.to_string()
-                                                        }
-                                                    )
-                                                );}
-                                            );
+                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                        self.statistics.base.incoming_message();
+                        match message.serialize(&mut self.buffer) {
+                            Ok(bytes_written) => {
+                                let _send_result = outgoing
+                                .send(Bytes::copy_from_slice(&self.buffer[0..(bytes_written as usize)]))
+                                .inspect(|_bytes_send| self.statistics.base.outgoing_message() )
+                                .inspect_err(|err| {
+                                    let _ = event_tx.send(
+                                        Event::NodeError(
+                                            InfraError::RuntimeNode {
+                                                instance_id: self.id(),
+                                                message: err.to_string()
+                                            }
+                                        )
+                                    );}
+                                );
+                            }
+                            Err(err) => {
+                                Self::emit_event(
+                                    &event_tx,
+                                    Event::NodeError(
+                                        InfraError::RuntimeNode {
+                                            instance_id: self.id(),
+                                            message: err.to_string()
                                         }
-                                        Err(err) => {
-                                            let _ = self.data.base.event_tx.send(
-                                                Event::NodeError(
-                                                    InfraError::RuntimeNode {
-                                                        instance_id: self.data.base.instance_id,
-                                                        message: err.to_string()
-                                                    }
-                                                )
-                                            );
-                                        }
-                                    }
-                                }
-                                Err(_err) => {}
-                            },
-                            None => {}
+                                    )
+                                );
+                            }
                         }
-                    } => { }
+                    }
                     // aggregate statistics for the interval
                     _ = aggregate_stats_interval.tick() => {
                         self.statistics.base.aggregate_interval();

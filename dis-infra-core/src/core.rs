@@ -6,7 +6,7 @@ use std::any::Any;
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::task::JoinHandle;
 use toml::Value;
-use tracing::trace;
+use tracing::{error, trace};
 
 pub type InstanceId = u64;
 pub type UntypedNode = Box<dyn NodeData>;
@@ -73,12 +73,53 @@ where
 /// Trait that defines a node at runtime. It connects the associated `NodeData` struct (as associated type `Data`) to the runtime logic.
 pub trait NodeRunner {
     type Data;
+    type Incoming: Clone;
+    type Outgoing: Clone;
+
+    // /// Convenience referral to the composed BaseNode fields
+    // fn base(&self) -> &BaseNode;
+    // fn base_mut(&mut self) -> &mut BaseNode;
+    // fn incoming(&mut self) -> Option<Receiver<Self::Incoming>>;
+
+    fn id(&self) -> InstanceId;
+    fn name(&self) -> &str;
 
     /// Spawns the actual node, given the associated `NodeData` type.
     fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError>;
     /// The async method executed when spawned.
     #[allow(async_fn_in_trait)]
-    async fn run(&mut self);
+    // async fn run(&mut self);
+    async fn run(
+        &mut self,
+        cmd_rx: Receiver<Command>,
+        event_tx: Sender<Event>,
+        incoming: Option<Receiver<Self::Incoming>>,
+        outgoing: Sender<Self::Outgoing>,
+    );
+
+    /// Send out an event over the event channel (convenient / shorthand function)
+    fn emit_event(event_tx: &Sender<Event>, event: Event) {
+        if let Err(err) = event_tx.send(event) {
+            // error!("Node '{}' - {}", self.base().name, err);
+            // TODO make a method again to log the name and such
+            error!("{}", err);
+        }
+    }
+
+    async fn receive_incoming(
+        channel_opt: &mut Option<Receiver<Self::Incoming>>,
+    ) -> Option<Self::Incoming> {
+        match channel_opt {
+            None => None,
+            Some(ref mut channel) => match channel.recv().await {
+                Ok(message) => Some(message),
+                Err(err) => {
+                    error!("{err}");
+                    None
+                }
+            },
+        }
+    }
 }
 
 #[allow(dead_code)]
