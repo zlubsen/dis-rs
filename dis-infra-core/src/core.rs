@@ -12,8 +12,8 @@ pub type InstanceId = u64;
 pub type UntypedNode = Box<dyn NodeData>;
 pub type NodeConstructor = fn(
     InstanceId,
-    tokio::sync::broadcast::Receiver<Command>,
-    tokio::sync::broadcast::Sender<Event>,
+    Receiver<Command>,
+    Sender<Event>,
     &str,
     &toml::Table,
 ) -> Result<UntypedNode, InfraError>;
@@ -76,19 +76,14 @@ pub trait NodeRunner {
     type Incoming: Clone;
     type Outgoing: Clone;
 
-    // /// Convenience referral to the composed BaseNode fields
-    // fn base(&self) -> &BaseNode;
-    // fn base_mut(&mut self) -> &mut BaseNode;
-    // fn incoming(&mut self) -> Option<Receiver<Self::Incoming>>;
-
     fn id(&self) -> InstanceId;
     fn name(&self) -> &str;
 
     /// Spawns the actual node, given the associated `NodeData` type.
     fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError>;
+
     /// The async method executed when spawned.
     #[allow(async_fn_in_trait)]
-    // async fn run(&mut self);
     async fn run(
         &mut self,
         cmd_rx: Receiver<Command>,
@@ -97,7 +92,7 @@ pub trait NodeRunner {
         outgoing: Sender<Self::Outgoing>,
     );
 
-    /// Send out an event over the event channel (convenient / shorthand function)
+    /// Send out an event over the event channel (convenience / shorthand function)
     fn emit_event(event_tx: &Sender<Event>, event: Event) {
         if let Err(err) = event_tx.send(event) {
             // error!("Node '{}' - {}", self.base().name, err);
@@ -106,6 +101,8 @@ pub trait NodeRunner {
         }
     }
 
+    /// Shorthand function to receive messages from the optional incoming channel of the node.
+    #[warn(async_fn_in_trait)]
     async fn receive_incoming(
         channel_opt: &mut Option<Receiver<Self::Incoming>>,
     ) -> Option<Self::Incoming> {
@@ -132,16 +129,16 @@ pub struct BaseNodeSpec {
 pub struct BaseNode {
     pub instance_id: InstanceId,
     pub name: String,
-    pub cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-    pub event_tx: tokio::sync::broadcast::Sender<Event>,
+    pub cmd_rx: Receiver<Command>,
+    pub event_tx: Sender<Event>,
 }
 
 impl BaseNode {
     pub fn new(
         instance_id: InstanceId,
         name: String,
-        cmd_rx: tokio::sync::broadcast::Receiver<Command>,
-        event_tx: tokio::sync::broadcast::Sender<Event>,
+        cmd_rx: Receiver<Command>,
+        event_tx: Sender<Event>,
     ) -> Self {
         Self {
             instance_id,
@@ -196,7 +193,7 @@ pub(crate) fn builtin_nodes() -> Vec<(&'static str, NodeConstructor)> {
 }
 
 /// Convenience function to retrieve a NodeConstructor from the provided lookup,
-/// given the provided key (node_type).
+/// given the provided key (`node_type`).
 ///
 /// Return an `InfraError::InvalidSpec` when the key is not found in the lookup.
 pub(crate) fn lookup_node_constructor(
@@ -238,10 +235,18 @@ pub(crate) fn check_node_spec_type_value(spec: &toml::Table) -> Result<String, I
 
 pub(crate) fn construct_nodes_from_spec(
     constructor_lookup: &Vec<(&'static str, NodeConstructor)>,
-    command_tx: tokio::sync::broadcast::Sender<Command>,
-    event_tx: tokio::sync::broadcast::Sender<Event>,
+    command_tx: Sender<Command>,
+    event_tx: Sender<Event>,
     contents: &toml::Table,
 ) -> Result<Vec<UntypedNode>, InfraError> {
+    if !contents.contains_key(SPEC_NODE_ARRAY) {
+        return Err(InfraError::InvalidSpec {
+            message: format!(
+                "A spec file must contain a non-empty list of '{}', which is missing.",
+                SPEC_NODE_ARRAY
+            ),
+        });
+    }
     if let Value::Array(array) = &contents[SPEC_NODE_ARRAY] {
         let nodes: Vec<Result<UntypedNode, InfraError>> = array
             .iter()
@@ -278,8 +283,10 @@ pub(crate) fn construct_nodes_from_spec(
         nodes
     } else {
         Err(InfraError::InvalidSpec {
-            message: "A spec file must contain a non-empty list of 'nodes', which is missing."
-                .to_string(),
+            message: format!(
+                "The '{}' field in the spec file is not an array.",
+                SPEC_NODE_ARRAY
+            ),
         })
     }
 }
@@ -293,6 +300,14 @@ pub(crate) fn register_channels_for_nodes(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,
 ) -> Result<(), InfraError> {
+    if !spec.contains_key(SPEC_CHANNEL_ARRAY) {
+        return Err(InfraError::InvalidSpec {
+            message: format!(
+                "A spec file must contain a non-empty array of '{}', which is missing.",
+                SPEC_CHANNEL_ARRAY
+            ),
+        });
+    }
     if let Value::Array(array) = &spec[SPEC_CHANNEL_ARRAY] {
         for channel in array {
             if let Value::Table(spec) = channel {
@@ -303,8 +318,10 @@ pub(crate) fn register_channels_for_nodes(
         }
     } else {
         return Err(InfraError::InvalidSpec {
-            message: "A spec file must contain a non-empty array of 'channels', which is missing."
-                .to_string(),
+            message: format!(
+                "A spec file must contain a non-empty array of '{}', which is not an array.",
+                SPEC_CHANNEL_ARRAY
+            ),
         });
     };
     Ok(())
@@ -320,26 +337,6 @@ pub(crate) fn register_channel_from_spec(
 
     let from_id = channel_name_to_instance_id(nodes, from, SPEC_CHANNEL_FROM_FIELD)?;
     let to_id = channel_name_to_instance_id(nodes, to, SPEC_CHANNEL_TO_FIELD)?;
-    // let from_id = nodes
-    //     .iter()
-    //     .find(|node| node.name() == from)
-    //     .ok_or(InfraError::InvalidSpec {
-    //         message: format!(
-    //             "Invalid channel spec, no correct ({}) node with name '{from}' is defined.",
-    //             SPEC_CHANNEL_FROM_FIELD
-    //         ),
-    //     })?
-    //     .id();
-    // let to_id = nodes
-    //     .iter()
-    //     .find(|node| node.name() == to)
-    //     .ok_or(InfraError::InvalidSpec {
-    //         message: format!(
-    //             "Invalid channel spec, no correct ({}) node with name '{to}' is defined.",
-    //             SPEC_CHANNEL_TO_FIELD
-    //         ),
-    //     })?
-    //     .id();
 
     let from_node = nodes
         .get(from_id as usize)

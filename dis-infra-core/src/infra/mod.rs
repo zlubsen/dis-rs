@@ -205,7 +205,6 @@ pub mod network {
     use tokio::sync::broadcast::error::RecvError;
     use tokio::sync::broadcast::{channel, Receiver, Sender};
     use tokio::task::JoinHandle;
-    use toml::Table;
     use tracing::error;
 
     const SOCKET_BUFFER_CAPACITY: usize = 32_768;
@@ -295,7 +294,7 @@ pub mod network {
     enum UdpNodeEvent {
         NoEvent,
         ReceivedPacket(Bytes),
-        BlockedPacket(usize),
+        BlockedPacket,
         ReceivedIncoming(Bytes),
         SocketError(std::io::Error),
         ReceiveIncomingError(RecvError),
@@ -543,7 +542,7 @@ pub mod network {
                     Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.buffer) => {
                         if self.block_own_socket && (local_address == from_address) {
                             self.statistics.blocked_packet(bytes_received);
-                            UdpNodeEvent::BlockedPacket(bytes_received)
+                            UdpNodeEvent::BlockedPacket
                         } else {
                             self.statistics.received_packet(bytes_received);
                             Bytes::copy_from_slice(&self.buffer[..bytes_received]);
@@ -575,7 +574,7 @@ pub mod network {
                             );
                         };
                     }
-                    UdpNodeEvent::BlockedPacket(_) => {}
+                    UdpNodeEvent::BlockedPacket => {}
                     UdpNodeEvent::ReceivedIncoming(incoming_data) => {
                         match self.socket.send_to(&incoming_data, self.address).await {
                             Ok(_bytes_send) => {}
@@ -786,7 +785,7 @@ pub mod network {
             instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            spec: &Table,
+            spec: &toml::Table,
         ) -> Result<Self, InfraError> {
             let node_spec: TcpServerNodeSpec =
                 toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
@@ -957,7 +956,7 @@ pub mod network {
             instance_id: InstanceId,
             cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            spec: &Table,
+            spec: &toml::Table,
         ) -> Result<Self, InfraError> {
             let node_spec: TcpClientNodeSpec =
                 toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {

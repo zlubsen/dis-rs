@@ -1,26 +1,31 @@
 use crate::core::{NodeConstructor, UntypedNode};
 use crate::error::InfraError;
 use futures::stream::FuturesUnordered;
+use std::any::Any;
 use std::fs::read_to_string;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
+use tokio::task::JoinHandle;
 use tracing::trace;
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
 const EVENT_CHANNEL_CAPACITY: usize = 50;
 
-/// The `InfraRuntime` is used to construct a specific infrastructure using composable Nodes, connected through Channels.
-/// `InfraRuntime` wraps a tokio async Runtime, and manages the generic communication channels for the infrastructure.
-pub struct InfraRuntime {
+/// The `InfraBuilder` is used to construct a specific infrastructure using composable Nodes, connected through Channels.
+/// It also constructs the generic communication channels for the infrastructure.
+pub struct InfraBuilder {
     command_tx: tokio::sync::broadcast::Sender<Command>,
     event_tx: tokio::sync::broadcast::Sender<Event>,
+    external_input_async: Option<tokio::sync::broadcast::Sender<Command>>,
+    external_output_async: Option<tokio::sync::broadcast::Receiver<Box<dyn Any>>>,
+    nodes: Vec<UntypedNode>,
     node_factories: Vec<(&'static str, NodeConstructor)>,
 }
 
-impl InfraRuntime {
-    /// Initialise a `InfraRuntime` environment.
-    /// The needed communication channels are created using this function.
+impl InfraBuilder {
+    /// Initialise an `InfraBuilder` environment.
+    /// The needed coordination channels (for sending `Command`s and receiving `Event`s) are created using this function.
     pub fn init() -> Self {
         let (command_tx, _command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
         let (event_tx, _event_rx) = tokio::sync::broadcast::channel(EVENT_CHANNEL_CAPACITY);
@@ -30,25 +35,28 @@ impl InfraRuntime {
         Self {
             command_tx,
             event_tx,
+            external_input_async: None,
+            external_output_async: None,
+            nodes: vec![],
             node_factories: node_factory,
         }
     }
 
-    /// Executes an infra specification from a given `Path`
-    pub async fn run_from_path(&self, path: &Path) -> Result<(), InfraError> {
+    /// Builds an infra specification from a given `Path`, pointing to a TOML file
+    pub fn build_from_path(&mut self, path: &Path) -> Result<(), InfraError> {
         let contents = read_to_string(path).map_err(|err| InfraError::InvalidSpec {
             message: err.to_string(),
         })?;
-        self.run_infra(&contents).await
+        self.build_spec(&contents)
     }
 
-    /// Executes an infra specification, provided as the bare content (TOML)
-    pub async fn run_from_str(&self, toml_spec: &str) -> Result<(), InfraError> {
-        self.run_infra(toml_spec).await
+    /// Builds an infra specification, provided as the bare content (in TOML format)
+    pub fn build_from_str(&mut self, toml_spec: &str) -> Result<(), InfraError> {
+        self.build_spec(toml_spec)
     }
 
-    /// Constructs and executes the provided specification.
-    async fn run_infra(&self, spec: &str) -> Result<(), InfraError> {
+    /// Builds the provided specification.
+    fn build_spec(&mut self, spec: &str) -> Result<(), InfraError> {
         let contents: toml::Table =
             toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
                 message: err.to_string(),
@@ -67,26 +75,7 @@ impl InfraRuntime {
         // 3. Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
-        // 4. Spawn the coordination tasks: shutdown signal and error event listeners
-        let shutdown_handle = tokio::spawn(shutdown_signal(self.command_tx.clone()));
-        let event_listener_handle = tokio::spawn(event_listener(
-            self.event_tx.subscribe(),
-            self.command_tx.clone(),
-        ));
-
-        // 5. Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
-        let handles: Result<FuturesUnordered<_>, _> = nodes
-            .into_iter()
-            .map(|node| node.spawn_into_runner())
-            .collect();
-        let handles = handles?; // Propagate any error
-
-        // 6. Push coordination handles to the FuturesUnordered
-        handles.push(shutdown_handle);
-        handles.push(event_listener_handle);
-
-        // 7. Wait for all tasks to finish
-        let _ = futures::future::join_all(handles).await;
+        self.nodes = nodes;
 
         Ok(())
     }
@@ -100,6 +89,33 @@ impl InfraRuntime {
     pub fn event_channel(&self) -> tokio::sync::broadcast::Receiver<Event> {
         self.event_tx.subscribe()
     }
+}
+
+/// Execute an infrastructure, as constructed by a `InfraRuntimeBuilder`.
+pub async fn run_from_builder(builder: InfraBuilder) -> Result<(), InfraError> {
+    // Spawn the coordination tasks: shutdown signal and error event listeners
+    let shutdown_handle = tokio::spawn(shutdown_signal(builder.command_tx.clone()));
+    let event_listener_handle = tokio::spawn(event_listener(
+        builder.event_tx.subscribe(),
+        builder.command_tx.clone(),
+    ));
+
+    // Spawn all nodes by iterating the vec, collecting JoinHandles in a FuturesUnordered, or an error when a node failed to start
+    let handles: Result<FuturesUnordered<_>, _> = builder
+        .nodes
+        .into_iter()
+        .map(|node| node.spawn_into_runner())
+        .collect();
+    let handles = handles?; // Propagate any error
+
+    // Push coordination handles to the FuturesUnordered
+    handles.push(shutdown_handle);
+    handles.push(event_listener_handle);
+
+    // 7. Wait for all tasks to finish
+    let _ = futures::future::join_all(handles).await;
+
+    Ok(())
 }
 
 /// General task that listens to emitted `Event`s.
@@ -160,9 +176,13 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
 
-    tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+    let mut cmd_rx = cmd.subscribe();
+    loop {
+        tokio::select! {
+            Ok(quit) = cmd_rx.recv() => { break; },
+            _ = ctrl_c => { break; },
+            _ = terminate => { break; },
+        }
     }
 
     trace!("Shutdown signal detected, stopping the infrastructure.");

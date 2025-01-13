@@ -1,7 +1,7 @@
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
-use dis_infra_core::runtime::{default_tokio_runtime, InfraRuntime};
+use dis_infra_core::runtime::{default_tokio_runtime, run_from_builder, InfraBuilder};
 
 /// Demonstrates the basic use of the infrastructure
 /// through the use of a specification (config) file.
@@ -21,6 +21,7 @@ fn main() {
         // sets this to be the default, global collector for this application.
         .init();
 
+    /// Create a specification in TOML format, either as a `&str` or a `Path` from the filesystem
     let spec = r#"
         [[ nodes ]]
         type = "udp"
@@ -40,11 +41,19 @@ fn main() {
         to = "Simple pass"
     "#;
 
-    let mut runtime =
+    /// Provide a (Tokio) runtime
+    let runtime =
         default_tokio_runtime().expect("Expected tokio runtime to be created successfully.");
-    let infra_runtime = InfraRuntime::init();
 
-    if let Err(err) = runtime.block_on(infra_runtime.run_from_str(spec)) {
+    /// Initialise the Infra
+    let mut infra_runtime_builder = InfraBuilder::init();
+    if let Err(err) = infra_runtime_builder.build_from_str(spec) {
+        println!("{err}");
+    }
+    let cmd_tx = infra_runtime_builder.command_channel();
+    let event_tx = infra_runtime_builder.event_channel();
+
+    if let Err(err) = runtime.block_on(run_from_builder(infra_runtime_builder)) {
         println!("{err}");
     }
 }
