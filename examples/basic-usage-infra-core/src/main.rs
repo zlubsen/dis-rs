@@ -6,9 +6,9 @@ use dis_infra_core::runtime::{default_tokio_runtime, run_from_builder, InfraBuil
 /// Demonstrates the basic use of the infrastructure
 /// through the use of a specification (config) file.
 ///
-/// Note that we call `runtime.run_with_spec_string(spec_as_&str)`,
+/// Note that we call `runtime.build_from_str(spec_as_&str)`,
 /// while normally the spec would be in a normal `File`
-/// Which one would call using `runtime.run_with_spec(path_to_file)`
+/// Which one would call using `runtime.build_from_path(path_to_file)`
 fn main() {
     tracing_subscriber::fmt()
         .pretty()
