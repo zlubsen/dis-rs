@@ -6,7 +6,6 @@ use std::fs::read_to_string;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
-use tokio::task::JoinHandle;
 use tracing::trace;
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
@@ -179,7 +178,7 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
     let mut cmd_rx = cmd.subscribe();
     loop {
         tokio::select! {
-            Ok(quit) = cmd_rx.recv() => { break; },
+            Ok(Command::Quit) = cmd_rx.recv() => { break; },
             _ = ctrl_c => { break; },
             _ = terminate => { break; },
         }
