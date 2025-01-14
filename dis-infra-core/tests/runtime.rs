@@ -198,3 +198,29 @@ async fn build_spec_channel_field_wrong_data_type() {
         assert!(true);
     }
 }
+
+#[tokio::test]
+async fn build_spec_channel_incompatible_data_between_nodes() {
+    use dis_infra_core::error::InfraError;
+
+    let spec = r#"
+        [[ nodes ]]
+        type = "pass_through"
+        name = "Sends Bytes"
+
+        [[ nodes ]]
+        type = "dis_sender"
+        name = "Receives PDU"
+
+        [[ channels ]]
+        from = "Sends Bytes"
+        to = "Receives PDU"
+    "#;
+
+    let mut infra_builder = InfraBuilder::init();
+    let error = infra_builder.build_from_str(spec).unwrap_err();
+
+    if let InfraError::InvalidSpec { .. } = error {
+        assert!(true);
+    }
+}

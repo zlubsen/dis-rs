@@ -16,8 +16,10 @@ const EVENT_CHANNEL_CAPACITY: usize = 50;
 pub struct InfraBuilder {
     command_tx: tokio::sync::broadcast::Sender<Command>,
     event_tx: tokio::sync::broadcast::Sender<Event>,
-    external_input_async: Option<tokio::sync::broadcast::Sender<Command>>,
+    external_input_async: Option<tokio::sync::broadcast::Sender<Box<dyn Any>>>,
     external_output_async: Option<tokio::sync::broadcast::Receiver<Box<dyn Any>>>,
+    // external_input_sync: Option<std::sync::mpsc::Sender<Box<dyn Any>>>,
+    // external_output_sync: Option<std::sync::mpsc::Receiver<Box<dyn Any>>>,
     nodes: Vec<UntypedNode>,
     node_factories: Vec<(&'static str, NodeConstructor)>,
 }
@@ -73,6 +75,9 @@ impl InfraBuilder {
 
         // 3. Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
+
+        // 4. Connect optional channels to an external sender/receiver.
+        let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes);
 
         self.nodes = nodes;
 

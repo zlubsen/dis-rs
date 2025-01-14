@@ -91,6 +91,7 @@ pub mod util {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    data_type_expected: "Bytes".to_string(),
                 })
             }
         }
@@ -457,6 +458,7 @@ pub mod network {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    data_type_expected: "Bytes".to_string(),
                 })
             }
         }
@@ -836,6 +838,7 @@ pub mod network {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    data_type_expected: "Bytes".to_string(),
                 })
             }
         }
@@ -1012,6 +1015,7 @@ pub mod network {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    data_type_expected: "Bytes".to_string(),
                 })
             }
         }
@@ -1304,6 +1308,7 @@ pub mod dis {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    data_type_expected: "Bytes".to_string(),
                 })
             }
         }
@@ -1466,6 +1471,7 @@ pub mod dis {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    data_type_expected: "Pdu".to_string(),
                 })
             }
         }

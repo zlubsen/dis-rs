@@ -7,8 +7,11 @@ pub enum InfraError {
     CannotStartRuntime,
     #[error("Config error: {message}")]
     InvalidSpec { message: String },
-    #[error("Node {instance_id} could not subscribe to channel (wrong data type).")]
-    SubscribeToChannel { instance_id: InstanceId },
+    #[error("Node {instance_id} could not subscribe to channel, wrong data type. Expected '{data_type_expected}'.")]
+    SubscribeToChannel {
+        instance_id: InstanceId,
+        data_type_expected: String,
+    },
     #[error("Could not create node {instance_id}: {message}")]
     CreateNode {
         instance_id: InstanceId,

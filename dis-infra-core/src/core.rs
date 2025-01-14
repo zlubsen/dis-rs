@@ -23,6 +23,7 @@ pub(crate) const SPEC_NODE_TYPE_FIELD: &str = "type";
 pub(crate) const SPEC_CHANNEL_ARRAY: &str = "channels";
 pub(crate) const SPEC_CHANNEL_FROM_FIELD: &str = "from";
 pub(crate) const SPEC_CHANNEL_TO_FIELD: &str = "to";
+pub(crate) const SPEC_EXTERNALS_TABLE: &str = "externals";
 
 pub const DEFAULT_NODE_CHANNEL_CAPACITY: usize = 50;
 pub const DEFAULT_AGGREGATE_STATS_INTERVAL_MS: u64 = 1000;
@@ -382,4 +383,22 @@ fn channel_name_to_instance_id(
             ),
         })?
         .id())
+}
+
+fn register_external_channels(
+    spec: &toml::Table,
+    nodes: &mut Vec<UntypedNode>,
+) -> (Option<Sender<Box<dyn Any>>>, Option<Receiver<Box<dyn Any>>>) {
+    if !spec.contains_key(SPEC_EXTERNALS_TABLE) {
+        return (None, None);
+    }
+    if let Value::Table(externals) = &spec[SPEC_EXTERNALS_TABLE] {
+        let incoming = if let Some(Value::String(node_name)) = externals.get("incoming") {
+            // get the name, get the id, get the node, connect the channel
+            None
+        } else {
+            None
+        };
+    }
+    (None, None)
 }
