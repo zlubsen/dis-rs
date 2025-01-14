@@ -1,0 +1,25 @@
+# A specification file contains an array of nodes, and an array of channels.
+
+# A specification file should have at least one node.
+# Each node has minimally the fields 'type' and 'name'.
+# 'type' indicates what type of node is to be constructed.
+[[nodes]]
+type = "pass_through"
+name = "Node One"
+# Additional node fields are defined by the specific node types.
+
+[[nodes]]
+type = "pass_through"
+name = "Node Two"
+
+# The channels array defines all the connections between the nodes.
+# The fields 'from' and 'to' must contain existing names of nodes.
+[[channels]]
+from = "Node One"
+to = "Node Two"
+
+# The externals table specifies nodes that need to be connected to
+# senders or receivers other than the speficied nodes. The resulting channels are exposed by the runtime.
+[externals]
+incoming = "Node One"
+outgoing = "Node Two"
