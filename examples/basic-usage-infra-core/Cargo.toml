@@ -5,6 +5,9 @@ edition = "2021"
 publish = false
 
 [dependencies]
+tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 dis-infra-core = { path = "../../dis-infra-core" }
+bytes = "1.9.0"
+tokio = "1.43.0"
 #dis-rs = { path = "../../dis-rs" }

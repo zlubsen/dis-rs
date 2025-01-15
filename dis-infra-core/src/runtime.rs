@@ -16,8 +16,8 @@ const EVENT_CHANNEL_CAPACITY: usize = 50;
 pub struct InfraBuilder {
     command_tx: tokio::sync::broadcast::Sender<Command>,
     event_tx: tokio::sync::broadcast::Sender<Event>,
-    external_input_async: Option<tokio::sync::broadcast::Sender<Box<dyn Any>>>,
-    external_output_async: Option<tokio::sync::broadcast::Receiver<Box<dyn Any>>>,
+    external_input_async: Option<Box<dyn Any>>,
+    external_output_async: Option<Box<dyn Any>>,
     // external_input_sync: Option<std::sync::mpsc::Sender<Box<dyn Any>>>,
     // external_output_sync: Option<std::sync::mpsc::Receiver<Box<dyn Any>>>,
     nodes: Vec<UntypedNode>,
@@ -77,7 +77,9 @@ impl InfraBuilder {
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
         // 4. Connect optional channels to an external sender/receiver.
-        let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes);
+        let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
+        self.external_input_async = incoming;
+        self.external_output_async = outgoing;
 
         self.nodes = nodes;
 
@@ -92,6 +94,17 @@ impl InfraBuilder {
     /// Obtain a receiver handle to the event channel.
     pub fn event_channel(&self) -> tokio::sync::broadcast::Receiver<Event> {
         self.event_tx.subscribe()
+    }
+
+    /// Returns a sender handle to the external input channel, if present (e.g., when defined in the specification).
+    pub fn external_input(&mut self) -> Option<Box<dyn Any>> {
+        self.external_input_async.take()
+    }
+
+    /// Returns a reference to the external output channel, if present (e.g., when defined in the specification).
+    /// The reference must be used to downcast the dyn type and subscribe to the channel.
+    pub fn external_output(&mut self) -> Option<Box<dyn Any>> {
+        self.external_output_async.take()
     }
 }
 

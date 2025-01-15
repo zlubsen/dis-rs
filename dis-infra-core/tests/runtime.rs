@@ -34,8 +34,6 @@ async fn build_valid_spec() {
 
     let runtime_result = run_from_builder(infra_builder).await;
 
-    // TODO send a value into Pass One, receive at the end of Pass Two; adapt spec to create external channels into/out of the nodes
-
     assert!(runtime_result.is_ok());
     let _ = cmd_task_handle.await;
 }

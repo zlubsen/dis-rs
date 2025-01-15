@@ -3,7 +3,7 @@ use crate::infra::{dis, network, util};
 use crate::runtime::{Command, Event};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
-use tokio::sync::broadcast::{Receiver, Sender};
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 use toml::Value;
 use tracing::{error, trace};
@@ -24,6 +24,8 @@ pub(crate) const SPEC_CHANNEL_ARRAY: &str = "channels";
 pub(crate) const SPEC_CHANNEL_FROM_FIELD: &str = "from";
 pub(crate) const SPEC_CHANNEL_TO_FIELD: &str = "to";
 pub(crate) const SPEC_EXTERNALS_TABLE: &str = "externals";
+pub(crate) const SPEC_EXTERNALS_INCOMING_FIELD: &str = "incoming";
+pub(crate) const SPEC_EXTERNALS_OUTGOING_FIELD: &str = "outgoing";
 
 pub const DEFAULT_NODE_CHANNEL_CAPACITY: usize = 50;
 pub const DEFAULT_AGGREGATE_STATS_INTERVAL_MS: u64 = 1000;
@@ -54,6 +56,8 @@ where
     /// The registration of the subscription will fail when the concrete data type of the channel does not match,
     /// returning an `InfraError::SubscribeToChannel` error.
     fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError>;
+    /// Obtain a Sender part of a channel that can be used to send data from outside the runtime to this node.
+    fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError>;
 
     fn id(&self) -> InstanceId;
     fn name(&self) -> &str;
@@ -105,6 +109,7 @@ pub trait NodeRunner {
     /// Shorthand function to receive messages from the optional incoming channel of the node.
     #[warn(async_fn_in_trait)]
     async fn receive_incoming(
+        node_id: InstanceId,
         channel_opt: &mut Option<Receiver<Self::Incoming>>,
     ) -> Option<Self::Incoming> {
         match channel_opt {
@@ -112,7 +117,7 @@ pub trait NodeRunner {
             Some(ref mut channel) => match channel.recv().await {
                 Ok(message) => Some(message),
                 Err(err) => {
-                    error!("{err}");
+                    error!("Node {node_id}: {err}");
                     None
                 }
             },
@@ -341,11 +346,11 @@ pub(crate) fn register_channel_from_spec(
 
     let from_node = nodes
         .get(from_id as usize)
-        .expect("Node with id is present");
+        .expect("Node with id is present.");
     let sub = from_node.request_subscription();
     let to_node = nodes
         .get_mut(to_id as usize)
-        .expect("Node with id is present");
+        .expect("Node with id is present.");
     to_node.register_subscription(sub)?;
 
     Ok(())
@@ -367,38 +372,87 @@ fn get_channel_name_from_spec<'a>(
         })?)
 }
 
-/// Get the instance_id of the node based on the name
+/// Get the instance_id of the node based on the name for a given channel spec field.
 fn channel_name_to_instance_id(
     nodes: &mut Vec<UntypedNode>,
     name: &str,
     field: &str,
 ) -> Result<InstanceId, InfraError> {
+    find_node_id_from_name(nodes, name).map_err(|_| InfraError::InvalidSpec {
+        message:
+            "Invalid channel spec (field '{field}'), no correct node with name '{name}' is defined."
+                .to_string(),
+    })
+}
+
+/// Find the InstanceId for a node with the given name in the list of nodes.
+fn find_node_id_from_name(nodes: &mut Vec<UntypedNode>, name: &str) -> Result<InstanceId, ()> {
     Ok(nodes
         .iter()
         .find(|node| node.name() == name)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!(
-                "Invalid channel spec, no correct ({}) node with name '{name}' is defined.",
-                field
-            ),
-        })?
+        .ok_or(())?
         .id())
 }
 
-fn register_external_channels(
+/// Register external incoming and outgoing channels to nodes as defined in the spec.
+///
+/// When the `incoming` or `outgoing` fields are not defined in the spec, no respective channel is returned.
+pub(crate) fn register_external_channels(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,
-) -> (Option<Sender<Box<dyn Any>>>, Option<Receiver<Box<dyn Any>>>) {
+) -> Result<(Option<Box<dyn Any>>, Option<Box<dyn Any>>), InfraError> {
     if !spec.contains_key(SPEC_EXTERNALS_TABLE) {
-        return (None, None);
+        return Ok((None, None));
     }
+
     if let Value::Table(externals) = &spec[SPEC_EXTERNALS_TABLE] {
-        let incoming = if let Some(Value::String(node_name)) = externals.get("incoming") {
+        let incoming = if let Some(Value::String(node_name)) =
+            externals.get(SPEC_EXTERNALS_INCOMING_FIELD)
+        {
             // get the name, get the id, get the node, connect the channel
-            None
+            let node_id = match find_node_id_from_name(nodes, node_name) {
+                Ok(id) => id,
+                Err(err) => {
+                    return Err(InfraError::InvalidSpec {
+                        message: format!(
+                            "Cannot register external input channel: no node '{node_name}' is defined."
+                        ),
+                    });
+                }
+            };
+
+            let node = nodes
+                .get_mut(node_id as usize)
+                .expect("Node with id is present.");
+            let incoming_tx = node.request_external_sender()?;
+            Some(incoming_tx)
         } else {
             None
         };
+
+        let outgoing = if let Some(Value::String(node_name)) =
+            externals.get(SPEC_EXTERNALS_OUTGOING_FIELD)
+        {
+            let node_id = match find_node_id_from_name(nodes, node_name) {
+                Ok(id) => id,
+                Err(err) => {
+                    return Err(InfraError::InvalidSpec {
+                        message: format!(
+                            "Cannot register external output channel: no node '{node_name}' is defined."
+                        ),
+                    });
+                }
+            };
+            let node = nodes
+                .get_mut(node_id as usize)
+                .expect("Node with id is present.");
+            let outgoing = node.request_subscription();
+            Some(outgoing)
+        } else {
+            None
+        };
+        Ok((incoming, outgoing))
+    } else {
+        Ok((None, None))
     }
-    (None, None)
 }

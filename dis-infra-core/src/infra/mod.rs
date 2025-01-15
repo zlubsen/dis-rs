@@ -91,9 +91,16 @@ pub mod util {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    node_name: self.base.name.clone(),
                     data_type_expected: "Bytes".to_string(),
                 })
             }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
         }
 
         fn id(&self) -> InstanceId {
@@ -165,7 +172,7 @@ pub mod util {
                     Ok(cmd) = cmd_rx.recv() => {
                         if cmd == Command::Quit { break; }
                     }
-                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                         let _send_result = outgoing.send(message);
                     }
                     _ = aggregate_stats_interval.tick() => {
@@ -458,9 +465,16 @@ pub mod network {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    node_name: self.base.name.clone(),
                     data_type_expected: "Bytes".to_string(),
                 })
             }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
         }
 
         fn id(&self) -> InstanceId {
@@ -536,7 +550,7 @@ pub mod network {
                         map_command_to_event(&cmd)
                     }
                     // receiving from the incoming channel
-                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                         self.statistics.received_incoming(message.len());
                         UdpNodeEvent::ReceivedIncoming(message)
                     }
@@ -838,9 +852,16 @@ pub mod network {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    node_name: self.base.name.clone(),
                     data_type_expected: "Bytes".to_string(),
                 })
             }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
         }
 
         fn id(&self) -> InstanceId {
@@ -920,7 +941,7 @@ pub mod network {
                         // TODO reader loop to forward to outgoing channel
                         // TODO whitelist/blacklist of remote addresses?
                     }
-                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                         // TODO send out via socket write loop, could be multiple connected clients
                     }
                 }
@@ -1015,9 +1036,16 @@ pub mod network {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    node_name: self.base.name.clone(),
                     data_type_expected: "Bytes".to_string(),
                 })
             }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
         }
 
         fn id(&self) -> InstanceId {
@@ -1134,7 +1162,7 @@ pub mod network {
                         if cmd == Command::Quit { break; }
                     }
                     // receiving from the incoming channel
-                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                         let _send_result = writer.write_all(&message).await;
                         self.statistics.received_incoming(message.len());
                     }
@@ -1308,9 +1336,16 @@ pub mod dis {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    node_name: self.base.name.clone(),
                     data_type_expected: "Bytes".to_string(),
                 })
             }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
         }
 
         fn id(&self) -> InstanceId {
@@ -1380,7 +1415,7 @@ pub mod dis {
                         if cmd == Command::Quit { break; }
                     }
                     // receiving from the incoming channel, parse into PDU
-                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                         let pdus = match dis_rs::parse(&message) {
                             Ok(vec) => { vec }
                             Err(err) => {
@@ -1471,9 +1506,16 @@ pub mod dis {
             } else {
                 Err(InfraError::SubscribeToChannel {
                     instance_id: self.base.instance_id,
+                    node_name: self.base.name.clone(),
                     data_type_expected: "Pdu".to_string(),
                 })
             }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) = channel::<Pdu>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
         }
 
         fn id(&self) -> InstanceId {
@@ -1542,7 +1584,7 @@ pub mod dis {
                         if cmd == Command::Quit { break; }
                     }
                     // receiving from the incoming channel, serialise PDU into Bytes
-                    Some(message) = Self::receive_incoming(&mut incoming) => {
+                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                         self.statistics.base.incoming_message();
                         match message.serialize(&mut self.buffer) {
                             Ok(bytes_written) => {
