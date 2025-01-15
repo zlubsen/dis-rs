@@ -1001,7 +1001,7 @@ impl NodeRunner for TcpClientNodeRunner {
                 }
                 // aggregate statistics for the interval
                 _ = aggregate_stats_interval.tick() => {
-                    self.statistics.base.aggregate_interval();
+                    self.statistics.aggregate_interval();
                 }
                 // output current state of the stats
                 _ = output_stats_interval.tick() => {
