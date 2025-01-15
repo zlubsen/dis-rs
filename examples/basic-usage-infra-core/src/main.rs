@@ -2,8 +2,8 @@ use bytes::Bytes;
 use dis_infra_core::error::InfraError;
 use dis_infra_core::runtime::{default_tokio_runtime, run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
-use tokio::time::{sleep, Instant};
-use tracing::{error, info, trace};
+use tokio::time::Instant;
+use tracing::{error, info};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
@@ -57,7 +57,7 @@ fn main() {
     // Initialise the Infra
     let mut infra_runtime_builder = InfraBuilder::init();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        println!("{err}");
+        error!("{err}");
     }
     // We can now obtain handles to the coordination channels, for sending commands and receiving events
     let cmd_tx = infra_runtime_builder.command_channel();
@@ -97,7 +97,7 @@ fn main() {
             )
             .tick()
             .await;
-            trace!("Sending the Command::Quit signal.");
+            info!("Sending the Command::Quit signal.");
             let _ = cmd_tx.send(Command::Quit);
         });
 
@@ -117,14 +117,13 @@ fn main() {
             input_tx // We return the sender handle to keep the channel open.
         });
 
-        sleep(Duration::from_secs(2)).await;
-
         // Await and print the resulting output
         let output_handle = tokio::spawn(async move {
             let out = output_rx.recv().await.unwrap();
-            info!("{:?}", out);
+            info!("Received the message: {}", String::from_utf8_lossy(&out));
         });
 
+        info!("Spawn the nodes");
         // Spawn the actual nodes, which is blocking
         run_from_builder(infra_runtime_builder).await?;
 

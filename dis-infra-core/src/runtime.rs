@@ -6,7 +6,7 @@ use std::fs::read_to_string;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
-use tracing::trace;
+use tracing::{error, trace};
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
 const EVENT_CHANNEL_CAPACITY: usize = 50;
@@ -148,7 +148,7 @@ async fn event_listener(
             Ok(event) = event_rx.recv() => {
                 match event {
                     Event::NodeError(err) => {
-                        println!("{err}");
+                        error!("{err}");
                         let _ = command_tx.send(Command::Quit);
                     }
                     Event::SendStatistics => {
@@ -164,7 +164,7 @@ async fn event_listener(
                         }
                     }
                     Err(err) => {
-                        println!("{err}");
+                        error!("{err}");
                         break;
                     }
                 }
@@ -185,13 +185,17 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
     #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install signal handler")
+            .expect("failed to install signal terminate handler")
             .recv()
             .await;
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+    let terminate = async {
+        let mut signal =
+            signal::windows::ctrl_close().expect("failed to install signal ctrl_close handler");
+        signal.recv().await;
+    };
 
     let mut cmd_rx = cmd.subscribe();
     loop {
