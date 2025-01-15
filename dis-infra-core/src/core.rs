@@ -3,7 +3,7 @@ use crate::infra::{dis, network, util};
 use crate::runtime::{Command, Event};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::task::JoinHandle;
 use toml::Value;
 use tracing::{error, trace};
@@ -108,19 +108,24 @@ pub trait NodeRunner {
 
     /// Shorthand function to receive messages from the optional incoming channel of the node.
     #[warn(async_fn_in_trait)]
-    async fn receive_incoming(
+    fn receive_incoming(
         node_id: InstanceId,
         channel_opt: &mut Option<Receiver<Self::Incoming>>,
-    ) -> Option<Self::Incoming> {
-        match channel_opt {
-            None => None,
-            Some(ref mut channel) => match channel.recv().await {
-                Ok(message) => Some(message),
-                Err(err) => {
-                    error!("Node {node_id}: {err}");
-                    None
-                }
-            },
+    ) -> impl std::future::Future<Output = Option<Self::Incoming>> + Send
+    where
+        <Self as NodeRunner>::Incoming: std::marker::Send,
+    {
+        async move {
+            match channel_opt {
+                None => None,
+                Some(ref mut channel) => match channel.recv().await {
+                    Ok(message) => Some(message),
+                    Err(err) => {
+                        error!("Node {node_id}: {err}");
+                        None
+                    }
+                },
+            }
         }
     }
 }
@@ -230,10 +235,7 @@ pub(crate) fn check_node_spec_type_value(spec: &toml::Table) -> Result<String, I
         match &spec[SPEC_NODE_TYPE_FIELD] {
             Value::String(value) => Ok(value.clone()),
             invalid_value => Err(InfraError::InvalidSpec {
-                message: format!(
-                    "Node type is of an invalid data type ('{}')",
-                    invalid_value.to_string()
-                ),
+                message: format!("Node type is of an invalid data type ('{}')", invalid_value),
             }),
         }
     }
@@ -317,9 +319,7 @@ pub(crate) fn register_channels_for_nodes(
     if let Value::Array(array) = &spec[SPEC_CHANNEL_ARRAY] {
         for channel in array {
             if let Value::Table(spec) = channel {
-                if let Err(err) = register_channel_from_spec(spec, nodes) {
-                    return Err(err);
-                }
+                register_channel_from_spec(spec, nodes)?
             }
         }
     } else {
@@ -378,20 +378,21 @@ fn channel_name_to_instance_id(
     name: &str,
     field: &str,
 ) -> Result<InstanceId, InfraError> {
-    find_node_id_from_name(nodes, name).map_err(|_| InfraError::InvalidSpec {
-        message:
-            "Invalid channel spec (field '{field}'), no correct node with name '{name}' is defined."
-                .to_string(),
-    })
+    match find_node_id_from_name(nodes, name) {
+        None => { Err(InfraError::InvalidSpec {
+            message:
+            format!("Invalid channel spec (field '{field}'), no correct node with name '{name}' is defined.")
+        })}
+        Some(id) => { Ok(id) }
+    }
 }
 
 /// Find the InstanceId for a node with the given name in the list of nodes.
-fn find_node_id_from_name(nodes: &mut Vec<UntypedNode>, name: &str) -> Result<InstanceId, ()> {
-    Ok(nodes
+fn find_node_id_from_name(nodes: &mut Vec<UntypedNode>, name: &str) -> Option<InstanceId> {
+    nodes
         .iter()
         .find(|node| node.name() == name)
-        .ok_or(())?
-        .id())
+        .map(|node| node.id())
 }
 
 /// Register external incoming and outgoing channels to nodes as defined in the spec.
@@ -411,8 +412,8 @@ pub(crate) fn register_external_channels(
         {
             // get the name, get the id, get the node, connect the channel
             let node_id = match find_node_id_from_name(nodes, node_name) {
-                Ok(id) => id,
-                Err(err) => {
+                Some(id) => id,
+                None => {
                     return Err(InfraError::InvalidSpec {
                         message: format!(
                             "Cannot register external input channel: no node '{node_name}' is defined."
@@ -434,8 +435,8 @@ pub(crate) fn register_external_channels(
             externals.get(SPEC_EXTERNALS_OUTGOING_FIELD)
         {
             let node_id = match find_node_id_from_name(nodes, node_name) {
-                Ok(id) => id,
-                Err(err) => {
+                Some(id) => id,
+                None => {
                     return Err(InfraError::InvalidSpec {
                         message: format!(
                             "Cannot register external output channel: no node '{node_name}' is defined."

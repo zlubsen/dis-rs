@@ -61,7 +61,7 @@ fn main() {
     }
     // We can now obtain handles to the coordination channels, for sending commands and receiving events
     let cmd_tx = infra_runtime_builder.command_channel();
-    let event_tx = infra_runtime_builder.event_channel();
+    let _event_tx = infra_runtime_builder.event_channel();
 
     // We can request a handle to an externalised input channel for a node, in this case 'Pass One'.
     // It needs to be downcast to the concrete type that you know yourself (depends on the node you created in the spec).
@@ -89,7 +89,7 @@ fn main() {
     // Now we can start the configured infrastructure using the async `run_from_builder` function, on a Tokio runtime.
     // Additional tasks need to be spawned to use the coordination and external I/O channels.
     if let Err(err) = runtime.block_on(async {
-        /// Send a Command::Quit after some time
+        // Send a Command::Quit after some time
         let cmd_handle = tokio::spawn(async move {
             tokio::time::interval_at(
                 Instant::now() + Duration::from_secs(QUIT_DELAY),

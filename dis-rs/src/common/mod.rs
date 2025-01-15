@@ -82,6 +82,7 @@ impl From<ProtocolVersion> for SupportedVersion {
 }
 
 /// Returns a `Vec` of all `ProtocolVersion`s supported by the crate.
+#[must_use]
 pub fn supported_protocol_versions() -> Vec<ProtocolVersion> {
     vec![
         ProtocolVersion::IEEE1278_1A1998,
