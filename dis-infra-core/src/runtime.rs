@@ -12,7 +12,7 @@ const COMMAND_CHANNEL_CAPACITY: usize = 50;
 const EVENT_CHANNEL_CAPACITY: usize = 50;
 
 /// The `InfraBuilder` is used to construct a specific infrastructure using composable Nodes, connected through Channels.
-/// It also constructs the generic communication channels for the infrastructure.
+/// It also provisions the generic communication channels for the infrastructure.
 pub struct InfraBuilder {
     command_tx: tokio::sync::broadcast::Sender<Command>,
     event_tx: tokio::sync::broadcast::Sender<Event>,
