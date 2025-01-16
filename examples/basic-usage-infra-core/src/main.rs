@@ -1,6 +1,6 @@
 use bytes::Bytes;
-use dis_infra_core::error::InfraError;
-use dis_infra_core::runtime::{default_tokio_runtime, run_from_builder, Command, InfraBuilder};
+use gateway_core::error::InfraError;
+use gateway_core::runtime::{default_tokio_runtime, run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 use tokio::time::Instant;
 use tracing::{error, info};

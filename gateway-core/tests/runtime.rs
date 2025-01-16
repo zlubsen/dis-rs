@@ -1,4 +1,4 @@
-use dis_infra_core::runtime::{run_from_builder, Command, InfraBuilder};
+use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 
 #[tokio::test]
@@ -40,7 +40,7 @@ async fn build_valid_spec() {
 
 #[tokio::test]
 async fn build_empty_spec() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
     "#;
@@ -54,7 +54,7 @@ async fn build_empty_spec() {
 
 #[tokio::test]
 async fn build_spec_wrong_node_data_type() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -71,7 +71,7 @@ async fn build_spec_wrong_node_data_type() {
 
 #[tokio::test]
 async fn build_spec_no_node_type_field() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -87,7 +87,7 @@ async fn build_spec_no_node_type_field() {
 
 #[tokio::test]
 async fn build_spec_incorrect_node_type_field() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -104,7 +104,7 @@ async fn build_spec_incorrect_node_type_field() {
 
 #[tokio::test]
 async fn build_spec_incorrect_channel_from() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -129,7 +129,7 @@ async fn build_spec_incorrect_channel_from() {
 
 #[tokio::test]
 async fn build_spec_no_channels_defined() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -150,7 +150,7 @@ async fn build_spec_no_channels_defined() {
 
 #[tokio::test]
 async fn build_spec_channel_field_missing() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -174,7 +174,7 @@ async fn build_spec_channel_field_missing() {
 
 #[tokio::test]
 async fn build_spec_channel_field_wrong_data_type() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]
@@ -199,7 +199,7 @@ async fn build_spec_channel_field_wrong_data_type() {
 
 #[tokio::test]
 async fn build_spec_channel_incompatible_data_between_nodes() {
-    use dis_infra_core::error::InfraError;
+    use gateway_core::error::InfraError;
 
     let spec = r#"
         [[ nodes ]]

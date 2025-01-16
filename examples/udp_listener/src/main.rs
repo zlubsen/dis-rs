@@ -1,4 +1,4 @@
-use dis_infra_core::runtime::{default_tokio_runtime, InfraBuilder};
+use gateway_core::runtime::{default_tokio_runtime, InfraBuilder};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 

@@ -6,15 +6,18 @@
 `dis-rs` is a suite of libraries and applications centered around the Distributed Interactive Simulation protocol (IEEE
 1278.1), implemented in the Rust programming language and for use in Rust-based simulation applications.
 
-This repository hosts a number of sub-projects, each located in a specific directory:
+This repository hosts a number of subprojects, each located in a specific directory:
 
-- [dis-rs](./dis-rs)\
-  Foundational implementation of DIS, offering models, parsing, serialization and enumerations for DIS PDUs.
-- [cdis-assemble](./cdis-assemble)\
+- [dis-rs](https://github.com/zlubsen/dis-rs/tree/master/dis-rs)\
+  Foundational implementation of DIS (IEEE-1278.1, offering models, parsing, serialization and enumerations for DIS
+  PDUs.
+- [cdis-assemble](https://github.com/zlubsen/dis-rs/tree/master/cdis-assemble)\
   Foundational implementation of C-DIS (SISO-STD-023-2024), offering models, parsing, serialization and conversion (to
   and from DIS) for C-DIS PDUs.
-- [cdis-gateway](./cdis-gateway)\
+- [cdis-gateway](https://github.com/zlubsen/dis-rs/tree/master/cdis-gateway)\
   CLI application for encoding/decoding DIS to/from C-DIS.
+- [gateway-core](https://github.com/zlubsen/dis-rs/tree/master/gateway-core)\
+  Core library of traits and components to build network gateways handling (typically simulation) data.
 
 See `README.md` of each project for more details.
 

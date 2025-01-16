@@ -1,8 +1,8 @@
 [package]
-name = "dis-infra-core"
+name = "gateway-core"
 version = "0.1.0"
 description = """
-Core infrastructure facilities and utilities for working with (DIS / C-DIS) data.
+Core infrastructure facilities and utilities for working with network data, such as DIS / C-DIS.
 
 Defines basic traits and implementations for handling packets creating UDP/TCP sockets, transforming and monitoring data flows.
 """
