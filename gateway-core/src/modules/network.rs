@@ -9,11 +9,14 @@ use bytes::{Bytes, BytesMut};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::{TcpListener, TcpSocket, UdpSocket};
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
+use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 use tracing::error;
 
@@ -728,30 +731,85 @@ impl NodeRunner for TcpServerNodeRunner {
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
-        let socket = TcpListener::bind(self.interface).await.unwrap();
-        let (mut stream, addr) = socket.accept().await.unwrap();
-        let (reader, writer) = stream.into_split();
+        let (tcp_read_tx, mut tcp_read_rx) =
+            tokio::sync::mpsc::channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
+        let (tcp_write_tx, _tcp_write_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        // TODO add semaphore for tracking max number of connections
+        let socket = TcpListener::bind(self.interface)
+            .await
+            .expect(format!("Cannot bind TCP socket to {}", self.interface).as_str());
 
-        // TODO
-        // decide: run accept loop here, or in separate future?
-        // have this loop/select go over 4 connection types:
-        // // 1 node incoming, 2 node outgoing, 3 tcp incoming, 4 tcp outgoing;
-        // (3 and 4 for each connected client, with broadcast channels to the main node)
         loop {
             tokio::select! {
                 Ok(command) = cmd_rx.recv() => {
                     if command == Command::Quit { break; }
                 }
-                Ok((mut stream, addr)) = socket.accept() => {
+                Ok((mut stream, remote_addr)) = socket.accept() => {
+                    // TODO add semaphore for tracking max number of connections
+                    // TODO whitelist/blacklist of remote addresses
                     let (reader, writer) = stream.into_split();
-                    // TODO spawn the reader and write loops
-                    // TODO reader loop to forward to outgoing channel
-                    // TODO whitelist/blacklist of remote addresses?
+                    let closer = Arc::new(Notify::new());
+                    let read_handle = tokio::spawn(run_tcp_reader(reader, tcp_read_tx.clone(), closer.clone()));
+                    let write_handle = tokio::spawn(run_tcp_write(writer, tcp_write_tx.subscribe(), closer.clone()));
+                    tokio::spawn( async move {
+                        read_handle.await.unwrap();
+                        write_handle.await.unwrap();
+                    });
                 }
                 Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    // TODO send out via socket write loop, could be multiple connected clients
+                    self.statistics.received_incoming(message.len());
+                    let _ = tcp_write_tx.send(message);
+                }
+                Some(message) = tcp_read_rx.recv() => {
+                    self.statistics.received_packet(message.len());
+                    let _ = outgoing.send(message);
+                }
+            }
+        }
+    }
+}
+
+async fn run_tcp_reader(
+    mut reader: OwnedReadHalf,
+    to_node: tokio::sync::mpsc::Sender<Bytes>,
+    closer: Arc<Notify>,
+) {
+    let mut buf = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
+    buf.resize(SOCKET_BUFFER_CAPACITY, 0);
+    loop {
+        match reader.read(&mut buf).await {
+            Ok(0) => {
+                closer.notify_one();
+                break;
+            }
+            Ok(bytes_received) => {
+                let buf_to_send = Bytes::copy_from_slice(&buf[..bytes_received]);
+                let _ = to_node.send(buf_to_send).await;
+            }
+            Err(_err) => {
+                break;
+            }
+        }
+    }
+}
+
+async fn run_tcp_write(
+    mut writer: OwnedWriteHalf,
+    mut from_node: Receiver<Bytes>,
+    closer: Arc<Notify>,
+) {
+    loop {
+        tokio::select! {
+            _ = closer.notified() => {
+                break;
+            }
+            Ok(message) = from_node.recv() => {
+                match writer.write(&message[..]).await {
+                    Ok(0) => {}
+                    Ok(_bytes_sent) => { }
+                    Err(_err) => {
+
+                    }
                 }
             }
         }
@@ -912,7 +970,7 @@ impl NodeRunner for TcpClientNodeRunner {
     async fn run(
         &mut self,
         mut cmd_rx: Receiver<Command>,
-        mut event_tx: Sender<Event>,
+        event_tx: Sender<Event>,
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {

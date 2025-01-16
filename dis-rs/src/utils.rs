@@ -69,7 +69,7 @@ pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64,
 /// Applies Geodetic (LLA) to Geocentric (ECEF) conversion
 ///
 /// Geodetic input parameters are in meters.
-/// Return value of consists of a tuple `(lat, lon, alt)`, where the ``lat`` and ``lon`` are in _radians_, ``altitude`` is in _meters_ (MSL).
+/// Return value consists of a tuple `(lat, lon, alt)`, where the ``lat`` and ``lon`` are in _radians_, ``altitude`` is in _meters_ (MSL).
 ///
 /// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
 #[must_use]
