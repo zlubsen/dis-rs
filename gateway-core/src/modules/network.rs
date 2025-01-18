@@ -41,6 +41,8 @@ pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
 
     let mut items = Vec::new();
     items.push((SPEC_UDP_NODE_TYPE, network_nodes_constructor));
+    items.push((SPEC_TCP_SERVER_NODE_TYPE, network_nodes_constructor));
+    items.push((SPEC_TCP_CLIENT_NODE_TYPE, network_nodes_constructor));
     items
 }
 

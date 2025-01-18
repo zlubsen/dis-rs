@@ -1,11 +1,14 @@
 use crate::core::{NodeConstructor, UntypedNode};
 use crate::error::InfraError;
+use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
 use std::any::Any;
 use std::fs::read_to_string;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
+use tokio::sync::broadcast::{Receiver, Sender};
+use tokio::task::JoinHandle;
 use tracing::{error, trace};
 
 const COMMAND_CHANNEL_CAPACITY: usize = 50;
@@ -62,7 +65,7 @@ impl InfraBuilder {
             toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
                 message: err.to_string(),
             })?;
-        // TODO (1. Read the meta info of the config, if any)
+        // TODO (1. Read the meta info of the spec, if any)
 
         // 2a. Get a list of all the nodes
         // 2b. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
@@ -109,7 +112,9 @@ impl InfraBuilder {
 }
 
 /// Execute an infrastructure, as constructed by a `InfraRuntimeBuilder`.
-pub async fn run_from_builder(builder: InfraBuilder) -> Result<(), InfraError> {
+pub async fn run_from_builder(
+    builder: InfraBuilder,
+) -> Result<JoinAll<(JoinHandle<()>)>, InfraError> {
     // Spawn the coordination tasks: shutdown signal and error event listeners
     let shutdown_handle = tokio::spawn(shutdown_signal(builder.command_tx.clone()));
     let event_listener_handle = tokio::spawn(event_listener(
@@ -129,10 +134,8 @@ pub async fn run_from_builder(builder: InfraBuilder) -> Result<(), InfraError> {
     handles.push(shutdown_handle);
     handles.push(event_listener_handle);
 
-    // 7. Wait for all tasks to finish
-    let _ = futures::future::join_all(handles).await;
-
-    Ok(())
+    // 7. Return the FuturesUnordered in a JoinAll so the callee can await the termination
+    Ok(futures::future::join_all(handles))
 }
 
 /// General task that listens to emitted `Event`s.
@@ -235,4 +238,36 @@ pub enum Command {
 pub enum Event {
     NodeError(InfraError),
     SendStatistics,
+}
+
+/// Convenience function to downcast an external incoming channel to a concrete, unboxed type.
+///
+/// The function discards any downcast errors.
+pub fn downcast_external_input<T: 'static>(
+    channel: Option<Box<dyn Any>>,
+) -> Option<tokio::sync::broadcast::Sender<T>> {
+    channel
+        .map(
+            |input| match input.downcast::<tokio::sync::broadcast::Sender<T>>() {
+                Ok(sender) => Some(*sender),
+                Err(_) => None,
+            },
+        )
+        .flatten()
+}
+
+/// Convenience function to downcast an external outgoing channel to a concrete, unboxed type.
+///
+/// The function discards any downcast errors.
+pub fn downcast_external_output<T: 'static>(
+    channel: Option<Box<dyn Any>>,
+) -> Option<tokio::sync::broadcast::Receiver<T>> {
+    channel
+        .map(
+            |input| match input.downcast::<tokio::sync::broadcast::Receiver<T>>() {
+                Ok(receiver) => Some(*receiver),
+                Err(_) => None,
+            },
+        )
+        .flatten()
 }

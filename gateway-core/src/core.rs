@@ -121,7 +121,7 @@ pub trait NodeRunner {
                 Some(ref mut channel) => match channel.recv().await {
                     Ok(message) => Some(message),
                     Err(err) => {
-                        error!("Node {node_id}: {err}");
+                        error!("Node {node_id} incoming channel: {err}");
                         None
                     }
                 },
@@ -444,6 +444,7 @@ pub(crate) fn register_external_channels(
                     });
                 }
             };
+
             let node = nodes
                 .get_mut(node_id as usize)
                 .expect("Node with id is present.");

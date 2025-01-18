@@ -25,6 +25,9 @@ async fn build_valid_spec() {
 
     assert!(build_result.is_ok());
 
+    assert!(infra_builder.external_input().is_none());
+    assert!(infra_builder.external_output().is_none());
+
     let cmd_task_handle = tokio::spawn(async move {
         tokio::time::interval(Duration::from_millis(100))
             .tick()
@@ -221,4 +224,51 @@ async fn build_spec_channel_incompatible_data_between_nodes() {
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
     }
+}
+
+#[tokio::test]
+async fn build_spec_external_channels() {
+    let spec = r#"
+        [[ nodes ]]
+        type = "pass_through"
+        name = "Pass One"
+
+        [[ nodes ]]
+        type = "pass_through"
+        name = "Pass Two"
+
+        [[ channels ]]
+        from = "Pass One"
+        to = "Pass Two"
+
+        [ externals ]
+        incoming = "Pass One"
+        outgoing = "Pass Two"
+    "#;
+
+    let mut infra_builder = InfraBuilder::init();
+    let build_result = infra_builder.build_from_str(spec);
+
+    let cmd_tx = infra_builder.command_channel();
+    let _event_tx = infra_builder.event_channel();
+
+    let incoming = infra_builder.external_input();
+    let outgoing = infra_builder.external_output();
+
+    assert!(build_result.is_ok());
+
+    assert!(incoming.is_some());
+    assert!(outgoing.is_some());
+
+    let cmd_task_handle = tokio::spawn(async move {
+        tokio::time::interval(Duration::from_millis(100))
+            .tick()
+            .await;
+        let _ = cmd_tx.send(Command::Quit);
+    });
+
+    let runtime_result = run_from_builder(infra_builder).await;
+
+    assert!(runtime_result.is_ok());
+    let _ = cmd_task_handle.await;
 }

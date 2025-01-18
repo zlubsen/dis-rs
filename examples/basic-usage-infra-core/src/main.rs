@@ -1,6 +1,9 @@
 use bytes::Bytes;
 use gateway_core::error::InfraError;
-use gateway_core::runtime::{default_tokio_runtime, run_from_builder, Command, InfraBuilder};
+use gateway_core::runtime::{
+    default_tokio_runtime, downcast_external_input, downcast_external_output, run_from_builder,
+    Command, InfraBuilder,
+};
 use std::time::Duration;
 use tokio::time::Instant;
 use tracing::{error, info};
@@ -65,23 +68,12 @@ fn main() {
 
     // We can request a handle to an externalised input channel for a node, in this case 'Pass One'.
     // It needs to be downcast to the concrete type that you know yourself (depends on the node you created in the spec).
-    let input_tx = infra_runtime_builder
-        .external_input()
-        .map(|input| {
-            *input
-                .downcast::<tokio::sync::broadcast::Sender<Bytes>>()
-                .unwrap()
-        })
-        .unwrap();
+    // The Infra Runtime provides convenience functions to do this.
+    let input_tx =
+        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
     // Similarly, we can request a handle to the externalised output channel, in this case 'Pass Two'.
-    let mut output_rx = infra_runtime_builder
-        .external_output()
-        .map(|output| {
-            output
-                .downcast::<tokio::sync::broadcast::Receiver<Bytes>>()
-                .unwrap()
-        })
-        .unwrap();
+    let mut output_rx =
+        downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
 
     const QUIT_DELAY: u64 = 4;
     const SEND_DELAY: u64 = QUIT_DELAY / 2;
@@ -124,8 +116,10 @@ fn main() {
         });
 
         info!("Spawn the nodes");
-        // Spawn the actual nodes, which is blocking
-        run_from_builder(infra_runtime_builder).await?;
+        // Spawn the actual nodes; This returns a JoinAll list with task handles, which can be awaited when needed.
+        let join_all = run_from_builder(infra_runtime_builder).await?;
+        // Thus await runtime completion, we send a Command::Quit concurrently after some time to stop in the cmd_handle.
+        let runtime_result = join_all.await;
 
         let _ = input_handle.await;
         let _ = output_handle.await;
