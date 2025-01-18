@@ -444,7 +444,6 @@ fn map_command_to_event(command: &Command) -> UdpNodeEvent {
 /// so that it can be used by multiple tasks (i.e., for both writing and sending).
 #[allow(clippy::too_many_lines)]
 fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, InfraError> {
-    // TODO make function fallible
     use socket2::{Domain, Protocol, Socket, Type};
 
     // Create socket using socket2 crate, to be able to set required socket options (SO_REUSEADDR, SO_REUSEPORT, ...)
