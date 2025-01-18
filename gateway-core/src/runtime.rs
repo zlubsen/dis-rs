@@ -4,6 +4,7 @@ use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
 use std::any::Any;
 use std::fs::read_to_string;
+use std::future::pending;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
@@ -186,6 +187,14 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
     };
 
     #[cfg(unix)]
+    let sigint = async {
+        signal::unix::signal(signal::unix::SignalKind::interrupt())
+            .expect("failed to install signal interrupt handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal terminate handler")
@@ -200,12 +209,16 @@ async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
         signal.recv().await;
     };
 
+    #[cfg(not(unix))]
+    let sigint = std::future::pending::<()>();
+
     let mut cmd_rx = cmd.subscribe();
     loop {
         tokio::select! {
             Ok(Command::Quit) = cmd_rx.recv() => { break; },
             _ = ctrl_c => { break; },
             _ = terminate => { break; },
+            _ = sigint => { break; },
         }
     }
 

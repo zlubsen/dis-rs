@@ -7,12 +7,15 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 #[tokio::test(flavor = "multi_thread")]
+async fn udp() {}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn tcp_server() {
     let spec = r#"
         [[ nodes ]]
         type = "tcp_server"
         name = "TCP Server"
-        interface = "127.0.0.1:3000"
+        interface = "127.0.0.1:3002"
         max_connections = 1
 
         [[ nodes ]]
@@ -29,11 +32,11 @@ async fn tcp_server() {
     "#;
 
     const DELAY: u64 = 500;
-    const SERVER_ADDRESS: &str = "127.0.0.1:3000";
+    const SERVER_ADDRESS: &str = "127.0.0.1:3002";
 
     let mut infra_runtime_builder = InfraBuilder::init();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        println!("{err}");
+        assert!(false, "{err}");
     }
 
     let cmd_tx = infra_runtime_builder.command_channel();
@@ -55,10 +58,14 @@ async fn tcp_server() {
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
         if tcp_rx.readable().await.is_ok() {
             let tcp_out_received = tcp_rx.read(&mut receive_buffer).await;
-            assert!(tcp_out_received.is_ok());
-            assert_eq!(tcp_out_received.unwrap(), message.as_bytes().len());
+            assert!(tcp_out_received.is_ok(), "TCP returned by node is not Ok.");
+            assert_eq!(
+                tcp_out_received.unwrap(),
+                message.as_bytes().len(),
+                "Message returned over TCP socket by node is not equal to the input."
+            );
         } else {
-            assert!(false)
+            assert!(false, "Failed to read from the TCP connection.");
         }
 
         let _ = tcp_tx.write(message.as_bytes()).await;
@@ -66,18 +73,27 @@ async fn tcp_server() {
 
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();
-        assert_eq!((&node_out_received).len(), message.as_bytes().len());
-        assert_eq!(String::from_utf8_lossy(&node_out_received), message);
+        assert_eq!(
+            (&node_out_received).len(),
+            message.as_bytes().len(),
+            "Length of the returned data is not equal to the input."
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&node_out_received),
+            message,
+            "Message output is not equal to the input."
+        );
 
         let _ = cmd_tx.send(Command::Quit);
     });
-    let runner_handles = run_from_builder(infra_runtime_builder).await.unwrap().await;
 
-    let _ = stimulus_handle.await.unwrap();
+    let runner_handles = run_from_builder(infra_runtime_builder).await.unwrap().await;
 
     runner_handles
         .iter()
-        .for_each(|handle| assert!(handle.is_ok()));
+        .for_each(|handle| assert!(handle.is_ok(), "Runtime not stopped correctly"));
+
+    let _ = stimulus_handle.await.unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -87,7 +103,7 @@ async fn tcp_client() {
         type = "tcp_client"
         name = "TCP Client"
         interface = "127.0.0.1:2000"
-        address = "127.0.0.1:3000"
+        address = "127.0.0.1:3003"
 
         [[ nodes ]]
         type = "pass_through"
@@ -103,11 +119,11 @@ async fn tcp_client() {
     "#;
 
     const DELAY: u64 = 500;
-    const SERVER_ADDRESS: &str = "127.0.0.1:3000";
+    const SERVER_ADDRESS: &str = "127.0.0.1:3003";
 
     let mut infra_runtime_builder = InfraBuilder::init();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        println!("{err}");
+        assert!(false, "{err}");
     }
 
     let cmd_tx = infra_runtime_builder.command_channel();
@@ -122,19 +138,21 @@ async fn tcp_client() {
         let message = "Hello, World!";
         let mut receive_buffer: [u8; 13] = [0; 13];
 
-        tokio::time::sleep(Duration::from_millis(500)).await; // wait for runtime to be started.
-
-        let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
+        let listener = TcpListener::bind(SERVER_ADDRESS).await.unwrap();
         let (stream, _address) = listener.accept().await.unwrap();
         let (mut tcp_rx, mut tcp_tx) = stream.into_split();
 
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
         if tcp_rx.readable().await.is_ok() {
             let tcp_out_received = tcp_rx.read(&mut receive_buffer).await;
-            assert!(tcp_out_received.is_ok());
-            assert_eq!(tcp_out_received.unwrap(), message.as_bytes().len());
+            assert!(tcp_out_received.is_ok(), "TCP returned by node is not Ok.");
+            assert_eq!(
+                tcp_out_received.unwrap(),
+                message.as_bytes().len(),
+                "Message returned over TCP socket by node is not equal to the input."
+            );
         } else {
-            assert!(false)
+            assert!(false, "Failed to read from the TCP connection.");
         }
 
         let _ = tcp_tx.write(message.as_bytes()).await;
@@ -142,16 +160,26 @@ async fn tcp_client() {
 
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();
-        assert_eq!((&node_out_received).len(), message.as_bytes().len());
-        assert_eq!(String::from_utf8_lossy(&node_out_received), message);
+        assert_eq!(
+            (&node_out_received).len(),
+            message.as_bytes().len(),
+            "Length of the returned data is not equal to the input."
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&node_out_received),
+            message,
+            "Message output is not equal to the input."
+        );
 
         let _ = cmd_tx.send(Command::Quit);
     });
+
+    tokio::time::sleep(Duration::from_millis(DELAY)).await; // give stimulus time to setup the TCP Server
     let runner_handles = run_from_builder(infra_runtime_builder).await.unwrap().await;
 
     let _ = stimulus_handle.await.unwrap();
 
     runner_handles
         .iter()
-        .for_each(|handle| assert!(handle.is_ok()));
+        .for_each(|handle| assert!(handle.is_ok(), "Runtime not stopped correctly"));
 }

@@ -18,7 +18,7 @@ use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
-use tracing::error;
+use tracing::{error, trace};
 
 const SOCKET_BUFFER_CAPACITY: usize = 32_768;
 
@@ -737,9 +737,13 @@ impl NodeRunner for TcpServerNodeRunner {
             tokio::sync::mpsc::channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
         let (tcp_write_tx, _tcp_write_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let socket = TcpListener::bind(self.interface)
-            .await
-            .expect(format!("Cannot bind TCP socket to {}", self.interface).as_str());
+        let socket = match TcpListener::bind(self.interface).await {
+            Ok(socket) => socket,
+            Err(err) => {
+                trace!("Cannot bind TCP socket to {}", self.interface);
+                return;
+            }
+        };
 
         loop {
             tokio::select! {
@@ -1000,18 +1004,15 @@ impl NodeRunner for TcpClientNodeRunner {
             }
         };
 
-        match socket.bind(self.interface) {
-            Ok(_) => {}
-            Err(err) => {
-                Self::emit_event(
-                    &event_tx,
-                    Event::NodeError(InfraError::CreateNode {
-                        instance_id: self.id(),
-                        message: err.to_string(),
-                    }),
-                );
-            }
-        };
+        if let Err(err) = socket.bind(self.interface) {
+            Self::emit_event(
+                &event_tx,
+                Event::NodeError(InfraError::CreateNode {
+                    instance_id: self.id(),
+                    message: err.to_string(),
+                }),
+            );
+        }
         let mut tcp_stream = match socket.connect(self.address).await {
             Ok(stream) => stream,
             Err(err) => {
@@ -1041,7 +1042,7 @@ impl NodeRunner for TcpClientNodeRunner {
                 }
                 // receiving from the socket
                 Ok(bytes_received) = reader.read(&mut self.buffer) => {
-                    if bytes_received > 0 {
+                    if bytes_received == 0 {
                         Self::emit_event(&event_tx, Event::NodeError(InfraError::RuntimeNode {
                             instance_id: self.id(),
                             message: "TCP client node disconnected.".to_string(),
