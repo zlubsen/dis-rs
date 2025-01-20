@@ -119,7 +119,7 @@ fn main() {
         // Spawn the actual nodes; This returns a JoinAll list with task handles, which can be awaited when needed.
         let join_all = run_from_builder(infra_runtime_builder).await?;
         // Thus await runtime completion, we send a Command::Quit concurrently after some time to stop in the cmd_handle.
-        let runtime_result = join_all.await;
+        let _runtime_result = join_all.await;
 
         let _ = input_handle.await;
         let _ = output_handle.await;

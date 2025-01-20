@@ -75,6 +75,62 @@ where
     fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError>;
 }
 
+/// Macro to generate the more trivial methods, implementation wise, of the NodeData trait for a node.
+///
+/// It is to be provided:
+/// - The type of the incoming data channel,
+/// - The field of `self` that is the incoming data channel, including `self`. E.g. `self.incoming`.
+/// - The field of `self` that is the outgoing data channel, including `self`. E.g. `self.outgoing`.
+/// - The field of `self` that holds the node InstanceId, including `self`. E.g. `self.base.node_id`.
+/// - The field of `self` that holds the node name, including `self`. E.g. `self.base.name`.
+/// - The type of the `NodeRunner`, which is to be spawned with this `NodeData`. E.g. `MyNodeRunner`.
+#[macro_export]
+macro_rules! node_data_impl {
+    ($in_data_type:ty,
+    self$(.$in_chan_field:ident)*,
+    self$(.$out_chan_field:ident)*,
+    self$(.$node_id_field:ident)*,
+    self$(.$node_name_field:ident)*,
+    $runner_type:ty) => {
+        fn request_subscription(&self) -> Box<dyn Any> {
+            let client = self$(.$out_chan_field)*.subscribe();
+            Box::new(client)
+        }
+
+        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
+            if let Ok(receiver) = receiver.downcast::<Receiver<$in_data_type>>() {
+                self$(.$in_chan_field)* = Some(*receiver);
+                Ok(())
+            } else {
+                Err(InfraError::SubscribeToChannel {
+                    instance_id: self$(.$node_id_field)*,
+                    node_name: self$(.$node_name_field)*.clone(),
+                    data_type_expected: std::any::type_name::<$in_data_type>().to_string(),
+                })
+            }
+        }
+
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+            let (incoming_tx, incoming_rx) =
+                channel::<$in_data_type>(DEFAULT_NODE_CHANNEL_CAPACITY);
+            self.register_subscription(Box::new(incoming_rx))?;
+            Ok(Box::new(incoming_tx))
+        }
+
+        fn id(&self) -> InstanceId {
+            self$(.$node_id_field)*
+        }
+
+        fn name(&self) -> &str {
+            self$(.$node_name_field)*.as_str()
+        }
+
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
+            <$runner_type>::spawn_with_data(*self)
+        }
+    };
+}
+
 /// Trait that defines a node at runtime. It connects the associated `NodeData` struct (as associated type `Data`) to the runtime logic.
 pub trait NodeRunner {
     type Data;

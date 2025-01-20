@@ -4,6 +4,7 @@ use crate::core::{
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
 use crate::error::InfraError;
+use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::Bytes;
 use std::any::Any;
@@ -78,41 +79,14 @@ impl NodeData for PassThroughNodeData {
         })
     }
 
-    fn request_subscription(&self) -> Box<dyn Any> {
-        let client = self.outgoing.subscribe();
-        Box::new(client)
-    }
-
-    fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
-        if let Ok(receiver) = receiver.downcast::<Receiver<Bytes>>() {
-            self.incoming = Some(*receiver);
-            Ok(())
-        } else {
-            Err(InfraError::SubscribeToChannel {
-                instance_id: self.base.instance_id,
-                node_name: self.base.name.clone(),
-                data_type_expected: "Bytes".to_string(),
-            })
-        }
-    }
-
-    fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
-        let (incoming_tx, incoming_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
-        self.register_subscription(Box::new(incoming_rx))?;
-        Ok(Box::new(incoming_tx))
-    }
-
-    fn id(&self) -> InstanceId {
-        self.base.instance_id
-    }
-
-    fn name(&self) -> &str {
-        self.base.name.as_str()
-    }
-
-    fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
-        PassThroughNodeRunner::spawn_with_data(*self)
-    }
+    node_data_impl!(
+        Bytes,
+        self.incoming,
+        self.outgoing,
+        self.base.instance_id,
+        self.base.name,
+        PassThroughNodeRunner
+    );
 }
 
 impl NodeRunner for PassThroughNodeRunner {
