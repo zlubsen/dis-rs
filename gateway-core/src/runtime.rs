@@ -4,7 +4,6 @@ use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
 use std::any::Any;
 use std::fs::read_to_string;
-use std::future::pending;
 use std::path::Path;
 use tokio::runtime::Runtime;
 use tokio::signal;
@@ -18,20 +17,18 @@ const EVENT_CHANNEL_CAPACITY: usize = 50;
 /// The `InfraBuilder` is used to construct a specific infrastructure using composable Nodes, connected through Channels.
 /// It also provisions the generic communication channels for the infrastructure.
 pub struct InfraBuilder {
-    command_tx: tokio::sync::broadcast::Sender<Command>,
-    event_tx: tokio::sync::broadcast::Sender<Event>,
+    command_tx: Sender<Command>,
+    event_tx: Sender<Event>,
     external_input_async: Option<Box<dyn Any>>,
     external_output_async: Option<Box<dyn Any>>,
-    // external_input_sync: Option<std::sync::mpsc::Sender<Box<dyn Any>>>,
-    // external_output_sync: Option<std::sync::mpsc::Receiver<Box<dyn Any>>>,
     nodes: Vec<UntypedNode>,
     node_factories: Vec<(&'static str, NodeConstructor)>,
 }
 
 impl InfraBuilder {
-    /// Initialise an `InfraBuilder` environment.
-    /// The needed coordination channels (for sending `Command`s and receiving `Event`s) are created using this function.
-    pub fn init() -> Self {
+    /// Creates a new `InfraBuilder` environment, initialising modules.
+    /// The needed coordination channels (for sending `Command`s and receiving `Event`s) are created using this constructor function.
+    pub fn new() -> Self {
         let (command_tx, _command_rx) = tokio::sync::broadcast::channel(COMMAND_CHANNEL_CAPACITY);
         let (event_tx, _event_rx) = tokio::sync::broadcast::channel(EVENT_CHANNEL_CAPACITY);
 
@@ -66,10 +63,8 @@ impl InfraBuilder {
             toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
                 message: err.to_string(),
             })?;
-        // TODO (1. Read the meta info of the spec, if any)
 
-        // 2a. Get a list of all the nodes
-        // 2b. Construct all nodes as a Vec<Box<dyn NodeData>>, giving them a unique id (index of the vec).
+        // Construct all nodes in the spec as a Vec<Box<dyn NodeData>>, giving them a unique id (index in the vec).
         let mut nodes: Vec<UntypedNode> = crate::core::construct_nodes_from_spec(
             &self.node_factories,
             self.command_tx.clone(),
@@ -77,10 +72,10 @@ impl InfraBuilder {
             &contents,
         )?;
 
-        // 3. Construct all edges between the nodes from the spec.
+        // Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
-        // 4. Connect optional channels to an external sender/receiver.
+        // Connect optional channels to an external sender/receiver.
         let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
         self.external_input_async = incoming;
         self.external_output_async = outgoing;
@@ -91,12 +86,12 @@ impl InfraBuilder {
     }
 
     /// Obtain a sender handle to the command channel.
-    pub fn command_channel(&self) -> tokio::sync::broadcast::Sender<Command> {
+    pub fn command_channel(&self) -> Sender<Command> {
         self.command_tx.clone()
     }
 
     /// Obtain a receiver handle to the event channel.
-    pub fn event_channel(&self) -> tokio::sync::broadcast::Receiver<Event> {
+    pub fn event_channel(&self) -> Receiver<Event> {
         self.event_tx.subscribe()
     }
 
@@ -115,7 +110,7 @@ impl InfraBuilder {
 /// Execute an infrastructure, as constructed by a `InfraRuntimeBuilder`.
 pub async fn run_from_builder(
     builder: InfraBuilder,
-) -> Result<JoinAll<(JoinHandle<()>)>, InfraError> {
+) -> Result<JoinAll<JoinHandle<()>>, InfraError> {
     // Spawn the coordination tasks: shutdown signal and error event listeners
     let shutdown_handle = tokio::spawn(shutdown_signal(builder.command_tx.clone()));
     let event_listener_handle = tokio::spawn(event_listener(
@@ -142,16 +137,13 @@ pub async fn run_from_builder(
 /// General task that listens to emitted `Event`s.
 ///
 /// This task is responsible for outputting any errors, and cleaning up the Runtime in such a case.
-async fn event_listener(
-    mut event_rx: tokio::sync::broadcast::Receiver<Event>,
-    command_tx: tokio::sync::broadcast::Sender<Command>,
-) {
+async fn event_listener(mut event_rx: Receiver<Event>, command_tx: Sender<Command>) {
     let mut command_rx = command_tx.subscribe();
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {
                 match event {
-                    Event::NodeError(err) => {
+                    Event::RuntimeError(err) => {
                         error!("{err}");
                         let _ = command_tx.send(Command::Quit);
                     }
@@ -179,7 +171,7 @@ async fn event_listener(
 
 /// General task that is spawned to listen for `Ctrl+C` and shutdown signals from the OS.
 /// When a shutdown signal is detected, a `Command::Quit` command will be issued to all tasks listening for `Command`s.
-async fn shutdown_signal(cmd: tokio::sync::broadcast::Sender<Command>) {
+async fn shutdown_signal(cmd: Sender<Command>) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -240,6 +232,32 @@ pub fn default_tokio_runtime() -> Result<Runtime, InfraError> {
     Ok(runtime)
 }
 
+/// Create an `InfraBuilder` from a spec, in TOML as a `&str`, and return all coordination and I/O channels.
+pub fn preset_builder_from_spec_str<I: 'static, O: 'static>(
+    toml_spec: &str,
+) -> Result<
+    (
+        InfraBuilder,
+        Sender<Command>,
+        Receiver<Event>,
+        Option<Sender<I>>,
+        Option<Receiver<O>>,
+    ),
+    InfraError,
+> {
+    let mut infra_runtime_builder = InfraBuilder::new();
+    infra_runtime_builder.build_from_str(toml_spec)?;
+
+    let cmd_tx = infra_runtime_builder.command_channel();
+    let event_rx = infra_runtime_builder.event_channel();
+
+    let input_tx = downcast_external_input::<I>(infra_runtime_builder.external_input());
+    // Similarly, we can request a handle to the externalised output channel, in this case 'Pass Two'.
+    let output_rx = downcast_external_output::<O>(infra_runtime_builder.external_output());
+
+    Ok((infra_runtime_builder, cmd_tx, event_rx, input_tx, output_rx))
+}
+
 /// Enum of Commands that the Runtime can send to Nodes
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
@@ -249,38 +267,29 @@ pub enum Command {
 /// Enum of Events that the Runtime and Nodes can emit
 #[derive(Clone)]
 pub enum Event {
-    NodeError(InfraError),
+    RuntimeError(InfraError),
     SendStatistics,
 }
 
 /// Convenience function to downcast an external incoming channel to a concrete, unboxed type.
 ///
 /// The function discards any downcast errors.
-pub fn downcast_external_input<T: 'static>(
-    channel: Option<Box<dyn Any>>,
-) -> Option<tokio::sync::broadcast::Sender<T>> {
+pub fn downcast_external_input<T: 'static>(channel: Option<Box<dyn Any>>) -> Option<Sender<T>> {
     channel
-        .map(
-            |input| match input.downcast::<tokio::sync::broadcast::Sender<T>>() {
-                Ok(sender) => Some(*sender),
-                Err(_) => None,
-            },
-        )
+        .map(|input| input.downcast::<Sender<T>>().map(|sender| *sender).ok())
         .flatten()
 }
 
 /// Convenience function to downcast an external outgoing channel to a concrete, unboxed type.
 ///
 /// The function discards any downcast errors.
-pub fn downcast_external_output<T: 'static>(
-    channel: Option<Box<dyn Any>>,
-) -> Option<tokio::sync::broadcast::Receiver<T>> {
+pub fn downcast_external_output<T: 'static>(channel: Option<Box<dyn Any>>) -> Option<Receiver<T>> {
     channel
-        .map(
-            |input| match input.downcast::<tokio::sync::broadcast::Receiver<T>>() {
-                Ok(receiver) => Some(*receiver),
-                Err(_) => None,
-            },
-        )
+        .map(|input| {
+            input
+                .downcast::<Receiver<T>>()
+                .map(|receiver| *receiver)
+                .ok()
+        })
         .flatten()
 }

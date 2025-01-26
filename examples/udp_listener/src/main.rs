@@ -38,7 +38,7 @@ fn main() {
     let mut runtime =
         default_tokio_runtime().expect("Expected tokio runtime to be created successfully.");
 
-    let mut infra_runtime_builder = InfraBuilder::init();
+    let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
         println!("{err}");
     }

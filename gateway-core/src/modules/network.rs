@@ -366,7 +366,7 @@ impl NodeRunner for UdpNodeRunner {
                     } else {
                         Self::emit_event(
                             &event_tx,
-                            Event::NodeError(InfraError::RuntimeNode {
+                            Event::RuntimeError(InfraError::RuntimeNode {
                                 instance_id: self.id(),
                                 message: "Outgoing channel send failed.".to_string(),
                             }),
@@ -379,7 +379,7 @@ impl NodeRunner for UdpNodeRunner {
                         Ok(_bytes_send) => {}
                         Err(err) => Self::emit_event(
                             &event_tx,
-                            Event::NodeError(InfraError::RuntimeNode {
+                            Event::RuntimeError(InfraError::RuntimeNode {
                                 instance_id: self.id(),
                                 message: err.to_string(),
                             }),
@@ -388,7 +388,7 @@ impl NodeRunner for UdpNodeRunner {
                 }
                 UdpNodeEvent::SocketError(err) => Self::emit_event(
                     &event_tx,
-                    Event::NodeError(InfraError::RuntimeNode {
+                    Event::RuntimeError(InfraError::RuntimeNode {
                         instance_id: self.id(),
                         message: err.to_string(),
                     }),
@@ -696,7 +696,7 @@ impl NodeRunner for TcpServerNodeRunner {
                 Ok(command) = cmd_rx.recv() => {
                     if command == Command::Quit { break; }
                 }
-                Ok((mut stream, remote_addr)) = socket.accept() => {
+                Ok((stream, _remote_addr)) = socket.accept() => {
                     // TODO add semaphore for tracking max number of connections
                     // TODO whitelist/blacklist of remote addresses
                     let (reader, writer) = stream.into_split();
@@ -914,7 +914,7 @@ impl NodeRunner for TcpClientNodeRunner {
             Err(err) => {
                 Self::emit_event(
                     &event_tx,
-                    Event::NodeError(InfraError::CreateNode {
+                    Event::RuntimeError(InfraError::CreateNode {
                         instance_id: self.id(),
                         message: err.to_string(),
                     }),
@@ -926,7 +926,7 @@ impl NodeRunner for TcpClientNodeRunner {
         if let Err(err) = socket.bind(self.interface) {
             Self::emit_event(
                 &event_tx,
-                Event::NodeError(InfraError::CreateNode {
+                Event::RuntimeError(InfraError::CreateNode {
                     instance_id: self.id(),
                     message: err.to_string(),
                 }),
@@ -937,7 +937,7 @@ impl NodeRunner for TcpClientNodeRunner {
             Err(err) => {
                 Self::emit_event(
                     &event_tx,
-                    Event::NodeError(InfraError::CreateNode {
+                    Event::RuntimeError(InfraError::CreateNode {
                         instance_id: self.id(),
                         message: err.to_string(),
                     }),
@@ -962,7 +962,7 @@ impl NodeRunner for TcpClientNodeRunner {
                 // receiving from the socket
                 Ok(bytes_received) = reader.read(&mut self.buffer) => {
                     if bytes_received == 0 {
-                        Self::emit_event(&event_tx, Event::NodeError(InfraError::RuntimeNode {
+                        Self::emit_event(&event_tx, Event::RuntimeError(InfraError::RuntimeNode {
                             instance_id: self.id(),
                             message: "TCP client node disconnected.".to_string(),
                         }));
@@ -970,7 +970,7 @@ impl NodeRunner for TcpClientNodeRunner {
                         .send(Bytes::copy_from_slice(&self.buffer[..bytes_received])) {
                         self.statistics.received_packet(bytes_received);
                     } else {
-                        Self::emit_event(&event_tx, Event::NodeError(
+                        Self::emit_event(&event_tx, Event::RuntimeError(
                             InfraError::RuntimeNode {
                                 instance_id: self.id(),
                                 message: "Outgoing channel send failed.".to_string(),

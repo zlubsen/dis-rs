@@ -367,7 +367,7 @@ pub(crate) fn register_channels_for_nodes(
     if !spec.contains_key(SPEC_CHANNEL_ARRAY) {
         return Err(InfraError::InvalidSpec {
             message: format!(
-                "A spec file must contain a non-empty array of '{}', which is missing.",
+                "A spec file must contain a non-empty array '{}', which is missing.",
                 SPEC_CHANNEL_ARRAY
             ),
         });
@@ -381,7 +381,7 @@ pub(crate) fn register_channels_for_nodes(
     } else {
         return Err(InfraError::InvalidSpec {
             message: format!(
-                "A spec file must contain a non-empty array of '{}', which is not an array.",
+                "A spec file must contain a non-empty array '{}', which in the specification is not an array.",
                 SPEC_CHANNEL_ARRAY
             ),
         });

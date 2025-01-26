@@ -334,7 +334,7 @@ impl NodeRunner for DisTxNodeRunner {
                             .inspect(|_bytes_send| self.statistics.base.outgoing_message() )
                             .inspect_err(|err| {
                                 let _ = event_tx.send(
-                                    Event::NodeError(
+                                    Event::RuntimeError(
                                         InfraError::RuntimeNode {
                                             instance_id: self.id(),
                                             message: err.to_string()
@@ -346,7 +346,7 @@ impl NodeRunner for DisTxNodeRunner {
                         Err(err) => {
                             Self::emit_event(
                                 &event_tx,
-                                Event::NodeError(
+                                Event::RuntimeError(
                                     InfraError::RuntimeNode {
                                         instance_id: self.id(),
                                         message: err.to_string()

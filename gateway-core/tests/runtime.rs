@@ -17,7 +17,7 @@ async fn build_valid_spec() {
         to = "Pass Two"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let build_result = infra_builder.build_from_str(spec);
 
     let cmd_tx = infra_builder.command_channel();
@@ -48,7 +48,7 @@ async fn build_empty_spec() {
     let spec = r#"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -65,7 +65,7 @@ async fn build_spec_wrong_node_data_type() {
         name = "Node"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -81,7 +81,7 @@ async fn build_spec_no_node_type_field() {
         name = "Node"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -98,7 +98,7 @@ async fn build_spec_incorrect_node_type_field() {
         name = "Node"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -123,7 +123,7 @@ async fn build_spec_incorrect_channel_from() {
         to = "Pass Two"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -144,7 +144,7 @@ async fn build_spec_no_channels_defined() {
         name = "Pass Two"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -168,7 +168,7 @@ async fn build_spec_channel_field_missing() {
         to = "Pass Two"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -193,7 +193,7 @@ async fn build_spec_channel_field_wrong_data_type() {
         to = "Pass Two"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let InfraError::InvalidSpec { .. } = error {
         assert!(true);
@@ -218,7 +218,7 @@ async fn build_spec_channel_incompatible_data_between_nodes() {
         to = "Receives PDU"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
 
     if let InfraError::InvalidSpec { .. } = error {
@@ -246,7 +246,7 @@ async fn build_spec_external_channels() {
         outgoing = "Pass Two"
     "#;
 
-    let mut infra_builder = InfraBuilder::init();
+    let mut infra_builder = InfraBuilder::new();
     let build_result = infra_builder.build_from_str(spec);
 
     let cmd_tx = infra_builder.command_channel();

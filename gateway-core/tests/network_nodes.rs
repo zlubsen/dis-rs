@@ -36,7 +36,7 @@ async fn udp() {
     const NODE_ADDRESS: &str = "127.0.0.1:5555";
     const REMOTE_SOCKET_ADDRESS: &str = "127.0.0.1:6666";
 
-    let mut infra_runtime_builder = InfraBuilder::init();
+    let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
         assert!(false, "{err}");
     }
@@ -120,7 +120,7 @@ async fn tcp_server() {
     const DELAY: u64 = 500;
     const SERVER_ADDRESS: &str = "127.0.0.1:3030";
 
-    let mut infra_runtime_builder = InfraBuilder::init();
+    let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
         assert!(false, "{err}");
     }
@@ -209,7 +209,7 @@ async fn tcp_client() {
     const DELAY: u64 = 500;
     const SERVER_ADDRESS: &str = "127.0.0.1:3003";
 
-    let mut infra_runtime_builder = InfraBuilder::init();
+    let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
         assert!(false, "{err}");
     }

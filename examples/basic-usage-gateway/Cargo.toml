@@ -1,5 +1,5 @@
 [package]
-name = "basic-usage-infra-core"
+name = "basic-usage-gateway"
 version = "0.1.0"
 edition = "2021"
 publish = false
