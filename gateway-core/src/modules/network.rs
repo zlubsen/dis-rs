@@ -22,8 +22,7 @@ use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 use tracing::{error, trace};
 
-const SOCKET_BUFFER_CAPACITY: usize = 32_768;
-
+const DEFAULT_SOCKET_BUFFER_CAPACITY: usize = 32_768;
 const DEFAULT_TTL: u32 = 1;
 const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
 const DEFAULT_OWN_ADDRESS: SocketAddr =
@@ -82,13 +81,15 @@ pub struct UdpNodeSpec {
     pub interface: String,
     pub mode: Option<String>,
     pub ttl: Option<u32>,
+    pub buffer_size: Option<usize>,
     pub block_own_socket: Option<bool>,
 }
 
 #[derive(Debug)]
 pub struct UdpNodeData {
     base: BaseNode,
-    buffer: BytesMut,
+    buffer_size: usize,
+    // buffer: BytesMut, // TODO convert to buffer_size config, buffer is created on run, like for the TCP server?
     mode: UdpMode,
     interface: SocketAddr,
     address: SocketAddr,
@@ -215,9 +216,6 @@ impl NodeData for UdpNodeData {
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
-        buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
-
         let mode = if let Some(mode) = &node_spec.mode {
             UdpMode::try_from(mode.as_str())
         } else {
@@ -225,6 +223,9 @@ impl NodeData for UdpNodeData {
         }
         .map_err(|node_error| SpecificationError::Module(Box::new(node_error)))?;
         let ttl = node_spec.ttl.unwrap_or(DEFAULT_TTL);
+        let buffer_size = node_spec
+            .buffer_size
+            .unwrap_or(DEFAULT_SOCKET_BUFFER_CAPACITY);
         let block_own_socket = node_spec
             .block_own_socket
             .unwrap_or(DEFAULT_BLOCK_OWN_SOCKET);
@@ -241,9 +242,10 @@ impl NodeData for UdpNodeData {
                 node_spec.uri,
             )))
         })?;
+
         Ok(Self {
             base: BaseNode::new(instance_id, node_spec.name.clone(), cmd_rx, event_tx),
-            buffer,
+            buffer_size,
             mode,
             interface,
             address,
@@ -281,10 +283,13 @@ impl NodeRunner for UdpNodeRunner {
         let socket = create_udp_socket(&data)
             .map_err(|udp_error| CreationError::CreateNode(Box::new(udp_error)))?;
 
+        let mut buffer = BytesMut::with_capacity(data.buffer_size);
+        buffer.resize(data.buffer_size, 0);
+
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
-            buffer: data.buffer,
+            buffer,
             address: data.address,
             socket,
             block_own_socket: data.block_own_socket,
@@ -541,6 +546,7 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, UdpNodeError> 
 pub struct TcpServerNodeSpec {
     name: String,
     interface: String,
+    buffer_size: Option<usize>,
     max_connections: Option<usize>,
 }
 
@@ -548,6 +554,7 @@ pub struct TcpServerNodeSpec {
 pub struct TcpServerNodeData {
     base: BaseNode,
     interface: SocketAddr,
+    buffer_size: usize,
     max_connections: usize,
     incoming: Option<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
@@ -557,6 +564,7 @@ pub struct TcpServerNodeRunner {
     instance_id: InstanceId,
     name: String,
     interface: SocketAddr,
+    buffer_size: usize,
     max_connections: usize,
     statistics: SocketStatistics,
 }
@@ -579,6 +587,9 @@ impl NodeData for TcpServerNodeData {
                 node_spec.interface,
             )))
         })?;
+        let buffer_size = node_spec
+            .buffer_size
+            .unwrap_or(DEFAULT_SOCKET_BUFFER_CAPACITY);
         let max_connections = node_spec
             .max_connections
             .unwrap_or(DEFAULT_TCP_MAX_CONNECTIONS);
@@ -591,6 +602,7 @@ impl NodeData for TcpServerNodeData {
                 event_tx,
             },
             interface,
+            buffer_size,
             max_connections,
             incoming: None,
             outgoing: out_tx,
@@ -625,6 +637,7 @@ impl NodeRunner for TcpServerNodeRunner {
             instance_id: data.base.instance_id,
             name: data.base.name,
             interface: data.interface,
+            buffer_size: data.buffer_size,
             max_connections: data.max_connections,
             statistics: SocketStatistics::default(),
         };
@@ -671,7 +684,7 @@ impl NodeRunner for TcpServerNodeRunner {
                     // TODO whitelist/blacklist of remote addresses
                     let (reader, writer) = stream.into_split();
                     let closer = Arc::new(Notify::new());
-                    let read_handle = tokio::spawn(run_tcp_reader(reader, tcp_read_tx.clone(), closer.clone()));
+                    let read_handle = tokio::spawn(run_tcp_reader(reader, tcp_read_tx.clone(), closer.clone(), self.buffer_size));
                     let write_handle = tokio::spawn(run_tcp_write(writer, tcp_write_tx.subscribe(), closer.clone()));
                     tokio::spawn( async move {
                         read_handle.await.unwrap();
@@ -695,9 +708,11 @@ async fn run_tcp_reader(
     mut reader: OwnedReadHalf,
     to_node: tokio::sync::mpsc::Sender<Bytes>,
     closer: Arc<Notify>,
+    buffer_size: usize,
 ) {
-    let mut buf = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
-    buf.resize(SOCKET_BUFFER_CAPACITY, 0);
+    let mut buf = BytesMut::with_capacity(buffer_size);
+    buf.resize(buffer_size, 0);
+
     loop {
         match reader.read(&mut buf).await {
             Ok(0) => {
@@ -743,14 +758,15 @@ pub struct TcpClientNodeSpec {
     name: String,
     interface: String,
     address: String,
+    buffer_size: Option<usize>,
 }
 
 #[derive(Debug)]
 pub struct TcpClientNodeData {
     base: BaseNode,
-    buffer: BytesMut,
     interface: SocketAddr,
     address: SocketAddr,
+    buffer_size: usize,
     incoming: Option<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
 }
@@ -776,9 +792,6 @@ impl NodeData for TcpClientNodeData {
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
-        buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
-
         let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
             SpecificationError::Module(Box::new(UdpNodeError::IncorrectInterface(
                 instance_id,
@@ -792,6 +805,10 @@ impl NodeData for TcpClientNodeData {
             )))
         })?;
 
+        let buffer_size = node_spec
+            .buffer_size
+            .unwrap_or(DEFAULT_SOCKET_BUFFER_CAPACITY);
+
         Ok(Self {
             base: BaseNode {
                 instance_id,
@@ -799,9 +816,9 @@ impl NodeData for TcpClientNodeData {
                 cmd_rx,
                 event_tx,
             },
-            buffer,
             interface,
             address,
+            buffer_size,
             incoming: None,
             outgoing: out_tx,
         })
@@ -831,10 +848,13 @@ impl NodeRunner for TcpClientNodeRunner {
     }
 
     fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
+        let mut buffer = BytesMut::with_capacity(data.buffer_size);
+        buffer.resize(data.buffer_size, 0);
+
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
-            buffer: data.buffer,
+            buffer,
             interface: data.interface,
             address: data.address,
             statistics: SocketStatistics::default(),
