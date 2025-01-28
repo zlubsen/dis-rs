@@ -139,7 +139,7 @@ async fn tcp_server() {
         tokio::time::sleep(Duration::from_millis(DELAY)).await; // wait for runtime to be started.
 
         let res = TcpStream::connect(SERVER_ADDRESS).await;
-        let (mut tcp_rx, mut tcp_tx) = res.unwrap().into_split();
+        let (tcp_rx, mut tcp_tx) = res.unwrap().into_split();
 
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
 
