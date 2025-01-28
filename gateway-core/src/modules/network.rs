@@ -547,7 +547,6 @@ pub struct TcpServerNodeSpec {
 #[derive(Debug)]
 pub struct TcpServerNodeData {
     base: BaseNode,
-    buffer: BytesMut,
     interface: SocketAddr,
     max_connections: usize,
     incoming: Option<Receiver<Bytes>>,
@@ -557,7 +556,6 @@ pub struct TcpServerNodeData {
 pub struct TcpServerNodeRunner {
     instance_id: InstanceId,
     name: String,
-    buffer: BytesMut,
     interface: SocketAddr,
     max_connections: usize,
     statistics: SocketStatistics,
@@ -574,9 +572,6 @@ impl NodeData for TcpServerNodeData {
             .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
-
-        let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
-        buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
 
         let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
             SpecificationError::Module(Box::new(UdpNodeError::IncorrectInterface(
@@ -595,7 +590,6 @@ impl NodeData for TcpServerNodeData {
                 cmd_rx,
                 event_tx,
             },
-            buffer,
             interface,
             max_connections,
             incoming: None,
@@ -630,7 +624,6 @@ impl NodeRunner for TcpServerNodeRunner {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
-            buffer: data.buffer,
             interface: data.interface,
             max_connections: data.max_connections,
             statistics: SocketStatistics::default(),

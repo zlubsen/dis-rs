@@ -62,7 +62,7 @@ async fn udp() {
 
         // input via incoming channel goes out via the socket
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
-        let len = sock.recv(&mut receive_buffer).await.unwrap();
+        let _bytes_send = sock.recv(&mut receive_buffer).await.unwrap();
 
         // input through the socket comes out via the outgoing channel
         sock.send(message.as_bytes()).await.unwrap();
