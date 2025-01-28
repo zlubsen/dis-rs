@@ -3,7 +3,7 @@ use crate::core::{
     DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::{CreationError, InfraError, NodeError, SpecificationError};
+use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::{Bytes, BytesMut};
@@ -16,11 +16,10 @@ use thiserror::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::{TcpListener, TcpSocket, UdpSocket};
-use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
-use tracing::{error, trace};
+use tracing::error;
 
 const DEFAULT_SOCKET_BUFFER_CAPACITY: usize = 32_768;
 const DEFAULT_TTL: u32 = 1;
@@ -116,9 +115,6 @@ enum UdpNodeEvent {
     BlockedPacket,
     ReceivedIncoming(Bytes),
     SocketError(std::io::Error),
-    ReceiveIncomingError(RecvError),
-    SendOutgoingChannelError,
-    SendEventChannelError,
     OutputStatistics,
     Quit,
 }
@@ -363,10 +359,7 @@ impl NodeRunner for UdpNodeRunner {
                     } else {
                         Self::emit_event(
                             &event_tx,
-                            Event::RuntimeError(InfraError::RuntimeNode {
-                                instance_id: self.id(),
-                                message: "Outgoing channel send failed.".to_string(),
-                            }),
+                            Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())),
                         );
                     };
                 }
@@ -376,8 +369,8 @@ impl NodeRunner for UdpNodeRunner {
                         Ok(_bytes_send) => {}
                         Err(err) => Self::emit_event(
                             &event_tx,
-                            Event::RuntimeError(InfraError::RuntimeNode {
-                                instance_id: self.id(),
+                            Event::RuntimeError(ExecutionError::NodeExecution {
+                                node_id: self.id(),
                                 message: err.to_string(),
                             }),
                         ),
@@ -385,8 +378,8 @@ impl NodeRunner for UdpNodeRunner {
                 }
                 UdpNodeEvent::SocketError(err) => Self::emit_event(
                     &event_tx,
-                    Event::RuntimeError(InfraError::RuntimeNode {
-                        instance_id: self.id(),
+                    Event::RuntimeError(ExecutionError::NodeExecution {
+                        node_id: self.id(),
                         message: err.to_string(),
                     }),
                 ),
@@ -396,9 +389,6 @@ impl NodeRunner for UdpNodeRunner {
                 UdpNodeEvent::Quit => {
                     break;
                 }
-                UdpNodeEvent::ReceiveIncomingError(_) => {} // TODO handle channel error
-                UdpNodeEvent::SendOutgoingChannelError => {} // TODO handle channel error
-                UdpNodeEvent::SendEventChannelError => {}   // TODO handle channel error
             }
         }
     }
@@ -667,9 +657,14 @@ impl NodeRunner for TcpServerNodeRunner {
 
         let socket = match TcpListener::bind(self.interface).await {
             Ok(socket) => socket,
-            Err(err) => {
-                // TODO ExecutionError
-                trace!("Cannot bind TCP socket to {}", self.interface);
+            Err(_) => {
+                Self::emit_event(
+                    &event_tx,
+                    Event::RuntimeError(ExecutionError::NodeExecution {
+                        node_id: self.id(),
+                        message: format!("Cannot bind TCP socket to {}", self.interface),
+                    }),
+                );
                 return;
             }
         };
@@ -687,17 +682,23 @@ impl NodeRunner for TcpServerNodeRunner {
                     let read_handle = tokio::spawn(run_tcp_reader(reader, tcp_read_tx.clone(), closer.clone(), self.buffer_size));
                     let write_handle = tokio::spawn(run_tcp_write(writer, tcp_write_tx.subscribe(), closer.clone()));
                     tokio::spawn( async move {
-                        read_handle.await.unwrap();
-                        write_handle.await.unwrap();
+                        let _ = read_handle.await;
+                        let _ = write_handle.await;
                     });
                 }
                 Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                     self.statistics.received_incoming(message.len());
-                    let _ = tcp_write_tx.send(message);
+                    let _ = tcp_write_tx.send(message).inspect_err(|err|
+                        Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::NodeExecution {
+                            node_id: self.id(),
+                            message: err.to_string()
+                        }))
+                    );
                 }
                 Some(message) = tcp_read_rx.recv() => {
                     self.statistics.received_packet(message.len());
-                    let _ = outgoing.send(message);
+                    let _ = outgoing.send(message).inspect_err(|_|
+                        Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::OutputChannelSend(self.id()))));
                 }
             }
         }
@@ -742,11 +743,9 @@ async fn run_tcp_write(
             }
             Ok(message) = from_node.recv() => {
                 match writer.write(&message[..]).await {
-                    Ok(0) => {}
+                    Ok(0) => { }
                     Ok(_bytes_sent) => { }
-                    Err(_err) => {
-
-                    }
+                    Err(_err) => { }
                 }
             }
         }
@@ -894,8 +893,8 @@ impl NodeRunner for TcpClientNodeRunner {
             Err(err) => {
                 Self::emit_event(
                     &event_tx,
-                    Event::RuntimeError(InfraError::CreateNode {
-                        instance_id: self.id(),
+                    Event::RuntimeError(ExecutionError::NodeExecution {
+                        node_id: self.id(),
                         message: err.to_string(),
                     }),
                 );
@@ -906,8 +905,8 @@ impl NodeRunner for TcpClientNodeRunner {
         if let Err(err) = socket.bind(self.interface) {
             Self::emit_event(
                 &event_tx,
-                Event::RuntimeError(InfraError::CreateNode {
-                    instance_id: self.id(),
+                Event::RuntimeError(ExecutionError::NodeExecution {
+                    node_id: self.id(),
                     message: err.to_string(),
                 }),
             );
@@ -917,8 +916,8 @@ impl NodeRunner for TcpClientNodeRunner {
             Err(err) => {
                 Self::emit_event(
                     &event_tx,
-                    Event::RuntimeError(InfraError::CreateNode {
-                        instance_id: self.id(),
+                    Event::RuntimeError(ExecutionError::NodeExecution {
+                        node_id: self.id(),
                         message: err.to_string(),
                     }),
                 );
@@ -942,8 +941,8 @@ impl NodeRunner for TcpClientNodeRunner {
                 // receiving from the socket
                 Ok(bytes_received) = reader.read(&mut self.buffer) => {
                     if bytes_received == 0 {
-                        Self::emit_event(&event_tx, Event::RuntimeError(InfraError::RuntimeNode {
-                            instance_id: self.id(),
+                        Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::NodeExecution {
+                            node_id: self.id(),
                             message: "TCP client node disconnected.".to_string(),
                         }));
                     } else if let Ok(_num_receivers) = outgoing
@@ -951,10 +950,7 @@ impl NodeRunner for TcpClientNodeRunner {
                         self.statistics.received_packet(bytes_received);
                     } else {
                         Self::emit_event(&event_tx, Event::RuntimeError(
-                            InfraError::RuntimeNode {
-                                instance_id: self.id(),
-                                message: "Outgoing channel send failed.".to_string(),
-                            },
+                            ExecutionError::OutputChannelSend(self.id())
                         ));
                         break;
                     };

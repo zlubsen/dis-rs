@@ -1,5 +1,5 @@
 use crate::core::{NodeConstructor, UntypedNode};
-use crate::error::{CreationError, GatewayError, InfraError, SpecificationError};
+use crate::error::{CreationError, ExecutionError, GatewayError, SpecificationError};
 use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
 use std::any::Any;
@@ -266,7 +266,7 @@ pub enum Command {
 /// Enum of Events that the Runtime and Nodes can emit
 #[derive(Clone)]
 pub enum Event {
-    RuntimeError(InfraError),
+    RuntimeError(ExecutionError),
     SendStatistics,
 }
 

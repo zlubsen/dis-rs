@@ -1,3 +1,4 @@
+use gateway_core::error::{CreationError, GatewayError, SpecificationError};
 use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 
@@ -43,22 +44,19 @@ async fn build_valid_spec() {
 
 #[tokio::test]
 async fn build_empty_spec() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
     "#;
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
+
+    if let GatewayError::Specification(SpecificationError::ParseSpecification(_)) = error {
         assert!(true);
     }
 }
 
 #[tokio::test]
 async fn build_spec_wrong_node_data_type() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = 123
@@ -67,15 +65,14 @@ async fn build_spec_wrong_node_data_type() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
+
+    if let GatewayError::Specification(SpecificationError::FieldIsNotAString(_)) = error {
         assert!(true);
     }
 }
 
 #[tokio::test]
 async fn build_spec_no_node_type_field() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         name = "Node"
@@ -83,15 +80,15 @@ async fn build_spec_no_node_type_field() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
+    if let GatewayError::Specification(SpecificationError::NodeEntryMissingTypeField(_)) = error {
         assert!(true);
+    } else {
+        assert!(false);
     }
 }
 
 #[tokio::test]
 async fn build_spec_incorrect_node_type_field() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = "a_type_that_does_not_exist"
@@ -100,15 +97,15 @@ async fn build_spec_incorrect_node_type_field() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
-        assert!(true);
+    if let GatewayError::Specification(SpecificationError::UnknownNodeType(node_type)) = error {
+        assert_eq!(node_type.as_str(), "a_type_that_does_not_exist");
+    } else {
+        assert!(false);
     }
 }
 
 #[tokio::test]
 async fn build_spec_incorrect_channel_from() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = "pass_through"
@@ -125,15 +122,20 @@ async fn build_spec_incorrect_channel_from() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
-        assert!(true);
+    if let GatewayError::Specification(SpecificationError::ChannelEntryUndefinedNodeName {
+        field,
+        name,
+    }) = error
+    {
+        assert_eq!(field.as_str(), "from");
+        assert_eq!(name.as_str(), "Incorrect");
+    } else {
+        assert!(false);
     }
 }
 
 #[tokio::test]
 async fn build_spec_no_channels_defined() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = "pass_through"
@@ -146,15 +148,15 @@ async fn build_spec_no_channels_defined() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
+    if let GatewayError::Specification(SpecificationError::NoChannelsSpecified(_)) = error {
         assert!(true);
+    } else {
+        assert!(false);
     }
 }
 
 #[tokio::test]
 async fn build_spec_channel_field_missing() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = "pass_through"
@@ -170,15 +172,16 @@ async fn build_spec_channel_field_missing() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
-        assert!(true);
+    if let GatewayError::Specification(SpecificationError::ChannelEntryMissingField(field)) = error
+    {
+        assert_eq!(field.as_str(), "from");
+    } else {
+        assert!(false);
     }
 }
 
 #[tokio::test]
 async fn build_spec_channel_field_wrong_data_type() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = "pass_through"
@@ -195,15 +198,15 @@ async fn build_spec_channel_field_wrong_data_type() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let InfraError::InvalidSpec { .. } = error {
-        assert!(true);
+    if let GatewayError::Specification(SpecificationError::FieldIsNotAString(field)) = error {
+        assert_eq!(field.as_str(), "from");
+    } else {
+        assert!(false);
     }
 }
 
 #[tokio::test]
 async fn build_spec_channel_incompatible_data_between_nodes() {
-    use gateway_core::error::InfraError;
-
     let spec = r#"
         [[ nodes ]]
         type = "pass_through"
@@ -220,9 +223,19 @@ async fn build_spec_channel_incompatible_data_between_nodes() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
+    println!("{:?}", error);
 
-    if let InfraError::InvalidSpec { .. } = error {
-        assert!(true);
+    if let GatewayError::Creation(CreationError::SubscribeToChannel {
+        instance_id,
+        node_name,
+        data_type_expected,
+    }) = error
+    {
+        assert_eq!(instance_id, 1);
+        assert_eq!(node_name.as_str(), "Receives PDU");
+        assert_eq!(data_type_expected.as_str(), "dis_rs::common::model::Pdu");
+    } else {
+        assert!(false);
     }
 }
 

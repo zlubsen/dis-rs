@@ -143,13 +143,26 @@ async fn tcp_server() {
 
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
 
-        let tcp_out_received = tcp_rx.read(&mut receive_buffer).await;
-        assert!(tcp_out_received.is_ok(), "TCP returned by node is not Ok.");
-        assert_eq!(
-            tcp_out_received.unwrap(),
-            message.as_bytes().len(),
-            "Message returned over TCP socket by node is not equal in length to the input."
-        );
+        let tcp_out_received = match tcp_rx.readable().await {
+            Ok(_) => tcp_rx.try_read(&mut receive_buffer),
+            Err(err) => Err(err),
+        };
+
+        match &tcp_out_received {
+            Ok(0) => {
+                assert!(false, "The TCP reader half is closed");
+            }
+            Ok(bytes_received) => {
+                assert_eq!(
+                    *bytes_received,
+                    message.as_bytes().len(),
+                    "Message returned over TCP socket by node is not equal in length to the input."
+                );
+            }
+            Err(err) => {
+                assert!(false, "{err}")
+            }
+        }
 
         let _ = tcp_tx.write(message.as_bytes()).await;
         let node_out_received = output_rx.recv().await;

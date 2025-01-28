@@ -69,16 +69,19 @@ pub enum CreationError {
 
 #[derive(Clone, Debug, Error)]
 pub enum ExecutionError {
-    // TODO Create variants
-    // input channel failure
-    // output channel failure
-    // command channel (receive) failure
-    // event channel (send) failure
+    #[error("Node {0} - Input channel receive failure.")]
+    InputChannelReceive(InstanceId),
+    #[error("Node {0} - Output channel send failure.")]
+    OutputChannelSend(InstanceId),
+    #[error("Node {0} - Command channel receive failure.")]
+    CommandChannelReceive(InstanceId),
+    #[error("Node {0} - Event channel send failure, no receivers available.")]
+    EventChannelSend(InstanceId),
     #[error("Node {node_id} - {message}")]
     NodeExecution {
         node_id: InstanceId,
         message: String,
-    }, // TODO determine additional fields; basically forward the error from the module, use Box<dyn Error> ?
+    },
 }
 
 #[derive(Clone, Debug, Error)]

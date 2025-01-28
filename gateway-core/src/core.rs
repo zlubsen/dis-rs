@@ -156,8 +156,6 @@ pub trait NodeRunner {
     /// Send out an event over the event channel (convenience / shorthand function)
     fn emit_event(event_tx: &Sender<Event>, event: Event) {
         if let Err(err) = event_tx.send(event) {
-            // error!("Node '{}' - {}", self.base().name, err);
-            // TODO make a method again to log the name and such
             error!("{}", err);
         }
     }

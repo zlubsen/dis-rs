@@ -3,7 +3,7 @@ use crate::core::{
     DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::{CreationError, InfraError, SpecificationError};
+use crate::error::{CreationError, ExecutionError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::{Bytes, BytesMut};
@@ -14,7 +14,6 @@ use std::any::Any;
 use std::time::Duration;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
-use tracing::trace;
 
 const SPEC_DIS_RECEIVER_NODE_TYPE: &str = "dis_receiver";
 const SPEC_DIS_SENDER_NODE_TYPE: &str = "dis_sender";
@@ -186,7 +185,11 @@ impl NodeRunner for DisRxNodeRunner {
                     let pdus = match dis_rs::parse(&message) {
                         Ok(vec) => { vec }
                         Err(err) => {
-                            trace!("DIS parse error: {err}");
+                            Self::emit_event(&event_tx,
+                                Event::RuntimeError(ExecutionError::NodeExecution {
+                                    node_id: self.id(),
+                                    message: format!("DIS parse error: {err}")
+                                }));
                             vec![]
                         }
                     };
@@ -329,14 +332,9 @@ impl NodeRunner for DisTxNodeRunner {
                             let _send_result = outgoing
                             .send(Bytes::copy_from_slice(&self.buffer[0..(bytes_written as usize)]))
                             .inspect(|_bytes_send| self.statistics.base.outgoing_message() )
-                            .inspect_err(|err| {
-                                let _ = event_tx.send(
-                                    Event::RuntimeError(
-                                        InfraError::RuntimeNode {
-                                            instance_id: self.id(),
-                                            message: err.to_string()
-                                        }
-                                    )
+                            .inspect_err(|_| {
+                                Self::emit_event(&event_tx,
+                                    Event::RuntimeError(ExecutionError::OutputChannelSend(self.instance_id))
                                 );}
                             );
                         }
@@ -344,9 +342,9 @@ impl NodeRunner for DisTxNodeRunner {
                             Self::emit_event(
                                 &event_tx,
                                 Event::RuntimeError(
-                                    InfraError::RuntimeNode {
-                                        instance_id: self.id(),
-                                        message: err.to_string()
+                                    ExecutionError::NodeExecution {
+                                        node_id: self.id(),
+                                        message: err.to_string(),
                                     }
                                 )
                             );

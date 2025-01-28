@@ -3,7 +3,7 @@ use crate::core::{
     UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::{CreationError, SpecificationError};
+use crate::error::{CreationError, ExecutionError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::Bytes;
@@ -139,7 +139,10 @@ impl NodeRunner for PassThroughNodeRunner {
                     if cmd == Command::Quit { break; }
                 }
                 Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    let _send_result = outgoing.send(message);
+                    let _send_result = outgoing.send(message).inspect_err(|_|
+                        Self::emit_event(&event_tx,
+                            Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
+                    );
                 }
                 _ = aggregate_stats_interval.tick() => {
                     self.statistics.aggregate_interval();
