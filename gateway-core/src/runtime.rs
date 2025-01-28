@@ -1,5 +1,5 @@
 use crate::core::{NodeConstructor, UntypedNode};
-use crate::error::InfraError;
+use crate::error::{CreationError, GatewayError, InfraError, SpecificationError};
 use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
 use std::any::Any;
@@ -45,24 +45,21 @@ impl InfraBuilder {
     }
 
     /// Builds an infra specification from a given `Path`, pointing to a TOML file
-    pub fn build_from_path(&mut self, path: &Path) -> Result<(), InfraError> {
-        let contents = read_to_string(path).map_err(|err| InfraError::InvalidSpec {
-            message: err.to_string(),
-        })?;
+    pub fn build_from_path(&mut self, path: &Path) -> Result<(), GatewayError> {
+        let contents = read_to_string(path)
+            .map_err(|err| GatewayError::from(SpecificationError::from(err)))?;
         self.build_spec(&contents)
     }
 
     /// Builds an infra specification, provided as the bare content (in TOML format)
-    pub fn build_from_str(&mut self, toml_spec: &str) -> Result<(), InfraError> {
+    pub fn build_from_str(&mut self, toml_spec: &str) -> Result<(), GatewayError> {
         self.build_spec(toml_spec)
     }
 
     /// Builds the provided specification.
-    fn build_spec(&mut self, spec: &str) -> Result<(), InfraError> {
-        let contents: toml::Table =
-            toml::from_str(spec).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+    fn build_spec(&mut self, spec: &str) -> Result<(), GatewayError> {
+        let contents: toml::Table = toml::from_str(spec)
+            .map_err(|err| GatewayError::from(SpecificationError::from(err)))?;
 
         // Construct all nodes in the spec as a Vec<Box<dyn NodeData>>, giving them a unique id (index in the vec).
         let mut nodes: Vec<UntypedNode> = crate::core::construct_nodes_from_spec(
@@ -70,7 +67,8 @@ impl InfraBuilder {
             self.command_tx.clone(),
             self.event_tx.clone(),
             &contents,
-        )?;
+        )
+        .map_err(|specification_error| GatewayError::from(specification_error))?;
 
         // Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
@@ -110,7 +108,7 @@ impl InfraBuilder {
 /// Execute an infrastructure, as constructed by a `InfraRuntimeBuilder`.
 pub async fn run_from_builder(
     builder: InfraBuilder,
-) -> Result<JoinAll<JoinHandle<()>>, InfraError> {
+) -> Result<JoinAll<JoinHandle<()>>, CreationError> {
     // Spawn the coordination tasks: shutdown signal and error event listeners
     let shutdown_handle = tokio::spawn(shutdown_signal(builder.command_tx.clone()));
     let event_listener_handle = tokio::spawn(event_listener(
@@ -172,6 +170,7 @@ async fn event_listener(mut event_rx: Receiver<Event>, command_tx: Sender<Comman
 /// General task that is spawned to listen for `Ctrl+C` and shutdown signals from the OS.
 /// When a shutdown signal is detected, a `Command::Quit` command will be issued to all tasks listening for `Command`s.
 async fn shutdown_signal(cmd: Sender<Command>) {
+    // TODO remove .expect() calls, make future fallible
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -221,12 +220,12 @@ async fn shutdown_signal(cmd: Sender<Command>) {
 /// Creates a default tokio runtime.
 ///
 /// The runtime is multithreaded, enables IO and Time features, and enters the runtime context.
-pub fn default_tokio_runtime() -> Result<Runtime, InfraError> {
+pub fn default_tokio_runtime() -> Result<Runtime, GatewayError> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
         .build()
-        .map_err(|_err| InfraError::CannotStartRuntime)?;
+        .map_err(|err| GatewayError::from(err))?;
     let _guard = runtime.enter();
 
     Ok(runtime)
@@ -243,7 +242,7 @@ pub fn preset_builder_from_spec_str<I: 'static, O: 'static>(
         Option<Sender<I>>,
         Option<Receiver<O>>,
     ),
-    InfraError,
+    GatewayError,
 > {
     let mut infra_runtime_builder = InfraBuilder::new();
     infra_runtime_builder.build_from_str(toml_spec)?;

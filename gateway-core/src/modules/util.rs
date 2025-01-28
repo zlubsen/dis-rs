@@ -3,7 +3,7 @@ use crate::core::{
     UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::InfraError;
+use crate::error::{CreationError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::Bytes;
@@ -28,14 +28,15 @@ pub fn node_from_spec(
     event_tx: Sender<Event>,
     type_value: &str,
     spec: &toml::Table,
-) -> Result<UntypedNode, InfraError> {
+) -> Result<UntypedNode, SpecificationError> {
     match type_value {
         SPEC_PASS_THROUGH_NODE_TYPE => {
             let node = PassThroughNodeData::new(instance_id, cmd_rx, event_tx, spec)?.to_dyn();
             Ok(node)
         }
-        unknown_value => Err(InfraError::InvalidSpec {
-            message: format!("Unknown node type '{unknown_value}' for module 'util'"),
+        unknown_value => Err(SpecificationError::UnknownNodeTypeForModule {
+            node_type: unknown_value.to_string(),
+            module_name: "util",
         }),
     }
 }
@@ -59,13 +60,11 @@ impl NodeData for PassThroughNodeData {
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError> {
+    ) -> Result<PassThroughNodeData, SpecificationError> {
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let node_spec: BaseNodeSpec =
-            toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+        let node_spec: BaseNodeSpec = toml::from_str(&spec.to_string())
+            .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         Ok(Self {
             base: BaseNode {
@@ -102,7 +101,7 @@ impl NodeRunner for PassThroughNodeRunner {
         &self.name
     }
 
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,

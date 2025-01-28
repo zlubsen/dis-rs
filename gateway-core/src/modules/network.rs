@@ -3,15 +3,16 @@ use crate::core::{
     DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::InfraError;
+use crate::error::{CreationError, InfraError, NodeError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::{Bytes, BytesMut};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
+use thiserror::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::{TcpListener, TcpSocket, UdpSocket};
@@ -53,7 +54,7 @@ pub fn node_from_spec(
     event_tx: Sender<Event>,
     type_value: &str,
     spec: &toml::Table,
-) -> Result<UntypedNode, InfraError> {
+) -> Result<UntypedNode, SpecificationError> {
     match type_value {
         SPEC_UDP_NODE_TYPE => {
             let node = UdpNodeData::new(instance_id, cmd_rx, event_tx, spec)?.to_dyn();
@@ -67,8 +68,9 @@ pub fn node_from_spec(
             let node = TcpClientNodeData::new(instance_id, cmd_rx, event_tx, spec)?.to_dyn();
             Ok(node)
         }
-        unknown_value => Err(InfraError::InvalidSpec {
-            message: format!("Unknown node type '{unknown_value}' for module 'network'"),
+        unknown_value => Err(SpecificationError::UnknownNodeTypeForModule {
+            node_type: unknown_value.to_string(),
+            module_name: "network",
         }),
     }
 }
@@ -185,19 +187,18 @@ pub(crate) enum UdpMode {
 }
 
 impl TryFrom<&str> for UdpMode {
-    type Error = InfraError;
+    type Error = UdpNodeError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             SPEC_UDP_MODE_UNICAST => Ok(Self::UniCast),
             SPEC_UDP_MODE_BROADCAST => Ok(Self::BroadCast),
             SPEC_UDP_MODE_MULTICAST => Ok(Self::MultiCast),
-            _ => Err(InfraError::InvalidSpec {
-                message: format!(
-                    "Configured UDP mode is invalid. Valid values are '{}', '{}' and '{}'.",
-                    SPEC_UDP_MODE_UNICAST, SPEC_UDP_MODE_BROADCAST, SPEC_UDP_MODE_MULTICAST
-                ),
-            }),
+            _ => Err(UdpNodeError::IncorrectMode(
+                SPEC_UDP_MODE_UNICAST,
+                SPEC_UDP_MODE_BROADCAST,
+                SPEC_UDP_MODE_MULTICAST,
+            )),
         }
     }
 }
@@ -208,11 +209,9 @@ impl NodeData for UdpNodeData {
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError> {
-        let node_spec: UdpNodeSpec =
-            toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+    ) -> Result<Self, SpecificationError> {
+        let node_spec: UdpNodeSpec = toml::from_str(&spec.to_string())
+            .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
@@ -223,33 +222,25 @@ impl NodeData for UdpNodeData {
             UdpMode::try_from(mode.as_str())
         } else {
             Ok(UdpMode::default())
-        }?;
+        }
+        .map_err(|node_error| SpecificationError::Module(Box::new(node_error)))?;
         let ttl = node_spec.ttl.unwrap_or(DEFAULT_TTL);
         let block_own_socket = node_spec
             .block_own_socket
             .unwrap_or(DEFAULT_BLOCK_OWN_SOCKET);
 
-        let interface =
-            node_spec
-                .interface
-                .parse::<SocketAddr>()
-                .map_err(|_err| InfraError::InvalidSpec {
-                    message: format!(
-                        "Node {instance_id} - Cannot parse socket address for interface {}",
-                        node_spec.interface
-                    ),
-                })?;
-        let address =
-            node_spec
-                .uri
-                .parse::<SocketAddr>()
-                .map_err(|_err| InfraError::InvalidSpec {
-                    message: format!(
-                        "Node {instance_id} - Cannot parse socket address for uri {}",
-                        node_spec.uri
-                    ),
-                })?;
-
+        let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
+            SpecificationError::Module(Box::new(UdpNodeError::IncorrectInterface(
+                instance_id,
+                node_spec.interface,
+            )))
+        })?;
+        let address = node_spec.uri.parse::<SocketAddr>().map_err(|_err| {
+            SpecificationError::Module(Box::new(UdpNodeError::IncorrectUri(
+                instance_id,
+                node_spec.uri,
+            )))
+        })?;
         Ok(Self {
             base: BaseNode::new(instance_id, node_spec.name.clone(), cmd_rx, event_tx),
             buffer,
@@ -286,8 +277,9 @@ impl NodeRunner for UdpNodeRunner {
         &self.name
     }
 
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
-        let socket = create_udp_socket(&data)?;
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
+        let socket = create_udp_socket(&data)
+            .map_err(|udp_error| CreationError::CreateNode(Box::new(udp_error)))?;
 
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
@@ -413,11 +405,43 @@ fn map_command_to_event(command: &Command) -> UdpNodeEvent {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum UdpNodeError {
+    #[error("Node {0}, Cannot parse socket address for interface \"{1}\"")]
+    IncorrectInterface(InstanceId, String),
+    #[error("Node {0}, Cannot parse socket address for remote uri \"{1}\"")]
+    IncorrectUri(InstanceId, String),
+    #[error("Configured UDP mode is invalid. Valid values are '{0}', '{1}' and '{2}'.")]
+    IncorrectMode(&'static str, &'static str, &'static str),
+    #[error("Node {0}, failed to create socket.")]
+    CreateSocket(InstanceId),
+    #[error("Node {0}, failed to set SO_REUSEADDR for endpoint address {1}.")]
+    SetReuseAddress(InstanceId, SocketAddr),
+    #[error("Node {0}, failed to set SO_REUSEPORT for endpoint address {1}.")]
+    SetReusePort(InstanceId, SocketAddr),
+    #[error("Node {0}, failed to set non-blocking mode for endpoint address {1}.")]
+    SetNonblocking(InstanceId, SocketAddr),
+    #[error("Node {0}, failed to set SO_BROADCAST for endpoint address {1}.")]
+    SetBroadcast(InstanceId, SocketAddr),
+    #[error("Node {0}, failed to set TTL for endpoint address {1}.")]
+    SetTtl(InstanceId, SocketAddr),
+    #[error("Node {0}, failed to join multicast group {0} using interface {1} (IPv4).")]
+    JoinMulticastV4(InstanceId, Ipv4Addr, Ipv4Addr),
+    #[error("Node {0}, failed to join multicast group {0} using interface {1} (IPv6).")]
+    JoinMulticastV6(InstanceId, Ipv6Addr, Ipv6Addr),
+    #[error("Node {0}, failed to bind to address {0:?}")]
+    BindToAddress(InstanceId, SocketAddr),
+    #[error("Node {0}, failed to convert std::net::UdpSocket to tokio::net::UdpSocket.")]
+    ConvertToAsync(InstanceId),
+}
+
+impl NodeError for UdpNodeError {}
+
 /// Creates an UDP socket based on the settings contained in `endpoint`.
 /// The created `tokio::net::udp::UdpSocket` is returned wrapped in an `Arc`
 /// so that it can be used by multiple tasks (i.e., for both writing and sending).
 #[allow(clippy::too_many_lines)]
-fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, InfraError> {
+fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, UdpNodeError> {
     use socket2::{Domain, Protocol, Socket, Type};
 
     // Create socket using socket2 crate, to be able to set required socket options (SO_REUSEADDR, SO_REUSEPORT, ...)
@@ -426,120 +450,80 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, InfraError> {
     let socket_type = Type::DGRAM;
     let socket_protocol = Protocol::UDP;
     let socket = Socket::new(socket_domain, socket_type, Some(socket_protocol))
-        .expect("Error creating socket.");
+        .map_err(|_err| UdpNodeError::CreateSocket(endpoint.base.instance_id))?;
 
-    if let Err(err) = socket.set_reuse_address(true) {
-        error!(
-            "Failed to set SO_REUSEADDR for endpoint address {} - {}.",
-            endpoint.address, err
-        );
-    }
+    socket
+        .set_reuse_address(true)
+        .map_err(|_| UdpNodeError::SetReuseAddress(endpoint.base.instance_id, endpoint.address))?;
+
     #[cfg(all(
         target_family = "unix",
         not(any(target_os = "solaris", target_os = "illumos"))
     ))]
-    if let Err(err) = socket.set_reuse_port(true) {
-        error!(
-            "Failed to set SO_REUSEPORT for endpoint address {} - {}.",
-            endpoint.address, err
-        );
-    }
-    if let Err(err) = socket.set_nonblocking(true) {
-        error!(
-            "Failed to set nonblocking mode for endpoint address {} - {}",
-            endpoint.address, err
-        );
-    }
+    socket
+        .set_reuse_port(true)
+        .map_err(|_| UdpNodeError::SetReusePort(endpoint.base.instance_id, endpoint.address))?;
+    socket
+        .set_nonblocking(true)
+        .map_err(|_| UdpNodeError::SetNonblocking(endpoint.base.instance_id, endpoint.address))?;
 
     match (is_ipv4, endpoint.mode) {
         (true, UdpMode::UniCast) => {
-            if let Err(err) = socket.bind(&endpoint.interface.into()) {
-                return Err(InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: format!(
-                        "Failed to bind to IPv4 address {:?} - {}",
-                        endpoint.address, err
-                    ),
-                });
-            }
+            socket.bind(&endpoint.interface.into()).map_err(|_| {
+                UdpNodeError::BindToAddress(endpoint.base.instance_id, endpoint.address)
+            })?;
         }
         (true, UdpMode::BroadCast) => {
-            if let Err(err) = socket.set_broadcast(true) {
-                return Err(InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: format!(
-                        "Failed to set SO_BROADCAST for endpoint address {} - {}.",
-                        endpoint.interface, err
-                    ),
-                });
-            }
-            if let Err(err) = socket.bind(&endpoint.interface.into()) {
-                return Err(InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: format!(
-                        "Failed to bind to IPv4 address {:?} - {}",
-                        endpoint.address, err
-                    ),
-                });
-            }
-            if let Err(err) = socket.set_ttl(endpoint.ttl) {
-                return Err(InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: format!("Failed to set TTL - {err}."),
-                });
-            }
+            socket.set_broadcast(true).map_err(|_| {
+                UdpNodeError::SetBroadcast(endpoint.base.instance_id, endpoint.interface)
+            })?;
+            socket
+                .set_ttl(endpoint.ttl)
+                .map_err(|_| UdpNodeError::SetTtl(endpoint.base.instance_id, endpoint.interface))?;
+            socket.bind(&endpoint.interface.into()).map_err(|_| {
+                UdpNodeError::BindToAddress(endpoint.base.instance_id, endpoint.interface)
+            })?;
         }
         (true, UdpMode::MultiCast) => {
             if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
                 if let IpAddr::V4(interface_v4) = endpoint.interface.ip() {
-                    if socket
+                    socket
                         .join_multicast_v4(&ip_address_v4, &interface_v4)
-                        .is_err()
-                    {
-                        return Err(InfraError::CreateNode {
-                            instance_id: endpoint.base.instance_id,
-                            message: format!("Failed to join multicast group {ip_address_v4} using interface {interface_v4}."),
-                        });
-                    }
+                        .map_err(|_| {
+                            UdpNodeError::JoinMulticastV4(
+                                endpoint.base.instance_id,
+                                ip_address_v4,
+                                interface_v4,
+                            )
+                        })?
                 }
             }
         }
-        (false, UdpMode::UniCast) => {
-            if socket.bind(&endpoint.interface.into()).is_err() {
-                return Err(InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: format!("Failed to bind to IPv6 address {:?}", endpoint.address),
-                });
-            }
-        }
+        (false, UdpMode::UniCast) => socket.bind(&endpoint.interface.into()).map_err(|_| {
+            UdpNodeError::BindToAddress(endpoint.base.instance_id, endpoint.address)
+        })?,
         (false, UdpMode::BroadCast) => {
-            socket
-                .set_broadcast(true)
-                .map_err(|_| InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: "Failed to set SO_BROADCAST.".to_string(),
-                })?;
-            socket.set_ttl(1).map_err(|_| InfraError::CreateNode {
-                instance_id: endpoint.base.instance_id,
-                message: "Failed to set TTL.".to_string(),
+            socket.set_broadcast(true).map_err(|_| {
+                UdpNodeError::SetBroadcast(endpoint.base.instance_id, endpoint.interface)
             })?;
             socket
-                .bind(&endpoint.interface.into())
-                .map_err(|_| InfraError::CreateNode {
-                    instance_id: endpoint.base.instance_id,
-                    message: format!("Failed to bind to IPv6 address {:?}", endpoint.address),
-                })?;
+                .set_ttl(1)
+                .map_err(|_| UdpNodeError::SetTtl(endpoint.base.instance_id, endpoint.interface))?;
+            socket.bind(&endpoint.interface.into()).map_err(|_| {
+                UdpNodeError::BindToAddress(endpoint.base.instance_id, endpoint.interface)
+            })?;
         }
         (false, UdpMode::MultiCast) => {
             if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
                 if let IpAddr::V6(interface_v6) = endpoint.interface.ip() {
                     // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
-                    socket
-                        .join_multicast_v6(&ip_address_v6, 0)
-                        .map_err(|_| InfraError::CreateNode {
-                            instance_id: endpoint.base.instance_id,
-                            message: format!("Failed to join multicast group {ip_address_v6} using interface 0 ({interface_v6})."),
-                        })?;
+                    socket.join_multicast_v6(&ip_address_v6, 0).map_err(|_| {
+                        UdpNodeError::JoinMulticastV6(
+                            endpoint.base.instance_id,
+                            ip_address_v6,
+                            interface_v6,
+                        )
+                    })?;
                 }
             }
         }
@@ -547,10 +531,8 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, InfraError> {
 
     // Convert socket2::Socket to tokio::net::UdpSocket via std::net::UdpSocket
     let socket = std::net::UdpSocket::from(socket);
-    let socket = UdpSocket::try_from(socket).map_err(|_| InfraError::CreateNode {
-        instance_id: endpoint.base.instance_id,
-        message: "Failed to convert std::net::UdpSocket to tokio::net::UdpSocket.".to_string(),
-    })?;
+    let socket = UdpSocket::try_from(socket)
+        .map_err(|_| UdpNodeError::ConvertToAsync(endpoint.base.instance_id))?;
 
     Ok(socket)
 }
@@ -587,27 +569,21 @@ impl NodeData for TcpServerNodeData {
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError> {
-        let node_spec: TcpServerNodeSpec =
-            toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+    ) -> Result<Self, SpecificationError> {
+        let node_spec: TcpServerNodeSpec = toml::from_str(&spec.to_string())
+            .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
         let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
         buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
 
-        let interface =
-            node_spec
-                .interface
-                .parse::<SocketAddr>()
-                .map_err(|_err| InfraError::InvalidSpec {
-                    message: format!(
-                        "Node {instance_id} - Cannot parse socket address for interface {}",
-                        node_spec.interface
-                    ),
-                })?;
+        let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
+            SpecificationError::Module(Box::new(UdpNodeError::IncorrectInterface(
+                instance_id,
+                node_spec.interface,
+            )))
+        })?;
         let max_connections = node_spec
             .max_connections
             .unwrap_or(DEFAULT_TCP_MAX_CONNECTIONS);
@@ -650,7 +626,7 @@ impl NodeRunner for TcpServerNodeRunner {
         &self.name
     }
 
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
@@ -686,6 +662,7 @@ impl NodeRunner for TcpServerNodeRunner {
         let socket = match TcpListener::bind(self.interface).await {
             Ok(socket) => socket,
             Err(err) => {
+                // TODO ExecutionError
                 trace!("Cannot bind TCP socket to {}", self.interface);
                 return;
             }
@@ -800,37 +777,27 @@ impl NodeData for TcpClientNodeData {
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError> {
-        let node_spec: TcpClientNodeSpec =
-            toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+    ) -> Result<Self, SpecificationError> {
+        let node_spec: TcpClientNodeSpec = toml::from_str(&spec.to_string())
+            .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
         let mut buffer = BytesMut::with_capacity(SOCKET_BUFFER_CAPACITY);
         buffer.resize(SOCKET_BUFFER_CAPACITY, 0);
 
-        let interface =
-            node_spec
-                .interface
-                .parse::<SocketAddr>()
-                .map_err(|_err| InfraError::InvalidSpec {
-                    message: format!(
-                        "Node {} - Cannot parse socket address for interface {}",
-                        node_spec.name, node_spec.interface
-                    ),
-                })?;
-        let address =
-            node_spec
-                .address
-                .parse::<SocketAddr>()
-                .map_err(|_err| InfraError::InvalidSpec {
-                    message: format!(
-                        "Node {} - Cannot parse socket address for remote TCP server {}",
-                        node_spec.name, node_spec.interface
-                    ),
-                })?;
+        let interface = node_spec.interface.parse::<SocketAddr>().map_err(|_err| {
+            SpecificationError::Module(Box::new(UdpNodeError::IncorrectInterface(
+                instance_id,
+                node_spec.interface,
+            )))
+        })?;
+        let address = node_spec.address.parse::<SocketAddr>().map_err(|_err| {
+            SpecificationError::Module(Box::new(UdpNodeError::IncorrectUri(
+                instance_id,
+                node_spec.address,
+            )))
+        })?;
 
         Ok(Self {
             base: BaseNode {
@@ -870,7 +837,7 @@ impl NodeRunner for TcpClientNodeRunner {
         &self.name
     }
 
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,

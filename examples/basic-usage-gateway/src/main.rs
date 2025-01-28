@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use gateway_core::error::InfraError;
+use gateway_core::error::{GatewayError, InfraError};
 use gateway_core::runtime;
 use gateway_core::runtime::{
     default_tokio_runtime, downcast_external_input, downcast_external_output, run_from_builder,
@@ -131,7 +131,7 @@ fn main() {
         let _ = input_handle.await;
         let _ = output_handle.await;
         let _ = cmd_handle.await;
-        Ok::<(), InfraError>(())
+        Ok::<(), GatewayError>(())
     }) {
         error!("{err}");
     }

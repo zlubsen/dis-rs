@@ -1,4 +1,4 @@
-use crate::error::InfraError;
+use crate::error::{CreationError, GatewayError, SpecificationError};
 use crate::modules::{dis, network, util};
 use crate::runtime::{Command, Event};
 use serde_derive::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ pub type NodeConstructor = fn(
     Sender<Event>,
     &str,
     &toml::Table,
-) -> Result<UntypedNode, InfraError>;
+) -> Result<UntypedNode, SpecificationError>;
 
 pub(crate) const SPEC_NODE_ARRAY: &str = "nodes";
 pub(crate) const SPEC_NODE_TYPE_FIELD: &str = "type";
@@ -39,13 +39,13 @@ where
     /// Create a new `NodeData` struct from the `spec`, hooking up the
     /// required coordination channels and setting the issued `instance_id`.
     ///
-    /// Returns an `InfraError::InvalidSpec` when the node cannot be constructed from the provided spec.
+    /// Returns a `SpecificationError` when the node cannot be constructed from the provided spec.
     fn new(
         instance_id: InstanceId,
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError>
+    ) -> Result<Self, SpecificationError>
     where
         Self: Sized;
 
@@ -54,10 +54,10 @@ where
     /// Register an opaque subscription to a Node's data, to the incoming channel for this Node (`self`).
     ///
     /// The registration of the subscription will fail when the concrete data type of the channel does not match,
-    /// returning an `InfraError::SubscribeToChannel` error.
-    fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError>;
+    /// returning an `CreationError::SubscribeToChannel` error.
+    fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), CreationError>;
     /// Obtain a Sender part of a channel that can be used to send data from outside the runtime to this node.
-    fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError>;
+    fn request_external_sender(&mut self) -> Result<Box<dyn Any>, CreationError>;
 
     fn id(&self) -> InstanceId;
     fn name(&self) -> &str;
@@ -71,8 +71,8 @@ where
     }
 
     /// This method must convert the NodeData to the associated NodeRunner by calling
-    /// the `spawn_with_data()` method on the concrete Runner type to spawn the Node on the `InfraRuntime`.
-    fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError>;
+    /// the `spawn_with_data()` method on the concrete Runner type to spawn the Node on the runtime.
+    fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, CreationError>;
 }
 
 /// Macro to generate the more trivial methods, implementation wise, of the NodeData trait for a node.
@@ -97,12 +97,12 @@ macro_rules! node_data_impl {
             Box::new(client)
         }
 
-        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), InfraError> {
+        fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), CreationError> {
             if let Ok(receiver) = receiver.downcast::<Receiver<$in_data_type>>() {
                 self$(.$in_chan_field)* = Some(*receiver);
                 Ok(())
             } else {
-                Err(InfraError::SubscribeToChannel {
+                Err(CreationError::SubscribeToChannel {
                     instance_id: self$(.$node_id_field)*,
                     node_name: self$(.$node_name_field)*.clone(),
                     data_type_expected: std::any::type_name::<$in_data_type>().to_string(),
@@ -110,7 +110,7 @@ macro_rules! node_data_impl {
             }
         }
 
-        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, InfraError> {
+        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, CreationError> {
             let (incoming_tx, incoming_rx) =
                 channel::<$in_data_type>(DEFAULT_NODE_CHANNEL_CAPACITY);
             self.register_subscription(Box::new(incoming_rx))?;
@@ -125,7 +125,7 @@ macro_rules! node_data_impl {
             self$(.$node_name_field)*.as_str()
         }
 
-        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, InfraError> {
+        fn spawn_into_runner(self: Box<Self>) -> Result<JoinHandle<()>, CreationError> {
             <$runner_type>::spawn_with_data(*self)
         }
     };
@@ -141,7 +141,7 @@ pub trait NodeRunner {
     fn name(&self) -> &str;
 
     /// Spawns the actual node, given the associated `NodeData` type.
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError>;
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError>;
 
     /// The async method executed when spawned.
     #[allow(async_fn_in_trait)]
@@ -262,37 +262,33 @@ pub(crate) fn builtin_nodes() -> Vec<(&'static str, NodeConstructor)> {
 /// Convenience function to retrieve a NodeConstructor from the provided lookup,
 /// given the provided key (`node_type`).
 ///
-/// Return an `InfraError::InvalidSpec` when the key is not found in the lookup.
+/// Returns a `SpecificationError` when the key is not found in the lookup.
 pub(crate) fn lookup_node_constructor(
     lookup: &Vec<(&'static str, NodeConstructor)>,
     key: &str,
-) -> Result<NodeConstructor, InfraError> {
+) -> Result<NodeConstructor, SpecificationError> {
     lookup
         .iter()
         .find(|&&tup| tup.0 == key)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!("Node type '{key}' is not known."),
-        })
+        .ok_or(SpecificationError::UnknownNodeType(key.to_string()))
         .map(|tup| tup.1)
 }
 
 /// Check if the provided TOML Table spec contains a field named 'type' and is of data type String.
 ///
-/// Returns the value of the 'type' field when present and valid, otherwise an `InfraError::InvalidSpec` error.
-pub(crate) fn check_node_spec_type_value(spec: &toml::Table) -> Result<String, InfraError> {
+/// Returns the value of the 'type' field when present and valid, otherwise an `SpecificationError` error.
+pub(crate) fn check_node_spec_type_value(
+    instance_id: InstanceId,
+    spec: &toml::Table,
+) -> Result<String, SpecificationError> {
     if !spec.contains_key(SPEC_NODE_TYPE_FIELD) {
-        Err(InfraError::InvalidSpec {
-            message: format!(
-                "Node specification does not contain the '{}' field of the node.",
-                SPEC_NODE_TYPE_FIELD
-            ),
-        })
+        Err(SpecificationError::NodeEntryMissingTypeField(
+            SPEC_NODE_TYPE_FIELD,
+        ))
     } else {
         match &spec[SPEC_NODE_TYPE_FIELD] {
             Value::String(value) => Ok(value.clone()),
-            invalid_value => Err(InfraError::InvalidSpec {
-                message: format!("Node type is of an invalid data type ('{}')", invalid_value),
-            }),
+            _invalid_value => Err(SpecificationError::NodeEntryIsNotATable(instance_id)),
         }
     }
 }
@@ -302,22 +298,17 @@ pub(crate) fn construct_nodes_from_spec(
     command_tx: Sender<Command>,
     event_tx: Sender<Event>,
     contents: &toml::Table,
-) -> Result<Vec<UntypedNode>, InfraError> {
+) -> Result<Vec<UntypedNode>, SpecificationError> {
     if !contents.contains_key(SPEC_NODE_ARRAY) {
-        return Err(InfraError::InvalidSpec {
-            message: format!(
-                "A spec file must contain a non-empty list of '{}', which is missing.",
-                SPEC_NODE_ARRAY
-            ),
-        });
+        return Err(SpecificationError::NoNodesSpecified(SPEC_NODE_ARRAY));
     }
     if let Value::Array(array) = &contents[SPEC_NODE_ARRAY] {
-        let nodes: Vec<Result<UntypedNode, InfraError>> = array
+        let nodes: Vec<Result<UntypedNode, SpecificationError>> = array
             .iter()
             .enumerate()
             .map(|(id, node)| {
                 if let Value::Table(spec) = node {
-                    let node_type_value = check_node_spec_type_value(spec)?;
+                    let node_type_value = check_node_spec_type_value(id as InstanceId, spec)?;
 
                     let factory = lookup_node_constructor(constructor_lookup, &node_type_value);
                     let factory = factory?;
@@ -335,42 +326,30 @@ pub(crate) fn construct_nodes_from_spec(
                         Err(err) => Err(err),
                     }
                 } else {
-                    Err(InfraError::InvalidSpec {
-                        message: format!(
-                            "Invalid node spec for index {id}, it is not a valid TOML table."
-                        ),
-                    })
+                    Err(SpecificationError::NodeEntryIsNotATable(id as InstanceId))
                 }
             })
             .collect();
-        let nodes: Result<Vec<UntypedNode>, InfraError> = nodes.into_iter().collect();
+        let nodes: Result<Vec<UntypedNode>, SpecificationError> = nodes.into_iter().collect();
         nodes
     } else {
-        Err(InfraError::InvalidSpec {
-            message: format!(
-                "The '{}' field in the spec file is not an array.",
-                SPEC_NODE_ARRAY
-            ),
-        })
+        Err(SpecificationError::FieldNotAnArray(SPEC_NODE_ARRAY))
     }
 }
 
 /// Reads the provided spec file for channel definitions,
 /// and constructs the specified channels between nodes.
 ///
-/// Returns `InfraError::InvalidSpec` errors when the specification is incorrect.
+/// Returns `SpecificationError` errors when the specification is incorrect.
 /// Plain `Result::Ok` when no errors are encountered.
 pub(crate) fn register_channels_for_nodes(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,
-) -> Result<(), InfraError> {
+) -> Result<(), GatewayError> {
     if !spec.contains_key(SPEC_CHANNEL_ARRAY) {
-        return Err(InfraError::InvalidSpec {
-            message: format!(
-                "A spec file must contain a non-empty array '{}', which is missing.",
-                SPEC_CHANNEL_ARRAY
-            ),
-        });
+        return Err(GatewayError::from(SpecificationError::NoChannelsSpecified(
+            SPEC_CHANNEL_ARRAY,
+        )));
     }
     if let Value::Array(array) = &spec[SPEC_CHANNEL_ARRAY] {
         for channel in array {
@@ -379,12 +358,9 @@ pub(crate) fn register_channels_for_nodes(
             }
         }
     } else {
-        return Err(InfraError::InvalidSpec {
-            message: format!(
-                "A spec file must contain a non-empty array '{}', which in the specification is not an array.",
-                SPEC_CHANNEL_ARRAY
-            ),
-        });
+        return Err(GatewayError::from(SpecificationError::FieldNotAnArray(
+            SPEC_CHANNEL_ARRAY,
+        )));
     };
     Ok(())
 }
@@ -393,7 +369,7 @@ pub(crate) fn register_channels_for_nodes(
 pub(crate) fn register_channel_from_spec(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,
-) -> Result<(), InfraError> {
+) -> Result<(), GatewayError> {
     let from = get_channel_name_from_spec(spec, SPEC_CHANNEL_FROM_FIELD)?;
     let to = get_channel_name_from_spec(spec, SPEC_CHANNEL_TO_FIELD)?;
 
@@ -416,16 +392,14 @@ pub(crate) fn register_channel_from_spec(
 fn get_channel_name_from_spec<'a>(
     spec: &'a toml::Table,
     field: &str,
-) -> Result<&'a str, InfraError> {
+) -> Result<&'a str, SpecificationError> {
     Ok(spec
         .get(field)
-        .ok_or(InfraError::InvalidSpec {
-            message: format!("Channel spec misses field '{}'.", field),
-        })?
+        .ok_or(SpecificationError::ChannelEntryMissingField(
+            field.to_string(),
+        ))?
         .as_str()
-        .ok_or(InfraError::InvalidSpec {
-            message: format!("Channel spec field '{}' is not a string value.", field),
-        })?)
+        .ok_or(SpecificationError::FieldIsNotAString(field.to_string()))?)
 }
 
 /// Get the instance_id of the node based on the name for a given channel spec field.
@@ -433,13 +407,13 @@ fn channel_name_to_instance_id(
     nodes: &mut Vec<UntypedNode>,
     name: &str,
     field: &str,
-) -> Result<InstanceId, InfraError> {
+) -> Result<InstanceId, SpecificationError> {
     match find_node_id_from_name(nodes, name) {
-        None => { Err(InfraError::InvalidSpec {
-            message:
-            format!("Invalid channel spec (field '{field}'), no correct node with name '{name}' is defined.")
-        })}
-        Some(id) => { Ok(id) }
+        None => Err(SpecificationError::ChannelEntryUndefinedNodeName {
+            field: field.to_string(),
+            name: name.to_string(),
+        }),
+        Some(id) => Ok(id),
     }
 }
 
@@ -457,58 +431,56 @@ fn find_node_id_from_name(nodes: &mut Vec<UntypedNode>, name: &str) -> Option<In
 pub(crate) fn register_external_channels(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,
-) -> Result<(Option<Box<dyn Any>>, Option<Box<dyn Any>>), InfraError> {
+) -> Result<(Option<Box<dyn Any>>, Option<Box<dyn Any>>), GatewayError> {
     if !spec.contains_key(SPEC_EXTERNALS_TABLE) {
         return Ok((None, None));
     }
 
     if let Value::Table(externals) = &spec[SPEC_EXTERNALS_TABLE] {
-        let incoming = if let Some(Value::String(node_name)) =
-            externals.get(SPEC_EXTERNALS_INCOMING_FIELD)
-        {
-            // get the name, get the id, get the node, connect the channel
-            let node_id = match find_node_id_from_name(nodes, node_name) {
-                Some(id) => id,
-                None => {
-                    return Err(InfraError::InvalidSpec {
-                        message: format!(
-                            "Cannot register external input channel: no node '{node_name}' is defined."
-                        ),
-                    });
-                }
+        let incoming =
+            if let Some(Value::String(node_name)) = externals.get(SPEC_EXTERNALS_INCOMING_FIELD) {
+                // get the name, get the id, get the node, connect the channel
+                let node_id = match find_node_id_from_name(nodes, node_name) {
+                    Some(id) => id,
+                    None => {
+                        return Err(GatewayError::from(
+                            SpecificationError::ExternalInputChannelUndefinedNodeName(
+                                node_name.to_string(),
+                            ),
+                        ));
+                    }
+                };
+
+                let node = nodes
+                    .get_mut(node_id as usize)
+                    .expect("Node with id is present.");
+                let incoming_tx = node.request_external_sender()?;
+                Some(incoming_tx)
+            } else {
+                None
             };
 
-            let node = nodes
-                .get_mut(node_id as usize)
-                .expect("Node with id is present.");
-            let incoming_tx = node.request_external_sender()?;
-            Some(incoming_tx)
-        } else {
-            None
-        };
+        let outgoing =
+            if let Some(Value::String(node_name)) = externals.get(SPEC_EXTERNALS_OUTGOING_FIELD) {
+                let node_id = match find_node_id_from_name(nodes, node_name) {
+                    Some(id) => id,
+                    None => {
+                        return Err(GatewayError::from(
+                            SpecificationError::ExternalOutputChannelUndefinedNodeName(
+                                node_name.to_string(),
+                            ),
+                        ));
+                    }
+                };
 
-        let outgoing = if let Some(Value::String(node_name)) =
-            externals.get(SPEC_EXTERNALS_OUTGOING_FIELD)
-        {
-            let node_id = match find_node_id_from_name(nodes, node_name) {
-                Some(id) => id,
-                None => {
-                    return Err(InfraError::InvalidSpec {
-                        message: format!(
-                            "Cannot register external output channel: no node '{node_name}' is defined."
-                        ),
-                    });
-                }
+                let node = nodes
+                    .get_mut(node_id as usize)
+                    .expect("Node with id is present.");
+                let outgoing = node.request_subscription();
+                Some(outgoing)
+            } else {
+                None
             };
-
-            let node = nodes
-                .get_mut(node_id as usize)
-                .expect("Node with id is present.");
-            let outgoing = node.request_subscription();
-            Some(outgoing)
-        } else {
-            None
-        };
         Ok((incoming, outgoing))
     } else {
         Ok((None, None))

@@ -3,7 +3,8 @@ use crate::core::{
     DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::InfraError;
+use crate::error::{CreationError, GatewayError};
+use crate::error::{InfraError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::{Bytes, BytesMut};
@@ -36,7 +37,7 @@ pub fn node_from_spec(
     event_tx: Sender<Event>,
     type_value: &str,
     spec: &toml::Table,
-) -> Result<UntypedNode, InfraError> {
+) -> Result<UntypedNode, SpecificationError> {
     match type_value {
         SPEC_DIS_RECEIVER_NODE_TYPE => {
             let node = DisRxNodeData::new(instance_id, cmd_rx, event_tx, spec)?.to_dyn();
@@ -46,8 +47,9 @@ pub fn node_from_spec(
             let node = DisTxNodeData::new(instance_id, cmd_rx, event_tx, spec)?.to_dyn();
             Ok(node)
         }
-        unknown_value => Err(InfraError::InvalidSpec {
-            message: format!("Unknown node type '{unknown_value}' for module 'dis'"),
+        unknown_value => Err(SpecificationError::UnknownNodeTypeForModule {
+            node_type: unknown_value.to_string(),
+            module_name: "dis",
         }),
     }
 }
@@ -87,11 +89,9 @@ impl NodeData for DisRxNodeData {
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError> {
-        let node_spec: DisRxNodeSpec =
-            toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+    ) -> Result<Self, SpecificationError> {
+        let node_spec: DisRxNodeSpec = toml::from_str(&spec.to_string())
+            .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
@@ -143,7 +143,7 @@ impl NodeRunner for DisRxNodeRunner {
         &self.name
     }
 
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
@@ -239,11 +239,9 @@ impl NodeData for DisTxNodeData {
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
         spec: &toml::Table,
-    ) -> Result<Self, InfraError> {
-        let node_spec: DisTxNodeSpec =
-            toml::from_str(&spec.to_string()).map_err(|err| InfraError::InvalidSpec {
-                message: err.to_string(),
-            })?;
+    ) -> Result<DisTxNodeData, SpecificationError> {
+        let node_spec: DisTxNodeSpec = toml::from_str(&spec.to_string())
+            .map_err(|err| SpecificationError::ParseSpecification(err))?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
@@ -286,7 +284,7 @@ impl NodeRunner for DisTxNodeRunner {
         &self.name
     }
 
-    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, InfraError> {
+    fn spawn_with_data(data: Self::Data) -> Result<JoinHandle<()>, CreationError> {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
