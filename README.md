@@ -25,7 +25,7 @@ See `README.md` of each project for more details.
 
 The goal of `dis-rs` is to provide the libraries and tools to use the DIS protocol in Rust-based applications
 Currently, the basic implementation of the most relevant DIS PDUs is present, making the library usable for simulation
-applications
+applications.
 Additionally, a gateway implementing C-DIS is available
 
 We intend to develop this project into a suite of tools that make it easy to integrate DIS into applications, having:
@@ -38,7 +38,7 @@ We intend to develop this project into a suite of tools that make it easy to int
 ## Supported versions and maturity
 
 `dis-rs` focuses on versions 6 and 7 of the DIS protocol. Version 7 is considered leading, meaning that v6 PDUs are
-mapped to v7 models transparently to the user (irregardless of the wire-format version).
+mapped to v7 models transparently to the user (regardless of the wire-format version).
 
 ## Resources
 
