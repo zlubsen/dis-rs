@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- EntityState serialisation reported incorrect number of bytes written to the buffer.
+
 ### Security
 
 ## [0.11.0] - 2024-12-12
