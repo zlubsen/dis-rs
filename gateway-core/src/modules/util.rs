@@ -104,7 +104,7 @@ impl NodeRunner for PassThroughNodeRunner {
         let mut node_runner = Self {
             instance_id: data.base.instance_id,
             name: data.base.name,
-            statistics: BaseStatistics::default(),
+            statistics: BaseStatistics::new(data.base.instance_id),
         };
 
         Ok(tokio::spawn(async move {
@@ -126,28 +126,34 @@ impl NodeRunner for PassThroughNodeRunner {
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
-        loop {
-            let mut aggregate_stats_interval =
-                tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
-            let mut output_stats_interval =
-                tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+        let mut aggregate_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
+        let mut output_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
 
+        loop {
             tokio::select! {
                 // receiving commands
                 Ok(cmd) = cmd_rx.recv() => {
                     if cmd == Command::Quit { break; }
                 }
                 Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    let _send_result = outgoing.send(message).inspect_err(|_|
-                        Self::emit_event(&event_tx,
-                            Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
+                    self.statistics.incoming_message();
+                    let _send_result = outgoing.send(message)
+                        .inspect(|_| self.statistics.outgoing_message() )
+                        .inspect_err(|_|
+                            Self::emit_event(&event_tx,
+                                Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
                     );
                 }
                 _ = aggregate_stats_interval.tick() => {
                     self.statistics.aggregate_interval();
                 }
                 _ = output_stats_interval.tick() => {
-                    // TODO
+                    if let Ok(json) = serde_json::to_string_pretty(&self.statistics) {
+                        Self::emit_event(&event_tx,
+                            Event::SendStatistics(json))
+                    }
                 }
             }
         }

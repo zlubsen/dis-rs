@@ -151,8 +151,8 @@ async fn event_listener(mut event_rx: Receiver<Event>, command_tx: Sender<Comman
                         error!("{err}");
                         let _ = command_tx.send(Command::Quit);
                     }
-                    Event::SendStatistics => {
-                        // TODO
+                    Event::SendStatistics(stats) => {
+                        trace!("{:?}", stats);
                     }
                 }
             }
@@ -281,7 +281,7 @@ pub enum Command {
 #[derive(Clone, Debug)]
 pub enum Event {
     RuntimeError(ExecutionError),
-    SendStatistics,
+    SendStatistics(String),
 }
 
 /// Convenience function to downcast an external incoming channel to a concrete, unboxed type.

@@ -59,6 +59,7 @@ fn main() {
         default_tokio_runtime().expect("Expected tokio runtime to be created successfully.");
 
     // TLDR; We can use the preset function to create all needed things in one go. Do provide the needed type hints.
+    // The runtime provides a build-in event listener task, which trace!-es events.
     let (infra_runtime_builder, cmd_tx, _event_rx, input_tx, output_rx) =
         runtime::preset_builder_from_spec_str::<Bytes, Bytes>(spec).unwrap();
     let input_tx = input_tx.unwrap();

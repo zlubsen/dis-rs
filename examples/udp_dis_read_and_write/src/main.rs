@@ -62,6 +62,14 @@ fn main() {
             out
         });
 
+        // Wait for some statistics to be gathered and published.
+        tokio::time::interval_at(
+            tokio::time::Instant::now() + Duration::from_millis(2000),
+            Duration::from_millis(100),
+        )
+        .tick()
+        .await;
+
         let join_all = run_from_builder(infra_runtime_builder).await?;
         // Await runtime completion, we send a Command::Quit after the message flow is complete.
         info!("Spawned all nodes, awaiting completion.");

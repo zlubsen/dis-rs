@@ -77,9 +77,29 @@ pub struct DisRxNodeRunner {
     statistics: DisStatistics,
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Serialize)]
 pub struct DisStatistics {
     base: BaseStatistics,
+    // TODO stats specific to DIS
+}
+
+impl DisStatistics {
+    fn new(node_id: InstanceId) -> Self {
+        Self {
+            base: BaseStatistics::new(node_id),
+            ..Default::default()
+        }
+    }
+
+    fn received_incoming(&mut self) {
+        self.base.incoming_message();
+    }
+
+    fn sent_outgoing(&mut self) {
+        self.base.outgoing_message();
+    }
+
+    // TODO parsed PDU, rejected PDU
 }
 
 impl NodeData for DisRxNodeData {
@@ -148,7 +168,7 @@ impl NodeRunner for DisRxNodeRunner {
             name: data.base.name,
             exercise_id: data.exercise_id,
             allow_dis_versions: data.allow_dis_versions,
-            statistics: DisStatistics::default(),
+            statistics: DisStatistics::new(data.base.instance_id),
         };
 
         Ok(tokio::spawn(async move {
@@ -170,12 +190,12 @@ impl NodeRunner for DisRxNodeRunner {
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
-        loop {
-            let mut aggregate_stats_interval =
-                tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
-            let mut output_stats_interval =
-                tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+        let mut aggregate_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
+        let mut output_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
 
+        loop {
             tokio::select! {
                 // receiving commands
                 Ok(cmd) = cmd_rx.recv() => {
@@ -194,13 +214,14 @@ impl NodeRunner for DisRxNodeRunner {
                             vec![]
                         }
                     };
+                    self.statistics.received_incoming();
 
                     pdus.into_iter()
                         .filter(|pdu| self.allow_dis_versions.contains(&pdu.header.protocol_version))
                         .filter(|pdu| self.exercise_id.is_none() || self.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
                         .for_each(|pdu| {
                             let _send_result = outgoing.send(pdu.clone());
-                            self.statistics.base.incoming_message();
+                            self.statistics.sent_outgoing();
                         });
                 }
                 // aggregate statistics for the interval
@@ -209,7 +230,10 @@ impl NodeRunner for DisRxNodeRunner {
                 }
                 // output current state of the stats
                 _ = output_stats_interval.tick() => {
-                    // TODO
+                    if let Ok(json) = serde_json::to_string_pretty(&self.statistics) {
+                        Self::emit_event(&event_tx,
+                            Event::SendStatistics(json))
+                    }
                 }
             }
         }
@@ -292,7 +316,7 @@ impl NodeRunner for DisTxNodeRunner {
             instance_id: data.base.instance_id,
             name: data.base.name,
             buffer: data.buffer,
-            statistics: Default::default(),
+            statistics: DisStatistics::new(data.base.instance_id),
         };
 
         Ok(tokio::spawn(async move {
@@ -314,12 +338,12 @@ impl NodeRunner for DisTxNodeRunner {
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
-        loop {
-            let mut aggregate_stats_interval =
-                tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
-            let mut output_stats_interval =
-                tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+        let mut aggregate_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
+        let mut output_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
 
+        loop {
             tokio::select! {
                 // receiving commands
                 Ok(cmd) = cmd_rx.recv() => {
@@ -327,12 +351,12 @@ impl NodeRunner for DisTxNodeRunner {
                 }
                 // receiving from the incoming channel, serialise PDU into Bytes
                 Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    self.statistics.base.incoming_message();
+                    self.statistics.received_incoming();
                     match message.serialize(&mut self.buffer) {
                         Ok(bytes_written) => {
                             let _send_result = outgoing
                             .send(Bytes::copy_from_slice(&self.buffer[0..(bytes_written as usize)]))
-                            .inspect(|_bytes_send| self.statistics.base.outgoing_message() )
+                            .inspect(|_bytes_send| self.statistics.sent_outgoing() )
                             .inspect_err(|_| {
                                 Self::emit_event(&event_tx,
                                     Event::RuntimeError(ExecutionError::OutputChannelSend(self.instance_id))
@@ -358,7 +382,10 @@ impl NodeRunner for DisTxNodeRunner {
                 }
                 // output current state of the stats
                 _ = output_stats_interval.tick() => {
-                    // TODO
+                    if let Ok(json) = serde_json::to_string_pretty(&self.statistics) {
+                        Self::emit_event(&event_tx,
+                            Event::SendStatistics(json))
+                    }
                 }
             }
         }

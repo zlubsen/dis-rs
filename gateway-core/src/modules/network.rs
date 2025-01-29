@@ -120,15 +120,16 @@ enum UdpNodeEvent {
     Quit,
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Serialize)]
 struct SocketStatistics {
     base: BaseStatistics,
     total: SocketStatisticsItems,
+    #[serde(skip)]
     running_interval: SocketStatisticsItems,
     latest_interval: SocketStatisticsItems,
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Serialize)]
 struct SocketStatisticsItems {
     packets_socket_in: u64,
     packets_socket_in_blocked: u64,
@@ -140,6 +141,13 @@ struct SocketStatisticsItems {
 }
 
 impl SocketStatistics {
+    fn new(node_id: InstanceId) -> Self {
+        Self {
+            base: BaseStatistics::new(node_id),
+            ..Default::default()
+        }
+    }
+
     fn received_packet(&mut self, number_of_bytes: usize) {
         self.total.packets_socket_in += 1;
         self.total.bytes_socket_in += number_of_bytes as u64;
@@ -290,7 +298,7 @@ impl NodeRunner for UdpNodeRunner {
             address: data.address,
             socket,
             block_own_socket: data.block_own_socket,
-            statistics: SocketStatistics::default(),
+            statistics: SocketStatistics::new(data.base.instance_id),
         };
 
         Ok(tokio::spawn(async move {
@@ -385,7 +393,9 @@ impl NodeRunner for UdpNodeRunner {
                     }),
                 ),
                 UdpNodeEvent::OutputStatistics => {
-                    // TODO send statistics out
+                    if let Ok(json) = serde_json::to_string_pretty(&self.statistics) {
+                        Self::emit_event(&event_tx, Event::SendStatistics(json))
+                    }
                 }
                 UdpNodeEvent::Quit => {
                     break;
@@ -630,7 +640,7 @@ impl NodeRunner for TcpServerNodeRunner {
             interface: data.interface,
             buffer_size: data.buffer_size,
             max_connections: data.max_connections,
-            statistics: SocketStatistics::default(),
+            statistics: SocketStatistics::new(data.base.instance_id),
         };
 
         Ok(tokio::spawn(async move {
@@ -652,6 +662,11 @@ impl NodeRunner for TcpServerNodeRunner {
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
+        let mut aggregate_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_AGGREGATE_STATS_INTERVAL_MS));
+        let mut output_stats_interval =
+            tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
+
         let (tcp_read_tx, mut tcp_read_rx) =
             tokio::sync::mpsc::channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
         let (tcp_write_tx, _tcp_write_rx) = channel::<Bytes>(DEFAULT_NODE_CHANNEL_CAPACITY);
@@ -700,6 +715,17 @@ impl NodeRunner for TcpServerNodeRunner {
                     self.statistics.received_packet(message.len());
                     let _ = outgoing.send(message).inspect_err(|_|
                         Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::OutputChannelSend(self.id()))));
+                }
+                // aggregate statistics for the interval
+                _ = aggregate_stats_interval.tick() => {
+                    self.statistics.aggregate_interval();
+                }
+                // output current state of the stats
+                _ = output_stats_interval.tick() => {
+                    if let Ok(json) = serde_json::to_string_pretty(&self.statistics) {
+                        Self::emit_event(&event_tx,
+                            Event::SendStatistics(json))
+                    }
                 }
             }
         }
@@ -857,7 +883,7 @@ impl NodeRunner for TcpClientNodeRunner {
             buffer,
             interface: data.interface,
             address: data.address,
-            statistics: SocketStatistics::default(),
+            statistics: SocketStatistics::new(data.base.instance_id),
         };
 
         Ok(tokio::spawn(async move {
@@ -962,7 +988,11 @@ impl NodeRunner for TcpClientNodeRunner {
                 }
                 // output current state of the stats
                 _ = output_stats_interval.tick() => {
-                    // TODO
+                    if let Ok(json) = serde_json::to_string_pretty(&self.statistics) {
+                        Self::emit_event(&event_tx,
+                            Event::SendStatistics(json)
+                        );
+                    }
                 }
             };
         }

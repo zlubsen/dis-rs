@@ -214,14 +214,22 @@ impl BaseNode {
     }
 }
 
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Default, Debug, Serialize)]
 pub struct BaseStatistics {
+    node_id: InstanceId,
     total: BaseStatisticsItems,
+    #[serde(skip)]
     running_interval: BaseStatisticsItems,
     latest_interval: BaseStatisticsItems,
 }
 
 impl BaseStatistics {
+    pub fn new(node_id: InstanceId) -> Self {
+        Self {
+            node_id,
+            ..Default::default()
+        }
+    }
     pub fn incoming_message(&mut self) {
         self.total.messages_in += 1;
         self.running_interval.messages_in += 1;
@@ -238,7 +246,7 @@ impl BaseStatistics {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Serialize)]
 struct BaseStatisticsItems {
     messages_in: u64,
     messages_out: u64,
