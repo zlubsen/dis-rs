@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use gateway_core::error::{GatewayError, InfraError};
+use gateway_core::error::GatewayError;
 use gateway_core::runtime;
 use gateway_core::runtime::{
     default_tokio_runtime, downcast_external_input, downcast_external_output, run_from_builder,

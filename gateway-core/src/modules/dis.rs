@@ -166,7 +166,7 @@ impl NodeRunner for DisRxNodeRunner {
     async fn run(
         &mut self,
         mut cmd_rx: Receiver<Command>,
-        mut event_tx: Sender<Event>,
+        event_tx: Sender<Event>,
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
@@ -310,7 +310,7 @@ impl NodeRunner for DisTxNodeRunner {
     async fn run(
         &mut self,
         mut cmd_rx: Receiver<Command>,
-        mut event_tx: Sender<Event>,
+        event_tx: Sender<Event>,
         mut incoming: Option<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {

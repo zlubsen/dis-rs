@@ -1,7 +1,6 @@
 use dis_rs::entity_state::model::EntityState;
 use dis_rs::enumerations::PduType;
 use dis_rs::model::{Pdu, PduHeader, PduStatus};
-use dis_rs::BodyInfo;
 use gateway_core::error::GatewayError;
 use gateway_core::runtime;
 use gateway_core::runtime::{default_tokio_runtime, run_from_builder, Command};
@@ -29,11 +28,12 @@ fn main() {
 
     let (infra_runtime_builder, cmd_tx, mut event_rx, input_tx, output_rx) =
         runtime::preset_builder_from_spec_str::<Pdu, Pdu>(spec).unwrap();
-    let mut input_tx = input_tx.unwrap();
+    let input_tx = input_tx.unwrap();
     let mut output_rx = output_rx.unwrap();
 
     if let Err(err) = runtime.block_on(async {
         let event_handle = tokio::spawn(async move {
+            #[allow(clippy::while_let_loop)]
             loop {
                 if let Ok(event) = event_rx.recv().await {
                     info!("{event:?}");

@@ -3,7 +3,7 @@ use gateway_core::runtime::{
     downcast_external_input, downcast_external_output, run_from_builder, Command, InfraBuilder,
 };
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tracing::trace;
 use tracing_subscriber::filter::LevelFilter;
@@ -56,7 +56,7 @@ async fn main() {
 
     let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        assert!(false, "{err}");
+        panic!("{err}");
     } else {
         trace!("Gateway build from spec Ok");
     }
@@ -77,7 +77,7 @@ async fn main() {
 
         trace!("Stimulus: Connect to the TCP Server socket");
         let res = TcpStream::connect(SERVER_ADDRESS).await;
-        let (mut tcp_rx, mut tcp_tx) = res.unwrap().into_split();
+        let (tcp_rx, mut tcp_tx) = res.unwrap().into_split();
 
         trace!("Stimulus: sending a message to the input channel");
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
@@ -90,17 +90,17 @@ async fn main() {
 
         match &tcp_out_received {
             Ok(0) => {
-                assert!(false, "The TCP reader half is closed");
+                panic!("The TCP reader half is closed");
             }
             Ok(bytes_received) => {
                 assert_eq!(
                     *bytes_received,
-                    message.as_bytes().len(),
+                    message.len(),
                     "Message returned over TCP socket by node is not equal in length to the input."
                 );
             }
             Err(err) => {
-                assert!(false, "{err}")
+                panic!("{err}");
             }
         }
         // let tcp_out_received = tcp_rx.read(&mut receive_buffer).await;
@@ -118,8 +118,8 @@ async fn main() {
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();
         assert_eq!(
-            (&node_out_received).len(),
-            message.as_bytes().len(),
+            node_out_received.len(),
+            message.len(),
             "Length of the returned data is not equal to the input."
         );
         assert_eq!(
