@@ -695,6 +695,63 @@ impl Default for SimulationAddress {
     }
 }
 
+impl Display for SimulationAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.site_id, self.application_id)
+    }
+}
+
+#[allow(clippy::get_first)]
+impl TryFrom<&[&str]> for SimulationAddress {
+    type Error = DisError;
+
+    fn try_from(value: &[&str]) -> Result<Self, Self::Error> {
+        const NUM_DIGITS: usize = 2;
+        if value.len() != NUM_DIGITS {
+            return Err(DisError::ParseError(format!(
+                "SimulationAddress string pattern does not contain precisely {NUM_DIGITS} digits"
+            )));
+        }
+        Ok(Self {
+            site_id: value
+                .get(0)
+                .expect("Impossible - checked for correct number of digits")
+                .parse::<u16>()
+                .map_err(|_| DisError::ParseError("Invalid site id digit".to_string()))?,
+            application_id: value
+                .get(1)
+                .expect("Impossible - checked for correct number of digits")
+                .parse::<u16>()
+                .map_err(|_| DisError::ParseError("Invalid application id digit".to_string()))?,
+        })
+    }
+}
+
+impl FromStr for SimulationAddress {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let ss = s.split(':').collect::<Vec<&str>>();
+        Self::try_from(ss.as_slice())
+    }
+}
+
+impl TryFrom<&str> for SimulationAddress {
+    type Error = DisError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        SimulationAddress::from_str(value)
+    }
+}
+
+impl TryFrom<String> for SimulationAddress {
+    type Error = DisError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        TryFrom::<&str>::try_from(&value)
+    }
+}
+
 /// 6.2.28 Entity Identifier record
 /// 6.2.81 Simulation Identifier record
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -702,25 +759,6 @@ impl Default for SimulationAddress {
 pub struct EntityId {
     pub simulation_address: SimulationAddress,
     pub entity_id: u16,
-}
-
-impl Default for EntityId {
-    fn default() -> Self {
-        Self {
-            simulation_address: SimulationAddress::default(),
-            entity_id: NO_ENTITY,
-        }
-    }
-}
-
-impl Display for EntityId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}:{}:{}",
-            self.simulation_address.site_id, self.simulation_address.application_id, self.entity_id
-        )
-    }
 }
 
 impl EntityId {
@@ -758,6 +796,61 @@ impl EntityId {
     }
 }
 
+impl Default for EntityId {
+    fn default() -> Self {
+        Self {
+            simulation_address: SimulationAddress::default(),
+            entity_id: NO_ENTITY,
+        }
+    }
+}
+
+impl Display for EntityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.simulation_address, self.entity_id)
+    }
+}
+
+#[allow(clippy::get_first)]
+impl FromStr for EntityId {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const NUM_DIGITS: usize = 3;
+        let mut ss = s.split(':').collect::<Vec<&str>>();
+        if ss.len() != NUM_DIGITS {
+            return Err(DisError::ParseError(format!(
+                "EntityId string pattern does not contain precisely {NUM_DIGITS} digits"
+            )));
+        }
+        let entity_id = ss
+            .pop()
+            .expect("Impossible - checked for correct number of digits")
+            .parse::<u16>()
+            .map_err(|_| DisError::ParseError("Invalid entity id digit".to_string()))?;
+        Ok(Self {
+            simulation_address: ss.as_slice().try_into()?,
+            entity_id,
+        })
+    }
+}
+
+impl TryFrom<&str> for EntityId {
+    type Error = DisError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        EntityId::from_str(value)
+    }
+}
+
+impl TryFrom<String> for EntityId {
+    type Error = DisError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        TryFrom::<&str>::try_from(&value)
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EventId {
@@ -789,6 +882,52 @@ impl Default for EventId {
             simulation_address: SimulationAddress::default(),
             event_id: NO_ENTITY,
         }
+    }
+}
+
+impl Display for EventId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.simulation_address, self.event_id)
+    }
+}
+
+#[allow(clippy::get_first)]
+impl FromStr for EventId {
+    type Err = DisError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        const NUM_DIGITS: usize = 3;
+        let mut ss = s.split(':').collect::<Vec<&str>>();
+        if ss.len() != NUM_DIGITS {
+            return Err(DisError::ParseError(format!(
+                "EventId string pattern does not contain precisely {NUM_DIGITS} digits"
+            )));
+        }
+        let event_id = ss
+            .pop()
+            .expect("Impossible - checked for correct number of digits")
+            .parse::<u16>()
+            .map_err(|_| DisError::ParseError("Invalid event id digit".to_string()))?;
+        Ok(Self {
+            simulation_address: ss.as_slice().try_into()?,
+            event_id,
+        })
+    }
+}
+
+impl TryFrom<&str> for EventId {
+    type Error = DisError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        EventId::from_str(value)
+    }
+}
+
+impl TryFrom<String> for EventId {
+    type Error = DisError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        TryFrom::<&str>::try_from(&value)
     }
 }
 
@@ -994,7 +1133,7 @@ impl FromStr for EntityType {
         let ss = s.split(':').collect::<Vec<&str>>();
         if ss.len() != NUM_DIGITS {
             return Err(DisError::ParseError(format!(
-                "EntityType string pattern does contain not precisely {NUM_DIGITS} digits"
+                "EntityType string pattern does not contain precisely {NUM_DIGITS} digits"
             )));
         }
         Ok(Self {
@@ -1858,6 +1997,30 @@ mod tests {
         specific: 5,
         extra: 6,
     };
+    const SIMULATION_ADDRESS_STR: &str = "0:1";
+    const SIMULATION_ADDRESS_STR_INVALID: &str = "0,1";
+    const SIMULATION_ADDRESS_STR_INVALID_APPLICATION_ID: &str = "0:one";
+    const SIMULATION_ADDRESS_STR_NOT_TWO_DIGITS: &str = "0";
+    const SIMULATION_ADDRESS: SimulationAddress = SimulationAddress {
+        site_id: 0,
+        application_id: 1,
+    };
+    const ENTITY_ID_STR: &str = "0:1:2";
+    const ENTITY_ID_STR_INVALID: &str = "0,1,2";
+    const ENTITY_ID_STR_INVALID_ENTITY_ID: &str = "0:1:two";
+    const ENTITY_ID_STR_NOT_THREE_DIGITS: &str = "0:1";
+    const ENTITY_ID: EntityId = EntityId {
+        simulation_address: SIMULATION_ADDRESS,
+        entity_id: 2,
+    };
+    const EVENT_ID_STR: &str = "0:1:2";
+    const EVENT_ID_STR_INVALID: &str = "0,1,2";
+    const EVENT_ID_STR_INVALID_EVENT_ID: &str = "0:1:two";
+    const EVENT_ID_STR_NOT_THREE_DIGITS: &str = "0:1";
+    const EVENT_ID: EventId = EventId {
+        simulation_address: SIMULATION_ADDRESS,
+        event_id: 2,
+    };
 
     #[test]
     fn entity_type_display() {
@@ -1872,7 +2035,7 @@ mod tests {
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(
             err.unwrap_err().to_string(),
-            "EntityType string pattern does contain not precisely 7 digits"
+            "EntityType string pattern does not contain precisely 7 digits"
         );
         let err = EntityType::from_str(ENTITY_TYPE_STR_INVALID_EXTRA);
         assert!(err.is_err());
@@ -1887,7 +2050,7 @@ mod tests {
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(
             err.unwrap_err().to_string(),
-            "EntityType string pattern does contain not precisely 7 digits"
+            "EntityType string pattern does not contain precisely 7 digits"
         );
     }
 
@@ -1902,7 +2065,7 @@ mod tests {
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(
             err.unwrap_err().to_string(),
-            "EntityType string pattern does contain not precisely 7 digits"
+            "EntityType string pattern does not contain precisely 7 digits"
         );
         let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA);
         assert!(err.is_err());
@@ -1921,11 +2084,228 @@ mod tests {
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(
             err.unwrap_err().to_string(),
-            "EntityType string pattern does contain not precisely 7 digits"
+            "EntityType string pattern does not contain precisely 7 digits"
         );
         let err = TryInto::<EntityType>::try_into(ENTITY_TYPE_STR_INVALID_EXTRA.to_string());
         assert!(err.is_err());
         assert!(matches!(err, Err(DisError::ParseError(_))));
         assert_eq!(err.unwrap_err().to_string(), "Invalid extra digit");
+    }
+
+    #[test]
+    fn simulation_address_display() {
+        assert_eq!(SIMULATION_ADDRESS_STR, SIMULATION_ADDRESS.to_string());
+    }
+
+    #[test]
+    fn simulation_address_from_str() {
+        assert_eq!(
+            SimulationAddress::from_str(SIMULATION_ADDRESS_STR).unwrap(),
+            SIMULATION_ADDRESS
+        );
+        let err = SimulationAddress::from_str(SIMULATION_ADDRESS_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "SimulationAddress string pattern does not contain precisely 2 digits"
+        );
+        let err = SimulationAddress::from_str(SIMULATION_ADDRESS_STR_INVALID_APPLICATION_ID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid application id digit");
+    }
+
+    #[test]
+    fn simulation_address_from_str_not_two_digits() {
+        let err = SimulationAddress::from_str(SIMULATION_ADDRESS_STR_NOT_TWO_DIGITS);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "SimulationAddress string pattern does not contain precisely 2 digits"
+        );
+    }
+
+    #[test]
+    fn simulation_address_try_from_str() {
+        assert_eq!(
+            TryInto::<SimulationAddress>::try_into(SIMULATION_ADDRESS_STR).unwrap(),
+            SIMULATION_ADDRESS
+        );
+        let err = TryInto::<SimulationAddress>::try_into(SIMULATION_ADDRESS_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "SimulationAddress string pattern does not contain precisely 2 digits"
+        );
+        let err =
+            TryInto::<SimulationAddress>::try_into(SIMULATION_ADDRESS_STR_INVALID_APPLICATION_ID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid application id digit");
+    }
+
+    #[test]
+    fn simulation_address_try_from_string() {
+        assert_eq!(
+            TryInto::<SimulationAddress>::try_into(SIMULATION_ADDRESS_STR.to_string()).unwrap(),
+            SIMULATION_ADDRESS
+        );
+        let err =
+            TryInto::<SimulationAddress>::try_into(SIMULATION_ADDRESS_STR_INVALID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "SimulationAddress string pattern does not contain precisely 2 digits"
+        );
+        let err = TryInto::<SimulationAddress>::try_into(
+            SIMULATION_ADDRESS_STR_INVALID_APPLICATION_ID.to_string(),
+        );
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid application id digit");
+    }
+
+    #[test]
+    fn entity_id_display() {
+        assert_eq!(ENTITY_ID_STR, ENTITY_ID.to_string());
+    }
+
+    #[test]
+    fn entity_id_from_str() {
+        assert_eq!(EntityId::from_str(ENTITY_ID_STR).unwrap(), ENTITY_ID);
+        let err = EntityId::from_str(ENTITY_ID_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityId string pattern does not contain precisely 3 digits"
+        );
+        let err = EntityId::from_str(ENTITY_ID_STR_INVALID_ENTITY_ID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid entity id digit");
+    }
+
+    #[test]
+    fn entity_id_from_str_not_three_digits() {
+        let err = EntityId::from_str(ENTITY_ID_STR_NOT_THREE_DIGITS);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityId string pattern does not contain precisely 3 digits"
+        );
+    }
+
+    #[test]
+    fn entity_id_try_from_str() {
+        assert_eq!(
+            TryInto::<EntityId>::try_into(ENTITY_ID_STR).unwrap(),
+            ENTITY_ID
+        );
+        let err = TryInto::<EntityId>::try_into(ENTITY_ID_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityId string pattern does not contain precisely 3 digits"
+        );
+        let err = TryInto::<EntityId>::try_into(ENTITY_ID_STR_INVALID_ENTITY_ID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid entity id digit");
+    }
+
+    #[test]
+    fn entity_id_try_from_string() {
+        assert_eq!(
+            TryInto::<EntityId>::try_into(ENTITY_ID_STR.to_string()).unwrap(),
+            ENTITY_ID
+        );
+        let err = TryInto::<EntityId>::try_into(ENTITY_ID_STR_INVALID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EntityId string pattern does not contain precisely 3 digits"
+        );
+        let err = TryInto::<EntityId>::try_into(ENTITY_ID_STR_INVALID_ENTITY_ID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid entity id digit");
+    }
+
+    #[test]
+    fn event_id_display() {
+        assert_eq!(EVENT_ID_STR, EVENT_ID.to_string());
+    }
+
+    #[test]
+    fn event_id_from_str() {
+        assert_eq!(EventId::from_str(EVENT_ID_STR).unwrap(), EVENT_ID);
+        let err = EventId::from_str(EVENT_ID_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EventId string pattern does not contain precisely 3 digits"
+        );
+        let err = EventId::from_str(EVENT_ID_STR_INVALID_EVENT_ID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid event id digit");
+    }
+
+    #[test]
+    fn event_id_from_str_not_three_digits() {
+        let err = EventId::from_str(EVENT_ID_STR_NOT_THREE_DIGITS);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EventId string pattern does not contain precisely 3 digits"
+        );
+    }
+
+    #[test]
+    fn event_id_try_from_str() {
+        assert_eq!(
+            TryInto::<EventId>::try_into(EVENT_ID_STR).unwrap(),
+            EVENT_ID
+        );
+        let err = TryInto::<EventId>::try_into(EVENT_ID_STR_INVALID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EventId string pattern does not contain precisely 3 digits"
+        );
+        let err = TryInto::<EventId>::try_into(EVENT_ID_STR_INVALID_EVENT_ID);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid event id digit");
+    }
+
+    #[test]
+    fn event_id_try_from_string() {
+        assert_eq!(
+            TryInto::<EventId>::try_into(EVENT_ID_STR.to_string()).unwrap(),
+            EVENT_ID
+        );
+        let err = TryInto::<EventId>::try_into(EVENT_ID_STR_INVALID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "EventId string pattern does not contain precisely 3 digits"
+        );
+        let err = TryInto::<EventId>::try_into(EVENT_ID_STR_INVALID_EVENT_ID.to_string());
+        assert!(err.is_err());
+        assert!(matches!(err, Err(DisError::ParseError(_))));
+        assert_eq!(err.unwrap_err().to_string(), "Invalid event id digit");
     }
 }
