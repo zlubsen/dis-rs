@@ -23,7 +23,7 @@ const SERIALISE_BUFFER_CAPACITY: usize = 32_768;
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let dis_nodes_constructor: NodeConstructor = node_from_spec;
 
-    let mut items = vec![
+    let items = vec![
         (SPEC_DIS_RECEIVER_NODE_TYPE, dis_nodes_constructor),
         (SPEC_DIS_SENDER_NODE_TYPE, dis_nodes_constructor),
     ];
@@ -194,11 +194,12 @@ impl NodeRunner for DisRxNodeRunner {
                             vec![]
                         }
                     };
+
                     pdus.into_iter()
                         .filter(|pdu| self.allow_dis_versions.contains(&pdu.header.protocol_version))
                         .filter(|pdu| self.exercise_id.is_none() || self.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
                         .for_each(|pdu| {
-                            let _send_result = outgoing.send(pdu);
+                            let _send_result = outgoing.send(pdu.clone());
                             self.statistics.base.incoming_message();
                         });
                 }
@@ -248,8 +249,7 @@ impl NodeData for DisTxNodeData {
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let mut buffer = BytesMut::with_capacity(SERIALISE_BUFFER_CAPACITY);
-        buffer.resize(SERIALISE_BUFFER_CAPACITY, 0);
+        let buffer = BytesMut::with_capacity(SERIALISE_BUFFER_CAPACITY);
 
         Ok(Self {
             base: BaseNode {

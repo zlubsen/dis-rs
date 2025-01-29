@@ -10,4 +10,3 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 gateway-core = { path = "../../gateway-core" }
 bytes = "1.9.0"
 tokio = "1.43.0"
-#dis-rs = { path = "../../dis-rs" }

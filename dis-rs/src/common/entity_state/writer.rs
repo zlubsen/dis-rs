@@ -57,9 +57,7 @@ impl SerializePdu for EntityState {
             + appearance_bytes
             + dr_params_bytes
             + capabilities_bytes
-            + 40
             + marking_bytes
-            + 4
             + variable_params_bytes
     }
 }

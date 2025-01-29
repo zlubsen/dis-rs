@@ -278,7 +278,7 @@ pub enum Command {
 }
 
 /// Enum of Events that the Runtime and Nodes can emit
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Event {
     RuntimeError(ExecutionError),
     SendStatistics,

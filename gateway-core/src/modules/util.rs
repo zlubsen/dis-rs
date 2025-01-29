@@ -17,7 +17,7 @@ const SPEC_PASS_THROUGH_NODE_TYPE: &str = "pass_through";
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let util_nodes_constructor: NodeConstructor = node_from_spec;
 
-    let mut items = vec![(SPEC_PASS_THROUGH_NODE_TYPE, util_nodes_constructor)];
+    let items = vec![(SPEC_PASS_THROUGH_NODE_TYPE, util_nodes_constructor)];
     items
 }
 

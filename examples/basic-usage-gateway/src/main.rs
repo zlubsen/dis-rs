@@ -58,29 +58,33 @@ fn main() {
     let runtime =
         default_tokio_runtime().expect("Expected tokio runtime to be created successfully.");
 
-    // Initialise the InfraBuilder using `new()`
-    let mut infra_runtime_builder = InfraBuilder::new();
-    if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        error!("{err}");
-    }
-    // We can now obtain handles to the coordination channels, for sending commands and receiving events
-    let _cmd_tx = infra_runtime_builder.command_channel();
-    let _event_rx = infra_runtime_builder.event_channel();
-
-    // We can request a handle to an externalised input channel for a node, in this case 'Pass One'.
-    // It needs to be downcast to the concrete type that you know yourself (depends on the node you created in the spec).
-    // The Infra Runtime provides convenience functions to do this.
-    let _input_tx =
-        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-    // Similarly, we can request a handle to the externalised output channel, in this case 'Pass Two'.
-    let _output_rx =
-        downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
-
-    // Alternatively, use the preset function to create all this in one go. Do provide the needed type hints.
+    // TLDR; We can use the preset function to create all needed things in one go. Do provide the needed type hints.
     let (infra_runtime_builder, cmd_tx, _event_rx, input_tx, output_rx) =
         runtime::preset_builder_from_spec_str::<Bytes, Bytes>(spec).unwrap();
     let input_tx = input_tx.unwrap();
     let mut output_rx = output_rx.unwrap();
+
+    // Alternatively, one can set up everything by hand.
+    // Especially if the input/output channels and such are not needed, you can omit these parts.
+    {
+        // Initialise the InfraBuilder using `new()`
+        let mut infra_runtime_builder = InfraBuilder::new();
+        if let Err(err) = infra_runtime_builder.build_from_str(spec) {
+            error!("{err}");
+        }
+        // We can now obtain handles to the coordination channels, for sending commands and receiving events
+        let _cmd_tx = infra_runtime_builder.command_channel();
+        let _event_rx = infra_runtime_builder.event_channel();
+
+        // We can request a handle to an externalised input channel for a node, in this case 'Pass One'.
+        // It needs to be downcast to the concrete type that you know yourself (depends on the node you created in the spec).
+        // The Infra Runtime provides convenience functions to do this.
+        let _input_tx =
+            downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
+        // Similarly, we can request a handle to the externalised output channel, in this case 'Pass Two'.
+        let _output_rx =
+            downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
+    }
 
     const QUIT_DELAY: u64 = 4;
     const SEND_DELAY: u64 = QUIT_DELAY / 2;
@@ -131,6 +135,8 @@ fn main() {
         let _ = input_handle.await;
         let _ = output_handle.await;
         let _ = cmd_handle.await;
+
+        info!("Done!");
         Ok::<(), GatewayError>(())
     }) {
         error!("{err}");

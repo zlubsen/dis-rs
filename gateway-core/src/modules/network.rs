@@ -39,7 +39,7 @@ const SPEC_TCP_CLIENT_NODE_TYPE: &str = "tcp_client";
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let network_nodes_constructor: NodeConstructor = node_from_spec;
 
-    let mut items = vec![
+    let items = vec![
         (SPEC_UDP_NODE_TYPE, network_nodes_constructor),
         (SPEC_TCP_SERVER_NODE_TYPE, network_nodes_constructor),
         (SPEC_TCP_CLIENT_NODE_TYPE, network_nodes_constructor),

@@ -42,7 +42,7 @@ impl Serialize for PduHeader {
 impl Pdu {
     /// Serializes `self` into the buffer.
     ///
-    /// Fails when the capacity of the buffer is smaller then the serialized length of the PDU (header + body).
+    /// Fails when the capacity of the buffer is smaller than the serialized length of the PDU (header + body).
     ///
     /// # Errors
     /// Returns a `DisError` when parsing fails
@@ -131,6 +131,7 @@ impl Pdu {
             PduBody::Attribute(body) => body.serialize_pdu(version, buf),
             _ => 0,
         };
+
         Ok(header_size + body_size)
     }
 }
