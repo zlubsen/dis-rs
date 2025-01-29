@@ -391,13 +391,12 @@ fn get_channel_name_from_spec<'a>(
     spec: &'a toml::Table,
     field: &str,
 ) -> Result<&'a str, SpecificationError> {
-    Ok(spec
-        .get(field)
+    spec.get(field)
         .ok_or(SpecificationError::ChannelEntryMissingField(
             field.to_string(),
         ))?
         .as_str()
-        .ok_or(SpecificationError::FieldIsNotAString(field.to_string()))?)
+        .ok_or(SpecificationError::FieldIsNotAString(field.to_string()))
 }
 
 /// Get the instance_id of the node based on the name for a given channel spec field.
@@ -426,6 +425,7 @@ fn find_node_id_from_name(nodes: &mut Vec<UntypedNode>, name: &str) -> Option<In
 /// Register external incoming and outgoing channels to nodes as defined in the spec.
 ///
 /// When the `incoming` or `outgoing` fields are not defined in the spec, no respective channel is returned.
+#[allow(clippy::type_complexity)]
 pub(crate) fn register_external_channels(
     spec: &toml::Table,
     nodes: &mut Vec<UntypedNode>,

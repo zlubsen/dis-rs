@@ -82,6 +82,7 @@ async fn main() {
         trace!("Stimulus: sending a message to the input channel");
         let _ = input_tx.send(Bytes::copy_from_slice(message.as_bytes()));
 
+        trace!("Stimulus: waiting for TCP Client to become readable");
         let tcp_out_received = match tcp_rx.readable().await {
             Ok(_) => tcp_rx.try_read(&mut receive_buffer),
             Err(err) => Err(err),

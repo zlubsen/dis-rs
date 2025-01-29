@@ -39,10 +39,11 @@ const SPEC_TCP_CLIENT_NODE_TYPE: &str = "tcp_client";
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let network_nodes_constructor: NodeConstructor = node_from_spec;
 
-    let mut items = Vec::new();
-    items.push((SPEC_UDP_NODE_TYPE, network_nodes_constructor));
-    items.push((SPEC_TCP_SERVER_NODE_TYPE, network_nodes_constructor));
-    items.push((SPEC_TCP_CLIENT_NODE_TYPE, network_nodes_constructor));
+    let mut items = vec![
+        (SPEC_UDP_NODE_TYPE, network_nodes_constructor),
+        (SPEC_TCP_SERVER_NODE_TYPE, network_nodes_constructor),
+        (SPEC_TCP_CLIENT_NODE_TYPE, network_nodes_constructor),
+    ];
     items
 }
 
@@ -207,8 +208,8 @@ impl NodeData for UdpNodeData {
         event_tx: Sender<Event>,
         spec: &toml::Table,
     ) -> Result<Self, SpecificationError> {
-        let node_spec: UdpNodeSpec = toml::from_str(&spec.to_string())
-            .map_err(|err| SpecificationError::ParseSpecification(err))?;
+        let node_spec: UdpNodeSpec =
+            toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
@@ -566,8 +567,8 @@ impl NodeData for TcpServerNodeData {
         event_tx: Sender<Event>,
         spec: &toml::Table,
     ) -> Result<Self, SpecificationError> {
-        let node_spec: TcpServerNodeSpec = toml::from_str(&spec.to_string())
-            .map_err(|err| SpecificationError::ParseSpecification(err))?;
+        let node_spec: TcpServerNodeSpec =
+            toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
@@ -786,8 +787,8 @@ impl NodeData for TcpClientNodeData {
         event_tx: Sender<Event>,
         spec: &toml::Table,
     ) -> Result<Self, SpecificationError> {
-        let node_spec: TcpClientNodeSpec = toml::from_str(&spec.to_string())
-            .map_err(|err| SpecificationError::ParseSpecification(err))?;
+        let node_spec: TcpClientNodeSpec =
+            toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 

@@ -17,8 +17,7 @@ const SPEC_PASS_THROUGH_NODE_TYPE: &str = "pass_through";
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let util_nodes_constructor: NodeConstructor = node_from_spec;
 
-    let mut items = Vec::new();
-    items.push((SPEC_PASS_THROUGH_NODE_TYPE, util_nodes_constructor));
+    let mut items = vec![(SPEC_PASS_THROUGH_NODE_TYPE, util_nodes_constructor)];
     items
 }
 
@@ -63,8 +62,8 @@ impl NodeData for PassThroughNodeData {
     ) -> Result<PassThroughNodeData, SpecificationError> {
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let node_spec: BaseNodeSpec = toml::from_str(&spec.to_string())
-            .map_err(|err| SpecificationError::ParseSpecification(err))?;
+        let node_spec: BaseNodeSpec =
+            toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         Ok(Self {
             base: BaseNode {

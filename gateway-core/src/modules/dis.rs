@@ -23,9 +23,10 @@ const SERIALISE_BUFFER_CAPACITY: usize = 32_768;
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let dis_nodes_constructor: NodeConstructor = node_from_spec;
 
-    let mut items = Vec::new();
-    items.push((SPEC_DIS_RECEIVER_NODE_TYPE, dis_nodes_constructor));
-    items.push((SPEC_DIS_SENDER_NODE_TYPE, dis_nodes_constructor));
+    let mut items = vec![
+        (SPEC_DIS_RECEIVER_NODE_TYPE, dis_nodes_constructor),
+        (SPEC_DIS_SENDER_NODE_TYPE, dis_nodes_constructor),
+    ];
     items
 }
 
@@ -88,8 +89,8 @@ impl NodeData for DisRxNodeData {
         event_tx: Sender<Event>,
         spec: &toml::Table,
     ) -> Result<Self, SpecificationError> {
-        let node_spec: DisRxNodeSpec = toml::from_str(&spec.to_string())
-            .map_err(|err| SpecificationError::ParseSpecification(err))?;
+        let node_spec: DisRxNodeSpec =
+            toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
@@ -242,8 +243,8 @@ impl NodeData for DisTxNodeData {
         event_tx: Sender<Event>,
         spec: &toml::Table,
     ) -> Result<DisTxNodeData, SpecificationError> {
-        let node_spec: DisTxNodeSpec = toml::from_str(&spec.to_string())
-            .map_err(|err| SpecificationError::ParseSpecification(err))?;
+        let node_spec: DisTxNodeSpec =
+            toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 

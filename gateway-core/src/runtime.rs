@@ -25,6 +25,12 @@ pub struct InfraBuilder {
     node_factories: Vec<(&'static str, NodeConstructor)>,
 }
 
+impl Default for InfraBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InfraBuilder {
     /// Creates a new `InfraBuilder` environment, initialising modules.
     /// The needed coordination channels (for sending `Command`s and receiving `Event`s) are created using this constructor function.
@@ -68,7 +74,7 @@ impl InfraBuilder {
             self.event_tx.clone(),
             &contents,
         )
-        .map_err(|specification_error| GatewayError::from(specification_error))?;
+        .map_err(GatewayError::from)?;
 
         // Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
@@ -204,13 +210,11 @@ async fn shutdown_signal(cmd: Sender<Command>) {
     let sigint = std::future::pending::<()>();
 
     let mut cmd_rx = cmd.subscribe();
-    loop {
-        tokio::select! {
-            Ok(Command::Quit) = cmd_rx.recv() => { break; },
-            _ = ctrl_c => { break; },
-            _ = terminate => { break; },
-            _ = sigint => { break; },
-        }
+    tokio::select! {
+        Ok(Command::Quit) = cmd_rx.recv() => { },
+        _ = ctrl_c => {  },
+        _ = terminate => {  },
+        _ = sigint => {  },
     }
 
     trace!("Shutdown signal detected, stopping the infrastructure.");
@@ -225,13 +229,23 @@ pub fn default_tokio_runtime() -> Result<Runtime, GatewayError> {
         .enable_io()
         .enable_time()
         .build()
-        .map_err(|err| GatewayError::from(err))?;
+        .map_err(GatewayError::from)?;
     let _guard = runtime.enter();
 
     Ok(runtime)
 }
 
 /// Create an `InfraBuilder` from a spec, in TOML as a `&str`, and return all coordination and I/O channels.
+///
+///
+/// # Example
+/// ```
+/// use gateway_core::runtime::preset_builder_from_spec_str;
+///
+/// let Ok((builder, cmd_tx, event_rx, input_tx, output_rx)) =
+///     preset_builder_from_spec_str(r#"Here be some TOML contents"#);
+/// ```
+#[allow(clippy::type_complexity)]
 pub fn preset_builder_from_spec_str<I: 'static, O: 'static>(
     toml_spec: &str,
 ) -> Result<
@@ -274,21 +288,17 @@ pub enum Event {
 ///
 /// The function discards any downcast errors.
 pub fn downcast_external_input<T: 'static>(channel: Option<Box<dyn Any>>) -> Option<Sender<T>> {
-    channel
-        .map(|input| input.downcast::<Sender<T>>().map(|sender| *sender).ok())
-        .flatten()
+    channel.and_then(|input| input.downcast::<Sender<T>>().map(|sender| *sender).ok())
 }
 
 /// Convenience function to downcast an external outgoing channel to a concrete, unboxed type.
 ///
 /// The function discards any downcast errors.
 pub fn downcast_external_output<T: 'static>(channel: Option<Box<dyn Any>>) -> Option<Receiver<T>> {
-    channel
-        .map(|input| {
-            input
-                .downcast::<Receiver<T>>()
-                .map(|receiver| *receiver)
-                .ok()
-        })
-        .flatten()
+    channel.and_then(|input| {
+        input
+            .downcast::<Receiver<T>>()
+            .map(|receiver| *receiver)
+            .ok()
+    })
 }
