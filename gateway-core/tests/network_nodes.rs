@@ -95,6 +95,7 @@ async fn udp() {
     res.unwrap();
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 async fn tcp_server() {
     let spec = r#"

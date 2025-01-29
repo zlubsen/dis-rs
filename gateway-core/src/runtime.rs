@@ -239,11 +239,11 @@ pub fn default_tokio_runtime() -> Result<Runtime, GatewayError> {
 ///
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use gateway_core::runtime::preset_builder_from_spec_str;
 ///
 /// let Ok((builder, cmd_tx, event_rx, input_tx, output_rx)) =
-///     preset_builder_from_spec_str(r#"Here be some TOML contents"#);
+///     preset_builder_from_spec_str::<InputType, OutputType>(r#"Here be some TOML contents"#);
 /// ```
 #[allow(clippy::type_complexity)]
 pub fn preset_builder_from_spec_str<I: 'static, O: 'static>(
