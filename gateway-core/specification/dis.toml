@@ -1,0 +1,25 @@
+# A node of type "dis_receiver" parses a blob of bytes into DIS PDUs.
+# Incoming data type: Bytes
+# Outgoing data type: dis_rs::common::model::Pdu
+[[nodes]]
+type = "dis_receiver"
+# The name for the node
+name = "DIS Receiver"
+# The Exercise ID the node is listening for. Valid values are integers between 1 and 128.
+# Optional field, when omitted the node does not filter PDUs based on the PDU Exercise ID.
+exercise_id = 1
+# A list of versions of the DIS protocol to allow being processed.
+# Valid values are '6' and '7', as the dis_rs library only supports these versions.
+# Optional field, defaults to all supported versions.
+allow_dis_versions = [6, 7]
+
+# A node of type "dis_sender" serializes DIS PDUs into the wire format, e.g. a blob of bytes.
+# Incoming data type: dis_rs::common::model::Pdu
+# Outgoing data type: Bytes
+[[nodes]]
+type = "dis_sender"
+# The name for the node
+name = "DIS Receiver"
+# The size of the buffer used to serialize the PDU, in bytes.
+# Optional field, defaults to 32768 bytes
+buffer_size = 2048

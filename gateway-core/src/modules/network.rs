@@ -783,7 +783,7 @@ async fn run_tcp_write(
 pub struct TcpClientNodeSpec {
     name: String,
     interface: String,
-    address: String,
+    uri: String,
     buffer_size: Option<usize>,
 }
 
@@ -824,10 +824,10 @@ impl NodeData for TcpClientNodeData {
                 node_spec.interface,
             )))
         })?;
-        let address = node_spec.address.parse::<SocketAddr>().map_err(|_err| {
+        let address = node_spec.uri.parse::<SocketAddr>().map_err(|_err| {
             SpecificationError::Module(Box::new(UdpNodeError::IncorrectUri(
                 instance_id,
-                node_spec.address,
+                node_spec.uri,
             )))
         })?;
 

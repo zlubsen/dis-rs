@@ -3,7 +3,7 @@ use crate::core::{
     DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
-use crate::error::{CreationError, ExecutionError, SpecificationError};
+use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
 use crate::node_data_impl;
 use crate::runtime::{Command, Event};
 use bytes::{Bytes, BytesMut};
@@ -12,13 +12,14 @@ use dis_rs::model::Pdu;
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
 use std::time::Duration;
+use thiserror::Error;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::task::JoinHandle;
 
 const SPEC_DIS_RECEIVER_NODE_TYPE: &str = "dis_receiver";
 const SPEC_DIS_SENDER_NODE_TYPE: &str = "dis_sender";
 
-const SERIALISE_BUFFER_CAPACITY: usize = 32_768;
+const DEFAULT_SERIALISE_BUFFER_CAPACITY: usize = 32_768;
 
 pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
     let dis_nodes_constructor: NodeConstructor = node_from_spec;
@@ -83,6 +84,14 @@ pub struct DisStatistics {
     // TODO stats specific to DIS
 }
 
+#[derive(Debug, Error)]
+pub enum DisNodeError {
+    #[error("The Exercise ID must be withing 1-128, but is {0}.")]
+    InvalidExerciseId(u8),
+}
+
+impl NodeError for DisNodeError {}
+
 impl DisStatistics {
     fn new(node_id: InstanceId) -> Self {
         Self {
@@ -99,7 +108,7 @@ impl DisStatistics {
         self.base.outgoing_message();
     }
 
-    // TODO parsed PDU, rejected PDU
+    // TODO parsed/serialised PDU, failures, rejected/filtered PDUs,
 }
 
 impl NodeData for DisRxNodeData {
@@ -113,6 +122,18 @@ impl NodeData for DisRxNodeData {
             toml::from_str(&spec.to_string()).map_err(SpecificationError::ParseSpecification)?;
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
+
+        let exercise_id = if let Some(id) = node_spec.exercise_id {
+            if (1..=u8::MAX).contains(&id) {
+                Some(id)
+            } else {
+                return Err(SpecificationError::Module(Box::new(
+                    DisNodeError::InvalidExerciseId(id),
+                )));
+            }
+        } else {
+            None
+        };
 
         let allow_dis_versions = node_spec
             .allow_dis_versions
@@ -132,7 +153,7 @@ impl NodeData for DisRxNodeData {
                 cmd_rx,
                 event_tx,
             },
-            exercise_id: node_spec.exercise_id,
+            exercise_id,
             allow_dis_versions,
             incoming: None,
             outgoing: out_tx,
@@ -273,7 +294,10 @@ impl NodeData for DisTxNodeData {
 
         let (out_tx, _out_rx) = channel(DEFAULT_NODE_CHANNEL_CAPACITY);
 
-        let buffer = BytesMut::with_capacity(SERIALISE_BUFFER_CAPACITY);
+        let buffer_size = node_spec
+            .buffer_size
+            .unwrap_or(DEFAULT_SERIALISE_BUFFER_CAPACITY);
+        let buffer = BytesMut::with_capacity(buffer_size);
 
         Ok(Self {
             base: BaseNode {
