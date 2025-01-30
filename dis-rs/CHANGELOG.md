@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Function `crate::supported_protocol_versions` that returns a `Vec<ProtocolVersions>` supported by the crate.
 - Top level `Pdu` struct is now `Clone`.
+- impl FromStr for SimulationAddress, EntityId and EventId ([@carlocorradini](https://github.com/carlocorradini)).
+- impl Display for EntityId and EventId ([@carlocorradini](https://github.com/carlocorradini)).
 
 ### Changed
 
@@ -22,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- EntityState serialisation reported incorrect number of bytes written to the buffer.
+- EntityState serialization reported incorrect number of bytes written to the buffer.
 
 ### Security
 
