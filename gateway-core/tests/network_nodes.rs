@@ -202,7 +202,7 @@ async fn tcp_client() {
         type = "tcp_client"
         name = "TCP Client"
         interface = "127.0.0.1:2000"
-        address = "127.0.0.1:3003"
+        uri = "127.0.0.1:3003"
 
         [[ nodes ]]
         type = "pass_through"
