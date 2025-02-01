@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - EntityState serialization reported incorrect number of bytes written to the buffer.
+- Added checks for consistency of reported PDU length and bytes written to the buffer, for all PDUs. Resulted in a
+  number of minor corrections.
 
 ### Security
 
