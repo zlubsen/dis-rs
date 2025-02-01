@@ -7,6 +7,8 @@ use thiserror::Error;
 pub enum GatewayError {
     #[error(transparent)]
     Initialisation(#[from] io::Error),
+    #[error("A node of type '{0}' is already registered.")]
+    Registration(String),
     #[error(transparent)]
     Specification(#[from] SpecificationError),
     #[error(transparent)]

@@ -1,7 +1,7 @@
 use crate::core::{
-    BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner,
-    UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
-    DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer,
+    NodeData, NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+    DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
 use crate::error::{CreationError, ExecutionError, SpecificationError};
 use crate::node_data_impl;
@@ -14,7 +14,7 @@ use tokio::task::JoinHandle;
 
 const SPEC_PASS_THROUGH_NODE_TYPE: &str = "pass_through";
 
-pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
+pub fn available_nodes() -> Vec<NodeConstructorPointer> {
     let util_nodes_constructor: NodeConstructor = node_from_spec;
 
     let items = vec![(SPEC_PASS_THROUGH_NODE_TYPE, util_nodes_constructor)];

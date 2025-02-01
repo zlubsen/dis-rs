@@ -1,4 +1,4 @@
-use crate::core::{NodeConstructor, UntypedNode};
+use crate::core::{NodeConstructor, NodeConstructorPointer, UntypedNode};
 use crate::error::{CreationError, ExecutionError, GatewayError, SpecificationError};
 use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
@@ -48,6 +48,35 @@ impl InfraBuilder {
             nodes: vec![],
             node_factories: node_factory,
         }
+    }
+
+    /// Adds the given `NodeConstructorTuple` pointer to the index of `NodeConstructor`s of this runtime.
+    pub fn register_node_type(
+        &mut self,
+        pointer: NodeConstructorPointer,
+    ) -> Result<(), GatewayError> {
+        if self
+            .node_factories
+            .iter()
+            .find(|&existing| existing.0 == pointer.0)
+            .is_none()
+        {
+            self.node_factories.push(pointer);
+            Ok(())
+        } else {
+            Err(GatewayError::Registration(pointer.0.to_string()))
+        }
+    }
+
+    /// Adds the given list of `NodeConstructorTuple` pointers to the index of `NodeConstructor`s of this runtime.
+    pub fn register_module(
+        &mut self,
+        pointers: Vec<NodeConstructorPointer>,
+    ) -> Result<(), GatewayError> {
+        for pointer in pointers {
+            self.register_node_type(pointer)?
+        }
+        Ok(())
     }
 
     /// Builds an infra specification from a given `Path`, pointing to a TOML file

@@ -10,6 +10,9 @@ use tracing::{error, trace};
 
 pub type InstanceId = u64;
 pub type UntypedNode = Box<dyn NodeData>;
+/// Alias for a tuple connecting a node type specification value to the function that creates the node.
+pub type NodeConstructorPointer = (&'static str, NodeConstructor);
+/// Signature alias of functions that create a node from a specification.
 pub type NodeConstructor = fn(
     InstanceId,
     Receiver<Command>,
@@ -254,7 +257,7 @@ struct BaseStatisticsItems {
 
 /// Returns an inventory of all builtin Node types and their constructors,
 /// as a tuple consisting of the node type attribute and function pointer.
-pub(crate) fn builtin_nodes() -> Vec<(&'static str, NodeConstructor)> {
+pub(crate) fn builtin_nodes() -> Vec<NodeConstructorPointer> {
     let mut items = Vec::new();
     let mod_util = util::available_nodes();
     let mod_network = network::available_nodes();
@@ -270,7 +273,7 @@ pub(crate) fn builtin_nodes() -> Vec<(&'static str, NodeConstructor)> {
 ///
 /// Returns a `SpecificationError` when the key is not found in the lookup.
 pub(crate) fn lookup_node_constructor(
-    lookup: &Vec<(&'static str, NodeConstructor)>,
+    lookup: &Vec<NodeConstructorPointer>,
     key: &str,
 ) -> Result<NodeConstructor, SpecificationError> {
     lookup

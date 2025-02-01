@@ -1,6 +1,6 @@
 use crate::core::{
-    BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeData, NodeRunner, UntypedNode,
-    DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+    BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer, NodeData,
+    NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
     DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
 use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
@@ -36,7 +36,7 @@ const SPEC_UDP_MODE_MULTICAST: &str = "multicast";
 const SPEC_TCP_SERVER_NODE_TYPE: &str = "tcp_server";
 const SPEC_TCP_CLIENT_NODE_TYPE: &str = "tcp_client";
 
-pub fn available_nodes() -> Vec<(&'static str, NodeConstructor)> {
+pub fn available_nodes() -> Vec<NodeConstructorPointer> {
     let network_nodes_constructor: NodeConstructor = node_from_spec;
 
     let items = vec![
