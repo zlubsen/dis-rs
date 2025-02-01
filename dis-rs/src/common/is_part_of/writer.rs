@@ -9,12 +9,14 @@ impl SerializePdu for IsPartOf {
         let relationship_bytes = self.relationship.serialize(buf);
         let part_location_bytes = self.part_location.serialize(buf);
         let named_location_bytes = self.named_location_id.serialize(buf);
+        let part_type_bytes = self.part_type.serialize(buf);
 
         originating_bytes
             + receiving_bytes
             + relationship_bytes
             + part_location_bytes
             + named_location_bytes
+            + part_type_bytes
     }
 }
 

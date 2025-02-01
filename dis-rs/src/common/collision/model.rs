@@ -5,7 +5,7 @@ use crate::enumerations::{CollisionType, PduType};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const COLLISION_BODY_LENGTH: u16 = 60;
+const COLLISION_BODY_LENGTH: u16 = 48;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

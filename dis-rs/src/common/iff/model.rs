@@ -29,7 +29,7 @@ use crate::enumerations::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 60;
+pub const IFF_PDU_LAYER_1_DATA_LENGTH_OCTETS: u16 = 48;
 pub const BASE_IFF_DATA_RECORD_LENGTH_OCTETS: u16 = 6;
 
 /// 7.6.5 Identification Friend or Foe (IFF) PDU

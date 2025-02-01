@@ -1,4 +1,4 @@
-use crate::common::parser::{entity_id, vec3_f32};
+use crate::common::parser::{entity_id, entity_type, vec3_f32};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, StationName};
 use crate::is_part_of::model::{IsPartOf, NamedLocationId, Relationship};
 use crate::model::PduBody;
@@ -11,6 +11,7 @@ pub(crate) fn is_part_of_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, relationship) = relationship(input)?;
     let (input, part_location) = vec3_f32(input)?;
     let (input, named_location_id) = named_location_id(input)?;
+    let (input, part_type) = entity_type(input)?;
 
     Ok((
         input,
@@ -20,6 +21,7 @@ pub(crate) fn is_part_of_body(input: &[u8]) -> IResult<&[u8], PduBody> {
             .with_relationship(relationship)
             .with_part_location(part_location)
             .with_named_location_id(named_location_id)
+            .with_part_type(part_type)
             .build()
             .into_pdu_body(),
     ))

@@ -28,7 +28,7 @@ impl Serialize for GroupReferencePoint {
         buf.put_f64(self.latitude);
         buf.put_f64(self.longitude);
 
-        8
+        16
     }
 }
 

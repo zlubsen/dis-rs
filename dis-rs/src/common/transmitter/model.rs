@@ -20,6 +20,9 @@ const BASE_TRANSMITTER_BODY_LENGTH: u16 = 92;
 pub const BEAM_ANTENNA_PATTERN_OCTETS: u16 = 40;
 pub const BASE_VTP_RECORD_LENGTH: u16 = 6;
 
+/// 5.8.3 Transmitter PDU
+///
+/// 7.7.2 Transmitter PDU
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Transmitter {

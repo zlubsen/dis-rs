@@ -12,6 +12,6 @@ impl SerializePdu for TransferOwnership {
         let transfer_bytes = self.transfer_entity_id.serialize(buf);
         let record_spec_bytes = self.record_specification.serialize(buf);
 
-        originating_bytes + receiving_bytes + 4 + transfer_bytes + record_spec_bytes
+        originating_bytes + receiving_bytes + 6 + transfer_bytes + record_spec_bytes
     }
 }

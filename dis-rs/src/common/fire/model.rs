@@ -5,7 +5,7 @@ use crate::fire::builder::FireBuilder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const FIRE_BODY_LENGTH: u16 = 28;
+const FIRE_BODY_LENGTH: u16 = 84;
 
 /// 5.4.3 Fire PDU
 ///

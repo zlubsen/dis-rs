@@ -5,7 +5,7 @@ use crate::service_request::builder::ServiceRequestBuilder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const SERVICE_REQUEST_BASE_BODY_LENGTH: u16 = 28;
+const SERVICE_REQUEST_BASE_BODY_LENGTH: u16 = 16;
 
 /// 5.5.5 Service Request PDU
 ///

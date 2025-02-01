@@ -63,7 +63,7 @@ impl SerializePdu for Transmitter {
             .map(|vtp| vtp.serialize(buf))
             .sum::<u16>();
 
-        104 + modulation_parameters_bytes + antenna_pattern_bytes + vtp_bytes
+        92 + modulation_parameters_bytes + antenna_pattern_bytes + vtp_bytes
     }
 }
 

@@ -6,7 +6,7 @@ use crate::resupply_received::builder::ResupplyReceivedBuilder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const RESUPPLY_RECEIVED_BASE_BODY_LENGTH: u16 = 28;
+const RESUPPLY_RECEIVED_BASE_BODY_LENGTH: u16 = 16;
 
 /// 5.5.7 Resupply Received PDU
 ///

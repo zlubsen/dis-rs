@@ -155,7 +155,7 @@ impl EntityAppearance {
     }
 
     #[must_use]
-    pub fn record_length(&self) -> u16 {
+    pub const fn record_length(&self) -> u16 {
         FOUR_OCTETS as u16
     }
 

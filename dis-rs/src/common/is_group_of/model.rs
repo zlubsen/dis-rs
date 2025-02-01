@@ -47,7 +47,7 @@ impl BodyInfo for IsGroupOf {
             + self
                 .descriptions
                 .iter()
-                .map(GroupEntityDescription::record_length)
+                .map(|ged_record| ged_record.record_length())
                 .sum::<u16>()
     }
 
@@ -85,6 +85,11 @@ impl GroupReferencePoint {
     pub fn with_longitude(mut self, longitude: f64) -> Self {
         self.longitude = longitude;
         self
+    }
+
+    #[must_use]
+    pub const fn record_length(&self) -> u16 {
+        16
     }
 }
 
@@ -172,7 +177,10 @@ pub struct GEDRecord1 {
 impl GEDRecord1 {
     #[must_use]
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length() + self.orientation.record_length() + 11
+        self.location.record_length()
+            + self.orientation.record_length()
+            + self.appearance.record_length()
+            + 7
     }
 }
 
@@ -212,7 +220,10 @@ pub struct GEDRecord3 {
 impl GEDRecord3 {
     #[must_use]
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length() + self.orientation.record_length() + 11
+        self.location.record_length()
+            + self.orientation.record_length()
+            + self.appearance.record_length()
+            + 7
     }
 }
 
@@ -255,7 +266,10 @@ pub struct GEDRecord5 {
 impl GEDRecord5 {
     #[must_use]
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length() + self.orientation.record_length() + 15
+        self.location.record_length()
+            + self.orientation.record_length()
+            + self.appearance.record_length()
+            + 11
     }
 }
 
@@ -294,7 +308,10 @@ pub struct GEDRecord7 {
 impl GEDRecord7 {
     #[must_use]
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length() + self.orientation.record_length() + 11
+        self.location.record_length()
+            + self.orientation.record_length()
+            + self.appearance.record_length()
+            + 7
     }
 }
 
@@ -330,6 +347,9 @@ pub struct GEDRecord9 {
 impl GEDRecord9 {
     #[must_use]
     pub const fn record_length(&self) -> u16 {
-        self.location.record_length() + self.orientation.record_length() + 8
+        self.location.record_length()
+            + self.orientation.record_length()
+            + self.appearance.record_length()
+            + 4
     }
 }

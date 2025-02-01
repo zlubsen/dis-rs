@@ -6,7 +6,7 @@ use crate::resupply_offer::builder::ResupplyOfferBuilder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const RESUPPLY_OFFER_BASE_BODY_LENGTH: u16 = 28;
+const RESUPPLY_OFFER_BASE_BODY_LENGTH: u16 = 16;
 
 /// 5.5.6 Resupply Offer PDU
 ///

@@ -1,7 +1,7 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, PduType, StationName};
 use crate::is_part_of::builder::IsPartOfBuilder;
-use crate::model::{EntityId, PduBody, VectorF32};
+use crate::model::{EntityId, EntityType, PduBody, VectorF32};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +18,7 @@ pub struct IsPartOf {
     pub relationship: Relationship,
     pub part_location: VectorF32,
     pub named_location_id: NamedLocationId,
+    pub part_type: EntityType,
 }
 
 impl IsPartOf {

@@ -1,5 +1,5 @@
 use crate::is_part_of::model::{IsPartOf, NamedLocationId, Relationship};
-use crate::model::{EntityId, VectorF32};
+use crate::model::{EntityId, EntityType, VectorF32};
 
 pub struct IsPartOfBuilder(IsPartOf);
 
@@ -52,6 +52,12 @@ impl IsPartOfBuilder {
     #[must_use]
     pub fn with_named_location_id(mut self, named_location_id: NamedLocationId) -> Self {
         self.0.named_location_id = named_location_id;
+        self
+    }
+
+    #[must_use]
+    pub fn with_part_type(mut self, part_type: EntityType) -> Self {
+        self.0.part_type = part_type;
         self
     }
 }

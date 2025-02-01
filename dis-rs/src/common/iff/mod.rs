@@ -67,10 +67,13 @@ mod tests {
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, iff_body, 1);
         let pdu_length = original_pdu.header.pdu_length;
+        let original_length = original_pdu.pdu_length();
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf).unwrap();
+        let serialized_length = original_pdu.serialize(&mut buf).unwrap();
+
+        assert_eq!(original_length, serialized_length);
 
         let parsed = parse_pdu(&buf);
         match parsed {

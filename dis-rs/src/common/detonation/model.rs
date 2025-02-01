@@ -8,7 +8,7 @@ use crate::enumerations::{DetonationResult, PduType};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const BASE_DETONATION_BODY_LENGTH: u16 = 104;
+const BASE_DETONATION_BODY_LENGTH: u16 = 92;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

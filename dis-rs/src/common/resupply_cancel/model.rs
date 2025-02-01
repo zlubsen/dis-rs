@@ -5,7 +5,7 @@ use crate::resupply_cancel::builder::ResupplyCancelBuilder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-const RESUPPLY_CANCEL_BASE_BODY_LENGTH: u16 = 24;
+const RESUPPLY_CANCEL_BASE_BODY_LENGTH: u16 = 12;
 
 /// 5.5.8 Resupply Cancel PDU
 ///
