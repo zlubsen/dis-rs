@@ -266,7 +266,6 @@ pub fn default_tokio_runtime() -> Result<Runtime, GatewayError> {
 
 /// Create an `InfraBuilder` from a spec, in TOML as a `&str`, and return all coordination and I/O channels.
 ///
-///
 /// # Example
 /// ```ignore
 /// use gateway_core::runtime::preset_builder_from_spec_str;
@@ -287,17 +286,43 @@ pub fn preset_builder_from_spec_str<I: 'static, O: 'static>(
     ),
     GatewayError,
 > {
-    let mut infra_runtime_builder = InfraBuilder::new();
-    infra_runtime_builder.build_from_str(toml_spec)?;
+    let builder = InfraBuilder::new();
+    preset_from_spec_str(builder, toml_spec)
+}
 
-    let cmd_tx = infra_runtime_builder.command_channel();
-    let event_rx = infra_runtime_builder.event_channel();
+/// Takes an initialised `InfraBuilder` and a specification, in TOML as a `&str`, and return all coordination and I/O channels.
+///
+/// # Example
+/// ```ignore
+/// use gateway_core::runtime::preset_from_spec_str;
+///
+/// let builder = InfraBuilder::new();
+/// let Ok((builder, cmd_tx, event_rx, input_tx, output_rx)) =
+///     preset_from_spec_str::<InputType, OutputType>(builder, r#"Here be some TOML contents"#);
+/// ```
+#[allow(clippy::type_complexity)]
+pub fn preset_from_spec_str<I: 'static, O: 'static>(
+    mut builder: InfraBuilder,
+    toml_spec: &str,
+) -> Result<
+    (
+        InfraBuilder,
+        Sender<Command>,
+        Receiver<Event>,
+        Option<Sender<I>>,
+        Option<Receiver<O>>,
+    ),
+    GatewayError,
+> {
+    builder.build_from_str(toml_spec)?;
 
-    let input_tx = downcast_external_input::<I>(infra_runtime_builder.external_input());
-    // Similarly, we can request a handle to the externalised output channel, in this case 'Pass Two'.
-    let output_rx = downcast_external_output::<O>(infra_runtime_builder.external_output());
+    let cmd_tx = builder.command_channel();
+    let event_rx = builder.event_channel();
 
-    Ok((infra_runtime_builder, cmd_tx, event_rx, input_tx, output_rx))
+    let input_tx = downcast_external_input::<I>(builder.external_input());
+    let output_rx = downcast_external_output::<O>(builder.external_output());
+
+    Ok((builder, cmd_tx, event_rx, input_tx, output_rx))
 }
 
 /// Enum of Commands that the Runtime can send to Nodes
