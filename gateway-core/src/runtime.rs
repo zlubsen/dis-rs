@@ -55,11 +55,10 @@ impl InfraBuilder {
         &mut self,
         pointer: NodeConstructorPointer,
     ) -> Result<(), GatewayError> {
-        if self
+        if !self
             .node_factories
             .iter()
-            .find(|&existing| existing.0 == pointer.0)
-            .is_none()
+            .any(|existing| existing.0 == pointer.0)
         {
             self.node_factories.push(pointer);
             Ok(())

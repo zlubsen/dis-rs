@@ -47,7 +47,7 @@ impl BodyInfo for IsGroupOf {
             + self
                 .descriptions
                 .iter()
-                .map(|ged_record| ged_record.record_length())
+                .map(GroupEntityDescription::record_length)
                 .sum::<u16>()
     }
 

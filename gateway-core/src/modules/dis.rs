@@ -96,7 +96,6 @@ impl DisStatistics {
     fn new(node_id: InstanceId) -> Self {
         Self {
             base: BaseStatistics::new(node_id),
-            ..Default::default()
         }
     }
 
