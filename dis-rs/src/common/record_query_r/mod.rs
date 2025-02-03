@@ -24,7 +24,7 @@ mod tests {
             .with_request_id(15)
             .with_required_reliability_service(RequiredReliabilityService::Unacknowledged)
             .with_event_type(RecordQueryREventType::InternalEntityStateData)
-            .with_time(TimeStamp::new(123456))
+            .with_time(TimeStamp::new(123_456))
             .with_record_query_specification(RecordQuerySpecification::default().with_record_ids(
                 vec![
                     VariableRecordType::_7_62mmM62_Quantity_24005,

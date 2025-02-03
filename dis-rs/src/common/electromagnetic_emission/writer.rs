@@ -132,7 +132,7 @@ mod tests {
                             .with_parameter_index(122)
                             .with_parameter_data(
                                 FundamentalParameterData::new()
-                                    .with_frequency(6000000000f32)
+                                    .with_frequency(6_000_000_000f32)
                                     .with_frequency_range(0f32)
                                     .with_effective_power(f32::from_be_bytes([
                                         0x42, 0xf0, 0x00, 0x00,
@@ -171,7 +171,7 @@ mod tests {
                             .with_parameter_index(100)
                             .with_parameter_data(
                                 FundamentalParameterData::new()
-                                    .with_frequency(6000000000f32)
+                                    .with_frequency(6_000_000_000f32)
                                     .with_frequency_range(0f32)
                                     .with_effective_power(f32::from_be_bytes([
                                         0x42, 0xf0, 0x00, 0x00,
@@ -212,7 +212,7 @@ mod tests {
                             .with_parameter_index(212)
                             .with_parameter_data(
                                 FundamentalParameterData::new()
-                                    .with_frequency(6000000000f32)
+                                    .with_frequency(6_000_000_000f32)
                                     .with_frequency_range(0f32)
                                     .with_effective_power(f32::from_be_bytes([
                                         0x42, 0xf0, 0x00, 0x00,

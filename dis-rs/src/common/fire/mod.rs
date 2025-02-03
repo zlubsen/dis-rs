@@ -48,9 +48,8 @@ mod tests {
             Ok(ref pdu) => {
                 assert_eq!(&original_pdu, pdu);
             }
-            Err(ref _err) => {
-                println!("{_err}");
-                assert!(false);
+            Err(ref err) => {
+                panic!("Parse error: {err}");
             }
         }
     }
@@ -87,9 +86,8 @@ mod tests {
             Ok(ref pdu) => {
                 assert_eq!(&original_pdu, pdu);
             }
-            Err(ref _err) => {
-                println!("{_err}");
-                assert!(false);
+            Err(ref err) => {
+                panic!("Parse error: {err}");
             }
         }
     }
@@ -130,9 +128,8 @@ mod tests {
             Ok(ref pdu) => {
                 assert_eq!(&original_pdu, pdu);
             }
-            Err(ref _err) => {
-                println!("{_err}");
-                assert!(false);
+            Err(ref err) => {
+                panic!("Parse error: {err}");
             }
         }
     }

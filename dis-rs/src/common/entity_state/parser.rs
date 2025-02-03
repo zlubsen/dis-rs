@@ -330,9 +330,9 @@ mod tests {
         assert!(location.is_ok());
         let (input, location) = location.unwrap();
         assert_eq!(input.len(), 0);
-        assert_eq!(location.x_coordinate, 4395115.478805255);
-        assert_eq!(location.y_coordinate, 4401128.300594416);
-        assert_eq!(location.z_coordinate, 1407254.6190504115);
+        assert_eq!(location.x_coordinate, 4_395_115.478_805_255);
+        assert_eq!(location.y_coordinate, 4_401_128.300_594_416);
+        assert_eq!(location.z_coordinate, 1_407_254.619_050_411_5);
     }
 
     #[test]
