@@ -1,9 +1,6 @@
 use gateway_core::error::GatewayError;
 use gateway_core::runtime;
-use gateway_core::runtime::{
-    default_tokio_runtime, downcast_external_input, downcast_external_output, run_from_builder,
-    Command, InfraBuilder,
-};
+use gateway_core::runtime::{default_tokio_runtime, run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 use tokio::time::Instant;
 use tracing::level_filters::LevelFilter;

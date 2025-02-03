@@ -83,8 +83,8 @@ jobs:
                 working-directory: ./cdis-gateway
                 run: bun install
 
-            -   name: Build
-                run: cargo build --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
+            -   name: Check
+                run: cargo check --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
 
             -   name: Format
                 run: cargo fmt --verbose --check --all

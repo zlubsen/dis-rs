@@ -26,8 +26,8 @@ const DEFAULT_TTL: u32 = 1;
 const DEFAULT_BLOCK_OWN_SOCKET: bool = true;
 const DEFAULT_OWN_ADDRESS: SocketAddr =
     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
-const DEFAULT_TCP_MAX_CONNECTIONS: usize = 15;
-const DEFAULT_TCP_CLIENT_CONNECT_TIMEOUT_MS: u64 = 5000;
+// const DEFAULT_TCP_MAX_CONNECTIONS: usize = 15;
+// const DEFAULT_TCP_CLIENT_CONNECT_TIMEOUT_MS: u64 = 5000;
 
 const SPEC_UDP_NODE_TYPE: &str = "udp";
 const SPEC_UDP_MODE_UNICAST: &str = "unicast";
@@ -115,6 +115,7 @@ enum UdpNodeEvent {
     ReceivedPacket(Bytes),
     BlockedPacket,
     ReceivedIncoming(Bytes),
+    #[allow(dead_code)]
     SocketError(std::io::Error),
     OutputStatistics,
     Quit,
@@ -556,7 +557,7 @@ pub struct TcpServerNodeData {
     base: BaseNode,
     interface: SocketAddr,
     buffer_size: usize,
-    max_connections: usize,
+    // max_connections: usize,
     incoming: Option<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
 }
@@ -566,7 +567,7 @@ pub struct TcpServerNodeRunner {
     name: String,
     interface: SocketAddr,
     buffer_size: usize,
-    max_connections: usize,
+    // max_connections: usize,
     statistics: SocketStatistics,
 }
 
@@ -591,9 +592,9 @@ impl NodeData for TcpServerNodeData {
         let buffer_size = node_spec
             .buffer_size
             .unwrap_or(DEFAULT_SOCKET_BUFFER_CAPACITY);
-        let max_connections = node_spec
-            .max_connections
-            .unwrap_or(DEFAULT_TCP_MAX_CONNECTIONS);
+        // let max_connections = node_spec
+        //     .max_connections
+        //     .unwrap_or(DEFAULT_TCP_MAX_CONNECTIONS);
 
         Ok(Self {
             base: BaseNode {
@@ -604,7 +605,7 @@ impl NodeData for TcpServerNodeData {
             },
             interface,
             buffer_size,
-            max_connections,
+            // max_connections,
             incoming: None,
             outgoing: out_tx,
         })
@@ -639,7 +640,7 @@ impl NodeRunner for TcpServerNodeRunner {
             name: data.base.name,
             interface: data.interface,
             buffer_size: data.buffer_size,
-            max_connections: data.max_connections,
+            // max_connections: data.max_connections,
             statistics: SocketStatistics::new(data.base.instance_id),
         };
 
@@ -994,7 +995,7 @@ impl NodeRunner for TcpClientNodeRunner {
                         );
                     }
                 }
-            };
+            }
         }
     }
 }
