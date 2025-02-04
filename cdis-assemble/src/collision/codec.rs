@@ -74,7 +74,9 @@ fn decode_collision_mass(mass: u32, unit: UnitsMass) -> f32 {
 mod tests {
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::collision::model::{Collision, CollisionUnits};
-    use crate::records::model::{UnitsMass, UnitsMeters};
+    use crate::records::model::{
+        EntityCoordinateVector, EntityId, LinearVelocity, UnitsMass, UnitsMeters,
+    };
     use crate::types::model::UVINT32;
     use crate::{BodyProperties, CdisBody};
     use dis_rs::collision::builder::CollisionBuilder;
@@ -117,13 +119,13 @@ mod tests {
                 location_entity_coordinates: UnitsMeters::Centimeter,
                 mass: UnitsMass::Grams,
             },
-            issuing_entity_id: Default::default(),
-            colliding_entity_id: Default::default(),
-            event_id: Default::default(),
+            issuing_entity_id: EntityId::default(),
+            colliding_entity_id: EntityId::default(),
+            event_id: EntityId::default(),
             collision_type: CollisionType::Inelastic,
-            velocity: Default::default(),
+            velocity: LinearVelocity::default(),
             mass: UVINT32::from(60001),
-            location: Default::default(),
+            location: EntityCoordinateVector::default(),
         }
         .into_cdis_body();
 

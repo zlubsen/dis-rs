@@ -1549,6 +1549,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn decode_body_partial_update_partial_update_flag_with_state() {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))

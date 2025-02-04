@@ -611,7 +611,7 @@ mod tests {
         Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType,
         PlatformDomain, ProtocolVersion,
     };
-    use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, TimeStamp};
+    use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, PduStatus, TimeStamp};
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {
@@ -637,17 +637,11 @@ mod tests {
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
-        let dis_body = if let PduBody::EntityState(es) = dis_pdu.body {
-            es
-        } else {
-            assert!(false);
-            dis_rs::entity_state::model::EntityState::default()
+        let PduBody::EntityState(dis_body) = dis_pdu.body else {
+            panic!();
         };
-        let cdis_body = if let CdisBody::EntityState(es) = cdis_pdu.body {
-            es
-        } else {
-            assert!(false);
-            crate::EntityState::default()
+        let CdisBody::EntityState(cdis_body) = cdis_pdu.body else {
+            panic!();
         };
 
         assert_eq!(
@@ -694,6 +688,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn cdis_pdu_entity_state_body_decode() {
         let mut decoder_state = DecoderState::new();
         let codec_options = CodecOptions::new_full_update();
@@ -731,7 +726,7 @@ mod tests {
             dr_params_entity_linear_acceleration: None,
             dr_params_entity_angular_velocity: None,
             entity_marking: Some(CdisEntityMarking::new("TEST".to_string())),
-            capabilities: Some(CdisEntityCapabilities(UVINT32::from(0xABC00000))),
+            capabilities: Some(CdisEntityCapabilities(UVINT32::from(0xABC0_0000))),
             variable_parameters: vec![],
         }
         .into_cdis_body();
@@ -739,9 +734,9 @@ mod tests {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(8),
             pdu_type: PduType::EntityState,
-            timestamp: Default::default(),
+            timestamp: TimeStamp::default(),
             length: 0,
-            pdu_status: Default::default(),
+            pdu_status: PduStatus::default(),
         };
         let cdis =
             CdisPdu::finalize_from_parts(cdis_header, cdis_body, Some(TimeStamp::from(20000)));
@@ -750,17 +745,11 @@ mod tests {
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
-        let dis_body = if let PduBody::EntityState(es) = dis.body {
-            es
-        } else {
-            assert!(false);
-            Default::default()
+        let PduBody::EntityState(dis_body) = dis.body else {
+            panic!();
         };
-        let cdis_body = if let CdisBody::EntityState(es) = cdis.body {
-            es
-        } else {
-            assert!(false);
-            Default::default()
+        let CdisBody::EntityState(cdis_body) = cdis.body else {
+            panic!();
         };
 
         assert_eq!(dis.header.exercise_id, cdis.header.exercise_id.value);
@@ -806,7 +795,7 @@ mod tests {
             assert!(air_caps.recovery);
             assert!(!air_caps.repair);
         } else {
-            assert!(false);
+            panic!()
         };
     }
 }

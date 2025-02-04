@@ -135,6 +135,9 @@ mod tests {
 
         assert_eq!(cursor, cdis_body.body_length());
 
+        #[rustfmt::skip]
+        #[allow(clippy::unusual_byte_groupings)]
+        #[allow(clippy::unreadable_literal)]
         let expected: [u8; 39] = [
             0b0000_10_00,
             0b00000001_,

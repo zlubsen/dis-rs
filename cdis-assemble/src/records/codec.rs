@@ -122,9 +122,9 @@ impl Codec for Orientation {
     #[allow(clippy::cast_possible_truncation)]
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            psi: (normalize_radians_to_plusminus_pi(item.psi) * Self::SCALING) as i16,
-            theta: (normalize_radians_to_plusminus_pi(item.theta) * Self::SCALING) as i16,
-            phi: (normalize_radians_to_plusminus_pi(item.phi) * Self::SCALING) as i16,
+            psi: (normalize_radians_to_plus_minus_pi(item.psi) * Self::SCALING) as i16,
+            theta: (normalize_radians_to_plus_minus_pi(item.theta) * Self::SCALING) as i16,
+            phi: (normalize_radians_to_plus_minus_pi(item.phi) * Self::SCALING) as i16,
         }
     }
 
@@ -137,7 +137,7 @@ impl Codec for Orientation {
     }
 }
 
-fn normalize_radians_to_plusminus_pi(radians: f32) -> f32 {
+fn normalize_radians_to_plus_minus_pi(radians: f32) -> f32 {
     const TWO_PI: f32 = 2.0 * std::f32::consts::PI;
     let radians = radians % TWO_PI;
     let radians = (radians + TWO_PI) % TWO_PI;
@@ -176,7 +176,7 @@ pub(crate) fn decode_layer_header_with_length(
 /// DIS Lin. Acc. is in meters/sec/sec (as ``VectorF32``).
 /// CDIS Lin. Acc. is in decimeters/sec/sec (as ``LinearAcceleration``).
 ///
-/// +8191, -8192 decimeters/sec/sec (Aprox 83.5 g)
+/// +8191, -8192 decimeters/sec/sec (Approx 83.5 g)
 impl Codec for LinearAcceleration {
     type Counterpart = VectorF32;
     const CONVERSION: f32 = DECIMETERS_IN_METER;
@@ -657,9 +657,11 @@ impl Codec for BeamData {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::approx_constant)]
+
     use crate::codec::Codec;
     use crate::records::codec::{
-        decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plusminus_pi,
+        decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plus_minus_pi,
     };
     use crate::records::model::{
         cdis_to_dis_u32_timestamp, dis_to_cdis_u32_timestamp, AngularVelocity, CdisHeader,
@@ -668,24 +670,24 @@ mod tests {
     };
     use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT8};
     use dis_rs::enumerations::{PduType, ProtocolVersion};
-    use dis_rs::model::{PduHeader, TimeStamp, VectorF32};
+    use dis_rs::model::{PduHeader, PduStatus, TimeStamp, VectorF32};
 
     #[test]
-    fn test_normalize_radians_to_plusminus_pi() {
+    fn test_normalize_radians_to_plus_minus_pi() {
         assert_eq!(
-            normalize_radians_to_plusminus_pi(std::f32::consts::PI),
+            normalize_radians_to_plus_minus_pi(std::f32::consts::PI),
             3.141_592_5f32
         ); // approx std::f32::consts::PI
         assert_eq!(
-            normalize_radians_to_plusminus_pi(-std::f32::consts::PI),
+            normalize_radians_to_plus_minus_pi(-std::f32::consts::PI),
             std::f32::consts::PI
         );
         assert_eq!(
-            normalize_radians_to_plusminus_pi(0.5 * std::f32::consts::PI),
+            normalize_radians_to_plus_minus_pi(0.5 * std::f32::consts::PI),
             1.570_796_5
         ); // approx std::f32::consts::FRAC_PI_2
         assert_eq!(
-            normalize_radians_to_plusminus_pi(3.5f32 * std::f32::consts::PI),
+            normalize_radians_to_plus_minus_pi(3.5f32 * std::f32::consts::PI),
             -1.570_796
         ); // approx -std::f32::consts::FRAC_PI_2
     }
@@ -715,7 +717,7 @@ mod tests {
             pdu_type: PduType::Acknowledge,
             timestamp: TimeStamp::from(20000),
             length: 140,
-            pdu_status: Default::default(),
+            pdu_status: PduStatus::default(),
         };
         let dis = cdis.decode();
 
@@ -819,20 +821,20 @@ mod tests {
         let (cdis, units) = encode_world_coordinates(&dis);
 
         assert_eq!(units, UnitsDekameters::Centimeter);
-        assert_eq!(cdis.latitude, 620384200f32); // scaled value
+        assert_eq!(cdis.latitude, 620_384_200_f32); // scaled value
         assert_eq!(
             (cdis.latitude / ((2.0_f32.powi(30) - 1.0) / std::f32::consts::FRAC_PI_2))
                 .to_degrees()
                 .round(),
             52.0
         ); // unscaled and in degrees
-        assert_eq!(cdis.longitude, 59652240f32); // scaled value
+        assert_eq!(cdis.longitude, 59_652_240_f32); // scaled value
         assert_eq!(cdis.altitude_msl.value, 1987); // ~ 19.87 meters
     }
 
     #[test]
     fn entity_location_decode() {
-        let cdis = WorldCoordinates::new(620384200f32, 59652240f32, SVINT24::from(1987));
+        let cdis = WorldCoordinates::new(620_384_200_f32, 59_652_240_f32, SVINT24::from(1987));
         let units = UnitsDekameters::Centimeter;
         let dis = decode_world_coordinates(&cdis, units);
 
@@ -883,12 +885,12 @@ mod tests {
         assert_eq!(cdis.psi, 4094);
         assert_eq!(cdis.theta, 0);
 
-        assert_eq!(dis_2.psi, 3.1408255);
+        assert_eq!(dis_2.psi, 3.140_825_5);
         assert_eq!(dis_2.theta, 0.0);
 
         let cdis = Orientation::new(1, 4095, -4096);
         let dis = cdis.decode();
 
-        assert_eq!(dis.psi.to_degrees(), 0.04395604); // in degrees, the resolution of the field
+        assert_eq!(dis.psi.to_degrees(), 0.043_956_04); // in degrees, the resolution of the field
     }
 }

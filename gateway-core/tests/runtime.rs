@@ -51,7 +51,8 @@ async fn build_empty_spec() {
     let error = infra_builder.build_from_str(spec).unwrap_err();
 
     if let GatewayError::Specification(SpecificationError::ParseSpecification(_)) = error {
-        assert!(true);
+    } else {
+        panic!();
     }
 }
 
@@ -67,7 +68,8 @@ async fn build_spec_wrong_node_data_type() {
     let error = infra_builder.build_from_str(spec).unwrap_err();
 
     if let GatewayError::Specification(SpecificationError::FieldIsNotAString(_)) = error {
-        assert!(true);
+    } else {
+        panic!();
     }
 }
 
@@ -81,9 +83,8 @@ async fn build_spec_no_node_type_field() {
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let GatewayError::Specification(SpecificationError::NodeEntryMissingTypeField(_)) = error {
-        assert!(true);
     } else {
-        assert!(false);
+        panic!();
     }
 }
 
@@ -100,7 +101,7 @@ async fn build_spec_incorrect_node_type_field() {
     if let GatewayError::Specification(SpecificationError::UnknownNodeType(node_type)) = error {
         assert_eq!(node_type.as_str(), "a_type_that_does_not_exist");
     } else {
-        assert!(false);
+        panic!()
     }
 }
 
@@ -130,7 +131,7 @@ async fn build_spec_incorrect_channel_from() {
         assert_eq!(field.as_str(), "from");
         assert_eq!(name.as_str(), "Incorrect");
     } else {
-        assert!(false);
+        panic!()
     }
 }
 
@@ -149,9 +150,8 @@ async fn build_spec_no_channels_defined() {
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
     if let GatewayError::Specification(SpecificationError::NoChannelsSpecified(_)) = error {
-        assert!(true);
     } else {
-        assert!(false);
+        panic!();
     }
 }
 
@@ -176,7 +176,7 @@ async fn build_spec_channel_field_missing() {
     {
         assert_eq!(field.as_str(), "from");
     } else {
-        assert!(false);
+        panic!();
     }
 }
 
@@ -201,7 +201,7 @@ async fn build_spec_channel_field_wrong_data_type() {
     if let GatewayError::Specification(SpecificationError::FieldIsNotAString(field)) = error {
         assert_eq!(field.as_str(), "from");
     } else {
-        assert!(false);
+        panic!();
     }
 }
 
@@ -235,7 +235,7 @@ async fn build_spec_channel_incompatible_data_between_nodes() {
         assert_eq!(node_name.as_str(), "Receives PDU");
         assert_eq!(data_type_expected.as_str(), "dis_rs::common::model::Pdu");
     } else {
-        assert!(false);
+        panic!();
     }
 }
 

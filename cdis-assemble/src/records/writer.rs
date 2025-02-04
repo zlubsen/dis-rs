@@ -391,6 +391,7 @@ mod tests {
     use crate::writing::SerializeCdis;
     use bitvec::prelude::BitArray;
     use dis_rs::enumerations::PduType;
+    use dis_rs::model::{PduStatus, TimeStamp};
 
     const FOUR_BYTES: usize = 4;
 
@@ -399,7 +400,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = CdisEntityMarking::from("ABCDE");
-        let expected: [u8; FOUR_BYTES] = [0b01010000, 0b01000100, 0b00110010, 0b00010100];
+        let expected: [u8; FOUR_BYTES] = [0b0101_0000, 0b0100_0100, 0b0011_0010, 0b0001_0100];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..FOUR_BYTES], buf.as_raw_slice()[..FOUR_BYTES]);
@@ -410,7 +411,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = CdisEntityMarking::from("AAJJ");
-        let expected: [u8; FOUR_BYTES] = [0b01001000, 0b00100000, 0b10010100, 0b01010000];
+        let expected: [u8; FOUR_BYTES] = [0b0100_1000, 0b0010_0000, 0b1001_0100, 0b0101_0000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..FOUR_BYTES], buf.as_raw_slice()[..FOUR_BYTES]);
@@ -424,14 +425,20 @@ mod tests {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(7),
             pdu_type: PduType::EntityState,
-            timestamp: Default::default(),
+            timestamp: TimeStamp::default(),
             length: 0,
-            pdu_status: Default::default(),
+            pdu_status: PduStatus::default(),
         };
 
         let expected: [u8; 8] = [
-            0b01001110, 0b00000010, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,
-            0b00000000,
+            0b0100_1110,
+            0b0000_0010,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
         ];
         let next_cursor = header.serialize(&mut buf, 0);
 

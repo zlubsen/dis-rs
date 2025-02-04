@@ -241,7 +241,7 @@ mod tests {
             assert_eq!(fire.descriptor_rate.unwrap(), 1);
             assert_eq!(fire.range.unwrap(), UVINT32::from(10000));
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -295,7 +295,7 @@ mod tests {
             assert!(fire.descriptor_quantity.is_none());
             assert!(fire.descriptor_rate.is_none());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -346,7 +346,7 @@ mod tests {
             assert!(fire.descriptor_rate.is_none());
             assert_eq!(fire.range.unwrap(), UVINT32::from(10000));
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -375,8 +375,8 @@ mod tests {
             event_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(1)),
             fire_mission_index: Some(UVINT32::from(100)),
             location_world_coordinates: WorldCoordinates::new(
-                620384200f32,
-                59652240f32,
+                620_384_200_f32,
+                59_652_240_f32,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -422,10 +422,10 @@ mod tests {
                 assert_eq!(munition.quantity, 1);
                 assert_eq!(munition.rate, 0);
             } else {
-                assert!(false);
+                panic!()
             };
         } else {
-            assert!(false);
+            panic!()
         };
     }
 
@@ -454,8 +454,8 @@ mod tests {
             event_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(1)),
             fire_mission_index: Some(UVINT32::from(100)),
             location_world_coordinates: WorldCoordinates::new(
-                620384200f32,
-                59652240f32,
+                620_384_200_f32,
+                59_652_240_f32,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -493,7 +493,7 @@ mod tests {
                 assert_eq!(entity_type.domain, PlatformDomain::Air);
                 assert_eq!(entity_type.category, 0);
             } else {
-                assert!(false);
+                panic!()
             };
         }
     }

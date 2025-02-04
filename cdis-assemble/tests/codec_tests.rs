@@ -1,3 +1,5 @@
+#![allow(clippy::float_cmp)]
+
 use bytes::BytesMut;
 use cdis_assemble::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
 use cdis_assemble::constants::EIGHT_BITS;
@@ -12,7 +14,6 @@ use dis_rs::designator::model::Designator;
 use dis_rs::electromagnetic_emission::model::{
     Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam,
 };
-
 use dis_rs::entity_state::model::{EntityAppearance, EntityMarking, EntityState};
 use dis_rs::enumerations::{
     AcknowledgeFlag, ActionId, AirPlatformAppearance, AirPlatformCapabilities, CollisionType,
@@ -85,7 +86,7 @@ fn encode_dis_to_cdis_entity_state_full_mode() {
         );
         assert_eq!(es.entity_marking.as_ref().unwrap().marking.as_str(), "TEST");
     } else {
-        assert!(false);
+        panic!();
     }
 }
 
@@ -100,7 +101,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         pdu_type: PduType::EntityState,
         timestamp: TimeStamp::new(968),
         length: 0,
-        pdu_status: Default::default(),
+        pdu_status: PduStatus::default(),
     };
     let cdis_body = cdis_assemble::entity_state::model::EntityState {
         units: UnitsDekameters::Dekameter,
@@ -135,7 +136,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         dr_params_entity_linear_acceleration: None,
         dr_params_entity_angular_velocity: None,
         entity_marking: Some(CdisEntityMarking::new("TEST".to_string())),
-        capabilities: Some(CdisEntityCapabilities(UVINT32::from(0xABC00000))),
+        capabilities: Some(CdisEntityCapabilities(UVINT32::from(0xABC0_0000))),
         variable_parameters: vec![],
     }
     .into_cdis_body();
@@ -169,7 +170,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         );
         assert_eq!(es.entity_marking.marking_string.as_str(), "TEST");
     } else {
-        assert!(false);
+        panic!();
     }
 }
 

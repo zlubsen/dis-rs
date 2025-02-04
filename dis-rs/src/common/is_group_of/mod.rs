@@ -11,7 +11,8 @@ mod tests {
     use crate::entity_state::model::EntityAppearance;
     use crate::enumerations::{AirPlatformAppearance, IsGroupOfGroupedEntityCategory, PduType};
     use crate::is_group_of::model::{
-        GEDRecord7, GEDRecord8, GroupEntityDescription, GroupReferencePoint, IsGroupOf,
+        GEDEntityLocation, GEDEntityOrientation, GEDRecord7, GEDRecord8, GroupEntityDescription,
+        GroupReferencePoint, IsGroupOf,
     };
     use crate::model::EntityId;
     use bytes::BytesMut;
@@ -32,9 +33,9 @@ mod tests {
                 GEDRecord8 {
                     basic_fixed_wing_aircraft: GEDRecord7 {
                         entity_id: 30,
-                        location: Default::default(),
+                        location: GEDEntityLocation::default(),
                         appearance: EntityAppearance::AirPlatform(AirPlatformAppearance::default()),
-                        orientation: Default::default(),
+                        orientation: GEDEntityOrientation::default(),
                         fuel_status: 0,
                         movement_horizontal_deviation: 0,
                         movement_vertical_deviation: 0,

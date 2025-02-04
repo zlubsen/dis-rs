@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn parse_uvint8_bit_flag_zero() {
-        let input = [0b00001000];
+        let input = [0b0000_1000];
         let expected = UVINT8::new(Uvint8BitSize::Four, 1u8);
         let (_input, actual) = uvint8((&input, 0)).unwrap();
 
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn parse_uvint8_bit_flag_one() {
-        let input = [0b11000000, 0b10000000];
+        let input = [0b1100_0000, 0b1000_0000];
         let expected = UVINT8::new(Uvint8BitSize::Eight, 129);
         let (_input, actual) = uvint8((&input, 0)).unwrap();
 
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn parse_uvint16_bit_flag_zero() {
-        let input = [0b00000000, 0b01000000];
+        let input = [0b0000_0000, 0b0100_0000];
         let expected = UVINT16::new(Uvint16BitSize::Eight, 1);
         let (_input, actual) = uvint16((&input, 0)).unwrap();
 
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn parse_uvint16_bit_flag_three() {
-        let input = [0b11011111, 0b11111111, 0b11000000];
+        let input = [0b1101_1111, 0b1111_1111, 0b1100_0000];
         let expected = UVINT16::new(Uvint16BitSize::Sixteen, 32767);
         let (_input, actual) = uvint16((&input, 0)).unwrap();
 
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn parse_uvint32_bit_flag_zero() {
-        let input = [0b00000000, 0b01000000];
+        let input = [0b0000_0000, 0b0100_0000];
         let expected = UVINT32::new(Uvint32BitSize::Eight, 1);
         let (_input, actual) = uvint32((&input, 0)).unwrap();
 
@@ -159,7 +159,13 @@ mod tests {
 
     #[test]
     fn parse_uvint32_bit_flag_three() {
-        let input = [0b11100000, 0b00000000, 0b00000000, 0b00000000, 0b01000000];
+        let input = [
+            0b1110_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0100_0000,
+        ];
         let expected = UVINT32::new(Uvint32BitSize::ThirtyTwo, 2_147_483_649);
         let (_input, actual) = uvint32((&input, 0)).unwrap();
 
@@ -168,7 +174,7 @@ mod tests {
 
     #[test]
     fn parse_svint12_bit_flag_zero_positive() {
-        let input = [0b00001000];
+        let input = [0b0000_1000];
         let expected = SVINT12::new(Svint12BitSize::Three, 1);
         let (_input, actual) = svint12((&input, 0)).unwrap();
 
@@ -177,7 +183,7 @@ mod tests {
 
     #[test]
     fn parse_svint12_bit_flag_zero_negative() {
-        let input = [0b00100000];
+        let input = [0b0010_0000];
         let expected = SVINT12::new(Svint12BitSize::Three, -4);
         let (_input, actual) = svint12((&input, 0)).unwrap();
 
@@ -186,7 +192,7 @@ mod tests {
 
     #[test]
     fn parse_svint12_bit_flag_three_positive() {
-        let input = [0b11010000, 0b00000100];
+        let input = [0b1101_0000, 0b0000_0100];
         let expected = SVINT12::new(Svint12BitSize::Twelve, 1025);
         let (_input, actual) = svint12((&input, 0)).unwrap();
 
@@ -195,7 +201,7 @@ mod tests {
 
     #[test]
     fn parse_svint12_bit_flag_three_negative() {
-        let input = [0b11100000, 0b00000100];
+        let input = [0b1110_0000, 0b0000_0100];
         let expected = SVINT12::new(Svint12BitSize::Twelve, -2047);
         let (_input, actual) = svint12((&input, 0)).unwrap();
 
@@ -262,7 +268,7 @@ mod tests {
 
     #[test]
     fn parse_cdis_float() {
-        let input = [0b00000000, 0b00000100, 0b10000000];
+        let input = [0b0000_0000, 0b0000_0100, 0b1000_0000];
 
         let (_input, float) = TestFloat::parse((&input, 0)).unwrap();
         assert_eq!(float.mantissa, 1);
@@ -273,7 +279,7 @@ mod tests {
 
     #[test]
     fn cdis_float_from_f32() {
-        let float = 1234567f32;
+        let float = 1_234_567_f32;
         let cdis_float = TestFloat::from_float(float);
 
         assert_eq!(cdis_float.mantissa, 12345);

@@ -120,7 +120,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = UVINT8::from(1);
-        let expected: [u8; ONE_BYTE] = [0b00001000];
+        let expected: [u8; ONE_BYTE] = [0b0000_1000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[0], buf.as_raw_slice()[0]);
@@ -131,7 +131,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = UVINT8::from(129);
-        let expected: [u8; TWO_BYTES] = [0b11000000, 0b10000000];
+        let expected: [u8; TWO_BYTES] = [0b1100_0000, 0b1000_0000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..2], buf.as_raw_slice()[..2]);
@@ -142,7 +142,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = UVINT16::from(1);
-        let expected: [u8; TWO_BYTES] = [0b00000000, 0b01000000];
+        let expected: [u8; TWO_BYTES] = [0b0000_0000, 0b0100_0000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..TWO_BYTES], buf.as_raw_slice()[..TWO_BYTES]);
@@ -153,7 +153,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = UVINT16::from(32767);
-        let expected: [u8; THREE_BYTES] = [0b11011111, 0b11111111, 0b11000000];
+        let expected: [u8; THREE_BYTES] = [0b1101_1111, 0b1111_1111, 0b1100_0000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..THREE_BYTES], buf.as_raw_slice()[..THREE_BYTES]);
@@ -164,7 +164,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = SVINT12::from(1);
-        let expected: [u8; ONE_BYTE] = [0b00001000];
+        let expected: [u8; ONE_BYTE] = [0b0000_1000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..ONE_BYTE], buf.as_raw_slice()[..ONE_BYTE]);
@@ -175,7 +175,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = SVINT12::from(-3);
-        let expected: [u8; ONE_BYTE] = [0b00101000];
+        let expected: [u8; ONE_BYTE] = [0b0010_1000];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..ONE_BYTE], buf.as_raw_slice()[..ONE_BYTE]);
@@ -186,7 +186,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = SVINT12::from(2047);
-        let expected: [u8; TWO_BYTES] = [0b11011111, 0b11111100];
+        let expected: [u8; TWO_BYTES] = [0b1101_1111, 0b1111_1100];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..TWO_BYTES], buf.as_raw_slice()[..TWO_BYTES]);
@@ -197,7 +197,7 @@ mod tests {
         let mut buf: BitBuffer = BitArray::ZERO;
 
         let input = SVINT12::from(-2047);
-        let expected: [u8; TWO_BYTES] = [0b11100000, 0b00000100];
+        let expected: [u8; TWO_BYTES] = [0b1110_0000, 0b0000_0100];
         let _next_cursor = input.serialize(&mut buf, 0);
 
         assert_eq!(expected[..TWO_BYTES], buf.as_raw_slice()[..TWO_BYTES]);
@@ -209,7 +209,7 @@ mod tests {
 
         let input = ParameterValueFloat::new(1, 1);
         // ParameterValueFloat has 15 bit mantissa and 3 bit exponent fields
-        let expected: [u8; THREE_BYTES] = [0b00000000, 0b00000010, 0b01000000];
+        let expected: [u8; THREE_BYTES] = [0b0000_0000, 0b0000_0010, 0b0100_0000];
         let cursor = CdisFloat::serialize(&input, &mut buf, 0);
 
         assert_eq!(cursor, 18);

@@ -75,6 +75,8 @@ fn test_two_pdus() {
 
 #[test]
 fn test_insufficient_buffer_capacity() {
+    const SOME_SMALL_AMOUNT_OF_BYTES: usize = 20;
+
     let data = vec![1, 2, 3, 4];
     let pdu = Pdu {
         header: PduHeader::new_v7(1, PduType::Signal),
@@ -88,7 +90,7 @@ fn test_insufficient_buffer_capacity() {
                 .build(),
         ),
     };
-    const SOME_SMALL_AMOUNT_OF_BYTES: usize = 20;
+
     let mut buf = BytesMut::with_capacity(SOME_SMALL_AMOUNT_OF_BYTES);
     let serialisation_result = pdu.serialize(&mut buf);
 

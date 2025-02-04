@@ -49,6 +49,9 @@ mod tests {
 
     #[test]
     fn parse_collision() {
+        #[rustfmt::skip]
+        #[allow(clippy::unusual_byte_groupings)]
+        #[allow(clippy::unreadable_literal)]
         let input = [
             0b00_000000,
             0b0001_0000,
@@ -103,7 +106,7 @@ mod tests {
             assert_eq!(collision.location.z, SVINT16::from(1));
             assert_eq!(collision.mass, UVINT32::from(100));
         } else {
-            assert!(false);
+            panic!()
         }
     }
 }

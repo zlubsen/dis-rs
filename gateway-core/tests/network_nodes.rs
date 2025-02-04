@@ -38,7 +38,7 @@ async fn udp() {
 
     let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        assert!(false, "{err}");
+        panic!("{err}");
     }
 
     let cmd_tx = infra_runtime_builder.command_channel();
@@ -71,8 +71,8 @@ async fn udp() {
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();
         assert_eq!(
-            (&node_out_received).len(),
-            message.as_bytes().len(),
+            node_out_received.len(),
+            message.len(),
             "Length of the returned data is not equal to the input."
         );
         assert_eq!(
@@ -123,7 +123,7 @@ async fn tcp_server() {
 
     let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        assert!(false, "{err}");
+        panic!("{err}");
     }
 
     let cmd_tx = infra_runtime_builder.command_channel();
@@ -151,17 +151,17 @@ async fn tcp_server() {
 
         match &tcp_out_received {
             Ok(0) => {
-                assert!(false, "The TCP reader half is closed");
+                panic!("The TCP reader half is closed");
             }
             Ok(bytes_received) => {
                 assert_eq!(
                     *bytes_received,
-                    message.as_bytes().len(),
+                    message.len(),
                     "Message returned over TCP socket by node is not equal in length to the input."
                 );
             }
             Err(err) => {
-                assert!(false, "{err}")
+                panic!("{err}")
             }
         }
 
@@ -171,8 +171,8 @@ async fn tcp_server() {
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();
         assert_eq!(
-            (&node_out_received).len(),
-            message.as_bytes().len(),
+            node_out_received.len(),
+            message.len(),
             "Length of the returned data is not equal to the input."
         );
         assert_eq!(
@@ -222,7 +222,7 @@ async fn tcp_client() {
 
     let mut infra_runtime_builder = InfraBuilder::new();
     if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        assert!(false, "{err}");
+        panic!("{err}");
     }
 
     let cmd_tx = infra_runtime_builder.command_channel();
@@ -247,11 +247,11 @@ async fn tcp_client() {
             assert!(tcp_out_received.is_ok(), "TCP returned by node is not Ok.");
             assert_eq!(
                 tcp_out_received.unwrap(),
-                message.as_bytes().len(),
+                message.len(),
                 "Message returned over TCP socket by node is not equal to the input."
             );
         } else {
-            assert!(false, "Failed to read from the TCP connection.");
+            panic!("Failed to read from the TCP connection.");
         }
 
         let _ = tcp_tx.write(message.as_bytes()).await;
@@ -260,8 +260,8 @@ async fn tcp_client() {
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();
         assert_eq!(
-            (&node_out_received).len(),
-            message.as_bytes().len(),
+            node_out_received.len(),
+            message.len(),
             "Length of the returned data is not equal to the input."
         );
         assert_eq!(

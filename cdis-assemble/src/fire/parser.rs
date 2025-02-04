@@ -88,6 +88,9 @@ mod tests {
 
     #[test]
     fn parse_fire_no_fields_present() {
+        #[rustfmt::skip]
+        #[allow(clippy::unusual_byte_groupings)]
+        #[allow(clippy::unreadable_literal)]
         let input = [
             0b0000_1_000,
             0b0000001_0,
@@ -174,7 +177,7 @@ mod tests {
             assert!(fire.descriptor_warhead.is_none());
             assert!(fire.range.is_none());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 }

@@ -192,7 +192,7 @@ mod tests {
                 15f32
             );
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -259,7 +259,7 @@ mod tests {
             assert_eq!(track.emitter, 0u8);
             assert_eq!(track.entity_id, EntityId::new(500u16, 11111u16, 71u16));
         } else {
-            assert!(false);
+            panic!();
         }
     }
 }

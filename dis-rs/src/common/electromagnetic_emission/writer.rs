@@ -116,6 +116,7 @@ mod tests {
     use bytes::BytesMut;
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn write_pdu_emission_with_tracks() {
         let body = ElectromagneticEmission::builder()
             .with_emitting_entity_id(EntityId::new(500, 11111, 62))

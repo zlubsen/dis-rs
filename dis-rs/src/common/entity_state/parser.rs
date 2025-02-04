@@ -291,7 +291,7 @@ mod tests {
                 assert!(!appearance.power_plant_on);
                 assert_eq!(appearance.state, AppearanceEntityOrObjectState::Active);
             } else {
-                assert!(false);
+                panic!();
             }
 
             assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation);
@@ -312,10 +312,10 @@ mod tests {
                 assert_eq!(part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
                 assert_eq!(part.parameter_value, 1f32);
             } else {
-                assert!(false);
+                panic!();
             }
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -396,7 +396,7 @@ mod tests {
             assert!(!appearance.landing_lights_on);
             assert!(!appearance.is_flaming);
         } else {
-            assert!(false);
+            panic!();
         }
         assert!(input.is_empty());
     }
@@ -416,7 +416,7 @@ mod tests {
             assert!(appearance.is_smoke_emanating);
             assert!(appearance.is_engine_emitting_smoke);
         } else {
-            assert!(false);
+            panic!();
         }
         assert!(input.is_empty());
     }
@@ -466,7 +466,7 @@ mod tests {
                 ArticulatedPartsTypeMetric::Azimuth
             );
         } else {
-            assert!(false);
+            panic!();
         }
 
         assert!(input.is_empty());
@@ -502,7 +502,7 @@ mod tests {
             );
             assert_eq!(articulated_part.parameter_value, 1f32);
         } else {
-            assert!(false);
+            panic!();
         }
 
         assert!(input.is_empty());

@@ -103,6 +103,9 @@ mod tests {
 
     #[test]
     fn parse_designator_no_fields_present() {
+        #[rustfmt::skip]
+        #[allow(clippy::unusual_byte_groupings)]
+        #[allow(clippy::unreadable_literal)]
         let input = [
             0b0000_00_0_0,
             0b00000000,
@@ -139,7 +142,7 @@ mod tests {
             assert!(designator.dr_algorithm.is_none());
             assert!(designator.dr_entity_linear_acceleration.is_none());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 }

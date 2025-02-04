@@ -130,6 +130,9 @@ mod tests {
 
     #[test]
     fn parse_entity_state_no_fields_present() {
+        #[rustfmt::skip]
+        #[allow(clippy::unusual_byte_groupings)]
+        #[allow(clippy::unreadable_literal)]
         let input = [
             0b00000000,
             0b00000_1_0_0,

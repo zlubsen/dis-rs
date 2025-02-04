@@ -3,6 +3,7 @@
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
     clippy::cast_possible_wrap,
+    clippy::float_cmp,
     reason = "Parsing, writing, encoding, decoding PDUs uses many valid conversions"
 )]
 #![allow(

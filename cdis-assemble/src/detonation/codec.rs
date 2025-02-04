@@ -264,7 +264,7 @@ mod tests {
             );
             assert_eq!(detonation.detonation_results.value, 5);
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -291,11 +291,12 @@ mod tests {
                 UnitsMeters::Meter
             );
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn detonation_body_decode_units_centimeters() {
         let mut state = DecoderState::new();
         let options = CodecOptions::new_full_update();
@@ -327,8 +328,8 @@ mod tests {
                 SVINT16::from(1),
             ),
             location_in_world_coordinates: WorldCoordinates::new(
-                620384200f32,
-                59652240f32,
+                620_384_200_f32,
+                59_652_240_f32,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -383,7 +384,7 @@ mod tests {
                 assert_eq!(munition.quantity, 1);
                 assert_eq!(munition.rate, 0);
             } else {
-                assert!(false);
+                panic!()
             };
             assert_eq!(
                 detonation
@@ -404,7 +405,7 @@ mod tests {
                 0.10
             );
         } else {
-            assert!(false);
+            panic!()
         };
     }
 
@@ -440,8 +441,8 @@ mod tests {
                 SVINT16::from(1),
             ),
             location_in_world_coordinates: WorldCoordinates::new(
-                620384200f32,
-                59652240f32,
+                620_384_200_f32,
+                59_652_240_f32,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -492,7 +493,7 @@ mod tests {
                 10.0
             );
         } else {
-            assert!(false);
+            panic!()
         };
     }
 }

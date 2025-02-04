@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn take_signed_positive_min() {
-        let input = [0b00000000];
+        let input = [0b0000_0000];
         let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(0, value);
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn take_signed_positive_max() {
-        let input = [0b01100000];
+        let input = [0b0110_0000];
         let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(3, value);
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn take_signed_negative_min() {
-        let input = [0b10000000];
+        let input = [0b1000_0000];
         let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(-4, value);
@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn take_signed_negative_max() {
-        let input = [0b11100000];
+        let input = [0b1110_0000];
         let (_input, value) = take_signed(THREE_BITS)((&input, 0)).unwrap();
 
         assert_eq!(-1, value);
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn field_present_u8_true() {
-        let fields = 0b00000010u8;
+        let fields = 0b0000_0010_u8;
         let mask = 0x2u8;
 
         assert!(field_present(fields, mask));
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn field_present_u32_true() {
-        let fields = 0x02004010u32;
+        let fields = 0x0200_4010_u32;
         let mask = 0x10u32;
 
         assert!(field_present(fields, mask));
@@ -229,9 +229,9 @@ mod tests {
 
     #[test]
     fn parse_when_present_entity_id() {
-        let fields = 0b00000001u8;
+        let fields = 0b0000_0001_u8;
         let mask = 0x01u8;
-        let input: [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
+        let input: [u8; 4] = [0b0000_0000, 0b0100_0000, 0b0001_0000, 0b0000_0100];
 
         // entity_identification is in reality always present, but is an easy example for a test.
         let actual = parse_field_when_present(fields, mask, entity_identification)((&input, 0));
@@ -247,9 +247,9 @@ mod tests {
 
     #[test]
     fn parse_when_present_entity_id_not_present() {
-        let fields = 0b00010000u8;
+        let fields = 0b0001_0000_u8;
         let mask = 0x01u8;
-        let input: [u8; 4] = [0b00000000, 0b01000000, 0b00010000, 0b00000100];
+        let input: [u8; 4] = [0b0000_0000, 0b0100_0000, 0b0001_0000, 0b0000_0100];
 
         // entity_identification is in reality always present, but is an easy example for a test.
         let actual = parse_field_when_present(fields, mask, entity_identification)((&input, 0));
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn field_present_u32_false() {
-        let fields = 0x02004010u32;
+        let fields = 0x0200_4010_u32;
         let mask = 0x01u32;
 
         assert!(!field_present(fields, mask));
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn field_present_u8_false() {
-        let fields = 0b00000100u8;
+        let fields = 0b0000_0100_u8;
         let mask = 0x2u8;
 
         assert!(!field_present(fields, mask));

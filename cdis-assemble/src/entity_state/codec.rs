@@ -616,7 +616,7 @@ mod tests {
             assert_eq!(es.dr_algorithm, DeadReckoningAlgorithm::Other);
             assert!(es.dr_params_other.is_none());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -628,12 +628,12 @@ mod tests {
         let entity_id = DisEntityId::new(1, 1, 1);
         let dis_body = create_basic_dis_entity_state_body().build().into_pdu_body();
 
-        assert!(state.entity_state.get(&entity_id).is_none());
+        assert!(!state.entity_state.contains_key(&entity_id));
 
         let (cdis_body, state_result) = CdisBody::encode(&dis_body, &mut state, &options);
 
         assert_eq!(state_result, CodecStateResult::StateUpdateEntityState);
-        assert!(state.entity_state.get(&entity_id).is_some());
+        assert!(state.entity_state.contains_key(&entity_id));
         if let CdisBody::EntityState(es) = cdis_body {
             assert!(es.full_update_flag);
             assert_eq!(es.force_id.unwrap().value, u8::from(ForceId::Friendly));
@@ -649,7 +649,7 @@ mod tests {
             assert!(es.entity_orientation.is_some());
             assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -675,7 +675,7 @@ mod tests {
             assert!(es.entity_orientation.is_none());
             assert!(es.entity_marking.is_none());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -721,7 +721,7 @@ mod tests {
             );
             assert!(es.dr_params_other.is_some());
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -759,7 +759,7 @@ mod tests {
                 u8::from(EntityKind::LifeForm)
             );
         } else {
-            assert!(false);
+            panic!()
         }
     }
 
@@ -796,10 +796,10 @@ mod tests {
                 assert_eq!(ap.type_metric, ArticulatedPartsTypeMetric::Azimuth);
                 assert_eq!(ap.parameter_value.to_float(), 45.0f32);
             } else {
-                assert!(false);
+                panic!();
             }
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -844,7 +844,7 @@ mod tests {
             );
             assert_eq!(es.force_id, ForceId::from(1));
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -884,7 +884,7 @@ mod tests {
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
         if let PduBody::EntityState(es) = dis_body {
-            assert!(es.variable_parameters.first().is_some());
+            assert!(!es.variable_parameters.is_empty());
             assert_eq!(
                 *es.variable_parameters.first().unwrap(),
                 VariableParameter::Articulated(
@@ -896,7 +896,7 @@ mod tests {
                 )
             );
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -941,7 +941,7 @@ mod tests {
             );
             assert_eq!(es.force_id, ForceId::from(1));
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -980,7 +980,7 @@ mod tests {
             assert_eq!(es.alternative_entity_type, DisEntityType::default());
             assert_eq!(es.force_id, ForceId::default());
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -1035,7 +1035,7 @@ mod tests {
             assert_eq!(es.force_id, ForceId::Friendly8);
             assert_eq!(es.entity_marking.marking_string, "STATE15".to_string());
         } else {
-            assert!(false);
+            panic!();
         }
     }
 }

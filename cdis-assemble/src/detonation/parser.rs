@@ -110,8 +110,12 @@ mod tests {
     use dis_rs::enumerations::DetonationResult;
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn parse_detonation_no_fields_present() {
         // TODO added explosive descriptor field present flag - update test when standardized, or remove this comment
+        #[rustfmt::skip]
+        #[allow(clippy::unusual_byte_groupings)]
+        #[allow(clippy::unreadable_literal)]
         let input: [u8; 39] = [
             0b0000_10_00,
             0b00000001_,
@@ -219,7 +223,7 @@ mod tests {
                 UVINT8::from(u8::from(DetonationResult::Detonation))
             );
         } else {
-            assert!(false);
+            panic!()
         }
     }
 }

@@ -19,6 +19,7 @@ mod tests {
     use bytes::BytesMut;
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn entity_state_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::EntityState);
 
