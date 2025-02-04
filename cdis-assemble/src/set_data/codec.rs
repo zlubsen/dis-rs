@@ -1,21 +1,26 @@
-use dis_rs::model::DatumSpecification;
 use crate::codec::Codec;
 use crate::records::model::EntityId;
 use crate::set_data::model::SetData;
 use crate::types::model::UVINT32;
+use dis_rs::model::DatumSpecification;
 
 type Counterpart = dis_rs::set_data::model::SetData;
 
 impl SetData {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         Self {
             originating_id: EntityId::encode(&item.originating_id),
             receiving_id: EntityId::encode(&item.receiving_id),
             request_id: UVINT32::from(item.request_id),
-            datum_specification: DatumSpecification::new(item.fixed_datum_records.clone(), item.variable_datum_records.clone())
+            datum_specification: DatumSpecification::new(
+                item.fixed_datum_records.clone(),
+                item.variable_datum_records.clone(),
+            ),
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())

@@ -1,28 +1,34 @@
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
-use crate::enumerations::{PduType};
+use crate::enumerations::PduType;
 use crate::resupply_cancel::builder::ResupplyCancelBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-const RESUPPLY_CANCEL_BASE_BODY_LENGTH : u16 = 24;
+const RESUPPLY_CANCEL_BASE_BODY_LENGTH: u16 = 12;
 
 /// 5.5.8 Resupply Cancel PDU
 ///
 /// 7.4.5 Resupply Cancel PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ResupplyCancel {
     pub requesting_id: EntityId,
     pub servicing_id: EntityId,
 }
 
 impl ResupplyCancel {
+    #[must_use]
     pub fn builder() -> ResupplyCancelBuilder {
         ResupplyCancelBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ResupplyCancelBuilder {
         ResupplyCancelBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ResupplyCancel(self)
     }

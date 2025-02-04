@@ -1,18 +1,25 @@
-pub mod parser;
-pub mod model;
-pub mod writer;
 pub mod builder;
 mod compatibility;
+pub mod model;
+pub mod parser;
+pub mod writer;
 
 #[cfg(test)]
 mod tests {
-    use bytes::BytesMut;
-    use crate::common::entity_state::model::{DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance, EntityMarking, EntityState};
-    use crate::enumerations::{*};
-    use crate::common::model::{ArticulatedPart, EntityId, Location, Orientation, Pdu, PduHeader, SimulationAddress, VectorF32, EntityType, VariableParameter};
+    use crate::common::entity_state::model::{
+        DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
+        EntityMarking, EntityState,
+    };
+    use crate::common::model::{
+        ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader,
+        SimulationAddress, VariableParameter, VectorF32,
+    };
     use crate::common::parser::parse_pdu;
+    use crate::enumerations::*;
+    use bytes::BytesMut;
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn entity_state_internal_consistency() {
         let header = PduHeader::new_v6(1, PduType::EntityState);
 
@@ -115,18 +122,21 @@ mod tests {
             .into_pdu_body();
         let original_pdu = Pdu::finalize_from_parts(header, body, 0);
         let pdu_length = original_pdu.header.pdu_length;
+        let original_length = original_pdu.pdu_length();
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
 
-        original_pdu.serialize(&mut buf).unwrap();
+        let serialized_length = original_pdu.serialize(&mut buf).unwrap();
+
+        assert_eq!(original_length, serialized_length);
 
         let parsed = parse_pdu(&buf);
         match parsed {
             Ok(ref pdu) => {
                 assert_eq!(&original_pdu, pdu);
             }
-            Err(ref _err) => {
-                assert!(false);
+            Err(ref err) => {
+                panic!("Parse error: {err}");
             }
         }
     }

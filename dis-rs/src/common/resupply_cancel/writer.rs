@@ -1,6 +1,6 @@
-use bytes::{BytesMut};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::resupply_cancel::model::ResupplyCancel;
+use bytes::BytesMut;
 
 impl SerializePdu for ResupplyCancel {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {

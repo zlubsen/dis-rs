@@ -1,9 +1,9 @@
-use nom::IResult;
-use nom::number::complete::{be_u16, be_u32, be_u8};
+use crate::common::model::PduBody;
 use crate::common::parser::{clock_time, entity_id};
 use crate::common::stop_freeze::model::StopFreeze;
-use crate::common::model::PduBody;
 use crate::enumerations::{StopFreezeFrozenBehavior, StopFreezeReason};
+use nom::number::complete::{be_u16, be_u32, be_u8};
+use nom::IResult;
 
 pub(crate) fn stop_freeze_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

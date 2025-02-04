@@ -1,11 +1,14 @@
-use nom::complete::take;
-use nom::IResult;
-use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{EIGHT_BITS, FIFTEEN_BITS, FOUR_BITS, SIXTEEN_BITS, THREE_BITS, TWO_BITS};
 use crate::parsing::{take_signed, BitInput};
-use crate::records::model::{CdisRecord, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters, WorldCoordinates};
-use crate::types::model::{UVINT8, VarInt, UVINT16, CdisFloat};
+use crate::records::model::{
+    CdisRecord, CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType,
+    LinearVelocity, UnitsDekameters, UnitsMeters, WorldCoordinates,
+};
+use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
 use crate::writing::{write_value_signed, write_value_unsigned};
+use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
+use nom::complete::take;
+use nom::IResult;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Detonation {
@@ -34,15 +37,31 @@ impl BodyProperties for Detonation {
     const FIELDS_PRESENT_LENGTH: usize = FOUR_BITS;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if self.descriptor_warhead.is_some() && self.descriptor_fuze.is_some() { Self::FieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT } else { 0 })
-            | (if self.descriptor_quantity.is_some() && self.descriptor_rate.is_some() { Self::FieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT } else { 0 })
-            | (if self.descriptor_explosive_material.is_some() && self.descriptor_explosive_force.is_some() { Self::FieldsPresent::DESCRIPTOR_EXPLOSIVE_BIT } else { 0 })
-            | (if !self.variable_parameters.is_empty() { Self::FieldsPresent::VARIABLE_PARAMETERS_BIT } else { 0 })
+        (if self.descriptor_warhead.is_some() && self.descriptor_fuze.is_some() {
+            Self::FieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT
+        } else {
+            0
+        }) | (if self.descriptor_quantity.is_some() && self.descriptor_rate.is_some() {
+            Self::FieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT
+        } else {
+            0
+        }) | (if self.descriptor_explosive_material.is_some()
+            && self.descriptor_explosive_force.is_some()
+        {
+            Self::FieldsPresent::DESCRIPTOR_EXPLOSIVE_BIT
+        } else {
+            0
+        }) | (if !self.variable_parameters.is_empty() {
+            Self::FieldsPresent::VARIABLE_PARAMETERS_BIT
+        } else {
+            0
+        })
     }
 
     fn body_length_bits(&self) -> usize {
         const CONST_BIT_SIZE: usize = TWO_BITS; // Units flags
-        Self::FIELDS_PRESENT_LENGTH + CONST_BIT_SIZE
+        Self::FIELDS_PRESENT_LENGTH
+            + CONST_BIT_SIZE
             + self.source_entity_id.record_length()
             + self.target_entity_id.record_length()
             + self.exploding_entity_id.record_length()
@@ -50,16 +69,47 @@ impl BodyProperties for Detonation {
             + self.entity_linear_velocity.record_length()
             + self.location_in_world_coordinates.record_length()
             + self.descriptor_entity_type.record_length()
-            + (if self.descriptor_warhead.is_some() { SIXTEEN_BITS } else { 0 })
-            + (if self.descriptor_fuze.is_some() { SIXTEEN_BITS } else { 0 })
-            + (if self.descriptor_quantity.is_some() { EIGHT_BITS } else { 0 })
-            + (if self.descriptor_rate.is_some() { EIGHT_BITS } else { 0 })
-            + (if let Some(record) = self.descriptor_explosive_material { record.record_length() } else { 0 })
-            + (if let Some(record) = self.descriptor_explosive_force { record.record_length() } else { 0 })
+            + (if self.descriptor_warhead.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.descriptor_fuze.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.descriptor_quantity.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + (if self.descriptor_rate.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + (if let Some(record) = self.descriptor_explosive_material {
+                record.record_length()
+            } else {
+                0
+            })
+            + (if let Some(record) = self.descriptor_explosive_force {
+                record.record_length()
+            } else {
+                0
+            })
             + self.location_in_entity_coordinates.record_length()
             + self.detonation_results.record_length()
-            + (if self.variable_parameters.is_empty() { 0 } else {
-                EIGHT_BITS + self.variable_parameters.iter().map(|vp| vp.record_length() ).sum::<usize>()
+            + (if self.variable_parameters.is_empty() {
+                0
+            } else {
+                EIGHT_BITS
+                    + self
+                        .variable_parameters
+                        .iter()
+                        .map(crate::records::model::CdisRecord::record_length)
+                        .sum::<usize>()
             })
     }
 
@@ -98,8 +148,12 @@ impl From<u8> for DetonationUnits {
         const WORLD_LOCATION_ALTITUDE_BIT: u8 = 0x02;
         const LOCATION_IN_ENTITY_COORDINATES_BIT: u8 = 0x01;
         Self {
-            world_location_altitude: UnitsDekameters::from((value & WORLD_LOCATION_ALTITUDE_BIT) >> 1),
-            location_entity_coordinates: UnitsMeters::from(value & LOCATION_IN_ENTITY_COORDINATES_BIT),
+            world_location_altitude: UnitsDekameters::from(
+                (value & WORLD_LOCATION_ALTITUDE_BIT) >> 1,
+            ),
+            location_entity_coordinates: UnitsMeters::from(
+                value & LOCATION_IN_ENTITY_COORDINATES_BIT,
+            ),
         }
     }
 }
@@ -113,6 +167,7 @@ pub struct ExplosiveForceFloat {
 }
 
 impl ExplosiveForceFloat {
+    #[must_use]
     pub fn record_length(&self) -> usize {
         Self::MANTISSA_BITS + Self::EXPONENT_BITS
     }
@@ -126,10 +181,7 @@ impl CdisFloat for ExplosiveForceFloat {
     const EXPONENT_BITS: usize = THREE_BITS;
 
     fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
-        Self {
-            mantissa,
-            exponent,
-        }
+        Self { mantissa, exponent }
     }
 
     fn from_float(float: Self::InnerFloat) -> Self {
@@ -148,7 +200,7 @@ impl CdisFloat for ExplosiveForceFloat {
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(self.exponent as f32)
+        f32::from(self.mantissa) * 10f32.powf(f32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -156,10 +208,7 @@ impl CdisFloat for ExplosiveForceFloat {
         let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
         let exponent = exponent as i8;
 
-        Ok((input, Self {
-            mantissa,
-            exponent,
-        }))
+        Ok((input, Self { mantissa, exponent }))
     }
 
     #[allow(clippy::let_and_return)]

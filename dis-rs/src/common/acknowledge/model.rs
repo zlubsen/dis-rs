@@ -1,14 +1,17 @@
+use crate::common::acknowledge::builder::AcknowledgeBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::acknowledge::builder::AcknowledgeBuilder;
-use crate::enumerations::{AcknowledgeFlag, ResponseFlag, PduType};
+use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-const ACKNOWLEDGE_BODY_LENGTH : u16 = 20;
+const ACKNOWLEDGE_BODY_LENGTH: u16 = 20;
 
 /// 5.6.5.6 Acknowledge PDU
 ///
 /// 7.5.6 Acknowledge PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Acknowledge {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -18,14 +21,17 @@ pub struct Acknowledge {
 }
 
 impl Acknowledge {
+    #[must_use]
     pub fn builder() -> AcknowledgeBuilder {
         AcknowledgeBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> AcknowledgeBuilder {
         AcknowledgeBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Acknowledge(self)
     }

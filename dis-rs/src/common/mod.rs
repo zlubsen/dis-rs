@@ -13,10 +13,12 @@ pub mod collision;
 pub mod collision_elastic;
 pub mod comment;
 pub mod comment_r;
+pub mod create_entity;
+pub mod create_entity_r;
 pub mod data;
-pub mod data_r;
 pub mod data_query;
 pub mod data_query_r;
+pub mod data_r;
 pub mod designator;
 pub mod detonation;
 pub mod electromagnetic_emission;
@@ -28,14 +30,14 @@ pub mod fire;
 pub mod iff;
 pub mod is_group_of;
 pub mod is_part_of;
-pub mod create_entity;
-pub mod create_entity_r;
+pub mod other;
+pub mod receiver;
 pub mod record_query_r;
 pub mod record_r;
 pub mod remove_entity;
 pub mod remove_entity_r;
-pub mod repair_response;
 pub mod repair_complete;
+pub mod repair_response;
 pub mod resupply_cancel;
 pub mod resupply_offer;
 pub mod resupply_received;
@@ -44,25 +46,23 @@ pub mod service_request;
 pub mod set_data;
 pub mod set_data_r;
 pub mod set_record_r;
+pub mod signal;
 pub mod start_resume;
 pub mod start_resume_r;
 pub mod stop_freeze;
 pub mod stop_freeze_r;
-pub mod other;
-pub mod signal;
-pub mod transmitter;
 pub mod transfer_ownership;
-pub mod receiver;
+pub mod transmitter;
 pub mod underwater_acoustic;
 
 pub mod errors;
 mod writer;
 
-use bytes::BytesMut;
 use crate::common::errors::DisError;
-use crate::common::model::{Pdu};
+use crate::common::model::Pdu;
 use crate::common::parser::parse_multiple_pdu;
 use crate::enumerations::{PduType, ProtocolVersion};
+use bytes::BytesMut;
 
 #[allow(dead_code)]
 pub enum SupportedVersion {
@@ -81,6 +81,15 @@ impl From<ProtocolVersion> for SupportedVersion {
     }
 }
 
+/// Returns a `Vec` of all `ProtocolVersion`s supported by the crate.
+#[must_use]
+pub fn supported_protocol_versions() -> Vec<ProtocolVersion> {
+    vec![
+        ProtocolVersion::IEEE1278_1A1998,
+        ProtocolVersion::IEEE1278_12012,
+    ]
+}
+
 /// Trait for PduBody-s to query basic information, typically used in the header
 pub trait BodyInfo {
     fn body_length(&self) -> u16;
@@ -95,18 +104,18 @@ pub trait Interaction {
     fn receiver(&self) -> Option<&model::EntityId>;
 }
 
-/// Trait that implements writing a PduBody to a buffer
+/// Trait that implements writing a `PduBody` to a buffer
 /// based on the protocol version of the PDU.
 /// Returns the number of bytes written to the buffer.
 pub trait SerializePdu {
-    fn serialize_pdu(&self, version: SupportedVersion, buf : &mut BytesMut) -> u16;
+    fn serialize_pdu(&self, version: SupportedVersion, buf: &mut BytesMut) -> u16;
 }
 
 /// Trait that implements writing data structures to a buffer.
 /// This serialize must be independent of protocol version differences for the data structure.
 /// Returns the number of bytes written to the buffer.
 pub trait Serialize {
-    fn serialize(&self, buf : &mut BytesMut) -> u16;
+    fn serialize(&self, buf: &mut BytesMut) -> u16;
 }
 
 /// Parses the contents of the input, determining the DIS version by itself.
@@ -114,6 +123,9 @@ pub trait Serialize {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// Assumes there will only be a single DIS version of PDUs in a buffer (packet).
+///
+/// # Errors
+/// Returns a `DisError` when parsing fails
 pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     parse_multiple_pdu(input)
 }
@@ -123,8 +135,12 @@ pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// This function will filter out any non-v6 PDUs in a buffer (packet).
+///
+/// # Errors
+/// Returns a `DisError` when parsing fails
 pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
-    let pdus = parse_multiple_pdu(input)?.into_iter()
+    let pdus = parse_multiple_pdu(input)?
+        .into_iter()
         .filter(|pdu| pdu.header.protocol_version == ProtocolVersion::IEEE1278_1A1998)
         .collect();
     Ok(pdus)
@@ -135,8 +151,12 @@ pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 /// assuming there are only complete PDUs present in the input.
 ///
 /// This function will filter out any non-v7 PDUs in a buffer (packet).
+///
+/// # Errors
+/// Returns a `DisError` when parsing fails
 pub fn parse_v7(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
-    let pdus = parse_multiple_pdu(input)?.into_iter()
+    let pdus = parse_multiple_pdu(input)?
+        .into_iter()
         .filter(|pdu| pdu.header.protocol_version == ProtocolVersion::IEEE1278_12012)
         .collect();
     Ok(pdus)

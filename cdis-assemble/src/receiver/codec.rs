@@ -1,12 +1,13 @@
-use num_traits::FromPrimitive;
+use crate::codec::Codec;
 use crate::receiver::model::Receiver;
 use crate::records::model::EntityId;
-use crate::codec::Codec;
 use crate::types::model::UVINT16;
+use num_traits::FromPrimitive;
 
 type Counterpart = dis_rs::receiver::model::Receiver;
 
 impl Receiver {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         Self {
             radio_reference_id: EntityId::encode(&item.radio_reference_id),
@@ -18,12 +19,13 @@ impl Receiver {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_radio_reference_id(self.radio_reference_id.decode())
             .with_radio_number(self.radio_number.value)
             .with_receiver_state(self.receiver_state)
-            .with_received_power(self.received_power as f32)
+            .with_received_power(f32::from(self.received_power))
             .with_transmitter_radio_reference_id(self.transmitter_radio_reference_id.decode())
             .with_transmitter_radio_number(self.transmitter_radio_number.value)
             .build()

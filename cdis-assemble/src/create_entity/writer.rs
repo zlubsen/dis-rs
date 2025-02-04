@@ -1,6 +1,6 @@
 use crate::create_entity::model::CreateEntity;
-use crate::{BitBuffer, SerializeCdisPdu};
 use crate::writing::SerializeCdis;
+use crate::{BitBuffer, SerializeCdisPdu};
 
 impl SerializeCdisPdu for CreateEntity {
     #[allow(clippy::let_and_return)]

@@ -1,7 +1,7 @@
-use bytes::{BufMut, BytesMut};
-use crate::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::FOUR_OCTETS;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
+use crate::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for RecordQueryR {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -21,11 +21,14 @@ impl SerializePdu for RecordQueryR {
 impl Serialize for RecordQuerySpecification {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u32(self.record_ids.len() as u32);
-        let record_bytes = self.record_ids.iter()
+        let record_bytes = self
+            .record_ids
+            .iter()
             .map(|record| {
                 buf.put_u32(u32::from(*record));
                 FOUR_OCTETS as u16
-        }).sum::<u16>();
+            })
+            .sum::<u16>();
 
         FOUR_OCTETS as u16 + record_bytes
     }

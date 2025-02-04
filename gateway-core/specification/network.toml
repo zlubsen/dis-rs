@@ -1,0 +1,65 @@
+# A node of type "udp" maintains a UDP socket. Incoming messages are send out over the network, received packets flow to the outgoing channel.
+# Both IPv4 and IPv6 addresses can be used.
+# Incoming data type: Bytes
+# Outgoing data type: Bytes
+[[nodes]]
+type = "udp"
+# The name for the node
+name = "UDP Socket"
+# The URI to which the socket should connect, in the format "<ip>:<port>".
+# In case of a multicast socket this field specifies the multicast group to join.
+# String value
+uri = "127.0.0.1:3000"
+# The interface address and port to which the socket should bind on the host, in the format "<ip>:<port>".
+# String value
+interface = "127.0.0.1:3000"
+# The mode that the UDP socket will have. Valid values are "unicast", "broadcast" and "multicast".
+# String value; Optional field, defaults to "unicast"
+mode = "broadcast"
+# The Time To Live value for emitted UDP packets.
+# Integer value; Optional fields, defaults to 1
+ttl = 1
+# The size of the buffer for receiving network packets.
+# Integer value; Optional field, defaults to 32768 bytes.
+buffer_size = 1500
+# Specifies whether the socket should reject or allow packets send out from its own host IP address and port which it is bound to.
+# Setting the field to 'true' prevents the socket from reading back its own messages in the case of broadcasting.
+# Boolean value; Optional field, defaults to true.
+block_own_socket = true
+
+# A node of type "tcp_server" maintains a TCP Server socket. Incoming messages are send out over the network, received packets flow to the outgoing channel.
+# Both IPv4 and IPv6 addresses can be used.
+# Incoming data type: Bytes
+# Outgoing data type: Bytes
+[[nodes]]
+type = "tcp_server"
+# The name for the node
+name = "TCP Server"
+# The interface address and port to which the socket should bind on the host, in the format "<ip>:<port>".
+# TCP clients should connect to the server at this address.
+# String value
+interface = "127.0.0.1:3000"
+# The size of the buffer for receiving network packets.
+# Integer value; Optional field, defaults to 32768 bytes.
+buffer_size = 1500
+# The maximum number of concurrent TCP connections allowed at this server address.
+# Integer value; Optional field, defaults to 15.
+max_connections = 15
+
+# A node of type "tcp_client" establishes a TCP connection with a server socket. Incoming messages are send out over the network, received packets flow to the outgoing channel.
+# Both IPv4 and IPv6 addresses can be used.
+# Incoming data type: Bytes
+# Outgoing data type: Bytes
+[[nodes]]
+type = "tcp_client"
+# The name for the node
+name = "TCP Server"
+# The interface address and port to which the socket should bind on the host, in the format "<ip>:<port>".
+# String value
+interface = "127.0.0.1:4000"
+# The URI to which the client should connect, in the format "<ip>:<port>".
+# String value
+uri = "127.0.0.1:3000"
+# The size of the buffer for receiving network packets.
+# Integer value; Optional field, defaults to 32768 bytes.
+buffer_size = 1500

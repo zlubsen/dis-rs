@@ -2,13 +2,16 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairCompleteRepair};
 use crate::repair_complete::builder::RepairCompleteBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-const REPAIR_COMPLETE_BASE_BODY_LENGTH : u16 = 16;
+const REPAIR_COMPLETE_BASE_BODY_LENGTH: u16 = 16;
 
 /// 5.5.9 Repair Complete PDU
 ///
 /// 7.4.6 Repair Complete PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RepairComplete {
     pub receiving_id: EntityId,
     pub repairing_id: EntityId,
@@ -16,14 +19,17 @@ pub struct RepairComplete {
 }
 
 impl RepairComplete {
+    #[must_use]
     pub fn builder() -> RepairCompleteBuilder {
         RepairCompleteBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> RepairCompleteBuilder {
         RepairCompleteBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::RepairComplete(self)
     }

@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::common::designator::model::Designator;
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Designator {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -17,9 +17,13 @@ impl SerializePdu for Designator {
         buf.put_u16(0u16);
         let linear_acceleration_bytes = self.linear_acceleration.serialize(buf);
 
-        designating_id_bytes + 2
-            + designated_id_bytes + 10
-            + spot_wrt_bytes + spot_location_bytes
-            + 4 + linear_acceleration_bytes
+        designating_id_bytes
+            + 2
+            + designated_id_bytes
+            + 10
+            + spot_wrt_bytes
+            + spot_location_bytes
+            + 4
+            + linear_acceleration_bytes
     }
 }

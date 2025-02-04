@@ -6,6 +6,7 @@ use crate::types::model::UVINT32;
 type Counterpart = dis_rs::remove_entity::model::RemoveEntity;
 
 impl RemoveEntity {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         Self {
             originating_id: EntityId::encode(&item.originating_id),
@@ -14,6 +15,7 @@ impl RemoveEntity {
         }
     }
 
+    #[must_use]
     pub fn decode(&self) -> Counterpart {
         Counterpart::builder()
             .with_origination_id(self.originating_id.decode())

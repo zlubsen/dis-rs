@@ -14,9 +14,9 @@ pub enum DisError {
     #[error("PDU is larger than size of the buffer for serialisation. Needs {0} bytes, available {1} bytes")]
     InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided PDU; (u16 PDU size, usize available capacity)
     #[error("Provided String is not valid ASCII encoded.")]
-    StringNotAsciiError,    // the String value to serialize is not valid ASCII encoded
+    StringNotAsciiError, // the String value to serialize is not valid ASCII encoded
     #[error("Provided String is too long.")]
-    StringTooLongError,     // the String value to serialize is too large for the field specification
+    StringTooLongError, // the String value to serialize is too large for the field specification
     #[error("IFF PDU - Incorrect System Time provided.")]
     IffIncorrectSystemType, // the System Type in an IFF PDU is incorrect (to determine the type for parsing the basic data)
     #[error("IFF PDU - Undetermined System Time.")]

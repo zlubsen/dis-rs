@@ -1,12 +1,17 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::detonation::builder::DetonationBuilder;
-use crate::enumerations::{DetonationResult, PduType};
-use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, PduBody, VectorF32, VariableParameter};
+use crate::common::model::{
+    DescriptorRecord, EntityId, EventId, Location, PduBody, VariableParameter, VectorF32,
+};
+use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
+use crate::enumerations::{DetonationResult, PduType};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-const BASE_DETONATION_BODY_LENGTH : u16 = 104;
+const BASE_DETONATION_BODY_LENGTH: u16 = 92;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Detonation {
     pub source_entity_id: EntityId,
     pub target_entity_id: EntityId,
@@ -21,14 +26,17 @@ pub struct Detonation {
 }
 
 impl Detonation {
+    #[must_use]
     pub fn builder() -> DetonationBuilder {
         DetonationBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> DetonationBuilder {
         DetonationBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Detonation(self)
     }
@@ -36,7 +44,8 @@ impl Detonation {
 
 impl BodyInfo for Detonation {
     fn body_length(&self) -> u16 {
-        BASE_DETONATION_BODY_LENGTH + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
+        BASE_DETONATION_BODY_LENGTH
+            + (VARIABLE_PARAMETER_RECORD_LENGTH * (self.variable_parameters.len() as u16))
     }
 
     fn body_type(&self) -> PduType {

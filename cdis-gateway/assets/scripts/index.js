@@ -1,4 +1,4 @@
-import './htmx.js';
+import 'htmx.org';
 import 'htmx-ext-sse';
 
 // import 'htmx.org';

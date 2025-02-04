@@ -1,14 +1,17 @@
+use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, ClockTime, PduBody};
 use crate::enumerations::{PduType, RequiredReliabilityService};
 use crate::start_resume_r::builder::StartResumeRBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-const START_RESUME_R_BODY_LENGTH : u16 = 36;
+const START_RESUME_R_BODY_LENGTH: u16 = 36;
 
 /// 5.12.4.4 Start/Resume-R PDU
 ///
 /// 7.11.4 Start/Resume-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StartResumeR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -19,14 +22,17 @@ pub struct StartResumeR {
 }
 
 impl StartResumeR {
+    #[must_use]
     pub fn builder() -> StartResumeRBuilder {
         StartResumeRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> StartResumeRBuilder {
         StartResumeRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::StartResumeR(self)
     }

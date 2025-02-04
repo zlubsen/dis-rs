@@ -1,9 +1,11 @@
 use crate::action_response_r::builder::ActionResponseRBuilder;
+use crate::common::model::{length_padded_to_num, BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH};
 use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
-use crate::enumerations::{PduType, RequestStatus};
-use crate::common::model::{BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num};
 use crate::constants::EIGHT_OCTETS;
+use crate::enumerations::{PduType, RequestStatus};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 pub const BASE_ACTION_RESPONSE_R_BODY_LENGTH: u16 = 28;
 
@@ -11,6 +13,7 @@ pub const BASE_ACTION_RESPONSE_R_BODY_LENGTH: u16 = 28;
 ///
 /// 7.11.8 Action Response-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ActionResponseR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -21,14 +24,17 @@ pub struct ActionResponseR {
 }
 
 impl ActionResponseR {
+    #[must_use]
     pub fn builder() -> ActionResponseRBuilder {
         ActionResponseRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ActionResponseRBuilder {
         ActionResponseRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::ActionResponseR(self)
     }
@@ -36,14 +42,19 @@ impl ActionResponseR {
 
 impl BodyInfo for ActionResponseR {
     fn body_length(&self) -> u16 {
-        BASE_ACTION_RESPONSE_R_BODY_LENGTH +
-            (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16) +
-            (self.variable_datum_records.iter().map(|datum| {
-                let padded_record = length_padded_to_num(
-                    BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
-                    EIGHT_OCTETS);
-                padded_record.record_length as u16
-            } ).sum::<u16>())
+        BASE_ACTION_RESPONSE_R_BODY_LENGTH
+            + (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16)
+            + (self
+                .variable_datum_records
+                .iter()
+                .map(|datum| {
+                    let padded_record = length_padded_to_num(
+                        BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
+                        EIGHT_OCTETS,
+                    );
+                    padded_record.record_length as u16
+                })
+                .sum::<u16>())
     }
 
     fn body_type(&self) -> PduType {

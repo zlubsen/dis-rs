@@ -1,11 +1,14 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ReceiverState};
 use crate::receiver::builder::ReceiverBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 const RECEIVER_BODY_LENGTH: u16 = 24;
 
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Receiver {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,
@@ -16,14 +19,17 @@ pub struct Receiver {
 }
 
 impl Receiver {
+    #[must_use]
     pub fn builder() -> ReceiverBuilder {
         ReceiverBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> ReceiverBuilder {
         ReceiverBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Receiver(self)
     }

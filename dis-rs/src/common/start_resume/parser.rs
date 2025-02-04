@@ -1,8 +1,8 @@
-use nom::IResult;
-use nom::number::complete::be_u32;
+use crate::common::model::PduBody;
 use crate::common::parser::{clock_time, entity_id};
 use crate::common::start_resume::model::StartResume;
-use crate::common::model::PduBody;
+use nom::number::complete::be_u32;
+use nom::IResult;
 
 pub(crate) fn start_resume_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

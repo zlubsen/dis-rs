@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
-use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::collision_elastic::model::CollisionElastic;
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for CollisionElastic {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -20,10 +20,15 @@ impl SerializePdu for CollisionElastic {
         let unit_surface_normal_bytes = self.unit_surface_normal.serialize(buf);
         buf.put_f32(self.coefficient_of_restitution);
 
-        issuing_id_bytes + colliding_id_bytes + event_id_bytes
-            + 2 + velocity_bytes
-            + 4 + location_bytes
+        issuing_id_bytes
+            + colliding_id_bytes
+            + event_id_bytes
+            + 2
+            + velocity_bytes
+            + 4
+            + location_bytes
             + (6 * 4)
-            + unit_surface_normal_bytes + 4
+            + unit_surface_normal_bytes
+            + 4
     }
 }

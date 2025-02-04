@@ -1,15 +1,21 @@
-use crate::enumerations::{SignalTdlType, SignalEncodingType, SignalEncodingClass, SignalUserProtocolIdentificationNumber, PduType};
-use crate::common::model::{EntityId, length_padded_to_num, PduBody};
+use crate::common::model::{length_padded_to_num, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
+use crate::enumerations::{
+    PduType, SignalEncodingClass, SignalEncodingType, SignalTdlType,
+    SignalUserProtocolIdentificationNumber,
+};
 use crate::signal::builder::SignalBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-pub const BASE_SIGNAL_BODY_LENGTH : u16 = 20;
+pub const BASE_SIGNAL_BODY_LENGTH: u16 = 20;
 
 /// 5.8.4 Signal PDU
 ///
 /// 7.7.3 Signal PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Signal {
     pub radio_reference_id: EntityId,
     pub radio_number: u16,
@@ -21,14 +27,17 @@ pub struct Signal {
 }
 
 impl Signal {
+    #[must_use]
     pub fn builder() -> SignalBuilder {
         SignalBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> SignalBuilder {
         SignalBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::Signal(self)
     }
@@ -36,10 +45,8 @@ impl Signal {
 
 impl BodyInfo for Signal {
     fn body_length(&self) -> u16 {
-        BASE_SIGNAL_BODY_LENGTH + length_padded_to_num(
-            self.data.len(),
-            FOUR_OCTETS)
-            .record_length as u16
+        BASE_SIGNAL_BODY_LENGTH
+            + length_padded_to_num(self.data.len(), FOUR_OCTETS).record_length as u16
     }
 
     fn body_type(&self) -> PduType {
@@ -61,16 +68,37 @@ impl Interaction for Signal {
 ///
 /// 5.8.4.3.2 Field-specific requirements
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum EncodingScheme {
-    EncodedAudio { encoding_class: SignalEncodingClass, encoding_type: SignalEncodingType },
-    RawBinaryData { encoding_class: SignalEncodingClass, nr_of_messages: u16 },
-    ApplicationSpecificData { encoding_class: SignalEncodingClass, user_protocol_id: SignalUserProtocolIdentificationNumber },
-    DatabaseIndex { encoding_class: SignalEncodingClass, index: u32, offset_milli_secs: u32, duration_milli_secs: u32 },
-    Unspecified { encoding_class: SignalEncodingClass },
+    EncodedAudio {
+        encoding_class: SignalEncodingClass,
+        encoding_type: SignalEncodingType,
+    },
+    RawBinaryData {
+        encoding_class: SignalEncodingClass,
+        nr_of_messages: u16,
+    },
+    ApplicationSpecificData {
+        encoding_class: SignalEncodingClass,
+        user_protocol_id: SignalUserProtocolIdentificationNumber,
+    },
+    DatabaseIndex {
+        encoding_class: SignalEncodingClass,
+        index: u32,
+        offset_milli_secs: u32,
+        duration_milli_secs: u32,
+    },
+    Unspecified {
+        encoding_class: SignalEncodingClass,
+    },
 }
 
 impl Default for EncodingScheme {
     fn default() -> Self {
-        EncodingScheme::EncodedAudio { encoding_class: SignalEncodingClass::default(), encoding_type: SignalEncodingType::default() }
+        EncodingScheme::EncodedAudio {
+            encoding_class: SignalEncodingClass::default(),
+            encoding_type: SignalEncodingType::default(),
+        }
     }
 }

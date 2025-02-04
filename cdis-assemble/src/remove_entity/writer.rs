@@ -1,6 +1,6 @@
 use crate::remove_entity::model::RemoveEntity;
-use crate::{BitBuffer, SerializeCdisPdu};
 use crate::writing::SerializeCdis;
+use crate::{BitBuffer, SerializeCdisPdu};
 
 impl SerializeCdisPdu for RemoveEntity {
     #[allow(clippy::let_and_return)]

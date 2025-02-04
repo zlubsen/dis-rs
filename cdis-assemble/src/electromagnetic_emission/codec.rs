@@ -1,45 +1,65 @@
+use crate::codec::{
+    Codec, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState,
+};
+use crate::constants::MAX_TRACK_JAM_NUMBER_OF_TARGETS;
+use crate::electromagnetic_emission::model::{
+    ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, PulseWidthFloat,
+    SiteAppPair, TrackJam,
+};
+use crate::records::codec::{
+    decode_entity_coordinate_vector, encode_entity_coordinate_vector_meters,
+};
+use crate::records::model::{
+    BeamData, EntityCoordinateVector, EntityId, FrequencyFloat, UnitsMeters,
+};
+use crate::types::model::{CdisFloat, UVINT16, UVINT8};
+use crate::{BodyProperties, CdisBody};
+use dis_rs::electromagnetic_emission::model::{Beam, FundamentalParameterData, JammingTechnique};
+use dis_rs::enumerations::{
+    BeamStatusBeamState, EmitterName, EmitterSystemFunction, HighDensityTrackJam,
+};
+use dis_rs::model::{
+    BeamData as DisBeamData, EntityId as DisEntityId, EventId, PduBody, SimulationAddress,
+    VectorF32,
+};
+use num_traits::ToPrimitive;
 use std::collections::HashMap;
 use std::time::Instant;
-use num_traits::ToPrimitive;
-use dis_rs::electromagnetic_emission::model::{Beam, FundamentalParameterData, JammingTechnique};
-use dis_rs::enumerations::{BeamStatusBeamState, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-use dis_rs::model::{BeamData as DisBeamData, EntityId as DisEntityId, EventId, PduBody, SimulationAddress, VectorF32};
-use crate::{BodyProperties, CdisBody};
-use crate::codec::{Codec, CodecOptions, CodecStateResult, CodecUpdateMode, DecoderState, EncoderState};
-use crate::constants::MAX_TRACK_JAM_NUMBER_OF_TARGETS;
-use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, PulseWidthFloat, SiteAppPair, TrackJam};
-use crate::records::codec::{decode_entity_coordinate_vector, encode_entity_coordinate_vector_meters};
-use crate::records::model::{BeamData, EntityCoordinateVector, EntityId, FrequencyFloat, UnitsMeters};
-use crate::types::model::{CdisFloat, UVINT16, UVINT8};
 
 type Counterpart = dis_rs::electromagnetic_emission::model::ElectromagneticEmission;
 type EmitterSystemCounterpart = dis_rs::electromagnetic_emission::model::EmitterSystem;
 type EmitterBeamCounterpart = Beam;
 type TrackJamCounterpart = dis_rs::electromagnetic_emission::model::TrackJam;
 
-pub(crate) fn encode_electromagnetic_emission_body_and_update_state(dis_body: &Counterpart,
-                                                        state: &mut EncoderState,
-                                                        options: &CodecOptions) -> (CdisBody, CodecStateResult) {
+pub(crate) fn encode_electromagnetic_emission_body_and_update_state(
+    dis_body: &Counterpart,
+    state: &mut EncoderState,
+    options: &CodecOptions,
+) -> (CdisBody, CodecStateResult) {
     let state_for_id = state.ee.get(&dis_body.emitting_entity_id);
 
-    let (cdis_body, state_result) = ElectromagneticEmission::encode(dis_body, state_for_id, options);
+    let (cdis_body, state_result) =
+        ElectromagneticEmission::encode(dis_body, state_for_id, options);
 
     if state_result == CodecStateResult::StateUpdateElectromagneticEmission {
-        state.ee.entry(dis_body.emitting_entity_id)
+        state
+            .ee
+            .entry(dis_body.emitting_entity_id)
             .and_modify(|ee| {
                 ee.heartbeat = Instant::now();
                 set_fundamental_params_encoder_state(dis_body, &mut ee.previous_fundamental_params);
                 set_beam_data_encoder_state(dis_body, &mut ee.previous_beam_data);
             })
-            .or_insert_with(|| {
-                EncoderStateElectromagneticEmission::new(dis_body)
-            });
+            .or_insert_with(|| EncoderStateElectromagneticEmission::new(dis_body));
     }
 
     (cdis_body.into_cdis_body(), state_result)
 }
 
-fn set_fundamental_params_encoder_state(dis_body: &Counterpart, map: &mut HashMap<(u8, u8), FundamentalParameterData>) {
+fn set_fundamental_params_encoder_state(
+    dis_body: &Counterpart,
+    map: &mut HashMap<(u8, u8), FundamentalParameterData>,
+) {
     map.clear();
     for emitter_system in &dis_body.emitter_systems {
         for beam in &emitter_system.beams {
@@ -57,26 +77,36 @@ fn set_beam_data_encoder_state(dis_body: &Counterpart, map: &mut HashMap<(u8, u8
     }
 }
 
-fn set_emitter_system_partial_fields_state(dis_body: &Counterpart, map: &mut HashMap<u8, EmitterSystemPartialFields>) {
+fn set_emitter_system_partial_fields_state(
+    dis_body: &Counterpart,
+    map: &mut HashMap<u8, EmitterSystemPartialFields>,
+) {
     map.clear();
     for emitter_system in &dis_body.emitter_systems {
-        map.insert(emitter_system.number, EmitterSystemPartialFields {
-            emitter_name: emitter_system.name,
-            emitter_function: emitter_system.function,
-            emitter_location: emitter_system.location,
-        });
+        map.insert(
+            emitter_system.number,
+            EmitterSystemPartialFields {
+                emitter_name: emitter_system.name,
+                emitter_function: emitter_system.function,
+                emitter_location: emitter_system.location,
+            },
+        );
     }
 }
 
-pub(crate) fn decode_electromagnetic_emission_body_and_update_state(cdis_body: &ElectromagneticEmission,
-                                                        state: &mut DecoderState,
-                                                        options: &CodecOptions) -> (PduBody, CodecStateResult) {
+pub(crate) fn decode_electromagnetic_emission_body_and_update_state(
+    cdis_body: &ElectromagneticEmission,
+    state: &mut DecoderState,
+    options: &CodecOptions,
+) -> (PduBody, CodecStateResult) {
     let emitting_id = dis_rs::model::EntityId::from(&cdis_body.emitting_id);
     let state_for_id = state.ee.get(&emitting_id);
     let (dis_body, state_result) = cdis_body.decode(state_for_id, options);
 
     if state_result == CodecStateResult::StateUpdateElectromagneticEmission {
-        state.ee.entry(emitting_id)
+        state
+            .ee
+            .entry(emitting_id)
             .and_modify(|ee| {
                 ee.heartbeat = Instant::now();
                 set_fundamental_params_encoder_state(&dis_body, &mut ee.fundamental_params);
@@ -89,16 +119,16 @@ pub(crate) fn decode_electromagnetic_emission_body_and_update_state(cdis_body: &
     (dis_body.into_pdu_body(), state_result)
 }
 
-/// Encoder maintained state for a given EntityId
-/// - Timestamp `heartbeat` for EE heartbeat for this EntityId.
+/// Encoder maintained state for a given `EntityId`
+/// - Timestamp `heartbeat` for EE heartbeat for this `EntityId`.
 /// - Previously send `FundamentalParameterData` for a specific (emitter system number, beam number) pair.
 /// - Previously send `BeamData` for a specific (emitter system number, beam number) pair.
 ///
-/// The `EncoderStateElectromagneticEmission` is initialised when a first EE PDU from an EntityId is received.
+/// The `EncoderStateElectromagneticEmission` is initialised when a first EE PDU from an `EntityId` is received.
 /// It is updated after receiving a DIS PDU and a full update to C-DIS is needed/send.
-/// The state of the FundamentalParameterData and (Dis)BeamData is used during construction of the
+/// The state of the `FundamentalParameterData` and (Dis)BeamData is used during construction of the
 /// fundamental params and beam data lists. When the data has not changed the param is left of the list,
-/// and consequently the index in the specific beam where the data is referenced will be left out of partial updates (as Option::None).
+/// and consequently the index in the specific beam where the data is referenced will be left out of partial updates (as `Option::None`).
 #[derive(Debug)]
 pub struct EncoderStateElectromagneticEmission {
     pub heartbeat: Instant,
@@ -132,13 +162,13 @@ impl Default for EncoderStateElectromagneticEmission {
     }
 }
 
-/// Decoder maintained state for a given EntityId:
-/// - Timestamp `heartbeat` of last received EE for this EntityId
+/// Decoder maintained state for a given `EntityId`:
+/// - Timestamp `heartbeat` of last received EE for this `EntityId`
 /// - Last received `FundamentalParameterData` for a specific (emitter system number, beam number) pair.
 /// - Last received `BeamData` for a specific (emitter system number, beam number) pair.
 /// - Last received fields for Emitter Systems: Name, Function, Location with respect to Entity.
 ///
-/// The `DecoderStateElectromagneticEmission` for an EntityId is initialised when a full update C-DIS PDU
+/// The `DecoderStateElectromagneticEmission` for an `EntityId` is initialised when a full update C-DIS PDU
 /// is received. The state is updated when new full update C-DIS PDUs are received.
 /// Fields in partial update PDUs are complemented from the state.
 #[derive(Debug)]
@@ -187,9 +217,16 @@ pub struct EmitterSystemPartialFields {
 }
 
 impl ElectromagneticEmission {
-    pub fn encode(item: &Counterpart,
-                  state: Option<&EncoderStateElectromagneticEmission>,
-                  options: &CodecOptions) -> (Self, CodecStateResult) {
+    #[allow(
+        clippy::missing_panics_doc,
+        reason = "Unwrap only occurs within an if statement that checks for Option::is_some()"
+    )]
+    #[must_use]
+    pub fn encode(
+        item: &Counterpart,
+        state: Option<&EncoderStateElectromagneticEmission>,
+        options: &CodecOptions,
+    ) -> (Self, CodecStateResult) {
         let site_app_pairs_list = construct_site_app_pairs_list(item);
 
         let (
@@ -200,31 +237,50 @@ impl ElectromagneticEmission {
             emitter_systems,
             state_result,
         ) = if options.update_mode == CodecUpdateMode::PartialUpdate
-            && state.is_some_and(|state|
-                !evaluate_timeout_for_ee(&state.heartbeat, options)) {
+            && state.is_some_and(|state| !evaluate_timeout_for_ee(&state.heartbeat, options))
+        {
             // Do not update stateful fields when a full update is not required
-            let fundamental_param_list = construct_fundamental_params_list_partial(state.unwrap(), item);
+            let fundamental_param_list =
+                construct_fundamental_params_list_partial(state.unwrap(), item);
             let beam_data_list = construct_beam_data_list_partial(state.unwrap(), item);
 
-            let emitter_systems = item.emitter_systems.iter()
-                .map(|emitter| EmitterSystem::encode_partial_update(
-                    emitter, &fundamental_param_list, &beam_data_list, &site_app_pairs_list)).collect::<Vec<EmitterSystem>>();
+            let emitter_systems = item
+                .emitter_systems
+                .iter()
+                .map(|emitter| {
+                    EmitterSystem::encode_partial_update(
+                        emitter,
+                        &fundamental_param_list,
+                        &beam_data_list,
+                        &site_app_pairs_list,
+                    )
+                })
+                .collect::<Vec<EmitterSystem>>();
             (
                 false,
                 fundamental_param_list,
                 beam_data_list,
                 site_app_pairs_list,
                 emitter_systems,
-                CodecStateResult::StateUnaffected
+                CodecStateResult::StateUnaffected,
             )
         } else {
             // full update mode, or partial with a (state) timeout on the entity
             let fundamental_param_list = construct_fundamental_params_list_full(item);
             let beam_data_list = construct_beam_data_list_full(item);
 
-            let emitter_systems = item.emitter_systems.iter()
-                .map(|emitter| EmitterSystem::encode_full_update(
-                    emitter, &fundamental_param_list, &beam_data_list, &site_app_pairs_list)).collect::<Vec<EmitterSystem>>();
+            let emitter_systems = item
+                .emitter_systems
+                .iter()
+                .map(|emitter| {
+                    EmitterSystem::encode_full_update(
+                        emitter,
+                        &fundamental_param_list,
+                        &beam_data_list,
+                        &site_app_pairs_list,
+                    )
+                })
+                .collect::<Vec<EmitterSystem>>();
             (
                 true,
                 fundamental_param_list,
@@ -233,69 +289,96 @@ impl ElectromagneticEmission {
                 emitter_systems,
                 if options.update_mode == CodecUpdateMode::PartialUpdate {
                     CodecStateResult::StateUpdateElectromagneticEmission
-                } else { CodecStateResult::StateUnaffected }
+                } else {
+                    CodecStateResult::StateUnaffected
+                },
             )
         };
 
-        (Self {
-            full_update_flag,
-            emitting_id: EntityId::encode(&item.emitting_entity_id),
-            event_id: EntityId::from(&item.event_id),
-            state_update_indicator: item.state_update_indicator,
-            fundamental_params: fundamental_param_list,
-            beam_data: beam_data_list,
-            site_app_pairs: site_app_pairs_list,
-            emitter_systems,
-        }, state_result)
+        (
+            Self {
+                full_update_flag,
+                emitting_id: EntityId::encode(&item.emitting_entity_id),
+                event_id: EntityId::from(&item.event_id),
+                state_update_indicator: item.state_update_indicator,
+                fundamental_params: fundamental_param_list,
+                beam_data: beam_data_list,
+                site_app_pairs: site_app_pairs_list,
+                emitter_systems,
+            },
+            state_result,
+        )
     }
 
-    pub fn decode(&self,
-                  state: Option<&DecoderStateElectromagneticEmission>,
-                  options: &CodecOptions) -> (Counterpart, CodecStateResult) {
+    #[must_use]
+    pub fn decode(
+        &self,
+        state: Option<&DecoderStateElectromagneticEmission>,
+        options: &CodecOptions,
+    ) -> (Counterpart, CodecStateResult) {
         match options.update_mode {
             CodecUpdateMode::FullUpdate => {
-                let mut emitter_systems = self.emitter_systems.iter()
-                    .map(|system| system.decode_full_update(
-                        self.fundamental_params.as_slice(),
-                        self.beam_data.as_slice(),
-                        self.site_app_pairs.as_slice()))
+                let mut emitter_systems = self
+                    .emitter_systems
+                    .iter()
+                    .map(|system| {
+                        system.decode_full_update(
+                            self.fundamental_params.as_slice(),
+                            self.beam_data.as_slice(),
+                            self.site_app_pairs.as_slice(),
+                        )
+                    })
                     .collect();
 
-                (Counterpart::builder()
-                     .with_emitting_entity_id(self.emitting_id.decode())
-                     .with_event_id(EventId::from(&self.event_id))
-                     .with_state_update_indicator(self.state_update_indicator)
-                     .with_emitter_systems(&mut emitter_systems)
-                     .build(),
-                 CodecStateResult::StateUnaffected
+                (
+                    Counterpart::builder()
+                        .with_emitting_entity_id(self.emitting_id.decode())
+                        .with_event_id(EventId::from(&self.event_id))
+                        .with_state_update_indicator(self.state_update_indicator)
+                        .with_emitter_systems(&mut emitter_systems)
+                        .build(),
+                    CodecStateResult::StateUnaffected,
                 )
             }
             CodecUpdateMode::PartialUpdate => {
                 let (mut emitters, state_result) = if self.full_update_flag {
-                    (self.emitter_systems.iter()
-                         .map(|system| system.decode_full_update(
-                             self.fundamental_params.as_slice(),
-                             self.beam_data.as_slice(),
-                             self.site_app_pairs.as_slice()))
-                         .collect(),
-                     CodecStateResult::StateUpdateElectromagneticEmission)
+                    (
+                        self.emitter_systems
+                            .iter()
+                            .map(|system| {
+                                system.decode_full_update(
+                                    self.fundamental_params.as_slice(),
+                                    self.beam_data.as_slice(),
+                                    self.site_app_pairs.as_slice(),
+                                )
+                            })
+                            .collect(),
+                        CodecStateResult::StateUpdateElectromagneticEmission,
+                    )
                 } else {
-                    (self.emitter_systems.iter()
-                         .map(|system| system.decode_partial_update(
-                             state,
-                             self.fundamental_params.as_slice(),
-                             self.beam_data.as_slice(),
-                             self.site_app_pairs.as_slice()))
-                         .collect(),
-                     CodecStateResult::StateUnaffected)
+                    (
+                        self.emitter_systems
+                            .iter()
+                            .map(|system| {
+                                system.decode_partial_update(
+                                    state,
+                                    self.fundamental_params.as_slice(),
+                                    self.beam_data.as_slice(),
+                                    self.site_app_pairs.as_slice(),
+                                )
+                            })
+                            .collect(),
+                        CodecStateResult::StateUnaffected,
+                    )
                 };
-                (Counterpart::builder()
-                     .with_emitting_entity_id(self.emitting_id.decode())
-                     .with_event_id(EventId::from(&self.event_id))
-                     .with_state_update_indicator(self.state_update_indicator)
-                     .with_emitter_systems(&mut emitters)
-                     .build(),
-                 state_result
+                (
+                    Counterpart::builder()
+                        .with_emitting_entity_id(self.emitting_id.decode())
+                        .with_event_id(EventId::from(&self.event_id))
+                        .with_state_update_indicator(self.state_update_indicator)
+                        .with_emitter_systems(&mut emitters)
+                        .build(),
+                    state_result,
                 )
             }
         }
@@ -308,10 +391,16 @@ fn evaluate_timeout_for_ee(last_heartbeat: &Instant, options: &CodecOptions) -> 
 }
 
 fn construct_fundamental_params_list_full(item: &Counterpart) -> Vec<FundamentalParameter> {
-    let mut params = item.emitter_systems.iter()
-        .flat_map(|emitter| emitter.beams.iter()
-            .map(|beam| FundamentalParameter::encode(&beam.parameter_data) )
-            .collect::<Vec<FundamentalParameter>>())
+    let mut params = item
+        .emitter_systems
+        .iter()
+        .flat_map(|emitter| {
+            emitter
+                .beams
+                .iter()
+                .map(|beam| FundamentalParameter::encode(&beam.parameter_data))
+                .collect::<Vec<FundamentalParameter>>()
+        })
         .collect::<Vec<FundamentalParameter>>();
 
     params.sort();
@@ -320,12 +409,19 @@ fn construct_fundamental_params_list_full(item: &Counterpart) -> Vec<Fundamental
     params
 }
 
-fn construct_fundamental_params_list_partial(state: &EncoderStateElectromagneticEmission, item: &Counterpart) -> Vec<FundamentalParameter> {
+fn construct_fundamental_params_list_partial(
+    state: &EncoderStateElectromagneticEmission,
+    item: &Counterpart,
+) -> Vec<FundamentalParameter> {
     let mut params = vec![];
     for emitter_system in &item.emitter_systems {
         for beam in &emitter_system.beams {
-            if let Some(stored_param) = state.previous_fundamental_params.get(&(emitter_system.number, beam.number)) {
-                if *stored_param != beam.parameter_data { // param has changed, so it is included in the list
+            if let Some(stored_param) = state
+                .previous_fundamental_params
+                .get(&(emitter_system.number, beam.number))
+            {
+                if *stored_param != beam.parameter_data {
+                    // param has changed, so it is included in the list
                     params.push(FundamentalParameter::encode(&beam.parameter_data));
                 }
             }
@@ -338,17 +434,27 @@ fn construct_fundamental_params_list_partial(state: &EncoderStateElectromagnetic
     params
 }
 
-fn find_fundamental_param_index(list: &[FundamentalParameter], item: &FundamentalParameter) -> Option<usize> {
-    list.iter().enumerate()
-        .find( |(_, param)| *param == item )
-        .map(|(index, _)| Some(index) )
-        .unwrap_or(None)
+fn find_fundamental_param_index(
+    list: &[FundamentalParameter],
+    item: &FundamentalParameter,
+) -> Option<usize> {
+    list.iter()
+        .enumerate()
+        .find(|(_, param)| *param == item)
+        .map(|(index, _)| index)
 }
 
 fn construct_beam_data_list_full(item: &Counterpart) -> Vec<BeamData> {
-    let mut beams = item.emitter_systems.iter()
-        .flat_map(|emitter| emitter.beams.iter().map(|beam| BeamData::encode(&beam.beam_data) )
-            .collect::<Vec<BeamData>>())
+    let mut beams = item
+        .emitter_systems
+        .iter()
+        .flat_map(|emitter| {
+            emitter
+                .beams
+                .iter()
+                .map(|beam| BeamData::encode(&beam.beam_data))
+                .collect::<Vec<BeamData>>()
+        })
         .collect::<Vec<BeamData>>();
 
     beams.sort();
@@ -357,12 +463,19 @@ fn construct_beam_data_list_full(item: &Counterpart) -> Vec<BeamData> {
     beams
 }
 
-fn construct_beam_data_list_partial(state: &EncoderStateElectromagneticEmission, item: &Counterpart) -> Vec<BeamData> {
+fn construct_beam_data_list_partial(
+    state: &EncoderStateElectromagneticEmission,
+    item: &Counterpart,
+) -> Vec<BeamData> {
     let mut beams = vec![];
     for emitter_system in &item.emitter_systems {
         for beam in &emitter_system.beams {
-            if let Some(stored_beam) = state.previous_beam_data.get(&(emitter_system.number, beam.number)) {
-                if *stored_beam != beam.beam_data { // beam data has changed, so it is included in the list
+            if let Some(stored_beam) = state
+                .previous_beam_data
+                .get(&(emitter_system.number, beam.number))
+            {
+                if *stored_beam != beam.beam_data {
+                    // beam data has changed, so it is included in the list
                     beams.push(BeamData::encode(&beam.beam_data));
                 }
             }
@@ -376,62 +489,99 @@ fn construct_beam_data_list_partial(state: &EncoderStateElectromagneticEmission,
 }
 
 fn find_beam_data_index(list: &[BeamData], item: &BeamData) -> Option<usize> {
-    list.iter().enumerate()
-        .find( |(_, beam_data)| *beam_data == item )
-        .map(|(index, _)| Some(index) )
-        .unwrap_or(None)
+    list.iter()
+        .enumerate()
+        .find(|(_, beam_data)| *beam_data == item)
+        .map(|(index, _)| index)
 }
 
 fn construct_site_app_pairs_list(item: &Counterpart) -> Vec<SiteAppPair> {
-    let mut pairs: Vec<SimulationAddress> = item.emitter_systems.iter()
-        .flat_map(|emitter| emitter.beams.iter()
-            .flat_map(|beam| beam.track_jam_data.iter()
-                .map(|tj| tj.entity_id.simulation_address )
-                .collect::<Vec<SimulationAddress>>())
-            .collect::<Vec<SimulationAddress>>())
+    let mut pairs: Vec<SimulationAddress> = item
+        .emitter_systems
+        .iter()
+        .flat_map(|emitter| {
+            emitter
+                .beams
+                .iter()
+                .flat_map(|beam| {
+                    beam.track_jam_data
+                        .iter()
+                        .map(|tj| tj.entity_id.simulation_address)
+                        .collect::<Vec<SimulationAddress>>()
+                })
+                .collect::<Vec<SimulationAddress>>()
+        })
         .collect::<Vec<SimulationAddress>>();
 
     pairs.sort();
     pairs.dedup();
 
-    pairs.iter()
+    pairs
+        .iter()
         .map(|sa| SiteAppPair {
             site: UVINT16::from(sa.site_id),
-            application: UVINT16::from(sa.application_id) } )
+            application: UVINT16::from(sa.application_id),
+        })
         .collect()
 }
 
 fn find_site_app_pair_index(list: &[SiteAppPair], item: &SiteAppPair) -> Option<usize> {
-    list.iter().enumerate()
-        .find(| (_, pair) | *pair == item )
-        .map(|(index, _)| Some(index) )
-        .unwrap_or(None)
+    list.iter()
+        .enumerate()
+        .find(|(_, pair)| *pair == item)
+        .map(|(index, _)| index)
 }
 
 impl EmitterSystem {
-    pub fn encode_full_update(item: &EmitterSystemCounterpart,
-                              fundamental_params: &[FundamentalParameter],
-                              beam_data_list: &[BeamData],
-                              site_app_pair_list: &[SiteAppPair]) -> Self {
-        let emitter_beams = item.beams.iter()
-            .map(|beam| EmitterBeam::encode_full_update(beam, fundamental_params, beam_data_list, site_app_pair_list))
+    #[must_use]
+    pub fn encode_full_update(
+        item: &EmitterSystemCounterpart,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> Self {
+        let emitter_beams = item
+            .beams
+            .iter()
+            .map(|beam| {
+                EmitterBeam::encode_full_update(
+                    beam,
+                    fundamental_params,
+                    beam_data_list,
+                    site_app_pair_list,
+                )
+            })
             .collect::<Vec<EmitterBeam>>();
 
         Self {
             name: Some(item.name),
             function: Some(item.function),
             number: UVINT8::from(item.number),
-            location_with_respect_to_entity: Some(encode_entity_coordinate_vector_meters(&item.location)),
+            location_with_respect_to_entity: Some(encode_entity_coordinate_vector_meters(
+                &item.location,
+            )),
             emitter_beams,
         }
     }
 
-    pub fn encode_partial_update(item: &EmitterSystemCounterpart,
-                                 fundamental_params: &[FundamentalParameter],
-                                 beam_data_list: &[BeamData],
-                                 site_app_pair_list: &[SiteAppPair]) -> Self {
-        let emitter_beams = item.beams.iter()
-            .map(|beam| EmitterBeam::encode_partial_update(beam, fundamental_params, beam_data_list, site_app_pair_list))
+    #[must_use]
+    pub fn encode_partial_update(
+        item: &EmitterSystemCounterpart,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> Self {
+        let emitter_beams = item
+            .beams
+            .iter()
+            .map(|beam| {
+                EmitterBeam::encode_partial_update(
+                    beam,
+                    fundamental_params,
+                    beam_data_list,
+                    site_app_pair_list,
+                )
+            })
             .collect::<Vec<EmitterBeam>>();
 
         Self {
@@ -443,12 +593,19 @@ impl EmitterSystem {
         }
     }
 
-    pub fn decode_full_update(&self,
-                              fundamental_params: &[FundamentalParameter],
-                              beam_data_list: &[BeamData],
-                              site_app_pair_list: &[SiteAppPair]) -> EmitterSystemCounterpart {
-        let mut beams = self.emitter_beams.iter()
-            .map(|beam| beam.decode_full_update(fundamental_params, beam_data_list, site_app_pair_list))
+    #[must_use]
+    pub fn decode_full_update(
+        &self,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> EmitterSystemCounterpart {
+        let mut beams = self
+            .emitter_beams
+            .iter()
+            .map(|beam| {
+                beam.decode_full_update(fundamental_params, beam_data_list, site_app_pair_list)
+            })
             .collect();
         EmitterSystemCounterpart::default()
             .with_name(self.name.unwrap_or(EmitterName::from(0)))
@@ -456,61 +613,111 @@ impl EmitterSystem {
             .with_number(self.number.value)
             .with_location(decode_entity_coordinate_vector(
                 &self.location_with_respect_to_entity.unwrap_or_default(),
-                UnitsMeters::Meter))
+                UnitsMeters::Meter,
+            ))
             .with_beams(&mut beams)
     }
 
-    pub fn decode_partial_update(&self, state: Option<&DecoderStateElectromagneticEmission>,
-                                 fundamental_params: &[FundamentalParameter],
-                                 beam_data_list: &[BeamData],
-                                 site_app_pair_list: &[SiteAppPair]) -> EmitterSystemCounterpart {
-        let mut beams = self.emitter_beams.iter()
-            .map(|beam| beam.decode_partial_update(self.number.value, state, fundamental_params, beam_data_list, site_app_pair_list))
+    #[must_use]
+    pub fn decode_partial_update(
+        &self,
+        state: Option<&DecoderStateElectromagneticEmission>,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> EmitterSystemCounterpart {
+        let mut beams = self
+            .emitter_beams
+            .iter()
+            .map(|beam| {
+                beam.decode_partial_update(
+                    self.number.value,
+                    state,
+                    fundamental_params,
+                    beam_data_list,
+                    site_app_pair_list,
+                )
+            })
             .collect();
 
         EmitterSystemCounterpart::default()
-            .with_name(self.name.unwrap_or(match state {
-                None => { EmitterName::from(0) }
-                Some(state) => { state.emitter_system_fields.get(&self.number.value).unwrap_or(&EmitterSystemPartialFields::default()).emitter_name }
-            }))
-            .with_function(self.function.unwrap_or(match state {
-                None => { EmitterSystemFunction::from(0) }
-                Some(state) => { state.emitter_system_fields.get(&self.number.value).unwrap_or(&EmitterSystemPartialFields::default()).emitter_function }
-            }))
+            .with_name(
+                self.name.unwrap_or(match state {
+                    None => EmitterName::from(0),
+                    Some(state) => {
+                        state
+                            .emitter_system_fields
+                            .get(&self.number.value)
+                            .unwrap_or(&EmitterSystemPartialFields::default())
+                            .emitter_name
+                    }
+                }),
+            )
+            .with_function(
+                self.function.unwrap_or(match state {
+                    None => EmitterSystemFunction::from(0),
+                    Some(state) => {
+                        state
+                            .emitter_system_fields
+                            .get(&self.number.value)
+                            .unwrap_or(&EmitterSystemPartialFields::default())
+                            .emitter_function
+                    }
+                }),
+            )
             .with_number(self.number.value)
             .with_location(
                 if let Some(location) = &self.location_with_respect_to_entity {
                     decode_entity_coordinate_vector(location, UnitsMeters::Meter)
                 } else {
                     match state {
-                        None => { decode_entity_coordinate_vector(&EntityCoordinateVector::default(), UnitsMeters::Meter) }
-                        Some(state) => { state.emitter_system_fields.get(&self.number.value).unwrap_or(&EmitterSystemPartialFields::default()).emitter_location }
+                        None => decode_entity_coordinate_vector(
+                            &EntityCoordinateVector::default(),
+                            UnitsMeters::Meter,
+                        ),
+                        Some(state) => {
+                            state
+                                .emitter_system_fields
+                                .get(&self.number.value)
+                                .unwrap_or(&EmitterSystemPartialFields::default())
+                                .emitter_location
+                        }
                     }
-                })
+                },
+            )
             .with_beams(&mut beams)
     }
 }
 
 impl EmitterBeam {
-    pub fn encode_full_update(item: &EmitterBeamCounterpart,
-                              fundamental_params: &[FundamentalParameter],
-                              beam_data_list: &[BeamData],
-                              site_app_pair_list: &[SiteAppPair]) -> Self {
-        let fundamental_params_index =
-            find_fundamental_param_index(fundamental_params, &FundamentalParameter::encode(&item.parameter_data));
+    #[must_use]
+    pub fn encode_full_update(
+        item: &EmitterBeamCounterpart,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> Self {
+        let fundamental_params_index = find_fundamental_param_index(
+            fundamental_params,
+            &FundamentalParameter::encode(&item.parameter_data),
+        );
         let beam_data_index =
             find_beam_data_index(beam_data_list, &BeamData::encode(&item.beam_data));
 
         // Table 62: If more than 15 remove list and set High Density Track Jam Flag
-        let (track_jam, high_density_track_jam) = if item.track_jam_data.len() > MAX_TRACK_JAM_NUMBER_OF_TARGETS {
-            (vec![],
-             HighDensityTrackJam::Selected)
-        } else { // otherwise build the list of tracks/jammers and take the actual high_density_track_jam value
-            (item.track_jam_data.iter()
-                 .map(|tj| TrackJam::encode_full_update(tj, site_app_pair_list))
-                 .collect::<Vec<TrackJam>>(),
-             item.high_density_track_jam)
-        };
+        let (track_jam, high_density_track_jam) =
+            if item.track_jam_data.len() > MAX_TRACK_JAM_NUMBER_OF_TARGETS {
+                (vec![], HighDensityTrackJam::Selected)
+            } else {
+                // otherwise build the list of tracks/jammers and take the actual high_density_track_jam value
+                (
+                    item.track_jam_data
+                        .iter()
+                        .map(|tj| TrackJam::encode_full_update(tj, site_app_pair_list))
+                        .collect::<Vec<TrackJam>>(),
+                    item.high_density_track_jam,
+                )
+            };
 
         Self {
             beam_id: UVINT8::from(item.number),
@@ -528,32 +735,41 @@ impl EmitterBeam {
         }
     }
 
-    pub fn encode_partial_update(item: &EmitterBeamCounterpart,
-                                 fundamental_params: &[FundamentalParameter],
-                                 beam_data_list: &[BeamData],
-                                 site_app_pair_list: &[SiteAppPair]) -> Self {
-        let fundamental_params_index =
-            find_fundamental_param_index(fundamental_params, &FundamentalParameter::encode(&item.parameter_data));
+    #[must_use]
+    pub fn encode_partial_update(
+        item: &EmitterBeamCounterpart,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> Self {
+        let fundamental_params_index = find_fundamental_param_index(
+            fundamental_params,
+            &FundamentalParameter::encode(&item.parameter_data),
+        );
         let beam_data_index =
             find_beam_data_index(beam_data_list, &BeamData::encode(&item.beam_data));
 
         // Table 62: If more than 15 remove list and set High Density Track Jam Flag
-        let (track_jam, high_density_track_jam) = if item.track_jam_data.len() > MAX_TRACK_JAM_NUMBER_OF_TARGETS {
-            (vec![],
-             HighDensityTrackJam::Selected)
-        } else { // otherwise build the list of tracks/jammers and take the actual high_density_track_jam value
-            (item.track_jam_data.iter()
-                 .map(|tj| TrackJam::encode_partial_update(tj, site_app_pair_list))
-                 .collect::<Vec<TrackJam>>(),
-             item.high_density_track_jam)
-        };
+        let (track_jam, high_density_track_jam) =
+            if item.track_jam_data.len() > MAX_TRACK_JAM_NUMBER_OF_TARGETS {
+                (vec![], HighDensityTrackJam::Selected)
+            } else {
+                // otherwise build the list of tracks/jammers and take the actual high_density_track_jam value
+                (
+                    item.track_jam_data
+                        .iter()
+                        .map(|tj| TrackJam::encode_partial_update(tj, site_app_pair_list))
+                        .collect::<Vec<TrackJam>>(),
+                    item.high_density_track_jam,
+                )
+            };
 
         Self {
             beam_id: UVINT8::from(item.number),
             beam_parameter_index: item.parameter_index,
             fundamental_params_index: fundamental_params_index.map(|index| index as u8),
             beam_data_index: beam_data_index.map(|index| index as u8),
-                beam_function: item.beam_function,
+            beam_function: item.beam_function,
             high_density_track_jam,
             beam_status: item.beam_status == BeamStatusBeamState::Active,
             jamming_technique_kind: None,
@@ -564,31 +780,53 @@ impl EmitterBeam {
         }
     }
 
-    pub fn decode_full_update(&self,
-                              fundamental_params: &[FundamentalParameter],
-                              beam_data_list: &[BeamData],
-                              site_app_pair_list: &[SiteAppPair]) -> EmitterBeamCounterpart {
-        let mut tjs = self.track_jam.iter()
+    #[must_use]
+    pub fn decode_full_update(
+        &self,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> EmitterBeamCounterpart {
+        let mut tjs = self
+            .track_jam
+            .iter()
             .map(|tj| tj.decode(site_app_pair_list))
             .collect();
         EmitterBeamCounterpart::default()
             .with_number(self.beam_id.value)
             .with_parameter_index(self.beam_parameter_index)
             .with_parameter_data(match self.fundamental_params_index {
-                None => { FundamentalParameterData::default() } // should be available in a full update
-                Some(index) => { fundamental_params.get(index as usize).unwrap_or(&Default::default()).decode() }
+                None => FundamentalParameterData::default(), // should be available in a full update
+                Some(index) => fundamental_params
+                    .get(index as usize)
+                    .unwrap_or(&FundamentalParameter::default())
+                    .decode(),
             })
             .with_beam_data(match self.beam_data_index {
-                None => { DisBeamData::default() } // should be available in a full update
-                Some(index) => { beam_data_list.get(index as usize).unwrap_or(&Default::default()).decode() }
+                None => DisBeamData::default(), // should be available in a full update
+                Some(index) => beam_data_list
+                    .get(index as usize)
+                    .unwrap_or(&BeamData::default())
+                    .decode(),
             })
             .with_beam_function(self.beam_function)
             .with_high_density_track_jam(self.high_density_track_jam)
-            .with_jamming_technique(JammingTechnique::default()
-                .with_kind(self.jamming_technique_kind.map_or(0, |kind| kind.value))
-                .with_category(self.jamming_technique_category.map_or(0, |category| category.value))
-                .with_subcategory(self.jamming_technique_subcategory.map_or(0, |subcategory| subcategory.value))
-                .with_specific(self.jamming_technique_specific.map_or(0, |specific| specific.value)))
+            .with_jamming_technique(
+                JammingTechnique::default()
+                    .with_kind(self.jamming_technique_kind.map_or(0, |kind| kind.value))
+                    .with_category(
+                        self.jamming_technique_category
+                            .map_or(0, |category| category.value),
+                    )
+                    .with_subcategory(
+                        self.jamming_technique_subcategory
+                            .map_or(0, |subcategory| subcategory.value),
+                    )
+                    .with_specific(
+                        self.jamming_technique_specific
+                            .map_or(0, |specific| specific.value),
+                    ),
+            )
             .with_beam_status(if self.beam_status {
                 BeamStatusBeamState::Active
             } else {
@@ -597,49 +835,82 @@ impl EmitterBeam {
             .with_track_jams(&mut tjs)
     }
 
-    pub fn decode_partial_update(&self,
-                                 emitter_number: u8,
-                                 state: Option<&DecoderStateElectromagneticEmission>,
-                                 fundamental_params: &[FundamentalParameter],
-                                 beam_data_list: &[BeamData],
-                                 site_app_pair_list: &[SiteAppPair]) -> EmitterBeamCounterpart {
-        let mut tjs = self.track_jam.iter()
+    #[must_use]
+    pub fn decode_partial_update(
+        &self,
+        emitter_number: u8,
+        state: Option<&DecoderStateElectromagneticEmission>,
+        fundamental_params: &[FundamentalParameter],
+        beam_data_list: &[BeamData],
+        site_app_pair_list: &[SiteAppPair],
+    ) -> EmitterBeamCounterpart {
+        let mut tjs = self
+            .track_jam
+            .iter()
             .map(|tj| tj.decode(site_app_pair_list))
             .collect();
         EmitterBeamCounterpart::default()
             .with_number(self.beam_id.value)
             .with_parameter_index(self.beam_parameter_index)
             .with_parameter_data(match self.fundamental_params_index {
-                None => { // retrieve from state
+                None => {
+                    // retrieve from state
                     if let Some(state) = state {
-                        if let Some(data) = state.fundamental_params.get(&(emitter_number, self.beam_id.value)) {
+                        if let Some(data) = state
+                            .fundamental_params
+                            .get(&(emitter_number, self.beam_id.value))
+                        {
                             *data
-                        } else { FundamentalParameterData::default() } // partial update before a full update is received
-                    } else { // no state found
+                        } else {
+                            FundamentalParameterData::default()
+                        } // partial update before a full update is received
+                    } else {
+                        // no state found
                         FundamentalParameterData::default()
                     }
                 }
-                Some(index) => { fundamental_params.get(index as usize).unwrap_or(&Default::default()).decode() }
+                Some(index) => fundamental_params
+                    .get(index as usize)
+                    .unwrap_or(&FundamentalParameter::default())
+                    .decode(),
             })
             .with_beam_data(match self.beam_data_index {
                 None => {
                     if let Some(state) = state {
-                        if let Some(data) = state.beam_data.get(&(emitter_number, self.beam_id.value)) {
+                        if let Some(data) =
+                            state.beam_data.get(&(emitter_number, self.beam_id.value))
+                        {
                             *data
-                        } else { DisBeamData::default() }
+                        } else {
+                            DisBeamData::default()
+                        }
                     } else {
                         DisBeamData::default()
                     }
                 }
-                Some(index) => { beam_data_list.get(index as usize).unwrap_or(&Default::default()).decode() }
+                Some(index) => beam_data_list
+                    .get(index as usize)
+                    .unwrap_or(&BeamData::default())
+                    .decode(),
             })
             .with_beam_function(self.beam_function)
             .with_high_density_track_jam(self.high_density_track_jam)
-            .with_jamming_technique(JammingTechnique::default()
-                .with_kind(self.jamming_technique_kind.map_or(0, |kind| kind.value))
-                .with_category(self.jamming_technique_category.map_or(0, |category| category.value))
-                .with_subcategory(self.jamming_technique_subcategory.map_or(0, |subcategory| subcategory.value))
-                .with_specific(self.jamming_technique_specific.map_or(0, |specific| specific.value)))
+            .with_jamming_technique(
+                JammingTechnique::default()
+                    .with_kind(self.jamming_technique_kind.map_or(0, |kind| kind.value))
+                    .with_category(
+                        self.jamming_technique_category
+                            .map_or(0, |category| category.value),
+                    )
+                    .with_subcategory(
+                        self.jamming_technique_subcategory
+                            .map_or(0, |subcategory| subcategory.value),
+                    )
+                    .with_specific(
+                        self.jamming_technique_specific
+                            .map_or(0, |specific| specific.value),
+                    ),
+            )
             .with_beam_status(if self.beam_status {
                 BeamStatusBeamState::Active
             } else {
@@ -680,24 +951,22 @@ impl TrackJam {
 
     fn decode(&self, list: &[SiteAppPair]) -> TrackJamCounterpart {
         let simulation_address = match list.get(self.site_app_pair_index as usize) {
-            None => { SimulationAddress::default() } // initialise simulation address as zeroes when not in the SiteAppPair list
-            Some(address) => {
-                SimulationAddress::new(address.site.value, address.application.value)
-            }
+            None => SimulationAddress::default(), // initialise simulation address as zeroes when not in the SiteAppPair list
+            Some(address) => SimulationAddress::new(address.site.value, address.application.value),
         };
 
         TrackJamCounterpart::default()
             .with_entity_id(DisEntityId::new_sim_address(
                 simulation_address,
-                self.entity_id.value
+                self.entity_id.value,
             ))
             .with_emitter(match self.emitter_number {
-                None => { 0 }
-                Some(number) => { number.value }
+                None => 0,
+                Some(number) => number.value,
             })
             .with_beam(match self.beam_number {
-                None => { 0 }
-                Some(number) => { number.value }
+                None => 0,
+                Some(number) => number.value,
             })
     }
 }
@@ -709,8 +978,8 @@ impl Codec for FundamentalParameter {
         Self {
             frequency: FrequencyFloat::from_float(item.frequency),
             frequency_range: FrequencyFloat::from_float(item.frequency_range),
-            erp: item.effective_power.to_u8().unwrap_or(0),// TODO check if conversion is correct
-            prf: UVINT16::from(item.pulse_repetition_frequency.to_u16().unwrap_or(0)),// TODO check if conversion is correct
+            erp: item.effective_power.to_u8().unwrap_or(0), // TODO check if conversion is correct
+            prf: UVINT16::from(item.pulse_repetition_frequency.to_u16().unwrap_or(0)), // TODO check if conversion is correct
             pulse_width: PulseWidthFloat::from_float(item.pulse_width),
         }
     }
@@ -720,21 +989,32 @@ impl Codec for FundamentalParameter {
             .with_frequency(self.frequency.to_float())
             .with_frequency_range(self.frequency_range.to_float())
             .with_effective_power(self.erp.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
-            .with_pulse_repetition_frequency(self.prf.value.to_f32().unwrap_or(0.0))// TODO check if conversion is correct
+            .with_pulse_repetition_frequency(self.prf.value.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
             .with_pulse_width(self.pulse_width.to_float())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use dis_rs::electromagnetic_emission::model::{Beam, ElectromagneticEmission as DisEE, EmitterSystem, FundamentalParameterData, TrackJam};
-    use dis_rs::enumerations::{ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction, HighDensityTrackJam};
-    use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, SimulationAddress, VectorF32};
-    use crate::electromagnetic_emission::codec::{construct_beam_data_list_full, construct_fundamental_params_list_full, construct_site_app_pairs_list, DecoderStateElectromagneticEmission, EncoderStateElectromagneticEmission};
-    use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterBeam, FundamentalParameter, SiteAppPair};
-    use crate::types::model::{CdisFloat, SVINT16, UVINT16, UVINT8};
     use crate::codec::{Codec, CodecOptions, CodecStateResult};
+    use crate::electromagnetic_emission::codec::{
+        construct_beam_data_list_full, construct_fundamental_params_list_full,
+        construct_site_app_pairs_list, DecoderStateElectromagneticEmission,
+        EncoderStateElectromagneticEmission,
+    };
+    use crate::electromagnetic_emission::model::{
+        ElectromagneticEmission, EmitterBeam, FundamentalParameter, SiteAppPair,
+    };
     use crate::records::model::{BeamData, EntityCoordinateVector, FrequencyFloat};
+    use crate::types::model::{CdisFloat, SVINT16, UVINT16, UVINT8};
+    use dis_rs::electromagnetic_emission::model::{
+        Beam, ElectromagneticEmission as DisEE, EmitterSystem, FundamentalParameterData, TrackJam,
+    };
+    use dis_rs::enumerations::{
+        ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator,
+        EmitterName, EmitterSystemFunction, HighDensityTrackJam,
+    };
+    use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, SimulationAddress, VectorF32};
 
     #[test]
     fn fundamental_params_list() {
@@ -758,21 +1038,27 @@ mod tests {
             .with_pulse_width(234.5);
 
         let body = DisEE::builder()
-            .with_emitter_system(EmitterSystem::default()
-                .with_beam(Beam::default()
-                    .with_parameter_data(param_1))
-                .with_beam(Beam::default()
-                    .with_parameter_data(param_2)))
-            .with_emitter_system(EmitterSystem::default()
-                .with_beam(Beam::default()
-                    .with_parameter_data(param_3)))
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_beam(Beam::default().with_parameter_data(param_1))
+                    .with_beam(Beam::default().with_parameter_data(param_2)),
+            )
+            .with_emitter_system(
+                EmitterSystem::default().with_beam(Beam::default().with_parameter_data(param_3)),
+            )
             .build();
 
         let param_list = construct_fundamental_params_list_full(&body);
 
         assert_eq!(param_list.len(), 2);
-        assert_eq!(param_list.get(0).unwrap().frequency, FrequencyFloat::from_float(12.3));
-        assert_eq!(param_list.get(1).unwrap().frequency, FrequencyFloat::from_float(23.4));
+        assert_eq!(
+            param_list.first().unwrap().frequency,
+            FrequencyFloat::from_float(12.3)
+        );
+        assert_eq!(
+            param_list.get(1).unwrap().frequency,
+            FrequencyFloat::from_float(23.4)
+        );
     }
 
     #[test]
@@ -797,21 +1083,21 @@ mod tests {
             .with_sweep_sync(50.0);
 
         let body = DisEE::builder()
-            .with_emitter_system(EmitterSystem::default()
-                .with_beam(Beam::default()
-                    .with_beam_data(beam_data_1))
-                .with_beam(Beam::default()
-                    .with_beam_data(beam_data_2)))
-            .with_emitter_system(EmitterSystem::default()
-                .with_beam(Beam::default()
-                    .with_beam_data(beam_data_3)))
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_beam(Beam::default().with_beam_data(beam_data_1))
+                    .with_beam(Beam::default().with_beam_data(beam_data_2)),
+            )
+            .with_emitter_system(
+                EmitterSystem::default().with_beam(Beam::default().with_beam_data(beam_data_3)),
+            )
             .build();
 
         let beam_data_list = construct_beam_data_list_full(&body);
 
         assert_eq!(beam_data_list.len(), 2);
-        assert_eq!(beam_data_list.get(0).unwrap().az_center.value, 0);
-        assert_eq!(beam_data_list.get(0).unwrap().sweep_sync, 511);
+        assert_eq!(beam_data_list.first().unwrap().az_center.value, 0);
+        assert_eq!(beam_data_list.first().unwrap().sweep_sync, 511);
         assert_eq!(beam_data_list.get(1).unwrap().az_center.value, 83);
         assert_eq!(beam_data_list.get(1).unwrap().sweep_sync, 102);
     }
@@ -825,21 +1111,21 @@ mod tests {
         let mut list_1 = vec![track_1, track_2];
 
         let body = DisEE::builder()
-            .with_emitter_system(EmitterSystem::default()
-                .with_beam(Beam::default()
-                    .with_track_jams(&mut list_1))
-                .with_beam(Beam::default()
-                    .with_track_jam(track_3)))
-            .with_emitter_system(EmitterSystem::default()
-                .with_beam(Beam::default()
-                    .with_track_jam(track_4)))
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_beam(Beam::default().with_track_jams(&mut list_1))
+                    .with_beam(Beam::default().with_track_jam(track_3)),
+            )
+            .with_emitter_system(
+                EmitterSystem::default().with_beam(Beam::default().with_track_jam(track_4)),
+            )
             .build();
 
         let pairs = construct_site_app_pairs_list(&body);
 
         assert_eq!(pairs.len(), 3);
-        assert_eq!(pairs.get(0).unwrap().site.value, 1);
-        assert_eq!(pairs.get(0).unwrap().application.value, 1);
+        assert_eq!(pairs.first().unwrap().site.value, 1);
+        assert_eq!(pairs.first().unwrap().application.value, 1);
         assert_eq!(pairs.get(1).unwrap().site.value, 2);
         assert_eq!(pairs.get(1).unwrap().application.value, 2);
         assert_eq!(pairs.get(2).unwrap().site.value, 3);
@@ -871,56 +1157,79 @@ mod tests {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
             .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
-            .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
-            .with_emitter_system(EmitterSystem::default()
-                .with_number(20)
-                .with_name(EmitterName::ANFPS16_5505)
-                .with_function(EmitterSystemFunction::SearchAcquisition_102)
-                .with_location(VectorF32::new(1.0, 2.0, 3.0))
-                .with_beam(Beam::default()
-                    .with_number(1)
-                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                    .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
-                    .with_parameter_index(1)
-                    .with_parameter_data(FundamentalParameterData::default())
-                    .with_track_jam(TrackJam::default()
-                        .with_entity_id(EntityId::new(1, 2, 3)))))
+            .with_state_update_indicator(
+                ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
+            )
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_number(20)
+                    .with_name(EmitterName::ANFPS16_5505)
+                    .with_function(EmitterSystemFunction::SearchAcquisition_102)
+                    .with_location(VectorF32::new(1.0, 2.0, 3.0))
+                    .with_beam(
+                        Beam::default()
+                            .with_number(1)
+                            .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                            .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                            .with_parameter_index(1)
+                            .with_parameter_data(FundamentalParameterData::default())
+                            .with_track_jam(
+                                TrackJam::default().with_entity_id(EntityId::new(1, 2, 3)),
+                            ),
+                    ),
+            )
             .build();
 
         let state = EncoderStateElectromagneticEmission::new(&dis_body);
         let options = CodecOptions::new_full_update();
 
-        let (cdis_body, state_result) = ElectromagneticEmission::encode(&dis_body, Some(&state), &options);
+        let (cdis_body, state_result) =
+            ElectromagneticEmission::encode(&dis_body, Some(&state), &options);
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
         assert!(cdis_body.full_update_flag);
-        assert_eq!(cdis_body.emitting_id, crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)));
+        assert_eq!(
+            cdis_body.emitting_id,
+            crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1)
+            )
+        );
         assert_eq!(cdis_body.emitter_systems.len(), 1);
-        assert_eq!(cdis_body.emitter_systems.first().unwrap(), &crate::electromagnetic_emission::model::EmitterSystem {
-            name: Some(EmitterName::ANFPS16_5505),
-            function: Some(EmitterSystemFunction::SearchAcquisition_102),
-            number: UVINT8::from(20),
-            location_with_respect_to_entity: Some(EntityCoordinateVector::new(SVINT16::from(1), SVINT16::from(2), SVINT16::from(3))),
-            emitter_beams: vec![EmitterBeam {
-                beam_id: UVINT8::from(1),
-                beam_parameter_index: 1,
-                fundamental_params_index: Some(0),
-                beam_data_index: Some(0),
-                beam_function: ElectromagneticEmissionBeamFunction::Acquisition,
-                high_density_track_jam: HighDensityTrackJam::NotSelected,
-                beam_status: true,
-                jamming_technique_kind: Some(UVINT8::from(0)),
-                jamming_technique_category: Some(UVINT8::from(0)),
-                jamming_technique_subcategory: Some(UVINT8::from(0)),
-                jamming_technique_specific: Some(UVINT8::from(0)),
-                track_jam: vec![crate::electromagnetic_emission::model::TrackJam {
-                    site_app_pair_index: 0,
-                    entity_id: UVINT16::from(3),
-                    emitter_number: Some(UVINT8::from(0)),
-                    beam_number: Some(UVINT8::from(0))}],
-            }],
-        });
+        assert_eq!(
+            cdis_body.emitter_systems.first().unwrap(),
+            &crate::electromagnetic_emission::model::EmitterSystem {
+                name: Some(EmitterName::ANFPS16_5505),
+                function: Some(EmitterSystemFunction::SearchAcquisition_102),
+                number: UVINT8::from(20),
+                location_with_respect_to_entity: Some(EntityCoordinateVector::new(
+                    SVINT16::from(1),
+                    SVINT16::from(2),
+                    SVINT16::from(3)
+                )),
+                emitter_beams: vec![EmitterBeam {
+                    beam_id: UVINT8::from(1),
+                    beam_parameter_index: 1,
+                    fundamental_params_index: Some(0),
+                    beam_data_index: Some(0),
+                    beam_function: ElectromagneticEmissionBeamFunction::Acquisition,
+                    high_density_track_jam: HighDensityTrackJam::NotSelected,
+                    beam_status: true,
+                    jamming_technique_kind: Some(UVINT8::from(0)),
+                    jamming_technique_category: Some(UVINT8::from(0)),
+                    jamming_technique_subcategory: Some(UVINT8::from(0)),
+                    jamming_technique_specific: Some(UVINT8::from(0)),
+                    track_jam: vec![crate::electromagnetic_emission::model::TrackJam {
+                        site_app_pair_index: 0,
+                        entity_id: UVINT16::from(3),
+                        emitter_number: Some(UVINT8::from(0)),
+                        beam_number: Some(UVINT8::from(0))
+                    }],
+                }],
+            }
+        );
     }
 
     #[test]
@@ -928,55 +1237,80 @@ mod tests {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
             .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
-            .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
-            .with_emitter_system(EmitterSystem::default()
-                .with_number(20)
-                .with_name(EmitterName::ANFPS16_5505)
-                .with_function(EmitterSystemFunction::SearchAcquisition_102)
-                .with_location(VectorF32::new(1.0, 2.0, 3.0))
-                .with_beam(Beam::default()
-                    .with_number(1)
-                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                    .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
-                    .with_parameter_index(1)
-                    .with_parameter_data(FundamentalParameterData::default())
-                    .with_track_jam(TrackJam::default()
-                        .with_entity_id(EntityId::new(1, 2, 3)))))
+            .with_state_update_indicator(
+                ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
+            )
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_number(20)
+                    .with_name(EmitterName::ANFPS16_5505)
+                    .with_function(EmitterSystemFunction::SearchAcquisition_102)
+                    .with_location(VectorF32::new(1.0, 2.0, 3.0))
+                    .with_beam(
+                        Beam::default()
+                            .with_number(1)
+                            .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                            .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                            .with_parameter_index(1)
+                            .with_parameter_data(FundamentalParameterData::default())
+                            .with_track_jam(
+                                TrackJam::default().with_entity_id(EntityId::new(1, 2, 3)),
+                            ),
+                    ),
+            )
             .build();
 
         let options = CodecOptions::new_partial_update();
 
         let (cdis_body, state_result) = ElectromagneticEmission::encode(&dis_body, None, &options);
 
-        assert_eq!(state_result, CodecStateResult::StateUpdateElectromagneticEmission);
+        assert_eq!(
+            state_result,
+            CodecStateResult::StateUpdateElectromagneticEmission
+        );
 
         assert!(cdis_body.full_update_flag);
-        assert_eq!(cdis_body.emitting_id, crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)));
+        assert_eq!(
+            cdis_body.emitting_id,
+            crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1)
+            )
+        );
         assert_eq!(cdis_body.emitter_systems.len(), 1);
-        assert_eq!(cdis_body.emitter_systems.first().unwrap(), &crate::electromagnetic_emission::model::EmitterSystem {
-            name: Some(EmitterName::ANFPS16_5505),
-            function: Some(EmitterSystemFunction::SearchAcquisition_102),
-            number: UVINT8::from(20),
-            location_with_respect_to_entity: Some(EntityCoordinateVector::new(SVINT16::from(1), SVINT16::from(2), SVINT16::from(3))),
-            emitter_beams: vec![EmitterBeam {
-                beam_id: UVINT8::from(1),
-                beam_parameter_index: 1,
-                fundamental_params_index: Some(0),
-                beam_data_index: Some(0),
-                beam_function: ElectromagneticEmissionBeamFunction::Acquisition,
-                high_density_track_jam: HighDensityTrackJam::NotSelected,
-                beam_status: true,
-                jamming_technique_kind: Some(UVINT8::from(0)),
-                jamming_technique_category: Some(UVINT8::from(0)),
-                jamming_technique_subcategory: Some(UVINT8::from(0)),
-                jamming_technique_specific: Some(UVINT8::from(0)),
-                track_jam: vec![crate::electromagnetic_emission::model::TrackJam {
-                    site_app_pair_index: 0,
-                    entity_id: UVINT16::from(3),
-                    emitter_number: Some(UVINT8::from(0)),
-                    beam_number: Some(UVINT8::from(0))}],
-            }],
-        });
+        assert_eq!(
+            cdis_body.emitter_systems.first().unwrap(),
+            &crate::electromagnetic_emission::model::EmitterSystem {
+                name: Some(EmitterName::ANFPS16_5505),
+                function: Some(EmitterSystemFunction::SearchAcquisition_102),
+                number: UVINT8::from(20),
+                location_with_respect_to_entity: Some(EntityCoordinateVector::new(
+                    SVINT16::from(1),
+                    SVINT16::from(2),
+                    SVINT16::from(3)
+                )),
+                emitter_beams: vec![EmitterBeam {
+                    beam_id: UVINT8::from(1),
+                    beam_parameter_index: 1,
+                    fundamental_params_index: Some(0),
+                    beam_data_index: Some(0),
+                    beam_function: ElectromagneticEmissionBeamFunction::Acquisition,
+                    high_density_track_jam: HighDensityTrackJam::NotSelected,
+                    beam_status: true,
+                    jamming_technique_kind: Some(UVINT8::from(0)),
+                    jamming_technique_category: Some(UVINT8::from(0)),
+                    jamming_technique_subcategory: Some(UVINT8::from(0)),
+                    jamming_technique_specific: Some(UVINT8::from(0)),
+                    track_jam: vec![crate::electromagnetic_emission::model::TrackJam {
+                        site_app_pair_index: 0,
+                        entity_id: UVINT16::from(3),
+                        emitter_number: Some(UVINT8::from(0)),
+                        beam_number: Some(UVINT8::from(0))
+                    }],
+                }],
+            }
+        );
     }
 
     #[test]
@@ -984,65 +1318,91 @@ mod tests {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
             .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
-            .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
-            .with_emitter_system(EmitterSystem::default()
-                .with_number(20)
-                .with_name(EmitterName::ANFPS16_5505)
-                .with_function(EmitterSystemFunction::SearchAcquisition_102)
-                .with_location(VectorF32::new(1.0, 2.0, 3.0))
-                .with_beam(Beam::default()
-                    .with_number(1)
-                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                    .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
-                    .with_parameter_index(1)
-                    .with_parameter_data(FundamentalParameterData::default())
-                    .with_track_jam(TrackJam::default()
-                        .with_entity_id(EntityId::new(1, 2, 3)))))
+            .with_state_update_indicator(
+                ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
+            )
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_number(20)
+                    .with_name(EmitterName::ANFPS16_5505)
+                    .with_function(EmitterSystemFunction::SearchAcquisition_102)
+                    .with_location(VectorF32::new(1.0, 2.0, 3.0))
+                    .with_beam(
+                        Beam::default()
+                            .with_number(1)
+                            .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                            .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                            .with_parameter_index(1)
+                            .with_parameter_data(FundamentalParameterData::default())
+                            .with_track_jam(
+                                TrackJam::default().with_entity_id(EntityId::new(1, 2, 3)),
+                            ),
+                    ),
+            )
             .build();
 
         let state = EncoderStateElectromagneticEmission::new(&dis_body);
         let options = CodecOptions::new_partial_update();
 
-        let (cdis_body, state_result) = ElectromagneticEmission::encode(&dis_body, Some(&state), &options);
+        let (cdis_body, state_result) =
+            ElectromagneticEmission::encode(&dis_body, Some(&state), &options);
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
 
         assert!(!cdis_body.full_update_flag);
-        assert_eq!(cdis_body.emitting_id, crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)));
+        assert_eq!(
+            cdis_body.emitting_id,
+            crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1)
+            )
+        );
         assert_eq!(cdis_body.emitter_systems.len(), 1);
-        assert_eq!(cdis_body.emitter_systems.first().unwrap(), &crate::electromagnetic_emission::model::EmitterSystem {
-            name: None,
-            function: None,
-            number: UVINT8::from(20),
-            location_with_respect_to_entity: None,
-            emitter_beams: vec![EmitterBeam {
-                beam_id: UVINT8::from(1),
-                beam_parameter_index: 1,
-                fundamental_params_index: None,
-                beam_data_index: None,
-                beam_function: ElectromagneticEmissionBeamFunction::Acquisition,
-                high_density_track_jam: HighDensityTrackJam::NotSelected,
-                beam_status: true,
-                jamming_technique_kind: None,
-                jamming_technique_category: None,
-                jamming_technique_subcategory: None,
-                jamming_technique_specific: None,
-                track_jam: vec![crate::electromagnetic_emission::model::TrackJam {
-                    site_app_pair_index: 0,
-                    entity_id: UVINT16::from(3),
-                    emitter_number: None,
-                    beam_number: None,
-                }],
-            }]
-        });
+        assert_eq!(
+            cdis_body.emitter_systems.first().unwrap(),
+            &crate::electromagnetic_emission::model::EmitterSystem {
+                name: None,
+                function: None,
+                number: UVINT8::from(20),
+                location_with_respect_to_entity: None,
+                emitter_beams: vec![EmitterBeam {
+                    beam_id: UVINT8::from(1),
+                    beam_parameter_index: 1,
+                    fundamental_params_index: None,
+                    beam_data_index: None,
+                    beam_function: ElectromagneticEmissionBeamFunction::Acquisition,
+                    high_density_track_jam: HighDensityTrackJam::NotSelected,
+                    beam_status: true,
+                    jamming_technique_kind: None,
+                    jamming_technique_category: None,
+                    jamming_technique_subcategory: None,
+                    jamming_technique_specific: None,
+                    track_jam: vec![crate::electromagnetic_emission::model::TrackJam {
+                        site_app_pair_index: 0,
+                        entity_id: UVINT16::from(3),
+                        emitter_number: None,
+                        beam_number: None,
+                    }],
+                }]
+            }
+        );
     }
 
     #[test]
     fn decode_body_full_update() {
         let cdis_body = ElectromagneticEmission {
             full_update_flag: true,
-            emitting_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
-            event_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(100)),
+            emitting_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1),
+            ),
+            event_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(100),
+            ),
             state_update_indicator: ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             fundamental_params: vec![FundamentalParameter::default()],
             beam_data: vec![BeamData::default()],
@@ -1054,7 +1414,11 @@ mod tests {
                 name: Some(EmitterName::ANFPS16_5505),
                 function: Some(EmitterSystemFunction::SearchAcquisition_102),
                 number: UVINT8::from(20),
-                location_with_respect_to_entity: Some(EntityCoordinateVector::new(SVINT16::from(1), SVINT16::from(2), SVINT16::from(3))),
+                location_with_respect_to_entity: Some(EntityCoordinateVector::new(
+                    SVINT16::from(1),
+                    SVINT16::from(2),
+                    SVINT16::from(3),
+                )),
                 emitter_beams: vec![EmitterBeam {
                     beam_id: UVINT8::from(1),
                     beam_parameter_index: 1,
@@ -1071,9 +1435,10 @@ mod tests {
                         site_app_pair_index: 0,
                         entity_id: UVINT16::from(3),
                         emitter_number: Some(UVINT8::from(0)),
-                        beam_number: Some(UVINT8::from(0))}],
+                        beam_number: Some(UVINT8::from(0)),
+                    }],
                 }],
-            }]
+            }],
         };
 
         let options = CodecOptions::new_full_update();
@@ -1081,31 +1446,41 @@ mod tests {
         let (dis_body, state_result) = cdis_body.decode(None, &options);
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
-        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1,1));
-        assert_eq!(dis_body.event_id, EventId::new(SimulationAddress::new(1, 1), 100));
+        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
+        assert_eq!(
+            dis_body.event_id,
+            EventId::new(SimulationAddress::new(1, 1), 100)
+        );
         let emitter_out = dis_body.emitter_systems.first().unwrap();
         let emitter_in = EmitterSystem::default()
             .with_name(EmitterName::ANFPS16_5505)
             .with_number(20)
             .with_function(EmitterSystemFunction::SearchAcquisition_102)
             .with_location(VectorF32::new(1.0, 2.0, 3.0))
-            .with_beam(Beam::default()
-                .with_number(1)
-                .with_parameter_index(1)
-                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                .with_track_jam(TrackJam::default()
-                    .with_entity_id(EntityId::new(1,2,3))
-                )
+            .with_beam(
+                Beam::default()
+                    .with_number(1)
+                    .with_parameter_index(1)
+                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                    .with_track_jam(TrackJam::default().with_entity_id(EntityId::new(1, 2, 3))),
             );
-        assert_eq!(emitter_in, *emitter_out)
+        assert_eq!(emitter_in, *emitter_out);
     }
 
     #[test]
     fn decode_body_partial_update_full_update_flag_without_state() {
         let cdis_body = ElectromagneticEmission {
             full_update_flag: true,
-            emitting_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
-            event_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(100)),
+            emitting_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1),
+            ),
+            event_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(100),
+            ),
             state_update_indicator: ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             fundamental_params: vec![FundamentalParameter::default()],
             beam_data: vec![BeamData::default()],
@@ -1117,7 +1492,11 @@ mod tests {
                 name: Some(EmitterName::ANFPS16_5505),
                 function: Some(EmitterSystemFunction::SearchAcquisition_102),
                 number: UVINT8::from(20),
-                location_with_respect_to_entity: Some(EntityCoordinateVector::new(SVINT16::from(1), SVINT16::from(2), SVINT16::from(3))),
+                location_with_respect_to_entity: Some(EntityCoordinateVector::new(
+                    SVINT16::from(1),
+                    SVINT16::from(2),
+                    SVINT16::from(3),
+                )),
                 emitter_beams: vec![EmitterBeam {
                     beam_id: UVINT8::from(1),
                     beam_parameter_index: 1,
@@ -1134,60 +1513,82 @@ mod tests {
                         site_app_pair_index: 0,
                         entity_id: UVINT16::from(3),
                         emitter_number: Some(UVINT8::from(0)),
-                        beam_number: Some(UVINT8::from(0))}],
+                        beam_number: Some(UVINT8::from(0)),
+                    }],
                 }],
-            }]
+            }],
         };
 
         let options = CodecOptions::new_partial_update();
 
         let (dis_body, state_result) = cdis_body.decode(None, &options);
 
-        assert_eq!(state_result, CodecStateResult::StateUpdateElectromagneticEmission);
-        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1,1));
-        assert_eq!(dis_body.event_id, EventId::new(SimulationAddress::new(1, 1), 100));
+        assert_eq!(
+            state_result,
+            CodecStateResult::StateUpdateElectromagneticEmission
+        );
+        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
+        assert_eq!(
+            dis_body.event_id,
+            EventId::new(SimulationAddress::new(1, 1), 100)
+        );
         let emitter_out = dis_body.emitter_systems.first().unwrap();
         let emitter_in = EmitterSystem::default()
             .with_name(EmitterName::ANFPS16_5505)
             .with_number(20)
             .with_function(EmitterSystemFunction::SearchAcquisition_102)
             .with_location(VectorF32::new(1.0, 2.0, 3.0))
-            .with_beam(Beam::default()
-                .with_number(1)
-                .with_parameter_index(1)
-                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                .with_track_jam(TrackJam::default()
-                    .with_entity_id(EntityId::new(1,2,3))
-                )
+            .with_beam(
+                Beam::default()
+                    .with_number(1)
+                    .with_parameter_index(1)
+                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                    .with_track_jam(TrackJam::default().with_entity_id(EntityId::new(1, 2, 3))),
             );
-        assert_eq!(emitter_in, *emitter_out)
+        assert_eq!(emitter_in, *emitter_out);
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn decode_body_partial_update_partial_update_flag_with_state() {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
             .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
-            .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
-            .with_emitter_system(EmitterSystem::default()
-                .with_number(20)
-                .with_name(EmitterName::ANFPS16_5505)
-                .with_function(EmitterSystemFunction::SearchAcquisition_102)
-                .with_location(VectorF32::new(1.0, 2.0, 3.0))
-                .with_beam(Beam::default()
-                    .with_number(1)
-                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                    .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
-                    .with_parameter_index(1)
-                    .with_parameter_data(FundamentalParameterData::default())
-                    .with_track_jam(TrackJam::default()
-                        .with_entity_id(EntityId::new(1, 2, 3)))))
+            .with_state_update_indicator(
+                ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
+            )
+            .with_emitter_system(
+                EmitterSystem::default()
+                    .with_number(20)
+                    .with_name(EmitterName::ANFPS16_5505)
+                    .with_function(EmitterSystemFunction::SearchAcquisition_102)
+                    .with_location(VectorF32::new(1.0, 2.0, 3.0))
+                    .with_beam(
+                        Beam::default()
+                            .with_number(1)
+                            .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                            .with_high_density_track_jam(HighDensityTrackJam::NotSelected)
+                            .with_parameter_index(1)
+                            .with_parameter_data(FundamentalParameterData::default())
+                            .with_track_jam(
+                                TrackJam::default().with_entity_id(EntityId::new(1, 2, 3)),
+                            ),
+                    ),
+            )
             .build();
 
         let cdis_body = ElectromagneticEmission {
             full_update_flag: false,
-            emitting_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
-            event_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(100)),
+            emitting_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1),
+            ),
+            event_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(100),
+            ),
             state_update_indicator: ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             fundamental_params: vec![FundamentalParameter::default()],
             beam_data: vec![BeamData::default()],
@@ -1199,7 +1600,11 @@ mod tests {
                 name: None,
                 function: None,
                 number: UVINT8::from(20),
-                location_with_respect_to_entity: Some(EntityCoordinateVector::new(SVINT16::from(1), SVINT16::from(2), SVINT16::from(3))),
+                location_with_respect_to_entity: Some(EntityCoordinateVector::new(
+                    SVINT16::from(1),
+                    SVINT16::from(2),
+                    SVINT16::from(3),
+                )),
                 emitter_beams: vec![EmitterBeam {
                     beam_id: UVINT8::from(1),
                     beam_parameter_index: 1,
@@ -1216,9 +1621,10 @@ mod tests {
                         site_app_pair_index: 0,
                         entity_id: UVINT16::from(3),
                         emitter_number: Some(UVINT8::from(0)),
-                        beam_number: Some(UVINT8::from(0))}],
+                        beam_number: Some(UVINT8::from(0)),
+                    }],
                 }],
-            }]
+            }],
         };
 
         let state = DecoderStateElectromagneticEmission::new(&dis_body);
@@ -1227,25 +1633,30 @@ mod tests {
         let (dis_body, state_result) = cdis_body.decode(Some(&state), &options);
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
-        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1,1));
-        assert_eq!(dis_body.event_id, EventId::new(SimulationAddress::new(1, 1), 100));
+        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
+        assert_eq!(
+            dis_body.event_id,
+            EventId::new(SimulationAddress::new(1, 1), 100)
+        );
         let emitter_out = dis_body.emitter_systems.first().unwrap();
         let emitter_in = EmitterSystem::default()
             .with_name(EmitterName::ANFPS16_5505)
             .with_number(20)
             .with_function(EmitterSystemFunction::SearchAcquisition_102)
             .with_location(VectorF32::new(1.0, 2.0, 3.0))
-            .with_beam(Beam::default()
-                .with_number(1)
-                .with_parameter_index(1)
-                .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
-                .with_track_jam(TrackJam::default()
-                    .with_entity_id(EntityId::new(1,2,3))
-                )
+            .with_beam(
+                Beam::default()
+                    .with_number(1)
+                    .with_parameter_index(1)
+                    .with_beam_function(ElectromagneticEmissionBeamFunction::Acquisition)
+                    .with_track_jam(TrackJam::default().with_entity_id(EntityId::new(1, 2, 3))),
             );
         assert_eq!(emitter_in, *emitter_out);
 
-        assert_eq!(state.fundamental_params.get(&(20, 1)).unwrap(), &emitter_out.beams.first().unwrap().parameter_data);
+        assert_eq!(
+            state.fundamental_params.get(&(20, 1)).unwrap(),
+            &emitter_out.beams.first().unwrap().parameter_data
+        );
     }
 
     /// Tests only whether fields are zeroed when not present in a partial update
@@ -1254,8 +1665,16 @@ mod tests {
     fn decode_body_partial_update_partial_update_flag_without_state() {
         let cdis_body = ElectromagneticEmission {
             full_update_flag: false,
-            emitting_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
-            event_id: crate::records::model::EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(100)),
+            emitting_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(1),
+            ),
+            event_id: crate::records::model::EntityId::new(
+                UVINT16::from(1),
+                UVINT16::from(1),
+                UVINT16::from(100),
+            ),
             state_update_indicator: ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             fundamental_params: vec![FundamentalParameter::default()],
             beam_data: vec![BeamData::default()],
@@ -1267,7 +1686,11 @@ mod tests {
                 name: None,
                 function: None,
                 number: UVINT8::from(20),
-                location_with_respect_to_entity: Some(EntityCoordinateVector::new(SVINT16::from(1), SVINT16::from(2), SVINT16::from(3))),
+                location_with_respect_to_entity: Some(EntityCoordinateVector::new(
+                    SVINT16::from(1),
+                    SVINT16::from(2),
+                    SVINT16::from(3),
+                )),
                 emitter_beams: vec![EmitterBeam {
                     beam_id: UVINT8::from(1),
                     beam_parameter_index: 1,
@@ -1284,9 +1707,10 @@ mod tests {
                         site_app_pair_index: 0,
                         entity_id: UVINT16::from(3),
                         emitter_number: Some(UVINT8::from(0)),
-                        beam_number: Some(UVINT8::from(0))}],
+                        beam_number: Some(UVINT8::from(0)),
+                    }],
                 }],
-            }]
+            }],
         };
 
         let options = CodecOptions::new_partial_update();
@@ -1294,8 +1718,11 @@ mod tests {
         let (dis_body, state_result) = cdis_body.decode(None, &options);
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
-        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1,1));
-        assert_eq!(dis_body.event_id, EventId::new(SimulationAddress::new(1, 1), 100));
+        assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
+        assert_eq!(
+            dis_body.event_id,
+            EventId::new(SimulationAddress::new(1, 1), 100)
+        );
         let emitter_out = dis_body.emitter_systems.first().unwrap();
 
         assert_eq!(emitter_out.name, EmitterName::default());

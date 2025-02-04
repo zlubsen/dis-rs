@@ -1,7 +1,7 @@
-use dis_rs::model::DatumSpecification;
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::records::model::{CdisRecord, EntityId};
-use crate::types::model::{UVINT32, VarInt};
+use crate::types::model::{VarInt, UVINT32};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::model::DatumSpecification;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct ActionRequest {
@@ -18,8 +18,15 @@ impl BodyProperties for ActionRequest {
     const FIELDS_PRESENT_LENGTH: usize = 2;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if !self.datum_specification.fixed_datum_records.is_empty() { Self::FieldsPresent::FIXED_DATUMS_BIT } else { 0 })
-        | (if !self.datum_specification.variable_datum_records.is_empty() { Self::FieldsPresent::VARIABLE_DATUMS_BIT } else { 0 })
+        (if self.datum_specification.fixed_datum_records.is_empty() {
+            0
+        } else {
+            Self::FieldsPresent::FIXED_DATUMS_BIT
+        }) | (if self.datum_specification.variable_datum_records.is_empty() {
+            0
+        } else {
+            Self::FieldsPresent::VARIABLE_DATUMS_BIT
+        })
     }
 
     fn body_length_bits(&self) -> usize {

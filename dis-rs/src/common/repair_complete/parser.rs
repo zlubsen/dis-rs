@@ -1,9 +1,9 @@
-use nom::IResult;
-use nom::number::complete::be_u16;
-use crate::common::parser::{entity_id};
 use crate::common::model::PduBody;
+use crate::common::parser::entity_id;
 use crate::enumerations::RepairCompleteRepair;
 use crate::repair_complete::model::RepairComplete;
+use nom::number::complete::be_u16;
+use nom::IResult;
 
 pub(crate) fn repair_complete_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, receiving_id) = entity_id(input)?;

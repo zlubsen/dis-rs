@@ -1,14 +1,17 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{ClockTime, EntityId, PduBody};
-use crate::enumerations::{StopFreezeReason, StopFreezeFrozenBehavior, PduType};
+use crate::common::{BodyInfo, Interaction};
+use crate::enumerations::{PduType, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze::builder::StopFreezeBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-const STOP_FREEZE_BODY_LENGTH : u16 = 28;
+const STOP_FREEZE_BODY_LENGTH: u16 = 28;
 
 /// 5.6.5.5 Stop/Freeze PDU
 ///
 /// 7.5.5 Stop/Freeze PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StopFreeze {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -19,14 +22,17 @@ pub struct StopFreeze {
 }
 
 impl StopFreeze {
+    #[must_use]
     pub fn builder() -> StopFreezeBuilder {
         StopFreezeBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> StopFreezeBuilder {
         StopFreezeBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::StopFreeze(self)
     }

@@ -1,8 +1,13 @@
+use crate::common::model::{
+    length_padded_to_num, EntityId, FixedDatum, PduBody, VariableDatum, BASE_VARIABLE_DATUM_LENGTH,
+    FIXED_DATUM_LENGTH,
+};
 use crate::common::{BodyInfo, Interaction};
-use crate::common::model::{EntityId, FixedDatum, VariableDatum, BASE_VARIABLE_DATUM_LENGTH, FIXED_DATUM_LENGTH, length_padded_to_num, PduBody};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
 use crate::set_data::builder::SetDataBuilder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 const BASE_SET_DATA_BODY_LENGTH: u16 = 28;
 
@@ -10,6 +15,7 @@ const BASE_SET_DATA_BODY_LENGTH: u16 = 28;
 ///
 /// 7.5.10 Set Data PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SetData {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -19,14 +25,17 @@ pub struct SetData {
 }
 
 impl SetData {
+    #[must_use]
     pub fn builder() -> SetDataBuilder {
         SetDataBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> SetDataBuilder {
         SetDataBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::SetData(self)
     }
@@ -34,14 +43,19 @@ impl SetData {
 
 impl BodyInfo for SetData {
     fn body_length(&self) -> u16 {
-        BASE_SET_DATA_BODY_LENGTH +
-            (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16) +
-            (self.variable_datum_records.iter().map(|datum| {
-                let padded_record = length_padded_to_num(
-                    BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
-                    EIGHT_OCTETS);
-                padded_record.record_length as u16
-            } ).sum::<u16>())
+        BASE_SET_DATA_BODY_LENGTH
+            + (FIXED_DATUM_LENGTH * self.fixed_datum_records.len() as u16)
+            + (self
+                .variable_datum_records
+                .iter()
+                .map(|datum| {
+                    let padded_record = length_padded_to_num(
+                        BASE_VARIABLE_DATUM_LENGTH as usize + datum.datum_value.len(),
+                        EIGHT_OCTETS,
+                    );
+                    padded_record.record_length as u16
+                })
+                .sum::<u16>())
     }
 
     fn body_type(&self) -> PduType {

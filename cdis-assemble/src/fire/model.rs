@@ -1,7 +1,9 @@
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{EIGHT_BITS, SIXTEEN_BITS};
-use crate::records::model::{CdisRecord, EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates};
-use crate::types::model::{UVINT32, VarInt};
+use crate::records::model::{
+    CdisRecord, EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
+};
+use crate::types::model::{VarInt, UVINT32};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Fire {
@@ -27,28 +29,66 @@ impl BodyProperties for Fire {
     const FIELDS_PRESENT_LENGTH: usize = 4;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if self.fire_mission_index.is_some() { Self::FieldsPresent::FIRE_MISSION_INDEX_BIT } else { 0 })
-        | (if self.descriptor_warhead.is_some() && self.descriptor_fuze.is_some() { Self::FieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT } else { 0 })
-        | (if self.descriptor_quantity.is_some() && self.descriptor_rate.is_some() { Self::FieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT } else { 0 })
-        | (if self.range.is_some() { Self::FieldsPresent::RANGE_BIT } else { 0 })
+        (if self.fire_mission_index.is_some() {
+            Self::FieldsPresent::FIRE_MISSION_INDEX_BIT
+        } else {
+            0
+        }) | (if self.descriptor_warhead.is_some() && self.descriptor_fuze.is_some() {
+            Self::FieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT
+        } else {
+            0
+        }) | (if self.descriptor_quantity.is_some() && self.descriptor_rate.is_some() {
+            Self::FieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT
+        } else {
+            0
+        }) | (if self.range.is_some() {
+            Self::FieldsPresent::RANGE_BIT
+        } else {
+            0
+        })
     }
 
     fn body_length_bits(&self) -> usize {
         const CONST_BIT_SIZE: usize = 1; // Units flag
-        Self::FIELDS_PRESENT_LENGTH + CONST_BIT_SIZE
-        + self.firing_entity_id.record_length()
-        + self.target_entity_id.record_length()
-        + self.munition_expandable_entity_id.record_length()
-        + self.event_id.record_length()
-        + (if let Some(record) = &self.fire_mission_index { record.record_length() } else { 0 })
-        + self.location_world_coordinates.record_length()
-        + self.descriptor_entity_type.record_length()
-        + (if self.descriptor_warhead.is_some() { SIXTEEN_BITS } else { 0 })
-        + (if self.descriptor_fuze.is_some() { SIXTEEN_BITS } else { 0 })
-        + (if self.descriptor_quantity.is_some() { EIGHT_BITS } else { 0 })
-        + (if self.descriptor_rate.is_some() { EIGHT_BITS } else { 0 })
-        + self.velocity.record_length()
-        + (if let Some(record) = &self.range { record.record_length() } else { 0 })
+        Self::FIELDS_PRESENT_LENGTH
+            + CONST_BIT_SIZE
+            + self.firing_entity_id.record_length()
+            + self.target_entity_id.record_length()
+            + self.munition_expandable_entity_id.record_length()
+            + self.event_id.record_length()
+            + (if let Some(record) = &self.fire_mission_index {
+                record.record_length()
+            } else {
+                0
+            })
+            + self.location_world_coordinates.record_length()
+            + self.descriptor_entity_type.record_length()
+            + (if self.descriptor_warhead.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.descriptor_fuze.is_some() {
+                SIXTEEN_BITS
+            } else {
+                0
+            })
+            + (if self.descriptor_quantity.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + (if self.descriptor_rate.is_some() {
+                EIGHT_BITS
+            } else {
+                0
+            })
+            + self.velocity.record_length()
+            + (if let Some(record) = &self.range {
+                record.record_length()
+            } else {
+                0
+            })
     }
 
     fn into_cdis_body(self) -> CdisBody {

@@ -1,8 +1,10 @@
-use crate::common::{BodyInfo, Interaction};
 use crate::common::model::{EntityId, PduBody};
+use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::data_query_r::builder::DataQueryRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService, VariableRecordType};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 pub const BASE_DATA_QUERY_R_BODY_LENGTH: u16 = 32;
 
@@ -10,6 +12,7 @@ pub const BASE_DATA_QUERY_R_BODY_LENGTH: u16 = 32;
 ///
 /// 7.11.9 Data Query-R PDU
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DataQueryR {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
@@ -21,14 +24,17 @@ pub struct DataQueryR {
 }
 
 impl DataQueryR {
+    #[must_use]
     pub fn builder() -> DataQueryRBuilder {
         DataQueryRBuilder::new()
     }
 
+    #[must_use]
     pub fn into_builder(self) -> DataQueryRBuilder {
         DataQueryRBuilder::new_from_body(self)
     }
 
+    #[must_use]
     pub fn into_pdu_body(self) -> PduBody {
         PduBody::DataQueryR(self)
     }
@@ -36,9 +42,9 @@ impl DataQueryR {
 
 impl BodyInfo for DataQueryR {
     fn body_length(&self) -> u16 {
-        BASE_DATA_QUERY_R_BODY_LENGTH +
-            (FOUR_OCTETS * self.fixed_datum_records.len()) as u16 +
-            (FOUR_OCTETS * self.variable_datum_records.len()) as u16
+        BASE_DATA_QUERY_R_BODY_LENGTH
+            + (FOUR_OCTETS * self.fixed_datum_records.len()) as u16
+            + (FOUR_OCTETS * self.variable_datum_records.len()) as u16
     }
 
     fn body_type(&self) -> PduType {

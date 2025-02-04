@@ -1,8 +1,8 @@
-use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 use crate::constants::TWO_BITS;
 use crate::event_report::model::EventReport;
 use crate::types::model::UVINT8;
-use crate::writing::{SerializeCdis, write_value_unsigned};
+use crate::writing::{write_value_unsigned, SerializeCdis};
+use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 
 impl SerializeCdisPdu for EventReport {
     #[allow(clippy::let_and_return)]
@@ -14,16 +14,28 @@ impl SerializeCdisPdu for EventReport {
         let cursor = self.event_type.serialize(buf, cursor);
 
         let cursor = if !self.datum_specification.fixed_datum_records.is_empty() {
-            UVINT8::from(self.datum_specification.fixed_datum_records.len() as u8).serialize(buf, cursor)
-        } else { cursor };
+            UVINT8::from(self.datum_specification.fixed_datum_records.len() as u8)
+                .serialize(buf, cursor)
+        } else {
+            cursor
+        };
         let cursor = if !self.datum_specification.variable_datum_records.is_empty() {
-            UVINT8::from(self.datum_specification.variable_datum_records.len() as u8).serialize(buf, cursor)
-        } else { cursor };
+            UVINT8::from(self.datum_specification.variable_datum_records.len() as u8)
+                .serialize(buf, cursor)
+        } else {
+            cursor
+        };
 
-        let cursor = self.datum_specification.fixed_datum_records.iter()
-            .fold(cursor, |cursor, vp| vp.serialize(buf, cursor) );
-        let cursor = self.datum_specification.variable_datum_records.iter()
-            .fold(cursor, |cursor, vp| vp.serialize(buf, cursor) );
+        let cursor = self
+            .datum_specification
+            .fixed_datum_records
+            .iter()
+            .fold(cursor, |cursor, vp| vp.serialize(buf, cursor));
+        let cursor = self
+            .datum_specification
+            .variable_datum_records
+            .iter()
+            .fold(cursor, |cursor, vp| vp.serialize(buf, cursor));
 
         cursor
     }

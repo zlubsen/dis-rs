@@ -1,7 +1,9 @@
 {
     "recommendations": [
+        "bierner.markdown-emoji",
         "EditorConfig.EditorConfig",
         "fill-labs.dependi",
+        "GitHub.vscode-github-actions",
         "Gruntfuggly.todo-tree",
         "rust-lang.rust-analyzer",
         "tamasfe.even-better-toml",

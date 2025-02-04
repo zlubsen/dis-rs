@@ -38,7 +38,7 @@ ttl = 1
 # `block_own_host` specifies whether the endpoint will block incoming messages that originate from the 'interface' socket address, to avoid echoing its own messages. It takes a boolean value, `true` or `false`. Optional, defaults to `true`.
 block_own_host = true
 
-# The `templates` entry specifies where the monitoring dashboard of the gateway is hosted.
+# The `site` entry specifies where the monitoring dashboard of the gateway is hosted.
 [site]
 # `port` specifies the port on the host where the templates is hosted. It defaults to port 8080.
 port = 8080

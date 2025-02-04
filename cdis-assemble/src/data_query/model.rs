@@ -1,9 +1,9 @@
-use num_traits::FromPrimitive;
-use dis_rs::enumerations::VariableRecordType;
-use crate::{BodyProperties, CdisBody, CdisInteraction};
 use crate::constants::{THIRTY_TWO_BITS, TWENTY_SIX_BITS};
 use crate::records::model::{CdisRecord, CdisTimeStamp, EntityId};
-use crate::types::model::{UVINT32, UVINT8, VarInt};
+use crate::types::model::{VarInt, UVINT32, UVINT8};
+use crate::{BodyProperties, CdisBody, CdisInteraction};
+use dis_rs::enumerations::VariableRecordType;
+use num_traits::FromPrimitive;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct DataQuery {
@@ -21,8 +21,15 @@ impl BodyProperties for DataQuery {
     const FIELDS_PRESENT_LENGTH: usize = 2;
 
     fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if !self.fixed_datum_ids.is_empty() { Self::FieldsPresent::FIXED_DATUMS_BIT } else { 0 })
-        | (if !self.variable_datum_ids.is_empty() { Self::FieldsPresent::VARIABLE_DATUMS_BIT } else { 0 })
+        (if !self.fixed_datum_ids.is_empty() {
+            Self::FieldsPresent::FIXED_DATUMS_BIT
+        } else {
+            0
+        }) | (if !self.variable_datum_ids.is_empty() {
+            Self::FieldsPresent::VARIABLE_DATUMS_BIT
+        } else {
+            0
+        })
     }
 
     fn body_length_bits(&self) -> usize {

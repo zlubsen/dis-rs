@@ -1,8 +1,11 @@
-use bytes::{BufMut, BytesMut};
-use crate::common::{Serialize, SerializePdu, SupportedVersion};
-use crate::common::transmitter::model::{BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter};
 use crate::common::model::length_padded_to_num;
+use crate::common::transmitter::model::{
+    BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter,
+    VariableTransmitterParameter, BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS,
+};
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Transmitter {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
@@ -28,28 +31,39 @@ impl SerializePdu for Transmitter {
         self.crypto_key_id.serialize(buf);
         if let Some(modulation_parameters) = &self.modulation_parameters {
             buf.put_u8(modulation_parameters.len() as u8);
-        } else { buf.put_u8(ZERO_OCTETS as u8) }
+        } else {
+            buf.put_u8(ZERO_OCTETS as u8);
+        }
         buf.put_u8(0u8);
         buf.put_u16(0u16);
 
-        let modulation_parameters_bytes = if let Some(modulation_parameters) = &self.modulation_parameters {
-            modulation_parameters.iter()
-                .map(|field| {
-                    buf.put_u8(*field);
-                    1u16
-                }).sum::<u16>()
-        } else { 0u16 };
+        let modulation_parameters_bytes =
+            if let Some(modulation_parameters) = &self.modulation_parameters {
+                modulation_parameters
+                    .iter()
+                    .map(|field| {
+                        buf.put_u8(*field);
+                        1u16
+                    })
+                    .sum::<u16>()
+            } else {
+                0u16
+            };
 
         let antenna_pattern_bytes = if let Some(antenna_pattern) = &self.antenna_pattern {
             antenna_pattern.serialize(buf);
             BEAM_ANTENNA_PATTERN_OCTETS
-        } else { ZERO_OCTETS as u16 };
+        } else {
+            ZERO_OCTETS as u16
+        };
 
-        let vtp_bytes = self.variable_transmitter_parameters.iter()
+        let vtp_bytes = self
+            .variable_transmitter_parameters
+            .iter()
             .map(|vtp| vtp.serialize(buf))
             .sum::<u16>();
 
-        104 + modulation_parameters_bytes + antenna_pattern_bytes + vtp_bytes
+        92 + modulation_parameters_bytes + antenna_pattern_bytes + vtp_bytes
     }
 }
 
@@ -76,8 +90,8 @@ impl Serialize for CryptoKeyId {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let field = self.pseudo_crypto_key << 1;
         let field = match self.crypto_mode {
-            CryptoMode::Baseband => { field }
-            CryptoMode::Diphase => { field + 1 }
+            CryptoMode::Baseband => field,
+            CryptoMode::Diphase => field + 1,
         };
         buf.put_u16(field);
         2
@@ -105,7 +119,8 @@ impl Serialize for VariableTransmitterParameter {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         let record_padded_lengths = length_padded_to_num(
             BASE_VTP_RECORD_LENGTH as usize + self.fields.len(),
-            EIGHT_OCTETS);
+            EIGHT_OCTETS,
+        );
         let record_length_bytes = record_padded_lengths.record_length as u16;
 
         buf.put_u32(self.record_type.into());

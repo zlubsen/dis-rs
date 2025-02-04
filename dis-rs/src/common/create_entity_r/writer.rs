@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
-use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::common::create_entity_r::model::CreateEntityR;
+use crate::common::{Serialize, SerializePdu, SupportedVersion};
+use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for CreateEntityR {
     fn serialize_pdu(&self, _version: SupportedVersion, buf: &mut BytesMut) -> u16 {
