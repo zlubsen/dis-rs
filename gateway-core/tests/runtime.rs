@@ -50,7 +50,7 @@ async fn build_empty_spec() {
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
 
-    if let GatewayError::Specification(SpecificationError::ParseSpecification(_)) = error {
+    if let GatewayError::Specification(SpecificationError::NoNodesSpecified(_)) = error {
     } else {
         panic!();
     }
@@ -67,7 +67,8 @@ async fn build_spec_wrong_node_data_type() {
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
 
-    if let GatewayError::Specification(SpecificationError::FieldIsNotAString(_)) = error {
+    if let GatewayError::Specification(SpecificationError::NodeEntryIsNotATable(id)) = error {
+        assert_eq!(id, 0);
     } else {
         panic!();
     }
