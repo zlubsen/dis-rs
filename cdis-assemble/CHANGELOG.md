@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- All kinds of code style changes due to applying `rustfmt` and `clippy`
+
 ### Security
 
 ## [0.3.0] - 2024-11-27
