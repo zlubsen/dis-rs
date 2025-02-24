@@ -13,6 +13,10 @@ check-all:
 test-all:
     cargo test --all-features --all-targets --workspace
 
+[group('format')]
+format-all:
+    cargo fmt --verbose --all
+
 [group('lint')]
 clippy-dis:
     cargo clippy --profile dev --all-features --all-targets --package dis-rs
@@ -68,3 +72,15 @@ check-gateway-core:
 [group('test')]
 test-gateway-core:
     cargo test --all-features --all-targets --package gateway-core
+
+[group('install')]
+install-tools-coverage:
+    cargo install cargo-tarpaulin
+
+[group('install')]
+install-tools-cdis-gateway:
+    @echo 'todo'
+    # bun
+    # tailwindcss
+    cd cdis-gateway
+    bun install
