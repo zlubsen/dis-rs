@@ -15,7 +15,7 @@ use dis_rs::enumerations::{
     TransmitterModulationTypeSystem, TransmitterTransmitState,
 };
 use dis_rs::transmitter::model::{CryptoKeyId, SpreadSpectrum, VariableTransmitterParameter};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 #[derive(Clone, Default, Debug, PartialEq)]

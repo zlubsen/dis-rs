@@ -26,7 +26,7 @@ use nom::IResult;
 use crate::parsing::{take_signed, BitInput};
 use crate::writing::{write_value_signed, write_value_unsigned};
 use crate::BitBuffer;
-use nom::complete::take;
+use nom::bits::complete::take;
 use num_traits::FromPrimitive;
 
 pub(crate) trait CdisRecord {

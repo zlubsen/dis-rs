@@ -13,7 +13,7 @@ use crate::underwater_acoustic::model::{
 };
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_i16, be_i32, be_u16, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn underwater_acoustic_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, emitting_entity_id) = entity_id(input)?;
@@ -30,10 +30,10 @@ pub(crate) fn underwater_acoustic_body(input: &[u8]) -> IResult<&[u8], PduBody> 
     let (input, number_of_apas) = be_u8(input)?;
     let (input, number_of_emitter_systems) = be_u8(input)?;
 
-    let (input, shafts) = count(shaft, number_of_shafts as usize)(input)?;
-    let (input, apas) = count(apa, number_of_apas as usize)(input)?;
+    let (input, shafts) = count(shaft, number_of_shafts as usize).parse(input)?;
+    let (input, apas) = count(apa, number_of_apas as usize).parse(input)?;
     let (input, emitter_systems) =
-        count(ua_emitter_system, number_of_emitter_systems as usize)(input)?;
+        count(ua_emitter_system, number_of_emitter_systems as usize).parse(input)?;
 
     Ok((
         input,
@@ -101,7 +101,7 @@ fn ua_emitter_system(input: &[u8]) -> IResult<&[u8], UAEmitterSystem> {
     let (input, _padding) = be_u16(input)?;
     let (input, acoustic_emitter_system) = acoustic_emitter_system(input)?;
     let (input, location) = vec3_f32(input)?;
-    let (input, beams) = count(ua_beam, number_of_beams as usize)(input)?;
+    let (input, beams) = count(ua_beam, number_of_beams as usize).parse(input)?;
 
     Ok((
         input,

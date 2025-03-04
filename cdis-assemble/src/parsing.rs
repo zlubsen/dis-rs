@@ -27,9 +27,9 @@ use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 use crate::{CdisBody, CdisError, CdisPdu};
 use dis_rs::enumerations::PduType;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::many1;
-use nom::IResult;
+use nom::{IResult, Parser};
 use std::ops::BitAnd;
 
 /// Attempts to parse the provided buffer for CDIS PDUs
@@ -41,7 +41,7 @@ pub fn parse(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
 }
 
 pub(crate) fn parse_multiple_cdis_pdu(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
-    match many1(cdis_pdu)((input, 0)) {
+    match many1(bitscdis_pdu).parse((input, 0)) {
         Ok((_, pdus)) => Ok(pdus),
         Err(err) => Err(CdisError::ParseError(err.to_string())), // TODO not very descriptive / error means we can not match any PDUs
     }

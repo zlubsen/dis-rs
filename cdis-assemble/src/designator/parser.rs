@@ -7,7 +7,7 @@ use crate::records::parser::{
 use crate::types::parser::{uvint16, uvint32};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, DesignatorSystemName};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 #[allow(clippy::redundant_closure)]

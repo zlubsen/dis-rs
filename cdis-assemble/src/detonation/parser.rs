@@ -10,9 +10,9 @@ use crate::records::parser::{
 use crate::types::model::CdisFloat;
 use crate::types::parser::{uvint16, uvint8};
 use crate::{parsing, BodyProperties, CdisBody};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn detonation_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present): (BitInput, u8) = take(FOUR_BITS)(input)?;
@@ -69,7 +69,7 @@ pub(crate) fn detonation_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     )(input)?;
 
     let (input, variable_parameters) = if let Some(num_params) = number_of_var_params {
-        count(variable_parameter, num_params)(input)?
+        count(variable_parameter, num_params).parse(input)?
     } else {
         (input, vec![])
     };

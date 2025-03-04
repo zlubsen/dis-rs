@@ -6,9 +6,9 @@ use crate::records::parser::entity_identification;
 use crate::types::parser::{uvint32, uvint8};
 use crate::{parsing, BodyProperties, CdisBody};
 use dis_rs::enumerations::VariableRecordType;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn data_query_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present): (BitInput, u8) = take(TWO_BITS)(input)?;
@@ -34,13 +34,13 @@ pub(crate) fn data_query_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
     let (input, fixed_datum_ids): (BitInput, Vec<u32>) =
         if let Some(num_datums) = number_of_fixed_datums {
-            count(take(THIRTY_TWO_BITS), num_datums)(input)?
+            count(take(THIRTY_TWO_BITS), num_datums).parse(input)?
         } else {
             (input, vec![])
         };
     let (input, variable_datum_ids): (BitInput, Vec<u32>) =
         if let Some(num_datums) = number_of_var_datums {
-            count(take(THIRTY_TWO_BITS), num_datums)(input)?
+            count(take(THIRTY_TWO_BITS), num_datums).parse(input)?
         } else {
             (input, vec![])
         };

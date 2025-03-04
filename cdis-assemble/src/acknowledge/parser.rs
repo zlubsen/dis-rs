@@ -5,7 +5,7 @@ use crate::records::parser::entity_identification;
 use crate::types::parser::uvint32;
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{AcknowledgeFlag, ResponseFlag};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 pub(crate) fn acknowledge_body(input: BitInput) -> IResult<BitInput, CdisBody> {

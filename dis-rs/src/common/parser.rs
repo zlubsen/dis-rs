@@ -80,12 +80,11 @@ use nom::combinator::peek;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
 use nom::number::complete::{be_f32, be_f64, be_i32, be_u16, be_u32, be_u64, be_u8};
-use nom::sequence::tuple;
-use nom::Err;
 use nom::IResult;
+use nom::{Err, Parser};
 
 pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
-    match many1(pdu)(input) {
+    match many1(pdu).parse(input) {
         Ok((_, pdus)) => Ok(pdus),
         Err(err) => Err(DisError::ParseError(err.to_string())), // TODO not very descriptive / error means we can not match any PDUs
     }
@@ -101,7 +100,7 @@ pub(crate) fn parse_pdu(input: &[u8]) -> Result<Pdu, DisError> {
 
 #[allow(dead_code)]
 pub(crate) fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisError> {
-    match many1(pdu_header_skip_body)(input) {
+    match many1(pdu_header_skip_body).parse(input) {
         Ok((_, headers)) => Ok(headers),
         Err(parse_error) => {
             if let Err::Error(ref error) = parse_error {
@@ -170,14 +169,15 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let pdu_length = be_u16;
 
     let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
-        tuple((
+        (
             protocol_version,
             exercise_id,
             pdu_type,
             protocol_family,
             time_stamp,
             pdu_length,
-        ))(input)?;
+        )
+            .parse(input)?;
     let (input, pdu_status, padding) = match u8::from(protocol_version) {
         legacy_version if (1..=5).contains(&legacy_version) => {
             let (input, padding) = be_u16(input)?;
@@ -317,7 +317,7 @@ pub(crate) fn parse_peek_protocol_version(input: &[u8]) -> Result<ProtocolVersio
 /// and return the raw value when successful.
 #[allow(dead_code)]
 fn peek_protocol_version(input: &[u8]) -> IResult<&[u8], u8> {
-    let (input, protocol_version) = peek(be_u8)(input)?;
+    let (input, protocol_version) = peek(be_u8).parse(input)?;
     Ok((input, protocol_version))
 }
 
@@ -412,7 +412,7 @@ fn country(input: &[u8]) -> IResult<&[u8], Country> {
 }
 
 pub(crate) fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
-    let (input, elements) = count(be_f32, 3)(input)?;
+    let (input, elements) = count(be_f32, 3).parse(input)?;
     #[allow(clippy::get_first)]
     Ok((
         input,
@@ -431,7 +431,7 @@ pub(crate) fn vec3_f32(input: &[u8]) -> IResult<&[u8], VectorF32> {
 }
 
 pub(crate) fn location(input: &[u8]) -> IResult<&[u8], Location> {
-    let (input, locations) = count(be_f64, 3)(input)?;
+    let (input, locations) = count(be_f64, 3).parse(input)?;
     #[allow(clippy::get_first)]
     Ok((
         input,
@@ -450,7 +450,7 @@ pub(crate) fn location(input: &[u8]) -> IResult<&[u8], Location> {
 }
 
 pub(crate) fn orientation(input: &[u8]) -> IResult<&[u8], Orientation> {
-    let (input, orientations) = count(be_f32, 3)(input)?;
+    let (input, orientations) = count(be_f32, 3).parse(input)?;
     #[allow(clippy::get_first)]
     Ok((
         input,
@@ -601,8 +601,9 @@ pub(crate) fn datum_specification(input: &[u8]) -> IResult<&[u8], DatumSpecifica
     let (input, num_fixed_datums) = be_u32(input)?;
     let (input, num_variable_datums) = be_u32(input)?;
 
-    let (input, fixed_datums) = count(fixed_datum, num_fixed_datums as usize)(input)?;
-    let (input, variable_datums) = count(variable_datum, num_variable_datums as usize)(input)?;
+    let (input, fixed_datums) = count(fixed_datum, num_fixed_datums as usize).parse(input)?;
+    let (input, variable_datums) =
+        count(variable_datum, num_variable_datums as usize).parse(input)?;
 
     let datums = DatumSpecification::new(fixed_datums, variable_datums);
 
@@ -797,7 +798,7 @@ pub(crate) fn supply_quantity(input: &[u8]) -> IResult<&[u8], SupplyQuantity> {
 /// Parses the `RecordSpecification` record (6.2.73)
 pub(crate) fn record_specification(input: &[u8]) -> IResult<&[u8], RecordSpecification> {
     let (input, number_of_records) = be_u32(input)?;
-    let (input, record_sets) = count(record_set, number_of_records as usize)(input)?;
+    let (input, record_sets) = count(record_set, number_of_records as usize).parse(input)?;
 
     Ok((
         input,
@@ -819,7 +820,7 @@ pub(crate) fn record_set(input: &[u8]) -> IResult<&[u8], RecordSet> {
     let record_length_bytes = ceil_bits_to_bytes(record_length_bits);
     let (input, record_count) = be_u16(input)?;
     let (input, record_values): (&[u8], Vec<&[u8]>) =
-        count(take(record_length_bytes), record_count as usize)(input)?;
+        count(take(record_length_bytes), record_count as usize).parse(input)?;
     let record_values = record_values.iter().map(|values| values.to_vec()).collect();
     let padded_record_length =
         length_padded_to_num((record_length_bytes * record_count) as usize, EIGHT_OCTETS);

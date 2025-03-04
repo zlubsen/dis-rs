@@ -27,7 +27,7 @@ use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
 use dis_rs::parse_pdu_status_fields;
 use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 use num::Integer;
 
 const FIVE_LEAST_SIGNIFICANT_BITS: u32 = 0x1f;
@@ -185,7 +185,8 @@ pub(crate) fn entity_marking(input: BitInput) -> IResult<BitInput, CdisEntityMar
     let (input, length): (BitInput, usize) = take(FOUR_BITS)(input)?;
     let (input, char_bit_size): (BitInput, u8) = take(ONE_BIT)(input)?;
     let encoding = CdisMarkingCharEncoding::new(char_bit_size);
-    let (input, chars): (BitInput, Vec<u8>) = count(take(encoding.bit_size()), length)(input)?;
+    let (input, chars): (BitInput, Vec<u8>) =
+        count(take(encoding.bit_size()), length).parse(input)?;
 
     let marking = CdisEntityMarking::from((chars.as_slice(), encoding));
 
@@ -529,7 +530,7 @@ pub(crate) fn variable_datum(input: BitInput) -> IResult<BitInput, VariableDatum
     let (num_full_bytes, partial_bytes_bits) = datum_length_bits.div_rem(&EIGHT_BITS);
 
     let (input, mut datum_value): (BitInput, Vec<u8>) =
-        count(take(EIGHT_BITS), num_full_bytes)(input)?;
+        count(take(EIGHT_BITS), num_full_bytes).parse(input)?;
     let (input, datum_value) = if partial_bytes_bits != 0 {
         let (input, last_byte): (BitInput, u8) = take(partial_bytes_bits)(input)?;
         datum_value.push(last_byte << (EIGHT_BITS - partial_bytes_bits));

@@ -5,7 +5,7 @@ use crate::records::parser::{entity_coordinate_vector, entity_identification, li
 use crate::types::parser::uvint32;
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::CollisionType;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 pub(crate) fn collision_body(input: BitInput) -> IResult<BitInput, CdisBody> {

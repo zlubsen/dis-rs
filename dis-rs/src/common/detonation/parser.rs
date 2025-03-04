@@ -6,6 +6,7 @@ use crate::enumerations::{DetonationResult, DetonationTypeIndicator};
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u8};
 use nom::IResult;
+use nom::Parser;
 
 pub(crate) fn detonation_body(
     header: &PduHeader,
@@ -28,7 +29,7 @@ pub(crate) fn detonation_body(
         let (input, variable_parameters_no) = be_u8(input)?;
         let (input, _padding) = be_u16(input)?;
         let (input, articulation_parameters) = if variable_parameters_no > 0 {
-            count(variable_parameter, variable_parameters_no as usize)(input)?
+            count(variable_parameter, variable_parameters_no as usize).parse(input)?
         } else {
             (input, vec![])
         };

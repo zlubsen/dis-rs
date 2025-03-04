@@ -5,7 +5,7 @@ use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
@@ -36,7 +36,7 @@ pub(crate) fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
 pub(crate) fn record_query_specification(input: &[u8]) -> IResult<&[u8], RecordQuerySpecification> {
     let (input, record_count) = be_u32(input)?;
-    let (input, records) = count(be_u32, record_count as usize)(input)?;
+    let (input, records) = count(be_u32, record_count as usize).parse(input)?;
     let records = records
         .iter()
         .map(|record| VariableRecordType::from(*record))

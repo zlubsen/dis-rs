@@ -18,9 +18,9 @@ use dis_rs::enumerations::{
     VariableRecordType,
 };
 use dis_rs::transmitter::model::{CryptoKeyId, VariableTransmitterParameter};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 #[allow(clippy::too_many_lines)]
 pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -144,7 +144,8 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         let (input, params): (BitInput, Vec<u8>) = count(
             take(EIGHT_BITS),
             length_of_modulation_parameters.unwrap_or_default() as usize,
-        )(input)?;
+        )
+        .parse(input)?;
         (input, params)
     } else {
         (input, vec![])
@@ -167,7 +168,8 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         let (input, params): (BitInput, Vec<VariableTransmitterParameter>) = count(
             variable_transmitter_parameter,
             nr_of_variable_transmitter_parameters.value as usize,
-        )(input)?;
+        )
+        .parse(input)?;
         (input, params)
     } else {
         (input, vec![])
@@ -209,7 +211,7 @@ fn variable_transmitter_parameter(
 
     let nr_of_records = record_length.saturating_sub(SIX_OCTETS);
     let (input, record_specific_fields): (BitInput, Vec<u8>) =
-        count(take(EIGHT_BITS), nr_of_records)(input)?;
+        count(take(EIGHT_BITS), nr_of_records).parse(input)?;
 
     Ok((
         input,

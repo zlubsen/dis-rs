@@ -13,6 +13,7 @@ use crate::enumerations::{
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u8};
 use nom::IResult;
+use nom::Parser;
 
 pub(crate) fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input| {
@@ -22,7 +23,8 @@ pub(crate) fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[
         let (input, no_of_systems) = be_u8(input)?;
         let (input, _pad_16) = be_u16(input)?;
 
-        let (input, mut emitter_systems) = count(emitter_system, no_of_systems as usize)(input)?;
+        let (input, mut emitter_systems) =
+            count(emitter_system, no_of_systems as usize).parse(input)?;
 
         let body = ElectromagneticEmission::builder()
             .with_emitting_entity_id(emitting_entity_id)
@@ -46,7 +48,7 @@ pub(crate) fn emitter_system(input: &[u8]) -> IResult<&[u8], EmitterSystem> {
     let (input, number) = be_u8(input)?;
     let (input, location) = vec3_f32(input)?;
 
-    let (input, mut beams) = count(beam, no_of_beams as usize)(input)?;
+    let (input, mut beams) = count(beam, no_of_beams as usize).parse(input)?;
 
     let system = EmitterSystem::new()
         .with_name(EmitterName::from(name))
@@ -69,7 +71,7 @@ pub(crate) fn beam(input: &[u8]) -> IResult<&[u8], Beam> {
     let (input, high_density_track_jam) = be_u8(input)?;
     let (input, status) = be_u8(input)?;
     let (input, jamming_technique) = jamming_technique(input)?;
-    let (input, mut track_jams) = count(track_jam, no_of_targets as usize)(input)?;
+    let (input, mut track_jams) = count(track_jam, no_of_targets as usize).parse(input)?;
 
     let beam = Beam::new()
         .with_number(number)

@@ -5,7 +5,7 @@ use crate::records::parser::entity_identification;
 use crate::types::parser::uvint16;
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::ReceiverState;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 pub(crate) fn receiver_body(input: BitInput) -> IResult<BitInput, CdisBody> {

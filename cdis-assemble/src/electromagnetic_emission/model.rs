@@ -10,7 +10,7 @@ use dis_rs::enumerations::{
     ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName,
     EmitterSystemFunction, HighDensityTrackJam,
 };
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 #[derive(Clone, Default, Debug, PartialEq)]

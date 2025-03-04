@@ -22,7 +22,7 @@ use crate::enumerations::{
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id) = entity_id(input)?;
@@ -87,7 +87,7 @@ fn iff_layer_2(input: &[u8]) -> IResult<&[u8], IffLayer2> {
     let (input, operational_parameter_2) = be_u8(input)?;
     let (input, num_params) = be_u16(input)?;
     let (input, fundamental_parameters) =
-        count(iff_fundamental_parameter_data, num_params.into())(input)?;
+        count(iff_fundamental_parameter_data, num_params.into()).parse(input)?;
 
     Ok((
         input,
@@ -222,7 +222,7 @@ fn iff_data_record(input: &[u8]) -> IResult<&[u8], IffDataRecord> {
 
 fn iff_data_specification(input: &[u8]) -> IResult<&[u8], IffDataSpecification> {
     let (input, num_records) = be_u16(input)?;
-    let (input, records) = count(iff_data_record, num_records.into())(input)?;
+    let (input, records) = count(iff_data_record, num_records.into()).parse(input)?;
 
     Ok((
         input,
@@ -518,7 +518,7 @@ fn mode_s_transponder_basic_data(input: &[u8]) -> IResult<&[u8], ModeSTransponde
     let aircraft_present_domain = AircraftPresentDomain::from(aircraft_present_domain);
 
     let mut buf: [u8; EIGHT_OCTETS] = [0; EIGHT_OCTETS];
-    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf).parse(input)?;
 
     let mut aircraft_id = String::from_utf8_lossy(&buf[..]).into_owned();
     aircraft_id.truncate(

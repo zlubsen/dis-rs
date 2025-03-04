@@ -3,7 +3,7 @@ use crate::model::PduBody;
 use crate::sees::model::{PropulsionSystemData, VectoringNozzleSystemData, SEES};
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn sees_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_entity_id) = entity_id(input)?;
@@ -14,11 +14,12 @@ pub(crate) fn sees_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, nr_of_vectoring_nozzle_systems) = be_u16(input)?;
 
     let (input, propulsion_systems) =
-        count(propulsion_system_data, nr_of_propulsion_systems.into())(input)?;
+        count(propulsion_system_data, nr_of_propulsion_systems.into()).parse(input)?;
     let (input, vectoring_nozzle_systems) = count(
         vectoring_nozzle_system_data,
         nr_of_vectoring_nozzle_systems.into(),
-    )(input)?;
+    )
+    .parse(input)?;
 
     let body = SEES::builder()
         .with_originating_entity_id(originating_entity_id)

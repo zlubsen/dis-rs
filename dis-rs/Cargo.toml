@@ -20,17 +20,17 @@ categories.workspace = true
 serde = ["dep:serde"]
 
 [dependencies]
-bytes = "1.9.0"
-nom = "7.1.3"
+bytes = "1.10.0"
+nom = "8.0.0"
 thiserror = "2.0"
-serde = { version = "1.0.216", features = ["derive"], optional = true }
+serde = { version = "1.0.218", features = ["derive"], optional = true }
 
 [build-dependencies]
-quote = "1.0.37"
-quick-xml = "0.37.1"
-proc-macro2 = "1.0.92"
-prettyplease = "0.2.25"
-syn = "2.0.90"
+quote = "1.0.39"
+quick-xml = "0.37.2"
+proc-macro2 = "1.0.94"
+prettyplease = "0.2.30"
+syn = "2.0.99"
 
 [lints]
 workspace = true

@@ -13,6 +13,7 @@ use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use nom::IResult;
+use nom::Parser;
 
 pub(crate) fn transmitter_body(
     header: &PduHeader,
@@ -65,7 +66,7 @@ pub(crate) fn transmitter_body(
         };
 
         let (input, vt_params) =
-            count(variable_transmitter_parameter, number_of_vtp.into())(input)?;
+            count(variable_transmitter_parameter, number_of_vtp.into()).parse(input)?;
 
         let body = Transmitter::builder()
             .with_radio_reference_id(radio_reference_id)

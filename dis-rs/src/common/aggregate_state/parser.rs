@@ -15,7 +15,7 @@ use crate::model::PduBody;
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn aggregate_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, aggregate_id) = entity_id(input)?;
@@ -36,8 +36,8 @@ pub(crate) fn aggregate_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, number_of_silent_aggregates) = be_u16(input)?;
     let (input, number_of_silent_entities) = be_u16(input)?;
 
-    let (input, aggregates) = count(entity_id, number_of_aggregates.into())(input)?;
-    let (input, entities) = count(entity_id, number_of_entities.into())(input)?;
+    let (input, aggregates) = count(entity_id, number_of_aggregates.into()).parse(input)?;
+    let (input, entities) = count(entity_id, number_of_entities.into()).parse(input)?;
 
     let (_intermediate_length, padding_length) =
         aggregate_state_intermediate_length_padding(&aggregates, &entities);
@@ -45,13 +45,13 @@ pub(crate) fn aggregate_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, _padding) = take(padding_length)(input)?;
 
     let (input, silent_aggregate_systems) =
-        count(silent_aggregate_system, number_of_silent_aggregates.into())(input)?;
+        count(silent_aggregate_system, number_of_silent_aggregates.into()).parse(input)?;
     let (input, silent_entity_systems) =
-        count(silent_entity_system, number_of_silent_entities.into())(input)?;
+        count(silent_entity_system, number_of_silent_entities.into()).parse(input)?;
 
     let (input, number_of_variable_datums) = be_u32(input)?;
     let (input, variable_datums) =
-        count(variable_datum, number_of_variable_datums as usize)(input)?;
+        count(variable_datum, number_of_variable_datums as usize).parse(input)?;
 
     Ok((
         input,
@@ -108,7 +108,7 @@ fn aggregate_marking(input: &[u8]) -> IResult<&[u8], AggregateMarking> {
     let mut buf: [u8; 31] = [0; 31];
     let (input, marking_character_set) = be_u8(input)?;
     let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
-    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf).parse(input)?;
 
     let marking_string = sanitize_marking(&buf[..]);
 
@@ -141,7 +141,8 @@ fn silent_entity_system(input: &[u8]) -> IResult<&[u8], SilentEntitySystem> {
     let (input, appearances) = count(
         entity_appearance(entity_type),
         number_of_appearance_records.into(),
-    )(input)?;
+    )
+    .parse(input)?;
 
     Ok((
         input,

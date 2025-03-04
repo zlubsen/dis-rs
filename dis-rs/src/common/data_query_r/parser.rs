@@ -4,7 +4,7 @@ use crate::data_query_r::model::DataQueryR;
 use crate::enumerations::{RequiredReliabilityService, VariableRecordType};
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn data_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
@@ -19,12 +19,13 @@ pub(crate) fn data_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
     let (input, num_of_fixed_datums) = be_u32(input)?;
     let (input, num_of_variable_datums) = be_u32(input)?;
-    let (input, fixed_datum_ids) = count(be_u32, num_of_fixed_datums as usize)(input)?;
+    let (input, fixed_datum_ids) = count(be_u32, num_of_fixed_datums as usize).parse(input)?;
     let fixed_datum_ids = fixed_datum_ids
         .iter()
         .map(|id| VariableRecordType::from(*id))
         .collect();
-    let (input, variable_datum_ids) = count(be_u32, num_of_variable_datums as usize)(input)?;
+    let (input, variable_datum_ids) =
+        count(be_u32, num_of_variable_datums as usize).parse(input)?;
     let variable_datum_ids = variable_datum_ids
         .iter()
         .map(|id| VariableRecordType::from(*id))
