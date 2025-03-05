@@ -25,13 +25,11 @@ bytes = "1.10.1"
 bytesize = "2.0.1"
 cdis-assemble = { path = "../cdis-assemble" }
 clap = { version = "4.5.31", features = ["derive"] }
-clap_derive = "4.5.28"
 dis-rs = { path = "../dis-rs" }
 futures = "0.3.31"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tokio = { version = "1.43.0", features = ["full"] }
-tokio-stream = "0.1.17"
 toml = "0.8.20"
 tower-http = { version = "0.6.2", features = ["fs", "trace"] }
 serde = "1.0.218"
