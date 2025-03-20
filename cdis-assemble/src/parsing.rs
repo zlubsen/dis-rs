@@ -274,7 +274,7 @@ mod tests {
         let dis_header = build_default_fire_header();
         let dis_body = build_default_fire_body();
         let dis_pdu_in_1 =
-            Pdu::finalize_from_parts(dis_header.clone(), dis_body.clone(), TimeStamp::new(0));
+            Pdu::finalize_from_parts(dis_header, dis_body.clone(), TimeStamp::new(0));
         let dis_pdu_in_2 = Pdu::finalize_from_parts(dis_header, dis_body, TimeStamp::new(50));
 
         let (cdis_pdu_1, _state_result) =
@@ -290,6 +290,7 @@ mod tests {
 
         let parsed_cdis_pdus = parse(bit_buf.as_raw_slice()).unwrap();
         assert_eq!(parsed_cdis_pdus.len(), 2);
+        #[allow(clippy::get_first)]
         if let Some(parsed_pdu_1) = parsed_cdis_pdus.get(0) {
             assert_eq!(parsed_pdu_1.header.pdu_type, PduType::Fire);
             assert_eq!(parsed_pdu_1.header.timestamp, TimeStamp::new(0));
