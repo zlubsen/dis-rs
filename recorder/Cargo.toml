@@ -1,0 +1,24 @@
+[package]
+name = "recorder"
+version = "0.1.0"
+description = """
+A network packet recorder and player, targeted at simulation data.
+"""
+readme = "README.md"
+keywords = ["simulation", "DIS", "packets", "recorder", "player"]
+
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+categories.workspace = true
+
+[dependencies]
+chrono = "0.4.40"
+thiserror = "2.0.12"
+tokio = "1.44.1"
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "sqlite"] } # "uuid", "chrono"
+
+[lints]
+workspace = true
