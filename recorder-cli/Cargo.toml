@@ -14,7 +14,7 @@ repository.workspace = true
 categories.workspace = true
 
 [dependencies]
-tokio = "1.44.1"
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 recorder = { path = "../recorder" }
 
 [lints]

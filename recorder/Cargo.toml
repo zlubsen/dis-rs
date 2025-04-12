@@ -16,6 +16,7 @@ categories.workspace = true
 
 [dependencies]
 chrono = "0.4.40"
+gethostname = "1.0.1"
 thiserror = "2.0.12"
 tokio = "1.44.1"
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "sqlite"] } # "uuid", "chrono"

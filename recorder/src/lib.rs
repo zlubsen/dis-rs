@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
-use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use thiserror::Error;
+
+pub(crate) mod db;
 
 pub type FrameId = usize;
 
@@ -51,6 +52,7 @@ pub struct RecordingMetaData {
     pub schema_version: String,
     pub name: String,
     pub date_created: DateTime<Utc>,
+    pub frame_time_ms: i64,
 }
 
 #[derive(Debug)]
@@ -64,14 +66,15 @@ pub struct Recorder {
 
 impl Recorder {
     pub async fn new() -> Result<Self, RecorderError> {
-        let file_path = create_db_filename();
+        let file_path = db::create_db_filename();
         Self::new_with_file(&file_path).await
     }
 
     pub async fn new_with_file(file_path: impl AsRef<Path>) -> Result<Self, RecorderError> {
         let filename = file_path.as_ref().to_string_lossy().to_string();
-        let mut pool = open_database(file_path).await?;
-        let meta = read_metadata(&mut pool).await?;
+
+        let mut pool = db::open_database(file_path).await?;
+        let meta = db::query_metadata(&mut pool).await?;
         Ok(Self {
             filename,
             pool,
@@ -80,40 +83,4 @@ impl Recorder {
             position: Position::default(),
         })
     }
-}
-
-fn create_db_filename() -> PathBuf {
-    let timestamp: DateTime<Utc> = Utc::now();
-    let mut path = PathBuf::new();
-    path.push(format!("{}.db", timestamp.format("%Y%m%d-%H%M%S")));
-
-    path
-}
-
-async fn open_database(file_path: impl AsRef<Path>) -> Result<SqlitePool, RecorderError> {
-    let options = SqliteConnectOptions::new()
-        .filename(file_path)
-        .create_if_missing(true);
-
-    let pool = SqlitePool::connect_with(options)
-        .await
-        .map_err(|err| RecorderError::DatabaseError(err))?;
-
-    Ok(pool)
-}
-
-async fn create_tables(pool: &SqlitePool) -> Result<(), RecorderError> {
-    sqlx::migrate!("./migrations")
-        .run(pool)
-        .await
-        .unwrap_or_else(|err| RecorderError::DatabaseError(err.into()));
-
-    Ok(())
-}
-
-async fn read_metadata(pool: &mut SqlitePool) -> Result<RecordingMetaData, RecorderError> {
-    sqlx::query!("SELECT * FROM meta_data;")
-        .fetch_one(pool)
-        .await?;
-    todo!()
 }
