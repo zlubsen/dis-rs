@@ -4,8 +4,10 @@ use std::path::Path;
 use thiserror::Error;
 
 pub(crate) mod db;
+pub mod model;
 
-pub type FrameId = usize;
+pub type DbId = u64;
+pub type FrameId = u64;
 
 #[derive(Default, Debug)]
 pub enum State {

@@ -1,4 +1,5 @@
-use crate::{RecorderError, RecordingMetaData};
+use crate::model::MarkerType;
+use crate::{DbId, RecorderError, RecordingMetaData};
 use chrono::{DateTime, Utc};
 use gethostname::gethostname;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteRow};
@@ -66,10 +67,10 @@ pub(crate) async fn run_migrations(pool: &SqlitePool) -> Result<(), RecorderErro
 pub(crate) async fn query_metadata(pool: &SqlitePool) -> Result<RecordingMetaData, RecorderError> {
     let row = sqlx::query("SELECT * FROM metadata LIMIT 1")
         .map(|row: SqliteRow| {
-            let id: u64 = row.get("id");
+            let _id: u64 = row.get("id");
             let hostname: &str = row.get("hostname");
             let time_started_utc: i64 = row.get("time_started_utc");
-            let frame_time_ms: i64 = row.get("frame_time_ms");
+            let frame_time_ms: i64 = row.get("frame_duration_ms");
             let schema_version: &str = row.get("schema_version");
 
             let date_created =
@@ -88,3 +89,42 @@ pub(crate) async fn query_metadata(pool: &SqlitePool) -> Result<RecordingMetaDat
 
     Ok(row)
 }
+
+/// Fetch all `MarkerType`s from the database, returned as a `Vec<MarkerType>`.
+pub(crate) async fn query_marker_types(
+    pool: &SqlitePool,
+) -> Result<Vec<MarkerType>, RecorderError> {
+    let rows = sqlx::query("SELECT * FROM marker_types")
+        .map(|row: SqliteRow| {
+            let id: u64 = row.get("id");
+            let name: &str = row.get("name");
+
+            MarkerType {
+                id,
+                name: name.to_string(),
+            }
+        })
+        .fetch_all(pool)
+        .await
+        .map_err(|err| RecorderError::DatabaseError(err))?;
+
+    Ok(rows)
+}
+
+pub(crate) async fn insert_stream(
+    pool: &SqlitePool,
+    name: &str,
+    protocol: &str,
+) -> Result<DbId, RecorderError> {
+    let query_result = sqlx::query("INSERT INTO streams (name, protocol) VALUES ($1, $2);")
+        .bind(name)
+        .bind(protocol)
+        .execute(pool)
+        .await
+        .map_err(|err| RecorderError::DatabaseError(err))?;
+    Ok(query_result.last_insert_rowid().into())
+}
+
+// TODO create frames for a given period; or create frames using triggers; only for frames that have actual packets?
+
+// TODO
