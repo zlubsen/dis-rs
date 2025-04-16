@@ -16,6 +16,7 @@ categories.workspace = true
 [dependencies]
 tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 recorder = { path = "../recorder" }
+inquire = "0.7.5"
 
 [lints]
 workspace = true

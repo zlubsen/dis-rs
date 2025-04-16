@@ -122,7 +122,7 @@ pub(crate) async fn insert_stream(
         .execute(pool)
         .await
         .map_err(|err| RecorderError::DatabaseError(err))?;
-    Ok(query_result.last_insert_rowid().into())
+    Ok(query_result.last_insert_rowid() as DbId)
 }
 
 // TODO create frames for a given period; or create frames using triggers; only for frames that have actual packets?
