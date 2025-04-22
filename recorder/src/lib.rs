@@ -1,10 +1,13 @@
 use chrono::{DateTime, Utc};
 use dis_rs::model::Pdu;
 use futures_util::future::JoinAll;
+use futures_util::stream::FuturesUnordered;
+use futures_util::StreamExt;
 use gateway_core::error::GatewayError;
 use gateway_core::runtime::{preset_builder_from_spec_str, run_from_builder, Command, Event};
 use sqlx::SqlitePool;
 use std::path::Path;
+use std::time::Duration;
 use thiserror::Error;
 use tokio::task::JoinHandle;
 
@@ -14,7 +17,7 @@ pub mod model;
 pub type DbId = u64;
 pub type FrameId = u64;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Copy, Clone)]
 pub enum State {
     #[default]
     Uninitialised,
@@ -25,10 +28,11 @@ pub enum State {
     Finished,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
     CreateRecording(Box<Path>),
     LoadRecording(Box<Path>),
+    CloseRecording,
     AddStream,
     RemoveStream,
     Record,
@@ -36,6 +40,13 @@ pub enum Operation {
     Pause,
     Rewind,
     Seek(FrameId),
+    Quit,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct RecorderInfo {
+    state: State,
+    position: Position,
 }
 
 #[derive(Debug, Error)]
@@ -50,7 +61,7 @@ pub enum RecorderError {
     GatewayError(GatewayError),
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Position {
     pub number_of_frames: FrameId,
     pub current_frame: FrameId,
@@ -134,12 +145,97 @@ impl Recorder {
         Ok(())
     }
 
-    pub fn shutdown(&mut self) {
+    pub fn info(&self) -> RecorderInfo {
+        let position = if let Some(recording) = &self.recording {
+            recording.position
+        } else {
+            Position::default()
+        };
+        RecorderInfo {
+            state: self.state,
+            position,
+        }
+    }
+
+    pub async fn run(
+        mut self,
+    ) -> (
+        JoinHandle<()>,
+        tokio::sync::mpsc::Sender<Operation>,
+        tokio::sync::mpsc::Receiver<RecorderInfo>,
+    ) {
+        const INFO_OUTPUT_INTERVAL_MS: u64 = 250;
+        const CHANNEL_CAPACITY: usize = 20;
+        let (cmd_tx, mut cmd_rx) = tokio::sync::mpsc::channel::<Operation>(CHANNEL_CAPACITY);
+        let (recorder_info_tx, recorder_info_rx) =
+            tokio::sync::mpsc::channel::<RecorderInfo>(CHANNEL_CAPACITY);
+
+        let mut info_interval =
+            tokio::time::interval(Duration::from_millis(INFO_OUTPUT_INTERVAL_MS));
+
+        let handle = tokio::spawn(async move {
+            let mut incoming_futures = Vec::new();
+            self.streams
+                .iter_mut()
+                .for_each(|mut stream| incoming_futures.push(stream.output_rx.recv()));
+            let incoming_futures = FuturesUnordered::from_iter(incoming_futures);
+            let incoming_futures = incoming_futures
+                .collect::<Vec<Result<Pdu, tokio::sync::broadcast::error::RecvError>>>();
+
+            loop {
+                tokio::select! {
+                    Some(op) = cmd_rx.recv() => {
+                        self.handle_operation(op.clone());
+                        if op == Operation::Quit { break };
+                    }
+                    _ = info_interval.tick() => {
+                        if let Err(err) = recorder_info_tx.send(self.info()).await {
+                            eprint!("{err}");
+                        };
+                    }
+                    aa = incoming_futures => {
+                        println!("{aa:?}");
+                    }
+                    // let pdu = self.streams.first().unwrap().output_rx.recv().await;
+                };
+            }
+        });
+
+        (handle, cmd_tx, recorder_info_rx)
+    }
+
+    // fn futures_infra(&mut self) -> Collect<FuturesUnordered<impl Future<Output>>, _> {
+    //     let mut incoming_futures = Vec::new();
+    //     self.streams
+    //         .iter_mut()
+    //         .for_each(|mut stream| incoming_futures.push(stream.output_rx.recv()));
+    //     let incoming_futures = FuturesUnordered::from_iter(incoming_futures);
+    //     // let _ = incoming_futures
+    //     //     .collect::<Vec<Result<Pdu, tokio::sync::broadcast::error::RecvError>>>()
+    //     //     .await;
+    //     // let a = incoming_futures
+    //     //     .collect::<Vec<Result<Pdu, tokio::sync::broadcast::error::RecvError>>>()
+    // }
+
+    pub fn handle_operation(&mut self, op: Operation) {
+        match op {
+            Operation::CreateRecording(_) => {}
+            Operation::LoadRecording(_) => {}
+            Operation::CloseRecording => {}
+            Operation::AddStream => {}
+            Operation::RemoveStream => {}
+            Operation::Record => {}
+            Operation::Play => {}
+            Operation::Pause => {}
+            Operation::Rewind => {}
+            Operation::Seek(_) => {}
+            Operation::Quit => self.shutdown(),
+        }
+    }
+
+    pub fn shutdown(&self) {
         self.streams.iter().for_each(|stream| {
             let _ = stream.cmd_tx.send(Command::Quit).unwrap();
         });
-        // if let Some(recording) = &self.recording {
-        //     recording.pool.close().await;
-        // }
     }
 }

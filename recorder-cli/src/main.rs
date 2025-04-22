@@ -1,5 +1,5 @@
 use inquire::{required, CustomUserError, Text};
-use recorder::Recorder;
+use recorder::Operation;
 use std::path::Path;
 
 #[tokio::main]
@@ -20,13 +20,25 @@ async fn main() {
         .await
         .expect("failed to add a stream to the recorder");
 
+    let (recorder_handle, cmd_tx, mut info_rx) = recorder.run().await;
+
+    let info_handle = tokio::spawn(async move {
+        loop {
+            if let Some(info) = info_rx.recv().await {
+                eprintln!("\r{info:?}");
+            }
+        }
+    });
+
     loop {
         let command = user_input();
-        if process_command(&command, &mut recorder) {
+        if process_command(&command, &cmd_tx).await {
             break;
         }
-        println!("State: {:?}", recorder.state);
     }
+
+    let _ = recorder_handle.await.unwrap();
+    info_handle.abort();
 }
 
 #[derive(Debug)]
@@ -78,7 +90,10 @@ fn suggester(val: &str) -> Result<Vec<String>, CustomUserError> {
         .collect())
 }
 
-fn process_command(cmd: &CliCommand, recorder: &mut Recorder) -> bool {
+async fn process_command(
+    cmd: &CliCommand,
+    recorder_cmd: &tokio::sync::mpsc::Sender<Operation>,
+) -> bool {
     match cmd {
         CliCommand::Nop => false,
         CliCommand::Record => false,
@@ -87,7 +102,8 @@ fn process_command(cmd: &CliCommand, recorder: &mut Recorder) -> bool {
         CliCommand::Rewind => false,
         CliCommand::Seek(_) => false,
         CliCommand::Quit => {
-            recorder.shutdown();
+            recorder_cmd.send(Operation::Quit).await.unwrap();
+            println!("Shutdown");
             true
         }
     }
