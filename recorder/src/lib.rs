@@ -1,7 +1,8 @@
+use crate::play::PlayCommand;
+use crate::rec::RecCommand;
 use chrono::{DateTime, Utc};
 use dis_rs::model::Pdu;
 use futures_util::future::JoinAll;
-use futures_util::stream::FuturesUnordered;
 use futures_util::StreamExt;
 use gateway_core::error::GatewayError;
 use gateway_core::runtime::{preset_builder_from_spec_str, run_from_builder, Command, Event};
@@ -13,6 +14,8 @@ use tokio::task::JoinHandle;
 
 pub(crate) mod db;
 pub mod model;
+mod play;
+mod rec;
 
 pub type DbId = u64;
 pub type FrameId = u64;
@@ -21,10 +24,10 @@ pub type FrameId = u64;
 pub enum State {
     #[default]
     Uninitialised,
-    Initialised,
+    Ready,
     Recording,
     Playing,
-    Paused,
+    // Paused,
     Finished,
 }
 
@@ -37,10 +40,17 @@ pub enum Operation {
     RemoveStream,
     Record,
     Play,
+    Stop,
     Pause,
     Rewind,
     Seek(FrameId),
     Quit,
+}
+
+#[derive(Debug, Clone)]
+pub enum RecorderEvent {
+    Info(RecorderInfo),
+    Error(RecorderError),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -49,16 +59,16 @@ pub struct RecorderInfo {
     position: Position,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum RecorderError {
     #[error("Failed to create database '{0}'.")]
     DatabaseCannotBeCreated(String),
     #[error("The database '{0}' does not exist.")]
     DatabaseDoesNotExist(String),
     #[error("Database error: {0}.")]
-    DatabaseError(sqlx::Error),
+    DatabaseError(String),
     #[error("Gateway error: {0}.")]
-    GatewayError(GatewayError),
+    GatewayError(String),
 }
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -126,7 +136,7 @@ impl Recorder {
                 position: Position::default(),
             }),
             streams: vec![],
-            state: State::Initialised,
+            state: State::Ready,
         })
     }
 
@@ -158,9 +168,8 @@ impl Recorder {
     }
 
     pub async fn run(
-        mut self,
+        &mut self,
     ) -> (
-        JoinHandle<()>,
         tokio::sync::mpsc::Sender<Operation>,
         tokio::sync::mpsc::Receiver<RecorderInfo>,
     ) {
@@ -170,38 +179,49 @@ impl Recorder {
         let (recorder_info_tx, recorder_info_rx) =
             tokio::sync::mpsc::channel::<RecorderInfo>(CHANNEL_CAPACITY);
 
+        let (rec_cmd_tx, rec_cmd_rx) = tokio::sync::mpsc::channel::<RecCommand>(CHANNEL_CAPACITY);
+        let (play_cmd_tx, play_cmd_rx) =
+            tokio::sync::mpsc::channel::<PlayCommand>(CHANNEL_CAPACITY);
+        let (int_event_tx, mut int_event_rx) =
+            tokio::sync::mpsc::channel::<RecorderEvent>(CHANNEL_CAPACITY);
+
         let mut info_interval =
             tokio::time::interval(Duration::from_millis(INFO_OUTPUT_INTERVAL_MS));
 
-        let handle = tokio::spawn(async move {
-            let mut incoming_futures = Vec::new();
-            self.streams
-                .iter_mut()
-                .for_each(|mut stream| incoming_futures.push(stream.output_rx.recv()));
-            let incoming_futures = FuturesUnordered::from_iter(incoming_futures);
-            let incoming_futures = incoming_futures
-                .collect::<Vec<Result<Pdu, tokio::sync::broadcast::error::RecvError>>>();
+        // let handle = tokio::spawn(async move {
+        //     let mut incoming_futures = Vec::new();
+        //     self.streams
+        //         .iter_mut()
+        //         .for_each(|mut stream| incoming_futures.push(stream.output_rx.recv()));
+        //     let incoming_futures = FuturesUnordered::from_iter(incoming_futures);
+        //     let incoming_futures = incoming_futures
+        //         .collect::<Vec<Result<Pdu, tokio::sync::broadcast::error::RecvError>>>();
 
-            loop {
-                tokio::select! {
-                    Some(op) = cmd_rx.recv() => {
-                        self.handle_operation(op.clone());
-                        if op == Operation::Quit { break };
+        loop {
+            tokio::select! {
+                Some(op) = cmd_rx.recv() => {
+                    self.handle_operation(op.clone());
+                    if op == Operation::Quit { break };
+                }
+                _ = info_interval.tick() => {
+                    if let Err(err) = recorder_info_tx.send(self.info()).await {
+                        eprintln!("{err}");
+                    };
+                }
+                Some(event) = int_event_rx.recv() => {
+                    match event {
+                        RecorderEvent::Info(info) => {
+                            println!("{info:?}");
+                        }
+                        RecorderEvent::Error(err) => {
+                            eprintln!("{err:?}");
+                        }
                     }
-                    _ = info_interval.tick() => {
-                        if let Err(err) = recorder_info_tx.send(self.info()).await {
-                            eprint!("{err}");
-                        };
-                    }
-                    aa = incoming_futures => {
-                        println!("{aa:?}");
-                    }
-                    // let pdu = self.streams.first().unwrap().output_rx.recv().await;
-                };
-            }
-        });
+                }
+            };
+        }
 
-        (handle, cmd_tx, recorder_info_rx)
+        (cmd_tx, recorder_info_rx)
     }
 
     // fn futures_infra(&mut self) -> Collect<FuturesUnordered<impl Future<Output>>, _> {
@@ -226,6 +246,7 @@ impl Recorder {
             Operation::RemoveStream => {}
             Operation::Record => {}
             Operation::Play => {}
+            Operation::Stop => {}
             Operation::Pause => {}
             Operation::Rewind => {}
             Operation::Seek(_) => {}

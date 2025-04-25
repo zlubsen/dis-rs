@@ -1,5 +1,6 @@
 use crate::model::MarkerType;
-use crate::{DbId, RecorderError, RecordingMetaData};
+use crate::{DbId, FrameId, RecorderError, RecordingMetaData};
+use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use gethostname::gethostname;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteRow};
@@ -28,7 +29,7 @@ pub(crate) async fn open_database(
 
     let pool = SqlitePool::connect_with(options)
         .await
-        .map_err(|err| RecorderError::DatabaseError(err))?;
+        .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
 
     if new_db {
         run_migrations(&pool).await?;
@@ -40,16 +41,16 @@ pub(crate) async fn open_database(
 
 /// Insert the initial metadata into a database.
 async fn insert_initial_metadata(pool: &SqlitePool) -> Result<(), RecorderError> {
-    let timestamp = Utc::now().timestamp();
+    let timestamp = Utc::now().timestamp_millis();
     let _query_result = sqlx::query(
-        "INSERT INTO metadata (hostname, time_started_utc, schema_version) VALUES ($1, $2, $3);",
+        "INSERT INTO metadata (hostname, time_created_utc_ms, schema_version) VALUES ($1, $2, $3);",
     )
     .bind(gethostname().to_string_lossy())
     .bind(timestamp)
     .bind(env!("CARGO_PKG_VERSION"))
     .execute(pool)
     .await
-    .map_err(|err| RecorderError::DatabaseError(err))?;
+    .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
     Ok(())
 }
 
@@ -58,7 +59,7 @@ pub(crate) async fn run_migrations(pool: &SqlitePool) -> Result<(), RecorderErro
     sqlx::migrate!("./migrations")
         .run(pool)
         .await
-        .map_err(|err| RecorderError::DatabaseError(err.into()))?;
+        .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
 
     Ok(())
 }
@@ -69,12 +70,12 @@ pub(crate) async fn query_metadata(pool: &SqlitePool) -> Result<RecordingMetaDat
         .map(|row: SqliteRow| {
             let _id: u64 = row.get("id");
             let hostname: &str = row.get("hostname");
-            let time_started_utc: i64 = row.get("time_started_utc");
+            let time_started_utc: i64 = row.get("time_created_utc_ms");
             let frame_time_ms: i64 = row.get("frame_duration_ms");
             let schema_version: &str = row.get("schema_version");
 
             let date_created =
-                chrono::DateTime::<Utc>::from_timestamp(time_started_utc, 0).unwrap();
+                chrono::DateTime::<Utc>::from_timestamp_millis(time_started_utc).unwrap();
 
             RecordingMetaData {
                 schema_version: schema_version.to_string(),
@@ -85,7 +86,7 @@ pub(crate) async fn query_metadata(pool: &SqlitePool) -> Result<RecordingMetaDat
         })
         .fetch_one(pool)
         .await
-        .map_err(|err| RecorderError::DatabaseError(err))?;
+        .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
 
     Ok(row)
 }
@@ -106,7 +107,7 @@ pub(crate) async fn query_marker_types(
         })
         .fetch_all(pool)
         .await
-        .map_err(|err| RecorderError::DatabaseError(err))?;
+        .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
 
     Ok(rows)
 }
@@ -121,10 +122,45 @@ pub(crate) async fn insert_stream(
         .bind(protocol)
         .execute(pool)
         .await
-        .map_err(|err| RecorderError::DatabaseError(err))?;
+        .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
     Ok(query_result.last_insert_rowid() as DbId)
 }
 
 // TODO create frames for a given period; or create frames using triggers; only for frames that have actual packets?
 
-// TODO
+pub(crate) async fn insert_packet(
+    pool: &SqlitePool,
+    stream_id: i64,
+    frame_id: FrameId,
+    time_received: i64,
+    time_since_start_ms: i64,
+    bytes: &Bytes,
+) -> Result<DbId, RecorderError> {
+    let query_result = sqlx::query(
+        r"
+            INSERT INTO packets (
+                 stream_id,
+                 frame_id,
+                 time_received,
+                 time_since_start_ms,
+                 bytes)
+            VALUES (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+            );
+        ",
+    )
+    .bind(stream_id)
+    .bind(frame_id as i64)
+    .bind(time_received)
+    .bind(time_since_start_ms)
+    .bind(&bytes[..])
+    .execute(pool)
+    .await
+    .map_err(|err| RecorderError::DatabaseError(err.to_string()))?;
+
+    Ok(query_result.last_insert_rowid() as DbId)
+}
