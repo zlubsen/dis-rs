@@ -63,6 +63,8 @@ async fn main() {
 
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
+
+    // FIXME remove method or create default input/output spec definition
     let input_tx =
         downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
     let mut output_rx =

@@ -132,6 +132,11 @@ impl NodeRunner for PassThroughNodeRunner {
             tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
 
         loop {
+            println!(
+                "passthrough - {:?} - {:?}",
+                &incoming.as_ref().unwrap().is_closed(),
+                &incoming.as_ref().unwrap().is_empty()
+            );
             tokio::select! {
                 // receiving commands
                 Ok(cmd) = cmd_rx.recv() => {
@@ -140,11 +145,12 @@ impl NodeRunner for PassThroughNodeRunner {
                 Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
                     self.statistics.incoming_message();
                     let _send_result = outgoing.send(message)
-                        .inspect(|_| self.statistics.outgoing_message() )
-                        .inspect_err(|_|
+                        .inspect(|_| {
+                        self.statistics.outgoing_message() })
+                        .inspect_err(|_| {
                             Self::emit_event(&event_tx,
                                 Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
-                    );
+                    });
                 }
                 _ = aggregate_stats_interval.tick() => {
                     self.statistics.aggregate_interval();

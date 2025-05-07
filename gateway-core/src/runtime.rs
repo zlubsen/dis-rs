@@ -118,12 +118,6 @@ impl InfraBuilder {
         let external_channels = ExternalChannels::new_from_nodes(&mut nodes);
         self.external_channels = external_channels;
 
-        // FIXME remove this way of only having one external in- and output.
-        // Connect optional channels to an external sender/receiver.
-        // let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
-        // self.external_input_async = incoming;
-        // self.external_output_async = outgoing;
-
         self.nodes = nodes;
 
         Ok(())
@@ -139,11 +133,13 @@ impl InfraBuilder {
         self.event_tx.subscribe()
     }
 
+    // FIXME remove method or create default input/output spec definition
     /// Returns a sender handle to the external input channel, if present (e.g., when defined in the specification).
     pub fn external_input(&mut self) -> Option<Box<dyn Any>> {
         self.external_input_async.take()
     }
 
+    // FIXME remove method or create default input/output spec definition
     /// Returns a reference to the external output channel, if present (e.g., when defined in the specification).
     /// The reference must be used to downcast the dyn type and subscribe to the channel.
     pub fn external_output(&mut self) -> Option<Box<dyn Any>> {
@@ -344,6 +340,7 @@ pub fn preset_from_spec_str<I: 'static, O: 'static>(
     let cmd_tx = builder.command_channel();
     let event_rx = builder.event_channel();
 
+    // FIXME replace or create default input/output spec definition
     let input_tx = downcast_external_input::<I>(builder.external_input());
     let output_rx = downcast_external_output::<O>(builder.external_output());
 
@@ -402,34 +399,6 @@ impl ExternalChannels {
 
         Self { in_map, out_map }
     }
-
-    // pub(crate) fn push_input(
-    //     &mut self,
-    //     node_name: &str,
-    //     sender: Box<dyn Any>,
-    // ) -> Result<(), GatewayError> {
-    //     if self.in_map.insert(node_name.to_string(), sender).is_none() {
-    //         Ok(())
-    //     } else {
-    //         Err(GatewayError::Specification(
-    //             SpecificationError::DuplicateNodeNames(node_name.to_string()),
-    //         ))
-    //     }
-    // }
-    //
-    // pub(crate) fn push_output(
-    //     &mut self,
-    //     node_name: &str,
-    //     sender: Box<dyn Any>,
-    // ) -> Result<(), GatewayError> {
-    //     if self.out_map.insert(node_name.to_string(), sender).is_none() {
-    //         Ok(())
-    //     } else {
-    //         Err(GatewayError::Specification(
-    //             SpecificationError::DuplicateNodeNames(node_name.to_string()),
-    //         ))
-    //     }
-    // }
 
     pub fn input_for_name<T: 'static>(
         &mut self,

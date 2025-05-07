@@ -28,6 +28,7 @@ pub(crate) const SPEC_NODE_NAME_FIELD: &str = "name";
 pub(crate) const SPEC_CHANNEL_ARRAY: &str = "channels";
 pub(crate) const SPEC_CHANNEL_FROM_FIELD: &str = "from";
 pub(crate) const SPEC_CHANNEL_TO_FIELD: &str = "to";
+// FIXME remove method or create default input/output spec definition
 pub(crate) const SPEC_EXTERNALS_TABLE: &str = "externals";
 pub(crate) const SPEC_EXTERNALS_INCOMING_FIELD: &str = "incoming";
 pub(crate) const SPEC_EXTERNALS_OUTGOING_FIELD: &str = "outgoing";
@@ -125,6 +126,7 @@ macro_rules! node_data_impl {
         }
 
         fn request_external_output_sender(&self) -> Box<dyn Any> {
+            todo!("this should just do a subscribe on the out_chan_field - apparently this closes the existing one")
             let sender = self$(.$out_chan_field)*.clone();
             Box::new(sender)
         }

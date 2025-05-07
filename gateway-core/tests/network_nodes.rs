@@ -43,10 +43,17 @@ async fn udp() {
 
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
-    let input_tx =
-        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-    let mut output_rx =
-        downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Bytes>("UDP")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<Bytes>("PassThrough")
+        .unwrap();
+    // FIXME remove method or create default input/output spec definition
+    // let input_tx =
+    //     downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
+    // let mut output_rx =
+    //     downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
 
     let stimulus_handle = tokio::spawn(async move {
         let message = "Hello, World!";
@@ -128,6 +135,7 @@ async fn tcp_server() {
 
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
+    // FIXME remove method or create default input/output spec definition
     let input_tx =
         downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
     let mut output_rx =
@@ -228,10 +236,18 @@ async fn tcp_client() {
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
 
-    let input_tx =
-        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-    let mut output_tx =
-        downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Bytes>("TCP Client")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<Bytes>("PassThrough")
+        .unwrap();
+
+    // FIXME remove method or create default input/output spec definition
+    // let input_tx =
+    //     downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
+    // let mut output_tx =
+    //     downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
 
     let stimulus_handle = tokio::spawn(async move {
         let message = "Hello, World!";
@@ -255,7 +271,7 @@ async fn tcp_client() {
         }
 
         let _ = tcp_tx.write(message.as_bytes()).await;
-        let node_out_received = output_tx.recv().await;
+        let node_out_received = output_rx.recv().await;
 
         assert!(node_out_received.is_ok());
         let node_out_received = node_out_received.unwrap();

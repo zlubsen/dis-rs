@@ -77,6 +77,7 @@ fn main() {
         let _cmd_tx = infra_runtime_builder.command_channel();
         let _event_rx = infra_runtime_builder.event_channel();
 
+        // FIXME remove method or create default input/output spec definition
         // We can request a handle to an externalised input channel for a node, in this case 'Pass One'.
         // It needs to be downcast to the concrete type that you know yourself (depends on the node you created in the spec).
         // The Infra Runtime provides convenience functions to do this.
