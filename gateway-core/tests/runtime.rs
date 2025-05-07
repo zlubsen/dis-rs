@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use gateway_core::error::{CreationError, GatewayError, SpecificationError};
 use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
@@ -83,7 +84,7 @@ async fn build_spec_no_node_type_field() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    if let GatewayError::Specification(SpecificationError::NodeEntryMissingTypeField(_)) = error {
+    if let GatewayError::Specification(SpecificationError::NodeEntryMissingField(_)) = error {
     } else {
         panic!();
     }
@@ -103,6 +104,42 @@ async fn build_spec_incorrect_node_type_field() {
         assert_eq!(node_type.as_str(), "a_type_that_does_not_exist");
     } else {
         panic!()
+    }
+}
+
+#[tokio::test]
+async fn build_spec_no_node_name_field() {
+    let spec = r#"
+        [[ nodes ]]
+        type = "pass_through"
+    "#;
+
+    let mut infra_builder = InfraBuilder::new();
+    let error = infra_builder.build_from_str(spec).unwrap_err();
+    if let GatewayError::Specification(SpecificationError::ParseSpecification(_)) = error {
+    } else {
+        panic!();
+    }
+}
+
+#[tokio::test]
+async fn build_spec_duplicate_node_names() {
+    let spec = r#"
+        [[ nodes ]]
+        type = "pass_through"
+        name = "pass"
+
+        [[ nodes ]]
+        type = "pass_through"
+        name = "pass"
+    "#;
+
+    let mut infra_builder = InfraBuilder::new();
+    let error = infra_builder.build_from_str(spec).unwrap_err();
+    if let GatewayError::Specification(SpecificationError::DuplicateNodeNames(name)) = error {
+        assert_eq!(name.as_str(), "pass");
+    } else {
+        panic!();
     }
 }
 
@@ -272,6 +309,49 @@ async fn build_spec_external_channels() {
 
     assert!(incoming.is_some());
     assert!(outgoing.is_some());
+
+    let cmd_task_handle = tokio::spawn(async move {
+        tokio::time::interval(Duration::from_millis(100))
+            .tick()
+            .await;
+        let _ = cmd_tx.send(Command::Quit);
+    });
+
+    let runtime_result = run_from_builder(infra_builder).await;
+
+    assert!(runtime_result.is_ok());
+    let _ = cmd_task_handle.await;
+}
+
+#[tokio::test]
+async fn build_spec_external_channels_new() {
+    let spec = r#"
+        [[ nodes ]]
+        type = "pass_through"
+        name = "Pass One"
+
+        [[ nodes ]]
+        type = "pass_through"
+        name = "Pass Two"
+
+        [[ channels ]]
+        from = "Pass One"
+        to = "Pass Two"
+    "#;
+
+    let mut infra_builder = InfraBuilder::new();
+    let build_result = infra_builder.build_from_str(spec);
+
+    let cmd_tx = infra_builder.command_channel();
+    let _event_tx = infra_builder.event_channel();
+
+    let input_to_pass_one = infra_builder.external_input_for_node::<Bytes>("Pass One");
+    let output_from_pass_two = infra_builder.external_output_for_node::<Bytes>("Pass Two");
+
+    assert!(build_result.is_ok());
+
+    assert!(input_to_pass_one.is_ok());
+    assert!(output_from_pass_two.is_ok());
 
     let cmd_task_handle = tokio::spawn(async move {
         tokio::time::interval(Duration::from_millis(100))

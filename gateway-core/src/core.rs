@@ -3,6 +3,7 @@ use crate::modules::{dis, network, util};
 use crate::runtime::{Command, Event};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
+use std::collections::HashSet;
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::task::JoinHandle;
 use toml::Value;
@@ -23,6 +24,7 @@ pub type NodeConstructor = fn(
 
 pub(crate) const SPEC_NODE_ARRAY: &str = "nodes";
 pub(crate) const SPEC_NODE_TYPE_FIELD: &str = "type";
+pub(crate) const SPEC_NODE_NAME_FIELD: &str = "name";
 pub(crate) const SPEC_CHANNEL_ARRAY: &str = "channels";
 pub(crate) const SPEC_CHANNEL_FROM_FIELD: &str = "from";
 pub(crate) const SPEC_CHANNEL_TO_FIELD: &str = "to";
@@ -60,7 +62,9 @@ where
     /// returning an `CreationError::SubscribeToChannel` error.
     fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), CreationError>;
     /// Obtain a Sender part of a channel that can be used to send data from outside the runtime to this node.
-    fn request_external_sender(&mut self) -> Result<Box<dyn Any>, CreationError>;
+    fn request_external_input_sender(&mut self) -> Result<Box<dyn Any>, CreationError>;
+    /// Obtain a clone of the Sender part of the channel that can be used to subscribe to outgoing data from this node, to link external receivers.
+    fn request_external_output_sender(&self) -> Box<dyn Any>;
 
     fn id(&self) -> InstanceId;
     fn name(&self) -> &str;
@@ -113,11 +117,16 @@ macro_rules! node_data_impl {
             }
         }
 
-        fn request_external_sender(&mut self) -> Result<Box<dyn Any>, CreationError> {
+        fn request_external_input_sender(&mut self) -> Result<Box<dyn Any>, CreationError> {
             let (incoming_tx, incoming_rx) =
                 channel::<$in_data_type>(DEFAULT_NODE_CHANNEL_CAPACITY);
             self.register_subscription(Box::new(incoming_rx))?;
             Ok(Box::new(incoming_tx))
+        }
+
+        fn request_external_output_sender(&self) -> Box<dyn Any> {
+            let sender = self$(.$out_chan_field)*.clone();
+            Box::new(sender)
         }
 
         fn id(&self) -> InstanceId {
@@ -290,15 +299,71 @@ pub(crate) fn check_node_spec_type_value(
     instance_id: InstanceId,
     spec: &toml::Table,
 ) -> Result<String, SpecificationError> {
-    if !spec.contains_key(SPEC_NODE_TYPE_FIELD) {
-        Err(SpecificationError::NodeEntryMissingTypeField(
-            SPEC_NODE_TYPE_FIELD,
-        ))
+    check_node_spec_has_string_entry(instance_id, spec, SPEC_NODE_TYPE_FIELD)
+}
+
+/// Check if the provided TOML Table spec contains a field named 'name' and is of data type String.
+///
+/// Returns the value of the 'name' field when present and valid, otherwise an `SpecificationError` error.
+pub(crate) fn check_node_spec_name_value(
+    instance_id: InstanceId,
+    spec: &toml::Table,
+) -> Result<String, SpecificationError> {
+    check_node_spec_has_string_entry(instance_id, spec, SPEC_NODE_NAME_FIELD)
+}
+
+/// Check if the provided TOML Table spec contains a field named by parameter `field_name` and is of data type String.
+///
+/// Returns the value of the 'name' field when present and valid, otherwise an `SpecificationError` error.
+fn check_node_spec_has_string_entry(
+    instance_id: InstanceId,
+    spec: &toml::Table,
+    field_name: &'static str,
+) -> Result<String, SpecificationError> {
+    if !spec.contains_key(field_name) {
+        Err(SpecificationError::NodeEntryMissingField(field_name))
     } else {
-        match &spec[SPEC_NODE_TYPE_FIELD] {
+        match &spec[field_name] {
             Value::String(value) => Ok(value.clone()),
             _invalid_value => Err(SpecificationError::NodeEntryIsNotATable(instance_id)),
         }
+    }
+}
+
+pub(crate) fn check_spec_for_duplicate_node_names(
+    contents: &toml::Table,
+) -> Result<(), SpecificationError> {
+    if !contents.contains_key(SPEC_NODE_ARRAY) {
+        return Err(SpecificationError::NoNodesSpecified(SPEC_NODE_ARRAY));
+    }
+    if let Value::Array(array) = &contents[SPEC_NODE_ARRAY] {
+        let mut set = HashSet::new();
+        let nodes: Vec<String> = array
+            .iter()
+            .enumerate()
+            .map(|(id, node)| {
+                if let Value::Table(spec) = node {
+                    check_node_spec_name_value(id as InstanceId, spec)
+                } else {
+                    Err(SpecificationError::NodeEntryIsNotATable(id as InstanceId))
+                }
+            })
+            .filter(|name| name.is_ok())
+            .map(|name| name.unwrap())
+            .collect();
+
+        for name in nodes.iter() {
+            match set.insert(name) {
+                true => {}
+                false => {
+                    return Err(SpecificationError::DuplicateNodeNames(name.to_string()));
+                }
+            }
+        }
+
+        Ok(())
+    } else {
+        Err(SpecificationError::FieldNotAnArray(SPEC_NODE_ARRAY))
     }
 }
 
@@ -463,7 +528,7 @@ pub(crate) fn register_external_channels(
                 let node = nodes
                     .get_mut(node_id as usize)
                     .expect("Node with id is present.");
-                let incoming_tx = node.request_external_sender()?;
+                let incoming_tx = node.request_external_input_sender()?;
                 Some(incoming_tx)
             } else {
                 None

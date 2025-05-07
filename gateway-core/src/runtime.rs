@@ -1,8 +1,11 @@
-use crate::core::{NodeConstructor, NodeConstructorPointer, UntypedNode};
+use crate::core::{
+    check_spec_for_duplicate_node_names, NodeConstructor, NodeConstructorPointer, UntypedNode,
+};
 use crate::error::{CreationError, ExecutionError, GatewayError, SpecificationError};
 use futures::future::JoinAll;
 use futures::stream::FuturesUnordered;
 use std::any::Any;
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::Path;
 use tokio::runtime::Runtime;
@@ -21,6 +24,7 @@ pub struct InfraBuilder {
     event_tx: Sender<Event>,
     external_input_async: Option<Box<dyn Any>>,
     external_output_async: Option<Box<dyn Any>>,
+    external_channels: ExternalChannels,
     nodes: Vec<UntypedNode>,
     node_factories: Vec<(&'static str, NodeConstructor)>,
 }
@@ -45,6 +49,7 @@ impl InfraBuilder {
             event_tx,
             external_input_async: None,
             external_output_async: None,
+            external_channels: ExternalChannels::default(),
             nodes: vec![],
             node_factories: node_factory,
         }
@@ -95,6 +100,9 @@ impl InfraBuilder {
         let contents: toml::Table = toml::from_str(spec)
             .map_err(|err| GatewayError::from(SpecificationError::from(err)))?;
 
+        // Check for duplicate names in the spec
+        check_spec_for_duplicate_node_names(&contents)?;
+
         // Construct all nodes in the spec as a Vec<Box<dyn NodeData>>, giving them a unique id (index in the vec).
         let mut nodes: Vec<UntypedNode> = crate::core::construct_nodes_from_spec(
             &self.node_factories,
@@ -107,10 +115,14 @@ impl InfraBuilder {
         // Construct all edges between the nodes from the spec.
         crate::core::register_channels_for_nodes(&contents, &mut nodes)?;
 
+        let external_channels = ExternalChannels::new_from_nodes(&mut nodes);
+        self.external_channels = external_channels;
+
+        // FIXME remove this way of only having one external in- and output.
         // Connect optional channels to an external sender/receiver.
-        let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
-        self.external_input_async = incoming;
-        self.external_output_async = outgoing;
+        // let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
+        // self.external_input_async = incoming;
+        // self.external_output_async = outgoing;
 
         self.nodes = nodes;
 
@@ -136,6 +148,20 @@ impl InfraBuilder {
     /// The reference must be used to downcast the dyn type and subscribe to the channel.
     pub fn external_output(&mut self) -> Option<Box<dyn Any>> {
         self.external_output_async.take()
+    }
+
+    pub fn external_input_for_node<T: 'static>(
+        &mut self,
+        node_name: &str,
+    ) -> Result<Sender<T>, GatewayError> {
+        self.external_channels.input_for_name::<T>(node_name)
+    }
+
+    pub fn external_output_for_node<T: 'static>(
+        &mut self,
+        node_name: &str,
+    ) -> Result<Receiver<T>, GatewayError> {
+        self.external_channels.output_for_name::<T>(node_name)
     }
 }
 
@@ -354,4 +380,92 @@ pub fn downcast_external_output<T: 'static>(channel: Option<Box<dyn Any>>) -> Op
             .map(|receiver| *receiver)
             .ok()
     })
+}
+
+#[derive(Default)]
+pub struct ExternalChannels {
+    in_map: HashMap<String, Box<dyn Any>>,
+    out_map: HashMap<String, Box<dyn Any>>,
+}
+
+impl ExternalChannels {
+    pub fn new_from_nodes(nodes: &mut Vec<UntypedNode>) -> Self {
+        let mut in_map = HashMap::new();
+        let mut out_map = HashMap::new();
+
+        nodes.iter_mut().for_each(|node| {
+            let input = node.request_external_input_sender().expect("Node exists");
+            let output = node.request_external_output_sender();
+            in_map.insert(node.name().to_string(), input);
+            out_map.insert(node.name().to_string(), output);
+        });
+
+        Self { in_map, out_map }
+    }
+
+    // pub(crate) fn push_input(
+    //     &mut self,
+    //     node_name: &str,
+    //     sender: Box<dyn Any>,
+    // ) -> Result<(), GatewayError> {
+    //     if self.in_map.insert(node_name.to_string(), sender).is_none() {
+    //         Ok(())
+    //     } else {
+    //         Err(GatewayError::Specification(
+    //             SpecificationError::DuplicateNodeNames(node_name.to_string()),
+    //         ))
+    //     }
+    // }
+    //
+    // pub(crate) fn push_output(
+    //     &mut self,
+    //     node_name: &str,
+    //     sender: Box<dyn Any>,
+    // ) -> Result<(), GatewayError> {
+    //     if self.out_map.insert(node_name.to_string(), sender).is_none() {
+    //         Ok(())
+    //     } else {
+    //         Err(GatewayError::Specification(
+    //             SpecificationError::DuplicateNodeNames(node_name.to_string()),
+    //         ))
+    //     }
+    // }
+
+    pub fn input_for_name<T: 'static>(
+        &mut self,
+        node_name: &str,
+    ) -> Result<Sender<T>, GatewayError> {
+        if let Some(boxed_node) = self.in_map.get(node_name) {
+            if let Some(node) = boxed_node.downcast_ref::<Sender<T>>() {
+                Ok(node.clone())
+            } else {
+                Err(GatewayError::Creation(
+                    CreationError::SubscribeToExternalChannelWrongDataType(node_name.to_string()),
+                ))
+            }
+        } else {
+            Err(GatewayError::Creation(
+                CreationError::SubscribeToExternalChannelNodeNonexistent(node_name.to_string()),
+            ))
+        }
+    }
+
+    pub fn output_for_name<T: 'static>(
+        &mut self,
+        node_name: &str,
+    ) -> Result<Receiver<T>, GatewayError> {
+        if let Some(boxed_node) = self.out_map.get(node_name) {
+            if let Some(node) = boxed_node.downcast_ref::<Sender<T>>() {
+                Ok(node.subscribe())
+            } else {
+                Err(GatewayError::Creation(
+                    CreationError::SubscribeToExternalChannelWrongDataType(node_name.to_string()),
+                ))
+            }
+        } else {
+            Err(GatewayError::Creation(
+                CreationError::SubscribeToExternalChannelNodeNonexistent(node_name.to_string()),
+            ))
+        }
+    }
 }

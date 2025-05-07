@@ -33,7 +33,9 @@ pub enum SpecificationError {
     #[error("Invalid node specification for index {0}, it is not a valid TOML table.")]
     NodeEntryIsNotATable(InstanceId),
     #[error("The node specification has no field '{0}'.")]
-    NodeEntryMissingTypeField(&'static str),
+    NodeEntryMissingField(&'static str),
+    #[error("The specification contains nodes with duplicate names '{0}'.")]
+    DuplicateNodeNames(String),
     #[error("A specification must contain a non-empty array '{0}', which is missing.")]
     NoChannelsSpecified(&'static str),
     #[error("Channel specification misses field '{0}'.")]
@@ -65,6 +67,12 @@ pub enum CreationError {
         node_name: String,
         data_type_expected: String,
     },
+    #[error(
+        "Could not create subscription for external channel to node {0}. Node does not exist."
+    )]
+    SubscribeToExternalChannelNodeNonexistent(String),
+    #[error("Could not create subscription for external channel to node {0}. Incorrect data type for channel.")]
+    SubscribeToExternalChannelWrongDataType(String),
     #[error("{0}")]
     CreateNode(Box<dyn NodeError>),
 }
