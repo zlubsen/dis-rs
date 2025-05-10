@@ -132,11 +132,6 @@ impl NodeRunner for PassThroughNodeRunner {
             tokio::time::interval(Duration::from_millis(DEFAULT_OUTPUT_STATS_INTERVAL_MS));
 
         loop {
-            println!(
-                "passthrough - {:?} - {:?}",
-                &incoming.as_ref().unwrap().is_closed(),
-                &incoming.as_ref().unwrap().is_empty()
-            );
             tokio::select! {
                 // receiving commands
                 Ok(cmd) = cmd_rx.recv() => {

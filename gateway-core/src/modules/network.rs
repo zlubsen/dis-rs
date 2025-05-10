@@ -968,8 +968,6 @@ impl NodeRunner for TcpClientNodeRunner {
                 }
                 // receiving from the socket
                 Ok(bytes_received) = reader.read(&mut self.buffer) => {
-                    println!("bytes received: {bytes_received}");
-                    println!("{}", outgoing.receiver_count());
                     if bytes_received == 0 {
                         Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::NodeExecution {
                             node_id: self.id(),
@@ -977,7 +975,6 @@ impl NodeRunner for TcpClientNodeRunner {
                         }));
                     } else if let Ok(_num_receivers) = outgoing
                         .send(Bytes::copy_from_slice(&self.buffer[..bytes_received])) {
-                        println!("tcp client stuurt bytes door");
                         self.statistics.received_packet(bytes_received);
                     } else {
                         Self::emit_event(&event_tx, Event::RuntimeError(

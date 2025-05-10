@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use gateway_core::error::{CreationError, GatewayError, SpecificationError};
-use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
+use gateway_core::runtime::{downcast_external_input, run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 
 #[tokio::test]
@@ -291,6 +291,10 @@ async fn build_spec_external_channels() {
         [[ channels ]]
         from = "Pass One"
         to = "Pass Two"
+
+        [ externals ]
+        incoming = "Pass One"
+        outgoing = "Pass Two"
     "#;
 
     let mut infra_builder = InfraBuilder::new();
@@ -299,13 +303,14 @@ async fn build_spec_external_channels() {
     let cmd_tx = infra_builder.command_channel();
     let _event_tx = infra_builder.event_channel();
 
-    let input_to_pass_one = infra_builder.external_input_for_node::<Bytes>("Pass One");
+    // FIXME external channels method
+    let input_to_pass_one =
+        downcast_external_input::<Bytes>(infra_builder.external_input()).unwrap();
+    // let input_to_pass_one = infra_builder.external_input_for_node::<Bytes>("Pass One");
     let output_from_pass_two = infra_builder.external_output_for_node::<Bytes>("Pass Two");
+    assert!(output_from_pass_two.is_ok());
 
     assert!(build_result.is_ok());
-
-    assert!(input_to_pass_one.is_ok());
-    assert!(output_from_pass_two.is_ok());
 
     let cmd_task_handle = tokio::spawn(async move {
         tokio::time::interval(Duration::from_millis(100))
@@ -315,9 +320,7 @@ async fn build_spec_external_channels() {
     });
 
     let runtime_result = run_from_builder(infra_builder).await;
-    let _ = input_to_pass_one
-        .unwrap()
-        .send(Bytes::copy_from_slice(&[0x01, 0x02]));
+    let _ = input_to_pass_one.send(Bytes::copy_from_slice(&[0x01, 0x02]));
 
     let out = output_from_pass_two.unwrap().recv().await.unwrap();
 

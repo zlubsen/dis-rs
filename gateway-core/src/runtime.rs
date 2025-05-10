@@ -118,6 +118,13 @@ impl InfraBuilder {
         let external_channels = ExternalChannels::new_from_nodes(&mut nodes);
         self.external_channels = external_channels;
 
+        // TODO remove external outputs; only register single input, or allow for multiple inputs
+        // TODO cleanup all examples and tests afterwards; change documentation
+        // Connect optional channels to an external sender/receiver.
+        let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
+        self.external_input_async = incoming;
+        self.external_output_async = outgoing;
+
         self.nodes = nodes;
 
         Ok(())
@@ -146,14 +153,14 @@ impl InfraBuilder {
         self.external_output_async.take()
     }
 
-    pub fn external_input_for_node<T: 'static>(
-        &mut self,
-        node_name: &str,
-    ) -> Result<Sender<T>, GatewayError> {
-        self.external_channels.input_for_name::<T>(node_name)
-    }
+    // pub fn external_input_for_node<T: 'static>(
+    //     &mut self,
+    //     node_name: &str,
+    // ) -> Result<Sender<T>, GatewayError> {
+    //     self.external_channels.input_for_name::<T>(node_name)
+    // }
 
-    pub fn external_output_for_node<T: 'static>(
+    pub fn external_output_for_node<T: 'static + Clone>(
         &mut self,
         node_name: &str,
     ) -> Result<Receiver<T>, GatewayError> {
@@ -381,51 +388,54 @@ pub fn downcast_external_output<T: 'static>(channel: Option<Box<dyn Any>>) -> Op
 
 #[derive(Default)]
 pub struct ExternalChannels {
-    in_map: HashMap<String, Box<dyn Any>>,
-    out_map: HashMap<String, Box<dyn Any>>,
+    // in_senders: HashMap<String, Box<dyn Any>>,
+    out_receivers: HashMap<String, Box<dyn Any>>,
 }
 
 impl ExternalChannels {
     pub fn new_from_nodes(nodes: &mut Vec<UntypedNode>) -> Self {
-        let mut in_map = HashMap::new();
-        let mut out_map = HashMap::new();
+        // let mut in_senders = HashMap::new();
+        let mut out_receivers = HashMap::new();
 
         nodes.iter_mut().for_each(|node| {
-            let input = node.request_external_input_sender().expect("Node exists");
-            let output = node.request_external_output_sender();
-            in_map.insert(node.name().to_string(), input);
-            out_map.insert(node.name().to_string(), output);
+            // let input = node.request_external_input_sender().expect("Node exists");
+            let output = node.request_subscription();
+            // in_senders.insert(node.name().to_string(), input);
+            out_receivers.insert(node.name().to_string(), output);
         });
 
-        Self { in_map, out_map }
+        // Self { in_senders, out_receivers }
+        Self { out_receivers }
     }
 
-    pub fn input_for_name<T: 'static>(
-        &mut self,
-        node_name: &str,
-    ) -> Result<Sender<T>, GatewayError> {
-        if let Some(boxed_node) = self.in_map.get(node_name) {
-            if let Some(node) = boxed_node.downcast_ref::<Sender<T>>() {
-                Ok(node.clone())
-            } else {
-                Err(GatewayError::Creation(
-                    CreationError::SubscribeToExternalChannelWrongDataType(node_name.to_string()),
-                ))
-            }
-        } else {
-            Err(GatewayError::Creation(
-                CreationError::SubscribeToExternalChannelNodeNonexistent(node_name.to_string()),
-            ))
-        }
-    }
+    // pub fn input_for_name<T: 'static>(
+    //     &mut self,
+    //     node_name: &str,
+    // ) -> Result<Sender<T>, GatewayError> {
+    //     if let Some(boxed_node) = self.in_senders.get(node_name) {
+    //         if let Some(node) = boxed_node.downcast_ref::<Sender<T>>() {
+    //             let tx = node.clone();
+    //             Ok(tx)
+    //         } else {
+    //             Err(GatewayError::Creation(
+    //                 CreationError::SubscribeToExternalChannelWrongDataType(node_name.to_string()),
+    //             ))
+    //         }
+    //     } else {
+    //         Err(GatewayError::Creation(
+    //             CreationError::SubscribeToExternalChannelNodeNonexistent(node_name.to_string()),
+    //         ))
+    //     }
+    // }
 
-    pub fn output_for_name<T: 'static>(
+    pub fn output_for_name<T: 'static + Clone>(
         &mut self,
         node_name: &str,
     ) -> Result<Receiver<T>, GatewayError> {
-        if let Some(boxed_node) = self.out_map.get(node_name) {
-            if let Some(node) = boxed_node.downcast_ref::<Sender<T>>() {
-                Ok(node.subscribe())
+        if let Some(boxed_node) = self.out_receivers.get(node_name) {
+            if let Some(node) = boxed_node.downcast_ref::<Receiver<T>>() {
+                let rx = node.resubscribe();
+                Ok(rx)
             } else {
                 Err(GatewayError::Creation(
                     CreationError::SubscribeToExternalChannelWrongDataType(node_name.to_string()),

@@ -4,6 +4,9 @@ use crate::runtime::{Command, Event};
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
 use std::collections::HashSet;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::task::JoinHandle;
 use toml::Value;
@@ -126,7 +129,6 @@ macro_rules! node_data_impl {
         }
 
         fn request_external_output_sender(&self) -> Box<dyn Any> {
-            todo!("this should just do a subscribe on the out_chan_field - apparently this closes the existing one")
             let sender = self$(.$out_chan_field)*.clone();
             Box::new(sender)
         }
@@ -560,5 +562,33 @@ pub(crate) fn register_external_channels(
         Ok((incoming, outgoing))
     } else {
         Ok((None, None))
+    }
+}
+
+struct ReceiverFuture<'a, T> {
+    receiver: &'a Vec<Receiver<T>>,
+}
+
+impl<'a, T> ReceiverFuture<'a, T> {
+    pub fn new(receiver: &'a Vec<Receiver<T>>) -> Self {
+        Self { receiver }
+    }
+}
+
+impl<T> Future for ReceiverFuture<'_, T> {
+    type Output = usize;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Some(index) = self
+            .receiver
+            .iter()
+            .enumerate()
+            .find(|(_, recv)| !recv.is_empty())
+        {
+            Poll::Ready(index.0)
+        } else {
+            cx.waker().wake_by_ref();
+            Poll::Pending
+        }
     }
 }
