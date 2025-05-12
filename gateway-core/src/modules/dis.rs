@@ -1,7 +1,7 @@
 use crate::core::{
     BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer, NodeData,
-    NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
-    DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    NodeRunner, ReceiverFuture, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+    DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
 use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
 use crate::node_data_impl;
@@ -66,7 +66,7 @@ pub struct DisRxNodeData {
     base: BaseNode,
     exercise_id: Option<u8>,
     allow_dis_versions: Vec<ProtocolVersion>,
-    incoming: Option<Receiver<Bytes>>,
+    incoming: Vec<Receiver<Bytes>>,
     outgoing: Sender<Pdu>,
 }
 
@@ -154,7 +154,7 @@ impl NodeData for DisRxNodeData {
             },
             exercise_id,
             allow_dis_versions,
-            incoming: None,
+            incoming: vec![],
             outgoing: out_tx,
         })
     }
@@ -207,7 +207,7 @@ impl NodeRunner for DisRxNodeRunner {
         &mut self,
         mut cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        mut incoming: Option<Receiver<Self::Incoming>>,
+        mut incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
         let mut aggregate_stats_interval =
@@ -221,28 +221,30 @@ impl NodeRunner for DisRxNodeRunner {
                 Ok(cmd) = cmd_rx.recv() => {
                     if cmd == Command::Quit { break; }
                 }
-                // receiving from the incoming channel, parse into PDU
-                Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    let pdus = match dis_rs::parse(&message) {
-                        Ok(vec) => { vec }
-                        Err(err) => {
-                            Self::emit_event(&event_tx,
-                                Event::RuntimeError(ExecutionError::NodeExecution {
-                                    node_id: self.id(),
-                                    message: format!("DIS parse error: {err}")
-                                }));
-                            vec![]
-                        }
-                    };
-                    self.statistics.received_incoming();
+                // receiving from the incoming channels, parse into PDU
+                index = ReceiverFuture::new(&incoming)=> {
+                    if let Ok(message) = incoming[index].recv().await {
+                        let pdus = match dis_rs::parse(&message) {
+                            Ok(vec) => { vec }
+                            Err(err) => {
+                                Self::emit_event(&event_tx,
+                                    Event::RuntimeError(ExecutionError::NodeExecution {
+                                        node_id: self.id(),
+                                        message: format!("DIS parse error: {err}")
+                                    }));
+                                vec![]
+                            }
+                        };
+                        self.statistics.received_incoming();
 
-                    pdus.into_iter()
-                        .filter(|pdu| self.allow_dis_versions.contains(&pdu.header.protocol_version))
-                        .filter(|pdu| self.exercise_id.is_none() || self.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
-                        .for_each(|pdu| {
-                            let _send_result = outgoing.send(pdu.clone());
-                            self.statistics.sent_outgoing();
-                        });
+                        pdus.into_iter()
+                            .filter(|pdu| self.allow_dis_versions.contains(&pdu.header.protocol_version))
+                            .filter(|pdu| self.exercise_id.is_none() || self.exercise_id.is_some_and(|exercise_id| pdu.header.exercise_id == exercise_id ))
+                            .for_each(|pdu| {
+                                let _send_result = outgoing.send(pdu.clone());
+                                self.statistics.sent_outgoing();
+                            });
+                    };
                 }
                 // aggregate statistics for the interval
                 _ = aggregate_stats_interval.tick() => {
@@ -270,7 +272,7 @@ pub struct DisTxNodeSpec {
 pub struct DisTxNodeData {
     base: BaseNode,
     buffer: BytesMut,
-    incoming: Option<Receiver<Pdu>>,
+    incoming: Vec<Receiver<Pdu>>,
     outgoing: Sender<Bytes>,
 }
 
@@ -306,7 +308,7 @@ impl NodeData for DisTxNodeData {
                 event_tx,
             },
             buffer,
-            incoming: None,
+            incoming: vec![],
             outgoing: out_tx,
         })
     }
@@ -358,7 +360,7 @@ impl NodeRunner for DisTxNodeRunner {
         &mut self,
         mut cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        mut incoming: Option<Receiver<Self::Incoming>>,
+        mut incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
         let mut aggregate_stats_interval =
@@ -373,29 +375,31 @@ impl NodeRunner for DisTxNodeRunner {
                     if cmd == Command::Quit { break; }
                 }
                 // receiving from the incoming channel, serialise PDU into Bytes
-                Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    self.statistics.received_incoming();
-                    match message.serialize(&mut self.buffer) {
-                        Ok(bytes_written) => {
-                            let _send_result = outgoing
-                            .send(Bytes::copy_from_slice(&self.buffer[0..(bytes_written as usize)]))
-                            .inspect(|_bytes_send| self.statistics.sent_outgoing() )
-                            .inspect_err(|_| {
-                                Self::emit_event(&event_tx,
-                                    Event::RuntimeError(ExecutionError::OutputChannelSend(self.instance_id))
-                                );}
-                            );
-                        }
-                        Err(err) => {
-                            Self::emit_event(
-                                &event_tx,
-                                Event::RuntimeError(
-                                    ExecutionError::NodeExecution {
-                                        node_id: self.id(),
-                                        message: err.to_string(),
-                                    }
-                                )
-                            );
+                index = ReceiverFuture::new(&incoming)=> {
+                    if let Ok(message) = incoming[index].recv().await {
+                        self.statistics.received_incoming();
+                        match message.serialize(&mut self.buffer) {
+                            Ok(bytes_written) => {
+                                let _send_result = outgoing
+                                .send(Bytes::copy_from_slice(&self.buffer[0..(bytes_written as usize)]))
+                                .inspect(|_bytes_send| self.statistics.sent_outgoing() )
+                                .inspect_err(|_| {
+                                    Self::emit_event(&event_tx,
+                                        Event::RuntimeError(ExecutionError::OutputChannelSend(self.instance_id))
+                                    );}
+                                );
+                            }
+                            Err(err) => {
+                                Self::emit_event(
+                                    &event_tx,
+                                    Event::RuntimeError(
+                                        ExecutionError::NodeExecution {
+                                            node_id: self.id(),
+                                            message: err.to_string(),
+                                        }
+                                    )
+                                );
+                            }
                         }
                     }
                 }

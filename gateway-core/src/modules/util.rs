@@ -1,6 +1,6 @@
 use crate::core::{
     BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer,
-    NodeData, NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+    NodeData, NodeRunner, ReceiverFuture, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
     DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
 use crate::error::{CreationError, ExecutionError, SpecificationError};
@@ -43,7 +43,7 @@ pub fn node_from_spec(
 #[derive(Debug)]
 pub struct PassThroughNodeData {
     base: BaseNode,
-    incoming: Option<Receiver<Bytes>>,
+    incoming: Vec<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
 }
 
@@ -72,7 +72,7 @@ impl NodeData for PassThroughNodeData {
                 cmd_rx,
                 event_tx,
             },
-            incoming: None,
+            incoming: vec![],
             outgoing: out_tx,
         })
     }
@@ -123,7 +123,7 @@ impl NodeRunner for PassThroughNodeRunner {
         &mut self,
         mut cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        mut incoming: Option<Receiver<Self::Incoming>>,
+        mut incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
         let mut aggregate_stats_interval =
@@ -137,15 +137,18 @@ impl NodeRunner for PassThroughNodeRunner {
                 Ok(cmd) = cmd_rx.recv() => {
                     if cmd == Command::Quit { break; }
                 }
-                Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    self.statistics.incoming_message();
-                    let _send_result = outgoing.send(message)
-                        .inspect(|_| {
-                        self.statistics.outgoing_message() })
-                        .inspect_err(|_| {
-                            Self::emit_event(&event_tx,
-                                Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
-                    });
+                // receiving from the incoming channels
+                index = ReceiverFuture::new(&incoming)=> {
+                    if let Ok(message) = incoming[index].recv().await {
+                        self.statistics.incoming_message();
+                        let _send_result = outgoing.send(message)
+                            .inspect(|_| {
+                            self.statistics.outgoing_message() })
+                            .inspect_err(|_| {
+                                Self::emit_event(&event_tx,
+                                    Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
+                            });
+                    };
                 }
                 _ = aggregate_stats_interval.tick() => {
                     self.statistics.aggregate_interval();

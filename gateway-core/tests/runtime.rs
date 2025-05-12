@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use gateway_core::error::{CreationError, GatewayError, SpecificationError};
-use gateway_core::runtime::{downcast_external_input, run_from_builder, Command, InfraBuilder};
+use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 
 #[tokio::test]
@@ -26,10 +26,6 @@ async fn build_valid_spec() {
     let _event_tx = infra_builder.event_channel();
 
     assert!(build_result.is_ok());
-
-    // FIXME remove method or create default input/output spec definition
-    assert!(infra_builder.external_input().is_none());
-    assert!(infra_builder.external_output().is_none());
 
     let cmd_task_handle = tokio::spawn(async move {
         tokio::time::interval(Duration::from_millis(100))
@@ -291,10 +287,6 @@ async fn build_spec_external_channels() {
         [[ channels ]]
         from = "Pass One"
         to = "Pass Two"
-
-        [ externals ]
-        incoming = "Pass One"
-        outgoing = "Pass Two"
     "#;
 
     let mut infra_builder = InfraBuilder::new();
@@ -303,11 +295,9 @@ async fn build_spec_external_channels() {
     let cmd_tx = infra_builder.command_channel();
     let _event_tx = infra_builder.event_channel();
 
-    // FIXME external channels method
-    let input_to_pass_one =
-        downcast_external_input::<Bytes>(infra_builder.external_input()).unwrap();
-    // let input_to_pass_one = infra_builder.external_input_for_node::<Bytes>("Pass One");
+    let input_to_pass_one = infra_builder.external_input_for_node::<Bytes>("Pass One");
     let output_from_pass_two = infra_builder.external_output_for_node::<Bytes>("Pass Two");
+    assert!(input_to_pass_one.is_ok());
     assert!(output_from_pass_two.is_ok());
 
     assert!(build_result.is_ok());
@@ -319,12 +309,16 @@ async fn build_spec_external_channels() {
         let _ = cmd_tx.send(Command::Quit);
     });
 
+    const INPUT: [u8; 2] = [0x01, 0x02];
+
     let runtime_result = run_from_builder(infra_builder).await;
-    let _ = input_to_pass_one.send(Bytes::copy_from_slice(&[0x01, 0x02]));
+    let _ = input_to_pass_one
+        .unwrap()
+        .send(Bytes::copy_from_slice(&INPUT));
 
     let out = output_from_pass_two.unwrap().recv().await.unwrap();
 
-    assert_eq!(&out[..], &[0x01, 0x02]);
+    assert_eq!(&out[..], &INPUT);
 
     assert!(runtime_result.is_ok());
     let _ = cmd_task_handle.await;

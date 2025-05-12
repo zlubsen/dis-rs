@@ -1,7 +1,7 @@
 use crate::core::{
     BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer, NodeData,
-    NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
-    DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    NodeRunner, ReceiverFuture, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+    DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS,
 };
 use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
 use crate::node_data_impl;
@@ -95,7 +95,7 @@ pub struct UdpNodeData {
     address: SocketAddr,
     ttl: u32,
     block_own_socket: bool,
-    incoming: Option<Receiver<Bytes>>,
+    incoming: Vec<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
 }
 
@@ -257,7 +257,7 @@ impl NodeData for UdpNodeData {
             address,
             ttl,
             block_own_socket,
-            incoming: None,
+            incoming: vec![],
             outgoing: out_tx,
         })
     }
@@ -318,7 +318,7 @@ impl NodeRunner for UdpNodeRunner {
         &mut self,
         mut cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        mut incoming: Option<Receiver<Self::Incoming>>,
+        mut incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
         let mut aggregate_stats_interval =
@@ -335,10 +335,14 @@ impl NodeRunner for UdpNodeRunner {
                 Ok(cmd) = cmd_rx.recv() => {
                     map_command_to_event(&cmd)
                 }
-                // receiving from the incoming channel
-                Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    self.statistics.received_incoming(message.len());
-                    UdpNodeEvent::ReceivedIncoming(message)
+                // receiving from the incoming channels
+                index = ReceiverFuture::new(&incoming)=> {
+                    if let Ok(message) = incoming[index].recv().await {
+                        self.statistics.received_incoming(message.len());
+                        UdpNodeEvent::ReceivedIncoming(message)
+                    } else {
+                        UdpNodeEvent::NoEvent
+                    }
                 }
                 // receiving from the socket
                 Ok((bytes_received, from_address)) = self.socket.recv_from(&mut self.buffer) => {
@@ -558,7 +562,7 @@ pub struct TcpServerNodeData {
     interface: SocketAddr,
     buffer_size: usize,
     // max_connections: usize,
-    incoming: Option<Receiver<Bytes>>,
+    incoming: Vec<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
 }
 
@@ -606,7 +610,7 @@ impl NodeData for TcpServerNodeData {
             interface,
             buffer_size,
             // max_connections,
-            incoming: None,
+            incoming: vec![],
             outgoing: out_tx,
         })
     }
@@ -660,7 +664,7 @@ impl NodeRunner for TcpServerNodeRunner {
         &mut self,
         mut cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        mut incoming: Option<Receiver<Self::Incoming>>,
+        mut incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
         let mut aggregate_stats_interval =
@@ -703,15 +707,19 @@ impl NodeRunner for TcpServerNodeRunner {
                         let _ = write_handle.await;
                     });
                 }
-                Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    self.statistics.received_incoming(message.len());
-                    let _ = tcp_write_tx.send(message).inspect_err(|err|
-                        Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::NodeExecution {
-                            node_id: self.id(),
-                            message: err.to_string()
-                        }))
-                    );
+                // receiving from the incoming channels
+                index = ReceiverFuture::new(&incoming)=> {
+                    if let Ok(message) = incoming[index].recv().await {
+                        self.statistics.received_incoming(message.len());
+                        let _ = tcp_write_tx.send(message).inspect_err(|err|
+                            Self::emit_event(&event_tx, Event::RuntimeError(ExecutionError::NodeExecution {
+                                node_id: self.id(),
+                                message: err.to_string()
+                            }))
+                        );
+                    };
                 }
+                // receiving from the TCP socket
                 Some(message) = tcp_read_rx.recv() => {
                     self.statistics.received_packet(message.len());
                     let _ = outgoing.send(message).inspect_err(|_|
@@ -794,7 +802,7 @@ pub struct TcpClientNodeData {
     interface: SocketAddr,
     address: SocketAddr,
     buffer_size: usize,
-    incoming: Option<Receiver<Bytes>>,
+    incoming: Vec<Receiver<Bytes>>,
     outgoing: Sender<Bytes>,
 }
 
@@ -846,7 +854,7 @@ impl NodeData for TcpClientNodeData {
             interface,
             address,
             buffer_size,
-            incoming: None,
+            incoming: vec![],
             outgoing: out_tx,
         })
     }
@@ -903,7 +911,7 @@ impl NodeRunner for TcpClientNodeRunner {
         &mut self,
         mut cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        mut incoming: Option<Receiver<Self::Incoming>>,
+        mut incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     ) {
         let mut aggregate_stats_interval =
@@ -961,10 +969,12 @@ impl NodeRunner for TcpClientNodeRunner {
                 Ok(cmd) = cmd_rx.recv() => {
                     if cmd == Command::Quit { break; }
                 }
-                // receiving from the incoming channel
-                Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                    let _send_result = writer.write_all(&message).await;
-                    self.statistics.received_incoming(message.len());
+                // receiving from the incoming channels
+                index = ReceiverFuture::new(&incoming)=> {
+                    if let Ok(message) = incoming[index].recv().await {
+                        let _send_result = writer.write_all(&message).await;
+                        self.statistics.received_incoming(message.len());
+                    };
                 }
                 // receiving from the socket
                 Ok(bytes_received) = reader.read(&mut self.buffer) => {

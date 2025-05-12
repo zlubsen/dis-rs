@@ -67,8 +67,6 @@ where
     fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), CreationError>;
     /// Obtain a Sender part of a channel that can be used to send data from outside the runtime to this node.
     fn request_external_input_sender(&mut self) -> Result<Box<dyn Any>, CreationError>;
-    /// Obtain a clone of the Sender part of the channel that can be used to subscribe to outgoing data from this node, to link external receivers.
-    fn request_external_output_sender(&self) -> Box<dyn Any>;
 
     fn id(&self) -> InstanceId;
     fn name(&self) -> &str;
@@ -110,7 +108,7 @@ macro_rules! node_data_impl {
 
         fn register_subscription(&mut self, receiver: Box<dyn Any>) -> Result<(), CreationError> {
             if let Ok(receiver) = receiver.downcast::<Receiver<$in_data_type>>() {
-                self$(.$in_chan_field)* = Some(*receiver);
+                self$(.$in_chan_field)*.push(*receiver);
                 Ok(())
             } else {
                 Err(CreationError::SubscribeToChannel {
@@ -126,11 +124,6 @@ macro_rules! node_data_impl {
                 channel::<$in_data_type>(DEFAULT_NODE_CHANNEL_CAPACITY);
             self.register_subscription(Box::new(incoming_rx))?;
             Ok(Box::new(incoming_tx))
-        }
-
-        fn request_external_output_sender(&self) -> Box<dyn Any> {
-            let sender = self$(.$out_chan_field)*.clone();
-            Box::new(sender)
         }
 
         fn id(&self) -> InstanceId {
@@ -165,7 +158,7 @@ pub trait NodeRunner {
         &mut self,
         cmd_rx: Receiver<Command>,
         event_tx: Sender<Event>,
-        incoming: Option<Receiver<Self::Incoming>>,
+        incoming: Vec<Receiver<Self::Incoming>>,
         outgoing: Sender<Self::Outgoing>,
     );
 
@@ -565,7 +558,7 @@ pub(crate) fn register_external_channels(
     }
 }
 
-struct ReceiverFuture<'a, T> {
+pub struct ReceiverFuture<'a, T> {
     receiver: &'a Vec<Receiver<T>>,
 }
 
