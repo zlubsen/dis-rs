@@ -22,8 +22,6 @@ const EVENT_CHANNEL_CAPACITY: usize = 50;
 pub struct InfraBuilder {
     command_tx: Sender<Command>,
     event_tx: Sender<Event>,
-    external_input_async: Option<Box<dyn Any>>,
-    external_output_async: Option<Box<dyn Any>>,
     external_channels: ExternalChannels,
     nodes: Vec<UntypedNode>,
     node_factories: Vec<(&'static str, NodeConstructor)>,
@@ -47,8 +45,6 @@ impl InfraBuilder {
         Self {
             command_tx,
             event_tx,
-            external_input_async: None,
-            external_output_async: None,
             external_channels: ExternalChannels::default(),
             nodes: vec![],
             node_factories: node_factory,
@@ -118,13 +114,6 @@ impl InfraBuilder {
         let external_channels = ExternalChannels::new_from_nodes(&mut nodes);
         self.external_channels = external_channels;
 
-        // TODO remove external outputs; only register single input, or allow for multiple inputs
-        // TODO cleanup all examples and tests afterwards; change documentation
-        // Connect optional channels to an external sender/receiver.
-        let (incoming, outgoing) = crate::core::register_external_channels(&contents, &mut nodes)?;
-        self.external_input_async = incoming;
-        self.external_output_async = outgoing;
-
         self.nodes = nodes;
 
         Ok(())
@@ -140,18 +129,18 @@ impl InfraBuilder {
         self.event_tx.subscribe()
     }
 
-    pub fn external_input_for_node<T: 'static>(
+    pub fn external_input_for_node<I: 'static>(
         &mut self,
         node_name: &str,
-    ) -> Result<Sender<T>, GatewayError> {
-        self.external_channels.input_for_name::<T>(node_name)
+    ) -> Result<Sender<I>, GatewayError> {
+        self.external_channels.input_for_name::<I>(node_name)
     }
 
-    pub fn external_output_for_node<T: 'static + Clone>(
+    pub fn external_output_for_node<O: 'static + Clone>(
         &mut self,
         node_name: &str,
-    ) -> Result<Receiver<T>, GatewayError> {
-        self.external_channels.output_for_name::<T>(node_name)
+    ) -> Result<Receiver<O>, GatewayError> {
+        self.external_channels.output_for_name::<O>(node_name)
     }
 }
 
@@ -279,66 +268,44 @@ pub fn default_tokio_runtime() -> Result<Runtime, GatewayError> {
     Ok(runtime)
 }
 
-/// Create an `InfraBuilder` from a spec, in TOML as a `&str`, and return all coordination and I/O channels.
+/// Create an `InfraBuilder` from a spec, in TOML as a `&str`, and return handles to all coordination channels.
 ///
 /// # Example
 /// ```ignore
 /// use gateway_core::runtime::preset_builder_from_spec_str;
 ///
-/// let Ok((builder, cmd_tx, event_rx, input_tx, output_rx)) =
+/// let Ok((builder, cmd_tx, event_rx)) =
 ///     preset_builder_from_spec_str::<InputType, OutputType>(r#"Here be some TOML contents"#);
 /// ```
 #[allow(clippy::type_complexity)]
-pub fn preset_builder_from_spec_str<I: 'static, O: 'static>(
+pub fn preset_builder_from_spec_str(
     toml_spec: &str,
-) -> Result<
-    (
-        InfraBuilder,
-        Sender<Command>,
-        Receiver<Event>,
-        Option<Sender<I>>,
-        Option<Receiver<O>>,
-    ),
-    GatewayError,
-> {
+) -> Result<(InfraBuilder, Sender<Command>, Receiver<Event>), GatewayError> {
     let builder = InfraBuilder::new();
     preset_from_spec_str(builder, toml_spec)
 }
 
-/// Takes an initialised `InfraBuilder` and a specification, in TOML as a `&str`, and return all coordination and I/O channels.
+/// Takes an initialised `InfraBuilder` and a specification, in TOML as a `&str`, and return handles to all coordination channels.
 ///
 /// # Example
 /// ```ignore
 /// use gateway_core::runtime::preset_from_spec_str;
 ///
 /// let builder = InfraBuilder::new();
-/// let Ok((builder, cmd_tx, event_rx, input_tx, output_rx)) =
+/// let Ok((builder, cmd_tx, event_rx)) =
 ///     preset_from_spec_str::<InputType, OutputType>(builder, r#"Here be some TOML contents"#);
 /// ```
 #[allow(clippy::type_complexity)]
-pub fn preset_from_spec_str<I: 'static, O: 'static>(
+pub fn preset_from_spec_str(
     mut builder: InfraBuilder,
     toml_spec: &str,
-) -> Result<
-    (
-        InfraBuilder,
-        Sender<Command>,
-        Receiver<Event>,
-        Option<Sender<I>>,
-        Option<Receiver<O>>,
-    ),
-    GatewayError,
-> {
+) -> Result<(InfraBuilder, Sender<Command>, Receiver<Event>), GatewayError> {
     builder.build_from_str(toml_spec)?;
 
     let cmd_tx = builder.command_channel();
     let event_rx = builder.event_channel();
 
-    // FIXME replace or create default input/output spec definition
-    let input_tx = downcast_external_input::<I>(builder.external_input());
-    let output_rx = downcast_external_output::<O>(builder.external_output());
-
-    Ok((builder, cmd_tx, event_rx, input_tx, output_rx))
+    Ok((builder, cmd_tx, event_rx))
 }
 
 /// Enum of Commands that the Runtime can send to Nodes

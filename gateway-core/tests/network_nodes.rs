@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use gateway_core::runtime::{
-    downcast_external_input, downcast_external_output, run_from_builder, Command, InfraBuilder,
+    run_from_builder, Command, InfraBuilder,
 };
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -26,10 +26,6 @@ async fn udp() {
         [[ channels ]]
         from = "UDP"
         to = "PassThrough"
-
-        [ externals ]
-        incoming = "UDP"
-        outgoing = "PassThrough"
     "#;
 
     const DELAY: u64 = 500;
@@ -44,17 +40,12 @@ async fn udp() {
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
 
-    // let input_tx = infra_runtime_builder
-    //     .external_input_for_node::<Bytes>("UDP")
-    //     .unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Bytes>("UDP")
+        .unwrap();
     let mut output_rx = infra_runtime_builder
         .external_output_for_node::<Bytes>("PassThrough")
         .unwrap();
-    // FIXME remove method or create default input/output spec definition
-    let input_tx =
-        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-    // let mut output_rx =
-    //     downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
 
     let stimulus_handle = tokio::spawn(async move {
         let message = "Hello, World!";
@@ -136,11 +127,13 @@ async fn tcp_server() {
 
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
-    // FIXME remove method or create default input/output spec definition
-    let input_tx =
-        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-    let mut output_rx =
-        downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
+
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Bytes>("TCP Server")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<Bytes>("PassThrough")
+        .unwrap();
 
     let stimulus_handle = tokio::spawn(async move {
         let message = "Hello, World!";

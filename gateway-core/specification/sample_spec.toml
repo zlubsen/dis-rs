@@ -17,9 +17,3 @@ name = "Node Two"
 [[channels]]
 from = "Node One"
 to = "Node Two"
-
-# The externals table specifies nodes that need to be connected to
-# senders or receivers other than the speficied nodes. The resulting channels are exposed by the runtime.
-[externals]
-incoming = "Node One"
-outgoing = "Node Two"

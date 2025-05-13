@@ -140,13 +140,19 @@ impl Recorder {
         })
     }
 
+    /// Add a stream that receives DIS traffic to the `Recorder`.
+    ///
+    /// # Errors
+    /// Fails with a `GatewayError` when the spec is incorrect, or the I/O channels cannot be properly created.
     pub async fn add_dis_stream(&mut self, gateway_spec: &str) -> Result<(), GatewayError> {
-        let (infra_runtime_builder, cmd_tx, event_rx, input_tx, output_rx) =
-            preset_builder_from_spec_str::<Pdu, Pdu>(gateway_spec)?;
+        let (mut infra_runtime_builder, cmd_tx, event_rx) =
+            preset_builder_from_spec_str(gateway_spec)?;
+        let input_tx = infra_runtime_builder.external_input_for_node::<Pdu>("DIS serialiser")?;
+        let output_rx = infra_runtime_builder.external_output_for_node::<Pdu>("DIS parser")?;
         let join_handle = run_from_builder(infra_runtime_builder).await?;
         let stream = DisStream {
-            input_tx: input_tx.expect("Expected an input channel for the gateway."),
-            output_rx: output_rx.expect("Expected an output channel for the gateway."),
+            input_tx,
+            output_rx,
             cmd_tx,
             event_rx,
             join_handle,
@@ -155,6 +161,7 @@ impl Recorder {
         Ok(())
     }
 
+    #[must_use]
     pub fn info(&self) -> RecorderInfo {
         let position = if let Some(recording) = &self.recording {
             recording.position

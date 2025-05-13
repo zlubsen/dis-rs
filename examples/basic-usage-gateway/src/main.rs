@@ -1,10 +1,7 @@
 use bytes::Bytes;
 use gateway_core::error::GatewayError;
 use gateway_core::runtime;
-use gateway_core::runtime::{
-    default_tokio_runtime, downcast_external_input, downcast_external_output, run_from_builder,
-    Command, InfraBuilder,
-};
+use gateway_core::runtime::{default_tokio_runtime, run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 use tokio::time::Instant;
 use tracing::{error, info};
@@ -48,10 +45,6 @@ fn main() {
         [[ channels ]]
         from = "Pass One"
         to = "Pass Two"
-
-        [ externals ]
-        incoming = "Pass One"
-        outgoing = "Pass Two"
     "#;
 
     // Provide a (Tokio) runtime
@@ -60,10 +53,14 @@ fn main() {
 
     // TLDR; We can use the preset function to create all needed things in one go. Do provide the needed type hints.
     // The runtime provides a build-in event listener task, which trace!-es events.
-    let (infra_runtime_builder, cmd_tx, _event_rx, input_tx, output_rx) =
-        runtime::preset_builder_from_spec_str::<Bytes, Bytes>(spec).unwrap();
-    let input_tx = input_tx.unwrap();
-    let mut output_rx = output_rx.unwrap();
+    let (mut infra_runtime_builder, cmd_tx, _event_rx) =
+        runtime::preset_builder_from_spec_str(spec).unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Bytes>("Pass One")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<Bytes>("Pass Two")
+        .unwrap();
 
     // Alternatively, one can set up everything by hand.
     // Especially if the input/output channels and such are not needed, you can omit these parts.
@@ -78,14 +75,15 @@ fn main() {
         let _event_rx = infra_runtime_builder.event_channel();
 
         // FIXME remove method or create default input/output spec definition
-        // We can request a handle to an externalised input channel for a node, in this case 'Pass One'.
-        // It needs to be downcast to the concrete type that you know yourself (depends on the node you created in the spec).
-        // The Infra Runtime provides convenience functions to do this.
-        let _input_tx =
-            downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-        // Similarly, we can request a handle to the externalised output channel, in this case 'Pass Two'.
-        let _output_rx =
-            downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
+        // We can request handles to an external input channel for a node, in this case 'Pass One'.
+        // The type annotation identifies the concrete type required by the node, which you know yourself (depends on the node created in the spec).
+        let _input_tx = infra_runtime_builder
+            .external_input_for_node::<Bytes>("Pass One")
+            .unwrap();
+        // Similarly, we can request a handle to the output channel of any node, in this case 'Pass Two'.
+        let _output_rx = infra_runtime_builder
+            .external_output_for_node::<Bytes>("Pass Two")
+            .unwrap();
     }
 
     const QUIT_DELAY: u64 = 4;

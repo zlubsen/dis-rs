@@ -20,7 +20,8 @@ async fn main() {
         .await
         .expect("failed to add a stream to the recorder");
 
-    let (recorder_handle, cmd_tx, mut info_rx) = recorder.run().await;
+    let (cmd_tx, mut info_rx) = recorder.run().await;
+    // let (recorder_handle, cmd_tx, mut info_rx) = recorder.run().await;
 
     let info_handle = tokio::spawn(async move {
         loop {
@@ -37,7 +38,7 @@ async fn main() {
         }
     }
 
-    let _ = recorder_handle.await.unwrap();
+    // let _ = recorder_handle.await.unwrap();
     info_handle.abort();
 }
 
@@ -139,9 +140,5 @@ fn dis_data_specification() -> &'static str {
         [[ channels ]]
         from = "DIS serialiser"
         to = "UDP socket"
-
-        [ externals ]
-        incoming = "DIS serialiser"
-        outgoing = "DIS parser"
     "#
 }

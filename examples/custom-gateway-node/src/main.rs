@@ -32,10 +32,6 @@ fn main() {
         [[ channels ]]
         from = "Mul 2"
         to = "No factor"
-
-        [ externals ]
-        incoming = "Mul 2"
-        outgoing = "No factor"
     "#;
 
     let runtime =
@@ -48,10 +44,14 @@ fn main() {
         error!("{err}");
     }
 
-    let (infra_runtime_builder, cmd_tx, _event_rx, input_tx, output_rx) =
-        runtime::preset_from_spec_str::<isize, isize>(infra_runtime_builder, spec).unwrap();
-    let input_tx = input_tx.unwrap();
-    let mut output_rx = output_rx.unwrap();
+    let (mut infra_runtime_builder, cmd_tx, _event_rx) =
+        runtime::preset_from_spec_str(infra_runtime_builder, spec).unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<isize>("Mul 2")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<isize>("No factor")
+        .unwrap();
 
     const QUIT_DELAY: u64 = 1;
     const SEND_DELAY: u64 = QUIT_DELAY / 2;
@@ -112,7 +112,7 @@ fn main() {
 mod example_node {
     use gateway_core::core::{
         BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer, NodeData,
-        NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+        NodeRunner, ReceiverFuture, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
         DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS,
     };
     use gateway_core::error::{CreationError, ExecutionError, SpecificationError};
@@ -185,7 +185,7 @@ mod example_node {
     pub struct MultiplyIsizeNodeData {
         base: BaseNode,
         factor: isize,
-        incoming: Option<Receiver<isize>>,
+        incoming: Vec<Receiver<isize>>,
         outgoing: Sender<isize>,
     }
 
@@ -242,7 +242,7 @@ mod example_node {
                     event_tx,
                 },
                 factor: node_spec.factor.unwrap_or(DEFAULT_MULTIPLICATION_FACTOR),
-                incoming: None,
+                incoming: vec![],
                 outgoing: out_tx,
             })
         }
@@ -310,7 +310,7 @@ mod example_node {
             &mut self,
             mut cmd_rx: Receiver<Command>,
             event_tx: Sender<Event>,
-            mut incoming: Option<Receiver<Self::Incoming>>,
+            mut incoming: Vec<Receiver<Self::Incoming>>,
             outgoing: Sender<Self::Outgoing>,
         ) {
             let mut aggregate_stats_interval =
@@ -324,19 +324,21 @@ mod example_node {
                     Ok(cmd) = cmd_rx.recv() => {
                         if cmd == Command::Quit { break; }
                     }
-                    // The associated function `Self::receive_incoming` is a convenience function/wrapper
-                    // around the incoming channel to be used in the `select!`.
-                    Some(message) = Self::receive_incoming(self.instance_id, &mut incoming) => {
-                        // In this example, here is where we do the actual multiplication of the data
-                        let multiplied = message * self.factor;
+                    // `crate::core::ReceiverFuture` is a convenience wrapper Future
+                    // around the Vec of incoming channels to be used in the `select!`.
+                    index = ReceiverFuture::new(&incoming)=> {
+                        if let Ok(message) = incoming[index].recv().await {
+                            // In this example, here is where we do the actual multiplication of the data
+                            let multiplied = message * self.factor;
 
-                        self.statistics.incoming_message();
-                        let _send_result = outgoing.send(multiplied)
-                            .inspect(|_| self.statistics.outgoing_message() )
-                            .inspect_err(|_|
-                                Self::emit_event(&event_tx,
-                                    Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
-                        );
+                            self.statistics.incoming_message();
+                            let _send_result = outgoing.send(multiplied)
+                                .inspect(|_| self.statistics.outgoing_message() )
+                                .inspect_err(|_|
+                                    Self::emit_event(&event_tx,
+                                        Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())))
+                            );
+                        }
                     }
                     // Periodic aggregation of statistics
                     _ = aggregate_stats_interval.tick() => {

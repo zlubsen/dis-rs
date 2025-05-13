@@ -42,10 +42,6 @@ async fn main() {
         [[ channels ]]
         from = "TCP Server"
         to = "PassThrough"
-
-        [ externals ]
-        incoming = "TCP Server"
-        outgoing = "PassThrough"
     "#;
 
     // let runtime =
@@ -64,11 +60,12 @@ async fn main() {
     let cmd_tx = infra_runtime_builder.command_channel();
     let _event_tx = infra_runtime_builder.event_channel();
 
-    // FIXME remove method or create default input/output spec definition
-    let input_tx =
-        downcast_external_input::<Bytes>(infra_runtime_builder.external_input()).unwrap();
-    let mut output_rx =
-        downcast_external_output::<Bytes>(infra_runtime_builder.external_output()).unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Bytes>("TCP Server")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<Bytes>("PassThrough")
+        .unwrap();
 
     let stimulus_handle = tokio::spawn(async move {
         trace!("Stimulus: Spawning task");

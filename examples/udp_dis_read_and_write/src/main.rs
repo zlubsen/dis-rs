@@ -26,10 +26,14 @@ fn main() {
     let runtime =
         default_tokio_runtime().expect("Expected tokio runtime to be created successfully.");
 
-    let (infra_runtime_builder, cmd_tx, mut event_rx, input_tx, output_rx) =
-        runtime::preset_builder_from_spec_str::<Pdu, Pdu>(spec).unwrap();
-    let input_tx = input_tx.unwrap();
-    let mut output_rx = output_rx.unwrap();
+    let (mut infra_runtime_builder, cmd_tx, mut event_rx) =
+        runtime::preset_builder_from_spec_str(spec).unwrap();
+    let input_tx = infra_runtime_builder
+        .external_input_for_node::<Pdu>("DIS serialiser")
+        .unwrap();
+    let mut output_rx = infra_runtime_builder
+        .external_output_for_node::<Pdu>("DIS parser")
+        .unwrap();
 
     if let Err(err) = runtime.block_on(async {
         let event_handle = tokio::spawn(async move {
@@ -129,10 +133,6 @@ fn nodes_specification() -> &'static str {
         [[ channels ]]
         from = "DIS serialiser"
         to = "UDP socket"
-
-        [ externals ]
-        incoming = "DIS serialiser"
-        outgoing = "DIS parser"
     "#
 }
 

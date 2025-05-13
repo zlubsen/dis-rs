@@ -31,10 +31,6 @@ pub(crate) const SPEC_NODE_NAME_FIELD: &str = "name";
 pub(crate) const SPEC_CHANNEL_ARRAY: &str = "channels";
 pub(crate) const SPEC_CHANNEL_FROM_FIELD: &str = "from";
 pub(crate) const SPEC_CHANNEL_TO_FIELD: &str = "to";
-// FIXME remove method or create default input/output spec definition
-pub(crate) const SPEC_EXTERNALS_TABLE: &str = "externals";
-pub(crate) const SPEC_EXTERNALS_INCOMING_FIELD: &str = "incoming";
-pub(crate) const SPEC_EXTERNALS_OUTGOING_FIELD: &str = "outgoing";
 
 pub const DEFAULT_NODE_CHANNEL_CAPACITY: usize = 50;
 pub const DEFAULT_AGGREGATE_STATS_INTERVAL_MS: u64 = 1000;
@@ -495,69 +491,10 @@ fn find_node_id_from_name(nodes: &mut Vec<UntypedNode>, name: &str) -> Option<In
         .map(|node| node.id())
 }
 
-/// Register external incoming and outgoing channels to nodes as defined in the spec.
+/// A Future that selects over a Vec of `tokio::sync::broadcast::Receiver`s
+/// Completes when the first `Receiver` has a message.
 ///
-/// When the `incoming` or `outgoing` fields are not defined in the spec, no respective channel is returned.
-#[allow(clippy::type_complexity)]
-pub(crate) fn register_external_channels(
-    spec: &toml::Table,
-    nodes: &mut Vec<UntypedNode>,
-) -> Result<(Option<Box<dyn Any>>, Option<Box<dyn Any>>), GatewayError> {
-    if !spec.contains_key(SPEC_EXTERNALS_TABLE) {
-        return Ok((None, None));
-    }
-
-    if let Value::Table(externals) = &spec[SPEC_EXTERNALS_TABLE] {
-        let incoming =
-            if let Some(Value::String(node_name)) = externals.get(SPEC_EXTERNALS_INCOMING_FIELD) {
-                // get the name, get the id, get the node, connect the channel
-                let node_id = match find_node_id_from_name(nodes, node_name) {
-                    Some(id) => id,
-                    None => {
-                        return Err(GatewayError::from(
-                            SpecificationError::ExternalInputChannelUndefinedNodeName(
-                                node_name.to_string(),
-                            ),
-                        ));
-                    }
-                };
-
-                let node = nodes
-                    .get_mut(node_id as usize)
-                    .expect("Node with id is present.");
-                let incoming_tx = node.request_external_input_sender()?;
-                Some(incoming_tx)
-            } else {
-                None
-            };
-
-        let outgoing =
-            if let Some(Value::String(node_name)) = externals.get(SPEC_EXTERNALS_OUTGOING_FIELD) {
-                let node_id = match find_node_id_from_name(nodes, node_name) {
-                    Some(id) => id,
-                    None => {
-                        return Err(GatewayError::from(
-                            SpecificationError::ExternalOutputChannelUndefinedNodeName(
-                                node_name.to_string(),
-                            ),
-                        ));
-                    }
-                };
-
-                let node = nodes
-                    .get_mut(node_id as usize)
-                    .expect("Node with id is present.");
-                let outgoing = node.request_subscription();
-                Some(outgoing)
-            } else {
-                None
-            };
-        Ok((incoming, outgoing))
-    } else {
-        Ok((None, None))
-    }
-}
-
+/// Returns the index of the receiver in the provided `Vec`.
 pub struct ReceiverFuture<'a, T> {
     receiver: &'a Vec<Receiver<T>>,
 }
