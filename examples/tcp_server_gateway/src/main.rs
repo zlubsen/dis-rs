@@ -1,7 +1,5 @@
 use bytes::Bytes;
-use gateway_core::runtime::{
-    downcast_external_input, downcast_external_output, run_from_builder, Command, InfraBuilder,
-};
+use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
