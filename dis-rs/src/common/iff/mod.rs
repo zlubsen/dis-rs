@@ -9,7 +9,7 @@ mod tests {
         FundamentalOperationalData, Iff, IffLayer2, InformationLayers, LayerHeader,
         LayersPresenceApplicability, SystemId,
     };
-    use crate::common::model::{EntityId, EventId, Pdu, PduHeader, SimulationAddress};
+    use crate::common::model::{EntityId, EventId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{
         ActiveInterrogationIndicator, CoupledExtensionIndicator, IffSimulationMode, IffSystemType,
@@ -30,7 +30,7 @@ mod tests {
         );
         let iff_body = Iff::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
-            .with_event_id(EventId::new(SimulationAddress::new(15, 15), 15))
+            .with_event_id(EventId::new(15, 15, 15))
             .with_fundamental_operational_data(
                 FundamentalOperationalData::builder()
                     .with_parameter_1(1)

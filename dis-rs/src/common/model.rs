@@ -866,7 +866,7 @@ impl EventId {
                 site_id,
                 application_id,
             },
-            entity_id,
+            event_id,
         }
     }
 

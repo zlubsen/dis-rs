@@ -12,7 +12,7 @@ mod tests {
         PduType, UAPassiveParameterIndex, UAPropulsionPlantConfiguration,
         UAStateChangeUpdateIndicator,
     };
-    use crate::model::{EntityId, EventId, SimulationAddress};
+    use crate::model::{EntityId, EventId};
     use crate::underwater_acoustic::model::{
         PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem, UAFundamentalParameterData,
         UnderwaterAcoustic, APA,
@@ -25,7 +25,7 @@ mod tests {
 
         let body = UnderwaterAcoustic::builder()
             .with_emitting_entity_id(EntityId::new(10, 10, 10))
-            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 38))
+            .with_event_id(EventId::new(10, 10, 38))
             .with_state_change_update_indicator(UAStateChangeUpdateIndicator::StateUpdate)
             .with_passive_parameter_index(UAPassiveParameterIndex::Other)
             .with_propulsion_plant_configuration(

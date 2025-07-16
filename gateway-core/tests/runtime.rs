@@ -224,7 +224,7 @@ async fn build_spec_channel_incompatible_data_between_nodes() {
 
     let mut infra_builder = InfraBuilder::new();
     let error = infra_builder.build_from_str(spec).unwrap_err();
-    println!("{:?}", error);
+    println!("{error:?}");
 
     if let GatewayError::Creation(CreationError::SubscribeToChannel {
         instance_id,

@@ -7,7 +7,7 @@ pub mod writer;
 mod tests {
     use crate::common::collision_elastic::model::CollisionElastic;
     use crate::common::model::DisTimeStamp;
-    use crate::common::model::{EventId, Pdu, PduHeader, SimulationAddress};
+    use crate::common::model::{EventId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::PduType;
     use bytes::BytesMut;
@@ -19,7 +19,7 @@ mod tests {
         let body = CollisionElastic::builder()
             .with_mass(88.4f32)
             .with_coefficient_of_restitution(6.43)
-            .with_event_id(EventId::new(SimulationAddress::new(11, 11), 11))
+            .with_event_id(EventId::new(11, 11, 11))
             .build()
             .into_pdu_body();
         let original_pdu =

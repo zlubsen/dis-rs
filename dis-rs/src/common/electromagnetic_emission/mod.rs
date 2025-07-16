@@ -10,7 +10,7 @@ mod tests {
     use crate::common::parser::parse_pdu;
     use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterSystem};
     use crate::enumerations::{ElectromagneticEmissionStateUpdateIndicator, PduType};
-    use crate::model::{EventId, SimulationAddress};
+    use crate::model::EventId;
     use bytes::BytesMut;
 
     #[test]
@@ -19,7 +19,7 @@ mod tests {
 
         let body = ElectromagneticEmission::builder()
             .with_emitting_entity_id(EntityId::new(5, 10, 15))
-            .with_event_id(EventId::new(SimulationAddress::new(5, 10), 70))
+            .with_event_id(EventId::new(5, 10, 70))
             .with_emitter_system(EmitterSystem::default())
             .with_state_update_indicator(
                 ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,

@@ -219,7 +219,7 @@ mod tests {
     };
     use dis_rs::model::{
         DescriptorRecord, EntityId as DisEntityId, EntityType as DisEntityType, EventId, Location,
-        PduBody, SimulationAddress, VectorF32,
+        PduBody, VectorF32,
     };
 
     fn create_basic_dis_detonation_body() -> DetonationBuilder {
@@ -227,7 +227,7 @@ mod tests {
             .with_source_entity_id(DisEntityId::new(10, 10, 10))
             .with_target_entity_id(DisEntityId::new(20, 20, 20))
             .with_exploding_entity_id(DisEntityId::new(10, 10, 500))
-            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+            .with_event_id(EventId::new(10, 10, 1))
             .with_descriptor(DescriptorRecord::new_explosion(
                 DisEntityType::default()
                     .with_kind(EntityKind::Munition)
@@ -367,10 +367,7 @@ mod tests {
                 detonation.exploding_entity_id,
                 DisEntityId::new(10, 10, 500)
             );
-            assert_eq!(
-                detonation.event_id,
-                EventId::new(SimulationAddress::new(10, 10), 1)
-            );
+            assert_eq!(detonation.event_id, EventId::new(10, 10, 1));
             if let DescriptorRecord::Munition {
                 entity_type,
                 munition,
@@ -385,7 +382,7 @@ mod tests {
                 assert_eq!(munition.rate, 0);
             } else {
                 panic!()
-            };
+            }
             assert_eq!(
                 detonation
                     .location_in_entity_coordinates
@@ -406,7 +403,7 @@ mod tests {
             );
         } else {
             panic!()
-        };
+        }
     }
 
     #[test]
@@ -494,6 +491,6 @@ mod tests {
             );
         } else {
             panic!()
-        };
+        }
     }
 }
