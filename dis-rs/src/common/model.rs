@@ -860,10 +860,13 @@ pub struct EventId {
 
 impl EventId {
     #[must_use]
-    pub fn new(simulation_address: SimulationAddress, event_id: u16) -> Self {
+    pub fn new(site_id: u16, application_id: u16, event_id: u16) -> Self {
         Self {
-            simulation_address,
-            event_id,
+            simulation_address: SimulationAddress {
+                site_id,
+                application_id,
+            },
+            entity_id,
         }
     }
 
