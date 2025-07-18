@@ -105,9 +105,7 @@ mod tests {
     use crate::common::electromagnetic_emission::model::{
         Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam,
     };
-    use crate::common::model::{
-        BeamData, EntityId, EventId, Pdu, PduHeader, SimulationAddress, VectorF32,
-    };
+    use crate::common::model::{BeamData, EntityId, EventId, Pdu, PduHeader, VectorF32};
     use crate::common::BodyInfo;
     use crate::enumerations::{
         ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction,
@@ -120,7 +118,7 @@ mod tests {
     fn write_pdu_emission_with_tracks() {
         let body = ElectromagneticEmission::builder()
             .with_emitting_entity_id(EntityId::new(500, 11111, 62))
-            .with_event_id(EventId::new(SimulationAddress::new(500, 11111), 577))
+            .with_event_id(EventId::new(500, 11111, 577))
             .with_emitter_system(
                 EmitterSystem::new()
                     .with_name(EmitterName::Unnamed_32175)

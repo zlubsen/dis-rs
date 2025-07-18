@@ -357,12 +357,16 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
     let is_empty = intermediate.is_empty();
 
     let prefix = String::from(if starts_with_digit { "_" } else { "" });
-    let name = is_empty
-        .then(|| String::from("Unnamed"))
-        .unwrap_or(intermediate);
-    let postfix = needs_postfix
-        .then(|| format!("_{uid}"))
-        .unwrap_or(String::new());
+    let name = if is_empty {
+        String::from("Unnamed")
+    } else {
+        intermediate
+    };
+    let postfix = if needs_postfix {
+        format!("_{uid}")
+    } else {
+        String::new()
+    };
     let intermediate = [prefix, name, postfix].join("");
 
     // When there are multiple parenthesis sections, replace them with '_' (such as Countries)

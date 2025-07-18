@@ -485,7 +485,8 @@ impl From<&EventId> for EntityId {
 impl From<&EntityId> for EventId {
     fn from(value: &EntityId) -> Self {
         Self::new(
-            SimulationAddress::new(value.site.value, value.application.value),
+            value.site.value,
+            value.application.value,
             value.entity.value,
         )
     }
