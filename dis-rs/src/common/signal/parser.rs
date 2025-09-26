@@ -1,10 +1,11 @@
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::common::signal::model::{EncodingScheme, Signal};
-use crate::constants::ONE_BYTE_IN_BITS;
+use crate::constants::{FOUR_OCTETS, ONE_BYTE_IN_BITS};
 use crate::enumerations::{
     SignalEncodingClass, SignalEncodingType, SignalTdlType, SignalUserProtocolIdentificationNumber,
 };
+use crate::model::length_padded_to_num;
 use nom::number::complete::{be_u16, be_u32};
 use nom::IResult;
 
@@ -20,6 +21,11 @@ pub(crate) fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, samples) = be_u16(input)?;
     let (input, data) =
         nom::bytes::complete::take(data_length_in_bits / ONE_BYTE_IN_BITS as u16)(input)?;
+
+    let data_length_in_bytes = data_length_in_bits / ONE_BYTE_IN_BITS as u16;
+    let padded_record = length_padded_to_num(data_length_in_bytes as usize, FOUR_OCTETS);
+    let (input, _padding) =
+        nom::bytes::complete::take(padded_record.padding_length)(input)?;
 
     let encoding_scheme = parse_encoding_scheme(encoding_scheme, data);
 
