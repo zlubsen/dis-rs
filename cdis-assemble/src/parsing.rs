@@ -211,7 +211,7 @@ mod tests {
     use dis_rs::fire::model::Fire;
     use dis_rs::model::{
         EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader,
-        PduStatus, SimulationAddress, TimeStamp,
+        PduStatus, TimeStamp,
     };
 
     fn build_default_fire_header() -> PduHeader {
@@ -225,7 +225,7 @@ mod tests {
             .with_firing_entity_id(EntityId::new(10, 10, 10))
             .with_target_entity_id(EntityId::new(20, 20, 20))
             .with_entity_id(EntityId::new(10, 10, 500))
-            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+            .with_event_id(EventId::new(10, 10, 1))
             .with_location_in_world(Location::new(0.0, 0.0, 20000.0))
             .with_munition_descriptor(
                 EntityType::default()
