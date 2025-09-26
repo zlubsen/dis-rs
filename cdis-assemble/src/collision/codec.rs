@@ -81,14 +81,14 @@ mod tests {
     use crate::{BodyProperties, CdisBody};
     use dis_rs::collision::builder::CollisionBuilder;
     use dis_rs::enumerations::CollisionType;
-    use dis_rs::model::{EntityId as DisEntityId, EventId, PduBody, SimulationAddress};
+    use dis_rs::model::{EntityId as DisEntityId, EventId, PduBody};
 
     fn create_basic_dis_collision_body() -> CollisionBuilder {
         use dis_rs::collision::model::Collision;
         Collision::builder()
             .with_issuing_entity_id(DisEntityId::new(20, 20, 20))
             .with_colliding_entity_id(DisEntityId::new(10, 10, 500))
-            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+            .with_event_id(EventId::new(10, 10, 1))
     }
 
     #[test]

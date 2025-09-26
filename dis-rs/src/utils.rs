@@ -58,7 +58,7 @@ pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64,
     let latitude = latitude + p; //Lat
     let altitude = f + m * p / 2.0; //Altitude
     let latitude = if ecef_z < 0.0 {
-        latitude * -1.0 //Lat
+        -latitude //Lat
     } else {
         latitude
     };

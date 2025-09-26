@@ -34,8 +34,7 @@ use dis_rs::iff::model::{
 };
 use dis_rs::model::{
     ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location,
-    MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, SimulationAddress, TimeStamp,
-    VariableDatum, VectorF32,
+    MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, TimeStamp, VariableDatum, VectorF32,
 };
 use dis_rs::signal::model::EncodingScheme;
 use dis_rs::transmitter::model::{
@@ -250,7 +249,7 @@ fn codec_consistency_fire() {
         .with_firing_entity_id(EntityId::new(10, 10, 10))
         .with_target_entity_id(EntityId::new(20, 20, 20))
         .with_entity_id(EntityId::new(10, 10, 500))
-        .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+        .with_event_id(EventId::new(10, 10, 1))
         .with_location_in_world(Location::new(0.0, 0.0, 20000.0))
         .with_munition_descriptor(
             EntityType::default()
@@ -315,7 +314,7 @@ fn codec_consistency_detonation() {
         .with_source_entity_id(EntityId::new(1, 1, 1))
         .with_target_entity_id(EntityId::new(2, 2, 1))
         .with_exploding_entity_id(EntityId::new(1, 1, 100))
-        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 1))
+        .with_event_id(EventId::new(1, 1, 1))
         .with_velocity(VectorF32::new(10.0, 10.0, 10.0))
         .with_world_location(Location::new(0.0, 0.0, 20000.0))
         .with_descriptor(DescriptorRecord::new_explosion(
@@ -383,7 +382,7 @@ fn codec_consistency_collision() {
     let dis_body = Collision::builder()
         .with_issuing_entity_id(EntityId::new(1, 1, 1))
         .with_colliding_entity_id(EntityId::new(2, 2, 1))
-        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 1))
+        .with_event_id(EventId::new(1, 1, 1))
         .with_collision_type(CollisionType::Inelastic)
         .with_location(VectorF32::new(1.0, 1.0, 1.0))
         .with_velocity(VectorF32::new(10.0, 0.0, 0.0))
@@ -1008,7 +1007,7 @@ fn codec_consistency_electromagnetic_emission_full_mode() {
 
     let dis_body = ElectromagneticEmission::builder()
         .with_emitting_entity_id(EntityId::new(1, 1, 1))
-        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+        .with_event_id(EventId::new(1, 1, 100))
         .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
         .with_emitter_system(
             EmitterSystem::default()
@@ -1068,7 +1067,7 @@ fn codec_consistency_electromagnetic_emission_partial_mode() {
         .with_pdu_status(PduStatus::default());
     let dis_body = ElectromagneticEmission::builder()
         .with_emitting_entity_id(EntityId::new(1, 1, 1))
-        .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+        .with_event_id(EventId::new(1, 1, 100))
         .with_state_update_indicator(ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate)
         .with_emitter_system(
             EmitterSystem::default()
@@ -1405,7 +1404,7 @@ fn codec_consistency_iff_full_mode() {
 
     let dis_body = Iff::builder()
         .with_emitting_entity_id(EntityId::new(10, 10, 10))
-        .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+        .with_event_id(EventId::new(10, 10, 1))
         .with_relative_antenna_location(VectorF32::new(1.0, 2.0, 3.0))
         .with_system_id(
             SystemId::builder()

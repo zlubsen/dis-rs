@@ -1014,7 +1014,7 @@ mod tests {
         ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator,
         EmitterName, EmitterSystemFunction, HighDensityTrackJam,
     };
-    use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, SimulationAddress, VectorF32};
+    use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, VectorF32};
 
     #[test]
     fn fundamental_params_list() {
@@ -1156,7 +1156,7 @@ mod tests {
     fn encode_body_full_update() {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
-            .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+            .with_event_id(EventId::new(1, 1, 100))
             .with_state_update_indicator(
                 ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             )
@@ -1236,7 +1236,7 @@ mod tests {
     fn encode_body_partial_update_partial_update_flag_without_state() {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
-            .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+            .with_event_id(EventId::new(1, 1, 100))
             .with_state_update_indicator(
                 ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             )
@@ -1317,7 +1317,7 @@ mod tests {
     fn encode_body_partial_update_partial_update_flag_with_state() {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
-            .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+            .with_event_id(EventId::new(1, 1, 100))
             .with_state_update_indicator(
                 ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             )
@@ -1447,10 +1447,7 @@ mod tests {
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
-        assert_eq!(
-            dis_body.event_id,
-            EventId::new(SimulationAddress::new(1, 1), 100)
-        );
+        assert_eq!(dis_body.event_id, EventId::new(1, 1, 100));
         let emitter_out = dis_body.emitter_systems.first().unwrap();
         let emitter_in = EmitterSystem::default()
             .with_name(EmitterName::ANFPS16_5505)
@@ -1528,10 +1525,7 @@ mod tests {
             CodecStateResult::StateUpdateElectromagneticEmission
         );
         assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
-        assert_eq!(
-            dis_body.event_id,
-            EventId::new(SimulationAddress::new(1, 1), 100)
-        );
+        assert_eq!(dis_body.event_id, EventId::new(1, 1, 100));
         let emitter_out = dis_body.emitter_systems.first().unwrap();
         let emitter_in = EmitterSystem::default()
             .with_name(EmitterName::ANFPS16_5505)
@@ -1553,7 +1547,7 @@ mod tests {
     fn decode_body_partial_update_partial_update_flag_with_state() {
         let dis_body = DisEE::builder()
             .with_emitting_entity_id(EntityId::new(1, 1, 1))
-            .with_event_id(EventId::new(SimulationAddress::new(1, 1), 100))
+            .with_event_id(EventId::new(1, 1, 100))
             .with_state_update_indicator(
                 ElectromagneticEmissionStateUpdateIndicator::HeartbeatUpdate,
             )
@@ -1634,10 +1628,7 @@ mod tests {
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
-        assert_eq!(
-            dis_body.event_id,
-            EventId::new(SimulationAddress::new(1, 1), 100)
-        );
+        assert_eq!(dis_body.event_id, EventId::new(1, 1, 100));
         let emitter_out = dis_body.emitter_systems.first().unwrap();
         let emitter_in = EmitterSystem::default()
             .with_name(EmitterName::ANFPS16_5505)
@@ -1719,10 +1710,7 @@ mod tests {
 
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         assert_eq!(dis_body.emitting_entity_id, EntityId::new(1, 1, 1));
-        assert_eq!(
-            dis_body.event_id,
-            EventId::new(SimulationAddress::new(1, 1), 100)
-        );
+        assert_eq!(dis_body.event_id, EventId::new(1, 1, 100));
         let emitter_out = dis_body.emitter_systems.first().unwrap();
 
         assert_eq!(emitter_out.name, EmitterName::default());

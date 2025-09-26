@@ -160,7 +160,7 @@ mod tests {
     use dis_rs::fire::model::Fire as DisFire;
     use dis_rs::model::{
         EntityId as DisEntityId, EntityType as DisEntityType, EventId, Location,
-        MunitionDescriptor, PduBody, SimulationAddress,
+        MunitionDescriptor, PduBody,
     };
 
     fn create_basic_dis_fire_body() -> FireBuilder {
@@ -168,7 +168,7 @@ mod tests {
             .with_firing_entity_id(DisEntityId::new(10, 10, 10))
             .with_target_entity_id(DisEntityId::new(20, 20, 20))
             .with_entity_id(DisEntityId::new(10, 10, 500))
-            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 1))
+            .with_event_id(EventId::new(10, 10, 1))
             .with_location_in_world(Location::new(20000.0, 20000.0, 20000.0))
     }
 
@@ -404,10 +404,7 @@ mod tests {
             assert_eq!(fire.firing_entity_id, DisEntityId::new(10, 10, 10));
             assert_eq!(fire.target_entity_id, DisEntityId::new(20, 20, 20));
             assert_eq!(fire.entity_id, DisEntityId::new(10, 10, 500));
-            assert_eq!(
-                fire.event_id,
-                EventId::new(SimulationAddress::new(10, 10), 1)
-            );
+            assert_eq!(fire.event_id, EventId::new(10, 10, 1));
             assert_eq!(fire.fire_mission_index, 100);
             if let dis_rs::model::DescriptorRecord::Munition {
                 entity_type,
@@ -423,10 +420,10 @@ mod tests {
                 assert_eq!(munition.rate, 0);
             } else {
                 panic!()
-            };
+            }
         } else {
             panic!()
-        };
+        }
     }
 
     #[test]
@@ -483,10 +480,7 @@ mod tests {
             assert_eq!(fire.firing_entity_id, DisEntityId::new(10, 10, 10));
             assert_eq!(fire.target_entity_id, DisEntityId::new(20, 20, 20));
             assert_eq!(fire.entity_id, DisEntityId::new(10, 10, 500));
-            assert_eq!(
-                fire.event_id,
-                EventId::new(SimulationAddress::new(10, 10), 1)
-            );
+            assert_eq!(fire.event_id, EventId::new(10, 10, 1));
             assert_eq!(fire.fire_mission_index, 100);
             if let dis_rs::model::DescriptorRecord::Expendable { entity_type } = fire.descriptor {
                 assert_eq!(entity_type.kind, EntityKind::Expendable);
@@ -494,7 +488,7 @@ mod tests {
                 assert_eq!(entity_type.category, 0);
             } else {
                 panic!()
-            };
+            }
         }
     }
 }

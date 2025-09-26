@@ -7,7 +7,7 @@ pub mod writer;
 mod tests {
     use crate::common::collision::model::Collision;
     use crate::common::model::DisTimeStamp;
-    use crate::common::model::{EntityId, EventId, Pdu, PduHeader, SimulationAddress};
+    use crate::common::model::{EntityId, EventId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{CollisionType, PduType};
     use bytes::BytesMut;
@@ -20,7 +20,7 @@ mod tests {
             .with_issuing_entity_id(EntityId::new(10, 10, 10))
             .with_colliding_entity_id(EntityId::new(20, 20, 20))
             .with_collision_type(CollisionType::Elastic)
-            .with_event_id(EventId::new(SimulationAddress::new(10, 10), 43))
+            .with_event_id(EventId::new(10, 10, 43))
             .build()
             .into_pdu_body();
         let original_pdu =

@@ -796,6 +796,6 @@ mod tests {
             assert!(!air_caps.repair);
         } else {
             panic!()
-        };
+        }
     }
 }
