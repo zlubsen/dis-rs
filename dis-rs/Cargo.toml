@@ -27,7 +27,7 @@ serde = { version = "1.0.216", features = ["derive"], optional = true }
 
 [build-dependencies]
 quote = "1.0.37"
-quick-xml = "0.37.1"
+quick-xml = "0.38.3"
 proc-macro2 = "1.0.92"
 prettyplease = "0.2.25"
 syn = "2.0.90"
