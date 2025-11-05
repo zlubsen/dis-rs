@@ -1,6 +1,6 @@
 [package]
 name = "gateway-core"
-version = "0.1.0"
+version = "0.1.1"
 description = """
 Core infrastructure facilities and utilities for working with network data, such as DIS / C-DIS.
 
