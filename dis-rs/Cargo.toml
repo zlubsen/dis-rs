@@ -16,10 +16,10 @@ license.workspace = true
 repository.workspace = true
 categories.workspace = true
 
-[[bin]]
-name = "allocations"
-test = false
-bench = false
+#[[bin]]
+#name = "allocations"
+#test = false
+#bench = false
 
 [features]
 serde = ["dep:serde"]

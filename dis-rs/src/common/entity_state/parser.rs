@@ -168,10 +168,7 @@ pub fn dr_other_parameters(
         DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
-        DeadReckoningAlgorithm::Other => {
-            dr_other_parameters_none(input)?
-        }
-        DeadReckoningAlgorithm::Unspecified(_) => {
+        DeadReckoningAlgorithm::Other | DeadReckoningAlgorithm::Unspecified(_) => {
             dr_other_parameters_none(input)?
         }
     };
