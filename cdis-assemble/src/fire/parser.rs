@@ -7,7 +7,7 @@ use crate::records::parser::{
 };
 use crate::types::parser::uvint32;
 use crate::{parsing, BodyProperties, CdisBody};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 #[allow(clippy::redundant_closure)]

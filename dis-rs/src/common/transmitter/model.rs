@@ -278,15 +278,11 @@ impl From<CryptoKeyId> for u16 {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub enum CryptoMode {
+    #[default]
     Baseband,
     Diphase,
-}
-
-impl Default for CryptoMode {
-    fn default() -> Self {
-        Self::Baseband
-    }
 }
 
 impl From<bool> for CryptoMode {

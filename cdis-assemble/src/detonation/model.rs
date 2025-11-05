@@ -7,7 +7,7 @@ use crate::records::model::{
 use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
 use crate::writing::{write_value_signed, write_value_unsigned};
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 #[derive(Clone, Default, Debug, PartialEq)]

@@ -7,7 +7,7 @@ use crate::enumerations::{AttributeActionCode, VariableRecordType};
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, origination_simulation_address) = simulation_address(input)?;
@@ -22,7 +22,7 @@ pub(crate) fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, _padding) = be_u8(input)?;
     let (input, number_of_record_sets) = be_u16(input)?;
     let (input, attribute_record_sets) =
-        count(attribute_record_set, number_of_record_sets.into())(input)?;
+        count(attribute_record_set, number_of_record_sets.into()).parse(input)?;
 
     let body = Attribute::builder()
         .with_originating_simulation_address(origination_simulation_address)
@@ -39,7 +39,8 @@ pub(crate) fn attribute_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 pub(crate) fn attribute_record_set(input: &[u8]) -> IResult<&[u8], AttributeRecordSet> {
     let (input, entity_id) = entity_id(input)?;
     let (input, number_of_records) = be_u16(input)?;
-    let (input, attribute_records) = count(attribute_record, number_of_records.into())(input)?;
+    let (input, attribute_records) =
+        count(attribute_record, number_of_records.into()).parse(input)?;
 
     Ok((
         input,

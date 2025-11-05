@@ -29,9 +29,9 @@ use dis_rs::iff::model::{
     ModeSTransponderBasicData, ModeSTransponderStatus, SystemId, SystemSpecificData, SystemStatus,
 };
 use dis_rs::DisError;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn iff_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present): (BitInput, u16) = take(TWELVE_BITS)(input)?;
@@ -227,7 +227,7 @@ fn iff_layer_2(input: BitInput) -> IResult<BitInput, IffLayer2> {
     let (input, nr_of_data_records): (BitInput, usize) = take(EIGHT_BITS)(input)?;
 
     let (input, iff_fundamental_parameters) =
-        count(fundamental_parameter_data_record, nr_of_data_records)(input)?;
+        count(fundamental_parameter_data_record, nr_of_data_records).parse(input)?;
 
     Ok((
         input,
@@ -288,7 +288,7 @@ fn iff_layer_3(
 
         let (input, iff_data_records) = if data_records_present {
             let (input, nr_of_data_records): (BitInput, usize) = take(FIVE_BITS)(input)?;
-            count(iff_data_record, nr_of_data_records)(input)?
+            count(iff_data_record, nr_of_data_records).parse(input)?
         } else {
             (input, vec![])
         };
@@ -399,7 +399,7 @@ fn iff_data_record(input: BitInput) -> IResult<BitInput, IffDataRecord> {
     let record_type = VariableRecordType::from(record_type);
     let (input, record_length): (BitInput, usize) = take(EIGHT_BITS)(input)?;
     let (input, specific_field): (BitInput, Vec<u8>) =
-        count(take(EIGHT_BITS), record_length.saturating_sub(THREE_OCTETS))(input)?;
+        count(take(EIGHT_BITS), record_length.saturating_sub(THREE_OCTETS)).parse(input)?;
 
     Ok((
         input,
@@ -423,7 +423,7 @@ fn iff_layer_4(
 
         let (input, iff_data_records) = if data_records_present {
             let (input, nr_of_data_records): (BitInput, usize) = take(FIVE_BITS)(input)?;
-            count(iff_data_record, nr_of_data_records)(input)?
+            count(iff_data_record, nr_of_data_records).parse(input)?
         } else {
             (input, vec![])
         };
@@ -492,7 +492,7 @@ fn mode_s_transponder_basic_data(input: BitInput) -> IResult<BitInput, ModeSTran
     let (input, nr_of_chars_in_id): (BitInput, usize) = take(FOUR_BITS)(input)?;
 
     let (input, aircraft_id): (BitInput, Vec<u8>) =
-        count(take(EIGHT_BITS), nr_of_chars_in_id)(input)?;
+        count(take(EIGHT_BITS), nr_of_chars_in_id).parse(input)?;
     let mut aircraft_id = String::from_utf8_lossy(&aircraft_id).into_owned();
     aircraft_id.truncate(
         aircraft_id
@@ -562,7 +562,7 @@ fn iff_layer_5(input: BitInput) -> IResult<BitInput, IffLayer5> {
 
     let (input, iff_data_records) = if data_records_present {
         let (input, nr_of_data_records): (BitInput, usize) = take(FIVE_BITS)(input)?;
-        count(iff_data_record, nr_of_data_records)(input)?
+        count(iff_data_record, nr_of_data_records).parse(input)?
     } else {
         (input, vec![])
     };

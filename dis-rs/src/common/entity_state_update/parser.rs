@@ -5,7 +5,7 @@ use crate::common::parser::{entity_id, location, orientation, variable_parameter
 use crate::enumerations::EntityKind;
 use nom::multi::count;
 use nom::number::complete::be_u8;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn entity_state_update_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, entity_id_val) = entity_id(input)?;
@@ -17,7 +17,7 @@ pub(crate) fn entity_state_update_body(input: &[u8]) -> IResult<&[u8], PduBody> 
     let (input, entity_appearance) =
         entity_appearance(EntityType::default().with_kind(EntityKind::Other))(input)?;
     let (input, variable_parameters) = if variable_parameters_no > 0 {
-        count(variable_parameter, variable_parameters_no as usize)(input)?
+        count(variable_parameter, variable_parameters_no as usize).parse(input)?
     } else {
         (input, vec![])
     };

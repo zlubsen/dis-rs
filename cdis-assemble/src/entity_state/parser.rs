@@ -14,7 +14,7 @@ use crate::{parsing, BodyProperties, CdisBody};
 use dis_rs::enumerations::DeadReckoningAlgorithm;
 use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 #[allow(clippy::redundant_closure)]
 pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -91,7 +91,7 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
     let capabilities = capabilities.map(|cap| CdisEntityCapabilities(cap));
 
     let (input, variable_parameters) = if let Some(num_params) = number_of_var_params {
-        count(variable_parameter, num_params)(input)?
+        count(variable_parameter, num_params).parse(input)?
     } else {
         (input, vec![])
     };

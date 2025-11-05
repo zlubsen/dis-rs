@@ -5,8 +5,7 @@ use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::enumerations::PduType;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
-use nom::sequence::tuple;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {
@@ -111,12 +110,12 @@ pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
 }
 
 fn peek_originating_field(input: &[u8]) -> IResult<&[u8], EntityId> {
-    let (input, originating_id) = peek(entity_id)(input)?;
+    let (input, originating_id) = peek(entity_id).parse(input)?;
     Ok((input, originating_id))
 }
 
 fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, EntityId)> {
-    let (input, fields) = peek(tuple((entity_id, entity_id)))(input)?;
+    let (input, fields) = peek((entity_id, entity_id)).parse(input)?;
     Ok((input, fields))
 }
 

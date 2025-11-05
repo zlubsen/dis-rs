@@ -6,8 +6,8 @@ use crate::types::model::{
     UVINT8,
 };
 use dis_rs::model::ClockTime;
+use nom::bits::complete::bool;
 use nom::bits::complete::take;
-use nom::complete::bool;
 use nom::IResult;
 
 pub(crate) fn uvint8(input: BitInput) -> IResult<BitInput, UVINT8> {

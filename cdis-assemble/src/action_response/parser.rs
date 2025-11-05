@@ -5,9 +5,9 @@ use crate::records::parser::{entity_identification, fixed_datum, variable_datum}
 use crate::types::parser::{uvint32, uvint8};
 use crate::{parsing, BodyProperties, CdisBody};
 use dis_rs::model::DatumSpecification;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn action_response_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present): (BitInput, u8) = take(TWO_BITS)(input)?;
@@ -31,12 +31,12 @@ pub(crate) fn action_response_body(input: BitInput) -> IResult<BitInput, CdisBod
     let number_of_var_datums = parsing::varint_to_type::<_, _, usize>(number_of_var_datums);
 
     let (input, fixed_datums) = if let Some(num_datums) = number_of_fixed_datums {
-        count(fixed_datum, num_datums)(input)?
+        count(fixed_datum, num_datums).parse(input)?
     } else {
         (input, vec![])
     };
     let (input, variable_datums) = if let Some(num_datums) = number_of_var_datums {
-        count(variable_datum, num_datums)(input)?
+        count(variable_datum, num_datums).parse(input)?
     } else {
         (input, vec![])
     };

@@ -5,9 +5,9 @@ use crate::signal::model::{Signal, SignalFieldsPresent};
 use crate::types::parser::{uvint16, uvint32};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::SignalTdlType;
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn signal_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, fields_present): (BitInput, u8) = take(TWO_BITS)(input)?;
@@ -31,7 +31,7 @@ pub(crate) fn signal_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, samples) =
         parse_field_when_present(fields_present, SignalFieldsPresent::SAMPLES_BIT, uvint16)(input)?;
 
-    let (input, data) = count(take(EIGHT_BITS), data_length / EIGHT_BITS)(input)?;
+    let (input, data) = count(take(EIGHT_BITS), data_length / EIGHT_BITS).parse(input)?;
 
     Ok((
         input,

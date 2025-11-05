@@ -14,9 +14,9 @@ use dis_rs::enumerations::{
     ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName,
     EmitterSystemFunction, HighDensityTrackJam,
 };
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::multi::count;
-use nom::IResult;
+use nom::{IResult, Parser};
 
 #[allow(clippy::redundant_closure)]
 pub(crate) fn electromagnetic_emission_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -37,11 +37,12 @@ pub(crate) fn electromagnetic_emission_body(input: BitInput) -> IResult<BitInput
     let (input, number_of_systems) = uvint8(input)?;
 
     let (input, fundamental_params) =
-        count(fundamental_parameter, number_of_fundamental_params)(input)?;
-    let (input, beam_data) = count(parser::beam_data, number_of_beam_params)(input)?;
-    let (input, site_app_pairs) = count(site_app_pair, number_of_site_app_pairs)(input)?;
+        count(fundamental_parameter, number_of_fundamental_params).parse(input)?;
+    let (input, beam_data) = count(parser::beam_data, number_of_beam_params).parse(input)?;
+    let (input, site_app_pairs) = count(site_app_pair, number_of_site_app_pairs).parse(input)?;
 
-    let (input, emitter_systems) = count(emitter_system, number_of_systems.value as usize)(input)?;
+    let (input, emitter_systems) =
+        count(emitter_system, number_of_systems.value as usize).parse(input)?;
 
     Ok((
         input,
@@ -112,7 +113,7 @@ fn emitter_system(input: BitInput) -> IResult<BitInput, EmitterSystem> {
         (input, None)
     };
 
-    let (input, emitter_beams) = count(emitter_beam, number_of_beams)(input)?;
+    let (input, emitter_beams) = count(emitter_beam, number_of_beams).parse(input)?;
 
     Ok((
         input,
@@ -184,7 +185,7 @@ fn emitter_beam(input: BitInput) -> IResult<BitInput, EmitterBeam> {
     };
 
     let (input, track_jam) =
-        count(track_jam(jamming_track_present_flag), number_of_targets)(input)?;
+        count(track_jam(jamming_track_present_flag), number_of_targets).parse(input)?;
 
     Ok((
         input,

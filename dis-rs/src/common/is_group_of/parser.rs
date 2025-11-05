@@ -9,7 +9,7 @@ use crate::is_group_of::model::{
 use crate::model::{EntityType, PduBody};
 use nom::multi::count;
 use nom::number::complete::{be_f64, be_u16, be_u32, be_u8};
-use nom::IResult;
+use nom::{IResult, Parser};
 
 pub(crate) fn is_group_of_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, group_id) = entity_id(input)?;
@@ -21,7 +21,8 @@ pub(crate) fn is_group_of_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, descriptions) = count(
         group_entity_description(&category),
         number_of_entities.into(),
-    )(input)?;
+    )
+    .parse(input)?;
 
     Ok((
         input,

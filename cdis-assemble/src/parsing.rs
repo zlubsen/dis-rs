@@ -15,7 +15,7 @@ use crate::event_report::parser::event_report_body;
 use crate::fire::parser::fire_body;
 use crate::iff::parser::iff_body;
 use crate::receiver::parser::receiver_body;
-use crate::records::model::CdisHeader;
+use crate::records::model::{CdisHeader, CdisProtocolVersion};
 use crate::records::parser::cdis_header;
 use crate::remove_entity::parser::remove_entity_body;
 use crate::set_data::parser::set_data_body;
@@ -27,8 +27,8 @@ use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 use crate::{CdisBody, CdisError, CdisPdu};
 use dis_rs::enumerations::PduType;
-use nom::complete::take;
-use nom::multi::many1;
+use nom::bits::complete::take;
+use nom::error::ErrorKind;
 use nom::IResult;
 use std::ops::BitAnd;
 
@@ -41,10 +41,33 @@ pub fn parse(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
 }
 
 pub(crate) fn parse_multiple_cdis_pdu(input: &[u8]) -> Result<Vec<CdisPdu>, CdisError> {
-    match many1(cdis_pdu)((input, 0)) {
-        Ok((_, pdus)) => Ok(pdus),
-        Err(err) => Err(CdisError::ParseError(err.to_string())), // TODO not very descriptive / error means we can not match any PDUs
+    let mut vec = vec![];
+    let mut bit_input = (input, 0);
+    loop {
+        match cdis_pdu(bit_input) {
+            Ok((next_input, pdu)) => {
+                bit_input = next_input;
+                if pdu.header.protocol_version != CdisProtocolVersion::StandardDis {
+                    vec.push(pdu);
+                }
+            }
+            Err(nom::Err::Error(e)) => {
+                if e.code == ErrorKind::Eof {
+                    break;
+                }
+                return Err(CdisError::ParseError("crack".to_string()));
+            }
+            Err(err) => {
+                return Err(CdisError::ParseError(err.to_string()));
+            }
+        }
     }
+    Ok(vec)
+    // FIXME With nom v8 the many1 combinator does not accept bit-input anymore
+    // match many1(cdis_pdu)((input, 0)) {
+    //     Ok((_, pdus)) => Ok(pdus),
+    //     Err(err) => Err(CdisError::ParseError(err.to_string())), // TODO not very descriptive / error means we can not match any PDUs
+    // }
 }
 
 pub(crate) fn cdis_pdu(input: BitInput) -> IResult<BitInput, CdisPdu> {
@@ -175,9 +198,115 @@ pub(crate) fn take_signed(count: usize) -> impl Fn(BitInput) -> IResult<BitInput
 
 #[cfg(test)]
 mod tests {
+    use crate::codec::{CodecOptions, EncoderState};
     use crate::constants::THREE_BITS;
     use crate::parsing::{field_present, parse_field_when_present, take_signed};
+    use crate::records::model::dis_to_cdis_u32_timestamp;
     use crate::records::parser::entity_identification;
+    use crate::{parse, CdisPdu, SerializeCdisPdu};
+    use dis_rs::enumerations::{
+        EntityKind, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType,
+        PlatformDomain,
+    };
+    use dis_rs::fire::model::Fire;
+    use dis_rs::model::{
+        EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader,
+        PduStatus, TimeStamp,
+    };
+
+    fn build_default_fire_header() -> PduHeader {
+        PduHeader::new_v7(7, PduType::Fire).with_pdu_status(
+            PduStatus::default().with_fire_type_indicator(FireTypeIndicator::Munition),
+        )
+    }
+
+    fn build_default_fire_body() -> PduBody {
+        Fire::builder()
+            .with_firing_entity_id(EntityId::new(10, 10, 10))
+            .with_target_entity_id(EntityId::new(20, 20, 20))
+            .with_entity_id(EntityId::new(10, 10, 500))
+            .with_event_id(EventId::new(10, 10, 1))
+            .with_location_in_world(Location::new(0.0, 0.0, 20000.0))
+            .with_munition_descriptor(
+                EntityType::default()
+                    .with_kind(EntityKind::Munition)
+                    .with_domain(PlatformDomain::Air),
+                MunitionDescriptor::default()
+                    .with_warhead(MunitionDescriptorWarhead::Dummy)
+                    .with_fuse(MunitionDescriptorFuse::Dummy_8110)
+                    .with_quantity(1)
+                    .with_rate(1),
+            )
+            .with_range(10000.0)
+            .build()
+            .into_pdu_body()
+    }
+
+    #[test]
+    fn parse_single_cdis_pdu() {
+        let mut encoder_state = EncoderState::new();
+        let codec_options = CodecOptions::new_full_update();
+
+        let dis_header = build_default_fire_header();
+        let dis_body = build_default_fire_body();
+        let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+
+        let (cdis_pdu, _state_result) =
+            CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
+
+        let mut bit_buf = crate::create_bit_buffer();
+        let cursor = cdis_pdu.serialize(&mut bit_buf, 0);
+        assert_ne!(cursor, 0);
+
+        let parsed_cdis_pdu = parse(bit_buf.as_raw_slice()).unwrap();
+        assert_eq!(parsed_cdis_pdu.len(), 1);
+        assert_eq!(
+            parsed_cdis_pdu.first().unwrap().header.pdu_type,
+            PduType::Fire
+        );
+    }
+
+    #[test]
+    fn parse_multiple_cdis_pdu() {
+        let mut encoder_state = EncoderState::new();
+        let codec_options = CodecOptions::new_full_update();
+
+        let dis_header = build_default_fire_header();
+        let dis_body = build_default_fire_body();
+        let dis_pdu_in_1 =
+            Pdu::finalize_from_parts(dis_header, dis_body.clone(), TimeStamp::new(0));
+        let dis_pdu_in_2 = Pdu::finalize_from_parts(dis_header, dis_body, TimeStamp::new(50));
+
+        let (cdis_pdu_1, _state_result) =
+            CdisPdu::encode(&dis_pdu_in_1, &mut encoder_state, &codec_options);
+        let (cdis_pdu_2, _state_result) =
+            CdisPdu::encode(&dis_pdu_in_2, &mut encoder_state, &codec_options);
+
+        let mut bit_buf = crate::create_bit_buffer();
+        let cursor_1 = cdis_pdu_1.serialize(&mut bit_buf, 0);
+        assert_ne!(cursor_1, 0);
+        let cursor_2 = cdis_pdu_2.serialize(&mut bit_buf, cursor_1);
+        assert_ne!(cursor_2, cursor_1);
+
+        let parsed_cdis_pdus = parse(bit_buf.as_raw_slice()).unwrap();
+        assert_eq!(parsed_cdis_pdus.len(), 2);
+        #[allow(clippy::get_first)]
+        if let Some(parsed_pdu_1) = parsed_cdis_pdus.get(0) {
+            assert_eq!(parsed_pdu_1.header.pdu_type, PduType::Fire);
+            assert_eq!(parsed_pdu_1.header.timestamp, TimeStamp::new(0));
+        } else {
+            panic!("Failed to get parsed PDU from vec.")
+        }
+        if let Some(parsed_pdu_2) = parsed_cdis_pdus.get(1) {
+            assert_eq!(parsed_pdu_2.header.pdu_type, PduType::Fire);
+            assert_eq!(
+                parsed_pdu_2.header.timestamp,
+                TimeStamp::new(dis_to_cdis_u32_timestamp(50))
+            );
+        } else {
+            panic!("Failed to get parsed PDU from vec.")
+        }
+    }
 
     #[test]
     fn take_signed_positive_min() {

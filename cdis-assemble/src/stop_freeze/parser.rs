@@ -5,7 +5,7 @@ use crate::stop_freeze::model::StopFreeze;
 use crate::types::parser::{clock_time, uvint32};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{StopFreezeFrozenBehavior, StopFreezeReason};
-use nom::complete::take;
+use nom::bits::complete::take;
 use nom::IResult;
 
 pub(crate) fn stop_freeze_body(input: BitInput) -> IResult<BitInput, CdisBody> {

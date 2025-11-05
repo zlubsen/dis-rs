@@ -13,6 +13,7 @@ use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use nom::IResult;
+use nom::Parser;
 
 pub(crate) fn entity_state_body(
     header: &PduHeader,
@@ -41,7 +42,7 @@ pub(crate) fn entity_state_body(
                 )
             };
         let (input, variable_parameters) = if variable_parameters_no > 0 {
-            count(parser::variable_parameter, variable_parameters_no as usize)(input)?
+            count(parser::variable_parameter, variable_parameters_no as usize).parse(input)?
         } else {
             (input, vec![])
         };
@@ -90,7 +91,7 @@ pub(crate) fn entity_appearance(
 pub(crate) fn entity_marking(input: &[u8]) -> IResult<&[u8], EntityMarking> {
     let mut buf: [u8; 11] = [0; 11];
     let (input, marking_character_set) = be_u8(input)?;
-    let (input, ()) = nom::multi::fill(be_u8, &mut buf)(input)?;
+    let (input, ()) = nom::multi::fill(be_u8, &mut buf).parse(input)?;
 
     let marking_character_set = EntityMarkingCharacterSet::from(marking_character_set);
     let marking_string = sanitize_marking(&buf[..]);
@@ -167,10 +168,7 @@ pub fn dr_other_parameters(
         DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
-        DeadReckoningAlgorithm::Other => {
-            dr_other_parameters_none(input)?
-        }
-        DeadReckoningAlgorithm::Unspecified(_) => {
+        DeadReckoningAlgorithm::Other | DeadReckoningAlgorithm::Unspecified(_) => {
             dr_other_parameters_none(input)?
         }
     };
