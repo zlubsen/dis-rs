@@ -24,8 +24,7 @@ pub(crate) fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
 
     let data_length_in_bytes = data_length_in_bits / ONE_BYTE_IN_BITS as u16;
     let padded_record = length_padded_to_num(data_length_in_bytes as usize, FOUR_OCTETS);
-    let (input, _padding) =
-        nom::bytes::complete::take(padded_record.padding_length)(input)?;
+    let (input, _padding) = nom::bytes::complete::take(padded_record.padding_length)(input)?;
 
     let encoding_scheme = parse_encoding_scheme(encoding_scheme, data);
 

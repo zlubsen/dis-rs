@@ -285,22 +285,23 @@ pub(crate) async fn home(State(state): State<Arc<SiteState>>) -> impl IntoRespon
 mod templates {
     use crate::config::{Config, UdpEndpoint, UdpMode};
     use crate::stats::{CodecStats, SocketStats};
-    use askama_axum::Template;
+    use askama::Template;
+    use askama_web::WebTemplate;
     use bytesize::ByteSize;
     use cdis_assemble::codec::CodecUpdateMode;
     use dis_rs::enumerations::PduType;
 
-    #[derive(Template)]
+    #[derive(Template, WebTemplate)]
     #[template(path = "index.html")]
     pub struct HomeTemplate {
         pub(crate) config: Config,
     }
 
-    #[derive(Template)]
+    #[derive(Template, WebTemplate)]
     #[template(path = "config.html")]
     pub struct ConfigTemplate;
 
-    #[derive(Template)]
+    #[derive(Template, WebTemplate)]
     #[template(path = "config_meta.html")]
     pub struct ConfigMetaTemplate {
         pub(crate) name: String,

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-    C-DIS Gateway
+C-DIS Gateway
 {% endblock %}
 {% block content %}
 
@@ -17,7 +17,8 @@
     </div>
 </div>
 
-<div class="container mx-auto grid grid-cols-8 grid-rows-2 gap-3 place-items-stretch content-stretch w-full" hx-ext="sse" sse-connect="/sse">
+<div class="container mx-auto grid grid-cols-8 grid-rows-2 gap-3 place-items-stretch content-stretch w-full"
+     hx-ext="sse" sse-connect="/sse">
     <div class="row-span-2 col-span-2 stats">
         <div class="stat max-w-fit" sse-swap="dis_socket"></div>
     </div>

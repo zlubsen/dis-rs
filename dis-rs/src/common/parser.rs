@@ -223,6 +223,7 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
     move |input: &[u8]| {
         // parse the body of the PDU based on the type
         // NOTE only processes supported PduTypes; process others as 'Other'
+        #[allow(clippy::match_same_arms)]
         let (input, body) = match header.pdu_type {
             PduType::Other => other_body(header)(input)?,
             PduType::EntityState => entity_state_body(header)(input)?,
