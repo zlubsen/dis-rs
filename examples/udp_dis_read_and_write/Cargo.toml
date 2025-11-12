@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 gateway-core = { path = "../../gateway-core" }
 dis-rs = { path = "../../dis-rs" }
-tokio = "1.43.0"
+tokio = "1.48.0"

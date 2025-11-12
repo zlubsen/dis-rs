@@ -19,7 +19,7 @@ categories.workspace = true
 
 [dependencies]
 dis-rs = { path = "../dis-rs" }
-bytes = "1.10.0"
+bytes = "1.10.1"
 nom = "8.0.0"
 bitvec = "1.0.1"
 num = "0.4.3"

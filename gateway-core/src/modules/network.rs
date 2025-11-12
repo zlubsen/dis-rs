@@ -485,7 +485,7 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, UdpNodeError> 
                 UdpNodeError::SetBroadcast(endpoint.base.instance_id, endpoint.interface)
             })?;
             socket
-                .set_ttl(endpoint.ttl)
+                .set_ttl_v4(endpoint.ttl)
                 .map_err(|_| UdpNodeError::SetTtl(endpoint.base.instance_id, endpoint.interface))?;
             socket.bind(&endpoint.interface.into()).map_err(|_| {
                 UdpNodeError::BindToAddress(endpoint.base.instance_id, endpoint.interface)
@@ -513,9 +513,6 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, UdpNodeError> 
             socket.set_broadcast(true).map_err(|_| {
                 UdpNodeError::SetBroadcast(endpoint.base.instance_id, endpoint.interface)
             })?;
-            socket
-                .set_ttl(1)
-                .map_err(|_| UdpNodeError::SetTtl(endpoint.base.instance_id, endpoint.interface))?;
             socket.bind(&endpoint.interface.into()).map_err(|_| {
                 UdpNodeError::BindToAddress(endpoint.base.instance_id, endpoint.interface)
             })?;

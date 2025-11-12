@@ -13,9 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The log level of the gateway defaults to INFO. Use RUST_LOG environment variable to override.
-- Updated dependencies
-
 ### Deprecated
 
 ### Removed
@@ -23,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [0.3.1] - 2025-11-05
+
+### Changed
+
+- The log level of the gateway defaults to INFO. Use RUST_LOG environment variable to override.
+- Updated dependencies
 
 ## [0.3.0] - 2024-11-27
 
@@ -37,16 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `IFF`
 - Proper implementation of `block_own_host` and uri `EndPointSpec` configuration
   options ([#36](https://github.com/zlubsen/dis-rs/issues/36) and [#37](https://github.com/zlubsen/dis-rs/issues/37))
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
 
 ## [0.2.0] - 2024-07-15
 

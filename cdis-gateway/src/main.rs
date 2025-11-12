@@ -290,7 +290,7 @@ fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
                     endpoint.address, err
                 );
             }
-            if let Err(err) = socket.set_ttl(1) {
+            if let Err(err) = socket.set_ttl_v4(1) {
                 error!("Failed to set TTL - {err}.");
             }
         }
@@ -315,7 +315,7 @@ fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             socket
                 .set_broadcast(true)
                 .expect("Failed to set SO_BROADCAST.");
-            socket.set_ttl(1).expect("Failed to set TTL.");
+            socket.set_ttl_v4(1).expect("Failed to set TTL.");
             socket.bind(&endpoint.interface.into()).unwrap_or_else(|_| {
                 panic!("Failed to bind to IPv6 address {:?}", endpoint.address)
             });
@@ -363,7 +363,7 @@ async fn reader_socket(
     let mut buf = BytesMut::with_capacity(READER_SOCKET_BUFFER_SIZE_BYTES);
 
     buf.resize(READER_SOCKET_BUFFER_SIZE_BYTES, 0);
-    let default_own_socketaddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 3000);
+    let default_own_socketaddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
 
     let local_address = socket.local_addr().unwrap_or(default_own_socketaddr);
 

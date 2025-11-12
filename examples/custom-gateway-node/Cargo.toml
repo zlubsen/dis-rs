@@ -10,9 +10,9 @@ path = "src/main.rs"
 
 [dependencies]
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 gateway-core = { path = "../../gateway-core" }
-tokio = "1.43.0"
-toml = "0.8.20"
-serde = { version = "1.0.218", features = ["derive"] }
-serde_json = "1.0.140"
+tokio = "1.48.0"
+toml = "0.9.8"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
