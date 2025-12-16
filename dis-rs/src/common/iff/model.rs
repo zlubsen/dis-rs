@@ -111,6 +111,13 @@ impl Interaction for Iff {
     }
 }
 
+impl From<Iff> for PduBody {
+    #[inline]
+    fn from(value: Iff) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 7.6.5.3 Layer 2 emissions data
 ///
 /// The Secondary Operational Data record (6.2.76) has been flattened in the `IffLayer2` struct, as it only

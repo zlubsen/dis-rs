@@ -68,3 +68,10 @@ impl Interaction for CommentR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<CommentR> for PduBody {
+    #[inline]
+    fn from(value: CommentR) -> Self {
+        value.into_pdu_body()
+    }
+}

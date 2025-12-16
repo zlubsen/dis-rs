@@ -60,3 +60,10 @@ impl Interaction for Fire {
         Some(&self.target_entity_id)
     }
 }
+
+impl From<Fire> for PduBody {
+    #[inline]
+    fn from(value: Fire) -> Self {
+        value.into_pdu_body()
+    }
+}

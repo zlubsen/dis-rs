@@ -66,6 +66,13 @@ impl Interaction for IsGroupOf {
     }
 }
 
+impl From<IsGroupOf> for PduBody {
+    #[inline]
+    fn from(value: IsGroupOf) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// Custom defined record.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

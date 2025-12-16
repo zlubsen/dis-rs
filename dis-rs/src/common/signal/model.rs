@@ -64,6 +64,13 @@ impl Interaction for Signal {
     }
 }
 
+impl From<Signal> for PduBody {
+    #[inline]
+    fn from(value: Signal) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// Table 177—Encoding Scheme record (7.7.3)
 ///
 /// 5.8.4.3.2 Field-specific requirements

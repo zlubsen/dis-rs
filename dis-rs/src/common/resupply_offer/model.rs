@@ -56,3 +56,10 @@ impl Interaction for ResupplyOffer {
         Some(&self.servicing_id)
     }
 }
+
+impl From<ResupplyOffer> for PduBody {
+    #[inline]
+    fn from(value: ResupplyOffer) -> Self {
+        value.into_pdu_body()
+    }
+}

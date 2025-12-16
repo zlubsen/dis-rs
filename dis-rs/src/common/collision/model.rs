@@ -55,3 +55,10 @@ impl Interaction for Collision {
         Some(&self.colliding_entity_id)
     }
 }
+
+impl From<Collision> for PduBody {
+    #[inline]
+    fn from(value: Collision) -> Self {
+        value.into_pdu_body()
+    }
+}

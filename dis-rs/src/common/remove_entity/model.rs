@@ -54,3 +54,10 @@ impl Interaction for RemoveEntity {
         Some(&self.receiving_id)
     }
 }
+
+impl From<RemoveEntity> for PduBody {
+    #[inline]
+    fn from(value: RemoveEntity) -> Self {
+        value.into_pdu_body()
+    }
+}

@@ -62,3 +62,10 @@ impl Interaction for Detonation {
         Some(&self.target_entity_id)
     }
 }
+
+impl From<Detonation> for PduBody {
+    #[inline]
+    fn from(value: Detonation) -> Self {
+        value.into_pdu_body()
+    }
+}

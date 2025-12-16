@@ -61,6 +61,13 @@ impl Interaction for SEES {
     }
 }
 
+impl From<SEES> for PduBody {
+    #[inline]
+    fn from(value: SEES) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.68 Propulsion System Data record
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -64,3 +64,10 @@ impl Interaction for Other {
         }
     }
 }
+
+impl From<Other> for PduBody {
+    #[inline]
+    fn from(value: Other) -> Self {
+        value.into_pdu_body()
+    }
+}

@@ -55,3 +55,10 @@ impl Interaction for CreateEntityR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<CreateEntityR> for PduBody {
+    #[inline]
+    fn from(value: CreateEntityR) -> Self {
+        value.into_pdu_body()
+    }
+}
