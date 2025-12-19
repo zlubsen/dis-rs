@@ -81,3 +81,24 @@ impl Default for DetonationDescriptor {
         Self::Munition(MunitionDescriptor::default())
     }
 }
+
+impl From<MunitionDescriptor> for DetonationDescriptor {
+    #[inline]
+    fn from(value: MunitionDescriptor) -> Self {
+        Self::Munition(value)
+    }
+}
+
+impl From<ExplosionDescriptor> for DetonationDescriptor {
+    #[inline]
+    fn from(value: ExplosionDescriptor) -> Self {
+        Self::Explosion(value)
+    }
+}
+
+impl From<ExpendableDescriptor> for DetonationDescriptor {
+    #[inline]
+    fn from(value: ExpendableDescriptor) -> Self {
+        Self::Expendable(value)
+    }
+}
