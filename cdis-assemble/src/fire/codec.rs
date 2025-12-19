@@ -4,7 +4,8 @@ use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
 use crate::records::model::{EntityId, EntityType, LinearVelocity};
 use crate::types::model::UVINT32;
 use dis_rs::enumerations::{EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead};
-use dis_rs::model::{DescriptorRecord, EventId, MunitionDescriptor};
+use dis_rs::fire::model::FireDescriptor;
+use dis_rs::model::{EventId, ExpendableDescriptor, MunitionDescriptor};
 use dis_rs::NO_FIRE_MISSION;
 use num::{ToPrimitive, Zero};
 
@@ -78,13 +79,10 @@ impl Fire {
 }
 
 fn encode_fire_descriptor(
-    item: &DescriptorRecord,
+    item: &FireDescriptor,
 ) -> (EntityType, Option<u16>, Option<u16>, Option<u8>, Option<u8>) {
     match item {
-        DescriptorRecord::Munition {
-            entity_type,
-            munition,
-        } => {
+        FireDescriptor::Munition(munition) => {
             let warhead = Some(munition.warhead.into());
             let fuze = Some(munition.fuse.into());
             let quantity = if munition.quantity.is_zero() {
@@ -98,35 +96,31 @@ fn encode_fire_descriptor(
                 Some(munition.rate.min(u16::from(u8::MAX)) as u8)
             };
             (
-                EntityType::encode(entity_type),
+                EntityType::encode(&munition.entity_type),
                 warhead,
                 fuze,
                 quantity,
                 rate,
             )
         }
-        DescriptorRecord::Expendable { entity_type } => {
-            (EntityType::encode(entity_type), None, None, None, None)
-        }
-        DescriptorRecord::Explosion {
-            entity_type,
-            explosive_material: _,
-            explosive_force: _,
-        } => {
-            // Fire PDU should not have an DescriptorRecord::Explosion, so material and force are not encoded.
-            (EntityType::encode(entity_type), None, None, None, None)
-        }
+        FireDescriptor::Expendable(expendable) => (
+            EntityType::encode(&expendable.entity_type),
+            None,
+            None,
+            None,
+            None,
+        ),
     }
 }
 
 fn decode_fire_descriptor(
     fire_body: &Fire,
     entity_type: dis_rs::model::EntityType,
-) -> DescriptorRecord {
+) -> FireDescriptor {
     match entity_type.kind {
-        EntityKind::Munition => DescriptorRecord::new_munition(
-            entity_type,
+        EntityKind::Munition => FireDescriptor::Munition(
             MunitionDescriptor::default()
+                .with_entity_type(entity_type)
                 .with_warhead(MunitionDescriptorWarhead::from(
                     fire_body.descriptor_warhead.unwrap_or_default(),
                 ))
@@ -136,10 +130,10 @@ fn decode_fire_descriptor(
                 .with_quantity(u16::from(fire_body.descriptor_quantity.unwrap_or_default()))
                 .with_rate(u16::from(fire_body.descriptor_rate.unwrap_or_default())),
         ),
-        EntityKind::Expendable => DescriptorRecord::new_expendable(entity_type),
+        EntityKind::Expendable => FireDescriptor::Expendable(ExpendableDescriptor { entity_type }),
         _ => {
             // Fire PDU should not have other EntityKinds than Munition or Expandable, so any others are decoded into munition by default
-            DescriptorRecord::new_munition(entity_type, MunitionDescriptor::default())
+            FireDescriptor::Munition(MunitionDescriptor::default().with_entity_type(entity_type))
         }
     }
 }
@@ -157,10 +151,10 @@ mod tests {
         EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PlatformDomain,
     };
     use dis_rs::fire::builder::FireBuilder;
-    use dis_rs::fire::model::Fire as DisFire;
+    use dis_rs::fire::model::{Fire as DisFire, FireDescriptor};
     use dis_rs::model::{
-        EntityId as DisEntityId, EntityType as DisEntityType, EventId, Location,
-        MunitionDescriptor, PduBody,
+        EntityId as DisEntityId, EntityType as DisEntityType, EventId, ExpendableDescriptor,
+        Location, MunitionDescriptor, PduBody,
     };
 
     fn create_basic_dis_fire_body() -> FireBuilder {
@@ -178,16 +172,18 @@ mod tests {
         let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_fire_body()
-            .with_munition_descriptor(
-                DisEntityType::default()
-                    .with_kind(EntityKind::Munition)
-                    .with_domain(PlatformDomain::Air),
+            .with_descriptor(FireDescriptor::Munition(
                 MunitionDescriptor::default()
+                    .with_entity_type(
+                        DisEntityType::default()
+                            .with_kind(EntityKind::Munition)
+                            .with_domain(PlatformDomain::Air),
+                    )
                     .with_warhead(MunitionDescriptorWarhead::Dummy)
                     .with_fuse(MunitionDescriptorFuse::Dummy_8110)
                     .with_quantity(1)
                     .with_rate(1),
-            )
+            ))
             .with_range(10000.0)
             .build()
             .into_pdu_body();
@@ -251,16 +247,18 @@ mod tests {
         let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_fire_body()
-            .with_munition_descriptor(
-                DisEntityType::default()
-                    .with_kind(EntityKind::Munition)
-                    .with_domain(PlatformDomain::Air),
+            .with_descriptor(FireDescriptor::Munition(
                 MunitionDescriptor::default()
+                    .with_entity_type(
+                        DisEntityType::default()
+                            .with_kind(EntityKind::Munition)
+                            .with_domain(PlatformDomain::Air),
+                    )
                     .with_warhead(MunitionDescriptorWarhead::Dummy)
                     .with_fuse(MunitionDescriptorFuse::Dummy_8110)
                     .with_quantity(0)
                     .with_rate(0),
-            )
+            ))
             .build()
             .into_pdu_body();
 
@@ -305,11 +303,11 @@ mod tests {
         let options = CodecOptions::new_partial_update();
 
         let dis_body = create_basic_dis_fire_body()
-            .with_expendable_descriptor(
-                DisEntityType::default()
+            .with_descriptor(FireDescriptor::Expendable(ExpendableDescriptor {
+                entity_type: DisEntityType::default()
                     .with_kind(EntityKind::Expendable)
                     .with_domain(PlatformDomain::Air),
-            )
+            }))
             .with_range(10000.0)
             .build()
             .into_pdu_body();
@@ -406,14 +404,10 @@ mod tests {
             assert_eq!(fire.entity_id, DisEntityId::new(10, 10, 500));
             assert_eq!(fire.event_id, EventId::new(10, 10, 1));
             assert_eq!(fire.fire_mission_index, 100);
-            if let dis_rs::model::DescriptorRecord::Munition {
-                entity_type,
-                munition,
-            } = fire.descriptor
-            {
-                assert_eq!(entity_type.kind, EntityKind::Munition);
-                assert_eq!(entity_type.domain, PlatformDomain::Air);
-                assert_eq!(entity_type.category, 0);
+            if let FireDescriptor::Munition(munition) = fire.descriptor {
+                assert_eq!(munition.entity_type.kind, EntityKind::Munition);
+                assert_eq!(munition.entity_type.domain, PlatformDomain::Air);
+                assert_eq!(munition.entity_type.category, 0);
                 assert_eq!(munition.warhead, MunitionDescriptorWarhead::Dummy);
                 assert_eq!(munition.fuse, MunitionDescriptorFuse::Dummy_8110);
                 assert_eq!(munition.quantity, 1);
@@ -482,10 +476,10 @@ mod tests {
             assert_eq!(fire.entity_id, DisEntityId::new(10, 10, 500));
             assert_eq!(fire.event_id, EventId::new(10, 10, 1));
             assert_eq!(fire.fire_mission_index, 100);
-            if let dis_rs::model::DescriptorRecord::Expendable { entity_type } = fire.descriptor {
-                assert_eq!(entity_type.kind, EntityKind::Expendable);
-                assert_eq!(entity_type.domain, PlatformDomain::Air);
-                assert_eq!(entity_type.category, 0);
+            if let FireDescriptor::Expendable(expendable) = fire.descriptor {
+                assert_eq!(expendable.entity_type.kind, EntityKind::Expendable);
+                assert_eq!(expendable.entity_type.domain, PlatformDomain::Air);
+                assert_eq!(expendable.entity_type.category, 0);
             } else {
                 panic!()
             }

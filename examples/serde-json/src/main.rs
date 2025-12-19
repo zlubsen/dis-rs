@@ -1,5 +1,5 @@
 use dis_rs::acknowledge::model::Acknowledge;
-use dis_rs::detonation::model::Detonation;
+use dis_rs::detonation::model::{Detonation, DetonationDescriptor};
 use dis_rs::enumerations::PduType;
 use dis_rs::model::{EntityType, MunitionDescriptor, Pdu, PduHeader, TimeStamp};
 
@@ -36,10 +36,10 @@ fn main() {
     // And a more complex PduBody
     // Note the format of the DescriptorRecord
     let detonation_pdu_body = Detonation::builder()
-        .with_munition_descriptor(
-            EntityType::try_from("1:2:3:4:5:6:7").unwrap(),
-            MunitionDescriptor::default(),
-        )
+        .with_descriptor(DetonationDescriptor::Munition(
+            MunitionDescriptor::default()
+                .with_entity_type(EntityType::try_from("1:2:3:4:5:6:7").unwrap()),
+        ))
         .build();
 
     let detonation_json = serde_json::to_string_pretty(&detonation_pdu_body).unwrap();
