@@ -19,7 +19,6 @@ use tokio::net::{TcpListener, TcpSocket, UdpSocket};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::sync::Notify;
 use tokio::task::JoinHandle;
-use tracing::error;
 
 const DEFAULT_SOCKET_BUFFER_CAPACITY: usize = 32_768;
 const DEFAULT_TTL: u32 = 1;
