@@ -1,4 +1,4 @@
-use crate::common::fire::model::Fire;
+use crate::common::fire::model::{Fire, FireDescriptor};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use bytes::{BufMut, BytesMut};
 
@@ -23,5 +23,14 @@ impl SerializePdu for Fire {
             + descriptor_bytes
             + velocity_bytes
             + 4
+    }
+}
+
+impl Serialize for FireDescriptor {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        match self {
+            Self::Munition(munition) => munition.serialize(buf),
+            Self::Expendable(expendable) => expendable.serialize(buf),
+        }
     }
 }

@@ -1198,66 +1198,11 @@ impl TryFrom<String> for EntityType {
     }
 }
 
-/// 6.2.19 Descriptor records
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum DescriptorRecord {
-    /// 6.2.19.2 Munition Descriptor record
-    #[cfg_attr(feature = "serde", serde(rename = "munition"))]
-    Munition {
-        entity_type: EntityType,
-        munition: MunitionDescriptor,
-    },
-    /// 6.2.19.4 Expendable Descriptor record
-    #[cfg_attr(feature = "serde", serde(rename = "expendable"))]
-    Expendable { entity_type: EntityType },
-    /// 6.2.19.3 Explosion Descriptor record
-    #[cfg_attr(feature = "serde", serde(rename = "explosion"))]
-    Explosion {
-        entity_type: EntityType,
-        explosive_material: ExplosiveMaterialCategories,
-        explosive_force: f32,
-    },
-}
-
-impl DescriptorRecord {
-    #[must_use]
-    pub fn new_munition(entity_type: EntityType, munition: MunitionDescriptor) -> Self {
-        DescriptorRecord::Munition {
-            entity_type,
-            munition,
-        }
-    }
-
-    #[must_use]
-    pub fn new_expendable(entity_type: EntityType) -> Self {
-        DescriptorRecord::Expendable { entity_type }
-    }
-
-    #[must_use]
-    pub fn new_explosion(
-        entity_type: EntityType,
-        explosive_material: ExplosiveMaterialCategories,
-        explosive_force: f32,
-    ) -> Self {
-        DescriptorRecord::Explosion {
-            entity_type,
-            explosive_material,
-            explosive_force,
-        }
-    }
-}
-
-impl Default for DescriptorRecord {
-    fn default() -> Self {
-        DescriptorRecord::new_munition(EntityType::default(), MunitionDescriptor::default())
-    }
-}
-
 /// 6.2.19.2 Munition Descriptor record
 #[derive(Clone, Default, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MunitionDescriptor {
+    pub entity_type: EntityType,
     pub warhead: MunitionDescriptorWarhead,
     pub fuse: MunitionDescriptorFuse,
     pub quantity: u16,
@@ -1265,6 +1210,12 @@ pub struct MunitionDescriptor {
 }
 
 impl MunitionDescriptor {
+    #[must_use]
+    pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
+        self.entity_type = entity_type;
+        self
+    }
+
     #[must_use]
     pub fn with_warhead(mut self, warhead: MunitionDescriptorWarhead) -> Self {
         self.warhead = warhead;
@@ -1286,6 +1237,53 @@ impl MunitionDescriptor {
     #[must_use]
     pub fn with_rate(mut self, rate: u16) -> Self {
         self.rate = rate;
+        self
+    }
+}
+
+/// 6.2.19.3 Explosion Descriptor record
+#[derive(Clone, Default, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ExplosionDescriptor {
+    pub entity_type: EntityType,
+    pub explosive_material: ExplosiveMaterialCategories,
+    pub explosive_force: f32,
+}
+
+impl ExplosionDescriptor {
+    #[must_use]
+    pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
+        self.entity_type = entity_type;
+        self
+    }
+
+    #[must_use]
+    pub fn with_explosive_material(
+        mut self,
+        explosive_material: ExplosiveMaterialCategories,
+    ) -> Self {
+        self.explosive_material = explosive_material;
+        self
+    }
+
+    #[must_use]
+    pub fn with_explosive_force(mut self, explosive_force: f32) -> Self {
+        self.explosive_force = explosive_force;
+        self
+    }
+}
+
+/// 6.2.19.4 Expendable Descriptor record
+#[derive(Clone, Default, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ExpendableDescriptor {
+    pub entity_type: EntityType,
+}
+
+impl ExpendableDescriptor {
+    #[must_use]
+    pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
+        self.entity_type = entity_type;
         self
     }
 }

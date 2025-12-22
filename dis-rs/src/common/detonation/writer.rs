@@ -1,4 +1,4 @@
-use crate::common::detonation::model::Detonation;
+use crate::common::detonation::model::{Detonation, DetonationDescriptor};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use bytes::{BufMut, BytesMut};
 
@@ -31,5 +31,15 @@ impl SerializePdu for Detonation {
             + entity_location_bytes
             + 4
             + variable_params_bytes
+    }
+}
+
+impl Serialize for DetonationDescriptor {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        match self {
+            Self::Munition(munition) => munition.serialize(buf),
+            Self::Explosion(explosion) => explosion.serialize(buf),
+            Self::Expendable(expendable) => expendable.serialize(buf),
+        }
     }
 }
