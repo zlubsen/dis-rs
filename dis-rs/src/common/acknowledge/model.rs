@@ -2,6 +2,7 @@ use crate::common::acknowledge::builder::AcknowledgeBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -20,19 +21,21 @@ pub struct Acknowledge {
     pub request_id: u32,
 }
 
-impl Acknowledge {
+impl BodyRaw for Acknowledge {
+    type Builder = AcknowledgeBuilder;
+
     #[must_use]
-    pub fn builder() -> AcknowledgeBuilder {
-        AcknowledgeBuilder::new()
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
     #[must_use]
-    pub fn into_builder(self) -> AcknowledgeBuilder {
+    fn into_builder(self) -> Self::Builder {
         AcknowledgeBuilder::new_from_body(self)
     }
 
     #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Acknowledge(self)
     }
 }
@@ -54,12 +57,5 @@ impl Interaction for Acknowledge {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<Acknowledge> for PduBody {
-    #[inline]
-    fn from(value: Acknowledge) -> Self {
-        value.into_pdu_body()
     }
 }

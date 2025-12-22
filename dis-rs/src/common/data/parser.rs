@@ -1,6 +1,7 @@
 use crate::common::data::model::Data;
 use crate::common::model::PduBody;
 use crate::common::parser::{datum_specification, entity_id};
+use crate::BodyRaw;
 use nom::number::complete::be_u32;
 use nom::IResult;
 

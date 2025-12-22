@@ -2,6 +2,7 @@ use crate::common::collision_elastic::builder::CollisionElasticBuilder;
 use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -29,19 +30,18 @@ pub struct CollisionElastic {
     pub coefficient_of_restitution: f32,
 }
 
-impl CollisionElastic {
-    #[must_use]
-    pub fn builder() -> CollisionElasticBuilder {
+impl BodyRaw for CollisionElastic {
+    type Builder = CollisionElasticBuilder;
+
+    fn builder() -> CollisionElasticBuilder {
         CollisionElasticBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> CollisionElasticBuilder {
+    fn into_builder(self) -> CollisionElasticBuilder {
         CollisionElasticBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::CollisionElastic(self)
     }
 }

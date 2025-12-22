@@ -10,6 +10,7 @@ mod tests {
     use crate::common::model::{Pdu, PduHeader, SimulationAddress};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

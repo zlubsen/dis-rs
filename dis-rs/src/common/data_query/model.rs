@@ -3,6 +3,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{PduType, VariableRecordType};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct DataQuery {
     pub variable_datum_records: Vec<VariableRecordType>,
 }
 
-impl DataQuery {
-    #[must_use]
-    pub fn builder() -> DataQueryBuilder {
-        DataQueryBuilder::new()
+impl BodyRaw for DataQuery {
+    type Builder = DataQueryBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> DataQueryBuilder {
-        DataQueryBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::DataQuery(self)
     }
 }
@@ -55,12 +55,5 @@ impl Interaction for DataQuery {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<DataQuery> for PduBody {
-    #[inline]
-    fn from(value: DataQuery) -> Self {
-        value.into_pdu_body()
     }
 }

@@ -2,6 +2,7 @@ use crate::common::collision::model::Collision;
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, event_id, vec3_f32};
 use crate::enumerations::CollisionType;
+use crate::BodyRaw;
 use nom::number::complete::{be_f32, be_u8};
 use nom::IResult;
 

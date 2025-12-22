@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::create_entity_r::builder::CreateEntityRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct CreateEntityR {
     pub request_id: u32,
 }
 
-impl CreateEntityR {
-    #[must_use]
-    pub fn builder() -> CreateEntityRBuilder {
+impl BodyRaw for CreateEntityR {
+    type Builder = CreateEntityRBuilder;
+
+    fn builder() -> CreateEntityRBuilder {
         CreateEntityRBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> CreateEntityRBuilder {
+    fn into_builder(self) -> CreateEntityRBuilder {
         CreateEntityRBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::CreateEntityR(self)
     }
 }
@@ -53,12 +53,5 @@ impl Interaction for CreateEntityR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<CreateEntityR> for PduBody {
-    #[inline]
-    fn from(value: CreateEntityR) -> Self {
-        value.into_pdu_body()
     }
 }

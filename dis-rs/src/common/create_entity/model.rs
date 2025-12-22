@@ -2,6 +2,7 @@ use crate::common::create_entity::builder::CreateEntityBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -18,19 +19,18 @@ pub struct CreateEntity {
     pub request_id: u32,
 }
 
-impl CreateEntity {
-    #[must_use]
-    pub fn builder() -> CreateEntityBuilder {
+impl BodyRaw for CreateEntity {
+    type Builder = CreateEntityBuilder;
+
+    fn builder() -> CreateEntityBuilder {
         CreateEntityBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> CreateEntityBuilder {
+    fn into_builder(self) -> CreateEntityBuilder {
         CreateEntityBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::CreateEntity(self)
     }
 }
@@ -52,12 +52,5 @@ impl Interaction for CreateEntity {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<CreateEntity> for PduBody {
-    #[inline]
-    fn from(value: CreateEntity) -> Self {
-        value.into_pdu_body()
     }
 }

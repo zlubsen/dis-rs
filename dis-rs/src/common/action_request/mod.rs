@@ -10,6 +10,7 @@ mod tests {
     use crate::common::model::{EntityId, FixedDatum, Pdu, PduHeader, VariableDatum};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{ActionId, PduType, VariableRecordType};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

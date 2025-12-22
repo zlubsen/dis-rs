@@ -6,6 +6,7 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -21,19 +22,18 @@ pub struct Data {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl Data {
-    #[must_use]
-    pub fn builder() -> DataBuilder {
+impl BodyRaw for Data {
+    type Builder = DataBuilder;
+
+    fn builder() -> DataBuilder {
         DataBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> DataBuilder {
+    fn into_builder(self) -> DataBuilder {
         DataBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Data(self)
     }
 }
@@ -67,12 +67,5 @@ impl Interaction for Data {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<Data> for PduBody {
-    #[inline]
-    fn from(value: Data) -> Self {
-        value.into_pdu_body()
     }
 }
