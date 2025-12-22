@@ -54,3 +54,10 @@ impl Interaction for Receiver {
         Some(&self.radio_reference_id)
     }
 }
+
+impl From<Receiver> for PduBody {
+    #[inline]
+    fn from(value: Receiver) -> Self {
+        value.into_pdu_body()
+    }
+}

@@ -56,3 +56,10 @@ impl Interaction for ServiceRequest {
         Some(&self.servicing_id)
     }
 }
+
+impl From<ServiceRequest> for PduBody {
+    #[inline]
+    fn from(value: ServiceRequest) -> Self {
+        value.into_pdu_body()
+    }
+}

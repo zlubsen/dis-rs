@@ -83,6 +83,13 @@ impl Interaction for EntityState {
     }
 }
 
+impl From<EntityState> for PduBody {
+    #[inline]
+    fn from(value: EntityState) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.26 Entity Appearance record
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -73,3 +73,10 @@ impl Interaction for EventReportR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<EventReportR> for PduBody {
+    #[inline]
+    fn from(value: EventReportR) -> Self {
+        value.into_pdu_body()
+    }
+}

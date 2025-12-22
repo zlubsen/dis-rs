@@ -56,3 +56,10 @@ impl Interaction for Acknowledge {
         Some(&self.receiving_id)
     }
 }
+
+impl From<Acknowledge> for PduBody {
+    #[inline]
+    fn from(value: Acknowledge) -> Self {
+        value.into_pdu_body()
+    }
+}

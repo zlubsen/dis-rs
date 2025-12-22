@@ -63,6 +63,13 @@ impl Interaction for Fire {
     }
 }
 
+impl From<Fire> for PduBody {
+    #[inline]
+    fn from(value: Fire) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.19 Fire Descriptor record
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -75,6 +75,13 @@ impl Interaction for Attribute {
     }
 }
 
+impl From<Attribute> for PduBody {
+    #[inline]
+    fn from(value: Attribute) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 5.3.6.3
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -64,6 +64,13 @@ impl Interaction for Detonation {
     }
 }
 
+impl From<Detonation> for PduBody {
+    #[inline]
+    fn from(value: Detonation) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.19 Detonation Descriptor record
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

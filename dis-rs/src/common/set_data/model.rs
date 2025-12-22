@@ -72,3 +72,10 @@ impl Interaction for SetData {
         Some(&self.receiving_id)
     }
 }
+
+impl From<SetData> for PduBody {
+    #[inline]
+    fn from(value: SetData) -> Self {
+        value.into_pdu_body()
+    }
+}

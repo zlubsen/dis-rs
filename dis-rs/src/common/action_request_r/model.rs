@@ -72,3 +72,10 @@ impl Interaction for ActionRequestR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<ActionRequestR> for PduBody {
+    #[inline]
+    fn from(value: ActionRequestR) -> Self {
+        value.into_pdu_body()
+    }
+}

@@ -81,6 +81,13 @@ impl Interaction for ElectromagneticEmission {
     }
 }
 
+impl From<ElectromagneticEmission> for PduBody {
+    #[inline]
+    fn from(value: ElectromagneticEmission) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.23 Emitter System record
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

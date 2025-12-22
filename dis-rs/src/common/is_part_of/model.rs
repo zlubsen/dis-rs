@@ -58,6 +58,13 @@ impl Interaction for IsPartOf {
     }
 }
 
+impl From<IsPartOf> for PduBody {
+    #[inline]
+    fn from(value: IsPartOf) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.74 Relationship record
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

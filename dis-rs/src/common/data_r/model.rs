@@ -73,3 +73,10 @@ impl Interaction for DataR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<DataR> for PduBody {
+    #[inline]
+    fn from(value: DataR) -> Self {
+        value.into_pdu_body()
+    }
+}

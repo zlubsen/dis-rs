@@ -54,3 +54,10 @@ impl Interaction for RepairResponse {
         Some(&self.receiving_id)
     }
 }
+
+impl From<RepairResponse> for PduBody {
+    #[inline]
+    fn from(value: RepairResponse) -> Self {
+        value.into_pdu_body()
+    }
+}

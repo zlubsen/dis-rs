@@ -73,6 +73,13 @@ impl Interaction for UnderwaterAcoustic {
     }
 }
 
+impl From<UnderwaterAcoustic> for PduBody {
+    #[inline]
+    fn from(value: UnderwaterAcoustic) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// Implementation of UID 149
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
