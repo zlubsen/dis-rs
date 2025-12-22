@@ -107,6 +107,13 @@ impl Interaction for AggregateState {
     }
 }
 
+impl From<AggregateState> for PduBody {
+    #[inline]
+    fn from(value: AggregateState) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.4 Aggregate Marking record
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

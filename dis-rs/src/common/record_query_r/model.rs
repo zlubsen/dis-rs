@@ -64,6 +64,13 @@ impl Interaction for RecordQueryR {
     }
 }
 
+impl From<RecordQueryR> for PduBody {
+    #[inline]
+    fn from(value: RecordQueryR) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 /// 6.2.72 Record Query Specification record
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

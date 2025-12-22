@@ -1,4 +1,6 @@
-use crate::common::model::{DescriptorRecord, EntityId, EventId, Location, PduBody, VectorF32};
+use crate::common::model::{
+    EntityId, EventId, ExpendableDescriptor, Location, MunitionDescriptor, PduBody, VectorF32,
+};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::fire::builder::FireBuilder;
@@ -19,7 +21,7 @@ pub struct Fire {
     pub event_id: EventId,
     pub fire_mission_index: u32,
     pub location_in_world: Location,
-    pub descriptor: DescriptorRecord,
+    pub descriptor: FireDescriptor,
     pub velocity: VectorF32,
     pub range: f32,
 }
@@ -58,5 +60,42 @@ impl Interaction for Fire {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.target_entity_id)
+    }
+}
+
+impl From<Fire> for PduBody {
+    #[inline]
+    fn from(value: Fire) -> Self {
+        value.into_pdu_body()
+    }
+}
+
+/// 6.2.19 Fire Descriptor record
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FireDescriptor {
+    #[cfg_attr(feature = "serde", serde(rename = "munition"))]
+    Munition(MunitionDescriptor),
+    #[cfg_attr(feature = "serde", serde(rename = "expendable"))]
+    Expendable(ExpendableDescriptor),
+}
+
+impl Default for FireDescriptor {
+    fn default() -> Self {
+        Self::Munition(MunitionDescriptor::default())
+    }
+}
+
+impl From<MunitionDescriptor> for FireDescriptor {
+    #[inline]
+    fn from(value: MunitionDescriptor) -> Self {
+        Self::Munition(value)
+    }
+}
+
+impl From<ExpendableDescriptor> for FireDescriptor {
+    #[inline]
+    fn from(value: ExpendableDescriptor) -> Self {
+        Self::Expendable(value)
     }
 }

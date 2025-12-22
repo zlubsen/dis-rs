@@ -1,8 +1,8 @@
 use crate::common::model::{
-    length_padded_to_num, ArticulatedPart, AttachedPart, BeamData, ClockTime, DescriptorRecord,
-    EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, FixedDatum, Location,
-    MunitionDescriptor, Orientation, SeparationParameter, SimulationAddress, VariableDatum,
-    VariableParameter, VectorF32,
+    length_padded_to_num, ArticulatedPart, AttachedPart, BeamData, ClockTime,
+    EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, ExpendableDescriptor,
+    ExplosionDescriptor, FixedDatum, Location, MunitionDescriptor, Orientation,
+    SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32,
 };
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
@@ -187,44 +187,32 @@ impl Serialize for Orientation {
     }
 }
 
-impl Serialize for DescriptorRecord {
-    fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        match self {
-            DescriptorRecord::Munition {
-                entity_type,
-                munition,
-            } => {
-                let entity_bytes = entity_type.serialize(buf);
-                let munition_bytes = munition.serialize(buf);
-                entity_bytes + munition_bytes
-            }
-            DescriptorRecord::Expendable { entity_type } => {
-                let entity_bytes = entity_type.serialize(buf);
-                buf.put_u64(0u64);
-                entity_bytes + 8
-            }
-            DescriptorRecord::Explosion {
-                entity_type,
-                explosive_material,
-                explosive_force,
-            } => {
-                let entity_bytes = entity_type.serialize(buf);
-                buf.put_u16((*explosive_material).into());
-                buf.put_u16(0u16);
-                buf.put_f32(*explosive_force);
-                entity_bytes + 8
-            }
-        }
-    }
-}
-
 impl Serialize for MunitionDescriptor {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        let entity_bytes = self.entity_type.serialize(buf);
         buf.put_u16(self.warhead.into());
         buf.put_u16(self.fuse.into());
         buf.put_u16(self.quantity);
         buf.put_u16(self.rate);
-        8
+        entity_bytes + 8
+    }
+}
+
+impl Serialize for ExplosionDescriptor {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        let entity_bytes = self.entity_type.serialize(buf);
+        buf.put_u16(self.explosive_material.into());
+        buf.put_u16(0u16);
+        buf.put_f32(self.explosive_force);
+        entity_bytes + 8
+    }
+}
+
+impl Serialize for ExpendableDescriptor {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        let entity_bytes = self.entity_type.serialize(buf);
+        buf.put_u64(0u64);
+        entity_bytes + 8
     }
 }
 

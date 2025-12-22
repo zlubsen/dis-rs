@@ -1,7 +1,6 @@
-use crate::common::fire::model::Fire;
+use crate::common::fire::model::{Fire, FireDescriptor};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser;
-use crate::common::parser::{entity_id, event_id, location, vec3_f32};
 use crate::enumerations::FireTypeIndicator;
 use nom::number::complete::{be_f32, be_u32};
 use nom::IResult;
@@ -17,14 +16,14 @@ pub(crate) fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
             .unwrap_or_default()
             .fire_type_indicator
             .unwrap_or(FireTypeIndicator::Munition);
-        let (input, firing_entity_id) = entity_id(input)?;
-        let (input, target_entity_id) = entity_id(input)?;
-        let (input, munition_id) = entity_id(input)?;
-        let (input, event_id) = event_id(input)?;
+        let (input, firing_entity_id) = parser::entity_id(input)?;
+        let (input, target_entity_id) = parser::entity_id(input)?;
+        let (input, munition_id) = parser::entity_id(input)?;
+        let (input, event_id) = parser::event_id(input)?;
         let (input, fire_mission_index) = be_u32(input)?;
-        let (input, location_in_world) = location(input)?;
-        let (input, descriptor) = parser::descriptor_record_fti(fti)(input)?;
-        let (input, velocity) = vec3_f32(input)?;
+        let (input, location_in_world) = parser::location(input)?;
+        let (input, descriptor) = fire_descriptor(fti)(input)?;
+        let (input, velocity) = parser::vec3_f32(input)?;
         let (input, range) = be_f32(input)?;
 
         let body = Fire {
@@ -40,5 +39,21 @@ pub(crate) fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], 
         };
 
         Ok((input, body.into_pdu_body()))
+    }
+}
+
+pub(crate) fn fire_descriptor(
+    fire_type_indicator: FireTypeIndicator,
+) -> impl Fn(&[u8]) -> IResult<&[u8], FireDescriptor> {
+    move |input: &[u8]| match fire_type_indicator {
+        FireTypeIndicator::Munition => {
+            let (input, munition) = parser::munition_descriptor(input)?;
+            Ok((input, FireDescriptor::Munition(munition)))
+        }
+        // FIXME: FireTypeIndicator::Unspecified(_) should be an error; for now parse as Expendable, which has no data
+        FireTypeIndicator::Expendable | FireTypeIndicator::Unspecified(_) => {
+            let (input, expendable) = parser::expendable_descriptor(input)?;
+            Ok((input, FireDescriptor::Expendable(expendable)))
+        }
     }
 }

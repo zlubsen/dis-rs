@@ -1,6 +1,7 @@
 use crate::common::detonation::builder::DetonationBuilder;
 use crate::common::model::{
-    DescriptorRecord, EntityId, EventId, Location, PduBody, VariableParameter, VectorF32,
+    EntityId, EventId, ExpendableDescriptor, ExplosionDescriptor, Location, MunitionDescriptor,
+    PduBody, VariableParameter, VectorF32,
 };
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
@@ -19,7 +20,7 @@ pub struct Detonation {
     pub event_id: EventId,
     pub velocity: VectorF32,
     pub location_in_world_coordinates: Location,
-    pub descriptor: DescriptorRecord,
+    pub descriptor: DetonationDescriptor,
     pub location_in_entity_coordinates: VectorF32,
     pub detonation_result: DetonationResult,
     pub variable_parameters: Vec<VariableParameter>,
@@ -60,5 +61,51 @@ impl Interaction for Detonation {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.target_entity_id)
+    }
+}
+
+impl From<Detonation> for PduBody {
+    #[inline]
+    fn from(value: Detonation) -> Self {
+        value.into_pdu_body()
+    }
+}
+
+/// 6.2.19 Detonation Descriptor record
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum DetonationDescriptor {
+    #[cfg_attr(feature = "serde", serde(rename = "munition"))]
+    Munition(MunitionDescriptor),
+    #[cfg_attr(feature = "serde", serde(rename = "explosion"))]
+    Explosion(ExplosionDescriptor),
+    #[cfg_attr(feature = "serde", serde(rename = "expendable"))]
+    Expendable(ExpendableDescriptor),
+}
+
+impl Default for DetonationDescriptor {
+    fn default() -> Self {
+        Self::Munition(MunitionDescriptor::default())
+    }
+}
+
+impl From<MunitionDescriptor> for DetonationDescriptor {
+    #[inline]
+    fn from(value: MunitionDescriptor) -> Self {
+        Self::Munition(value)
+    }
+}
+
+impl From<ExplosionDescriptor> for DetonationDescriptor {
+    #[inline]
+    fn from(value: ExplosionDescriptor) -> Self {
+        Self::Explosion(value)
+    }
+}
+
+impl From<ExpendableDescriptor> for DetonationDescriptor {
+    #[inline]
+    fn from(value: ExpendableDescriptor) -> Self {
+        Self::Expendable(value)
     }
 }

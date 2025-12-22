@@ -56,3 +56,10 @@ impl Interaction for StartResume {
         Some(&self.receiving_id)
     }
 }
+
+impl From<StartResume> for PduBody {
+    #[inline]
+    fn from(value: StartResume) -> Self {
+        value.into_pdu_body()
+    }
+}

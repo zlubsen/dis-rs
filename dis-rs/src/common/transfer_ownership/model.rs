@@ -76,3 +76,10 @@ impl Interaction for TransferOwnership {
         Some(&self.receiving_id)
     }
 }
+
+impl From<TransferOwnership> for PduBody {
+    #[inline]
+    fn from(value: TransferOwnership) -> Self {
+        value.into_pdu_body()
+    }
+}

@@ -62,3 +62,10 @@ impl Interaction for EntityStateUpdate {
         None
     }
 }
+
+impl From<EntityStateUpdate> for PduBody {
+    #[inline]
+    fn from(value: EntityStateUpdate) -> Self {
+        value.into_pdu_body()
+    }
+}

@@ -208,7 +208,7 @@ mod tests {
         EntityKind, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType,
         PlatformDomain,
     };
-    use dis_rs::fire::model::Fire;
+    use dis_rs::fire::model::{Fire, FireDescriptor};
     use dis_rs::model::{
         EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader,
         PduStatus, TimeStamp,
@@ -227,16 +227,18 @@ mod tests {
             .with_entity_id(EntityId::new(10, 10, 500))
             .with_event_id(EventId::new(10, 10, 1))
             .with_location_in_world(Location::new(0.0, 0.0, 20000.0))
-            .with_munition_descriptor(
-                EntityType::default()
-                    .with_kind(EntityKind::Munition)
-                    .with_domain(PlatformDomain::Air),
+            .with_descriptor(FireDescriptor::Munition(
                 MunitionDescriptor::default()
+                    .with_entity_type(
+                        EntityType::default()
+                            .with_kind(EntityKind::Munition)
+                            .with_domain(PlatformDomain::Air),
+                    )
                     .with_warhead(MunitionDescriptorWarhead::Dummy)
                     .with_fuse(MunitionDescriptorFuse::Dummy_8110)
                     .with_quantity(1)
                     .with_rate(1),
-            )
+            ))
             .with_range(10000.0)
             .build()
             .into_pdu_body()

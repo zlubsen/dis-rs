@@ -12,8 +12,8 @@ mod tests {
         CoupledExtensionIndicator, EntityKind, FireTypeIndicator, LvcIndicator,
         MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType,
     };
-    use crate::fire::model::Fire;
-    use crate::model::{DescriptorRecord, EntityType, MunitionDescriptor, VectorF32};
+    use crate::fire::model::{Fire, FireDescriptor};
+    use crate::model::{EntityType, ExpendableDescriptor, MunitionDescriptor, VectorF32};
     use crate::v7::model::PduStatus;
     use bytes::BytesMut;
 
@@ -22,9 +22,9 @@ mod tests {
         let header = PduHeader::new_v6(1, PduType::Fire);
 
         let body = Fire::builder()
-            .with_descriptor(DescriptorRecord::new_munition(
-                EntityType::default().with_kind(EntityKind::Munition),
+            .with_descriptor(FireDescriptor::Munition(
                 MunitionDescriptor::default()
+                    .with_entity_type(EntityType::default().with_kind(EntityKind::Munition))
                     .with_warhead(MunitionDescriptorWarhead::Blank)
                     .with_fuse(MunitionDescriptorFuse::Contact_Nose_1960)
                     .with_quantity(10),
@@ -64,8 +64,9 @@ mod tests {
         );
 
         let body = Fire::builder()
-            .with_descriptor(DescriptorRecord::new_expendable(
-                EntityType::default().with_kind(EntityKind::Expendable),
+            .with_descriptor(FireDescriptor::Expendable(
+                ExpendableDescriptor::default()
+                    .with_entity_type(EntityType::default().with_kind(EntityKind::Expendable)),
             ))
             .with_velocity(VectorF32::new(50.0, 60.0, 70.0))
             .build()
@@ -102,9 +103,9 @@ mod tests {
         );
 
         let body = Fire::builder()
-            .with_descriptor(DescriptorRecord::new_munition(
-                EntityType::default().with_kind(EntityKind::Munition),
+            .with_descriptor(FireDescriptor::Munition(
                 MunitionDescriptor::default()
+                    .with_entity_type(EntityType::default().with_kind(EntityKind::Munition))
                     .with_warhead(MunitionDescriptorWarhead::Blank)
                     .with_fuse(MunitionDescriptorFuse::Contact_Nose_1960)
                     .with_quantity(10),

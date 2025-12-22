@@ -101,6 +101,13 @@ impl Interaction for Transmitter {
     }
 }
 
+impl From<Transmitter> for PduBody {
+    #[inline]
+    fn from(value: Transmitter) -> Self {
+        value.into_pdu_body()
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ModulationType {

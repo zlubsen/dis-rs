@@ -57,3 +57,10 @@ impl Interaction for DataQuery {
         Some(&self.receiving_id)
     }
 }
+
+impl From<DataQuery> for PduBody {
+    #[inline]
+    fn from(value: DataQuery) -> Self {
+        value.into_pdu_body()
+    }
+}

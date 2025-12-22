@@ -60,3 +60,10 @@ impl Interaction for StopFreezeR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<StopFreezeR> for PduBody {
+    #[inline]
+    fn from(value: StopFreezeR) -> Self {
+        value.into_pdu_body()
+    }
+}

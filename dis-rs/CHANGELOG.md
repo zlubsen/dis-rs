@@ -21,11 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-## [0.12.1] - 2025-11-05
+## [0.12.1] - 2025-12-22
+
+### Added
+
+- PDU Bodies now have `From<_SomeBody_>` implementations for `PduBody` for easy conversion.
 
 ### Changed
 
 - Updated dependencies
+- Split DescritorRecord into FireDescription and DetonationDescriptor records.
 
 ### Fixed
 

@@ -62,3 +62,10 @@ impl Interaction for Designator {
         Some(&self.designated_entity_id)
     }
 }
+
+impl From<Designator> for PduBody {
+    #[inline]
+    fn from(value: Designator) -> Self {
+        value.into_pdu_body()
+    }
+}

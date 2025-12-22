@@ -75,3 +75,10 @@ impl Interaction for SetRecordR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<SetRecordR> for PduBody {
+    #[inline]
+    fn from(value: SetRecordR) -> Self {
+        value.into_pdu_body()
+    }
+}

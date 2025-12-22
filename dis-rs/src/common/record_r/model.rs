@@ -75,3 +75,10 @@ impl Interaction for RecordR {
         Some(&self.receiving_id)
     }
 }
+
+impl From<RecordR> for PduBody {
+    #[inline]
+    fn from(value: RecordR) -> Self {
+        value.into_pdu_body()
+    }
+}

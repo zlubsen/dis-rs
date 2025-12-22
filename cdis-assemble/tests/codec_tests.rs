@@ -33,7 +33,7 @@ use dis_rs::iff::model::{
     IffLayer5, InformationLayers, LayersPresenceApplicability, SystemId,
 };
 use dis_rs::model::{
-    ClockTime, DescriptorRecord, EntityId, EntityType, EventId, FixedDatum, Location,
+    ClockTime, EntityId, EntityType, EventId, ExplosionDescriptor, FixedDatum, Location,
     MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, TimeStamp, VariableDatum, VectorF32,
 };
 use dis_rs::signal::model::EncodingScheme;
@@ -236,7 +236,7 @@ fn codec_consistency_entity_state_full_mode() {
 
 #[test]
 fn codec_consistency_fire() {
-    use dis_rs::fire::model::Fire;
+    use dis_rs::fire::model::{Fire, FireDescriptor};
 
     let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
@@ -251,16 +251,18 @@ fn codec_consistency_fire() {
         .with_entity_id(EntityId::new(10, 10, 500))
         .with_event_id(EventId::new(10, 10, 1))
         .with_location_in_world(Location::new(0.0, 0.0, 20000.0))
-        .with_munition_descriptor(
-            EntityType::default()
-                .with_kind(EntityKind::Munition)
-                .with_domain(PlatformDomain::Air),
+        .with_descriptor(FireDescriptor::Munition(
             MunitionDescriptor::default()
+                .with_entity_type(
+                    EntityType::default()
+                        .with_kind(EntityKind::Munition)
+                        .with_domain(PlatformDomain::Air),
+                )
                 .with_warhead(MunitionDescriptorWarhead::Dummy)
                 .with_fuse(MunitionDescriptorFuse::Dummy_8110)
                 .with_quantity(1)
                 .with_rate(1),
-        )
+        ))
         .with_range(10000.0)
         .build()
         .into_pdu_body();
@@ -302,7 +304,7 @@ fn codec_consistency_fire() {
 
 #[test]
 fn codec_consistency_detonation() {
-    use dis_rs::detonation::model::Detonation;
+    use dis_rs::detonation::model::{Detonation, DetonationDescriptor};
 
     let mut encoder_state = EncoderState::new();
     let codec_options = CodecOptions::new_full_update();
@@ -317,12 +319,15 @@ fn codec_consistency_detonation() {
         .with_event_id(EventId::new(1, 1, 1))
         .with_velocity(VectorF32::new(10.0, 10.0, 10.0))
         .with_world_location(Location::new(0.0, 0.0, 20000.0))
-        .with_descriptor(DescriptorRecord::new_explosion(
-            EntityType::default()
-                .with_kind(EntityKind::Other)
-                .with_domain(PlatformDomain::Land),
-            ExplosiveMaterialCategories::Alcohol,
-            200.0,
+        .with_descriptor(DetonationDescriptor::Explosion(
+            ExplosionDescriptor::default()
+                .with_entity_type(
+                    EntityType::default()
+                        .with_kind(EntityKind::Other)
+                        .with_domain(PlatformDomain::Land),
+                )
+                .with_explosive_material(ExplosiveMaterialCategories::Alcohol)
+                .with_explosive_force(200.0),
         ))
         .with_entity_location(VectorF32::new(10.0, 10.0, 0.0))
         .with_detonation_result(DetonationResult::Detonation)
