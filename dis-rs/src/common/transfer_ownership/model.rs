@@ -5,6 +5,7 @@ use crate::model::{
     length_padded_to_num, EntityId, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
 };
 use crate::transfer_ownership::builder::TransferOwnershipBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -25,19 +26,18 @@ pub struct TransferOwnership {
     pub record_specification: RecordSpecification,
 }
 
-impl TransferOwnership {
-    #[must_use]
-    pub fn builder() -> TransferOwnershipBuilder {
-        TransferOwnershipBuilder::new()
+impl BodyRaw for TransferOwnership {
+    type Builder = TransferOwnershipBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> TransferOwnershipBuilder {
-        TransferOwnershipBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::TransferOwnership(self)
     }
 }
@@ -74,12 +74,5 @@ impl Interaction for TransferOwnership {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<TransferOwnership> for PduBody {
-    #[inline]
-    fn from(value: TransferOwnership) -> Self {
-        value.into_pdu_body()
     }
 }

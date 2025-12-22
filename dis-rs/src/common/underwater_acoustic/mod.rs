@@ -17,6 +17,7 @@ mod tests {
         PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem, UAFundamentalParameterData,
         UnderwaterAcoustic, APA,
     };
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

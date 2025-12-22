@@ -9,6 +9,7 @@ use crate::enumerations::{
     TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation,
     TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
 };
+use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};

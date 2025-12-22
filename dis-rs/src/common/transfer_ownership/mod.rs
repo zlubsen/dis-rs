@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{PduType, RequiredReliabilityService, TransferControlTransferType};
     use crate::model::{EntityId, RecordSet, RecordSpecification};
     use crate::transfer_ownership::model::TransferOwnership;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

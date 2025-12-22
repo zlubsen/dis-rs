@@ -13,6 +13,7 @@ use crate::enumerations::{
     TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
 };
 use crate::transmitter::builder::TransmitterBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -45,19 +46,18 @@ pub struct Transmitter {
     pub variable_transmitter_parameters: Vec<VariableTransmitterParameter>,
 }
 
-impl Transmitter {
-    #[must_use]
-    pub fn builder() -> TransmitterBuilder {
-        TransmitterBuilder::new()
+impl BodyRaw for Transmitter {
+    type Builder = TransmitterBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> TransmitterBuilder {
-        TransmitterBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Transmitter(self)
     }
 }
@@ -98,13 +98,6 @@ impl Interaction for Transmitter {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<Transmitter> for PduBody {
-    #[inline]
-    fn from(value: Transmitter) -> Self {
-        value.into_pdu_body()
     }
 }
 
