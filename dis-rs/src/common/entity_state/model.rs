@@ -12,7 +12,7 @@ use crate::enumerations::{
     SensorEmitterAppearance, SpacePlatformAppearance, SubsurfacePlatformAppearance,
     SupplyAppearance, SurfacePlatformAppearance,
 };
-use crate::DisError;
+use crate::{BodyRaw, DisError};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -45,19 +45,18 @@ pub struct EntityState {
     pub variable_parameters: Vec<VariableParameter>,
 }
 
-impl EntityState {
-    #[must_use]
-    pub fn builder() -> EntityStateBuilder {
-        EntityStateBuilder::new()
+impl BodyRaw for EntityState {
+    type Builder = EntityStateBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> EntityStateBuilder {
-        EntityStateBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::EntityState(self)
     }
 }
@@ -80,13 +79,6 @@ impl Interaction for EntityState {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<EntityState> for PduBody {
-    #[inline]
-    fn from(value: EntityState) -> Self {
-        value.into_pdu_body()
     }
 }
 

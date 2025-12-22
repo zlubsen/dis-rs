@@ -16,6 +16,7 @@ mod tests {
         LvcIndicator, PduType, TransferredEntityIndicator,
     };
     use crate::v7::model::PduStatus;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

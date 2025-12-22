@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::other::builder::OtherBuilder;
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -30,19 +31,18 @@ impl BodyInfo for Other {
     }
 }
 
-impl Other {
-    #[must_use]
-    pub fn builder() -> OtherBuilder {
-        OtherBuilder::new()
+impl BodyRaw for Other {
+    type Builder = OtherBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> OtherBuilder {
-        OtherBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Other(self)
     }
 }
@@ -62,12 +62,5 @@ impl Interaction for Other {
         } else {
             None
         }
-    }
-}
-
-impl From<Other> for PduBody {
-    #[inline]
-    fn from(value: Other) -> Self {
-        value.into_pdu_body()
     }
 }

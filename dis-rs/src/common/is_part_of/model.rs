@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, PduType, StationName};
 use crate::is_part_of::builder::IsPartOfBuilder;
 use crate::model::{EntityId, EntityType, PduBody, VectorF32};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -21,19 +22,18 @@ pub struct IsPartOf {
     pub part_type: EntityType,
 }
 
-impl IsPartOf {
-    #[must_use]
-    pub fn builder() -> IsPartOfBuilder {
-        IsPartOfBuilder::new()
+impl BodyRaw for IsPartOf {
+    type Builder = IsPartOfBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> IsPartOfBuilder {
-        IsPartOfBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::IsPartOf(self)
     }
 }
@@ -55,13 +55,6 @@ impl Interaction for IsPartOf {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_entity_id)
-    }
-}
-
-impl From<IsPartOf> for PduBody {
-    #[inline]
-    fn from(value: IsPartOf) -> Self {
-        value.into_pdu_body()
     }
 }
 

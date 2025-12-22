@@ -7,6 +7,7 @@ use crate::is_group_of::model::{
     GroupReferencePoint, IsGroupOf,
 };
 use crate::model::{EntityType, PduBody};
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::{be_f64, be_u16, be_u32, be_u8};
 use nom::{IResult, Parser};

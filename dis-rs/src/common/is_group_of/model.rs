@@ -3,6 +3,7 @@ use crate::entity_state::model::EntityAppearance;
 use crate::enumerations::{IsGroupOfGroupedEntityCategory, PduType};
 use crate::is_group_of::builder::IsGroupOfBuilder;
 use crate::model::{EntityId, PduBody};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -24,19 +25,18 @@ pub struct IsGroupOf {
     pub descriptions: Vec<GroupEntityDescription>,
 }
 
-impl IsGroupOf {
-    #[must_use]
-    pub fn builder() -> IsGroupOfBuilder {
-        IsGroupOfBuilder::new()
+impl BodyRaw for IsGroupOf {
+    type Builder = IsGroupOfBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> IsGroupOfBuilder {
-        IsGroupOfBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::IsGroupOf(self)
     }
 }
@@ -63,13 +63,6 @@ impl Interaction for IsGroupOf {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<IsGroupOf> for PduBody {
-    #[inline]
-    fn from(value: IsGroupOf) -> Self {
-        value.into_pdu_body()
     }
 }
 

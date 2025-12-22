@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{IsPartOfNature, IsPartOfPosition, PduType, StationName};
     use crate::is_part_of::model::{IsPartOf, NamedLocationId, Relationship};
     use crate::model::{EntityId, VectorF32};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

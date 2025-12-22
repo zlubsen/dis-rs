@@ -612,6 +612,7 @@ mod tests {
         PlatformDomain, ProtocolVersion,
     };
     use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, PduStatus, TimeStamp};
+    use dis_rs::BodyRaw;
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {

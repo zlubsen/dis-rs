@@ -19,6 +19,7 @@ use crate::enumerations::{
     IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource,
     VariableRecordType,
 };
+use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};

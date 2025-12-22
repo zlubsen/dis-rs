@@ -7,6 +7,7 @@ use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::EventType;
 use crate::enumerations::PduType;
 use crate::event_report_r::builder::EventReportRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -25,19 +26,18 @@ pub struct EventReportR {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl EventReportR {
-    #[must_use]
-    pub fn builder() -> EventReportRBuilder {
-        EventReportRBuilder::new()
+impl BodyRaw for EventReportR {
+    type Builder = EventReportRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> EventReportRBuilder {
-        EventReportRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::EventReportR(self)
     }
 }
@@ -71,12 +71,5 @@ impl Interaction for EventReportR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<EventReportR> for PduBody {
-    #[inline]
-    fn from(value: EventReportR) -> Self {
-        value.into_pdu_body()
     }
 }

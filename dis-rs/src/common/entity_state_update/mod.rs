@@ -11,6 +11,7 @@ mod tests {
     use crate::entity_state_update::model::EntityStateUpdate;
     use crate::enumerations::PduType;
     use crate::model::{EntityId, Location, Orientation, VectorF32};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

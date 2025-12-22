@@ -2,6 +2,7 @@ use crate::common::fire::model::{Fire, FireDescriptor};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser;
 use crate::enumerations::FireTypeIndicator;
+use crate::BodyRaw;
 use nom::number::complete::{be_f32, be_u32};
 use nom::IResult;
 
