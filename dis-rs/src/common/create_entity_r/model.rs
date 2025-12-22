@@ -23,12 +23,12 @@ pub struct CreateEntityR {
 impl BodyRaw for CreateEntityR {
     type Builder = CreateEntityRBuilder;
 
-    fn builder() -> CreateEntityRBuilder {
-        CreateEntityRBuilder::new()
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    fn into_builder(self) -> CreateEntityRBuilder {
-        CreateEntityRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
     fn into_pdu_body(self) -> PduBody {

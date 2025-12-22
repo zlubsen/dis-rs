@@ -24,17 +24,14 @@ pub struct ActionResponse {
 impl BodyRaw for ActionResponse {
     type Builder = ActionResponseBuilder;
 
-    #[must_use]
-    fn builder() -> ActionResponseBuilder {
-        ActionResponseBuilder::new()
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    fn into_builder(self) -> ActionResponseBuilder {
-        ActionResponseBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
     fn into_pdu_body(self) -> PduBody {
         PduBody::ActionResponse(self)
     }

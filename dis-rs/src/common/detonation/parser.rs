@@ -2,6 +2,7 @@ use crate::common::detonation::model::{Detonation, DetonationDescriptor};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser;
 use crate::enumerations::{DetonationResult, DetonationTypeIndicator};
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u8};
 use nom::IResult;

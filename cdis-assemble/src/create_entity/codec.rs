@@ -2,6 +2,7 @@ use crate::codec::Codec;
 use crate::create_entity::model::CreateEntity;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::create_entity::model::CreateEntity;
 

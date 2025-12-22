@@ -65,10 +65,3 @@ impl Interaction for CollisionElastic {
         Some(&self.colliding_entity_id)
     }
 }
-
-impl From<CollisionElastic> for PduBody {
-    #[inline]
-    fn from(value: CollisionElastic) -> Self {
-        value.into_pdu_body()
-    }
-}

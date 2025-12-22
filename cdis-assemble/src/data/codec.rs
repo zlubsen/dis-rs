@@ -3,6 +3,7 @@ use crate::data::model::Data;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
 use dis_rs::model::DatumSpecification;
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::data::model::Data;
 

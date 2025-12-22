@@ -3,6 +3,7 @@ use crate::data_query::model::DataQuery;
 use crate::records::model::{cdis_to_dis_u32_timestamp, CdisTimeStamp, EntityId};
 use crate::types::model::UVINT32;
 use dis_rs::model::{DisTimeStamp, TimeStamp};
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::data_query::model::DataQuery;
 

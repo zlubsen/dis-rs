@@ -13,6 +13,7 @@ use dis_rs::model::{EntityId as DisEntityId, Location, PduBody, VectorF32};
 use std::time::Instant;
 
 use crate::entity_state::codec::encode_dr_linear_acceleration;
+use dis_rs::BodyRaw;
 use num_traits::FromPrimitive;
 
 type Counterpart = dis_rs::designator::model::Designator;

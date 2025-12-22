@@ -24,17 +24,14 @@ pub struct Acknowledge {
 impl BodyRaw for Acknowledge {
     type Builder = AcknowledgeBuilder;
 
-    #[must_use]
     fn builder() -> Self::Builder {
         Self::Builder::new()
     }
 
-    #[must_use]
     fn into_builder(self) -> Self::Builder {
-        AcknowledgeBuilder::new_from_body(self)
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
     fn into_pdu_body(self) -> PduBody {
         PduBody::Acknowledge(self)
     }

@@ -2,6 +2,7 @@ use crate::acknowledge::model::Acknowledge;
 use crate::codec::Codec;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::acknowledge::model::Acknowledge;
 

@@ -25,12 +25,12 @@ pub struct Data {
 impl BodyRaw for Data {
     type Builder = DataBuilder;
 
-    fn builder() -> DataBuilder {
-        DataBuilder::new()
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    fn into_builder(self) -> DataBuilder {
-        DataBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
     fn into_pdu_body(self) -> PduBody {

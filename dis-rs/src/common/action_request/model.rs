@@ -27,17 +27,14 @@ pub struct ActionRequest {
 impl BodyRaw for ActionRequest {
     type Builder = ActionRequestBuilder;
 
-    #[must_use]
-    fn builder() -> ActionRequestBuilder {
-        ActionRequestBuilder::new()
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    fn into_builder(self) -> ActionRequestBuilder {
-        ActionRequestBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
     fn into_pdu_body(self) -> PduBody {
         PduBody::ActionRequest(self)
     }
