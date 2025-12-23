@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::resupply_cancel::builder::ResupplyCancelBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -17,19 +18,18 @@ pub struct ResupplyCancel {
     pub servicing_id: EntityId,
 }
 
-impl ResupplyCancel {
-    #[must_use]
-    pub fn builder() -> ResupplyCancelBuilder {
-        ResupplyCancelBuilder::new()
+impl BodyRaw for ResupplyCancel {
+    type Builder = ResupplyCancelBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ResupplyCancelBuilder {
-        ResupplyCancelBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ResupplyCancel(self)
     }
 }
@@ -51,12 +51,5 @@ impl Interaction for ResupplyCancel {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.servicing_id)
-    }
-}
-
-impl From<ResupplyCancel> for PduBody {
-    #[inline]
-    fn from(value: ResupplyCancel) -> Self {
-        value.into_pdu_body()
     }
 }

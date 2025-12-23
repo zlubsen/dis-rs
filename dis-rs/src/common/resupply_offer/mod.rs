@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{EntityKind, PduType};
     use crate::model::EntityType;
     use crate::resupply_offer::model::ResupplyOffer;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

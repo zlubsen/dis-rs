@@ -2,6 +2,7 @@ use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze::builder::StopFreezeBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -21,19 +22,18 @@ pub struct StopFreeze {
     pub request_id: u32,
 }
 
-impl StopFreeze {
-    #[must_use]
-    pub fn builder() -> StopFreezeBuilder {
-        StopFreezeBuilder::new()
+impl BodyRaw for StopFreeze {
+    type Builder = StopFreezeBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> StopFreezeBuilder {
-        StopFreezeBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::StopFreeze(self)
     }
 }
@@ -55,12 +55,5 @@ impl Interaction for StopFreeze {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<StopFreeze> for PduBody {
-    #[inline]
-    fn from(value: StopFreeze) -> Self {
-        value.into_pdu_body()
     }
 }

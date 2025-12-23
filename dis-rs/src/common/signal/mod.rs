@@ -12,6 +12,7 @@ mod tests {
     use crate::model::EntityId;
     use crate::parser::parse_multiple_pdu;
     use crate::signal::model::{EncodingScheme, Signal};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

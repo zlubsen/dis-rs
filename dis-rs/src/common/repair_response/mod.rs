@@ -10,6 +10,7 @@ mod tests {
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{PduType, RepairResponseRepairResult};
     use crate::repair_response::model::RepairResponse;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

@@ -4,6 +4,7 @@ use crate::enumerations::{
     PduType, RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason,
 };
 use crate::stop_freeze_r::builder::StopFreezeRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -24,19 +25,18 @@ pub struct StopFreezeR {
     pub request_id: u32,
 }
 
-impl StopFreezeR {
-    #[must_use]
-    pub fn builder() -> StopFreezeRBuilder {
-        StopFreezeRBuilder::new()
+impl BodyRaw for StopFreezeR {
+    type Builder = StopFreezeRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> StopFreezeRBuilder {
-        StopFreezeRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::StopFreezeR(self)
     }
 }
@@ -58,12 +58,5 @@ impl Interaction for StopFreezeR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<StopFreezeR> for PduBody {
-    #[inline]
-    fn from(value: StopFreezeR) -> Self {
-        value.into_pdu_body()
     }
 }

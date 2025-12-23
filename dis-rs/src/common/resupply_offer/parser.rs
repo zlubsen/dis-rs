@@ -1,6 +1,7 @@
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, supply_quantity};
 use crate::common::resupply_offer::model::ResupplyOffer;
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u8};
 use nom::{IResult, Parser};

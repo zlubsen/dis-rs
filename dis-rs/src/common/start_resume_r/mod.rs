@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{PduType, RequiredReliabilityService};
     use crate::model::{ClockTime, EntityId};
     use crate::start_resume_r::model::StartResumeR;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

@@ -2,6 +2,7 @@ use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, record_specification};
 use crate::enumerations::RequiredReliabilityService;
 use crate::set_record_r::model::SetRecordR;
+use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::IResult;
 

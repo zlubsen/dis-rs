@@ -6,6 +6,7 @@ use crate::enumerations::{
     SignalEncodingClass, SignalEncodingType, SignalTdlType, SignalUserProtocolIdentificationNumber,
 };
 use crate::model::length_padded_to_num;
+use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u32};
 use nom::IResult;
 

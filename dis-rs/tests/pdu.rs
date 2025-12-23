@@ -3,7 +3,7 @@ use dis_rs::{
     enumerations::{PduType, SignalEncodingClass, SignalEncodingType},
     model::{Pdu, PduBody, PduHeader},
     signal::model::{EncodingScheme, Signal},
-    DisError,
+    BodyRaw, DisError,
 };
 use nom::AsBytes;
 

@@ -13,6 +13,7 @@ mod tests {
     };
     use crate::model::ClockTime;
     use crate::stop_freeze_r::model::StopFreezeR;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

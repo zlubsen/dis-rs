@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ReceiverState};
 use crate::receiver::builder::ReceiverBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -18,19 +19,18 @@ pub struct Receiver {
     pub transmitter_radio_number: u16,
 }
 
-impl Receiver {
-    #[must_use]
-    pub fn builder() -> ReceiverBuilder {
-        ReceiverBuilder::new()
+impl BodyRaw for Receiver {
+    type Builder = ReceiverBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ReceiverBuilder {
-        ReceiverBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Receiver(self)
     }
 }
@@ -52,12 +52,5 @@ impl Interaction for Receiver {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.radio_reference_id)
-    }
-}
-
-impl From<Receiver> for PduBody {
-    #[inline]
-    fn from(value: Receiver) -> Self {
-        value.into_pdu_body()
     }
 }

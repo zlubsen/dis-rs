@@ -6,6 +6,7 @@ use crate::enumerations::{
     SignalUserProtocolIdentificationNumber,
 };
 use crate::signal::builder::SignalBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -26,19 +27,18 @@ pub struct Signal {
     pub data: Vec<u8>,
 }
 
-impl Signal {
-    #[must_use]
-    pub fn builder() -> SignalBuilder {
-        SignalBuilder::new()
+impl BodyRaw for Signal {
+    type Builder = SignalBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> SignalBuilder {
-        SignalBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Signal(self)
     }
 }
@@ -61,13 +61,6 @@ impl Interaction for Signal {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<Signal> for PduBody {
-    #[inline]
-    fn from(value: Signal) -> Self {
-        value.into_pdu_body()
     }
 }
 

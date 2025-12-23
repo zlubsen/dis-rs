@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
 use crate::resupply_received::builder::ResupplyReceivedBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct ResupplyReceived {
     pub supplies: Vec<SupplyQuantity>,
 }
 
-impl ResupplyReceived {
-    #[must_use]
-    pub fn builder() -> ResupplyReceivedBuilder {
-        ResupplyReceivedBuilder::new()
+impl BodyRaw for ResupplyReceived {
+    type Builder = ResupplyReceivedBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ResupplyReceivedBuilder {
-        ResupplyReceivedBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ResupplyReceived(self)
     }
 }
@@ -54,12 +54,5 @@ impl Interaction for ResupplyReceived {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.servicing_id)
-    }
-}
-
-impl From<ResupplyReceived> for PduBody {
-    #[inline]
-    fn from(value: ResupplyReceived) -> Self {
-        value.into_pdu_body()
     }
 }

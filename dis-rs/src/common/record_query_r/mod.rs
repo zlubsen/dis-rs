@@ -13,6 +13,7 @@ mod tests {
     };
     use crate::model::TimeStamp;
     use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

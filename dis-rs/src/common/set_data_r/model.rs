@@ -6,6 +6,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{PduType, RequiredReliabilityService};
 use crate::set_data_r::builder::SetDataRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -25,19 +26,18 @@ pub struct SetDataR {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl SetDataR {
-    #[must_use]
-    pub fn builder() -> SetDataRBuilder {
-        SetDataRBuilder::new()
+impl BodyRaw for SetDataR {
+    type Builder = SetDataRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> SetDataRBuilder {
-        SetDataRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::SetDataR(self)
     }
 }
@@ -71,12 +71,5 @@ impl Interaction for SetDataR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<SetDataR> for PduBody {
-    #[inline]
-    fn from(value: SetDataR) -> Self {
-        value.into_pdu_body()
     }
 }
