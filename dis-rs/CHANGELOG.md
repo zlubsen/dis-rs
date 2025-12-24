@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `ExplosionDescriptor` parsing where the _16-bit_ padding before the explosive force was not read
 - Clippy lints
 
 ## [0.12.0] - 2025-02-04
