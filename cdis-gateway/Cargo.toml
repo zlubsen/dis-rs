@@ -16,7 +16,7 @@ repository.workspace = true
 categories.workspace = true
 
 [dependencies]
-askama = "0.14.0"
+askama = "0.15.1"
 askama_web = { version = "0.14.0", features = ["axum-0.8"] }
 async-stream = "0.3.6"
 axum = { version = "0.8.6", features = ["tokio", "http2"] }
