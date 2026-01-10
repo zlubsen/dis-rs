@@ -20,7 +20,7 @@ pub const FIVE_LEAST_SIGNIFICANT_BITS: u32 = 0x1f;
 #[allow(clippy::cast_possible_truncation)]
 #[allow(clippy::cast_sign_loss)]
 pub const NANOSECONDS_PER_HOUR: u32 = 3600 * 1e6 as u32;
-pub const TIME_UNITS_PER_HOUR: u32 = (2 ^ 31) - 1;
+pub const TIME_UNITS_PER_HOUR: u32 = 2u32.pow(31) - 1;
 #[allow(clippy::cast_precision_loss)]
 pub const NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / TIME_UNITS_PER_HOUR as f32;
 
