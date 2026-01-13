@@ -236,19 +236,18 @@ impl Serialize for FixedDatum {
 impl Serialize for VariableDatum {
     #[allow(clippy::cast_possible_truncation)]
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        const SIXTY_FOUR_BITS: usize = 64;
-        let data_length_bits: usize = self.datum_value.len() * 8;
-        let padded_record_bits = length_padded_to_num(data_length_bits, SIXTY_FOUR_BITS);
-        let record_length_bits = padded_record_bits.record_length as u16;
-        let record_length_bytes = record_length_bits / 8;
-        let padding_length_bytes = padded_record_bits.padding_length * 8;
+        const ALIGNMENT_BYTES: usize = 8; // 64-bits alignment
+
+        let data_length_bytes: usize = self.datum_value.len();
+        let padded = length_padded_to_num(data_length_bytes, ALIGNMENT_BYTES);
+        let padding_length_bytes = padded.padding_length;
 
         buf.put_u32(self.datum_id.into());
-        buf.put_u32(data_length_bits as u32);
-        buf.put_slice(self.datum_value.as_slice());
+        buf.put_u32((data_length_bytes * 8) as u32);
+        buf.put_slice(&self.datum_value);
         buf.put_bytes(0, padding_length_bytes);
 
-        8 + (record_length_bytes)
+        8 + padded.record_length as u16
     }
 }
 
@@ -458,6 +457,27 @@ mod tests {
         let expected: [u8; 12] = [
             0x07, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0c, 0x02, 0x00,
         ];
+        assert_eq!(buf.as_ref(), expected.as_ref());
+    }
+
+    #[test]
+    fn serialize_variable_datum() {
+        use crate::enumerations::VariableRecordType;
+        use crate::model::VariableDatum;
+
+        let variable_datum = VariableDatum::new(VariableRecordType::Unspecified(1), vec![1, 2]);
+
+        let mut buf = BytesMut::new();
+        variable_datum.serialize(&mut buf);
+
+        let expected = [
+            0, 0, 0, 1, // Datum ID
+            0, 0, 0, 16, // Length of the data field in bits
+            // Data field + Padding
+            1, 2, // Actual data
+            0, 0, 0, 0, 0, 0, // Padding (for 64-bit aligment)
+        ];
+
         assert_eq!(buf.as_ref(), expected.as_ref());
     }
 }
