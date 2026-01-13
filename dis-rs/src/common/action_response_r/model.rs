@@ -26,7 +26,7 @@ pub struct ActionResponseR {
 
 impl BodyRaw for ActionResponseR {
     type Builder = ActionResponseRBuilder;
-    
+
     fn builder() -> ActionResponseRBuilder {
         ActionResponseRBuilder::new()
     }
