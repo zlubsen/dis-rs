@@ -6,6 +6,7 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::enumerations::{DetonationResult, PduType};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -26,19 +27,18 @@ pub struct Detonation {
     pub variable_parameters: Vec<VariableParameter>,
 }
 
-impl Detonation {
-    #[must_use]
-    pub fn builder() -> DetonationBuilder {
-        DetonationBuilder::new()
+impl BodyRaw for Detonation {
+    type Builder = DetonationBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> DetonationBuilder {
-        DetonationBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Detonation(self)
     }
 }
@@ -61,13 +61,6 @@ impl Interaction for Detonation {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.target_entity_id)
-    }
-}
-
-impl From<Detonation> for PduBody {
-    #[inline]
-    fn from(value: Detonation) -> Self {
-        value.into_pdu_body()
     }
 }
 

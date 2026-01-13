@@ -2,6 +2,7 @@ use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::enumerations::RepairResponseRepairResult;
 use crate::repair_response::model::RepairResponse;
+use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u8};
 use nom::IResult;
 

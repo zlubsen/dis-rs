@@ -2,6 +2,7 @@ use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::common::receiver::model::Receiver;
 use crate::enumerations::ReceiverState;
+use crate::BodyRaw;
 use nom::number::complete::{be_f32, be_u16};
 use nom::IResult;
 

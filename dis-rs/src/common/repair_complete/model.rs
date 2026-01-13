@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairCompleteRepair};
 use crate::repair_complete::builder::RepairCompleteBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -18,19 +19,18 @@ pub struct RepairComplete {
     pub repair: RepairCompleteRepair,
 }
 
-impl RepairComplete {
-    #[must_use]
-    pub fn builder() -> RepairCompleteBuilder {
-        RepairCompleteBuilder::new()
+impl BodyRaw for RepairComplete {
+    type Builder = RepairCompleteBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> RepairCompleteBuilder {
-        RepairCompleteBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::RepairComplete(self)
     }
 }
@@ -52,12 +52,5 @@ impl Interaction for RepairComplete {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<RepairComplete> for PduBody {
-    #[inline]
-    fn from(value: RepairComplete) -> Self {
-        value.into_pdu_body()
     }
 }

@@ -3,6 +3,7 @@ use crate::common::entity_state_update::model::EntityStateUpdate;
 use crate::common::model::{EntityType, PduBody};
 use crate::common::parser::{entity_id, location, orientation, variable_parameter, vec3_f32};
 use crate::enumerations::EntityKind;
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::be_u8;
 use nom::{IResult, Parser};

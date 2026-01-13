@@ -111,6 +111,7 @@ mod tests {
         ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction,
         HighDensityTrackJam,
     };
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

@@ -11,6 +11,7 @@ use crate::underwater_acoustic::model::{
     AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
     UAFundamentalParameterData, UnderwaterAcoustic, APA,
 };
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_i16, be_i32, be_u16, be_u8};
 use nom::{IResult, Parser};

@@ -6,6 +6,7 @@ use crate::types::model::UVINT32;
 use dis_rs::enumerations::{EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead};
 use dis_rs::fire::model::FireDescriptor;
 use dis_rs::model::{EventId, ExpendableDescriptor, MunitionDescriptor};
+use dis_rs::BodyRaw;
 use dis_rs::NO_FIRE_MISSION;
 use num::{ToPrimitive, Zero};
 
@@ -156,6 +157,7 @@ mod tests {
         EntityId as DisEntityId, EntityType as DisEntityType, EventId, ExpendableDescriptor,
         Location, MunitionDescriptor, PduBody,
     };
+    use dis_rs::BodyRaw;
 
     fn create_basic_dis_fire_body() -> FireBuilder {
         DisFire::builder()

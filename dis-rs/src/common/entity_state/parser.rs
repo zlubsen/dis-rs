@@ -9,6 +9,7 @@ use crate::enumerations::{
     DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion,
 };
 use crate::v6::entity_state::parser::entity_capabilities;
+use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};

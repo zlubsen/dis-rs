@@ -15,6 +15,7 @@ mod tests {
         GroupReferencePoint, IsGroupOf,
     };
     use crate::model::EntityId;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

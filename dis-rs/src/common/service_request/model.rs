@@ -2,6 +2,7 @@ use crate::common::model::{EntityId, PduBody, SupplyQuantity, SUPPLY_QUANTITY_RE
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ServiceRequestServiceTypeRequested};
 use crate::service_request::builder::ServiceRequestBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct ServiceRequest {
     pub supplies: Vec<SupplyQuantity>,
 }
 
-impl ServiceRequest {
-    #[must_use]
-    pub fn builder() -> ServiceRequestBuilder {
-        ServiceRequestBuilder::new()
+impl BodyRaw for ServiceRequest {
+    type Builder = ServiceRequestBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ServiceRequestBuilder {
-        ServiceRequestBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ServiceRequest(self)
     }
 }
@@ -54,12 +54,5 @@ impl Interaction for ServiceRequest {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.servicing_id)
-    }
-}
-
-impl From<ServiceRequest> for PduBody {
-    #[inline]
-    fn from(value: ServiceRequest) -> Self {
-        value.into_pdu_body()
     }
 }

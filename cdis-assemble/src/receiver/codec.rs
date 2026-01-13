@@ -2,6 +2,7 @@ use crate::codec::Codec;
 use crate::receiver::model::Receiver;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT16;
+use dis_rs::BodyRaw;
 use num_traits::FromPrimitive;
 
 type Counterpart = dis_rs::receiver::model::Receiver;

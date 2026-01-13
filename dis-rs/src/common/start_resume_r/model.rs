@@ -2,6 +2,7 @@ use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RequiredReliabilityService};
 use crate::start_resume_r::builder::StartResumeRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -21,19 +22,18 @@ pub struct StartResumeR {
     pub request_id: u32,
 }
 
-impl StartResumeR {
-    #[must_use]
-    pub fn builder() -> StartResumeRBuilder {
-        StartResumeRBuilder::new()
+impl BodyRaw for StartResumeR {
+    type Builder = StartResumeRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> StartResumeRBuilder {
-        StartResumeRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::StartResumeR(self)
     }
 }
@@ -55,12 +55,5 @@ impl Interaction for StartResumeR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<StartResumeR> for PduBody {
-    #[inline]
-    fn from(value: StartResumeR) -> Self {
-        value.into_pdu_body()
     }
 }

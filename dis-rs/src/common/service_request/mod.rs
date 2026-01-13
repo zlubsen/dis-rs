@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{EntityKind, PduType, ServiceRequestServiceTypeRequested};
     use crate::model::EntityType;
     use crate::service_request::model::ServiceRequest;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

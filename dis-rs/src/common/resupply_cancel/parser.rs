@@ -1,6 +1,7 @@
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::resupply_cancel::model::ResupplyCancel;
+use crate::BodyRaw;
 use nom::IResult;
 
 pub(crate) fn resupply_cancel_body(input: &[u8]) -> IResult<&[u8], PduBody> {

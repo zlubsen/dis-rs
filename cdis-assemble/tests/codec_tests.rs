@@ -40,6 +40,7 @@ use dis_rs::signal::model::EncodingScheme;
 use dis_rs::transmitter::model::{
     BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter,
 };
+use dis_rs::BodyRaw;
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {

@@ -16,6 +16,7 @@ use dis_rs::enumerations::{TransmitterCryptoSystem, TransmitterInputSource};
 use dis_rs::model::{
     EntityType as DisEntityType, Location as DisLocation, Location, Orientation, PduBody, VectorF32,
 };
+use dis_rs::BodyRaw;
 use std::time::Instant;
 
 type Counterpart = dis_rs::transmitter::model::Transmitter;

@@ -10,6 +10,7 @@ mod tests {
     use crate::common::parser::parse_pdu;
     use crate::create_entity_r::model::CreateEntityR;
     use crate::enumerations::{PduType, RequiredReliabilityService};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

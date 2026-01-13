@@ -10,6 +10,7 @@ mod tests {
     use crate::common::model::{EventId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::PduType;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

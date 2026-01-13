@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{PduType, RequiredReliabilityService};
     use crate::model::EntityId;
     use crate::remove_entity_r::model::RemoveEntityR;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

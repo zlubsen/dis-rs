@@ -2,6 +2,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{EntityId, PduBody};
 use crate::sees::builder::SeesBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -22,19 +23,18 @@ pub struct SEES {
     pub vectoring_nozzle_systems: Vec<VectoringNozzleSystemData>,
 }
 
-impl SEES {
-    #[must_use]
-    pub fn builder() -> SeesBuilder {
-        SeesBuilder::new()
+impl BodyRaw for SEES {
+    type Builder = SeesBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> SeesBuilder {
-        SeesBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::SupplementalEmissionEntityState(self)
     }
 }
@@ -58,13 +58,6 @@ impl Interaction for SEES {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<SEES> for PduBody {
-    #[inline]
-    fn from(value: SEES) -> Self {
-        value.into_pdu_body()
     }
 }
 

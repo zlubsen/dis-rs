@@ -40,7 +40,7 @@ use crate::transmitter::codec::{
 use crate::unsupported::Unsupported;
 use crate::{BodyProperties, CdisBody, CdisPdu};
 use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
-use dis_rs::VariableParameters;
+use dis_rs::{BodyRaw, VariableParameters};
 use std::collections::HashMap;
 
 pub const DEFAULT_HBT_CDIS_FULL_UPDATE_MPLIER: f32 = 2.4;
@@ -612,6 +612,7 @@ mod tests {
         PlatformDomain, ProtocolVersion,
     };
     use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, PduStatus, TimeStamp};
+    use dis_rs::BodyRaw;
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {

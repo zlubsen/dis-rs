@@ -1,7 +1,8 @@
 use crate::common::model::{EntityId, PduBody};
-use crate::common::remove_entity_r::builder::RemoveEntityRBuilder;
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RequiredReliabilityService};
+use crate::remove_entity_r::builder::RemoveEntityRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct RemoveEntityR {
     pub request_id: u32,
 }
 
-impl RemoveEntityR {
-    #[must_use]
-    pub fn builder() -> RemoveEntityRBuilder {
-        RemoveEntityRBuilder::new()
+impl BodyRaw for RemoveEntityR {
+    type Builder = RemoveEntityRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> RemoveEntityRBuilder {
-        RemoveEntityRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::RemoveEntityR(self)
     }
 }
@@ -53,12 +53,5 @@ impl Interaction for RemoveEntityR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<RemoveEntityR> for PduBody {
-    #[inline]
-    fn from(value: RemoveEntityR) -> Self {
-        value.into_pdu_body()
     }
 }

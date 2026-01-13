@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{EntityKind, PduType};
     use crate::model::EntityType;
     use crate::resupply_received::model::ResupplyReceived;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

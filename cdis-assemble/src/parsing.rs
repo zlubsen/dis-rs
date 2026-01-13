@@ -213,6 +213,7 @@ mod tests {
         EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader,
         PduStatus, TimeStamp,
     };
+    use dis_rs::BodyRaw;
 
     fn build_default_fire_header() -> PduHeader {
         PduHeader::new_v7(7, PduType::Fire).with_pdu_status(

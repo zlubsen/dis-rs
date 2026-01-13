@@ -4,6 +4,7 @@ use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
 use dis_rs::enumerations::ActionId;
 use dis_rs::model::DatumSpecification;
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::action_request::model::ActionRequest;
 

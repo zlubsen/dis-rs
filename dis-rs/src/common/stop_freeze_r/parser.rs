@@ -2,6 +2,7 @@ use crate::common::model::PduBody;
 use crate::common::parser::{clock_time, entity_id};
 use crate::enumerations::{RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason};
 use crate::stop_freeze_r::model::StopFreezeR;
+use crate::BodyRaw;
 use nom::number::complete::{be_u32, be_u8};
 use nom::IResult;
 

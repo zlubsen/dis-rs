@@ -2,6 +2,7 @@ use crate::common::designator::model::Designator;
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, location, vec3_f32};
 use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName};
+use crate::BodyRaw;
 use nom::number::complete::{be_f32, be_u16, be_u8};
 use nom::IResult;
 

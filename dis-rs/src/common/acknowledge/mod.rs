@@ -9,6 +9,7 @@ mod tests {
     use crate::common::model::DisTimeStamp;
     use crate::common::model::{EntityId, Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
+    use crate::common::BodyRaw;
     use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
     use bytes::BytesMut;
 

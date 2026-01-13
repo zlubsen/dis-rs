@@ -2,6 +2,7 @@ use crate::common::model::PduBody;
 use crate::common::parser::{datum_specification, entity_id};
 use crate::data_r::model::DataR;
 use crate::enumerations::RequiredReliabilityService;
+use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::IResult;
 

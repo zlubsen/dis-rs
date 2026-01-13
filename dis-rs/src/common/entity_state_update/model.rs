@@ -6,6 +6,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::entity_state_update::builder::EntityStateUpdateBuilder;
 use crate::enumerations::PduType;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -25,19 +26,18 @@ pub struct EntityStateUpdate {
     pub variable_parameters: Vec<VariableParameter>,
 }
 
-impl EntityStateUpdate {
-    #[must_use]
-    pub fn builder() -> EntityStateUpdateBuilder {
-        EntityStateUpdateBuilder::new()
+impl BodyRaw for EntityStateUpdate {
+    type Builder = EntityStateUpdateBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> EntityStateUpdateBuilder {
-        EntityStateUpdateBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::EntityStateUpdate(self)
     }
 }
@@ -60,12 +60,5 @@ impl Interaction for EntityStateUpdate {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<EntityStateUpdate> for PduBody {
-    #[inline]
-    fn from(value: EntityStateUpdate) -> Self {
-        value.into_pdu_body()
     }
 }

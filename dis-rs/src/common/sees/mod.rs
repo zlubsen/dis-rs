@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::PduType;
     use crate::model::EntityId;
     use crate::sees::model::{PropulsionSystemData, VectoringNozzleSystemData, SEES};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

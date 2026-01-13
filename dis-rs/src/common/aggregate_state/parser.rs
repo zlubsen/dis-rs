@@ -12,6 +12,7 @@ use crate::enumerations::{
     PlatformDomain,
 };
 use crate::model::PduBody;
+use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};

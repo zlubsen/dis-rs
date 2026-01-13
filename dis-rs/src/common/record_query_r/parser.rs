@@ -3,6 +3,7 @@ use crate::common::parser::entity_id;
 use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService, VariableRecordType};
 use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::{IResult, Parser};

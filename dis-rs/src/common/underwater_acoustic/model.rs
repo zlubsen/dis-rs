@@ -8,6 +8,7 @@ use crate::enumerations::{
 };
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::underwater_acoustic::builder::UnderwaterAcousticBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -29,19 +30,18 @@ pub struct UnderwaterAcoustic {
     pub emitter_systems: Vec<UAEmitterSystem>,
 }
 
-impl UnderwaterAcoustic {
-    #[must_use]
-    pub fn builder() -> UnderwaterAcousticBuilder {
-        UnderwaterAcousticBuilder::new()
+impl BodyRaw for UnderwaterAcoustic {
+    type Builder = UnderwaterAcousticBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> UnderwaterAcousticBuilder {
-        UnderwaterAcousticBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::UnderwaterAcoustic(self)
     }
 }
@@ -70,13 +70,6 @@ impl Interaction for UnderwaterAcoustic {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<UnderwaterAcoustic> for PduBody {
-    #[inline]
-    fn from(value: UnderwaterAcoustic) -> Self {
-        value.into_pdu_body()
     }
 }
 

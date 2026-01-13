@@ -4,6 +4,7 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{ActionId, PduType, RequiredReliabilityService};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -24,19 +25,18 @@ pub struct ActionRequestR {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl ActionRequestR {
-    #[must_use]
-    pub fn builder() -> ActionRequestRBuilder {
-        ActionRequestRBuilder::new()
+impl BodyRaw for ActionRequestR {
+    type Builder = ActionRequestRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ActionRequestRBuilder {
-        ActionRequestRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ActionRequestR(self)
     }
 }
@@ -70,12 +70,5 @@ impl Interaction for ActionRequestR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<ActionRequestR> for PduBody {
-    #[inline]
-    fn from(value: ActionRequestR) -> Self {
-        value.into_pdu_body()
     }
 }

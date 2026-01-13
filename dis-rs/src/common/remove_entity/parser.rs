@@ -1,6 +1,7 @@
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::common::remove_entity::model::RemoveEntity;
+use crate::BodyRaw;
 use nom::number::complete::be_u32;
 use nom::IResult;
 

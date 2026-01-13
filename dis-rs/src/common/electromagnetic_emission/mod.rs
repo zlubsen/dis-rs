@@ -11,6 +11,7 @@ mod tests {
     use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterSystem};
     use crate::enumerations::{ElectromagneticEmissionStateUpdateIndicator, PduType};
     use crate::model::EventId;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

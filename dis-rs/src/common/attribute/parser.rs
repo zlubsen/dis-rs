@@ -4,6 +4,7 @@ use crate::common::attribute::model::{
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, pdu_type, protocol_version, simulation_address};
 use crate::enumerations::{AttributeActionCode, VariableRecordType};
+use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
 use nom::number::complete::{be_u16, be_u32, be_u8};

@@ -4,6 +4,7 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{PduType, RequestStatus};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -20,19 +21,18 @@ pub struct ActionResponse {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl ActionResponse {
-    #[must_use]
-    pub fn builder() -> ActionResponseBuilder {
-        ActionResponseBuilder::new()
+impl BodyRaw for ActionResponse {
+    type Builder = ActionResponseBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ActionResponseBuilder {
-        ActionResponseBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ActionResponse(self)
     }
 }
@@ -66,12 +66,5 @@ impl Interaction for ActionResponse {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<ActionResponse> for PduBody {
-    #[inline]
-    fn from(value: ActionResponse) -> Self {
-        value.into_pdu_body()
     }
 }

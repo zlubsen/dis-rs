@@ -2,6 +2,7 @@ use crate::common::acknowledge::model::Acknowledge;
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::enumerations::{AcknowledgeFlag, ResponseFlag};
+use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u32};
 use nom::IResult;
 

@@ -1,6 +1,7 @@
 use crate::records::model::{EncodingScheme, EntityId};
 use crate::signal::model::Signal;
 use dis_rs::signal::model::EncodingScheme as DisEncodingScheme;
+use dis_rs::BodyRaw;
 
 use crate::codec::Codec;
 use crate::types::model::{UVINT16, UVINT32};

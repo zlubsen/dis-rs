@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{PduType, StopFreezeReason};
     use crate::model::ClockTime;
     use crate::stop_freeze::model::StopFreeze;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

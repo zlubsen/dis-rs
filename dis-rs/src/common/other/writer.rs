@@ -17,6 +17,7 @@ mod tests {
     use crate::common::model::{Pdu, PduHeader};
     use crate::enumerations::PduType;
     use crate::other::model::Other;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

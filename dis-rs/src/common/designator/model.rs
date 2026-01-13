@@ -3,6 +3,7 @@ use crate::common::model::{EntityId, Location, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -26,19 +27,18 @@ pub struct Designator {
     pub linear_acceleration: VectorF32,
 }
 
-impl Designator {
-    #[must_use]
-    pub fn builder() -> DesignatorBuilder {
-        DesignatorBuilder::new()
+impl BodyRaw for Designator {
+    type Builder = DesignatorBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> DesignatorBuilder {
-        DesignatorBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Designator(self)
     }
 }
@@ -60,12 +60,5 @@ impl Interaction for Designator {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.designated_entity_id)
-    }
-}
-
-impl From<Designator> for PduBody {
-    #[inline]
-    fn from(value: Designator) -> Self {
-        value.into_pdu_body()
     }
 }

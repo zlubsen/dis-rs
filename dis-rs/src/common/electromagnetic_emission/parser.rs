@@ -10,6 +10,7 @@ use crate::enumerations::{
     ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
     HighDensityTrackJam,
 };
+use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16, be_u8};
 use nom::IResult;

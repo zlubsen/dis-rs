@@ -62,6 +62,7 @@ use crate::common::errors::DisError;
 use crate::common::model::Pdu;
 use crate::common::parser::parse_multiple_pdu;
 use crate::enumerations::{PduType, ProtocolVersion};
+use crate::model::PduBody;
 use bytes::BytesMut;
 
 #[allow(dead_code)]
@@ -88,6 +89,27 @@ pub fn supported_protocol_versions() -> Vec<ProtocolVersion> {
         ProtocolVersion::IEEE1278_1A1998,
         ProtocolVersion::IEEE1278_12012,
     ]
+}
+
+/// Trait for PduBody-s to build and convert specific PDU types
+pub trait BodyRaw {
+    type Builder;
+
+    #[must_use]
+    fn builder() -> Self::Builder;
+
+    #[must_use]
+    fn into_builder(self) -> Self::Builder;
+
+    #[must_use]
+    fn into_pdu_body(self) -> PduBody;
+}
+
+impl<T: BodyRaw> From<T> for PduBody {
+    #[inline]
+    fn from(value: T) -> Self {
+        value.into_pdu_body()
+    }
 }
 
 /// Trait for PduBody-s to query basic information, typically used in the header

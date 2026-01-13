@@ -12,6 +12,7 @@ use dis_rs::enumerations::{
     MunitionDescriptorWarhead,
 };
 use dis_rs::model::{EventId, ExpendableDescriptor, ExplosionDescriptor, MunitionDescriptor};
+use dis_rs::BodyRaw;
 use num_traits::Zero;
 
 type Counterpart = dis_rs::detonation::model::Detonation;
@@ -218,6 +219,7 @@ mod tests {
         EntityId as DisEntityId, EntityType as DisEntityType, EventId, ExplosionDescriptor,
         Location, PduBody, VectorF32,
     };
+    use dis_rs::BodyRaw;
 
     fn create_basic_dis_detonation_body() -> DetonationBuilder {
         DisDetonation::builder()

@@ -4,6 +4,7 @@ use crate::records::codec::{decode_entity_coordinate_vector, encode_entity_coord
 use crate::records::model::{EntityId, LinearVelocity, UnitsMass};
 use crate::types::model::UVINT32;
 use dis_rs::model::EventId;
+use dis_rs::BodyRaw;
 
 use num_traits::FromPrimitive;
 
@@ -82,6 +83,7 @@ mod tests {
     use dis_rs::collision::builder::CollisionBuilder;
     use dis_rs::enumerations::CollisionType;
     use dis_rs::model::{EntityId as DisEntityId, EventId, PduBody};
+    use dis_rs::BodyRaw;
 
     fn create_basic_dis_collision_body() -> CollisionBuilder {
         use dis_rs::collision::model::Collision;

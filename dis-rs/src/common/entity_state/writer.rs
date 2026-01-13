@@ -170,6 +170,7 @@ mod tests {
         DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType,
         PlatformDomain,
     };
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

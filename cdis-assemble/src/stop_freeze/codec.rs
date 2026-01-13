@@ -2,6 +2,7 @@ use crate::codec::Codec;
 use crate::records::model::EntityId;
 use crate::stop_freeze::model::StopFreeze;
 use crate::types::model::UVINT32;
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::stop_freeze::model::StopFreeze;
 

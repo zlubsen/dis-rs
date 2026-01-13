@@ -5,6 +5,7 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -21,19 +22,18 @@ pub struct Comment {
     pub variable_datum_records: Vec<VariableDatum>,
 }
 
-impl Comment {
-    #[must_use]
-    pub fn builder() -> CommentBuilder {
+impl BodyRaw for Comment {
+    type Builder = CommentBuilder;
+
+    fn builder() -> CommentBuilder {
         CommentBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> CommentBuilder {
+    fn into_builder(self) -> CommentBuilder {
         CommentBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Comment(self)
     }
 }
@@ -66,12 +66,5 @@ impl Interaction for Comment {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<Comment> for PduBody {
-    #[inline]
-    fn from(value: Comment) -> Self {
-        value.into_pdu_body()
     }
 }

@@ -1,6 +1,7 @@
 use crate::comment_r::model::CommentR;
 use crate::common::model::PduBody;
 use crate::common::parser::{datum_specification, entity_id};
+use crate::BodyRaw;
 use nom::IResult;
 
 pub(crate) fn comment_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {

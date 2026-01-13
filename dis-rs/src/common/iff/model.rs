@@ -26,6 +26,7 @@ use crate::enumerations::{
     ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduType,
     VariableRecordType,
 };
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -54,19 +55,18 @@ pub struct Iff {
     pub layer_5: Option<IffLayer5>, // Data Communications
 }
 
-impl Iff {
-    #[must_use]
-    pub fn builder() -> IffBuilder {
-        IffBuilder::new()
+impl BodyRaw for Iff {
+    type Builder = IffBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> IffBuilder {
-        IffBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::IFF(self)
     }
 }
@@ -108,13 +108,6 @@ impl Interaction for Iff {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<Iff> for PduBody {
-    #[inline]
-    fn from(value: Iff) -> Self {
-        value.into_pdu_body()
     }
 }
 

@@ -18,6 +18,7 @@ mod tests {
     };
     use crate::model::{EntityId, EntityType, Location, Orientation, VariableDatum, VectorF32};
     use crate::v7::model::PduStatus;
+    use crate::BodyRaw;
     use bytes::BytesMut;
     use std::str::FromStr;
 

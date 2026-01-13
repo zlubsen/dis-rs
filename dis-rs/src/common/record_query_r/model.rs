@@ -6,6 +6,7 @@ use crate::enumerations::{
 };
 use crate::model::{PduBody, TimeStamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -26,19 +27,18 @@ pub struct RecordQueryR {
     pub record_query_specification: RecordQuerySpecification,
 }
 
-impl RecordQueryR {
-    #[must_use]
-    pub fn builder() -> RecordQueryRBuilder {
-        RecordQueryRBuilder::new()
+impl BodyRaw for RecordQueryR {
+    type Builder = RecordQueryRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> RecordQueryRBuilder {
-        RecordQueryRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::RecordQueryR(self)
     }
 }
@@ -61,13 +61,6 @@ impl Interaction for RecordQueryR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<RecordQueryR> for PduBody {
-    #[inline]
-    fn from(value: RecordQueryR) -> Self {
-        value.into_pdu_body()
     }
 }
 

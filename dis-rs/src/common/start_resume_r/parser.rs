@@ -2,6 +2,7 @@ use crate::common::model::PduBody;
 use crate::common::parser::{clock_time, entity_id};
 use crate::enumerations::RequiredReliabilityService;
 use crate::start_resume_r::model::StartResumeR;
+use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::IResult;
 

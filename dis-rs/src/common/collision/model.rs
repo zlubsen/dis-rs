@@ -2,6 +2,7 @@ use crate::common::collision::builder::CollisionBuilder;
 use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{CollisionType, PduType};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct Collision {
     pub location: VectorF32,
 }
 
-impl Collision {
-    #[must_use]
-    pub fn builder() -> CollisionBuilder {
+impl BodyRaw for Collision {
+    type Builder = CollisionBuilder;
+
+    fn builder() -> CollisionBuilder {
         CollisionBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> CollisionBuilder {
+    fn into_builder(self) -> CollisionBuilder {
         CollisionBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Collision(self)
     }
 }
@@ -53,12 +53,5 @@ impl Interaction for Collision {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.colliding_entity_id)
-    }
-}
-
-impl From<Collision> for PduBody {
-    #[inline]
-    fn from(value: Collision) -> Self {
-        value.into_pdu_body()
     }
 }

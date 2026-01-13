@@ -15,6 +15,7 @@ mod tests {
     use crate::fire::model::{Fire, FireDescriptor};
     use crate::model::{EntityType, ExpendableDescriptor, MunitionDescriptor, VectorF32};
     use crate::v7::model::PduStatus;
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

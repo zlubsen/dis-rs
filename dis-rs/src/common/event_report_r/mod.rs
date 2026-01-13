@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{EventType, PduType, VariableRecordType};
     use crate::event_report_r::model::EventReportR;
     use crate::model::{FixedDatum, VariableDatum};
+    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

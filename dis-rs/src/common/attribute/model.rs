@@ -2,6 +2,7 @@ use crate::common::attribute::builder::AttributeBuilder;
 use crate::common::model::{EntityId, PduBody, SimulationAddress};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, VariableRecordType};
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -23,19 +24,18 @@ pub struct Attribute {
     pub attribute_record_sets: Vec<AttributeRecordSet>,
 }
 
-impl Attribute {
-    #[must_use]
-    pub fn builder() -> AttributeBuilder {
+impl BodyRaw for Attribute {
+    type Builder = AttributeBuilder;
+
+    fn builder() -> AttributeBuilder {
         AttributeBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> AttributeBuilder {
+    fn into_builder(self) -> AttributeBuilder {
         AttributeBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::Attribute(self)
     }
 }
@@ -72,13 +72,6 @@ impl Interaction for Attribute {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<Attribute> for PduBody {
-    #[inline]
-    fn from(value: Attribute) -> Self {
-        value.into_pdu_body()
     }
 }
 

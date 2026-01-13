@@ -22,6 +22,7 @@ use dis_rs::model::{
     BeamData as DisBeamData, EntityId as DisEntityId, EventId, PduBody, SimulationAddress,
     VectorF32,
 };
+use dis_rs::BodyRaw;
 use num_traits::ToPrimitive;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -1015,6 +1016,7 @@ mod tests {
         EmitterName, EmitterSystemFunction, HighDensityTrackJam,
     };
     use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, VectorF32};
+    use dis_rs::BodyRaw;
 
     #[test]
     fn fundamental_params_list() {

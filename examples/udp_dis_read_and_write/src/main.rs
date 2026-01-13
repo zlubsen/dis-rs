@@ -1,6 +1,7 @@
 use dis_rs::entity_state::model::EntityState;
 use dis_rs::enumerations::PduType;
 use dis_rs::model::{Pdu, PduHeader, PduStatus};
+use dis_rs::BodyRaw;
 use gateway_core::error::GatewayError;
 use gateway_core::runtime;
 use gateway_core::runtime::{default_tokio_runtime, run_from_builder, Command};

@@ -2,6 +2,7 @@ use dis_rs::acknowledge::model::Acknowledge;
 use dis_rs::detonation::model::{Detonation, DetonationDescriptor};
 use dis_rs::enumerations::PduType;
 use dis_rs::model::{EntityType, MunitionDescriptor, Pdu, PduHeader, TimeStamp};
+use dis_rs::BodyRaw;
 
 fn main() {
     // Serialise a PduBody

@@ -18,6 +18,7 @@ use dis_rs::model::{
     EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation, PduBody,
     VectorF32,
 };
+use dis_rs::BodyRaw;
 use std::time::Instant;
 
 type Counterpart = dis_rs::entity_state::model::EntityState;
@@ -569,6 +570,7 @@ mod tests {
         ArticulatedPart, EntityId as DisEntityId, EntityType as DisEntityType, Location,
         Orientation as DisOrientation, PduBody, VariableParameter,
     };
+    use dis_rs::BodyRaw;
     use std::str::FromStr;
     use std::time::Instant;
 

@@ -2,6 +2,7 @@ use crate::codec::Codec;
 use crate::comment::model::Comment;
 use crate::records::model::EntityId;
 use dis_rs::model::DatumSpecification;
+use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::comment::model::Comment;
 

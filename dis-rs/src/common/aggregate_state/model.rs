@@ -11,7 +11,7 @@ use crate::model::{
     length_padded_to_num, EntityId, EntityType, Location, Orientation, PduBody, VariableDatum,
     VectorF32, BASE_VARIABLE_DATUM_LENGTH,
 };
-use crate::DisError;
+use crate::{BodyRaw, DisError};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
@@ -42,19 +42,18 @@ pub struct AggregateState {
     pub variable_datums: Vec<VariableDatum>,
 }
 
-impl AggregateState {
-    #[must_use]
-    pub fn builder() -> AggregateStateBuilder {
+impl BodyRaw for AggregateState {
+    type Builder = AggregateStateBuilder;
+
+    fn builder() -> AggregateStateBuilder {
         AggregateStateBuilder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> AggregateStateBuilder {
+    fn into_builder(self) -> AggregateStateBuilder {
         AggregateStateBuilder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::AggregateState(self)
     }
 }
@@ -104,13 +103,6 @@ impl Interaction for AggregateState {
 
     fn receiver(&self) -> Option<&EntityId> {
         None
-    }
-}
-
-impl From<AggregateState> for PduBody {
-    #[inline]
-    fn from(value: AggregateState) -> Self {
-        value.into_pdu_body()
     }
 }
 

@@ -6,6 +6,7 @@ use crate::enumerations::{
     ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
     HighDensityTrackJam, PduType,
 };
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -26,19 +27,18 @@ pub struct ElectromagneticEmission {
     pub emitter_systems: Vec<EmitterSystem>,
 }
 
-impl ElectromagneticEmission {
-    #[must_use]
-    pub fn builder() -> ElectromagneticEmissionBuilder {
-        ElectromagneticEmissionBuilder::new()
+impl BodyRaw for ElectromagneticEmission {
+    type Builder = ElectromagneticEmissionBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ElectromagneticEmissionBuilder {
-        ElectromagneticEmissionBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ElectromagneticEmission(self)
     }
 }
@@ -78,13 +78,6 @@ impl Interaction for ElectromagneticEmission {
         } else {
             None
         }
-    }
-}
-
-impl From<ElectromagneticEmission> for PduBody {
-    #[inline]
-    fn from(value: ElectromagneticEmission) -> Self {
-        value.into_pdu_body()
     }
 }
 

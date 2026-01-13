@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
 use crate::resupply_offer::builder::ResupplyOfferBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -19,19 +20,18 @@ pub struct ResupplyOffer {
     pub supplies: Vec<SupplyQuantity>,
 }
 
-impl ResupplyOffer {
-    #[must_use]
-    pub fn builder() -> ResupplyOfferBuilder {
-        ResupplyOfferBuilder::new()
+impl BodyRaw for ResupplyOffer {
+    type Builder = ResupplyOfferBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> ResupplyOfferBuilder {
-        ResupplyOfferBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::ResupplyOffer(self)
     }
 }
@@ -54,12 +54,5 @@ impl Interaction for ResupplyOffer {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.servicing_id)
-    }
-}
-
-impl From<ResupplyOffer> for PduBody {
-    #[inline]
-    fn from(value: ResupplyOffer) -> Self {
-        value.into_pdu_body()
     }
 }

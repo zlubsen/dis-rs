@@ -6,6 +6,7 @@ use crate::model::{
     length_padded_to_num, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
 };
 use crate::set_record_r::builder::SetRecordRBuilder;
+use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -24,19 +25,18 @@ pub struct SetRecordR {
     pub record_specification: RecordSpecification,
 }
 
-impl SetRecordR {
-    #[must_use]
-    pub fn builder() -> SetRecordRBuilder {
-        SetRecordRBuilder::new()
+impl BodyRaw for SetRecordR {
+    type Builder = SetRecordRBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::new()
     }
 
-    #[must_use]
-    pub fn into_builder(self) -> SetRecordRBuilder {
-        SetRecordRBuilder::new_from_body(self)
+    fn into_builder(self) -> Self::Builder {
+        Self::Builder::new_from_body(self)
     }
 
-    #[must_use]
-    pub fn into_pdu_body(self) -> PduBody {
+    fn into_pdu_body(self) -> PduBody {
         PduBody::SetRecordR(self)
     }
 }
@@ -73,12 +73,5 @@ impl Interaction for SetRecordR {
 
     fn receiver(&self) -> Option<&EntityId> {
         Some(&self.receiving_id)
-    }
-}
-
-impl From<SetRecordR> for PduBody {
-    #[inline]
-    fn from(value: SetRecordR) -> Self {
-        value.into_pdu_body()
     }
 }
