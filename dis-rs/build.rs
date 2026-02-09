@@ -1169,7 +1169,7 @@ mod generation {
         let name_ident = format_ident!("{}", formatted_name);
         let size_type = size_to_type(item.size);
         let size_ident = format_ident!("{}", size_type);
-        let field_assignments = quote_bitfield_from_fields(&item.fields, item.size, lookup_xref);
+        let field_assignments = quote_bitfield_from_fields(&item.fields, lookup_xref);
         let field_names: Vec<TokenStream> = item
             .fields
             .iter()
@@ -1193,7 +1193,6 @@ mod generation {
 
     fn quote_bitfield_from_fields<'a, F>(
         fields: &[BitfieldItem],
-        data_size: usize,
         lookup_xref: F,
     ) -> Vec<TokenStream>
     where
@@ -1202,7 +1201,7 @@ mod generation {
         fields.iter().map(|field| {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
-            let position_shift_literal = Literal::usize_unsuffixed(data_size - field.length - field.bit_position);
+            let position_shift_literal = Literal::usize_unsuffixed(field.bit_position);
             #[allow(clippy::cast_possible_truncation)]
             let bitmask = Literal::usize_unsuffixed(2usize.pow(field.length as u32) - 1);
             if let Some(xref) = field.xref {
