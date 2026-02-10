@@ -23,6 +23,10 @@ pub const NANOSECONDS_PER_HOUR: u32 = 3600 * 1e6 as u32;
 pub const TIME_UNITS_PER_HOUR: u32 = (2 ^ 31) - 1;
 #[allow(clippy::cast_precision_loss)]
 pub const NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / TIME_UNITS_PER_HOUR as f32;
+#[allow(dead_code)]
+pub const MAXIMUM_PDU_SIZE_OCTETS: usize = 8_192;
+#[allow(dead_code)]
+pub const ETHERNET_MTU_OCTETS: usize = 1_500;
 
 pub const BIT_0_IN_BYTE: u8 = 0x80;
 pub const BIT_1_IN_BYTE: u8 = 0x40;

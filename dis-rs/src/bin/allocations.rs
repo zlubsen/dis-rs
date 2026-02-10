@@ -1,18 +1,14 @@
 use dis_rs::model::Pdu;
-#[cfg(feature = "pcap-file")]
-use pcap_file::pcap::PcapReader;
-use std::fs::File;
 
 const FILE_EXT_PCAP: &str = "pcap";
 const FILE_EXT_XMSN: &str = "xmsn";
 
 fn main() {
     #[cfg(feature = "hotpath")]
-    let _guard = hotpath::init(
-        "pdu_parser_allocations".to_string(),
-        &[50, 95, 99],
-        hotpath::Format::Table,
-    );
+    let _guard = hotpath::FunctionsGuardBuilder::new("pdu_parser_allocations")
+        .percentiles(&[50, 95, 99])
+        .format(hotpath::Format::Table)
+        .build();
 
     let file_name = std::env::args()
         .nth(1)
@@ -42,9 +38,10 @@ fn main() {
     drop(_guard);
 }
 
+#[cfg(feature = "pcap-file")]
 fn read_pcap_file(file_name: &str) -> Vec<u8> {
-    let file_in = File::open(file_name).expect("Error opening .{FILE_EXT_PCAP} file");
-    let mut pcap_reader = PcapReader::new(file_in).unwrap();
+    let file_in = std::fs::File::open(file_name).expect("Error opening .{FILE_EXT_PCAP} file");
+    let mut pcap_reader = pcap_file::pcap::PcapReader::new(file_in).unwrap();
     const NETWORK_STACK_HEADERS_LENGTH: usize = 42; // Ethernet/IP/UDP headers
 
     let mut bytes = Vec::new();
