@@ -5,7 +5,7 @@ const FILE_EXT_XMSN: &str = "xmsn";
 
 fn main() {
     #[cfg(feature = "hotpath")]
-    let _guard = hotpath::FunctionsGuardBuilder::new("pdu_parser_allocations")
+    let guard = hotpath::FunctionsGuardBuilder::new("pdu_parser_allocations")
         .percentiles(&[50, 95, 99])
         .format(hotpath::Format::Table)
         .build();
@@ -14,7 +14,7 @@ fn main() {
         .nth(1)
         .expect("Filename as first argument expected.");
 
-    let bytes = match file_name.to_lowercase().split(".").last() {
+    let bytes = match file_name.to_lowercase().split('.').next_back() {
         Some(FILE_EXT_PCAP) => {
             println!("Opening .{FILE_EXT_PCAP} file: {file_name}");
             read_pcap_file(&file_name)
@@ -24,7 +24,7 @@ fn main() {
             read_xmsn_file(&file_name)
         }
         Some(_) | None => {
-            eprintln!("Unknown file format or no file specified: {}", file_name);
+            eprintln!("Unknown file format or no file specified: {file_name}");
             eprintln!("Expecting '.{FILE_EXT_PCAP}' or '.{FILE_EXT_XMSN}' files.");
             return;
         }
@@ -35,14 +35,14 @@ fn main() {
     println!("Parsed {} PDUs.", pdus.len());
 
     #[cfg(feature = "hotpath")]
-    drop(_guard);
+    drop(guard);
 }
 
 #[cfg(feature = "pcap-file")]
 fn read_pcap_file(file_name: &str) -> Vec<u8> {
+    const NETWORK_STACK_HEADERS_LENGTH: usize = 42; // Ethernet/IP/UDP headers
     let file_in = std::fs::File::open(file_name).expect("Error opening .{FILE_EXT_PCAP} file");
     let mut pcap_reader = pcap_file::pcap::PcapReader::new(file_in).unwrap();
-    const NETWORK_STACK_HEADERS_LENGTH: usize = 42; // Ethernet/IP/UDP headers
 
     let mut bytes = Vec::new();
     while let Some(pkt) = pcap_reader.next_packet() {

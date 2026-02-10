@@ -979,7 +979,8 @@ mod tests {
         let bytes: [u8; 2] = [0x00, 0x00];
 
         let (input, skipped) = skip_body(2)(&bytes).unwrap();
+        let empty_array: [u8; 0] = [];
         assert_eq!(input, [0x00, 0x00]);
-        assert_eq!(skipped, []);
+        assert_eq!(skipped, empty_array);
     }
 }
