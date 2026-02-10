@@ -1,5 +1,5 @@
 use dis_rs::model::Pdu;
-#[cfg(feature = "hotpath")]
+#[cfg(feature = "pcap-file")]
 use pcap_file::pcap::PcapReader;
 use std::fs::File;
 
