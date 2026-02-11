@@ -1201,9 +1201,9 @@ mod generation {
         fields.iter().map(|field| {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
-            let position_shift_literal = Literal::usize_unsuffixed(field.bit_position);
+            let shift_literal = Literal::usize_unsuffixed(field.bit_position);
             #[allow(clippy::cast_possible_truncation)]
-            let bitmask = Literal::usize_unsuffixed(2usize.pow(field.length as u32) - 1);
+            let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.length as u32) - 1);
             if let Some(xref) = field.xref {
                 let xref = lookup_xref(xref).unwrap();
                 let xref_name = format_name(xref.name(), xref.uid());
@@ -1211,11 +1211,11 @@ mod generation {
                 let xref_data_size = size_to_type(xref.size());
                 let xref_size_ident = format_ident!("{}", xref_data_size);
                 quote!(
-                    let #field_ident = #xref_ident::from(((value >> #position_shift_literal) & #bitmask) as #xref_size_ident);
+                    let #field_ident = #xref_ident::from(((value >> #shift_literal) & #bitmask_literal) as #xref_size_ident);
                 )
             } else {
                 quote!(
-                    let #field_ident = ((value >> #position_shift_literal) & #bitmask) != 0;
+                    let #field_ident = ((value >> #shift_literal) & #bitmask_literal) != 0;
                 )
             }
         }).collect()
@@ -1264,16 +1264,18 @@ mod generation {
         fields.iter().map(|field| {
             let field_name = format_field_name(&field.name);
             let field_ident = format_ident!("{}", field_name);
-            let position_shift_literal = data_size - field.length - field.bit_position;
+            let shift_literal = Literal::usize_unsuffixed(field.bit_position);
+            #[allow(clippy::cast_possible_truncation)]
+            let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.length as u32) - 1);
             if let Some(xref) = field.xref {
                 let xref_size_type = size_to_type(lookup_xref(xref).unwrap().size());
                 let xref_size_ident = format_ident!("{}", xref_size_type);
                 quote!(
-                    let #field_ident = #field_size_ident::from(#xref_size_ident::from(value.#field_ident)) << #position_shift_literal;
+                    let #field_ident = (#field_size_ident::from(#xref_size_ident::from(value.#field_ident)) & #bitmask_literal) << #shift_literal;
                 )
             } else {
                 quote!(
-                    let #field_ident = #field_size_ident::from( value.#field_ident) << #position_shift_literal;
+                    let #field_ident = (#field_size_ident::from(value.#field_ident) & #bitmask_literal) << #shift_literal;
                 )
             }
         }).collect()
