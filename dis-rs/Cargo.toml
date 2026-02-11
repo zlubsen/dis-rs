@@ -15,9 +15,11 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 categories.workspace = true
+build = "build/main.rs"
 
 [features]
 serde = ["dep:serde"]
+v8 = []
 pcap-file = ["dep:pcap-file"]
 hotpath = ["dep:hotpath", "hotpath/hotpath", "hotpath/hotpath-alloc"]
 _test_no_instrumentation = []

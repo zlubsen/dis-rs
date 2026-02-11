@@ -1,11 +1,10 @@
+use quick_xml::Reader;
 use std::ops::RangeInclusive;
 use std::path::Path;
 use std::{env, fs};
 
-use proc_macro2::{Ident, Literal, TokenStream};
-use quick_xml::Reader;
-
-const SISO_REF_FILE: &str = "./enumerations/SISO-REF-010.xml";
+const SISO_REF_FILE: &str = "./definitions/enumerations/SISO-REF-010.xml";
+const TARGET_FILE: &str = "enumerations.rs";
 
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:
@@ -264,6 +263,10 @@ pub enum EnumItem {
 pub struct BasicEnumItem {
     pub description: String,
     pub value: usize,
+    #[allow(
+        unused,
+        reason = "Deprecated items are included for full compatibility."
+    )]
     pub deprecated: bool,
 }
 
@@ -271,6 +274,10 @@ pub struct BasicEnumItem {
 pub struct RangeEnumItem {
     pub description: String,
     pub range: RangeInclusive<usize>,
+    #[allow(
+        unused,
+        reason = "Deprecated items are included for full compatibility."
+    )]
     pub deprecated: bool,
 }
 
@@ -279,6 +286,10 @@ pub struct CrossRefEnumItem {
     pub description: String,
     pub value: usize,
     pub xref: usize,
+    #[allow(
+        unused,
+        reason = "Deprecated items are included for full compatibility."
+    )]
     pub deprecated: bool,
 }
 
@@ -298,7 +309,7 @@ pub struct BitfieldItem {
     pub xref: Option<usize>,
 }
 
-fn main() {
+pub fn generate() {
     let mut reader = Reader::from_file(Path::new(SISO_REF_FILE)).unwrap();
     reader.config_mut().trim_text(true);
 
@@ -314,7 +325,7 @@ fn main() {
     let contents = prettyplease::unparse(&ast);
 
     // Save to file
-    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join("enumerations.rs");
+    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(TARGET_FILE);
     fs::write(dest_path, contents).unwrap();
 }
 
@@ -352,7 +363,7 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .collect();
 
     // Prefix values starting with a digit with '_'
-    // .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.
+    // FIXME .unwrap_or('x') is a hack to fail when `intermediate` is empty. is_some_and() is unstable at this time.
     let starts_with_digit = intermediate.chars().next().unwrap_or('x').is_ascii_digit();
     let is_empty = intermediate.is_empty();
 
@@ -392,7 +403,7 @@ fn format_field_name(name: &str) -> String {
 }
 
 mod extraction {
-    use crate::{
+    use super::{
         BasicEnumItem, Bitfield, BitfieldItem, CrossRefEnumItem, Enum, EnumItem, GenerationItem,
         RangeEnumItem, BITFIELD_UIDS, ENUM_UIDS, SKIP_XREF_UIDS,
     };
@@ -763,10 +774,11 @@ mod extraction {
 }
 
 mod generation {
-    use crate::{
+    use super::{
         format_field_name, format_name, format_name_postfix, Bitfield, BitfieldItem, Enum,
-        EnumItem, GenerationItem, Ident, Literal, TokenStream,
+        EnumItem, GenerationItem,
     };
+    use proc_macro2::{Ident, Literal, TokenStream};
     use quote::{format_ident, quote};
 
     pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
@@ -838,7 +850,7 @@ mod generation {
         let name = format_name(e.name.as_str(), e.uid);
         let name_ident = format_ident!("{}", name);
         let arms = quote_enum_decl_arms(&e.items, e.size, e.postfix_items, lookup_xref);
-        let uid_doc_comment = format!("UID {}", e.uid);
+        let uid_doc_comment = format!(" UID {}", e.uid);
         quote!(
             #[doc = #uid_doc_comment]
             #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

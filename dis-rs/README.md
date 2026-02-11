@@ -101,7 +101,7 @@ code.
 E.g., one can use the enum `PduType::EntityState` in code instead of remembering that a `1` means that specific value.
 
 The code for these enums is generated using a build script from the
-published [SISO-REF-010.xml](./enumerations/SISO-REF-010.xml) file.
+published [SISO-REF-010.xml](definitions/enumerations/SISO-REF-010.xml) file.
 
 ## Usage
 

@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<DISsyntax
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
+  title="DIS Syntax Entity Information/Interaction"
+  release="0.3"
+  date="2025-12-29"
+  description="PDUs and records for the Entity Information/Interaction family. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  organization="Simulation Interoperability Standards Organization">
+
+  <copyright><![CDATA[
+Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+All rights reserved.
+
+Schema and API: SISO hereby grants a general, royalty-free license to copy, distribute, display, and
+make derivative works from this material, for all purposes, provided that any use of the material
+contains the following attribution: "Reprinted with permission from SISO Inc." Should
+a reader require additional information, contact the SISO Inc. Board of Directors.
+
+Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
+display, and make derivative works from this material, for noncommercial purposes, provided that
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+The material may not be used for a commercial purpose without express written
+permission from the SISO Inc Board of Directors.
+
+SISO Inc. Board of Directors
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+]]></copyright>
+
+  <PDU name="Entity State" PDUType="1" protocolFamily="1" baseLength="72">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Entity ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Force ID" type="enum8" enumTableUID="6"/>
+    <EnumField name="Dead Reckoning Algorithm" type="enum8" enumTableUID="44"/>
+    <FixedRecordField name="Entity Type" length="8" type="Entity Type"/>
+    <FixedRecordField name="Entity Location" length="24" type="World Coordinates"/>
+    <FixedRecordField name="Entity Orientation" length="12" type="Euler Angles"/>
+    <BitRecordField name="Entity Status" size="8" type="Entity Status"/>
+    <BitRecordField name="Placement Attributes" size="8" type="Placement Attributes"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Collision" PDUType="4" protocolFamily="1" baseLength="72">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Issuing Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Colliding Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Collision Event ID" length="6" type="Event Identifier"/>
+    <EnumField name="Collision Type" type="enum8" enumTableUID="189"/>
+    <EnumField name="Collision Origin" type="enum8" enumTableUID="702"/>
+    <FixedRecordField name="Velocity" length="12" type="Linear Velocity Vector"/>
+    <NumericField name="Mass" type="float32" units="kg"/>
+    <FixedRecordField name="Location" length="12" type="Entity Coordinate Vector"/>
+    <NumericField name="Padding" type="uint32"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Attribute" PDUType="72" protocolFamily="1" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="System Number" type="uint16"/>
+    <EnumField name="PDU Type" type="enum8" enumTableUID="4"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Logical Object State" PDUType="75" protocolFamily="1" baseLength="48">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Logical Object ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Force ID" type="enum8" enumTableUID="6"/>
+    <NumericField name="Padding" type="uint8"/>
+    <FixedRecordField name="Object Type" length="8" type="Entity Type"/>
+    <FixedStringField name="Object Short Name" length="8"/>
+    <NumericField name="Padding" type="uint32"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <BitRecord type="Entity Status" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <BooleanBitField name="Frozen" bitPosition="1"/>
+    <BooleanBitField name="Power Plant On" bitPosition="2"/>
+    <BooleanBitField name="Mobility Killed" bitPosition="3"/>
+    <EnumBitField name="Damage/Health" bitPosition="4" size="2" enumTableUID="379, 390"/>
+    <BooleanBitField name="Smoke Emanating" bitPosition="6"/>
+    <BooleanBitField name="Flaming" bitPosition="7"/>
+  </BitRecord>
+
+  <BitRecord type="Placement Attributes" size="8">
+    <EnumBitField name="Location Definition" bitPosition="0" size="2" enumTableUID="46"/>
+    <EnumBitField name="Entity Clamping Type" bitPosition="2" size="2" enumTableUID="52"/>
+    <BooleanBitField name="Clamp to Ground" bitPosition="4"/>
+    <BooleanBitField name="Clamp to Water" bitPosition="5"/>
+    <BooleanBitField name="Clamp to Structures" bitPosition="6"/>
+    <BooleanBitField name="Clamp to Foliage" bitPosition="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Articulated Parts" recordTypeEnum="2000" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Articulated Part Parameters" type="uint8"/>
+      <FixedRecordField name="Articulated Part Parameter" length="16" type="Articulated Part Parameter"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Articulated Part Parameter" length="16">
+    <NumericField name="Part ID" type="uint8"/>
+    <NumericField name="ID - Part Attached To" type="uint8"/>
+    <BitRecordField name="Articulated Part Status" size="16" enumTableUID="887"/>
+    <EnumField name="Parameter Type Class" type="enum16" enumTableUID="885"/>
+    <EnumField name="Parameter Type Metric" type="enum8" enumTableUID="886"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Parameter Value" type="float32"/>
+    <NumericField name="Parameter Rate" type="float32"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Attached Parts" recordTypeEnum="2001" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Attached Parts" type="uint8"/>
+      <FixedRecordField name="Attached Part" length="16" type="Attached Part"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Attached Part" length="16">
+    <NumericField name="Part ID" type="uint8"/>
+    <NumericField name="ID - Part Attached To" type="uint8"/>
+    <BitRecordField name="Attached Part Status" size="16" enumTableUID="888"/>
+    <EnumField name="Attached Part Station" type="enum16" enumTableUID="57"/>
+    <NumericField name="Padding" type="uint16"/>
+    <FixedRecordField name="Attached Part Type" length="8" type="Entity Type"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Entity Association" recordTypeEnum="2002" baseLength="24" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Change Indicator" type="enum8" enumTableUID="320"/>
+    <EnumField name="Association Status" type="enum8" enumTableUID="319"/>
+    <EnumField name="Association Type" type="enum8" enumTableUID="323"/>
+    <FixedRecordField name="Entity ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Own Station Location" type="enum16" enumTableUID="212"/>
+    <EnumField name="Physical Connection Type" type="enum8" enumTableUID="324"/>
+    <EnumField name="Group Member Type" type="enum8" enumTableUID="321"/>
+    <NumericField name="Group Number" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Entity Type" recordTypeEnum="2003" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint32"/>
+    <FixedRecordField name="Entity Type" length="8" type="Entity Type"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Separation" recordTypeEnum="2004" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <FixedRecordField name="Station Location" length="4" type="Named Location Identification"/>
+    <EnumField name="Reason for Separation" type="enum8" enumTableUID="282"/>
+    <EnumField name="Pre-Entity Indicator" type="enum8" enumTableUID="283"/>
+    <FixedRecordField name="Parent Entity ID" length="6" type="Entity Identifier"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Linear Object" recordTypeEnum="2006" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Segments" type="uint16"/>
+      <FixedRecordField name="Linear Segment" length="64" type="Linear Segment"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Linear Segment" length="64">
+    <NumericField name="Segment Number" type="uint8"/>
+    <BitRecordField name="Entity Status" size="8" type="Entity Status"/>
+    <EnumField name="Appearance Type" type="enum8" enumTableUID="141" isDiscriminant="true" />
+    <EnumField name="Extended Appearance Type" type="enum8" enumTableUID="142" isDiscriminant="true" />
+    <AdaptiveRecordField name="Appearance" length="4" enumTableUID="142" discriminant="Appearance Type"/>
+    <AdaptiveRecordField name="Extended Appearance" length="4" enumTableUID="142" discriminant="Extended Appearance Type"/>
+    <NumericField name="Length" type="float32" units="meters"/>
+    <NumericField name="Width" type="float32" units="meters"/>
+    <NumericField name="Height" type="float32" units="meters"/>
+    <NumericField name="Depth" type="float32" units="meters"/>
+    <FixedRecordField name="Orientation" length="12" type="Euler Angles"/>
+    <FixedRecordField name="Origin" length="24" type="World Coordinates"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Areal Object" recordTypeEnum="2007" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Points" type="uint16"/>
+      <FixedRecordField name="Point" length="24" type="World Coordinates"/>
+    </Array>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Combined Parabolic/Circular DRA" recordTypeEnum="2010" baseLength="48" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <BitRecordField name="CPC Flags" size="16" type="CPC Flags"/>
+    <FixedRecordField name="Linear Velocity" length="12" type="Linear Velocity Vector"/>
+    <FixedRecordField name="Angular Velocity" length="12" type="Angular Velocity Vector"/>
+    <FixedRecordField name="Linear Acceleration" length="12" type="Linear Acceleration Vector"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Combined Parabolic/Circular DRA Velocity" recordTypeEnum="2011" baseLength="24" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <BitRecordField name="CPC Flags" size="16" type="CPC Flags"/>
+    <FixedRecordField name="Linear Velocity" length="12" type="Linear Velocity Vector"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="CPC Flags" size="16">
+    <BooleanBitField name="Rotational Dead Reckoning Disabled" bitPosition="0"/>
+    <BooleanBitField name="Noncircular Path" bitPosition="1"/>
+    <BooleanBitField name="Low Acceleration" bitPosition="2"/>
+    <BooleanBitField name="Low Angular Velocity" bitPosition="3"/>
+    <IntBitField name="Padding" bitPosition="4" size="12"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Multiple Static Entity" recordTypeEnum="2020" baseLength="16" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <FixedRecordField name="Entity Type" length="8"  type="Entity Type"/>
+    <EnumField name="Appearance Type" type="enum8" enumTableUID="141" isDiscriminant="true"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Entities" type="uint16"/>
+      <FixedRecordField name="Static Entity" length="32" type="Basic Multiple Entity"/>
+    </Array>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Multiple Moving Entity" recordTypeEnum="2021" baseLength="16" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <FixedRecordField name="Entity Type" length="8" type="Entity Type"/>
+    <EnumField name="Appearance Type" type="enum8" enumTableUID="141" isDiscriminant="true"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Entities" type="uint16"/>
+      <FixedRecordField name="Moving Entity" length="48" type="Moving Entity"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Moving Entity" length="48">
+    <FixedRecordField name="Basic Entity" length="32" type="Basic Multiple Entity"/>
+    <FixedRecordField name="Linear Velocity" length="12" type="Linear Velocity Vector"/>
+    <NumericField name="Yaw Rate" type="float32" units="radians/sec"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Multiple Accelerating Entity" recordTypeEnum="2022" baseLength="16" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <FixedRecordField name="Entity Type"  length="8" type="Entity Type"/>
+    <EnumField name="Appearance Type" type="enum8" enumTableUID="141" isDiscriminant="true"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Entities" type="uint16"/>
+      <FixedRecordField name="Accelerating Entity" length="72" type="Accelerating Entity"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Accelerating Entity" length="72">
+    <FixedRecordField name="Basic Entity" length="32" type="Basic Multiple Entity"/>
+    <FixedRecordField name="Linear Velocity" length="12" type="Linear Velocity Vector"/>
+    <FixedRecordField name="Linear Acceleration" length="12" type="Linear Acceleration Vector"/>
+    <FixedRecordField name="Angular Velocity" length="12" type="Angular Velocity Vector"/>
+    <BitRecordField name="CPC Flags" size="16" type="CPC Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Multiple Static Entity with Extended Appearance" recordTypeEnum="2023" baseLength="16" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <FixedRecordField name="Entity Type"  length="8" type="Entity Type"/>
+    <EnumField name="Appearance Type" type="enum8" enumTableUID="141" isDiscriminant="true"/>
+    <EnumField name="Extended Appearance Type" type="enum8" enumTableUID="142" isDiscriminant="true"/>
+    <Array>
+      <CountField name="Number of Entities" type="uint16"/>
+      <FixedRecordField name="Entity with Extended Appearance" length="36" type="Entity with Extended Appearance"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Entity with Extended Appearance" length="36">
+    <FixedRecordField name="Basic Entity" length="32" type="Basic Multiple Entity"/>
+    <AdaptiveRecordField name="Extended Appearance" length="4" enumTableUID="142" discriminant="Extended Appearance Type"/>
+  </FixedRecord>
+
+  <FixedRecord type="Basic Multiple Entity" length="32">
+    <NumericField name="Entity Number" type="uint16"/>
+    <NumericField name="Marking Number" type="uint8"/>
+    <BitRecordField name="Entity Status" size="8" type="Entity Status"/>
+    <AdaptiveRecordField name="Appearance" length="4" enumTableUID="141" discriminant="Appearance Type"/>
+    <FixedRecordField name="Location Offset" length="12" type="World Location Offset"/>
+    <FixedRecordField name="Orientation" length="12" type="Euler Angles"/>
+  </FixedRecord>
+
+  <FixedRecord type="World Location Offset" length="12">
+    <NumericField name="X offset" type="float32" units="meters"/>
+    <NumericField name="Y offset" type="float32" units="meters"/>
+    <NumericField name="Z offset" type="float32" units="meters"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Entity Appearance" recordTypeEnum="2030" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <EnumField name="Appearance Type" type="enum8" enumTableUID="141" isDiscriminant="true" />
+    <EnumField name="Extended Appearance Type" type="enum8" enumTableUID="142" isDiscriminant="true" />
+    <AdaptiveRecordField name="Appearance" length="4" enumTableUID="141" discriminant="Appearance Type"/>
+    <AdaptiveRecordField name="Extended Appearance" length="4" enumTableUID="142" discriminant="Extended Appearance Type"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Capabilities" recordTypeEnum="2031" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <EnumField name="Capabilities Type" type="enum8" enumTableUID="140" isDiscriminant="true"/>
+    <NumericField name="Padding" type="uint8"/>
+    <AdaptiveRecordField name="Capabilities" length="4" enumTableUID="140" discriminant="Capabilities Type"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Entity Marking" recordTypeEnum="2032" baseLength="7" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="Marking Type" type="enum8" enumTableUID="599"/>
+    <EnumField name="Character Set" type="enum8" enumTableUID="45"/>
+    <VariableString>
+      <CountField name="String Length" type="uint8"/>
+      <VariableStringField name="Marking"/>
+    </VariableString>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Entity Marking with Entity Number" recordTypeEnum="2033" baseLength="9" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Entity Number" type="uint16"/>
+    <EnumField name="Marking Type" type="enum8" enumTableUID="599"/>
+    <EnumField name="Character Set" type="enum8" enumTableUID="45"/>
+    <VariableString>
+      <CountField name="String Length" type="uint8"/>
+      <VariableStringField name="Marking"/>
+    </VariableString>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Entity Decal" recordTypeEnum="2034" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Decal Type" type="enum8" enumTableUID="615"/>
+    <EnumField name="Decal Selection" type="enum16" hierarchyDependency="Decal Type"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="IR Setup" recordTypeEnum="2035" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="IR Band" type="enum8" enumTableUID="710"/>
+    <EnumField name="Shape Coverage" type="enum8" enumTableUID="713"/>
+    <EnumField name="IR Shape" type="enum8" enumTableUID="712"/>
+    <Array>
+      <CountField name="Number of IR Facets" type="uint8"/>
+      <FixedRecordField name="IR Facet" length="2" type="IR Facet"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="IR Facet" length="2">
+    <NumericField name="IR Facet ID" type="uint8"/>
+    <EnumField name="Surface Type" type="enum8" enumTableUID="711"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="IR Radiant Intensity" recordTypeEnum="2036" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="IR Band" type="enum8" enumTableUID="710"/>
+    <EnumField name="Shape Coverage" type="enum8" enumTableUID="713"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Facets" type="uint8"/>
+      <FixedRecordField name="Facet IR Radiant Intensity" length="12" type="Facet IR Radiant Intensity"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Facet IR Radiant Intensity" length="12">
+    <NumericField name="IR Facet ID" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Emissivity" type="uint16" units="ratio of ideal black x 65535"/>
+    <NumericField name="Color Temperature" type="float32" units="degrees Kelvin"/>
+    <NumericField name="Radiant Intensity" type="float32" units="Watts/steradian"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Detailed Entity Color" recordTypeEnum="2038" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <EnumField name="Cleanliness" type="enum8" enumTableUID="613"/>
+    <Array>
+      <CountField name="Number of Color Layers" type="uint8"/>
+      <FixedRecordField name="Color Layer" length="8" type="Color Layer"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Color Layer" length="8">
+    <NumericField name="Color Layer ID" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Pattern" type="enum16" enumTableUID="614"/>
+    <NumericField name="Red" type="uint8"/>
+    <NumericField name="Green" type="uint8"/>
+    <NumericField name="Blue" type="uint8"/>
+    <NumericField name="Alpha" type="uint8"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Detailed Styles" recordTypeEnum="2040" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Styles" type="uint8"/>
+      <FixedRecordField name="Style" length="8" type="Style"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Style" length="8">
+    <EnumField name="Style Type" type="enum8" enumTableUID="634"/>
+    <EnumField name="Style Selection" type="enum8" hierarchyDependency="Style Type"/>
+    <EnumField name="Pattern" type="enum16" enumTableUID="614"/>
+    <NumericField name="Red" type="uint8"/>
+    <NumericField name="Green" type="uint8"/>
+    <NumericField name="Blue" type="uint8"/>
+    <NumericField name="Alpha" type="uint8"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Equipment Selection" recordTypeEnum="2041" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Equipment ID" type="uint8"/>
+    <EnumField name="Class" type="enum8" enumTableUID="473"/>
+    <EnumField name="Selection" type="enum8" hierarchyDependency="Class"/>
+    <EnumField name="Carry" type="enum8" enumTableUID="649"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Animation Control" recordTypeEnum="2042" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="Animation ID" type="enum16" enumTableUID="TBD"/>
+    <BitRecordField name="Animation State" size="8" type="Animation State"/>
+    <NumericField name="Percent Complete" type="uint8" units="percent"/>
+    <NumericField name="Animation Speed" type="float32" units="times normal speed"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="Animation State" size="8">
+    <BooleanBitField name="Is Playing" bitPosition="0"/>
+    <BooleanBitField name="Is Continuous Play" bitPosition="1"/>
+    <IntBitField name="Padding" bitPosition="2" size="6"/>
+  </BitRecord>
+
+  <ExtensionRecord name="High-Fidelity Thermal" recordTypeEnum="2045" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Thermal Parts" type="uint8"/>
+      <FixedRecordField name="Thermal Part" length="6" type="Thermal Part"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Thermal Part" length="6">
+    <EnumField name="Part" type="enum8" enumTableUID="544"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Current Temperature" type="uint16" units="degrees Kelvin x 10"/>
+    <NumericField name="Temperature Rate" type="int16" units="degrees Kelvin x 10 per second"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Logical Object Role" recordTypeEnum="2600" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="Component" type="enum8" enumTableUID="761"/>
+    <EnumField name="Command and Control" type="enum8" enumTableUID="762"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Logical Object Physical Association" recordTypeEnum="2601" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <FixedRecordField name="Physical Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Logical Object Relationship" recordTypeEnum="2602" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="Relationship" type="enum8" enumTableUID="763"/>
+    <Array>
+      <CountField name="Number of Related Logical Objects" type="uint8"/>
+      <FixedRecordField name="Related Logical Object " length="6" type="Entity Identifier"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Logical Object Long Name" recordTypeEnum="2603" baseLength="5" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <VariableString>
+      <CountField name="Name String Length" type="uint8"/>
+      <VariableStringField name="Logical Object Long Name"/>
+    </VariableString>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+</DISsyntax>
