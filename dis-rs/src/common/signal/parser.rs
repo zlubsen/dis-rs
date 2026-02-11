@@ -10,6 +10,7 @@ use crate::BodyRaw;
 use nom::number::complete::{be_u16, be_u32};
 use nom::IResult;
 
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 pub(crate) fn signal_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, radio_reference_id) = entity_id(input)?;
     let (input, radio_number) = be_u16(input)?;

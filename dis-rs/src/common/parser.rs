@@ -145,6 +145,7 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     }
 }
 
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
     let (input, header) = pdu_header(input)?;
@@ -933,7 +934,8 @@ mod tests {
         let bytes: [u8; 2] = [0x00, 0x00];
 
         let (input, skipped) = skip_body(2)(&bytes).unwrap();
+        let empty_array: [u8; 0] = [];
         assert_eq!(input, [0x00, 0x00]);
-        assert_eq!(skipped, []);
+        assert_eq!(skipped, empty_array);
     }
 }
