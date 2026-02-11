@@ -145,7 +145,10 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
     }
 }
 
-#[cfg_attr(feature = "hotpath", hotpath::measure)]
+#[cfg_attr(
+    all(feature = "hotpath", not(feature = "_test_no_instrumentation")),
+    hotpath::measure
+)]
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
     let (input, header) = pdu_header(input)?;

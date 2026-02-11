@@ -54,6 +54,11 @@ fn read_pcap_file(file_name: &str) -> Vec<u8> {
     bytes
 }
 
+#[cfg(not(feature = "pcap-file"))]
+fn read_pcap_file(_file_name: &str) -> Vec<u8> {
+    vec![]
+}
+
 fn read_xmsn_file(file_name: &str) -> Vec<u8> {
     std::fs::read(file_name).expect("Error opening and reading .{FILE_EXT_XMSN} file")
 }
