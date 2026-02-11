@@ -727,7 +727,7 @@ mod tests {
             dr_params_entity_linear_acceleration: None,
             dr_params_entity_angular_velocity: None,
             entity_marking: Some(CdisEntityMarking::new("TEST".to_string())),
-            capabilities: Some(CdisEntityCapabilities(UVINT32::from(0xABC0_0000))),
+            capabilities: Some(CdisEntityCapabilities(UVINT32::from(0x15D))),
             variable_parameters: vec![],
         }
         .into_cdis_body();
@@ -794,7 +794,13 @@ mod tests {
             assert!(air_caps.ammunition_supply);
             assert!(!air_caps.fuel_supply);
             assert!(air_caps.recovery);
-            assert!(!air_caps.repair);
+            assert!(air_caps.repair);
+            assert!(air_caps.adsb);
+            assert!(!air_caps.sling_load_carrier);
+            assert!(air_caps.sling_loadable);
+            assert!(!air_caps.ied_presence_indicator);
+            assert!(air_caps.task_organizable);
+            assert!(!air_caps.laircm);
         } else {
             panic!()
         }

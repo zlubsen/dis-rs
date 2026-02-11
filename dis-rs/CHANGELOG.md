@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.13.0] - 2026-02-11
+
+### Fixed
+
+- Bitfield enumerations from SISO-REF-010 were incorrectly reversed during serialization/deserialization.
+
 ## [0.12.2] - 2026-01-13
 
 ### Changed
