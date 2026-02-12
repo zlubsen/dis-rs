@@ -2,8 +2,8 @@ mod enumerations;
 mod pdus;
 
 fn main() {
-    enumerations::generate();
+    let uid_index = enumerations::execute();
 
     #[cfg(feature = "v8")]
-    pdus::generate();
+    pdus::execute(&uid_index);
 }

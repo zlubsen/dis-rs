@@ -1,10 +1,11 @@
 use quick_xml::Reader;
+use std::collections::HashMap;
 use std::ops::RangeInclusive;
 use std::path::Path;
 use std::{env, fs};
 
 const SISO_REF_FILE: &str = "./definitions/enumerations/SISO-REF-010.xml";
-const TARGET_FILE: &str = "enumerations.rs";
+const TARGET_ENUM_FILE: &str = "enumerations.rs";
 
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:
@@ -309,15 +310,38 @@ pub struct BitfieldItem {
     pub xref: Option<usize>,
 }
 
-pub fn generate() {
+pub fn execute() -> HashMap<usize, String> {
     let mut reader = Reader::from_file(Path::new(SISO_REF_FILE)).unwrap();
     reader.config_mut().trim_text(true);
 
     // Extract enums and bitfields from the source file
     let generation_items = extraction::extract(&mut reader);
 
+    // Build the index of UIDs and their code names
+    let uid_index = generate_uid_index(&generation_items);
+
+    // Generate the code for the enumerations
+    generate_enums(&generation_items);
+
+    uid_index
+}
+
+/// Generate an index of UIDs to the name of the generated code items
+/// for use in further generation functions.
+fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, String> {
+    let mut uid_index = HashMap::new();
+
+    for item in generation_items {
+        uid_index.insert(item.uid(), format_name(item.name(), item.uid()));
+    }
+
+    uid_index
+}
+
+/// Generates code for all provided `GenerationItem`s, formats the code and stores it in `OUT_DIR`.
+fn generate_enums(generation_items: &Vec<GenerationItem>) {
     // Generate all code for enums
-    let generated = generation::generate(&generation_items);
+    let generated = generation::generate(generation_items);
 
     // format generated code using prettyplease
     let ast = syn::parse_file(&generated.to_string())
@@ -325,7 +349,7 @@ pub fn generate() {
     let contents = prettyplease::unparse(&ast);
 
     // Save to file
-    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(TARGET_FILE);
+    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(TARGET_ENUM_FILE);
     fs::write(dest_path, contents).unwrap();
 }
 
