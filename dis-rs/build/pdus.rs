@@ -238,8 +238,9 @@ struct Pdu {
 
 mod extraction {
     use crate::pdus::{
-        AdaptiveFormatEnum, AdaptiveRecord, BitRecord, BitRecordFieldEnum,
-        ExtensionRecord, FixedRecord, FixedRecordFieldEnum, GenerationItem, Pdu,
+        AdaptiveFormatEnum, AdaptiveRecord, BitRecord, BitRecordFieldEnum, CountField,
+        ExtensionRecord, FixedRecord, FixedRecordField, FixedRecordFieldEnum, GenerationItem,
+        NumericField, PaddingTo16, PaddingTo32, PaddingTo64, Pdu,
     };
     use quick_xml::events::{BytesStart, Event};
     use quick_xml::name::QName;
@@ -316,13 +317,7 @@ mod extraction {
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(ref element)) => match element.name() {
-                    PDU_ELEMENT => {
-                        current_item = if let Ok(extracted) = extract_pdu(element, reader) {
-                            Some(GenerationItem::Pdu(extracted))
-                        } else {
-                            None
-                        }
-                    }
+                    PDU_ELEMENT => Some(GenerationItem::Pdu(extract_pdu(element, reader))),
                     FIXED_RECORD_ELEMENT => {
                         todo!()
                     }
@@ -410,9 +405,7 @@ mod extraction {
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Empty(ref element)) => match element.name() {
-                    NUMERIC_FIELD_ELEMENT => {
-                        todo!()
-                    }
+                    NUMERIC_FIELD_ELEMENT => extract_numeric_field(reader),
                     ENUM_FIELD_ELEMENT => {
                         todo!()
                     }
@@ -539,8 +532,98 @@ mod extraction {
     fn extract_extension_record(
         element: &BytesStart,
         reader: &Reader<BufReader<File>>,
-    ) -> Result<ExtensionRecord, ()> {
+    ) -> ExtensionRecord {
         todo!()
+    }
+
+    fn extract_numeric_field(
+        element: &BytesStart,
+        reader: &Reader<BufReader<File>>,
+    ) -> NumericField {
+        let field_type = if let Ok(Some(attr_type)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(String::from_utf8(attr_type.value.to_vec()).expect("Expected valid UTF-8"))
+        } else {
+            None
+        };
+        let field_name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(String::from_utf8(attr_name.value.to_vec()).expect("Expected valid UTF-8"))
+        } else {
+            None
+        };
+
+        NumericField {
+            name: field_name.expect("Expected NumericField attribute 'name' to be present."),
+            primitive_type: field_type
+                .expect("Expected NumericField attribute 'type' to be present."),
+            units: None,
+        }
+    }
+
+    fn extract_fixed_record_field(
+        element: &BytesStart,
+        reader: &Reader<BufReader<File>>,
+    ) -> FixedRecordField {
+        let field_type = if let Ok(Some(attr_type)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(String::from_utf8(attr_type.value.to_vec()).expect("Expected valid UTF-8"))
+        } else {
+            None
+        };
+        let field_name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(String::from_utf8(attr_name.value.to_vec()).expect("Expected valid UTF-8"))
+        } else {
+            None
+        };
+        let length = if let Ok(Some(attr_length)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
+            Some(
+                usize::from_str(
+                    &reader
+                        .decoder()
+                        .decode(&attr_length.value)
+                        .expect("Expected valid UTF-8"),
+                )
+                .expect("Expected a value able to be parsed to 'usize'"),
+            )
+        } else {
+            None
+        };
+
+        FixedRecordField {
+            name: field_name.expect("Expected FixedRecordField attribute 'name' to be present."),
+            length: length.expect("Expected FixedRecordField attribute 'length' to be present."),
+            field_type: field_type
+                .expect("Expected FixedRecordField attribute 'type' to be present."),
+        }
+    }
+
+    fn extract_count_field(element: &BytesStart, reader: &Reader<BufReader<File>>) -> CountField {
+        let field_type = if let Ok(Some(attr_type)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(String::from_utf8(attr_type.value.to_vec()).expect("Expected valid UTF-8"))
+        } else {
+            None
+        };
+        let field_name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(String::from_utf8(attr_name.value.to_vec()).expect("Expected valid UTF-8"))
+        } else {
+            None
+        };
+
+        CountField {
+            name: field_name.expect("Expected CountField attribute 'name' to be present."),
+            primitive_type: field_type
+                .expect("Expected CountField attribute 'type' to be present."),
+        }
+    }
+
+    fn extract_padding_16_field(element: &BytesStart) -> PaddingTo16 {
+        PaddingTo16
+    }
+
+    fn extract_padding_32_field(element: &BytesStart) -> PaddingTo32 {
+        PaddingTo32
+    }
+
+    fn extract_padding_64_field(element: &BytesStart) -> PaddingTo64 {
+        PaddingTo64
     }
 }
 
