@@ -239,14 +239,14 @@ struct PaddingTo64;
 
 #[derive(Debug, Clone)]
 struct ExtensionRecord {
-    pub record_type_field: EnumField,
-    pub record_length_field: NumericField,
-    pub fields: Vec<ExtensionRecordFieldEnum>,
-    pub padding_to_64_field: Option<PaddingTo64>,
     pub name_attr: String,
     pub record_type_attr: usize,
     pub base_length_attr: usize,
     pub is_variable_attr: bool,
+    pub record_type_field: EnumField,
+    pub record_length_field: NumericField,
+    pub fields: Vec<ExtensionRecordFieldEnum>,
+    pub padding_to_64_field: Option<PaddingTo64>,
 }
 
 #[derive(Debug, Clone)]
@@ -261,10 +261,11 @@ struct Pdu {
 mod extraction {
     use crate::pdus::{
         AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, BitRecord, BitRecordField,
-        BitRecordFieldEnum, CountField, EnumField, ExtensionRecord, FixedRecord, FixedRecordField,
-        FixedRecordFieldsEnum, FixedStringField, GenerationItem, NumericField, PaddingTo16,
-        PaddingTo32, PaddingTo64, Pdu,
+        BitRecordFieldEnum, CountField, EnumField, ExtensionRecord, ExtensionRecordFieldEnum,
+        FixedRecord, FixedRecordField, FixedRecordFieldsEnum, FixedStringField, GenerationItem,
+        NumericField, PaddingTo16, PaddingTo32, PaddingTo64, Pdu,
     };
+    use quick_xml::events::attributes::Attribute;
     use quick_xml::events::{BytesStart, Event};
     use quick_xml::name::QName;
     use quick_xml::Reader;
@@ -326,11 +327,38 @@ mod extraction {
         let mut reader = Reader::from_file(path).unwrap();
         reader.config_mut().trim_text(true);
 
-        let generation_items = extract(&mut reader);
+        let generation_items = extract_from_root(&mut reader);
         todo!()
     }
 
-    fn extract(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
+    fn extract_from_root(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
+        let mut items: Vec<GenerationItem> = Vec::new();
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(ref element)) => match element.name() {
+                    DIS_SYNTAX_ELEMENT => items.append(&mut extract_protocol_items(reader)),
+                    element => {
+                        panic!("Encountered unexpected start element {element:?} at top-level.")
+                    }
+                },
+                Ok(Event::End(ref element)) => match element.name() {
+                    element => {
+                        panic!("Encountered unexpected end element {element:?} at top-level.")
+                    }
+                },
+                Ok(Event::Empty(ref element)) => {
+                    let name = element.name();
+                    panic!("Unexpected closed element '{name:?}' encountered at top-level")
+                }
+                Ok(Event::Eof) => break, // exits the loop when reaching end of file
+                Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
+                _ => (), // There are several other `Event`s we do not consider here
+            };
+        }
+        items
+    }
+
+    fn extract_protocol_items(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
         let mut buf = Vec::new();
         let mut items = Vec::new();
 
@@ -360,14 +388,15 @@ mod extraction {
                             element, reader,
                         )));
                     }
-                    DIS_SYNTAX_ELEMENT | COPYRIGHT_ELEMENT => (),
+                    COPYRIGHT_ELEMENT => (), // skip
                     element => {
                         panic!("Encountered unexpected start element {element:?} at top-level.")
                     }
                 },
                 Ok(Event::End(ref element)) => match element.name() {
-                    // Pass on the main structure elements that are not interesting
-                    DIS_SYNTAX_ELEMENT | COPYRIGHT_ELEMENT => (),
+                    // Pass over the main structure elements that are not interesting
+                    COPYRIGHT_ELEMENT => (), // skip
+                    DIS_SYNTAX_ELEMENT => break,
                     element => {
                         panic!("Encountered unexpected end element {element:?} at top-level.")
                     }
@@ -376,16 +405,14 @@ mod extraction {
                     let name = element.name();
                     panic!("Unexpected closed element '{name:?}' encountered at top-level")
                 }
-                Ok(Event::Eof) => break, // exits the loop when reaching end of file
+                Ok(Event::Eof) => {
+                    panic!("Unexpected end of file at element {DIS_SYNTAX_ELEMENT:?}.")
+                }
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
                 _ => (), // There are several other `Event`s we do not consider here
             };
         }
         items
-    }
-
-    fn extract_dis_syntax(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Pdu {
-        todo!()
     }
 
     fn extract_pdu(element: &BytesStart, reader: &Reader<BufReader<File>>) -> Pdu {
@@ -396,21 +423,21 @@ mod extraction {
         element: &BytesStart,
         reader: &mut Reader<BufReader<File>>,
     ) -> FixedRecord {
-        let record_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let record_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
-            Some(usize::from_str(&reader.decoder().decode(&attr.value).unwrap()).unwrap())
+        let attr_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
+            Some(extract_attr_to_usize(reader, attr))
         } else {
             None
         };
         let fields = extract_fixed_record_fields(reader);
 
         FixedRecord {
-            record_type: record_type.expect("Expected record attribute 'type' to be present."),
-            length: record_length.expect("Expected record attribute 'length' to be present."),
+            record_type: attr_type.expect("Expected record attribute 'type' to be present."),
+            length: attr_length.expect("Expected record attribute 'length' to be present."),
             fields,
         }
     }
@@ -425,7 +452,7 @@ mod extraction {
                 Ok(Event::Empty(ref element)) => match element.name() {
                     NUMERIC_FIELD_ELEMENT => {
                         fields.push(FixedRecordFieldsEnum::Numeric(extract_numeric_field(
-                            element, reader,
+                            element,
                         )));
                     }
                     ENUM_FIELD_ELEMENT => {
@@ -457,7 +484,15 @@ mod extraction {
                         panic!("Unexpected element '{element:?}' in {FIXED_RECORD_ELEMENT:?}")
                     }
                 },
-                Ok(Event::Eof) => break, // exits the loop when reaching end of file
+                Ok(Event::End(ref element)) => match element.name() {
+                    FIXED_RECORD_ELEMENT => break, // record finished
+                    element => {
+                        panic!("Encountered unexpected end element {element:?}.")
+                    }
+                },
+                Ok(Event::Eof) => {
+                    panic!("Unexpected end of file at element {FIXED_RECORD_ELEMENT:?}.")
+                }
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
                 _ => (), // There are several other `Event`s we do not consider here
             }
@@ -466,21 +501,21 @@ mod extraction {
     }
 
     fn extract_bit_record(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> BitRecord {
-        let record_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let record_size = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
-            Some(usize::from_str(&reader.decoder().decode(&attr.value).unwrap()).unwrap())
+        let attr_size = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
+            Some(extract_attr_to_usize(reader, attr))
         } else {
             None
         };
         let fields = extract_bit_record_fields(reader);
 
         BitRecord {
-            record_type: record_type.expect("Expected BitRecord attribute 'type' to be present."),
-            size: record_size.expect("Expected BitRecord attribute 'size' to be present."),
+            record_type: attr_type.expect("Expected BitRecord attribute 'type' to be present."),
+            size: attr_size.expect("Expected BitRecord attribute 'size' to be present."),
             fields,
         }
     }
@@ -507,7 +542,15 @@ mod extraction {
                         panic!("Unexpected element '{element:?}' in {BIT_RECORD_ELEMENT:?}")
                     }
                 },
-                Ok(Event::Eof) => break, // exits the loop when reaching end of file
+                Ok(Event::End(ref element)) => match element.name() {
+                    BIT_RECORD_ELEMENT => break, // record finished
+                    element => {
+                        panic!("Encountered unexpected end element {element:?}.")
+                    }
+                },
+                Ok(Event::Eof) => {
+                    panic!("Unexpected end of file at element {BIT_RECORD_ELEMENT:?}.")
+                }
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
                 _ => (), // There are several other `Event`s we do not consider here
             }
@@ -519,22 +562,22 @@ mod extraction {
         element: &BytesStart,
         reader: &mut Reader<BufReader<File>>,
     ) -> AdaptiveRecord {
-        let record_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let record_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
-            Some(usize::from_str(&reader.decoder().decode(&attr.value).unwrap()).unwrap())
+        let attr_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
+            Some(extract_attr_to_usize(reader, attr))
         } else {
             None
         };
         let fields = extract_adaptive_record_formats(reader);
 
         AdaptiveRecord {
-            record_type: record_type
+            record_type: attr_type
                 .expect("Expected AdaptiveRecord attribute 'type' to be present."),
-            length: record_length
+            length: attr_length
                 .expect("Expected AdaptiveRecord attribute 'length' to be present."),
             fields,
         }
@@ -549,9 +592,7 @@ mod extraction {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Empty(ref element)) => match element.name() {
                     NUMERIC_FIELD_ELEMENT => {
-                        fields.push(AdaptiveFormatEnum::Numeric(extract_numeric_field(
-                            element, reader,
-                        )));
+                        fields.push(AdaptiveFormatEnum::Numeric(extract_numeric_field(element)));
                     }
                     ENUM_FIELD_ELEMENT => {
                         fields.push(AdaptiveFormatEnum::Enum(extract_enum_field(
@@ -575,7 +616,15 @@ mod extraction {
                         panic!("Unexpected element '{element:?}' in {ADAPTIVE_FORMAT_ELEMENT:?}")
                     }
                 },
-                Ok(Event::Eof) => break, // exits the loop when reaching end of file
+                Ok(Event::End(ref element)) => match element.name() {
+                    ADAPTIVE_RECORD_ELEMENT => break, // record finished
+                    element => {
+                        panic!("Encountered unexpected end element {element:?}.")
+                    }
+                },
+                Ok(Event::Eof) => {
+                    panic!("Unexpected end of file at element {ADAPTIVE_RECORD_ELEMENT:?}.")
+                }
                 Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
                 _ => (), // There are several other `Event`s we do not consider here
             }
@@ -585,29 +634,73 @@ mod extraction {
 
     fn extract_extension_record(
         element: &BytesStart,
-        reader: &Reader<BufReader<File>>,
+        reader: &mut Reader<BufReader<File>>,
     ) -> ExtensionRecord {
-        todo!()
-    }
-
-    fn extract_numeric_field(
-        element: &BytesStart,
-        reader: &Reader<BufReader<File>>,
-    ) -> NumericField {
-        let field_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_record_type =
+            if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_RECORD_TYPE_ENUM) {
+                Some(extract_attr_to_usize(reader, attr))
+            } else {
+                None
+            };
+        let attr_base_length =
+            if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_BASE_LENGTH) {
+                Some(extract_attr_to_usize(reader, attr))
+            } else {
+                None
+            };
+        let attr_is_variable =
+            if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_IS_VARIABLE) {
+                Some(extract_attr_as_bool(reader, attr))
+            } else {
+                None
+            };
+        let fields = extract_extension_record_fields(reader);
+
+        todo!("extract 1x EnumField and 1x NumericField");
+
+        ExtensionRecord {
+            name_attr: attr_name.expect("Expected ExtensionRecord attribute 'name' to be present."),
+            record_type_attr: attr_record_type
+                .expect("Expected ExtensionRecord attribute 'recordTypeEnum' to be present."),
+            base_length_attr: attr_base_length
+                .expect("Expected ExtensionRecord attribute 'baseLength' to be present."),
+            is_variable_attr: attr_is_variable
+                .expect("Expected ExtensionRecord attribute 'isVariable' to be present."),
+            record_type_field: EnumField {},
+            record_length_field: NumericField {},
+            fields,
+        }
+    }
+
+    fn extract_extension_record_fields(
+        reader: &mut Reader<BufReader<File>>,
+    ) -> (Vec<ExtensionRecordFieldEnum>, Option<PaddingTo64>) {
+        let mut buf = Vec::new();
+        let mut fields = vec![];
+
+        todo!("extract the sequence of fields, break when finding a Padding64 or ExtensionRecord end element; return as tuple.")
+    }
+
+    fn extract_numeric_field(element: &BytesStart) -> NumericField {
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
+        } else {
+            None
+        };
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
 
         NumericField {
-            name: field_name.expect("Expected NumericField attribute 'name' to be present."),
-            primitive_type: field_type
+            name: attr_name.expect("Expected NumericField attribute 'name' to be present."),
+            primitive_type: attr_type
                 .expect("Expected NumericField attribute 'type' to be present."),
             units: None,
         }
@@ -617,97 +710,87 @@ mod extraction {
         element: &BytesStart,
         reader: &Reader<BufReader<File>>,
     ) -> FixedRecordField {
-        let field_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
-            Some(
-                usize::from_str(
-                    &reader
-                        .decoder()
-                        .decode(&attr.value)
-                        .expect("Expected valid UTF-8"),
-                )
-                .expect("Expected a value able to be parsed to 'usize'"),
-            )
+        let attr_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
+            Some(extract_attr_to_usize(reader, attr))
         } else {
             None
         };
 
         FixedRecordField {
-            name: field_name.expect("Expected FixedRecordField attribute 'name' to be present."),
-            length: length.expect("Expected FixedRecordField attribute 'length' to be present."),
-            field_type: field_type
+            name: attr_name.expect("Expected FixedRecordField attribute 'name' to be present."),
+            length: attr_length.expect("Expected FixedRecordField attribute 'length' to be present."),
+            field_type: attr_type
                 .expect("Expected FixedRecordField attribute 'type' to be present."),
         }
     }
 
-    fn extract_count_field(element: &BytesStart, reader: &Reader<BufReader<File>>) -> CountField {
-        let field_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+    fn extract_count_field(element: &BytesStart) -> CountField {
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr)
         } else {
             None
         };
 
         CountField {
-            name: field_name.expect("Expected CountField attribute 'name' to be present."),
-            primitive_type: field_type
+            name: attr_name.expect("Expected CountField attribute 'name' to be present."),
+            primitive_type: attr_type
                 .expect("Expected CountField attribute 'type' to be present."),
         }
     }
 
     fn extract_enum_field(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> EnumField {
-        let field_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_ID)
+        let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_ID)
         {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_hd =
+        let attr_hd =
             if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_HIERARCHY_DEPENDENCY) {
-                Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+                Some(extract_attr_to_string(attr))
             } else {
                 None
             };
-        let field_is_discriminant =
+        let attr_is_discriminant =
             if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_IS_DISCRIMINANT) {
-                let value = String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8");
                 Some(
-                    bool::from_str(&value)
-                        .expect("Expected 'true' or 'false' value for attribute 'isDiscriminant'."),
+                    extract_attr_as_bool(reader, attr)
                 )
             } else {
                 None
             };
 
         EnumField {
-            name: field_name.expect("Expected EnumField attribute 'name' to be present."),
-            field_type: field_type.expect("Expected EnumField attribute 'type' to be present."),
-            enum_uid: field_enum_uid,
-            hierarchy_dependency: field_hd,
-            is_discriminant: field_is_discriminant,
+            name: attr_name.expect("Expected EnumField attribute 'name' to be present."),
+            field_type: attr_type.expect("Expected EnumField attribute 'type' to be present."),
+            enum_uid: attr_enum_uid,
+            hierarchy_dependency: attr_hd,
+            is_discriminant: attr_is_discriminant,
         }
     }
 
@@ -715,20 +798,20 @@ mod extraction {
         element: &BytesStart,
         reader: &mut Reader<BufReader<File>>,
     ) -> FixedStringField {
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
-            Some(usize::from_str(&reader.decoder().decode(&attr.value).unwrap()).unwrap())
+        let attr_length = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
+            Some(extract_attr_to_usize(reader, attr))
         } else {
             None
         };
 
         FixedStringField {
-            name: field_name.expect("Expected FixedStringField attribute 'name' to be present."),
-            length: field_length
+            name: attr_name.expect("Expected FixedStringField attribute 'name' to be present."),
+            length: attr_length
                 .expect("Expected FixedStringField attribute 'length' to be present."),
         }
     }
@@ -737,33 +820,33 @@ mod extraction {
         element: &BytesStart,
         reader: &mut Reader<BufReader<File>>,
     ) -> BitRecordField {
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_size = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
-            Some(usize::from_str(&reader.decoder().decode(&attr.value).unwrap()).unwrap())
+        let attr_size = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_SIZE) {
+            Some(extract_attr_to_usize(reader, attr))
         } else {
             None
         };
-        let field_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_ID)
+        let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_ID)
         {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
 
         BitRecordField {
-            name: field_name.expect("Expected BitRecordField attribute 'name' to be present."),
-            size: field_size.expect("Expected BitRecordField attribute 'size' to be present."),
-            field_type,
-            enum_uid: field_enum_uid,
+            name: attr_name.expect("Expected BitRecordField attribute 'name' to be present."),
+            size: attr_size.expect("Expected BitRecordField attribute 'size' to be present."),
+            field_type: attr_type,
+            enum_uid: attr_enum_uid,
         }
     }
 
@@ -771,42 +854,42 @@ mod extraction {
         element: &BytesStart,
         reader: &mut Reader<BufReader<File>>,
     ) -> AdaptiveRecordField {
-        let field_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_name = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_length =
-            if let Ok(Some(attr_size)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
-                Some(usize::from_str(&reader.decoder().decode(&attr_size.value).unwrap()).unwrap())
+        let attr_length =
+            if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_LENGTH) {
+                Some(extract_attr_to_usize(reader, attr))
             } else {
                 None
             };
-        let field_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+        let attr_type = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_TYPE) {
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_ID)
+        let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_ID)
         {
-            Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+            Some(extract_attr_to_string(attr))
         } else {
             None
         };
-        let field_discriminant =
+        let attr_discriminant =
             if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_DISCRIMINANT) {
-                Some(String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8"))
+                Some(extract_attr_to_string(attr))
             } else {
                 None
             };
 
         AdaptiveRecordField {
-            name: field_name.expect("Expected AdaptiveRecordField attribute 'name' to be present."),
-            length: field_length
+            name: attr_name.expect("Expected AdaptiveRecordField attribute 'name' to be present."),
+            length: attr_length
                 .expect("Expected AdaptiveRecordField attribute 'length' to be present."),
-            field_type,
-            enum_uid: field_enum_uid,
-            discriminant: field_discriminant
+            field_type: attr_type,
+            enum_uid: attr_enum_uid,
+            discriminant: attr_discriminant
                 .expect("Expected AdaptiveRecordField attribute 'discriminant' to be present."),
         }
     }
@@ -822,16 +905,43 @@ mod extraction {
     fn extract_padding_64_field() -> PaddingTo64 {
         PaddingTo64
     }
+
+    /// Helper function to extract an Attribute value as a String
+    fn extract_attr_to_string(attr: Attribute) -> String {
+        String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8")
+    }
+
+    /// Helper function to extract an Attribute value as an usize
+    fn extract_attr_to_usize(reader: &Reader<BufReader<File>>, attr: Attribute) -> usize {
+        usize::from_str(
+            &reader
+                .decoder()
+                .decode(&attr.value)
+                .expect("Expected valid UTF-8"),
+        )
+        .expect("Expected a value able to be parsed to 'usize'")
+    }
+
+    /// Helper function to extract an Attribute value as a bool
+    fn extract_attr_as_bool(reader: &Reader<BufReader<File>>, attr: Attribute) -> bool {
+        bool::from_str(
+            &reader
+                .decoder()
+                .decode(&attr.value)
+                .expect("Expected valid UTF-8"),
+        )
+        .expect("Expected a value able to be parsed to 'bool'")
+    }
 }
 
 // Approach:
-// 1. When generating SISO-REF-010 enumerations, build an index of uids to the names of the structs/enums.
+// 1. V When generating SISO-REF-010 enumerations, build an index of uids to the names of the structs/enums.
 //     - this can be done after extracting the values from the XML,
 //          V making a loop over all GenerationItems,
 //          V already formatting the decl names (instead of in the generate step, >> just applied the formatting again, could be more efficient naturally.
 //          V and building the index of UID to names as used in the generated code.
 //          V The resulting index must be made available to the PDU generator.
-// 2. Build intermediate model based on the XSD, either by hand or using https://github.com/Bergmann89/xsd-parser >> xsd-parser would require a multi-phase build script.
+// 2. V Build intermediate model based on the XSD, either by hand or using https://github.com/Bergmann89/xsd-parser >> xsd-parser would require a multi-phase build script.
 // 3. Extract and generate all basic types and records (from DIS_CommonRecords.xml)
 // 4. Extract and generate all types in the other XML files that define the schema, per family/category.
 // 5. Generate all serialization, deserialization, Display, Default, and (optional) builder code.
