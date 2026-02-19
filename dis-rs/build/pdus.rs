@@ -1510,6 +1510,13 @@ mod extraction {
     }
 }
 
+mod generation {
+    use crate::enumerations::GenerationItem;
+    use proc_macro2::TokenStream;
+
+    pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {}
+}
+
 // Approach:
 // 1. V When generating SISO-REF-010 enumerations, build an index of uids to the names of the structs/enums.
 //     - this can be done after extracting the values from the XML,

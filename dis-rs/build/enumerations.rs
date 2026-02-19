@@ -200,7 +200,7 @@ const BITFIELD_UIDS: [RangeInclusive<usize>; 3] = [
     // 488..=489, // Linear Object Appearances
     31..=43, // Appearances
     68..=68, // StopFreeze Frozen Behavior
-             // 149..=149, // UA-Propulsion Plant Configuration -- does not compile as of yet
+             // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
 ];
 
 /// Some enums cross-reference "record" elements.
