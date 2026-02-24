@@ -5,7 +5,9 @@ use std::path::Path;
 use std::{env, fs};
 
 const SISO_REF_FILE: &str = "./definitions/enumerations/SISO-REF-010.xml";
-const TARGET_ENUM_FILE: &str = "enumerations.rs";
+const OUT_DIR: &str = "OUT_DIR";
+const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_REF_010_FILENAME";
+const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:
@@ -349,8 +351,11 @@ fn generate_enums(generation_items: &Vec<GenerationItem>) {
     let contents = prettyplease::unparse(&ast);
 
     // Save to file
-    let dest_path = Path::new(&env::var("OUT_DIR").unwrap()).join(TARGET_ENUM_FILE);
+    let dest_path = Path::new(&env::var(OUT_DIR).unwrap()).join(TARGET_OUT_FILE);
+    println!("output path ofzo: {dest_path:?}");
     fs::write(dest_path, contents).unwrap();
+
+    println!("cargo:rustc-env={TARGET_ENV_VAR}={TARGET_OUT_FILE}");
 }
 
 fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {

@@ -1,9 +1,9 @@
-mod enumerations;
-mod pdus;
+mod siso_1278_v8;
+mod siso_ref_010;
 
 fn main() {
-    let uid_index = enumerations::execute();
+    let uid_index = siso_ref_010::execute();
 
     #[cfg(feature = "v8")]
-    pdus::execute(&uid_index);
+    siso_1278_v8::execute(&uid_index);
 }

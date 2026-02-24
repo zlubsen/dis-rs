@@ -17,7 +17,18 @@ mod v6;
 mod v7;
 mod variable_parameters;
 
-include!(concat!(env!("OUT_DIR"), "/enumerations.rs"));
+include!(concat!(
+    env!("OUT_DIR"),
+    "/",
+    env!("TARGET_GENERATED_SISO_REF_010_FILENAME")
+));
+
+#[cfg(feature = "v8")]
+include!(concat!(
+    env!("OUT_DIR"),
+    "/",
+    env!("TARGET_GENERATED_SISO_1278_V8_FILENAME")
+));
 
 pub use common::entity_state::parser::dr_other_parameters as parse_dr_other_parameters;
 pub use common::parse;
