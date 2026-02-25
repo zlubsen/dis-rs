@@ -21,6 +21,11 @@ use quote::{format_ident, quote};
 //            parser.rs
 //            writer.rs
 
+// TODO
+// - create separate crates for siso_ref_010 and siso_1278_v8 code generation, to make them testable.
+// - experiment with xsd_parser to generate the intermediate representation, again in separate crates
+// - annotate the GenerationItems with module structure context (family, pdu, common).
+
 // Approach
 // Construct a tree structure, where each node represents a code unit (module, struct, enum, function, impl block).
 // Each node in the tree contains the children contained in that code unit. E.g modules, which are parents, and Structs, impl blocks, etc are the leafs.

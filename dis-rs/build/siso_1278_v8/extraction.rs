@@ -12,7 +12,7 @@ use quick_xml::name::QName;
 use quick_xml::Reader;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 // Top-level elements
@@ -66,24 +66,39 @@ const ELEMENT_ATTR_PDU_TYPE: QName = QName(b"PDUType");
 const ELEMENT_ATTR_PROTOCOL_FAMILY: QName = QName(b"protocolFamily");
 
 pub(crate) fn extract_from_file(path: &PathBuf) -> Vec<GenerationItem> {
-    const MIN_LENGTH_FOR_ABBREVIATIONS: usize = 6;
     let mut reader = Reader::from_file(path).unwrap();
     reader.config_mut().trim_text(true);
 
-    let filename = path
+    let family_name = pdu_family_name_from_path(path);
+
+    extract_from_root(&mut reader, family_name.as_str())
+}
+
+/// Extracts the PDU Family name from a `PathBuf`.
+///
+/// A path like `some/path/to/a/file/DIS_FamilyName.xml` will result in `family_name`.
+/// The function converts the CamelCase file name to snake_case. Each uppercase character
+/// is replaced by an underscore and the lowercase character. Names in all uppercase
+/// characters (abbreviations such as IFF or SIMAN) are converted to lowercase characters.
+fn pdu_family_name_from_path(path: &Path) -> String {
+    let family_name = path
         .file_stem()
-        .expect("Expected a regular filename of format 'DIS_PduFamilyName.xml'")
+        .expect("Expected a regular filename having the format 'DIS_PduFamilyName.xml'")
         .to_string_lossy()
-        .split('_')
-        .map(ToString::to_string)
-        .collect::<Vec<String>>()
-        .get(1)
+        .to_string()
+        .strip_prefix("DIS_")
         .unwrap()
-        .to_owned();
-    let filename = if all_upper(&filename) {
-        filename.to_lowercase()
+        .to_string();
+    // .split('_')
+    // .map(ToString::to_string)
+    // .collect::<Vec<String>>()
+    // .get(1)
+    // .unwrap()
+    // .to_owned();
+    if all_upper(&family_name) {
+        family_name.to_lowercase()
     } else {
-        filename
+        family_name
             .char_indices()
             .map(|(idx, ch)| match (idx, ch.is_uppercase(), ch) {
                 (0, _, ch) => ch.to_lowercase().to_string(),
@@ -91,9 +106,7 @@ pub(crate) fn extract_from_file(path: &PathBuf) -> Vec<GenerationItem> {
                 (_, true, ch) => format!("_{}", ch.to_lowercase()),
             })
             .collect::<String>()
-    };
-
-    extract_from_root(&mut reader, filename.as_str())
+    }
 }
 
 fn all_upper(string: &str) -> bool {
@@ -114,7 +127,7 @@ fn extract_from_root(
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref element)) => match element.name() {
                 DIS_SYNTAX_ELEMENT => {
-                    items.append(&mut extract_protocol_items(reader, family_name))
+                    items.append(&mut extract_protocol_items(reader, family_name));
                 }
                 element => {
                     panic!("Encountered unexpected start element {element:?} at top-level.")
