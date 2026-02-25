@@ -1,0 +1,22 @@
+[package]
+name = "dis-gen-ieee-1278-v8"
+version = "0.1.0"
+description = """
+Code generator for Distributed Interactive Simulation (IEEE-1278.1) protocol version 8 schema definitions, as used in the dis-rs crate.
+"""
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+categories.workspace = true
+
+[dependencies]
+quote = "1.0.41"
+quick-xml = "0.39.0"
+proc-macro2 = "1.0.101"
+prettyplease = "0.2.37"
+syn = "2.0.106"
+
+[lints]
+workspace = true
