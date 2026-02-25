@@ -1,4 +1,4 @@
-use crate::siso_1278_v8::{
+use crate::{
     AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
     BitRecordField, BitRecordFieldEnum, BoolBitField, CountField, EnumBitField, EnumField,
     ExtensionRecord, ExtensionRecordFieldEnum, ExtensionRecordSet, FixedRecord, FixedRecordField,
@@ -69,7 +69,8 @@ pub(crate) fn extract_from_file(path: &PathBuf) -> Vec<GenerationItem> {
     let mut reader = Reader::from_file(path).unwrap();
     reader.config_mut().trim_text(true);
 
-    let family_name = pdu_family_name_from_path(path);
+    let family_name = pdu_family_name_from_path(path)
+        .expect("Expected uniformly named XML files ('DIS_FamilyName.xml')");
 
     extract_from_root(&mut reader, family_name.as_str())
 }
@@ -80,14 +81,14 @@ pub(crate) fn extract_from_file(path: &PathBuf) -> Vec<GenerationItem> {
 /// The function converts the CamelCase file name to snake_case. Each uppercase character
 /// is replaced by an underscore and the lowercase character. Names in all uppercase
 /// characters (abbreviations such as IFF or SIMAN) are converted to lowercase characters.
-fn pdu_family_name_from_path(path: &Path) -> String {
+fn pdu_family_name_from_path(path: &Path) -> Result<String, ()> {
     let family_name = path
         .file_stem()
         .expect("Expected a regular filename having the format 'DIS_PduFamilyName.xml'")
         .to_string_lossy()
         .to_string()
         .strip_prefix("DIS_")
-        .unwrap()
+        .ok_or(())?
         .to_string();
     // .split('_')
     // .map(ToString::to_string)
@@ -96,16 +97,16 @@ fn pdu_family_name_from_path(path: &Path) -> String {
     // .unwrap()
     // .to_owned();
     if all_upper(&family_name) {
-        family_name.to_lowercase()
+        Ok(family_name.to_lowercase())
     } else {
-        family_name
+        Ok(family_name
             .char_indices()
             .map(|(idx, ch)| match (idx, ch.is_uppercase(), ch) {
                 (0, _, ch) => ch.to_lowercase().to_string(),
                 (_, false, ch) => ch.to_string(),
                 (_, true, ch) => format!("_{}", ch.to_lowercase()),
             })
-            .collect::<String>()
+            .collect::<String>())
     }
 }
 
@@ -470,7 +471,7 @@ fn extract_enum_bit_field(
         None
     };
     let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_UID) {
-        expand_uid_string(&extract_attr_to_string(&attr))
+        expand_uid_string(&extract_attr_to_string(&attr)).ok()
     } else {
         None
     };
@@ -888,7 +889,7 @@ fn extract_enum_field(element: &BytesStart, reader: &mut Reader<BufReader<File>>
         None
     };
     let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_UID) {
-        expand_uid_string(&extract_attr_to_string(&attr))
+        expand_uid_string(&extract_attr_to_string(&attr)).ok()
     } else {
         None
     };
@@ -1077,7 +1078,7 @@ fn extract_bit_record_field(
         None
     };
     let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_UID) {
-        expand_uid_string(&extract_attr_to_string(&attr))
+        expand_uid_string(&extract_attr_to_string(&attr)).ok()
     } else {
         None
     };
@@ -1110,7 +1111,7 @@ fn extract_adaptive_record_field(
         None
     };
     let attr_enum_uid = if let Ok(Some(attr)) = element.try_get_attribute(ELEMENT_ATTR_ENUM_UID) {
-        expand_uid_string(&extract_attr_to_string(&attr))
+        expand_uid_string(&extract_attr_to_string(&attr)).ok()
     } else {
         None
     };
@@ -1240,47 +1241,101 @@ fn extract_attr_to_bool(reader: &Reader<BufReader<File>>, attr: &Attribute) -> b
 /// the value of `uid_string` equals `"None"` (as the attribute can be optional).
 ///
 /// Example: `"1, 4, 6-8"` would expand to `1, 4, 6, 7, 8`.
-fn expand_uid_string(uid_string: &str) -> Option<Vec<usize>> {
+fn expand_uid_string(uid_string: &str) -> Result<Vec<usize>, ()> {
     const NONE_STRING: &str = "None";
     const EREF_STRING: &str = "EREF"; // TODO figure out what this value means
     const TBD_STRING: &str = "TBD"; // FIXME remove when the standard has settled all UIDs
-    if [NONE_STRING, EREF_STRING, TBD_STRING].contains(&uid_string) {
-        return None;
+    if [NONE_STRING, EREF_STRING, TBD_STRING].contains(&uid_string) || uid_string.is_empty() {
+        return Err(());
     }
 
-    Some(
-        uid_string
-            .split(',')
-            .map(str::trim)
-            .filter(|part| !part.is_empty())
-            .flat_map(|part| {
-                if let Some((start_str, end_str)) = part.split_once('-') {
-                    // Parse range
-                    let start: usize = start_str
-                        .trim()
-                        .parse()
-                        .unwrap_or_else(|_| panic!("Invalid range start: '{start_str}'"));
+    Ok(uid_string
+        .split(',')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .flat_map(|part| {
+            if let Some((start_str, end_str)) = part.split_once('-') {
+                // Parse range
+                let start: usize = start_str
+                    .trim()
+                    .parse()
+                    .unwrap_or_else(|_| panic!("Invalid range start: '{start_str}'"));
 
-                    let end: usize = end_str
-                        .trim()
-                        .parse()
-                        .unwrap_or_else(|_| panic!("Invalid range end: '{end_str}'"));
+                let end: usize = end_str
+                    .trim()
+                    .parse()
+                    .unwrap_or_else(|_| panic!("Invalid range end: '{end_str}'"));
 
-                    assert!(
-                        start <= end,
-                        "{}",
-                        format!("Invalid range '{part}': start > end")
-                    );
-                    (start..=end).collect::<Vec<usize>>()
-                } else {
-                    // Parse single number
-                    let number: usize = part
-                        .parse()
-                        .unwrap_or_else(|_| panic!("Invalid number: '{part}'"));
+                assert!(
+                    start <= end,
+                    "{}",
+                    format!("Invalid range '{part}': start > end")
+                );
+                (start..=end).collect::<Vec<usize>>()
+            } else {
+                // Parse single number
+                let number: usize = part
+                    .parse()
+                    .unwrap_or_else(|_| panic!("Invalid number: '{part}'"));
 
-                    vec![number]
-                }
-            })
-            .collect(),
-    )
+                vec![number]
+            }
+        })
+        .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::extraction::{all_upper, expand_uid_string, pdu_family_name_from_path};
+    use std::path::Path;
+
+    #[test]
+    fn test_family_name_from_path() {
+        let path_ok = Path::new("./DIS_CommonRecords.xml");
+        let path_abbreviation = Path::new("./DIS_EE.xml");
+        let path_nok = Path::new("./BlahBlahCommonRecords.xml");
+
+        let actual_ok = pdu_family_name_from_path(&path_ok);
+        let actual_abbreviation = pdu_family_name_from_path(&path_abbreviation);
+        let actual_err = pdu_family_name_from_path(&path_nok);
+
+        assert_eq!(actual_ok, Ok("common_records".to_string()));
+        assert_eq!(actual_abbreviation, Ok("ee".to_string()));
+        assert_eq!(actual_err, Err(()));
+    }
+
+    #[test]
+    fn test_all_upper() {
+        let all_upper = all_upper("IFF");
+        let not_all_upper = crate::extraction::all_upper("EntityInfo");
+
+        assert!(all_upper);
+        assert!(!not_all_upper);
+    }
+
+    #[test]
+    fn test_expand_uid_string() {
+        let single_uid = expand_uid_string("8");
+        let multiple_uid = expand_uid_string("6, 7");
+        let range_uid = expand_uid_string("10-12");
+        let both = expand_uid_string("8, 10-12");
+
+        assert_eq!(single_uid, Ok(vec![8]));
+        assert_eq!(multiple_uid, Ok(vec![6, 7]));
+        assert_eq!(range_uid, Ok(vec![10, 11, 12]));
+        assert_eq!(both, Ok(vec![8, 10, 11, 12]));
+    }
+
+    #[test]
+    fn test_expand_uid_string_errors() {
+        let empty = expand_uid_string("");
+        let none = expand_uid_string("None");
+        let eref = expand_uid_string("EREF");
+        let tbd = expand_uid_string("TBD");
+
+        assert_eq!(empty, Err(()));
+        assert_eq!(none, Err(()));
+        assert_eq!(eref, Err(()));
+        assert_eq!(tbd, Err(()));
+    }
 }
