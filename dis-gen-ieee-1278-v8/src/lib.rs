@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::{env, fs};
+use std::env;
+use std::fmt::{Debug, Display, Write};
 
 mod extraction;
 mod generation;
@@ -12,47 +13,92 @@ const TARGET_OUT_FILE: &str = "siso_1278_v8.rs";
 /// This is the main entry point for the generation of the DIS v8 code units.
 /// It is meant to be called from a build script.
 ///
+/// When reading all schemas and generating all code is successful the code written
+/// to an output file in the `OUT_DIR` location. The precise location and name are
+/// set in an environment variable, which is read by the DIS library itself to include
+/// the generated code.
+///
 /// # Panics
 /// The functions in the call stack beneath this function panic when encountering
 /// inconsistent states or values in the schema files.
 pub fn execute(schema_dir: &str, uid_index: &HashMap<usize, String>) {
     if std::path::Path::new(schema_dir).is_dir() {
+        // Find all files in the provided directory. Files must be .xml files.
         let mut file_paths = std::fs::read_dir(schema_dir)
-            .unwrap()
-            .map(|a| a.unwrap())
+            .expect("Cannot read provided directory.")
+            .map(|a| a.expect("Cannot access `DirEntry`"))
             .filter(|a| a.path().is_file())
             .filter(|a| a.path().extension() == Some(XML_FILE_EXTENSION.as_ref()))
             .map(|a| a.path())
             .collect::<Vec<std::path::PathBuf>>();
         file_paths.sort();
 
+        let mut families = vec![]; // keeps track of all unique PDU Family names, based on the schema file names.
+                                   // Extract the items to be generated from all identified files
         let generation_items = file_paths
             .iter()
-            .flat_map(extraction::extract_from_file)
+            .flat_map(|path| {
+                // The extractor extracts and formats the PDU Family name, which is also in the path.
+                // But it is already formatted nicely this way.
+                let (items, family) = extraction::extract_from_file(path);
+                families.push(family);
+                items
+            })
             .collect::<Vec<GenerationItem>>();
 
-        let generated = generation::generate(&generation_items);
+        // Generate all items
+        let generated = generation::generate(&generation_items, &families);
 
-        // format generated code using prettyplease
+        // Format generated code using prettyplease
         let ast = syn::parse_file(&generated.to_string())
             .expect("Error parsing generated code for pretty printing.");
         let contents = prettyplease::unparse(&ast);
 
         // Save to file
         let dest_path = std::path::Path::new(&env::var(OUT_DIR).unwrap()).join(TARGET_OUT_FILE);
-        fs::write(dest_path, contents).unwrap();
+        std::fs::write(dest_path, contents).unwrap();
 
+        // Set file name to an environment variable, for inclusion in the to-be compiled library
         println!("cargo:rustc-env={TARGET_ENV_VAR}={TARGET_OUT_FILE}");
     }
 }
 
 #[derive(Debug, Clone)]
 enum GenerationItem {
-    Pdu(Pdu),
-    FixedRecord(FixedRecord),
-    BitRecord(BitRecord),
-    AdaptiveRecord(AdaptiveRecord),
-    ExtensionRecord(ExtensionRecord),
+    Pdu(Pdu, String),
+    FixedRecord(FixedRecord, String),
+    BitRecord(BitRecord, String),
+    AdaptiveRecord(AdaptiveRecord, String),
+    ExtensionRecord(ExtensionRecord, String),
+}
+
+impl GenerationItem {
+    fn family(&self) -> String {
+        match self {
+            GenerationItem::Pdu(_, fam) => fam.clone(),
+            GenerationItem::FixedRecord(_, fam) => fam.clone(),
+            GenerationItem::BitRecord(_, fam) => fam.clone(),
+            GenerationItem::AdaptiveRecord(_, fam) => fam.clone(),
+            GenerationItem::ExtensionRecord(_, fam) => fam.clone(),
+        }
+    }
+
+    fn name(&self) -> String {
+        match self {
+            GenerationItem::Pdu(item, _) => item.name_attr.clone(),
+            GenerationItem::FixedRecord(item, _) => item.record_type.clone(),
+            GenerationItem::BitRecord(item, _) => item.record_type.clone(),
+            GenerationItem::AdaptiveRecord(item, _) => item.record_type.clone(),
+            GenerationItem::ExtensionRecord(item, _) => item.name_attr.clone(),
+        }
+    }
+
+    fn is_pdu(&self) -> bool {
+        match self {
+            GenerationItem::Pdu(_, _) => true,
+            _ => false,
+        }
+    }
 }
 
 // enum Items {

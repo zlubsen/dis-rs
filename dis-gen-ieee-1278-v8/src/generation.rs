@@ -1,10 +1,10 @@
-use super::GenerationItem;
+use super::{GenerationItem, Pdu};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
 // Module tree of generated sources:
 // src/v8
-//    common/           // Containing all common records
+//    common_records/           // Containing all common records
 //        builder.rs
 //        model.rs
 //        parser.rs
@@ -66,15 +66,12 @@ enum NodeItem {
     Unit(GenerationItem),
 }
 
-pub fn generate(items: &[GenerationItem]) -> TokenStream {
-    let families = vec![
-        "acoustic",
-        "communications",
-        "ee",
-        "entity_info_interaction",
-    ];
-
-    let generated = generate_v8_module(&families);
+pub fn generate(items: &[GenerationItem], families: &[String]) -> TokenStream {
+    let contents = families
+        .iter()
+        .map(|family| generate_family_module(items, family.as_str()))
+        .collect();
+    let generated = generate_named_module("v8", &contents);
 
     println!("{generated}");
 
@@ -119,4 +116,46 @@ fn generate_named_module(name: &str, contents: &TokenStream) -> TokenStream {
             #contents
         }
     )
+}
+
+fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream {
+    // 1. Filter items for this family
+    // 2. Filter the PDUs and generate these in separate modules
+    // 3. Filter the non-PDU items and generate the records in the family module
+    // 4. Merge resulting TokenStreams
+
+    let pdus = items
+        .iter()
+        .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
+        .map(|pdu| {
+            if let GenerationItem::Pdu(pdu, _) = pdu {
+                generate_pdu_module(pdu)
+            } else {
+                quote!( compile error; )
+            }
+        })
+        .collect::<TokenStream>();
+
+    let records = items
+        .iter()
+        .filter(|&item| (item.family().as_str() == family) && !item.is_pdu())
+        .collect::<Vec<&GenerationItem>>();
+
+    println!("{records:?}");
+
+    generate_named_module(family, &pdus)
+}
+
+fn generate_pdu_module(item: &Pdu) -> TokenStream {
+    let formatted_name = item.name_attr.replace(' ', "");
+    println!(
+        "generate_pdu_module - {} - {}",
+        item.name_attr, formatted_name
+    );
+    let ident = format_ident!("{}", formatted_name);
+    let contents = quote!(
+        pub const NAME: &str = #ident;
+    );
+
+    generate_named_module(formatted_name.as_str(), &contents)
 }

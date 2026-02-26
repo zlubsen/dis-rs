@@ -65,14 +65,17 @@ const ELEMENT_ATTR_IS_VARIABLE: QName = QName(b"isVariable");
 const ELEMENT_ATTR_PDU_TYPE: QName = QName(b"PDUType");
 const ELEMENT_ATTR_PROTOCOL_FAMILY: QName = QName(b"protocolFamily");
 
-pub(crate) fn extract_from_file(path: &PathBuf) -> Vec<GenerationItem> {
+pub(crate) fn extract_from_file(path: &PathBuf) -> (Vec<GenerationItem>, String) {
     let mut reader = Reader::from_file(path).unwrap();
     reader.config_mut().trim_text(true);
 
     let family_name = pdu_family_name_from_path(path)
         .expect("Expected uniformly named XML files ('DIS_FamilyName.xml')");
 
-    extract_from_root(&mut reader, family_name.as_str())
+    (
+        extract_from_root(&mut reader, family_name.as_str()),
+        family_name,
+    )
 }
 
 /// Extracts the PDU Family name from a `PathBuf`.
@@ -90,12 +93,6 @@ fn pdu_family_name_from_path(path: &Path) -> Result<String, ()> {
         .strip_prefix("DIS_")
         .ok_or(())?
         .to_string();
-    // .split('_')
-    // .map(ToString::to_string)
-    // .collect::<Vec<String>>()
-    // .get(1)
-    // .unwrap()
-    // .to_owned();
     if all_upper(&family_name) {
         Ok(family_name.to_lowercase())
     } else {
@@ -110,6 +107,8 @@ fn pdu_family_name_from_path(path: &Path) -> Result<String, ()> {
     }
 }
 
+/// Check if all characters in the `&str` are uppercase.
+/// Returns `true` when so, `false` when non-alphabetic or lowercase characters are encountered.
 fn all_upper(string: &str) -> bool {
     string
         .chars()
@@ -117,6 +116,7 @@ fn all_upper(string: &str) -> bool {
         .all(char::is_uppercase)
 }
 
+/// Extract all `GenerationItems`, starting from the root of an XML document.
 fn extract_from_root(
     reader: &mut Reader<BufReader<File>>,
     family_name: &str,
@@ -150,6 +150,9 @@ fn extract_from_root(
     items
 }
 
+/// Extract all DIS protocol items possible within the first level of the XML schema.
+///
+/// `GenerationItems` are annotated with the PDU Family these items belong to.
 fn extract_protocol_items(
     reader: &mut Reader<BufReader<File>>,
     family_name: &str,
@@ -161,27 +164,34 @@ fn extract_protocol_items(
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref element)) => match element.name() {
                 PDU_ELEMENT => {
-                    items.push(GenerationItem::Pdu(extract_pdu(element, reader)));
+                    items.push(GenerationItem::Pdu(
+                        extract_pdu(element, reader),
+                        family_name.to_string(),
+                    ));
                 }
                 FIXED_RECORD_ELEMENT => {
-                    items.push(GenerationItem::FixedRecord(extract_fixed_record(
-                        element, reader,
-                    )));
+                    items.push(GenerationItem::FixedRecord(
+                        extract_fixed_record(element, reader),
+                        family_name.to_string(),
+                    ));
                 }
                 BIT_RECORD_ELEMENT => {
-                    items.push(GenerationItem::BitRecord(extract_bit_record(
-                        element, reader,
-                    )));
+                    items.push(GenerationItem::BitRecord(
+                        extract_bit_record(element, reader),
+                        family_name.to_string(),
+                    ));
                 }
                 ADAPTIVE_RECORD_ELEMENT => {
-                    items.push(GenerationItem::AdaptiveRecord(extract_adaptive_record(
-                        element, reader,
-                    )));
+                    items.push(GenerationItem::AdaptiveRecord(
+                        extract_adaptive_record(element, reader),
+                        family_name.to_string(),
+                    ));
                 }
                 EXTENSION_RECORD_ELEMENT => {
-                    items.push(GenerationItem::ExtensionRecord(extract_extension_record(
-                        element, reader,
-                    )));
+                    items.push(GenerationItem::ExtensionRecord(
+                        extract_extension_record(element, reader),
+                        family_name.to_string(),
+                    ));
                 }
                 COPYRIGHT_ELEMENT => (), // skip
                 element => {
