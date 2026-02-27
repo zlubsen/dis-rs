@@ -33,8 +33,9 @@ pub fn execute(schema_dir: &str, uid_index: &HashMap<usize, String>) {
             .collect::<Vec<std::path::PathBuf>>();
         file_paths.sort();
 
-        let mut families = vec![]; // keeps track of all unique PDU Family names, based on the schema file names.
-                                   // Extract the items to be generated from all identified files
+        // keeps track of all unique PDU Family names, based on the schema file names.
+        let mut families = vec![];
+        // Extract the items to be generated from all identified files
         let generation_items = file_paths
             .iter()
             .flat_map(|path| {
@@ -45,6 +46,11 @@ pub fn execute(schema_dir: &str, uid_index: &HashMap<usize, String>) {
                 items
             })
             .collect::<Vec<GenerationItem>>();
+
+        // TODO intermediate processing: format all field names?
+        // TODO intermediate processing: keep track of 'fully qualified names', including the modules, for use/import statements
+        // TODO intermediate processing: convert all type names (schema to rust types)
+        // TODO intermediate processing: expand all UIDs to textual field names
 
         // Generate all items
         let generated = generation::generate(&generation_items, &families);
