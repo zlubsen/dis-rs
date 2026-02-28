@@ -10,8 +10,17 @@ const OUT_DIR: &str = "OUT_DIR";
 const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_V8_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_1278_v8.rs";
 
+type UidLookup = HashMap<usize, String>;
+type FqnLookup = HashMap<String, String>;
+
 /// This is the main entry point for the generation of the DIS v8 code units.
 /// It is meant to be called from a build script.
+///
+/// The `schema_dir` argument is the path to the directory where the XML schema definitions
+/// are located.
+///
+/// The `uid_lookup` argument is a `&HashMap` that associates the UIDs from SISO-REF-010
+/// enumerations to the code type names of those enumerations.
 ///
 /// When reading all schemas and generating all code is successful the code written
 /// to an output file in the `OUT_DIR` location. The precise location and name are
@@ -21,7 +30,7 @@ const TARGET_OUT_FILE: &str = "siso_1278_v8.rs";
 /// # Panics
 /// The functions in the call stack beneath this function panic when encountering
 /// inconsistent states or values in the schema files.
-pub fn execute(schema_dir: &str, uid_index: &HashMap<usize, String>) {
+pub fn execute(schema_dir: &str, uid_lookup: &UidLookup) {
     if std::path::Path::new(schema_dir).is_dir() {
         // Find all files in the provided directory. Files must be .xml files.
         let mut file_paths = std::fs::read_dir(schema_dir)
@@ -47,13 +56,15 @@ pub fn execute(schema_dir: &str, uid_index: &HashMap<usize, String>) {
             })
             .collect::<Vec<GenerationItem>>();
 
+        let fqn_lookup = create_fqn_lookup(&generation_items);
+        println!("{fqn_lookup:?}");
         // TODO intermediate processing: format all field names?
         // TODO intermediate processing: keep track of 'fully qualified names', including the modules, for use/import statements
         // TODO intermediate processing: convert all type names (schema to rust types)
         // TODO intermediate processing: expand all UIDs to textual field names
 
         // Generate all items
-        let generated = generation::generate(&generation_items, &families);
+        let generated = generation::generate(&generation_items, &families, &fqn_lookup, uid_lookup);
 
         // Format generated code using prettyplease
         let ast = syn::parse_file(&generated.to_string())
@@ -67,6 +78,18 @@ pub fn execute(schema_dir: &str, uid_index: &HashMap<usize, String>) {
         // Set file name to an environment variable, for inclusion in the to-be compiled library
         println!("cargo:rustc-env={TARGET_ENV_VAR}={TARGET_OUT_FILE}");
     }
+}
+
+fn create_fqn_lookup(items: &Vec<GenerationItem>) -> FqnLookup {
+    let mut lookup = HashMap::new();
+
+    for item in items {
+        let name = format_type_name(&item.name());
+        let fqn_name = format_full_qualified_name(item);
+        lookup.entry(name.clone()).or_insert(fqn_name);
+    }
+
+    lookup
 }
 
 #[derive(Debug, Clone)]
@@ -391,12 +414,130 @@ enum PduFieldsEnum {
 // 4. Extract and generate all types in the other XML files that define the schema, per family/category.
 // 5. Generate all serialization, deserialization, Display, Default, and (optional) builder code.
 
+fn format_full_qualified_name(item: &GenerationItem) -> String {
+    if item.is_pdu() {
+        format!(
+            "v8::{}::{}::{}",
+            item.family(),
+            format_field_name(item.name().as_str()),
+            format_type_name(item.name().as_str())
+        )
+    } else {
+        format!(
+            "v8::{}::{}",
+            item.family(),
+            format_type_name(item.name().as_str())
+        )
+    }
+}
+
+/// Formats the name of a PDU from the defined format into the code representation
+/// The basic approach is to remove non-alphabetic characters and whitespace.
+///
+/// Examples:
+/// - Create Entity -> `CreateEntity`
+/// - Electromagnetic Emission -> `ElectromagneticEmission`
+/// - Start/Resume -> `StartResume`
+fn format_type_name(name: &str) -> String {
+    name.replace(['/', ' '], "")
+}
+
+/// Formats the name of a field into the code representation
+/// The basic approach is to remove non-alphabetic characters and convert `CamelCase` to `snake_case`.
+fn format_field_name(name: &str) -> String {
+    name.replace(['/', '-', '(', ')'], "")
+        .replace([' '], "_")
+        .to_lowercase()
+}
+
+fn numeric_type_to_field_type(ty: &str) -> Result<String, ()> {
+    let field_type = match ty {
+        "uint8" => Ok("u8"),
+        "uint16" => Ok("u16"),
+        "uint32" => Ok("u32"),
+        "uint64" => Ok("u64"),
+        "int8" => Ok("i8"),
+        "int16" => Ok("i16"),
+        "int32" => Ok("i32"),
+        "int64" => Ok("i64"),
+        "float32" => Ok("f32"),
+        "float64" => Ok("f64"),
+        _ => Err(()),
+    };
+
+    field_type.map(ToString::to_string)
+}
+
+fn enum_type_to_field_type(ty: &str) -> Result<String, ()> {
+    let field_type = match ty {
+        "enum8" => Ok("u8"),
+        "enum16" => Ok("u16"),
+        "enum32" => Ok("u32"),
+        _ => Err(()),
+    };
+
+    field_type.map(ToString::to_string)
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::{
+        format_field_name, format_type_name, CountField, ExtensionRecordSet, FixedRecordField,
+        GenerationItem, Pdu,
+    };
 
-    // #[test]
-    // fn it_works() {
-    //     let result = add(2, 2);
-    //     assert_eq!(result, 4);
-    // }
+    #[test]
+    fn test_format_pdu_name() {
+        // format PDUs
+        assert_eq!(format_type_name("Create Entity"), "CreateEntity");
+        assert_eq!(
+            format_type_name("Electromagnetic Emission"),
+            "ElectromagneticEmission"
+        );
+        // having a non-alphabetic character
+        assert_eq!(format_type_name("Start/Resume"), "StartResume");
+        // and some Records
+        assert_eq!(format_type_name("Euler Angles"), "EulerAngles");
+        assert_eq!(format_type_name("Entity Location"), "EntityLocation");
+    }
+
+    #[test]
+    fn test_format_field_name() {
+        assert_eq!(format_field_name("Entity Location"), "entity_location");
+        assert_eq!(format_field_name("Ez"), "ez");
+        assert_eq!(
+            format_field_name("Emitter Name (Jammer)"),
+            "emitter_name_jammer"
+        );
+    }
+
+    #[test]
+    fn format_full_qualified_name() {
+        let pdu = GenerationItem::Pdu(
+            Pdu {
+                name_attr: "Entity State".to_string(),
+                type_attr: 0,
+                protocol_family_attr: 0,
+                base_length_attr: 0,
+                header_field: FixedRecordField {
+                    name: String::new(),
+                    length: 0,
+                    field_type: String::new(),
+                },
+                fields: vec![],
+                extension_record_set: ExtensionRecordSet {
+                    count_field: CountField {
+                        name: String::new(),
+                        primitive_type: String::new(),
+                    },
+                },
+            },
+            "entity_info_interaction".to_string(),
+        );
+        let pdu_fqn = crate::format_full_qualified_name(&pdu);
+        assert_eq!(
+            pdu_fqn.as_str(),
+            "v8::entity_info_interaction::entity_state::EntityState"
+        );
+    }
 }
