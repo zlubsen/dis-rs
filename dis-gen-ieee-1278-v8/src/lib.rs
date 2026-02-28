@@ -100,10 +100,11 @@ impl GenerationItem {
     }
 
     fn is_pdu(&self) -> bool {
-        match self {
-            GenerationItem::Pdu(_, _) => true,
-            _ => false,
-        }
+        matches!(self, GenerationItem::Pdu(_, _))
+    }
+
+    fn is_record(&self) -> bool {
+        !self.is_pdu()
     }
 }
 

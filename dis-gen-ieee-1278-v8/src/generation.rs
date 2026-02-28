@@ -116,6 +116,7 @@ fn generate_module_with_name(name: &str, contents: &TokenStream) -> TokenStream 
     }
 }
 
+/// Generates a module for a PDU Family of PDUs and records, plus all its contents
 fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream {
     // 1. Filter items for this family
     // 2. Filter the PDUs and generate these in separate modules
@@ -153,15 +154,15 @@ fn generate_pdu_module(item: &Pdu) -> TokenStream {
     );
     let ident_pdu_name = format_ident!("{}", formatted_pdu_name);
 
-    // TODO required imports to common fields
-    // TODO decide if the header is part of the PDU struct
-    // TODO generate the pdu field declarations
+    // TODO required imports/uses to common fields
+    // TODO decide if the header is part of the PDU struct >> No, consistent with v6/v7 implementation
+    // TODO generate the pdu field declarations, with correct uses of enumerations and Records (needs the imports/uses)
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
 
     let fields = item
         .fields
         .iter()
-        .map(|field| generate_field_decl(field))
+        .map(generate_field_decl)
         .collect::<Vec<TokenStream>>();
     let contents = quote! {
         pub struct #ident_pdu_name {
@@ -211,7 +212,7 @@ fn generate_enum_field_decl(field: &EnumField) -> TokenStream {
     let type_ident = if let Some(uids) = &field.enum_uid {
         // FIXME get Enum type name that goes with the UID
         // format_ident!("{}", uids.first().unwrap().to_string())
-        format_ident!("u8")
+        format_ident!("u8") // PLACEHOLDER
     } else {
         format_ident!(
             "{}",
@@ -246,7 +247,7 @@ fn generate_bit_record_field_decl(field: &BitRecordField) -> TokenStream {
     let type_ident = if let Some(uids) = &field.enum_uid {
         // FIXME get Enum name that goes with the UID
         // format_ident!("{}", uids.first().unwrap().to_string())
-        format_ident!("u8")
+        format_ident!("u8") // PLACEHOLDER
     } else {
         format_ident!(
             "{}",
@@ -263,11 +264,12 @@ fn generate_bit_record_field_decl(field: &BitRecordField) -> TokenStream {
 
 fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStream {
     // TODO figure out where the discriminant attribute is needed.
+    // It is what makes the record 'adaptive', determining the contents (based on UID) of what follows in the record.
     let field_ident = format_ident!("{}", format_field_name(&field.name));
     let type_ident = if let Some(uids) = &field.enum_uid {
         // FIXME get Enum name that goes with the UID
         // format_ident!("{}", uids.first().unwrap().to_string())
-        format_ident!("u8")
+        format_ident!("u8") // PLACEHOLDER
     } else {
         format_ident!(
             "{}",
@@ -279,6 +281,19 @@ fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStre
 
     quote! {
         #field_ident : #type_ident,
+    }
+}
+
+fn format_full_qualified_name(item: &GenerationItem, family: &str) -> String {
+    if item.is_pdu() {
+        format!(
+            "crate::v8::{}::{}::{};",
+            family,
+            format_field_name(item.name().as_str()),
+            item.name().as_str()
+        )
+    } else {
+        format!("crate::v8::{}::{};", family, item.name().as_str())
     }
 }
 
@@ -294,7 +309,7 @@ fn format_pdu_name(name: &str) -> String {
 }
 
 /// Formats the name of a field into the code representation
-/// The basic approach is to remove non-alphabetic characters and convert to `snake_case`.
+/// The basic approach is to remove non-alphabetic characters and convert `CamelCase` to `snake_case`.
 fn format_field_name(name: &str) -> String {
     name.replace(['/', '-', '(', ')'], "")
         .replace([' '], "_")
