@@ -1,7 +1,8 @@
 use super::{
     enum_type_to_field_type, format_field_name, format_type_name, numeric_type_to_field_type,
-    AdaptiveRecordField, BitRecordField, EnumField, FixedRecordField, FixedStringField,
-    GenerationItem, Lookup, NumericField, Pdu, PduFieldsEnum,
+    AdaptiveRecord, AdaptiveRecordField, BitRecordField, EnumField, ExtensionRecordSet,
+    FixedRecord, FixedRecordField, FixedStringField, GenerationItem, Lookup, NumericField, Pdu,
+    PduFieldsEnum,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -79,11 +80,7 @@ fn generate_module_with_name(name: &str, contents: &TokenStream) -> TokenStream 
 
 /// Generates a module for a PDU Family of PDUs and records, plus all its contents
 fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Lookup) -> TokenStream {
-    // 1. Filter items for this family
-    // 2. Filter the PDUs and generate these in separate modules
-    // 3. Filter the non-PDU items and generate the records in the family module
-    // 4. Merge resulting TokenStreams
-
+    // 1. Filter the PDUs for this family and generate these in separate modules
     let pdus = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
@@ -91,30 +88,38 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
             if let GenerationItem::Pdu(pdu, _) = pdu {
                 generate_pdu_module(pdu, lookup)
             } else {
-                quote!( compile error; )
+                panic!("GenerationItem is not a PDU.")
             }
         })
         .collect::<TokenStream>();
 
+    // 2. Filter the non-PDU items for this family and generate the records in the family module
     let records = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && !item.is_pdu())
-        // TODO generate records
-        .collect::<Vec<&GenerationItem>>();
+        .map(|item| match item {
+            GenerationItem::FixedRecord(record, family) => generate_fixed_record(),
+            GenerationItem::ExtensionRecord(record, family) => quote! {},
+            GenerationItem::BitRecord(record, family) => quote! {},
+            GenerationItem::AdaptiveRecord(record, family) => quote! {},
+            GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record."),
+        })
+        .collect::<TokenStream>();
 
     println!("{records:?}");
+    // 3. Merge resulting TokenStreams
+    let contents = quote! { #pdus #records };
 
-    generate_module_with_name(family, &pdus)
+    generate_module_with_name(family, &contents)
 }
 
 /// Generates all code related a PDU
 fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
     let formatted_pdu_name = format_type_name(item.name_attr.as_str());
     let ident_pdu_name = format_ident!("{}", formatted_pdu_name);
+    let pdu_module_name = formatted_pdu_name.to_lowercase();
 
-    // TODO required imports/uses to common fields >> use full qualified names
     // TODO decide if the header is part of the PDU struct >> No, consistent with v6/v7 implementation
-    // TODO generate the pdu field declarations, with correct uses of enumerations and Records (needs the imports/uses)
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
 
     let fields = item
@@ -129,7 +134,7 @@ fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
         }
     };
 
-    generate_module_with_name(formatted_pdu_name.as_str(), &contents)
+    generate_module_with_name(pdu_module_name.as_str(), &contents)
 }
 
 fn generate_field_decl(field: &PduFieldsEnum, lookup: &Lookup) -> TokenStream {
@@ -137,7 +142,7 @@ fn generate_field_decl(field: &PduFieldsEnum, lookup: &Lookup) -> TokenStream {
         PduFieldsEnum::Numeric(field) => generate_numeric_field_decl(field),
         PduFieldsEnum::Enum(field) => generate_enum_field_decl(field, lookup),
         PduFieldsEnum::FixedString(field) => generate_fixed_string_field_decl(field),
-        PduFieldsEnum::FixedRecord(field) => generate_fixed_record_field_decl(field),
+        PduFieldsEnum::FixedRecord(field) => generate_fixed_record_field_decl(field, lookup),
         PduFieldsEnum::BitRecord(field) => generate_bit_record_field_decl(field, lookup),
         PduFieldsEnum::AdaptiveRecord(field) => generate_adaptive_record_field_decl(field, lookup),
     };
@@ -205,9 +210,11 @@ fn generate_fixed_string_field_decl(field: &FixedStringField) -> TokenStream {
     }
 }
 
-fn generate_fixed_record_field_decl(field: &FixedRecordField) -> TokenStream {
+fn generate_fixed_record_field_decl(field: &FixedRecordField, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
-    let type_decl = format_ident!("{}", format_type_name(&field.field_type));
+    let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
+    let type_decl: syn::Type = syn::parse_str(fqn_field_type)
+        .expect("Expected a valid Type for a FixedRecordField declaration.");
 
     quote! {
         #field_ident : #type_decl,
@@ -272,6 +279,29 @@ fn generate_adaptive_record_field_decl(
     quote! {
         #field_ident : #type_decl,
     }
+}
+
+fn generate_fixed_record(item: &FixedRecord, lookup: &Lookup) -> TokenStream {
+    let record_name = format_ident!("{}", format_type_name(&item.record_type));
+    todo!("generate fields for FixedRecord");
+
+    quote! {
+        pub struct #record_name {
+
+        }
+    }
+}
+
+fn generate_extension_record(item: &ExtensionRecordSet, lookup: &Lookup) -> TokenStream {
+    todo!()
+}
+
+fn generate_bitfield_record_bool(item: &GenerationItem, lookup: &Lookup) -> TokenStream {
+    todo!()
+}
+
+fn generate_adaptive_record(item: &AdaptiveRecord, lookup: &Lookup) -> TokenStream {
+    todo!()
 }
 
 #[inline]

@@ -434,14 +434,14 @@ enum PduFieldsEnum {
 fn format_full_qualified_name(item: &GenerationItem) -> String {
     if item.is_pdu() {
         format!(
-            "v8::{}::{}::{}",
+            "crate::v8::{}::{}::{}",
             item.family(),
             format_field_name(item.name().as_str()),
             format_type_name(item.name().as_str())
         )
     } else {
         format!(
-            "v8::{}::{}",
+            "crate::v8::{}::{}",
             item.family(),
             format_type_name(item.name().as_str())
         )
