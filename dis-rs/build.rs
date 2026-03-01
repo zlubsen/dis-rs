@@ -5,5 +5,5 @@ fn main() {
     let uid_index = dis_gen_siso_ref_010::execute(SISO_REF_FILE);
 
     #[cfg(feature = "v8")]
-    dis_gen_ieee_1278_v8::execute(SISO_SCHEMA_DIR, &uid_index);
+    dis_gen_ieee_1278_v8::execute(SISO_SCHEMA_DIR, uid_index);
 }

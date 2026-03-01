@@ -346,6 +346,30 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
         uid_index.insert(item.uid(), format_name(item.name(), item.uid()));
     }
 
+    // FIXME: placeholder values for currently unsupported UIDs
+    uid_index.insert(53, "Enumeration<u8>".to_string());
+    uid_index.insert(149, "Enumeration<u16>".to_string());
+    uid_index.insert(151, "Enumeration<u16>".to_string());
+    uid_index.insert(152, "Enumeration<u8>".to_string());
+    uid_index.insert(153, "Enumeration<u16>".to_string());
+    uid_index.insert(154, "Enumeration<u8>".to_string());
+    uid_index.insert(169, "Enumeration<u8>".to_string());
+    uid_index.insert(249, "Enumeration<u8>".to_string());
+    uid_index.insert(285, "Enumeration<u16>".to_string());
+    uid_index.insert(286, "Enumeration<u16>".to_string());
+    uid_index.insert(287, "Enumeration<u16>".to_string());
+    uid_index.insert(288, "Enumeration<u16>".to_string());
+    uid_index.insert(289, "Enumeration<u8>".to_string());
+    uid_index.insert(312, "Enumeration<u8>".to_string());
+    uid_index.insert(313, "Enumeration<u16>".to_string());
+    uid_index.insert(372, "Enumeration<u8>".to_string());
+    uid_index.insert(590, "Enumeration<u8>".to_string());
+    uid_index.insert(627, "Enumeration<u8>".to_string());
+    uid_index.insert(628, "Enumeration<u8>".to_string());
+    uid_index.insert(702, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(716, "Enumeration<u8>".to_string());
+    uid_index.insert(898, "Enumeration<u8>".to_string());
+
     uid_index
 }
 
@@ -831,6 +855,9 @@ mod generation {
                 }
             }
         }
+
+        let type_placeholder = generate_type_placeholder();
+
         quote!(
             #[allow(clippy::default_trait_access)]
             #[allow(clippy::identity_op)]
@@ -847,6 +874,8 @@ mod generation {
                 use serde::{Deserialize, Serialize};
 
                 #(#generated_items)*
+
+                #type_placeholder
             }
         )
     }
@@ -1363,6 +1392,38 @@ mod generation {
             16 => Literal::u16_suffixed(value as u16),
             8 => Literal::u8_suffixed(value as u8),
             _ => Literal::u8_suffixed(value as u8),
+        }
+    }
+
+    // FIXME: placeholder values for currently unsupported UIDs
+    /// Generates wrapper types for `u8`/`u16` enumerations or bitfields
+    fn generate_type_placeholder() -> TokenStream {
+        quote! {
+            pub struct Enumeration<T: Display>(T);
+
+            impl<T: Display> From<T> for Enumeration<T> {
+                fn from(value: T) -> Self {
+                    Self(value)
+                }
+            }
+
+            // impl<T> From<Enumeration<T>> for T {
+            //     fn from(value: Enumeration<T>) -> Self {
+            //         value.0
+            //     }
+            // }
+
+            impl<T: Default + Display> Default for Enumeration<T> {
+                fn default() -> Self {
+                    Self(T::default())
+                }
+            }
+
+            impl<T: Display> Display for Enumeration<T> {
+                fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}", self.0)
+                }
+            }
         }
     }
 }

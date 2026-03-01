@@ -1,7 +1,7 @@
 use super::{
     enum_type_to_field_type, format_field_name, format_type_name, numeric_type_to_field_type,
-    AdaptiveRecordField, BitRecordField, EnumField, FixedRecordField, FixedStringField, FqnLookup,
-    GenerationItem, NumericField, Pdu, PduFieldsEnum, UidLookup,
+    AdaptiveRecordField, BitRecordField, EnumField, FixedRecordField, FixedStringField,
+    GenerationItem, Lookup, NumericField, Pdu, PduFieldsEnum,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -28,16 +28,16 @@ use quote::{format_ident, quote};
 // TODO
 // - experiment with xsd_parser to generate the intermediate representation, again in separate crates
 
-pub fn generate(
-    items: &[GenerationItem],
-    families: &[String],
-    fqn_lookup: &FqnLookup,
-    uid_lookup: &UidLookup,
-) -> TokenStream {
+pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) -> TokenStream {
+    let type_thing = "Enumeration<u16>";
+    let tokens = quote! { #type_thing, };
+
+    println!("test: {tokens}");
+
     let core_contents = generate_core_units();
     let family_contents: Vec<TokenStream> = families
         .iter()
-        .map(|family| generate_family_module(items, family.as_str()))
+        .map(|family| generate_family_module(items, family.as_str(), lookup))
         .collect();
     let contents = quote! {
 
@@ -83,7 +83,7 @@ fn generate_module_with_name(name: &str, contents: &TokenStream) -> TokenStream 
 }
 
 /// Generates a module for a PDU Family of PDUs and records, plus all its contents
-fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream {
+fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Lookup) -> TokenStream {
     // 1. Filter items for this family
     // 2. Filter the PDUs and generate these in separate modules
     // 3. Filter the non-PDU items and generate the records in the family module
@@ -94,7 +94,7 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
         .map(|pdu| {
             if let GenerationItem::Pdu(pdu, _) = pdu {
-                generate_pdu_module(pdu)
+                generate_pdu_module(pdu, lookup)
             } else {
                 quote!( compile error; )
             }
@@ -112,7 +112,7 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
 }
 
 /// Generates all code related a PDU
-fn generate_pdu_module(item: &Pdu) -> TokenStream {
+fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
     let formatted_pdu_name = format_type_name(item.name_attr.as_str());
     println!(
         "generate_pdu_module - {} - {}",
@@ -128,8 +128,9 @@ fn generate_pdu_module(item: &Pdu) -> TokenStream {
     let fields = item
         .fields
         .iter()
-        .map(generate_field_decl)
+        .map(|field| generate_field_decl(field, lookup))
         .collect::<Vec<TokenStream>>();
+
     let contents = quote! {
         pub struct #ident_pdu_name {
             #(#fields)*
@@ -139,13 +140,13 @@ fn generate_pdu_module(item: &Pdu) -> TokenStream {
     generate_module_with_name(formatted_pdu_name.as_str(), &contents)
 }
 
-fn generate_field_decl(field: &PduFieldsEnum) -> TokenStream {
+fn generate_field_decl(field: &PduFieldsEnum, lookup: &Lookup) -> TokenStream {
     let decl = match field {
         PduFieldsEnum::Numeric(field) => generate_numeric_field_decl(field),
-        PduFieldsEnum::Enum(field) => generate_enum_field_decl(field),
+        PduFieldsEnum::Enum(field) => generate_enum_field_decl(field, lookup),
         PduFieldsEnum::FixedString(field) => generate_fixed_string_field_decl(field),
         PduFieldsEnum::FixedRecord(field) => generate_fixed_record_field_decl(field),
-        PduFieldsEnum::BitRecord(field) => generate_bit_record_field_decl(field),
+        PduFieldsEnum::BitRecord(field) => generate_bit_record_field_decl(field, lookup),
         PduFieldsEnum::AdaptiveRecord(field) => generate_adaptive_record_field_decl(field),
     };
 
@@ -155,6 +156,9 @@ fn generate_field_decl(field: &PduFieldsEnum) -> TokenStream {
 }
 
 fn generate_numeric_field_decl(field: &NumericField) -> TokenStream {
+    if field.name.as_str() == "Padding" {
+        return quote! {};
+    }
     let field_ident = format_ident!("{}", format_field_name(&field.name));
     let type_ident = format_ident!(
         "{}",
@@ -173,18 +177,25 @@ fn generate_numeric_field_decl(field: &NumericField) -> TokenStream {
     }
 }
 
-fn generate_enum_field_decl(field: &EnumField) -> TokenStream {
+fn generate_enum_field_decl(field: &EnumField, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
     let type_ident = if let Some(uids) = &field.enum_uid {
-        // FIXME get Enum type name that goes with the UID
-        // format_ident!("{}", uids.first().unwrap().to_string())
-        format_ident!("u8") // PLACEHOLDER
+        let enum_type = uids
+            .iter()
+            .map(|uid| lookup_uid(*uid, lookup).to_string())
+            .collect::<Vec<String>>();
+        let enum_type = enum_type.first().expect("Expected a type.");
+        let enum_type = lookup_fqn(enum_type, lookup);
+        println!("hier dus (enum): {enum_type}");
+        format_ident!("{}", enum_type)
     } else {
         format_ident!(
             "{}",
             enum_type_to_field_type(&field.field_type).expect("Expected valid enum field type.")
         )
     };
+
+    println!("generate_enum_field_decl: {field_ident} : {type_ident}");
 
     quote! {
         #field_ident : #type_ident,
@@ -208,12 +219,19 @@ fn generate_fixed_record_field_decl(field: &FixedRecordField) -> TokenStream {
     }
 }
 
-fn generate_bit_record_field_decl(field: &BitRecordField) -> TokenStream {
+fn generate_bit_record_field_decl(field: &BitRecordField, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
     let type_ident = if let Some(uids) = &field.enum_uid {
-        // FIXME get Enum name that goes with the UID
-        // format_ident!("{}", uids.first().unwrap().to_string())
-        format_ident!("u8") // PLACEHOLDER
+        let enum_type = uids
+            .iter()
+            .map(|uid| lookup_uid(*uid, lookup).to_string())
+            .collect::<Vec<String>>();
+        let enum_type = enum_type.first().expect("Expected a type.");
+        let enum_type = lookup_fqn(enum_type, lookup);
+        println!("hier dus (bitrec): {enum_type}");
+        // format_ident!("{}", enum_type)
+        // proc_macro2::
+        quote! { #enum_type }
     } else {
         format_ident!(
             "{}",
@@ -248,4 +266,24 @@ fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStre
     quote! {
         #field_ident : #type_ident,
     }
+}
+
+#[inline]
+fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
+    println!("lookup_uid: {uid}");
+    let val = lookup
+        .uid
+        .get(&uid)
+        .expect("Expected an existing type for uid.");
+    println!("lookup_uid({uid}) -> {val}");
+
+    val
+}
+
+#[inline]
+fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+    lookup
+        .fqn
+        .get(type_name)
+        .unwrap_or_else(|| panic!("Expected full qualified name for type {type_name}"))
 }

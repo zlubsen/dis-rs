@@ -13,6 +13,11 @@ const TARGET_OUT_FILE: &str = "siso_1278_v8.rs";
 type UidLookup = HashMap<usize, String>;
 type FqnLookup = HashMap<String, String>;
 
+struct Lookup {
+    fqn: FqnLookup,
+    uid: UidLookup,
+}
+
 /// This is the main entry point for the generation of the DIS v8 code units.
 /// It is meant to be called from a build script.
 ///
@@ -30,7 +35,7 @@ type FqnLookup = HashMap<String, String>;
 /// # Panics
 /// The functions in the call stack beneath this function panic when encountering
 /// inconsistent states or values in the schema files.
-pub fn execute(schema_dir: &str, uid_lookup: &UidLookup) {
+pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
     if std::path::Path::new(schema_dir).is_dir() {
         // Find all files in the provided directory. Files must be .xml files.
         let mut file_paths = std::fs::read_dir(schema_dir)
@@ -56,15 +61,19 @@ pub fn execute(schema_dir: &str, uid_lookup: &UidLookup) {
             })
             .collect::<Vec<GenerationItem>>();
 
-        let fqn_lookup = create_fqn_lookup(&generation_items);
-        println!("{fqn_lookup:?}");
+        let fqn_lookup = create_fqn_lookup(&generation_items, &uid_lookup);
+        let lookup = Lookup {
+            fqn: fqn_lookup,
+            uid: uid_lookup,
+        };
+        println!("{:?}", lookup.fqn);
         // TODO intermediate processing: format all field names?
         // TODO intermediate processing: keep track of 'fully qualified names', including the modules, for use/import statements
         // TODO intermediate processing: convert all type names (schema to rust types)
         // TODO intermediate processing: expand all UIDs to textual field names
 
         // Generate all items
-        let generated = generation::generate(&generation_items, &families, &fqn_lookup, uid_lookup);
+        let generated = generation::generate(&generation_items, &families, &lookup);
 
         // Format generated code using prettyplease
         let ast = syn::parse_file(&generated.to_string())
@@ -80,7 +89,7 @@ pub fn execute(schema_dir: &str, uid_lookup: &UidLookup) {
     }
 }
 
-fn create_fqn_lookup(items: &Vec<GenerationItem>) -> FqnLookup {
+fn create_fqn_lookup(items: &Vec<GenerationItem>, uid_lookup: &UidLookup) -> FqnLookup {
     let mut lookup = HashMap::new();
 
     for item in items {
@@ -88,6 +97,14 @@ fn create_fqn_lookup(items: &Vec<GenerationItem>) -> FqnLookup {
         let fqn_name = format_full_qualified_name(item);
         lookup.entry(name.clone()).or_insert(fqn_name);
     }
+
+    for uid in uid_lookup {
+        let fqn_name = format!("crate::enumerations::{}", uid.1);
+        lookup.entry(uid.1.clone()).or_insert(fqn_name);
+    }
+
+    lookup.insert("u8".to_string(), "u8".to_string());
+    lookup.insert("u16".to_string(), "u16".to_string());
 
     lookup
 }
