@@ -286,7 +286,7 @@ struct OpaqueDataField {
 }
 
 #[derive(Debug, Clone)]
-enum FixedRecordFieldsEnum {
+enum PduFixedFieldsEnum {
     Numeric(NumericField),
     Enum(EnumField),
     FixedString(FixedStringField),
@@ -318,7 +318,7 @@ struct OpaqueData {
 
 #[derive(Debug, Clone)]
 struct FixedRecord {
-    pub fields: Vec<FixedRecordFieldsEnum>,
+    pub fields: Vec<PduFixedFieldsEnum>,
     pub record_type: String,
     pub length: usize,
 }
@@ -402,18 +402,8 @@ struct Pdu {
     pub protocol_family_attr: usize,
     pub base_length_attr: usize,
     pub header_field: FixedRecordField,
-    pub fields: Vec<PduFieldsEnum>,
+    pub fields: Vec<PduFixedFieldsEnum>,
     pub extension_record_set: ExtensionRecordSet,
-}
-
-#[derive(Debug, Clone)]
-enum PduFieldsEnum {
-    Numeric(NumericField),
-    Enum(EnumField),
-    FixedString(FixedStringField),
-    FixedRecord(FixedRecordField),
-    BitRecord(BitRecordField),
-    AdaptiveRecord(AdaptiveRecordField),
 }
 
 // TODO define a scope attribute for generation items so we can fit them into the module tree
