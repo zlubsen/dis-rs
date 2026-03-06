@@ -347,28 +347,75 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
     }
 
     // FIXME: placeholder values for currently unsupported UIDs
+    uid_index.insert(46, "Enumeration<u8>".to_string());
+    uid_index.insert(52, "Enumeration<u8>".to_string());
     uid_index.insert(53, "Enumeration<u8>".to_string());
+    uid_index.insert(74, "Enumeration<u8>".to_string());
+    uid_index.insert(93, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(94, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(95, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(141, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(142, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(149, "Enumeration<u16>".to_string());
     uid_index.insert(151, "Enumeration<u16>".to_string());
     uid_index.insert(152, "Enumeration<u8>".to_string());
     uid_index.insert(153, "Enumeration<u16>".to_string());
     uid_index.insert(154, "Enumeration<u8>".to_string());
     uid_index.insert(169, "Enumeration<u8>".to_string());
+    uid_index.insert(176, "Enumeration<u8>".to_string());
+    uid_index.insert(203, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(249, "Enumeration<u8>".to_string());
     uid_index.insert(285, "Enumeration<u16>".to_string());
     uid_index.insert(286, "Enumeration<u16>".to_string());
     uid_index.insert(287, "Enumeration<u16>".to_string());
     uid_index.insert(288, "Enumeration<u16>".to_string());
     uid_index.insert(289, "Enumeration<u8>".to_string());
+    uid_index.insert(298, "Enumeration<u8>".to_string());
+    uid_index.insert(299, "Enumeration<u8>".to_string());
     uid_index.insert(312, "Enumeration<u8>".to_string());
     uid_index.insert(313, "Enumeration<u16>".to_string());
+    uid_index.insert(340, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(343, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(348, "Enumeration<u8>".to_string());
+    uid_index.insert(360, "Enumeration<u8>".to_string());
     uid_index.insert(372, "Enumeration<u8>".to_string());
+    uid_index.insert(373, "Enumeration<u8>".to_string());
+    uid_index.insert(374, "Enumeration<u8>".to_string());
+    uid_index.insert(490, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(544, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(567, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(572, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(590, "Enumeration<u8>".to_string());
+    uid_index.insert(592, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(593, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(614, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(627, "Enumeration<u8>".to_string());
     uid_index.insert(628, "Enumeration<u8>".to_string());
+    uid_index.insert(634, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(666, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(667, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(669, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(702, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(716, "Enumeration<u8>".to_string());
-    uid_index.insert(898, "Enumeration<u8>".to_string());
+    uid_index.insert(711, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(716, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(717, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(719, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(720, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(721, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(722, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(736, "Enumeration<u8>".to_string());
+    uid_index.insert(790, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(791, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(800, "Enumeration<u8>".to_string());
+    uid_index.insert(885, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(886, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(887, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(888, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(898, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(899, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
 
     uid_index
 }

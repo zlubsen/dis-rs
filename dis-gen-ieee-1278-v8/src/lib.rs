@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::env;
-use std::fmt::{Debug, Display, Write};
+use std::fmt::Debug;
 
 mod extraction;
 mod generation;
@@ -62,15 +62,23 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
             .collect::<Vec<GenerationItem>>();
 
         let fqn_lookup = create_fqn_lookup(&generation_items, &uid_lookup);
+todo!("Uniformly make sure all items are put in the FQN lookup - BitRecords");
+todo!("Generate all enumerations instead of a subselection");
+todo!("remove all 'Padding' and 'Not used' fields from records");
+        
+        for fqn in &fqn_lookup {
+            println!("{} => {}", fqn.0, fqn.1);
+        }
+
         let lookup = Lookup {
             fqn: fqn_lookup,
             uid: uid_lookup,
         };
-        println!("{:?}", lookup.fqn);
-        // TODO intermediate processing: format all field names?
-        // TODO intermediate processing: keep track of 'fully qualified names', including the modules, for use/import statements
-        // TODO intermediate processing: convert all type names (schema to rust types)
-        // TODO intermediate processing: expand all UIDs to textual field names
+
+        // TODO intermediate processing: 1) format all field/type names before generating? need to update in the Intermediate Representation model.
+        // DONE intermediate processing: 2) keep track of 'fully qualified names', including the modules, for use/import statements.
+        // TODO intermediate processing: 3) convert all type names (schema to rust types) - See 1).
+        // TODO intermediate processing: 4) expand all UIDs to textual field names in the Intermediate Representation model.
 
         // Generate all items
         let generated = generation::generate(&generation_items, &families, &lookup);
@@ -286,7 +294,7 @@ struct OpaqueDataField {
 }
 
 #[derive(Debug, Clone)]
-enum FixedRecordFieldsEnum {
+enum PduAndFixedRecordFieldsEnum {
     Numeric(NumericField),
     Enum(EnumField),
     FixedString(FixedStringField),
@@ -318,7 +326,7 @@ struct OpaqueData {
 
 #[derive(Debug, Clone)]
 struct FixedRecord {
-    pub fields: Vec<FixedRecordFieldsEnum>,
+    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
     pub record_type: String,
     pub length: usize,
 }
@@ -402,18 +410,8 @@ struct Pdu {
     pub protocol_family_attr: usize,
     pub base_length_attr: usize,
     pub header_field: FixedRecordField,
-    pub fields: Vec<PduFieldsEnum>,
+    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
     pub extension_record_set: ExtensionRecordSet,
-}
-
-#[derive(Debug, Clone)]
-enum PduFieldsEnum {
-    Numeric(NumericField),
-    Enum(EnumField),
-    FixedString(FixedStringField),
-    FixedRecord(FixedRecordField),
-    BitRecord(BitRecordField),
-    AdaptiveRecord(AdaptiveRecordField),
 }
 
 // TODO define a scope attribute for generation items so we can fit them into the module tree
@@ -448,7 +446,7 @@ fn format_full_qualified_name(item: &GenerationItem) -> String {
     }
 }
 
-/// Formats the name of a PDU from the defined format into the code representation
+/// Formats the name of a PDU or Record from the defined format into the code representation
 /// The basic approach is to remove non-alphabetic characters and whitespace.
 ///
 /// Examples:
@@ -456,17 +454,63 @@ fn format_full_qualified_name(item: &GenerationItem) -> String {
 /// - Electromagnetic Emission -> `ElectromagneticEmission`
 /// - Start/Resume -> `StartResume`
 fn format_type_name(name: &str) -> String {
-    name.replace(['/', ' '], "")
+    let name = move_non_alpha_prefix_to_suffix(name);
+    name.replace(['/', '-', ' '], "")
 }
 
 /// Formats the name of a field into the code representation
 /// The basic approach is to remove non-alphabetic characters and convert `CamelCase` to `snake_case`.
 fn format_field_name(name: &str) -> String {
-    name.replace(['/', '-', '(', ')'], "")
-        .replace([' '], "_")
-        .to_lowercase()
+    let name = move_non_alpha_prefix_to_suffix(name);
+    let name = replace_rust_keywords(name.to_lowercase().as_str());
+    name.replace(['/', '(', ')'], "")
+        .replace([' ', '-'], "_")
 }
 
+/// Transforms the name of a type such that there are no leading non-alphanumerical characters,
+/// by moving the (hard-coded) prefix to the end of the type name.
+///
+/// Supported prefixes:
+/// - `2D`
+///
+/// Example:
+/// - `2DWindSample` => `WindSample2D`
+#[inline]
+fn move_non_alpha_prefix_to_suffix(name: &str) -> String {
+    const STRING_2D: &str = "2D";
+    if name.starts_with(STRING_2D) {
+        let mut stripped = name
+            .strip_prefix(STRING_2D)
+            .expect("Prefix is checked beforehand.")
+            .trim()
+            .to_string();
+        stripped.push(' ');
+        stripped.push_str(STRING_2D);
+        stripped
+    } else {
+        name.to_string()
+    }
+}
+
+/// Alters (field) names that would result in compiler errors due to name clashes with Rust keywords.
+/// Occurrences are prefixed with `field_`.
+///
+/// `name` is expected be formatted as a type name (CamelCase containing capitals and whitespace).
+///
+/// Supported keywords:
+/// - `type`
+#[inline]
+fn replace_rust_keywords(name: &str) -> String {
+    if [ "type" ].contains(&name) {
+        let mut field_name = "field_".to_string();
+        field_name.push_str(name);
+        field_name
+    } else {
+        name.to_string()
+    }
+}
+
+/// Maps DIS schema primitive field types to Rust primitive types
 fn numeric_type_to_field_type(ty: &str) -> Result<String, ()> {
     let field_type = match ty {
         "uint8" => Ok("u8"),
@@ -485,6 +529,8 @@ fn numeric_type_to_field_type(ty: &str) -> Result<String, ()> {
     field_type.map(ToString::to_string)
 }
 
+/// Maps DIS schema primitive enumeration field types to Rust primitive types
+/// (equal to the data size of the DIS Enum - 8, 16 or 32 bits).
 fn enum_type_to_field_type(ty: &str) -> Result<String, ()> {
     let field_type = match ty {
         "enum8" => Ok("u8"),
@@ -526,6 +572,7 @@ mod tests {
             format_field_name("Emitter Name (Jammer)"),
             "emitter_name_jammer"
         );
+        assert_eq!(format_field_name("X-coordinate"), "x_coordinate");
     }
 
     #[test]
@@ -554,7 +601,24 @@ mod tests {
         let pdu_fqn = crate::format_full_qualified_name(&pdu);
         assert_eq!(
             pdu_fqn.as_str(),
-            "v8::entity_info_interaction::entity_state::EntityState"
+            "crate::v8::entity_info_interaction::entity_state::EntityState"
         );
+    }
+
+    #[test]
+    fn move_non_alpha_prefix_to_suffix() {
+        let type_name = format_type_name("2D Wind Sample");
+        let field_name = format_field_name("2D Wind Sample");
+
+        assert_eq!(type_name.as_str(), "WindSample2D");
+        assert_eq!(field_name.as_str(), "wind_sample_2d");
+    }
+
+    #[test]
+    fn replace_rust_keywords() {
+        let field_name = format_field_name("Type");
+
+        assert_eq!(field_name.as_str(), "field_type");
+
     }
 }

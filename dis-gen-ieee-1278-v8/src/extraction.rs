@@ -2,8 +2,8 @@ use crate::{
     AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
     BitRecordField, BitRecordFieldEnum, BoolBitField, CountField, EnumBitField, EnumField,
     ExtensionRecord, ExtensionRecordFieldEnum, ExtensionRecordSet, FixedRecord, FixedRecordField,
-    FixedRecordFieldsEnum, FixedStringField, GenerationItem, IntBitField, NumericField, OpaqueData,
-    OpaqueDataField, PaddingTo16, PaddingTo32, PaddingTo64, Pdu, PduFieldsEnum, VariableString,
+    PduAndFixedRecordFieldsEnum, FixedStringField, GenerationItem, IntBitField, NumericField, OpaqueData,
+    OpaqueDataField, PaddingTo16, PaddingTo32, PaddingTo64, Pdu, VariableString,
     VariableStringField,
 };
 use quick_xml::events::attributes::Attribute;
@@ -254,13 +254,13 @@ fn extract_pdu(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Pd
         match evt {
             Ok(Event::Empty(ref element)) => match element.name() {
                 NUMERIC_FIELD_ELEMENT => {
-                    fields.push(PduFieldsEnum::Numeric(extract_numeric_field(element)));
+                    fields.push(PduAndFixedRecordFieldsEnum::Numeric(extract_numeric_field(element)));
                 }
                 ENUM_FIELD_ELEMENT => {
-                    fields.push(PduFieldsEnum::Enum(extract_enum_field(element, reader)));
+                    fields.push(PduAndFixedRecordFieldsEnum::Enum(extract_enum_field(element, reader)));
                 }
                 FIXED_STRING_FIELD_ELEMENT => {
-                    fields.push(PduFieldsEnum::FixedString(extract_fixed_string_field(
+                    fields.push(PduAndFixedRecordFieldsEnum::FixedString(extract_fixed_string_field(
                         element, reader,
                     )));
                 }
@@ -268,18 +268,18 @@ fn extract_pdu(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Pd
                     if header_field.is_none() {
                         header_field = Some(extract_fixed_record_field(element, reader));
                     } else {
-                        fields.push(PduFieldsEnum::FixedRecord(extract_fixed_record_field(
+                        fields.push(PduAndFixedRecordFieldsEnum::FixedRecord(extract_fixed_record_field(
                             element, reader,
                         )));
                     }
                 }
                 BIT_RECORD_FIELD_ELEMENT => {
-                    fields.push(PduFieldsEnum::BitRecord(extract_bit_record_field(
+                    fields.push(PduAndFixedRecordFieldsEnum::BitRecord(extract_bit_record_field(
                         element, reader,
                     )));
                 }
                 ADAPTIVE_RECORD_FIELD_ELEMENT => {
-                    fields.push(PduFieldsEnum::AdaptiveRecord(
+                    fields.push(PduAndFixedRecordFieldsEnum::AdaptiveRecord(
                         extract_adaptive_record_field(element, reader),
                     ));
                 }
@@ -343,39 +343,39 @@ fn extract_fixed_record(element: &BytesStart, reader: &mut Reader<BufReader<File
     }
 }
 
-fn extract_fixed_record_fields(reader: &mut Reader<BufReader<File>>) -> Vec<FixedRecordFieldsEnum> {
+fn extract_fixed_record_fields(reader: &mut Reader<BufReader<File>>) -> Vec<PduAndFixedRecordFieldsEnum> {
     let mut buf = Vec::new();
     let mut fields = vec![];
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Empty(ref element)) => match element.name() {
                 NUMERIC_FIELD_ELEMENT => {
-                    fields.push(FixedRecordFieldsEnum::Numeric(extract_numeric_field(
+                    fields.push(PduAndFixedRecordFieldsEnum::Numeric(extract_numeric_field(
                         element,
                     )));
                 }
                 ENUM_FIELD_ELEMENT => {
-                    fields.push(FixedRecordFieldsEnum::Enum(extract_enum_field(
+                    fields.push(PduAndFixedRecordFieldsEnum::Enum(extract_enum_field(
                         element, reader,
                     )));
                 }
                 FIXED_STRING_FIELD_ELEMENT => {
-                    fields.push(FixedRecordFieldsEnum::FixedString(
+                    fields.push(PduAndFixedRecordFieldsEnum::FixedString(
                         extract_fixed_string_field(element, reader),
                     ));
                 }
                 FIXED_RECORD_FIELD_ELEMENT => {
-                    fields.push(FixedRecordFieldsEnum::FixedRecord(
+                    fields.push(PduAndFixedRecordFieldsEnum::FixedRecord(
                         extract_fixed_record_field(element, reader),
                     ));
                 }
                 BIT_RECORD_FIELD_ELEMENT => {
-                    fields.push(FixedRecordFieldsEnum::BitRecord(extract_bit_record_field(
+                    fields.push(PduAndFixedRecordFieldsEnum::BitRecord(extract_bit_record_field(
                         element, reader,
                     )));
                 }
                 ADAPTIVE_RECORD_FIELD_ELEMENT => {
-                    fields.push(FixedRecordFieldsEnum::AdaptiveRecord(
+                    fields.push(PduAndFixedRecordFieldsEnum::AdaptiveRecord(
                         extract_adaptive_record_field(element, reader),
                     ));
                 }
