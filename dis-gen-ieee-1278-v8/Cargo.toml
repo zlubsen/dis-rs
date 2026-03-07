@@ -18,6 +18,7 @@ quick-xml = "0.39.0"
 proc-macro2 = "1.0.101"
 prettyplease = "0.2.37"
 syn = "2.0.106"
+dis-gen-utils = { path = "../dis-gen-utils" }
 
 [lints]
 workspace = true

@@ -6,14 +6,13 @@ use crate::{
     PaddingTo16, PaddingTo32, PaddingTo64, Pdu, PduAndFixedRecordFieldsEnum, VariableString,
     VariableStringField,
 };
-use quick_xml::events::attributes::Attribute;
+use dis_gen_utils::extract_attr_as_usize;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::name::QName;
 use quick_xml::Reader;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 // Top-level elements
 const DIS_SYNTAX_ELEMENT: QName = QName(b"DISsyntax");
@@ -221,10 +220,13 @@ fn extract_protocol_items(
 }
 
 fn extract_pdu(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Pdu {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_pdu_type = extract_attr_as_usize(element, ELEMENT_ATTR_PDU_TYPE, reader);
-    let attr_protocol_family = extract_attr_as_usize(element, ELEMENT_ATTR_PROTOCOL_FAMILY, reader);
-    let attr_base_length = extract_attr_as_usize(element, ELEMENT_ATTR_BASE_LENGTH, reader);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_pdu_type =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_PDU_TYPE, reader);
+    let attr_protocol_family =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_PROTOCOL_FAMILY, reader);
+    let attr_base_length =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_BASE_LENGTH, reader);
 
     let mut buf = Vec::new();
     let mut header_field = None;
@@ -310,8 +312,8 @@ fn extract_pdu(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Pd
 }
 
 fn extract_fixed_record(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> FixedRecord {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_length = extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_length = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
     let fields = extract_fixed_record_fields(reader);
 
     FixedRecord {
@@ -380,8 +382,8 @@ fn extract_fixed_record_fields(
 }
 
 fn extract_bit_record(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> BitRecord {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_size = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
     let fields = extract_bit_record_fields(reader);
 
     BitRecord {
@@ -436,11 +438,13 @@ fn extract_enum_bit_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> EnumBitField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_bit_position = extract_attr_as_usize(element, ELEMENT_ATTR_BIT_POSITION, reader);
-    let attr_size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
-    let attr_enum_uid = extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
-    let attr_is_discriminant = extract_attr_as_bool(element, ELEMENT_ATTR_IS_DISCRIMINANT, reader);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_bit_position =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_BIT_POSITION, reader);
+    let attr_size = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
+    let attr_enum_uid = dis_gen_utils::extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
+    let attr_is_discriminant =
+        dis_gen_utils::extract_attr_as_bool(element, ELEMENT_ATTR_IS_DISCRIMINANT, reader);
 
     EnumBitField {
         name: attr_name.expect("Expected EnumBitField attribute 'name' to be present."),
@@ -456,10 +460,11 @@ fn extract_int_bit_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> IntBitField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_bit_position = extract_attr_as_usize(element, ELEMENT_ATTR_BIT_POSITION, reader);
-    let attr_size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
-    let attr_units = extract_attr_as_string(element, ELEMENT_ATTR_UNITS);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_bit_position =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_BIT_POSITION, reader);
+    let attr_size = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
+    let attr_units = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_UNITS);
 
     IntBitField {
         name: attr_name.expect("Expected IntBitField attribute 'name' to be present."),
@@ -474,8 +479,9 @@ fn extract_bool_bit_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> BoolBitField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_bit_position = extract_attr_as_usize(element, ELEMENT_ATTR_BIT_POSITION, reader);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_bit_position =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_BIT_POSITION, reader);
 
     BoolBitField {
         name: attr_name.expect("Expected BooleanBitField attribute 'name' to be present."),
@@ -488,8 +494,8 @@ fn extract_adaptive_record(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> AdaptiveRecord {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_length = extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_length = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
 
     let (fields, discriminant_start_value) = extract_adaptive_record_formats(reader);
 
@@ -539,13 +545,11 @@ fn extract_adaptive_record_formats(
             },
             Ok(Event::Start(ref element)) => match element.name() {
                 ADAPTIVE_FORMAT_ELEMENT => {
-                    let attr = if let Ok(Some(attr)) =
-                        element.try_get_attribute(ELEMENT_ATTR_DISCRIMINANT_START_VALUE)
-                    {
-                        Some(convert_attr_to_usize(reader, &attr))
-                    } else {
-                        None
-                    };
+                    let attr = extract_attr_as_usize(
+                        element,
+                        ELEMENT_ATTR_DISCRIMINANT_START_VALUE,
+                        reader,
+                    );
                     attr_discriminant_start_value = Some(attr.expect("Expected element AdaptiveFormat attribute 'discriminantStartValue' to be present."));
                 } // pass, enter the AdaptiveFormat element
                 element => {
@@ -608,10 +612,13 @@ fn extract_extension_record(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> ExtensionRecord {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_record_type = extract_attr_as_usize(element, ELEMENT_ATTR_RECORD_TYPE_ENUM, reader);
-    let attr_base_length = extract_attr_as_usize(element, ELEMENT_ATTR_BASE_LENGTH, reader);
-    let attr_is_variable = extract_attr_as_bool(element, ELEMENT_ATTR_IS_VARIABLE, reader);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_record_type =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_RECORD_TYPE_ENUM, reader);
+    let attr_base_length =
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_BASE_LENGTH, reader);
+    let attr_is_variable =
+        dis_gen_utils::extract_attr_as_bool(element, ELEMENT_ATTR_IS_VARIABLE, reader);
 
     let mut buf = Vec::new();
     let record_type_field = if let Ok(Event::Empty(ref element)) = reader.read_event_into(&mut buf)
@@ -721,8 +728,8 @@ fn extract_extension_record_fields(
 }
 
 fn extract_numeric_field(element: &BytesStart) -> NumericField {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
 
     NumericField {
         name: attr_name.expect("Expected NumericField attribute 'name' to be present."),
@@ -735,9 +742,9 @@ fn extract_fixed_record_field(
     element: &BytesStart,
     reader: &Reader<BufReader<File>>,
 ) -> FixedRecordField {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_length = extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_length = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
 
     FixedRecordField {
         name: attr_name.expect("Expected FixedRecordField attribute 'name' to be present."),
@@ -747,8 +754,8 @@ fn extract_fixed_record_field(
 }
 
 fn extract_count_field(element: &BytesStart) -> CountField {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
 
     CountField {
         name: attr_name.expect("Expected CountField attribute 'name' to be present."),
@@ -757,11 +764,12 @@ fn extract_count_field(element: &BytesStart) -> CountField {
 }
 
 fn extract_enum_field(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> EnumField {
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_enum_uid = extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
-    let attr_hd = extract_attr_as_string(element, ELEMENT_ATTR_HIERARCHY_DEPENDENCY);
-    let attr_is_discriminant = extract_attr_as_bool(element, ELEMENT_ATTR_IS_DISCRIMINANT, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_enum_uid = dis_gen_utils::extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
+    let attr_hd = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_HIERARCHY_DEPENDENCY);
+    let attr_is_discriminant =
+        dis_gen_utils::extract_attr_as_bool(element, ELEMENT_ATTR_IS_DISCRIMINANT, reader);
 
     EnumField {
         name: attr_name.expect("Expected EnumField attribute 'name' to be present."),
@@ -776,8 +784,8 @@ fn extract_fixed_string_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> FixedStringField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_length = extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_length = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
 
     FixedStringField {
         name: attr_name.expect("Expected FixedStringField attribute 'name' to be present."),
@@ -830,9 +838,9 @@ fn extract_variable_string_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> VariableStringField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
     let fixed_number_of_strings =
-        extract_attr_as_usize(element, ELEMENT_ATTR_FIXED_NO_OF_STRINGS, reader);
+        dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_FIXED_NO_OF_STRINGS, reader);
 
     VariableStringField {
         name: attr_name.expect("Expected VariableStringField attribute 'name' to be present."),
@@ -903,10 +911,10 @@ fn extract_bit_record_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> BitRecordField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_enum_uid = extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_size = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_enum_uid = dis_gen_utils::extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
 
     BitRecordField {
         name: attr_name.expect("Expected BitRecordField attribute 'name' to be present."),
@@ -920,11 +928,12 @@ fn extract_adaptive_record_field(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
 ) -> AdaptiveRecordField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
-    let attr_length = extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
-    let attr_type = extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
-    let attr_enum_uid = extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
-    let attr_discriminant = extract_attr_as_string(element, ELEMENT_ATTR_DISCRIMINANT);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_length = dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_LENGTH, reader);
+    let attr_type = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_TYPE);
+    let attr_enum_uid = dis_gen_utils::extract_attr_as_enum_uid(element, ELEMENT_ATTR_ENUM_UID);
+    let attr_discriminant =
+        dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_DISCRIMINANT);
 
     AdaptiveRecordField {
         name: attr_name.expect("Expected AdaptiveRecordField attribute 'name' to be present."),
@@ -981,7 +990,7 @@ fn extract_opaque_data_element(reader: &mut Reader<BufReader<File>>) -> OpaqueDa
 }
 
 fn extract_opaque_data_field(element: &BytesStart) -> OpaqueDataField {
-    let attr_name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
 
     OpaqueDataField {
         name: attr_name.expect("Expected OpaqueDataField attribute 'name' to be present."),
@@ -1003,137 +1012,9 @@ fn extract_padding_64_field() -> PaddingTo64 {
     PaddingTo64
 }
 
-/// Helper function to extract an attribute from `element` as `String`
-#[inline]
-fn extract_attr_as_string(element: &BytesStart, attr_name: QName) -> Option<String> {
-    if let Ok(Some(attr)) = element.try_get_attribute(attr_name) {
-        Some(convert_attr_to_string(&attr))
-    } else {
-        None
-    }
-}
-
-/// Helper function to extract an attribute from `element` as `usize`
-#[inline]
-fn extract_attr_as_usize(
-    element: &BytesStart,
-    attr_name: QName,
-    reader: &Reader<BufReader<File>>,
-) -> Option<usize> {
-    if let Ok(Some(attr)) = element.try_get_attribute(attr_name) {
-        Some(convert_attr_to_usize(reader, &attr))
-    } else {
-        None
-    }
-}
-
-/// Helper function to extract an attribute from `element` containing one ore more UID values as 'String'
-fn extract_attr_as_enum_uid(element: &BytesStart, attr_name: QName) -> Option<Vec<usize>> {
-    if let Ok(Some(attr)) = element.try_get_attribute(attr_name) {
-        expand_uid_string(&convert_attr_to_string(&attr)).ok()
-    } else {
-        None
-    }
-}
-
-/// Helper function to extract an attribute from `element` as `bool`
-#[inline]
-fn extract_attr_as_bool(
-    element: &BytesStart,
-    attr_name: QName,
-    reader: &mut Reader<BufReader<File>>,
-) -> Option<bool> {
-    if let Ok(Some(attr)) = element.try_get_attribute(attr_name) {
-        Some(convert_attr_to_bool(reader, &attr))
-    } else {
-        None
-    }
-}
-
-/// Helper function to convert an Attribute value to `String`
-#[inline]
-fn convert_attr_to_string(attr: &Attribute) -> String {
-    String::from_utf8(attr.value.to_vec()).expect("Expected valid UTF-8")
-}
-
-/// Helper function to convert an Attribute value to `usize`
-#[inline]
-fn convert_attr_to_usize(reader: &Reader<BufReader<File>>, attr: &Attribute) -> usize {
-    usize::from_str(
-        &reader
-            .decoder()
-            .decode(&attr.value)
-            .expect("Expected valid UTF-8"),
-    )
-    .expect("Expected a value able to be parsed to 'usize'")
-}
-
-/// Helper function to extract an Attribute value as a `bool`
-#[inline]
-fn convert_attr_to_bool(reader: &Reader<BufReader<File>>, attr: &Attribute) -> bool {
-    bool::from_str(
-        &reader
-            .decoder()
-            .decode(&attr.value)
-            .expect("Expected valid UTF-8"),
-    )
-    .expect("Expected a value able to be parsed to 'bool'")
-}
-
-/// Helper function to expand a list of UIDs in &str format,
-/// consisting of single items and ranges, into a Vec<usize>.
-///
-/// Returns the enum IDs as defined by the `uid_string` format
-/// contained in an `Option::Some`, and `Option::None` when
-/// the value of `uid_string` equals `"None"` (as the attribute can be optional).
-///
-/// Example: `"1, 4, 6-8"` would expand to `1, 4, 6, 7, 8`.
-fn expand_uid_string(uid_string: &str) -> Result<Vec<usize>, ()> {
-    const NONE_STRING: &str = "None";
-    const EREF_STRING: &str = "EREF"; // TODO figure out what this value means
-    const TBD_STRING: &str = "TBD"; // FIXME remove when the standard has settled all UIDs
-    if [NONE_STRING, EREF_STRING, TBD_STRING].contains(&uid_string) || uid_string.is_empty() {
-        return Err(());
-    }
-
-    Ok(uid_string
-        .split(',')
-        .map(str::trim)
-        .filter(|part| !part.is_empty())
-        .flat_map(|part| {
-            if let Some((start_str, end_str)) = part.split_once('-') {
-                // Parse range
-                let start: usize = start_str
-                    .trim()
-                    .parse()
-                    .unwrap_or_else(|_| panic!("Invalid range start: '{start_str}'"));
-
-                let end: usize = end_str
-                    .trim()
-                    .parse()
-                    .unwrap_or_else(|_| panic!("Invalid range end: '{end_str}'"));
-
-                assert!(
-                    start <= end,
-                    "{}",
-                    format!("Invalid range '{part}': start > end")
-                );
-                (start..=end).collect::<Vec<usize>>()
-            } else {
-                // Parse single number
-                let number: usize = part
-                    .parse()
-                    .unwrap_or_else(|_| panic!("Invalid number: '{part}'"));
-
-                vec![number]
-            }
-        })
-        .collect())
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::extraction::{all_upper, expand_uid_string, pdu_family_name_from_path};
+    use crate::extraction::{all_upper, pdu_family_name_from_path};
     use std::path::Path;
 
     #[test]
@@ -1158,31 +1039,5 @@ mod tests {
 
         assert!(all_upper);
         assert!(!not_all_upper);
-    }
-
-    #[test]
-    fn test_expand_uid_string() {
-        let single_uid = expand_uid_string("8");
-        let multiple_uid = expand_uid_string("6, 7");
-        let range_uid = expand_uid_string("10-12");
-        let both = expand_uid_string("8, 10-12");
-
-        assert_eq!(single_uid, Ok(vec![8]));
-        assert_eq!(multiple_uid, Ok(vec![6, 7]));
-        assert_eq!(range_uid, Ok(vec![10, 11, 12]));
-        assert_eq!(both, Ok(vec![8, 10, 11, 12]));
-    }
-
-    #[test]
-    fn test_expand_uid_string_errors() {
-        let empty = expand_uid_string("");
-        let none = expand_uid_string("None");
-        let eref = expand_uid_string("EREF");
-        let tbd = expand_uid_string("TBD");
-
-        assert_eq!(empty, Err(()));
-        assert_eq!(none, Err(()));
-        assert_eq!(eref, Err(()));
-        assert_eq!(tbd, Err(()));
     }
 }

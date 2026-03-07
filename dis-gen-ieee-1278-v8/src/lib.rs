@@ -62,10 +62,10 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
             .collect::<Vec<GenerationItem>>();
 
         let fqn_lookup = create_fqn_lookup(&generation_items, &uid_lookup);
-todo!("Uniformly make sure all items are put in the FQN lookup - BitRecords");
-todo!("Generate all enumerations instead of a subselection");
-todo!("remove all 'Padding' and 'Not used' fields from records");
-        
+        todo!("Uniformly make sure all items are put in the FQN lookup - BitRecords");
+        todo!("Generate all enumerations instead of a subselection");
+        todo!("remove all 'Padding' and 'Not used' fields from records");
+
         for fqn in &fqn_lookup {
             println!("{} => {}", fqn.0, fqn.1);
         }
@@ -101,7 +101,7 @@ fn create_fqn_lookup(items: &Vec<GenerationItem>, uid_lookup: &UidLookup) -> Fqn
     let mut lookup = HashMap::new();
 
     for item in items {
-        let name = format_type_name(&item.name());
+        let name = dis_gen_utils::format_type_name(&item.name());
         let fqn_name = format_full_qualified_name(item);
         lookup.entry(name.clone()).or_insert(fqn_name);
     }
@@ -434,79 +434,15 @@ fn format_full_qualified_name(item: &GenerationItem) -> String {
         format!(
             "crate::v8::{}::{}::{}",
             item.family(),
-            format_field_name(item.name().as_str()),
-            format_type_name(item.name().as_str())
+            dis_gen_utils::format_field_name(item.name().as_str()),
+            dis_gen_utils::format_type_name(item.name().as_str())
         )
     } else {
         format!(
             "crate::v8::{}::{}",
             item.family(),
-            format_type_name(item.name().as_str())
+            dis_gen_utils::format_type_name(item.name().as_str())
         )
-    }
-}
-
-/// Formats the name of a PDU or Record from the defined format into the code representation
-/// The basic approach is to remove non-alphabetic characters and whitespace.
-///
-/// Examples:
-/// - Create Entity -> `CreateEntity`
-/// - Electromagnetic Emission -> `ElectromagneticEmission`
-/// - Start/Resume -> `StartResume`
-fn format_type_name(name: &str) -> String {
-    let name = move_non_alpha_prefix_to_suffix(name);
-    name.replace(['/', '-', ' '], "")
-}
-
-/// Formats the name of a field into the code representation
-/// The basic approach is to remove non-alphabetic characters and convert `CamelCase` to `snake_case`.
-fn format_field_name(name: &str) -> String {
-    let name = move_non_alpha_prefix_to_suffix(name);
-    let name = replace_rust_keywords(name.to_lowercase().as_str());
-    name.replace(['/', '(', ')'], "")
-        .replace([' ', '-'], "_")
-}
-
-/// Transforms the name of a type such that there are no leading non-alphanumerical characters,
-/// by moving the (hard-coded) prefix to the end of the type name.
-///
-/// Supported prefixes:
-/// - `2D`
-///
-/// Example:
-/// - `2DWindSample` => `WindSample2D`
-#[inline]
-fn move_non_alpha_prefix_to_suffix(name: &str) -> String {
-    const STRING_2D: &str = "2D";
-    if name.starts_with(STRING_2D) {
-        let mut stripped = name
-            .strip_prefix(STRING_2D)
-            .expect("Prefix is checked beforehand.")
-            .trim()
-            .to_string();
-        stripped.push(' ');
-        stripped.push_str(STRING_2D);
-        stripped
-    } else {
-        name.to_string()
-    }
-}
-
-/// Alters (field) names that would result in compiler errors due to name clashes with Rust keywords.
-/// Occurrences are prefixed with `field_`.
-///
-/// `name` is expected be formatted as a type name (CamelCase containing capitals and whitespace).
-///
-/// Supported keywords:
-/// - `type`
-#[inline]
-fn replace_rust_keywords(name: &str) -> String {
-    if [ "type" ].contains(&name) {
-        let mut field_name = "field_".to_string();
-        field_name.push_str(name);
-        field_name
-    } else {
-        name.to_string()
     }
 }
 
@@ -529,51 +465,9 @@ fn numeric_type_to_field_type(ty: &str) -> Result<String, ()> {
     field_type.map(ToString::to_string)
 }
 
-/// Maps DIS schema primitive enumeration field types to Rust primitive types
-/// (equal to the data size of the DIS Enum - 8, 16 or 32 bits).
-fn enum_type_to_field_type(ty: &str) -> Result<String, ()> {
-    let field_type = match ty {
-        "enum8" => Ok("u8"),
-        "enum16" => Ok("u16"),
-        "enum32" => Ok("u32"),
-        _ => Err(()),
-    };
-
-    field_type.map(ToString::to_string)
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{
-        format_field_name, format_type_name, CountField, ExtensionRecordSet, FixedRecordField,
-        GenerationItem, Pdu,
-    };
-
-    #[test]
-    fn test_format_pdu_name() {
-        // format PDUs
-        assert_eq!(format_type_name("Create Entity"), "CreateEntity");
-        assert_eq!(
-            format_type_name("Electromagnetic Emission"),
-            "ElectromagneticEmission"
-        );
-        // having a non-alphabetic character
-        assert_eq!(format_type_name("Start/Resume"), "StartResume");
-        // and some Records
-        assert_eq!(format_type_name("Euler Angles"), "EulerAngles");
-        assert_eq!(format_type_name("Entity Location"), "EntityLocation");
-    }
-
-    #[test]
-    fn test_format_field_name() {
-        assert_eq!(format_field_name("Entity Location"), "entity_location");
-        assert_eq!(format_field_name("Ez"), "ez");
-        assert_eq!(
-            format_field_name("Emitter Name (Jammer)"),
-            "emitter_name_jammer"
-        );
-        assert_eq!(format_field_name("X-coordinate"), "x_coordinate");
-    }
+    use crate::{CountField, ExtensionRecordSet, FixedRecordField, GenerationItem, Pdu};
 
     #[test]
     fn format_full_qualified_name() {
@@ -603,22 +497,5 @@ mod tests {
             pdu_fqn.as_str(),
             "crate::v8::entity_info_interaction::entity_state::EntityState"
         );
-    }
-
-    #[test]
-    fn move_non_alpha_prefix_to_suffix() {
-        let type_name = format_type_name("2D Wind Sample");
-        let field_name = format_field_name("2D Wind Sample");
-
-        assert_eq!(type_name.as_str(), "WindSample2D");
-        assert_eq!(field_name.as_str(), "wind_sample_2d");
-    }
-
-    #[test]
-    fn replace_rust_keywords() {
-        let field_name = format_field_name("Type");
-
-        assert_eq!(field_name.as_str(), "field_type");
-
     }
 }

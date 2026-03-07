@@ -1,7 +1,12 @@
-use super::{enum_type_to_field_type, format_field_name, format_type_name, numeric_type_to_field_type, AdaptiveRecord, AdaptiveRecordField, BitRecord, BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecordSet, FixedRecord, FixedRecordField, FixedStringField, GenerationItem, IntBitField, Lookup, NumericField, Pdu, PduAndFixedRecordFieldsEnum};
+use super::{
+    numeric_type_to_field_type, AdaptiveRecord, AdaptiveRecordField, BitRecord, BitRecordField,
+    BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecordSet, FixedRecord,
+    FixedRecordField, FixedStringField, GenerationItem, IntBitField, Lookup, NumericField, Pdu,
+    PduAndFixedRecordFieldsEnum,
+};
+use dis_gen_utils::{enum_type_to_field_type, format_field_name, format_type_name};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
 // Module tree of generated sources:
 // src/v8
 //    common_records/           // Containing all common records
@@ -136,9 +141,15 @@ fn generate_field_decl(field: &PduAndFixedRecordFieldsEnum, lookup: &Lookup) -> 
         PduAndFixedRecordFieldsEnum::Numeric(field) => generate_numeric_field_decl(field),
         PduAndFixedRecordFieldsEnum::Enum(field) => generate_enum_field_decl(field, lookup),
         PduAndFixedRecordFieldsEnum::FixedString(field) => generate_fixed_string_field_decl(field),
-        PduAndFixedRecordFieldsEnum::FixedRecord(field) => generate_fixed_record_field_decl(field, lookup),
-        PduAndFixedRecordFieldsEnum::BitRecord(field) => generate_bit_record_field_decl(field, lookup),
-        PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => generate_adaptive_record_field_decl(field, lookup),
+        PduAndFixedRecordFieldsEnum::FixedRecord(field) => {
+            generate_fixed_record_field_decl(field, lookup)
+        }
+        PduAndFixedRecordFieldsEnum::BitRecord(field) => {
+            generate_bit_record_field_decl(field, lookup)
+        }
+        PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => {
+            generate_adaptive_record_field_decl(field, lookup)
+        }
     };
 
     quote! {
@@ -283,7 +294,9 @@ fn generate_adaptive_record_field_decl(
 fn generate_fixed_record(item: &FixedRecord, lookup: &Lookup) -> TokenStream {
     let record_name = format_ident!("{}", format_type_name(&item.record_type));
 
-    let fields = item.fields.iter()
+    let fields = item
+        .fields
+        .iter()
         .map(|field| generate_field_decl(field, lookup))
         .collect::<Vec<TokenStream>>();
 
@@ -303,8 +316,10 @@ fn generate_extension_record(item: &ExtensionRecordSet, lookup: &Lookup) -> Toke
 fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
     let record_name = format_ident!("{}", format_type_name(&item.record_type));
 
-    let fields = item.fields.iter()
-        .map(|field| generate_bit_record_item_decl(field, lookup) )
+    let fields = item
+        .fields
+        .iter()
+        .map(|field| generate_bit_record_item_decl(field, lookup))
         .collect::<Vec<TokenStream>>();
 
     quote! {
@@ -316,15 +331,14 @@ fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
 
 fn generate_bit_record_item_decl(item: &BitRecordFieldEnum, lookup: &Lookup) -> TokenStream {
     match item {
-        BitRecordFieldEnum::Enum(field) => { generate_enum_bit_field_decl(field, lookup) }
-        BitRecordFieldEnum::Int(field) => { generate_int_bit_field_decl(field, lookup) }
-        BitRecordFieldEnum::Bool(field) => { generate_bool_bit_field_decl(field, lookup) }
+        BitRecordFieldEnum::Enum(field) => generate_enum_bit_field_decl(field, lookup),
+        BitRecordFieldEnum::Int(field) => generate_int_bit_field_decl(field, lookup),
+        BitRecordFieldEnum::Bool(field) => generate_bool_bit_field_decl(field, lookup),
     }
 }
 
 fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenStream {
     let field_name = format_ident!("{}", format_field_name(field.name.as_str()));
-    println!("generate_enum_bit_field_decl - {field:?}");
     let field_type = match (field.size, &field.enum_uid) {
         (Some(size), None) => {
             let field_type = bit_field_size_to_primitive_type(size);
@@ -338,7 +352,9 @@ fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenS
                 .expect("Expected a valid Type for an EnumBitField declaration.");
             quote! { #ty }
         }
-        (None, None) => { quote! { bool } }
+        (None, None) => {
+            quote! { bool }
+        }
     };
     quote! { #field_name: #field_type, }
 }
@@ -371,10 +387,11 @@ fn bit_field_size_to_primitive_type(size: usize) -> String {
         "u16"
     } else {
         "u8"
-    }.to_string()
+    }
+    .to_string()
 }
 
-fn lookup_first_uid<'l>(uids: &Vec<usize>, lookup: &'l Lookup) -> &'l str {
+fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
     let the_type = uids
         .iter()
         .map(|uid| lookup_uid(*uid, lookup).to_string())
@@ -418,6 +435,5 @@ mod tests {
         assert_eq!(bit_field_size_to_primitive_type(32), "u32".to_string());
         assert_eq!(bit_field_size_to_primitive_type(33), "u64".to_string());
         assert_eq!(bit_field_size_to_primitive_type(100), "u128".to_string());
-
     }
 }

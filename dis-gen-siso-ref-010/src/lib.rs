@@ -348,7 +348,7 @@ pub fn execute(siso_ref_010_file: &str) -> HashMap<usize, String> {
     let uid_index = generate_uid_index(&generation_items);
 
     // Generate the code for the enumerations
-    generate_enums(&generation_items);
+    generate_and_save(&generation_items);
 
     uid_index
 }
@@ -438,7 +438,7 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
 }
 
 /// Generates code for all provided `GenerationItem`s, formats the code and stores it in `OUT_DIR`.
-fn generate_enums(generation_items: &Vec<GenerationItem>) {
+fn generate_and_save(generation_items: &Vec<GenerationItem>) {
     // Generate all code for enums
     let generated = generation::generate(generation_items);
 
@@ -451,6 +451,7 @@ fn generate_enums(generation_items: &Vec<GenerationItem>) {
     let dest_path = Path::new(&env::var(OUT_DIR).unwrap()).join(TARGET_OUT_FILE);
     fs::write(dest_path, contents).unwrap();
 
+    // Set file name to an environment variable, for inclusion in the to-be compiled library
     println!("cargo:rustc-env={TARGET_ENV_VAR}={TARGET_OUT_FILE}");
 }
 
