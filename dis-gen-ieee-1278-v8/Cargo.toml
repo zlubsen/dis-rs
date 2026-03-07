@@ -10,6 +10,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 categories.workspace = true
+keywords = ["IEEE-1278-1", "generator", "DIS"]
 
 [dependencies]
 quote = "1.0.41"

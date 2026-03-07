@@ -10,6 +10,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 categories.workspace = true
+keywords = ["SISO-REF-010", "generator", "Enummerations", "DIS"]
 
 [dependencies]
 quote = "1.0.41"
@@ -17,6 +18,7 @@ quick-xml = "0.39.0"
 proc-macro2 = "1.0.101"
 prettyplease = "0.2.37"
 syn = "2.0.106"
+tempfile = "3.26.0"
 
 [lints]
 workspace = true
