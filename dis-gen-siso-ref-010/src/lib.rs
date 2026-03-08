@@ -11,6 +11,14 @@ const OUT_DIR: &str = "OUT_DIR";
 const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_REF_010_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 
+// TODO 1) generate enums based on 'overrides' instead of listing all that need to be generated (inverse) (521 items).
+//  - less usage of name overrides
+//  - auto infer data size overrides
+//  - flag indicating to not generate the UID
+//  - uniform way of handling for all UID types (enums, bitfields, records)
+// TODO 2) generate all bitfields (60 items).
+// TODO 3) generate the record types as well (31 items).
+
 /// Array containing all the uids of enumerations that should be generated.
 /// Each entry is a tuple containing:
 /// - the uid,
@@ -208,14 +216,14 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 156] = [
     (889, None, None, false), // Damage Area
 ];
 
-const BITFIELD_UIDS: [RangeInclusive<usize>; 3] = [
-    31..=43, // Appearances
-    68..=68, // StopFreeze Frozen Behavior
-    // 230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
+const BITFIELD_UIDS: [RangeInclusive<usize>; 7] = [
+    31..=43,   // Appearances
+    68..=68,   // StopFreeze Frozen Behavior
+    230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
     450..=462, // Capabilities
-               // 483..=487, // Point Object Appearances
-               // 488..=489, // Linear Object Appearances
-               // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
+    483..=487, // Point Object Appearances
+    488..=489, // Linear Object Appearances
+    149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
                // TODO 54 - Cultural Feature General Appearance
                // TODO 480 - Non-Human Life Forms Appearance
 ];
@@ -325,6 +333,7 @@ pub struct BitfieldItem {
     pub bit_position: usize,
     pub length: usize,
     pub xref: Option<usize>,
+    pub description: String,
 }
 
 type Overrides = HashMap<usize, UidOverride>;

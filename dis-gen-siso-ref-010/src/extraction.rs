@@ -28,6 +28,7 @@ const BITFIELD_ROW_ATTR_NAME: QName = QName(b"name");
 const BITFIELD_ROW_ATTR_BIT_POSITION: QName = QName(b"bit_position");
 const BITFIELD_ROW_ATTR_LENGTH: QName = QName(b"length");
 const BITFIELD_ROW_ATTR_XREF: QName = QName(b"xref");
+const BITFIELD_ROW_ATTR_DESCRIPTION: QName = QName(b"description");
 const CR_ELEMENT: QName = QName(b"cr");
 
 #[allow(clippy::too_many_lines)]
@@ -110,15 +111,17 @@ fn extract_enum_rows(reader: &mut Reader<BufReader<File>>) -> Vec<EnumItem> {
 
     loop {
         match reader.read_event_into(&mut buf) {
+            #[allow(clippy::match_same_arms)]
             Ok(Event::Start(ref element)) => match element.name() {
                 ENUM_ROW_ELEMENT => rows.push(extract_enum_row(element, reader)),
                 ENUM_ROW_RANGE_ELEMENT => rows.push(extract_enum_range_row(element, reader)),
                 _ => (), // HEADER element
             },
-            Ok(Event::End(ref element)) => match element.name() {
-                ENUM_ELEMENT => break,
-                _ => (),
-            },
+            Ok(Event::End(ref element)) => {
+                if element.name() == ENUM_ELEMENT {
+                    break;
+                }
+            }
             Ok(Event::Empty(ref element)) => match element.name() {
                 ENUM_ROW_ELEMENT => rows.push(extract_enum_row(element, reader)),
                 ENUM_ROW_RANGE_ELEMENT => rows.push(extract_enum_range_row(element, reader)),
@@ -138,16 +141,8 @@ fn extract_enum_row(element: &BytesStart, reader: &Reader<BufReader<File>>) -> E
     let value = extract_attr_as_usize(element, ENUM_ROW_ATTR_VALUE, reader);
     let description = extract_attr_as_string(element, ENUM_ROW_ATTR_DESC);
     // TODO simplify - generate that single xref correctly
-    let xref = if let Some(xref_value) = extract_attr_as_usize(element, ENUM_ROW_ATTR_XREF, reader)
-    {
-        if SKIP_XREF_UIDS.contains(&xref_value) {
-            None
-        } else {
-            Some(xref_value)
-        }
-    } else {
-        None
-    };
+    let xref = extract_attr_as_usize(element, ENUM_ROW_ATTR_XREF, reader)
+        .filter(|&xref_value| !SKIP_XREF_UIDS.contains(&xref_value));
     let deprecated = deprecated_attribute_present(element);
 
     match (value, description, xref) {
@@ -250,6 +245,8 @@ fn extract_bitfield_row(element: &BytesStart, reader: &Reader<BufReader<File>>) 
     let length = extract_attr_as_usize(element, BITFIELD_ROW_ATTR_LENGTH, reader)
         .unwrap_or(DEFAULT_BIT_SIZE);
     let xref = extract_attr_as_usize(element, BITFIELD_ROW_ATTR_XREF, reader);
+    let description = extract_attr_as_string(element, BITFIELD_ROW_ATTR_DESCRIPTION)
+        .unwrap_or_else(|| panic!("Expected attribute '{BITFIELD_ROW_ATTR_DESCRIPTION:?}' on element '{BITFIELD_ROW_ELEMENT:?}'"));
 
     if let (Some(name), Some(bit_position)) = (name, position) {
         BitfieldItem {
@@ -257,6 +254,7 @@ fn extract_bitfield_row(element: &BytesStart, reader: &Reader<BufReader<File>>) 
             bit_position,
             length,
             xref,
+            description,
         }
     } else {
         panic!("Encountered an error extracting an '{BITFIELD_ROW_ELEMENT:?}'.");

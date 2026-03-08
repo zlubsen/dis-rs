@@ -19,6 +19,7 @@ pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
         }
     }
 
+    // FIXME remove after implementing all stuff for v8
     let type_placeholder = generate_type_placeholder();
 
     quote!(
