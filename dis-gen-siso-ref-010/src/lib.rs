@@ -26,7 +26,7 @@ const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 157] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 156] = [
     (3, Some("ProtocolVersion"), None, false), // DIS-Protocol Version
     (4, Some("PduType"), None, false),         // DIS-PDU Type
     (5, Some("ProtocolFamily"), None, false),  // DIS-PDU Family
@@ -74,7 +74,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 157] = [
     // 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
     (141, None, None, false), // Appearance Type
-    (142, None, None, false), // Extended Appearance Type
+    // (142, None, None, false), // Extended Appearance Type
     (143, None, None, false), // UA-State/Change Update Indicator
     (144, None, None, false), // UA-Acoustic System Name
     (145, None, None, false), // UA-Acoustic Emitter System Function
@@ -327,6 +327,41 @@ pub struct BitfieldItem {
     pub xref: Option<usize>,
 }
 
+type Overrides = HashMap<usize, UidOverride>;
+
+#[derive(Default, Debug)]
+struct UidOverride {
+    name: Option<&'static str>,
+    size: Option<usize>, // TODO see if we can derive this override when extracting or generating.
+    postfix_uid: bool,
+}
+
+impl UidOverride {
+    fn new(name: Option<&'static str>, size: Option<usize>, postfix_uid: bool) -> Self {
+        Self {
+            name,
+            size,
+            postfix_uid,
+        }
+    }
+
+    fn new_with_name(name: &'static str) -> Self {
+        Self {
+            name: Some(name),
+            size: None,
+            postfix_uid: false,
+        }
+    }
+
+    fn new_with_size(size: usize) -> Self {
+        Self {
+            name: None,
+            size: Some(size),
+            postfix_uid: false,
+        }
+    }
+}
+
 /// This is the main entry point for generating the enumerations
 /// as defined in the SISO-REF-010 reference document.
 ///
@@ -371,7 +406,7 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
     uid_index.insert(94, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(95, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
                                                          // uid_index.insert(141, "Enumeration<u8>".to_string());
-                                                         // uid_index.insert(142, "Enumeration<u8>".to_string());
+    uid_index.insert(142, "Enumeration<u8>".to_string());
     uid_index.insert(149, "Enumeration<u16>".to_string()); // bitfield
                                                            // uid_index.insert(151, "Enumeration<u16>".to_string());
                                                            // uid_index.insert(152, "Enumeration<u8>".to_string());
