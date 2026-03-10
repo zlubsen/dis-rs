@@ -16,6 +16,7 @@ const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 //  - auto infer data size overrides
 //  - flag indicating to not generate the UID
 //  - uniform way of handling for all UID types (enums, bitfields, records)
+//  - adding `footnotes` to the code; check what we now do with `description`s of bitfieldrows
 // TODO 2) generate all bitfields (60 items).
 // TODO 3) generate the record types as well (31 items).
 
@@ -34,7 +35,7 @@ const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 156] = [
+const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 155] = [
     (3, Some("ProtocolVersion"), None, false), // DIS-Protocol Version
     (4, Some("PduType"), None, false),         // DIS-PDU Type
     (5, Some("ProtocolFamily"), None, false),  // DIS-PDU Family
@@ -81,7 +82,7 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 156] = [
     (84, Some("IffSystemMode"), None, false), // IFF-System Mode
     // 87, 96-98 // IFF stuff
     // 100-106, // Subcategories
-    (141, None, None, false), // Appearance Type
+    // (141, None, None, false), // Appearance Type
     // (142, None, None, false), // Extended Appearance Type
     (143, None, None, false), // UA-State/Change Update Indicator
     (144, None, None, false), // UA-Acoustic System Name
@@ -216,14 +217,14 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 156] = [
     (889, None, None, false), // Damage Area
 ];
 
-const BITFIELD_UIDS: [RangeInclusive<usize>; 7] = [
-    31..=43,   // Appearances
-    68..=68,   // StopFreeze Frozen Behavior
-    230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
+const BITFIELD_UIDS: [RangeInclusive<usize>; 3] = [
+    31..=43, // Appearances
+    68..=68, // StopFreeze Frozen Behavior
+    // 230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
     450..=462, // Capabilities
-    483..=487, // Point Object Appearances
-    488..=489, // Linear Object Appearances
-    149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
+               // 483..=487, // Point Object Appearances
+               // 488..=489, // Linear Object Appearances
+               // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
                // TODO 54 - Cultural Feature General Appearance
                // TODO 480 - Non-Human Life Forms Appearance
 ];
@@ -338,37 +339,198 @@ pub struct BitfieldItem {
 
 type Overrides = HashMap<usize, UidOverride>;
 
+/// An `UidOverride` record is used to store overrides for UID items.
+/// Available configurations are:
+/// - Change the name of the to-be generated item (e.g. `Some Very Long Name` becomes `ShorterName`);
+/// - Change the data size of the to-be generated item (e.g. '5' becomes '16').
+/// - Postfix fields of enumeration items with their value, because duplicate fields names exist in the SISO-REF-010 definitions.
+/// - Completely skip the item of being generated.
 #[derive(Default, Debug)]
 struct UidOverride {
     name: Option<&'static str>,
     size: Option<usize>, // TODO see if we can derive this override when extracting or generating.
     postfix_uid: bool,
+    skip: bool,
 }
 
 impl UidOverride {
-    fn new(name: Option<&'static str>, size: Option<usize>, postfix_uid: bool) -> Self {
+    /// Create an `UidOverride` record, passing all available settings.
+    fn new(name: Option<&'static str>, size: Option<usize>, postfix_uid: bool, skip: bool) -> Self {
         Self {
             name,
             size,
             postfix_uid,
+            skip,
         }
     }
 
+    /// Create an `UidOverride` record that indicates that the name
+    /// of the to-be generated enum/bitfield/record needs to be overridden.
     fn new_with_name(name: &'static str) -> Self {
         Self {
             name: Some(name),
             size: None,
             postfix_uid: false,
+            skip: false,
         }
     }
 
+    /// Create an `UidOverride` record that indicates that the data size
+    /// of the enum/bitfield/record needs to be overridden.
     fn new_with_size(size: usize) -> Self {
         Self {
             name: None,
             size: Some(size),
             postfix_uid: false,
+            skip: false,
         }
     }
+
+    /// Create an `UidOverride` record that indicates that the fields
+    /// of the enum/bitfield/record need to be post-fixed with their value.
+    fn new_with_postfix() -> Self {
+        Self {
+            name: None,
+            size: None,
+            postfix_uid: true,
+            skip: false,
+        }
+    }
+
+    /// Create a new `UidOverride` record, indicating the UID needs to be skipped.
+    ///
+    /// All other options, which are irrelevant when the UID is skipped, are set to defaults.
+    fn new_skip() -> Self {
+        Self {
+            name: None,
+            size: None,
+            postfix_uid: false,
+            skip: true,
+        }
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+fn init_overrides() -> Overrides {
+    let mut overrides = Overrides::new();
+
+    // Enumerations
+    overrides.insert(3, UidOverride::new_with_name("ProtocolVersion"));
+    overrides.insert(4, UidOverride::new_with_name("PduType"));
+    overrides.insert(5, UidOverride::new_with_name("ProtocolFamily"));
+    overrides.insert(6, UidOverride::new_with_name("ForceId"));
+    overrides.insert(9, UidOverride::new_skip());
+    overrides.insert(10, UidOverride::new_skip());
+    overrides.insert(11, UidOverride::new_skip());
+    overrides.insert(12, UidOverride::new_skip());
+    overrides.insert(13, UidOverride::new_skip());
+    overrides.insert(14, UidOverride::new_skip());
+    overrides.insert(15, UidOverride::new_skip());
+    overrides.insert(16, UidOverride::new_skip());
+    overrides.insert(17, UidOverride::new_skip());
+    overrides.insert(18, UidOverride::new_skip());
+    overrides.insert(19, UidOverride::new_skip());
+    overrides.insert(20, UidOverride::new_skip());
+    overrides.insert(21, UidOverride::new_skip());
+    overrides.insert(22, UidOverride::new_skip());
+    overrides.insert(23, UidOverride::new_skip());
+    overrides.insert(24, UidOverride::new_skip());
+    overrides.insert(25, UidOverride::new_skip());
+    overrides.insert(26, UidOverride::new_skip());
+    overrides.insert(27, UidOverride::new_skip());
+    overrides.insert(28, UidOverride::new_skip());
+    overrides.insert(58, UidOverride::new_with_size(32));
+    overrides.insert(61, UidOverride::new_with_postfix());
+    overrides.insert(64, UidOverride::new_with_postfix());
+    overrides.insert(
+        66,
+        UidOverride::new(Some("VariableRecordType"), None, true, false),
+    );
+    overrides.insert(69, UidOverride::new_with_name("AcknowledgeFlag"));
+    overrides.insert(70, UidOverride::new_with_name("ResponseFlag"));
+    overrides.insert(71, UidOverride::new_with_name("ActionId"));
+    overrides.insert(72, UidOverride::new_with_name("RequestStatus"));
+    overrides.insert(73, UidOverride::new_with_name("EventType"));
+    overrides.insert(75, UidOverride::new_with_postfix());
+    overrides.insert(76, UidOverride::new_with_postfix());
+    overrides.insert(81, UidOverride::new_with_name("DesignatorCode"));
+    overrides.insert(82, UidOverride::new_with_name("IffSystemType"));
+    overrides.insert(83, UidOverride::new_with_name("IffSystemName"));
+    overrides.insert(84, UidOverride::new_with_name("IffSystemMode"));
+    overrides.insert(87, UidOverride::new_skip());
+    overrides.insert(141, UidOverride::new_skip());
+    overrides.insert(142, UidOverride::new_skip());
+    overrides.insert(151, UidOverride::new_skip());
+    overrides.insert(152, UidOverride::new_skip());
+    overrides.insert(153, UidOverride::new_skip());
+    overrides.insert(154, UidOverride::new_skip());
+    overrides.insert(
+        157,
+        UidOverride::new_with_name("TransmitterDetailAmplitudeAngleModulation"),
+    );
+    overrides.insert(169, UidOverride::new_skip());
+    overrides.insert(176, UidOverride::new_skip());
+    overrides.insert(
+        178,
+        UidOverride::new(Some("SignalTdlType"), None, true, false),
+    );
+    overrides.insert(179, UidOverride::new_with_name("ReceiverState"));
+    overrides.insert(207, UidOverride::new_skip());
+    overrides.insert(212, UidOverride::new_with_name("StationName"));
+    overrides.insert(224, UidOverride::new_with_postfix());
+    overrides.insert(270, UidOverride::new_with_size(16));
+    overrides.insert(271, UidOverride::new(None, Some(16), true, false));
+
+    overrides.insert(281, UidOverride::new_with_name("APAStatus"));
+    overrides.insert(
+        282,
+        UidOverride::new_with_name("SeparationReasonForSeparation"),
+    );
+    overrides.insert(
+        283,
+        UidOverride::new_with_name("SeparationPreEntityIndicator"),
+    );
+    overrides.insert(295, UidOverride::new_with_name("AttributeActionCode"));
+    overrides.insert(296, UidOverride::new_with_name("DrParametersType"));
+    overrides.insert(
+        301,
+        UidOverride::new_with_name("TransferredEntityIndicator"),
+    );
+    overrides.insert(302, UidOverride::new_with_name("LvcIndicator"));
+    overrides.insert(303, UidOverride::new_with_name("CoupledExtensionIndicator"));
+    overrides.insert(304, UidOverride::new_with_name("FireTypeIndicator"));
+    overrides.insert(305, UidOverride::new_with_name("DetonationTypeIndicator"));
+    overrides.insert(306, UidOverride::new_with_name("RadioAttachedIndicator"));
+    overrides.insert(307, UidOverride::new_with_name("IntercomAttachedIndicator"));
+    overrides.insert(308, UidOverride::new_with_name("IffSimulationMode"));
+    overrides.insert(320, UidOverride::new_with_name("ChangeIndicator"));
+
+    overrides.insert(
+        335,
+        UidOverride::new_with_name("UAPropulsionPlantConfiguration"),
+    );
+    overrides.insert(339, UidOverride::new_with_name("IffApplicableModes"));
+    overrides.insert(346, UidOverride::new_with_name("Mode5IffMission"));
+
+    overrides.insert(
+        347,
+        UidOverride::new(Some("ModeSTransmitState"), Some(8), false, false),
+    );
+
+    overrides.insert(358, UidOverride::new_with_postfix());
+    overrides.insert(359, UidOverride::new_with_postfix());
+    overrides.insert(361, UidOverride::new_with_name("Mode5SAltitudeResolution"));
+    overrides.insert(
+        389,
+        UidOverride::new_with_name("Active Interrogation Indicator"),
+    );
+
+    // Bitfields
+    overrides.insert(54, UidOverride::new_skip()); // TODO - Cultural Feature General Appearance
+    overrides.insert(149, UidOverride::new_skip()); // TODO - does not compile as of yet
+    overrides.insert(480, UidOverride::new_skip()); // TODO - Non-Human Life Forms Appearance
+
+    overrides
 }
 
 /// This is the main entry point for generating the enumerations
@@ -382,6 +544,8 @@ impl UidOverride {
 /// aborting by panicking is acceptable.
 #[must_use]
 pub fn execute(siso_ref_010_file: &str) -> HashMap<usize, String> {
+    let overrides = init_overrides();
+
     let mut reader = Reader::from_file(Path::new(siso_ref_010_file)).unwrap();
     reader.config_mut().trim_text(true);
 
