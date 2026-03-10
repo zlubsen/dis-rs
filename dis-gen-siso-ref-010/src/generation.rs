@@ -1,20 +1,28 @@
 use super::{
     format_field_name, format_name, format_name_postfix, Bitfield, BitfieldItem, Enum, EnumItem,
-    GenerationItem,
+    GenerationItem, Overrides,
 };
 use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote};
 
-pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
+pub fn generate(items: &Vec<GenerationItem>, overrides: &Overrides) -> TokenStream {
     let mut generated_items = vec![];
 
     let lookup_xref = |xref: usize| items.iter().find(|&it| it.uid() == xref);
 
     for item in items {
         match item {
-            GenerationItem::Enum(e) => generated_items.push(generate_enum(e, lookup_xref)),
+            GenerationItem::Enum(e) => {
+                let tokens = generate_enum(e, lookup_xref, overrides);
+                // println!("{tokens}");
+                // let _ast = syn::parse_file(&tokens.to_string()).unwrap();
+                generated_items.push(tokens);
+            }
             GenerationItem::Bitfield(b) => {
-                generated_items.push(generate_bitfield(b, lookup_xref));
+                let tokens = generate_bitfield(b, lookup_xref);
+                // println!("{tokens}");
+                // let _ast = syn::parse_file(&tokens.to_string()).unwrap();
+                generated_items.push(tokens);
             }
         }
     }
@@ -44,19 +52,23 @@ pub fn generate(items: &Vec<GenerationItem>) -> TokenStream {
     )
 }
 
-fn generate_enum<'a, F>(item: &Enum, lookup_xref: F) -> TokenStream
+fn generate_enum<'a, F>(item: &Enum, lookup_xref: F, overrides: &Overrides) -> TokenStream
 where
     F: Fn(usize) -> Option<&'a GenerationItem>,
 {
+    if overrides.get(&item.uid).is_some_and(|entry| entry.skip) {
+        return quote! {};
+    }
+
     let formatted_name = format_name(item.name.as_str(), item.uid);
     let name_ident = format_ident!("{}", formatted_name);
     // generate enum declarations
-    let decl = quote_enum_decl(item, lookup_xref);
+    let decl = quote_enum_decl(item, lookup_xref, overrides);
     // generate From impls (2x)
-    let from_impl = quote_enum_from_impl(item, &name_ident);
-    let into_impl = quote_enum_into_impl(item, &name_ident);
+    let from_impl = quote_enum_from_impl(item, &name_ident, overrides);
+    let into_impl = quote_enum_into_impl(item, &name_ident, overrides);
     // generate Display impl
-    let display_impl = quote_enum_display_impl(item, &name_ident);
+    let display_impl = quote_enum_display_impl(item, &name_ident, overrides);
     // generate Default impl
     let default_impl = quote_enum_default_impl(&name_ident);
     quote!(
@@ -73,13 +85,14 @@ where
     )
 }
 
-fn quote_enum_decl<'a, F>(e: &Enum, lookup_xref: F) -> TokenStream
+fn quote_enum_decl<'a, F>(e: &Enum, lookup_xref: F, overrides: &Overrides) -> TokenStream
 where
     F: Fn(usize) -> Option<&'a GenerationItem>,
 {
     let name = format_name(e.name.as_str(), e.uid);
     let name_ident = format_ident!("{}", name);
-    let arms = quote_enum_decl_arms(&e.items, e.size, e.postfix_items, lookup_xref);
+    let needs_postfix = overrides.get(&e.uid).is_some_and(|entry| entry.postfix_uid);
+    let arms = quote_enum_decl_arms(&e.items, e.size, needs_postfix, lookup_xref);
     let uid_doc_comment = format!(" UID {}", e.uid);
     quote!(
         #[doc = #uid_doc_comment]
@@ -147,8 +160,12 @@ where
     arms
 }
 
-fn quote_enum_from_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-    let arms = quote_enum_from_arms(name_ident, &e.items, e.size, e.postfix_items);
+fn quote_enum_from_impl(e: &Enum, name_ident: &Ident, overrides: &Overrides) -> TokenStream {
+    let needs_postfix = overrides
+        .get(&e.uid)
+        .map(|entry| entry.postfix_uid)
+        .unwrap_or(false);
+    let arms = quote_enum_from_arms(name_ident, &e.items, e.size, needs_postfix);
     let discriminant_type = size_to_type(e.size);
     let discriminant_ident = format_ident!("{}", discriminant_type);
     quote!(
@@ -208,8 +225,12 @@ fn quote_enum_from_arms(
     arms
 }
 
-fn quote_enum_into_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-    let arms = quote_enum_into_arms(name_ident, &e.items, e.size, e.postfix_items);
+fn quote_enum_into_impl(e: &Enum, name_ident: &Ident, overrides: &Overrides) -> TokenStream {
+    let needs_postfix = overrides
+        .get(&e.uid)
+        .map(|entry| entry.postfix_uid)
+        .unwrap_or(false);
+    let arms = quote_enum_into_arms(name_ident, &e.items, e.size, needs_postfix);
     let discriminant_type = size_to_type(e.size);
     let discriminant_ident = format_ident!("{}", discriminant_type);
     quote!(
@@ -267,8 +288,12 @@ fn quote_enum_into_arms(
     arms
 }
 
-fn quote_enum_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
-    let arms = quote_enum_display_arms(&e.items, name_ident, e.postfix_items);
+fn quote_enum_display_impl(e: &Enum, name_ident: &Ident, overrides: &Overrides) -> TokenStream {
+    let needs_postfix = overrides
+        .get(&e.uid)
+        .map(|entry| entry.postfix_uid)
+        .unwrap_or(false);
+    let arms = quote_enum_display_arms(&e.items, name_ident, needs_postfix);
     quote!(
         impl Display for #name_ident {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

@@ -1,6 +1,6 @@
 use super::{
     BasicEnumItem, Bitfield, BitfieldItem, CrossRefEnumItem, Enum, EnumItem, GenerationItem,
-    RangeEnumItem, BITFIELD_UIDS, ENUM_UIDS, SKIP_XREF_UIDS,
+    RangeEnumItem, BITFIELD_UIDS, SKIP_XREF_UIDS,
 };
 use dis_gen_utils::{extract_attr_as_string, extract_attr_as_usize};
 use quick_xml::events::{BytesStart, Event};
@@ -67,41 +67,20 @@ pub fn extract(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
 
 fn extract_enum(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Option<Enum> {
     let uid = extract_attr_as_usize(element, ELEMENT_ATTR_UID, reader);
-    let should_generate = ENUM_UIDS.iter().find(|&&tuple| tuple.0 == uid.unwrap());
 
-    if let Some(should_generate) = should_generate {
-        let name_override = should_generate.1;
-        let size_override = should_generate.2;
-        let postfix_items = should_generate.3;
+    let name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
+    let size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
+    let items = extract_enum_rows(reader);
 
-        let name = if let Some(name) = name_override {
-            Some(name.to_string())
-        } else {
-            extract_attr_as_string(element, ELEMENT_ATTR_NAME)
-        };
-
-        let size = if let Some(size) = size_override {
-            Some(size)
-        } else {
-            extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader)
-        };
-
-        let items = extract_enum_rows(reader);
-
-        if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
-            Some(Enum {
-                uid,
-                name,
-                size,
-                items,
-                postfix_items,
-            })
-        } else {
-            panic!("Encountered an error extracting an '{ENUM_ELEMENT:?}'.");
-        }
+    if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
+        Some(Enum {
+            uid,
+            name,
+            size,
+            items,
+        })
     } else {
-        // Not to be generated
-        None
+        panic!("Encountered an error extracting an '{ENUM_ELEMENT:?}'.");
     }
 }
 

@@ -217,16 +217,17 @@ const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 155] = [
     (889, None, None, false), // Damage Area
 ];
 
-const BITFIELD_UIDS: [RangeInclusive<usize>; 3] = [
+const BITFIELD_UIDS: [RangeInclusive<usize>; 4] = [
     31..=43, // Appearances
     68..=68, // StopFreeze Frozen Behavior
     // 230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
     450..=462, // Capabilities
-               // 483..=487, // Point Object Appearances
-               // 488..=489, // Linear Object Appearances
-               // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
-               // TODO 54 - Cultural Feature General Appearance
-               // TODO 480 - Non-Human Life Forms Appearance
+    // 483..=487, // Point Object Appearances
+    // 488..=489, // Linear Object Appearances
+    // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
+    // TODO 54 - Cultural Feature General Appearance
+    // TODO 480 - Non-Human Life Forms Appearance
+    591..=591, // NET ID Record
 ];
 
 /// Some enums cross-reference "record" elements.
@@ -276,7 +277,6 @@ pub struct Enum {
     pub name: String,
     pub size: usize,
     pub items: Vec<EnumItem>,
-    pub postfix_items: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -544,8 +544,6 @@ fn init_overrides() -> Overrides {
 /// aborting by panicking is acceptable.
 #[must_use]
 pub fn execute(siso_ref_010_file: &str) -> HashMap<usize, String> {
-    let overrides = init_overrides();
-
     let mut reader = Reader::from_file(Path::new(siso_ref_010_file)).unwrap();
     reader.config_mut().trim_text(true);
 
@@ -647,8 +645,9 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
 
 /// Generates code for all provided `GenerationItem`s, formats the code and stores it in `OUT_DIR`.
 fn generate_and_save(generation_items: &Vec<GenerationItem>) {
+    let overrides = init_overrides();
     // Generate all code for enums
-    let generated = generation::generate(generation_items);
+    let generated = generation::generate(generation_items, &overrides);
 
     // format generated code using prettyplease
     let ast = syn::parse_file(&generated.to_string())
@@ -676,9 +675,13 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace("&quot;", "")
         .replace("&amp;", "")
         .replace(';', "")
+        .replace(':', "")
         .replace('(', "_")
         .replace(')', "_")
         .replace('=', "_")
+        .replace('–', "_")
+        .replace('+', "plus")
+        .replace('%', "pct")
         // Split by white space (1), capitalize each substring (2), then merge (3).
         // Example procedure for "Life form":
         // 1 | Split      : ["Life", "form"]
