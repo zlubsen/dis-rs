@@ -62,9 +62,9 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
             .collect::<Vec<GenerationItem>>();
 
         let fqn_lookup = create_fqn_lookup(&generation_items, &uid_lookup);
-        todo!("Uniformly make sure all items are put in the FQN lookup - BitRecords");
-        todo!("Generate all enumerations instead of a subselection");
-        todo!("remove all 'Padding' and 'Not used' fields from records");
+        // todo!("Uniformly make sure all items are put in the FQN lookup - BitRecords");
+        // todo!("Generate all enumerations instead of a subselection");
+        // todo!("remove all 'Padding' and 'Not used' fields from records");
 
         for fqn in &fqn_lookup {
             println!("{} => {}", fqn.0, fqn.1);

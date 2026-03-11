@@ -10,4 +10,5 @@ fn main() {
     for entry in &uid_lookup {
         println!("{}\t{}", entry.0, entry.1);
     }
+    println!("Nr of items: {}", uid_lookup.len());
 }

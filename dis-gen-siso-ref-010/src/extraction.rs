@@ -1,6 +1,6 @@
 use super::{
     BasicEnumItem, Bitfield, BitfieldItem, CrossRefEnumItem, Enum, EnumItem, GenerationItem,
-    RangeEnumItem, BITFIELD_UIDS, SKIP_XREF_UIDS,
+    RangeEnumItem, SKIP_XREF_UIDS,
 };
 use dis_gen_utils::{extract_attr_as_string, extract_attr_as_usize};
 use quick_xml::events::{BytesStart, Event};
@@ -166,12 +166,6 @@ fn extract_bitfield(
     reader: &mut Reader<BufReader<File>>,
 ) -> Option<Bitfield> {
     let uid = extract_attr_as_usize(element, ELEMENT_ATTR_UID, reader);
-    if let Some(uid) = uid {
-        if !BITFIELD_UIDS.iter().any(|range| range.contains(&uid)) {
-            // uid is not in the list, skip this bitfield, not to be generated
-            return None;
-        }
-    }
 
     let name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
     let size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);

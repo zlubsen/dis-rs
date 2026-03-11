@@ -5,7 +5,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
 use crate::enumerations::{
     PduType, TransmitterAntennaPatternReferenceSystem, TransmitterAntennaPatternType,
-    TransmitterCryptoSystem, TransmitterDetailAmplitudeAngleModulation,
+    TransmitterCryptoSystem,
     TransmitterDetailAmplitudeModulation, TransmitterDetailAngleModulation,
     TransmitterDetailCarrierPhaseShiftModulation, TransmitterDetailCombinationModulation,
     TransmitterDetailPulseModulation, TransmitterDetailSATCOMModulation,
@@ -434,8 +434,8 @@ impl TransmitterMajorModulation {
             TransmitterMajorModulation::Unmodulated(_) => TransmitterMajorModulation::Unmodulated(
                 TransmitterDetailUnmodulatedModulation::from(detail),
             ),
-            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(_) => {
-                TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(
+            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM(_) => {
+                TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM(
                     TransmitterDetailCarrierPhaseShiftModulation::from(detail),
                 )
             }
@@ -458,7 +458,7 @@ impl TransmitterMajorModulation {
             TransmitterMajorModulation::Combination(detail) => (4, (*detail).into()),
             TransmitterMajorModulation::Pulse(detail) => (5, (*detail).into()),
             TransmitterMajorModulation::Unmodulated(detail) => (6, (*detail).into()),
-            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM_(detail) => {
+            TransmitterMajorModulation::CarrierPhaseShiftModulation_CPSM(detail) => {
                 (7, (*detail).into())
             }
             TransmitterMajorModulation::SATCOM(detail) => (8, (*detail).into()),

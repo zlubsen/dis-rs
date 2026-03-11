@@ -35,200 +35,200 @@ const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 ///
 /// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
 /// The bool flag will append `"_value"` to the name of the variant to make it unique
-const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 155] = [
-    (3, Some("ProtocolVersion"), None, false), // DIS-Protocol Version
-    (4, Some("PduType"), None, false),         // DIS-PDU Type
-    (5, Some("ProtocolFamily"), None, false),  // DIS-PDU Family
-    (6, Some("ForceId"), None, false),         // Force ID
-    (7, None, None, false),                    // Entity Kind
-    (8, None, None, false),                    // Domain
-    // 9-28 // (Sub-)Categories
-    (29, None, None, false), // Country
-    // 30 // Entity Types records
-    // 31-43 // Bitfields, see `BITFIELD_UIDS`
-    (44, None, None, false),                      // Dead Reckoning Algorithm
-    (45, None, None, false),                      // Entity Marking Character Set
-    (46, None, None, false),                      // Location Definition
-    (52, None, None, false),                      // Entity Clamping Type
-    (53, None, None, false),                      // Vertical Reference
-    (55, None, None, false), // Entity Capabilities (together with bitfields 450-462)
-    (56, None, None, false), // Variable Parameter Record Type
-    (57, None, None, false), // Attached Parts
-    (58, None, Some(32), false), // Articulated Parts-Type Metric
-    (59, None, None, false), // Articulated Parts-Type Class
-    (60, None, None, false), // Munition Descriptor-Warhead
-    (61, None, None, true),  // Munition Descriptor-Fuse
-    (62, None, None, false), // Detonation result
-    (63, None, None, false), // Service Type Requested
-    (64, None, None, true),  // Repair Complete-Repair
-    (65, None, None, false), // Repair Complete-Repair Result
-    (66, Some("VariableRecordType"), None, true), // Variable Record Types
-    (67, None, None, false), // Stop/Freeze Reason
-    (69, Some("AcknowledgeFlag"), None, false), // Acknowledge-Acknowledge Flag
-    (70, Some("ResponseFlag"), None, false), // Acknowledge-Response Flag
-    (71, Some("ActionId"), None, false), // Action Request-Action ID
-    (72, Some("RequestStatus"), None, false), // Action Request-Request Status
-    (73, Some("EventType"), None, false), // Event Report-Event Type
-    (74, None, None, false), // Required Reliability Service
-    (75, None, None, true),  // Emitter Name
-    (76, None, None, true),  // Emitter System Function
-    (77, None, None, false), // Electromagnetic Emission-State Update Indicator
-    (78, None, None, false), // Electromagnetic Emission-Beam Function
-    (79, None, None, false), // High Density Track/Jam
-    (80, None, None, false), // Designator System Name
-    (81, Some("DesignatorCode"), None, false), // Designator Code
-    (82, Some("IffSystemType"), None, false), // IFF-System Type
-    (83, Some("IffSystemName"), None, false), // IFF-System Name
-    (84, Some("IffSystemMode"), None, false), // IFF-System Mode
-    // 87, 96-98 // IFF stuff
-    // 100-106, // Subcategories
-    // (141, None, None, false), // Appearance Type
-    // (142, None, None, false), // Extended Appearance Type
-    (143, None, None, false), // UA-State/Change Update Indicator
-    (144, None, None, false), // UA-Acoustic System Name
-    (145, None, None, false), // UA-Acoustic Emitter System Function
-    (146, None, None, false), // UA-Active Emission Parameter Index
-    (147, None, None, false), // UA-Scan Pattern
-    (148, None, None, false), // UA-Passive Parameter Index
-    (150, None, None, false), // UA-Additional Passive Activity Parameter Index
-    // (151, None, None, false), // Channel Type
-    // (152, None, None, false), // Channel Detail
-    // (153, None, None, false), // Transmitter Waveform Type
-    // (154, None, None, false), // Transmitter Waveform Detail
-    (155, None, None, false), // Transmitter Major Modulation
-    (156, None, None, false), // Transmitter-Detail-Amplitude Modulation
-    (
-        157,
-        Some("TransmitterDetailAmplitudeAngleModulation"),
-        None,
-        false,
-    ), // Transmitter-Detail-Amplitude and Angle Modulation
-    (158, Some("TransmitterDetailAngleModulation"), None, false), // Transmitter-Detail-Angle modulation
-    (159, None, None, false), // Transmitter-Detail-Combination Modulation
-    (160, None, None, false), // Transmitter-Detail-Pulse Modulation
-    (161, None, None, false), // Transmitter-Detail-Unmodulated Modulation
-    (162, None, None, false), // Transmitter-Detail-Carrier Phase Shift Modulation
-    (163, None, None, false), // Transmitter-Modulation Type System
-    (164, None, None, false), // Transmitter Transmit State
-    (165, None, None, false), // Transmitter Input Source
-    (166, None, None, false), // Transmitter Crypto System
-    (167, None, None, false), // Transmitter Antenna Pattern Type
-    (168, None, None, false), // Transmitter Antenna Pattern Reference System
-    // (169, None, None, false), // Surrogate Group
-    // (176, None, None, false), // Message Type Identifier
-    (177, None, None, false), // Signal User Protocol Identification Number
-    (178, Some("SignalTdlType"), None, true), // Signal TDL Type
-    (179, Some("ReceiverState"), None, false), // Receiver Receiver State
-    (189, None, None, false), // Collision Type
-    (204, None, None, false), // Aggregate State-Aggregate State
-    (205, None, None, false), // Aggregate State-Formation
-    (206, None, None, false), // Aggregate State-Aggregate Kind
-    // (207, None, None, false), // Aggregate State-Aggregate Types -- not supported
-    (208, None, None, false),                // Aggregate State-Subcategory
-    (209, None, None, false),                // Aggregate State-Specific
-    (210, None, None, false),                // IsPartOf-Nature
-    (211, None, None, false),                // IsPartOf-Position
-    (212, Some("StationName"), None, false), // IsPartOf-Station Name
-    (213, None, None, false),                // IsGroupOf-Grouped Entity Category
-    (224, None, None, true),                 // Transfer Control-Transfer Type
-    (270, None, Some(16), false),            // Signal Encoding Class
-    (271, None, Some(16), true),             // Signal Encoding Type
-    (281, Some("APAStatus"), None, false),   // APA Parameter Index-APA Status
-    (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
-    (283, Some("SeparationPreEntityIndicator"), None, false),  // Separation VP-Pre-Entity Indicator
-    (295, Some("AttributeActionCode"), None, false),           // Attribute Action Code
-    (296, Some("DrParametersType"), None, false),              // Dead Reckoning Parameters Type
-    (301, Some("TransferredEntityIndicator"), None, false), // DIS-PDU Status-Transferred Entity Indicator (TEI)
-    (302, Some("LvcIndicator"), None, false),               // DIS-PDU Status-LVC Indicator (LVC)
-    (303, Some("CoupledExtensionIndicator"), None, false), // DIS-PDU Status-Coupled Extension Indicator (CEI)
-    (304, Some("FireTypeIndicator"), None, false), // DIS-PDU Status-Fire Type Indicator (FTI)
-    (305, Some("DetonationTypeIndicator"), None, false), // DIS-PDU Status-Detonation Type Indicator (DTI)
-    (306, Some("RadioAttachedIndicator"), None, false),  // Radio Attached Indicator
-    (307, Some("IntercomAttachedIndicator"), None, false), // DIS-PDU Status-Intercom Attached Indicator (IAI)
-    (308, Some("IffSimulationMode"), None, false), // DIS-PDU Status-IFF Simulation Mode (ISM)
-    (310, None, None, false),                      // Explosive Material Categories
-    (318, None, None, false),                      // Beam Status-Beam State
-    (319, None, None, false),                      // Entity Association-Association Status
-    (320, Some("ChangeIndicator"), None, false),   // Entity VP Record-Change Indicator
-    (321, None, None, false),                      // Entity Association-Group Member Type
-    (323, None, None, false),                      // Entity Association-Physical Association Type
-    (324, None, None, false),                      // Entity Association-Physical Connection Type
-    (334, None, None, false),                      // Record Query-R-Event Type
-    (335, Some("UAPropulsionPlantConfiguration"), None, false), // UA Propulsion Plant Configuration-Configuration
-    (339, Some("IffApplicableModes"), None, false),             // IFF Applicable Modes
-    (346, Some("Mode5IffMission"), None, false),                // IFF Mission
-    (347, Some("ModeSTransmitState"), Some(8), false), // Mode S Interrogator Status Transmit State
-    (350, None, None, false),                          // Mode 5 Reply
-    (351, None, None, false),                          // Antenna Selection
-    (353, None, None, false),                          // Mode S Squitter Type
-    (354, None, None, false),                          // Mode S Squitter Type
-    (355, None, None, false),                          // Mode S Squitter Record Source
-    (356, None, None, false),                          // Aircraft Present Domain
-    (357, None, None, false),                          // Aircraft Identification Type
-    (358, None, None, true),                           // Capability Report
-    (359, None, None, true),                           // Navigation Source
-    (361, Some("Mode5SAltitudeResolution"), None, false), // Mode 5/S Altitude Resolution
-    (369, None, None, false),                          // Data Category
-    (378, None, None, false),                          // Appearance-Paint Scheme
-    (379, None, None, false),                          // Appearance-Damage
-    (380, None, None, false),                          // Mode 5 Message Formats Status
-    (381, None, None, false),                          // Appearance-Trailing Effects
-    (382, None, None, false),                          // Appearance-Hatch
-    (383, None, None, false),                          // Appearance-Launcher/Operational
-    (384, None, None, false),                          // Appearance-Camouflage Type
-    (385, None, None, false),                          // Appearance-Concealed Position
-    (386, None, None, false),                          // Appearance-Entity or Object State
-    (387, None, None, false),                          // Appearance-Canopy
-    (388, None, None, false),                          // Appearance-Subsurface Hatch
-    (389, Some("Active Interrogation Indicator"), None, false), // DIS-PDU Status-Active Interrogation Indicator (AII)
-    (390, None, None, false),                                   // Appearance-Lifeform Health
-    (391, None, None, false), // Appearance-Life Form Compliance Status
-    (392, None, None, false), // Appearance-Life Form Posture
-    (393, None, None, false), // Appearance-Life Form Weapon/Implement
-    (394, None, None, false), // Appearance-Concealed Movement
-    (395, None, None, false), // Appearance-Environmental Density
-    (396, None, None, false), // Mode 5 Platform Type
-    (397, None, None, false), // Appearance-Anti-Collision Day/Night
-    (398, None, None, false), // Appearance-Navigation/Position Brightness
-    (399, None, None, false), // Appearance-Supply Deployed
-    (400, None, None, false), // Appearance-NVG Mode
-    (401, None, None, false), // Parachute
-    (402, None, None, false), // Flare/Smoke Color
-    (403, None, None, false), // Flare/Smoke Status
-    (404, None, None, false), // Spot Chaff Status
-    (405, None, None, false), // Appearance-Object General-Damage
-    (406, None, None, false), // Appearance-Object General-Predistributed
-    (407, None, None, false), // Appearance-Object Specific-Breach State
-    (408, None, None, false), // Appearance-Object Specific-Chemical Type
-    (409, None, None, false), // Appearance-Linear Object Tank Ditch Breach
-    (410, None, None, false), // Appearance-Linear Object Lane Marker Visible
-    (411, None, None, false), // Appearance-Object General-IED Present
-    (412, None, None, false), // Mode 5 Level Selection
-    (415, None, None, false), // Attached Part-Detached Indicator
-    (423, None, None, false), // Mode 5 Location Errors
-    (426, None, None, false), // Cover/Shroud Status
-    // 427 - 448, 478 - 479 // SubCategories (EntityType)
-    // 481 - 482, 505 - 527 // Specifics (EntityType)
-    (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
-    // 800 // Link 16 Version
-    // 801 // Aircraft ID Source
-    (802, None, None, false), // Clothing IR Signature
-    // 803-887 // Do not exist
-    (889, None, None, false), // Damage Area
-];
+// const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 155] = [
+//     (3, Some("ProtocolVersion"), None, false), // DIS-Protocol Version
+//     (4, Some("PduType"), None, false),         // DIS-PDU Type
+//     (5, Some("ProtocolFamily"), None, false),  // DIS-PDU Family
+//     (6, Some("ForceId"), None, false),         // Force ID
+//     (7, None, None, false),                    // Entity Kind
+//     (8, None, None, false),                    // Domain
+//     // 9-28 // (Sub-)Categories
+//     (29, None, None, false), // Country
+//     // 30 // Entity Types records
+//     // 31-43 // Bitfields, see `BITFIELD_UIDS`
+//     (44, None, None, false),                      // Dead Reckoning Algorithm
+//     (45, None, None, false),                      // Entity Marking Character Set
+//     (46, None, None, false),                      // Location Definition
+//     (52, None, None, false),                      // Entity Clamping Type
+//     (53, None, None, false),                      // Vertical Reference
+//     (55, None, None, false), // Entity Capabilities (together with bitfields 450-462)
+//     (56, None, None, false), // Variable Parameter Record Type
+//     (57, None, None, false), // Attached Parts
+//     (58, None, Some(32), false), // Articulated Parts-Type Metric
+//     (59, None, None, false), // Articulated Parts-Type Class
+//     (60, None, None, false), // Munition Descriptor-Warhead
+//     (61, None, None, true),  // Munition Descriptor-Fuse
+//     (62, None, None, false), // Detonation result
+//     (63, None, None, false), // Service Type Requested
+//     (64, None, None, true),  // Repair Complete-Repair
+//     (65, None, None, false), // Repair Complete-Repair Result
+//     (66, Some("VariableRecordType"), None, true), // Variable Record Types
+//     (67, None, None, false), // Stop/Freeze Reason
+//     (69, Some("AcknowledgeFlag"), None, false), // Acknowledge-Acknowledge Flag
+//     (70, Some("ResponseFlag"), None, false), // Acknowledge-Response Flag
+//     (71, Some("ActionId"), None, false), // Action Request-Action ID
+//     (72, Some("RequestStatus"), None, false), // Action Request-Request Status
+//     (73, Some("EventType"), None, false), // Event Report-Event Type
+//     (74, None, None, false), // Required Reliability Service
+//     (75, None, None, true),  // Emitter Name
+//     (76, None, None, true),  // Emitter System Function
+//     (77, None, None, false), // Electromagnetic Emission-State Update Indicator
+//     (78, None, None, false), // Electromagnetic Emission-Beam Function
+//     (79, None, None, false), // High Density Track/Jam
+//     (80, None, None, false), // Designator System Name
+//     (81, Some("DesignatorCode"), None, false), // Designator Code
+//     (82, Some("IffSystemType"), None, false), // IFF-System Type
+//     (83, Some("IffSystemName"), None, false), // IFF-System Name
+//     (84, Some("IffSystemMode"), None, false), // IFF-System Mode
+//     // 87, 96-98 // IFF stuff
+//     // 100-106, // Subcategories
+//     // (141, None, None, false), // Appearance Type
+//     // (142, None, None, false), // Extended Appearance Type
+//     (143, None, None, false), // UA-State/Change Update Indicator
+//     (144, None, None, false), // UA-Acoustic System Name
+//     (145, None, None, false), // UA-Acoustic Emitter System Function
+//     (146, None, None, false), // UA-Active Emission Parameter Index
+//     (147, None, None, false), // UA-Scan Pattern
+//     (148, None, None, false), // UA-Passive Parameter Index
+//     (150, None, None, false), // UA-Additional Passive Activity Parameter Index
+//     // (151, None, None, false), // Channel Type
+//     // (152, None, None, false), // Channel Detail
+//     // (153, None, None, false), // Transmitter Waveform Type
+//     // (154, None, None, false), // Transmitter Waveform Detail
+//     (155, None, None, false), // Transmitter Major Modulation
+//     (156, None, None, false), // Transmitter-Detail-Amplitude Modulation
+//     (
+//         157,
+//         Some("TransmitterDetailAmplitudeAngleModulation"),
+//         None,
+//         false,
+//     ), // Transmitter-Detail-Amplitude and Angle Modulation
+//     (158, Some("TransmitterDetailAngleModulation"), None, false), // Transmitter-Detail-Angle modulation
+//     (159, None, None, false), // Transmitter-Detail-Combination Modulation
+//     (160, None, None, false), // Transmitter-Detail-Pulse Modulation
+//     (161, None, None, false), // Transmitter-Detail-Unmodulated Modulation
+//     (162, None, None, false), // Transmitter-Detail-Carrier Phase Shift Modulation
+//     (163, None, None, false), // Transmitter-Modulation Type System
+//     (164, None, None, false), // Transmitter Transmit State
+//     (165, None, None, false), // Transmitter Input Source
+//     (166, None, None, false), // Transmitter Crypto System
+//     (167, None, None, false), // Transmitter Antenna Pattern Type
+//     (168, None, None, false), // Transmitter Antenna Pattern Reference System
+//     // (169, None, None, false), // Surrogate Group
+//     // (176, None, None, false), // Message Type Identifier
+//     (177, None, None, false), // Signal User Protocol Identification Number
+//     (178, Some("SignalTdlType"), None, true), // Signal TDL Type
+//     (179, Some("ReceiverState"), None, false), // Receiver Receiver State
+//     (189, None, None, false), // Collision Type
+//     (204, None, None, false), // Aggregate State-Aggregate State
+//     (205, None, None, false), // Aggregate State-Formation
+//     (206, None, None, false), // Aggregate State-Aggregate Kind
+//     // (207, None, None, false), // Aggregate State-Aggregate Types -- not supported
+//     (208, None, None, false),                // Aggregate State-Subcategory
+//     (209, None, None, false),                // Aggregate State-Specific
+//     (210, None, None, false),                // IsPartOf-Nature
+//     (211, None, None, false),                // IsPartOf-Position
+//     (212, Some("StationName"), None, false), // IsPartOf-Station Name
+//     (213, None, None, false),                // IsGroupOf-Grouped Entity Category
+//     (224, None, None, true),                 // Transfer Control-Transfer Type
+//     (270, None, Some(16), false),            // Signal Encoding Class
+//     (271, None, Some(16), true),             // Signal Encoding Type
+//     (281, Some("APAStatus"), None, false),   // APA Parameter Index-APA Status
+//     (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
+//     (283, Some("SeparationPreEntityIndicator"), None, false),  // Separation VP-Pre-Entity Indicator
+//     (295, Some("AttributeActionCode"), None, false),           // Attribute Action Code
+//     (296, Some("DrParametersType"), None, false),              // Dead Reckoning Parameters Type
+//     (301, Some("TransferredEntityIndicator"), None, false), // DIS-PDU Status-Transferred Entity Indicator (TEI)
+//     (302, Some("LvcIndicator"), None, false),               // DIS-PDU Status-LVC Indicator (LVC)
+//     (303, Some("CoupledExtensionIndicator"), None, false), // DIS-PDU Status-Coupled Extension Indicator (CEI)
+//     (304, Some("FireTypeIndicator"), None, false), // DIS-PDU Status-Fire Type Indicator (FTI)
+//     (305, Some("DetonationTypeIndicator"), None, false), // DIS-PDU Status-Detonation Type Indicator (DTI)
+//     (306, Some("RadioAttachedIndicator"), None, false),  // Radio Attached Indicator
+//     (307, Some("IntercomAttachedIndicator"), None, false), // DIS-PDU Status-Intercom Attached Indicator (IAI)
+//     (308, Some("IffSimulationMode"), None, false), // DIS-PDU Status-IFF Simulation Mode (ISM)
+//     (310, None, None, false),                      // Explosive Material Categories
+//     (318, None, None, false),                      // Beam Status-Beam State
+//     (319, None, None, false),                      // Entity Association-Association Status
+//     (320, Some("ChangeIndicator"), None, false),   // Entity VP Record-Change Indicator
+//     (321, None, None, false),                      // Entity Association-Group Member Type
+//     (323, None, None, false),                      // Entity Association-Physical Association Type
+//     (324, None, None, false),                      // Entity Association-Physical Connection Type
+//     (334, None, None, false),                      // Record Query-R-Event Type
+//     (335, Some("UAPropulsionPlantConfiguration"), None, false), // UA Propulsion Plant Configuration-Configuration
+//     (339, Some("IffApplicableModes"), None, false),             // IFF Applicable Modes
+//     (346, Some("Mode5IffMission"), None, false),                // IFF Mission
+//     (347, Some("ModeSTransmitState"), Some(8), false), // Mode S Interrogator Status Transmit State
+//     (350, None, None, false),                          // Mode 5 Reply
+//     (351, None, None, false),                          // Antenna Selection
+//     (353, None, None, false),                          // Mode S Squitter Type
+//     (354, None, None, false),                          // Mode S Squitter Type
+//     (355, None, None, false),                          // Mode S Squitter Record Source
+//     (356, None, None, false),                          // Aircraft Present Domain
+//     (357, None, None, false),                          // Aircraft Identification Type
+//     (358, None, None, true),                           // Capability Report
+//     (359, None, None, true),                           // Navigation Source
+//     (361, Some("Mode5SAltitudeResolution"), None, false), // Mode 5/S Altitude Resolution
+//     (369, None, None, false),                          // Data Category
+//     (378, None, None, false),                          // Appearance-Paint Scheme
+//     (379, None, None, false),                          // Appearance-Damage
+//     (380, None, None, false),                          // Mode 5 Message Formats Status
+//     (381, None, None, false),                          // Appearance-Trailing Effects
+//     (382, None, None, false),                          // Appearance-Hatch
+//     (383, None, None, false),                          // Appearance-Launcher/Operational
+//     (384, None, None, false),                          // Appearance-Camouflage Type
+//     (385, None, None, false),                          // Appearance-Concealed Position
+//     (386, None, None, false),                          // Appearance-Entity or Object State
+//     (387, None, None, false),                          // Appearance-Canopy
+//     (388, None, None, false),                          // Appearance-Subsurface Hatch
+//     (389, Some("Active Interrogation Indicator"), None, false), // DIS-PDU Status-Active Interrogation Indicator (AII)
+//     (390, None, None, false),                                   // Appearance-Lifeform Health
+//     (391, None, None, false), // Appearance-Life Form Compliance Status
+//     (392, None, None, false), // Appearance-Life Form Posture
+//     (393, None, None, false), // Appearance-Life Form Weapon/Implement
+//     (394, None, None, false), // Appearance-Concealed Movement
+//     (395, None, None, false), // Appearance-Environmental Density
+//     (396, None, None, false), // Mode 5 Platform Type
+//     (397, None, None, false), // Appearance-Anti-Collision Day/Night
+//     (398, None, None, false), // Appearance-Navigation/Position Brightness
+//     (399, None, None, false), // Appearance-Supply Deployed
+//     (400, None, None, false), // Appearance-NVG Mode
+//     (401, None, None, false), // Parachute
+//     (402, None, None, false), // Flare/Smoke Color
+//     (403, None, None, false), // Flare/Smoke Status
+//     (404, None, None, false), // Spot Chaff Status
+//     (405, None, None, false), // Appearance-Object General-Damage
+//     (406, None, None, false), // Appearance-Object General-Predistributed
+//     (407, None, None, false), // Appearance-Object Specific-Breach State
+//     (408, None, None, false), // Appearance-Object Specific-Chemical Type
+//     (409, None, None, false), // Appearance-Linear Object Tank Ditch Breach
+//     (410, None, None, false), // Appearance-Linear Object Lane Marker Visible
+//     (411, None, None, false), // Appearance-Object General-IED Present
+//     (412, None, None, false), // Mode 5 Level Selection
+//     (415, None, None, false), // Attached Part-Detached Indicator
+//     (423, None, None, false), // Mode 5 Location Errors
+//     (426, None, None, false), // Cover/Shroud Status
+//     // 427 - 448, 478 - 479 // SubCategories (EntityType)
+//     // 481 - 482, 505 - 527 // Specifics (EntityType)
+//     (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
+//     // 800 // Link 16 Version
+//     // 801 // Aircraft ID Source
+//     (802, None, None, false), // Clothing IR Signature
+//     // 803-887 // Do not exist
+//     (889, None, None, false), // Damage Area
+// ];
 
-const BITFIELD_UIDS: [RangeInclusive<usize>; 4] = [
-    31..=43, // Appearances
-    68..=68, // StopFreeze Frozen Behavior
-    // 230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
-    450..=462, // Capabilities
-    // 483..=487, // Point Object Appearances
-    // 488..=489, // Linear Object Appearances
-    // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
-    // TODO 54 - Cultural Feature General Appearance
-    // TODO 480 - Non-Human Life Forms Appearance
-    591..=591, // NET ID Record
-];
+// const BITFIELD_UIDS: [RangeInclusive<usize>; 4] = [
+//     31..=43, // Appearances
+//     68..=68, // StopFreeze Frozen Behavior
+//     // 230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
+//     450..=462, // Capabilities
+//     // 483..=487, // Point Object Appearances
+//     // 488..=489, // Linear Object Appearances
+//     // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
+//     // TODO 54 - Cultural Feature General Appearance
+//     // TODO 480 - Non-Human Life Forms Appearance
+//     591..=591, // NET ID Record
+// ];
 
 /// Some enums cross-reference "record" elements.
 /// Such records are not generated by this script
@@ -341,15 +341,15 @@ type Overrides = HashMap<usize, UidOverride>;
 
 /// An `UidOverride` record is used to store overrides for UID items.
 /// Available configurations are:
-/// - Change the name of the to-be generated item (e.g. `Some Very Long Name` becomes `ShorterName`);
-/// - Change the data size of the to-be generated item (e.g. '5' becomes '16').
-/// - Postfix fields of enumeration items with their value, because duplicate fields names exist in the SISO-REF-010 definitions.
-/// - Completely skip the item of being generated.
+/// - `name`: Change the name of the to-be generated item (e.g. `Some Very Long Name` becomes `ShorterName`);
+/// - `size`: Change the data size of the to-be generated item (e.g. '5' becomes '16').
+/// - `postfix_value` Postfix fields of enumeration items with their value, because duplicate fields names exist in the SISO-REF-010 definitions.
+/// - `skip`: Completely skip the item of being generated.
 #[derive(Default, Debug)]
 struct UidOverride {
     name: Option<&'static str>,
     size: Option<usize>, // TODO see if we can derive this override when extracting or generating.
-    postfix_uid: bool,
+    postfix_value: bool,
     skip: bool,
 }
 
@@ -359,7 +359,7 @@ impl UidOverride {
         Self {
             name,
             size,
-            postfix_uid,
+            postfix_value: postfix_uid,
             skip,
         }
     }
@@ -370,7 +370,7 @@ impl UidOverride {
         Self {
             name: Some(name),
             size: None,
-            postfix_uid: false,
+            postfix_value: false,
             skip: false,
         }
     }
@@ -381,7 +381,7 @@ impl UidOverride {
         Self {
             name: None,
             size: Some(size),
-            postfix_uid: false,
+            postfix_value: false,
             skip: false,
         }
     }
@@ -392,7 +392,7 @@ impl UidOverride {
         Self {
             name: None,
             size: None,
-            postfix_uid: true,
+            postfix_value: true,
             skip: false,
         }
     }
@@ -404,7 +404,7 @@ impl UidOverride {
         Self {
             name: None,
             size: None,
-            postfix_uid: false,
+            postfix_value: false,
             skip: true,
         }
     }
@@ -419,26 +419,7 @@ fn init_overrides() -> Overrides {
     overrides.insert(4, UidOverride::new_with_name("PduType"));
     overrides.insert(5, UidOverride::new_with_name("ProtocolFamily"));
     overrides.insert(6, UidOverride::new_with_name("ForceId"));
-    overrides.insert(9, UidOverride::new_skip());
-    overrides.insert(10, UidOverride::new_skip());
-    overrides.insert(11, UidOverride::new_skip());
-    overrides.insert(12, UidOverride::new_skip());
-    overrides.insert(13, UidOverride::new_skip());
-    overrides.insert(14, UidOverride::new_skip());
-    overrides.insert(15, UidOverride::new_skip());
-    overrides.insert(16, UidOverride::new_skip());
-    overrides.insert(17, UidOverride::new_skip());
-    overrides.insert(18, UidOverride::new_skip());
-    overrides.insert(19, UidOverride::new_skip());
-    overrides.insert(20, UidOverride::new_skip());
-    overrides.insert(21, UidOverride::new_skip());
-    overrides.insert(22, UidOverride::new_skip());
-    overrides.insert(23, UidOverride::new_skip());
-    overrides.insert(24, UidOverride::new_skip());
-    overrides.insert(25, UidOverride::new_skip());
-    overrides.insert(26, UidOverride::new_skip());
-    overrides.insert(27, UidOverride::new_skip());
-    overrides.insert(28, UidOverride::new_skip());
+    overrides.insert(16, UidOverride::new_with_postfix());
     overrides.insert(58, UidOverride::new_with_size(32));
     overrides.insert(61, UidOverride::new_with_postfix());
     overrides.insert(64, UidOverride::new_with_postfix());
@@ -457,30 +438,22 @@ fn init_overrides() -> Overrides {
     overrides.insert(82, UidOverride::new_with_name("IffSystemType"));
     overrides.insert(83, UidOverride::new_with_name("IffSystemName"));
     overrides.insert(84, UidOverride::new_with_name("IffSystemMode"));
-    overrides.insert(87, UidOverride::new_skip());
+    overrides.insert(140, UidOverride::new_skip()); // TODO enum that defines the type of the subsequent field (UIDs 450-462)
     overrides.insert(141, UidOverride::new_skip());
     overrides.insert(142, UidOverride::new_skip());
-    overrides.insert(151, UidOverride::new_skip());
-    overrides.insert(152, UidOverride::new_skip());
-    overrides.insert(153, UidOverride::new_skip());
-    overrides.insert(154, UidOverride::new_skip());
-    overrides.insert(
-        157,
-        UidOverride::new_with_name("TransmitterDetailAmplitudeAngleModulation"),
-    );
-    overrides.insert(169, UidOverride::new_skip());
-    overrides.insert(176, UidOverride::new_skip());
+    // overrides.insert(
+    //     157,
+    //     UidOverride::new_with_name("TransmitterDetailAmplitudeAngleModulation"),
+    // );
     overrides.insert(
         178,
         UidOverride::new(Some("SignalTdlType"), None, true, false),
     );
     overrides.insert(179, UidOverride::new_with_name("ReceiverState"));
-    overrides.insert(207, UidOverride::new_skip());
     overrides.insert(212, UidOverride::new_with_name("StationName"));
     overrides.insert(224, UidOverride::new_with_postfix());
     overrides.insert(270, UidOverride::new_with_size(16));
     overrides.insert(271, UidOverride::new(None, Some(16), true, false));
-
     overrides.insert(281, UidOverride::new_with_name("APAStatus"));
     overrides.insert(
         282,
@@ -504,19 +477,17 @@ fn init_overrides() -> Overrides {
     overrides.insert(307, UidOverride::new_with_name("IntercomAttachedIndicator"));
     overrides.insert(308, UidOverride::new_with_name("IffSimulationMode"));
     overrides.insert(320, UidOverride::new_with_name("ChangeIndicator"));
-
-    overrides.insert(
-        335,
-        UidOverride::new_with_name("UAPropulsionPlantConfiguration"),
-    );
+    overrides.insert(326, UidOverride::new_with_postfix());
+    // overrides.insert(
+    //     335,
+    //     UidOverride::new_with_name("UAPropulsionPlantConfiguration"),
+    // );
     overrides.insert(339, UidOverride::new_with_name("IffApplicableModes"));
     overrides.insert(346, UidOverride::new_with_name("Mode5IffMission"));
-
     overrides.insert(
         347,
         UidOverride::new(Some("ModeSTransmitState"), Some(8), false, false),
     );
-
     overrides.insert(358, UidOverride::new_with_postfix());
     overrides.insert(359, UidOverride::new_with_postfix());
     overrides.insert(361, UidOverride::new_with_name("Mode5SAltitudeResolution"));
@@ -524,11 +495,14 @@ fn init_overrides() -> Overrides {
         389,
         UidOverride::new_with_name("Active Interrogation Indicator"),
     );
+    overrides.insert(463, UidOverride::new_with_postfix());
+    overrides.insert(637, UidOverride::new_with_postfix());
+    overrides.insert(740, UidOverride::new_with_postfix());
+    overrides.insert(344, UidOverride::new_with_name("TCASACASType344"));
+    overrides.insert(896, UidOverride::new_with_name("TCASACASType896"));
 
     // Bitfields
-    overrides.insert(54, UidOverride::new_skip()); // TODO - Cultural Feature General Appearance
-    overrides.insert(149, UidOverride::new_skip()); // TODO - does not compile as of yet
-    overrides.insert(480, UidOverride::new_skip()); // TODO - Non-Human Life Forms Appearance
+    // No Overrides at the moment
 
     overrides
 }
@@ -569,76 +543,57 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
     }
 
     // FIXME: placeholder values for currently unsupported UIDs
-    // uid_index.insert(46, "Enumeration<u8>".to_string());
-    // uid_index.insert(52, "Enumeration<u8>".to_string());
-    // uid_index.insert(53, "Enumeration<u8>".to_string());
-    // uid_index.insert(74, "Enumeration<u8>".to_string());
     uid_index.insert(93, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(94, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(95, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-                                                         // uid_index.insert(141, "Enumeration<u8>".to_string());
+    uid_index.insert(141, "Enumeration<u8>".to_string());
     uid_index.insert(142, "Enumeration<u8>".to_string());
-    uid_index.insert(149, "Enumeration<u16>".to_string()); // bitfield
-                                                           // uid_index.insert(151, "Enumeration<u16>".to_string());
-                                                           // uid_index.insert(152, "Enumeration<u8>".to_string());
-                                                           // uid_index.insert(153, "Enumeration<u16>".to_string());
-                                                           // uid_index.insert(154, "Enumeration<u8>".to_string());
-    uid_index.insert(169, "Enumeration<u8>".to_string());
-    uid_index.insert(176, "Enumeration<u8>".to_string());
-    uid_index.insert(203, "Enumeration<u8>".to_string());
-    uid_index.insert(249, "Enumeration<u8>".to_string()); // bitfield
-    uid_index.insert(285, "Enumeration<u16>".to_string());
-    uid_index.insert(286, "Enumeration<u16>".to_string());
-    uid_index.insert(287, "Enumeration<u16>".to_string());
-    uid_index.insert(288, "Enumeration<u16>".to_string());
-    uid_index.insert(289, "Enumeration<u8>".to_string());
-    uid_index.insert(298, "Enumeration<u8>".to_string());
-    uid_index.insert(299, "Enumeration<u8>".to_string());
-    uid_index.insert(312, "Enumeration<u8>".to_string());
-    uid_index.insert(313, "Enumeration<u16>".to_string()); // bitfield
-    uid_index.insert(340, "Enumeration<u8>".to_string());
-    uid_index.insert(343, "Enumeration<u8>".to_string()); // needs prefix for row values
-    uid_index.insert(348, "Enumeration<u8>".to_string());
-    uid_index.insert(360, "Enumeration<u8>".to_string());
-    uid_index.insert(372, "Enumeration<u8>".to_string());
-    uid_index.insert(373, "Enumeration<u8>".to_string());
-    uid_index.insert(374, "Enumeration<u8>".to_string());
-    // ----
+    // uid_index.insert(149, "Enumeration<u16>".to_string()); // bitfield
+    // uid_index.insert(151, "Enumeration<u16>".to_string());
+    // uid_index.insert(152, "Enumeration<u8>".to_string());
+    // uid_index.insert(153, "Enumeration<u16>".to_string());
+    // uid_index.insert(154, "Enumeration<u8>".to_string());
+    // uid_index.insert(169, "Enumeration<u8>".to_string());
+    // uid_index.insert(176, "Enumeration<u8>".to_string());
+    // uid_index.insert(203, "Enumeration<u8>".to_string());
+    // uid_index.insert(249, "Enumeration<u8>".to_string()); // bitfield
+    // uid_index.insert(285, "Enumeration<u16>".to_string());
+    // uid_index.insert(286, "Enumeration<u16>".to_string());
+    // uid_index.insert(287, "Enumeration<u16>".to_string());
+    // uid_index.insert(288, "Enumeration<u16>".to_string());
+    // uid_index.insert(289, "Enumeration<u8>".to_string());
+    // uid_index.insert(298, "Enumeration<u8>".to_string());
+    // uid_index.insert(299, "Enumeration<u8>".to_string());
+    // uid_index.insert(312, "Enumeration<u8>".to_string());
+    // uid_index.insert(313, "Enumeration<u16>".to_string()); // bitfield
+    // uid_index.insert(340, "Enumeration<u8>".to_string());
+    // uid_index.insert(343, "Enumeration<u8>".to_string()); // needs prefix for row values
+    // uid_index.insert(348, "Enumeration<u8>".to_string());
+    // uid_index.insert(360, "Enumeration<u8>".to_string());
+    // uid_index.insert(372, "Enumeration<u8>".to_string());
+    // uid_index.insert(373, "Enumeration<u8>".to_string());
+    // uid_index.insert(374, "Enumeration<u8>".to_string());
+    // // ----
     uid_index.insert(490, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(544, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(567, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(572, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(590, "Enumeration<u8>".to_string());
-    uid_index.insert(592, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(593, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(614, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(627, "Enumeration<u8>".to_string());
-    uid_index.insert(628, "Enumeration<u8>".to_string());
-    uid_index.insert(634, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(666, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(667, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(669, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(590, "Enumeration<u8>".to_string());
+                                                          // uid_index.insert(592, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(593, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(614, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(627, "Enumeration<u8>".to_string());
+                                                          // uid_index.insert(628, "Enumeration<u8>".to_string());
+                                                          // uid_index.insert(634, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(666, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(667, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+                                                          // uid_index.insert(669, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(702, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(711, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(716, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(717, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(719, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(720, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(721, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(722, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(736, "Enumeration<u8>".to_string());
     uid_index.insert(790, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(791, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(800, "Enumeration<u8>".to_string());
-    uid_index.insert(885, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(886, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(887, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(888, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(898, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(899, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
 
     uid_index
 }
@@ -678,6 +633,8 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace(':', "")
         .replace('(', "_")
         .replace(')', "_")
+        .replace('{', "_")
+        .replace('}', "_")
         .replace('=', "_")
         .replace('–', "_")
         .replace('+', "plus")
@@ -697,6 +654,7 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
                 Some(char) => format!("{}{}", char.to_uppercase(), chars.as_str()),
             }
         })
+        .map(|string| string.trim_end_matches('_').to_string()) // trim trailing underscores
         .collect();
 
     // Prefix values starting with a digit with '_'
@@ -737,4 +695,8 @@ fn format_field_name(name: &str) -> String {
         .replace(')', "")
         .replace('=', "_")
         .replace('\'', "")
+}
+
+fn escape_description(description: &str) -> String {
+    description.replace('{', "{{").replace('}', "}}")
 }
