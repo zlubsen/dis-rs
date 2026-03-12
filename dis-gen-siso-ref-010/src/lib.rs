@@ -450,11 +450,10 @@ fn init_overrides() -> Overrides {
         UidOverride::new(Some("SignalTdlType"), None, true, false),
     );
     overrides.insert(179, UidOverride::new_with_name("ReceiverState"));
-    overrides.insert(212, UidOverride::new_with_name("StationName"));
+    // overrides.insert(212, UidOverride::new_with_name("StationName"));
     overrides.insert(224, UidOverride::new_with_postfix());
     overrides.insert(270, UidOverride::new_with_size(16));
     overrides.insert(271, UidOverride::new(None, Some(16), true, false));
-    overrides.insert(281, UidOverride::new_with_name("APAStatus"));
     overrides.insert(
         282,
         UidOverride::new_with_name("SeparationReasonForSeparation"),
@@ -496,6 +495,10 @@ fn init_overrides() -> Overrides {
         UidOverride::new_with_name("Active Interrogation Indicator"),
     );
     overrides.insert(463, UidOverride::new_with_postfix());
+
+    overrides.insert(590, UidOverride::new_skip());
+    overrides.insert(615, UidOverride::new_skip());
+
     overrides.insert(637, UidOverride::new_with_postfix());
     overrides.insert(740, UidOverride::new_with_postfix());
     overrides.insert(344, UidOverride::new_with_name("TCASACASType344"));
@@ -578,7 +581,7 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
     uid_index.insert(544, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(567, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(572, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-                                                          // uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
                                                           // uid_index.insert(590, "Enumeration<u8>".to_string());
                                                           // uid_index.insert(592, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
                                                           // uid_index.insert(593, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
@@ -586,8 +589,8 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
                                                           // uid_index.insert(627, "Enumeration<u8>".to_string());
                                                           // uid_index.insert(628, "Enumeration<u8>".to_string());
                                                           // uid_index.insert(634, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-                                                          // uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-                                                          // uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
                                                           // uid_index.insert(666, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
                                                           // uid_index.insert(667, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
                                                           // uid_index.insert(669, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
