@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<DISsyntax
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
+  title="DIS Syntax Electromagnetic Emission PDU"
+  release="0.3"
+  date="2025-12-29"
+  description="EE PDU and associated records. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  organization="Simulation Interoperability Standards Organization">
+
+  <copyright><![CDATA[
+Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+All rights reserved.
+
+Schema and API: SISO hereby grants a general, royalty-free license to copy, distribute, display, and
+make derivative works from this material, for all purposes, provided that any use of the material
+contains the following attribution: "Reprinted with permission from SISO Inc." Should
+a reader require additional information, contact the SISO Inc. Board of Directors.
+
+Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
+display, and make derivative works from this material, for noncommercial purposes, provided that
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+The material may not be used for a commercial purpose without express written
+permission from the SISO Inc Board of Directors.
+
+SISO Inc. Board of Directors
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+]]></copyright>
+
+  <PDU name="Electromagnetic Emission" PDUType="23" protocolFamily="6" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Emitting Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Emitter Number" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Emitter Name" type="enum16" enumTableUID="75"/>
+    <EnumField name="Emitter Function" type="enum8" enumTableUID="76" />
+    <EnumField name="Emitter Status" type="enum8" enumTableUID="716" />
+    <BitRecordField name="Attributes" size="8" type="Emitter Attributes"/>
+    <NumericField name="Padding" type="uint8"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+  
+  <BitRecord type="Emitter Attributes" size="8">
+    <BooleanBitField name="Permanently Associated" bitPosition="0"/>
+    <BooleanBitField name="Location Provided" bitPosition="1"/>
+    <IntBitField name="Padding" bitPosition="2" size="6"/>
+  </BitRecord>
+
+  <ExtensionRecord name="EE Beam" recordTypeEnum="3503" baseLength="32" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Beam Number" type="uint8"/>
+    <BitRecordField name="Beam Status" size="8" type="Beam Status"/>
+    <EnumField name="Beam Function" type="enum8" enumTableUID="78"/>
+    <EnumField name="High-Density Track/Jam" type="enum8" enumTableUID="79"/>
+    <FixedRecordField name="Beam Data" length="20" type="Beam Data"/>
+    <NumericField name="Beam Parameter Index" type="uint16"/>
+    <NumericField name="Fundamental Parameter Index" type="uint8"/>
+    <Array>
+      <CountField name="Number of Targets" type="uint8"/>
+      <FixedRecordField name="Track/Jam Data" length="10" type="Track/Jam Data"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Beam Data" length="20">
+    <NumericField name="Beam Azimuth Center" type="float32" units="radians"/>
+    <NumericField name="Beam Azimuth Sweep" type="float32" units="radians"/>
+    <NumericField name="Beam Elevation Center" type="float32" units="radians"/>
+    <NumericField name="Beam Elevation Sweep" type="float32" units="radians"/>
+    <NumericField name="Beam Sweep Sync" type="float32" units="percent"/>
+  </FixedRecord>
+
+  <FixedRecord type="Track/Jam Data" length="10">
+    <FixedRecordField name="Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Emitter Number" type="uint8"/>
+    <NumericField name="Beam Number" type="uint8"/>
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Jammer Parameters" recordTypeEnum="3504" baseLength="9" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <EnumField name="Jamming Architecture" type="enum8" enumTableUID="718"/>
+    <BitRecordField name="Jammer Attributes" size="16" type="Jamming Attributes"/>
+    <Array>
+      <CountField name="Number of Jamming Techniques" type="uint8"/>
+      <FixedRecordField name="Jamming Technique" length="5" type="Jamming Technique"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <BitRecord type="Jamming Attributes" size="16">
+    <BooleanBitField name="Persistent" bitPosition="0"/>
+    <BooleanBitField name="Constant Power" bitPosition="1"/>
+    <BooleanBitField name="Coordinated" bitPosition="2"/>
+    <BooleanBitField name="Cooperative" bitPosition="3"/>
+    <BooleanBitField name="Coherent" bitPosition="4"/>
+    <BooleanBitField name="Bounce" bitPosition="5"/>
+    <BooleanBitField name="Downlink" bitPosition="6"/>
+    <IntBitField name="Padding" bitPosition="7" size="9"/>
+  </BitRecord>
+
+  <FixedRecord type="Jamming Technique" length="5">
+    <EnumField name="Type" type="enum8" enumTableUID="719"/>
+    <EnumField name="Intent" type="enum8" enumTableUID="720"/>
+    <EnumField name="Waveform" type="enum8" enumTableUID="721"/>
+    <EnumField name="Modulation" type="enum8" enumTableUID="722"/>
+    <EnumField name="Specific" type="enum8" enumTableUID="None"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Universal Scan Data" recordTypeEnum="3505" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Beam Number" type="uint8"/>
+    <Array>
+      <CountField name="Number of Scan Vectors" type="uint8"/>
+      <FixedRecordField name="Scan Vector" length="32" type="Scan Vector"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Scan Vector" length="32">
+    <NumericField name="Time" type="float32" units="seconds"/>
+    <NumericField name="Duration" type="float32" units="seconds"/>
+    <NumericField name="Azimuth-Theta" type="float32" units="radians"/>
+    <NumericField name="Elevation-Radius" type="float32" units="radians"/>
+    <NumericField name="Azimuth-Theta Rate" type="float32" units="radians/sec"/>
+    <NumericField name="Elevation-Radius Rate" type="float32" units="radians/sec"/>
+    <NumericField name="Amplitude" type="float32" units="percent"/>
+    <BitRecordField name="Flags" size="16" type="Scan Data Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+  </FixedRecord>
+
+  <BitRecord type="Scan Data Flags" size="16">
+    <BooleanBitField name="Polar Scan Type" bitPosition="0"/>
+    <BooleanBitField name="Secondary" bitPosition="1"/>
+    <IntBitField name="Padding" bitPosition="2" size="14"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Pulse Table Definition" recordTypeEnum="3506" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Pulse Table ID" type="uint8"/>
+    <Array>
+      <CountField name="Number of Partial Pulsewords" type="uint8"/>
+      <FixedRecordField name="Partial Pulseword" length="32" type="Partial Pulseword"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Partial Pulseword" length="32">
+    <NumericField name="Pulse ID" type="uint8"/>
+    <BitRecordField name="Flags" size="8" type="Pulse Table Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Pulse Count" type="uint32"/>
+    <NumericField name="Pulse Repetition Interval" type="float32" units="milliseconds"/>
+    <NumericField name="Duration" type="float32" units="seconds"/>
+    <NumericField name="Amplitude" type="float32" units="percentage"/>
+    <NumericField name="Phase" type="float32" units="radians"/>
+    <NumericField name="Frequency" type="float64" units="Hertz"/>
+  </FixedRecord>
+
+  <BitRecord type="Pulse Table Flags" size="8">
+    <BooleanBitField name="Discrete Amplitude" bitPosition="0"/>
+    <BooleanBitField name="Discrete Frequency" bitPosition="1"/>
+    <BooleanBitField name="Discrete Phase" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Beam Shape Definition" recordTypeEnum="3507" baseLength="60" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Beam Number" type="uint8"/>
+    <FixedRecordField name="Polarization Vector" length="12" type="Polarization Vector"/>
+    <NumericField name="Gain" type="float32" units="dB"/>
+    <FixedRecordField name="Azimuth Shape Data" length="16" type="Shape Data"/>
+    <FixedRecordField name="Elevation Shape Data" length="16" type="Shape Data"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Custom Lobes" type="uint8"/>
+      <FixedRecordField name="Custom Lobe" length="16" type="Custom Lobe"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Polarization Vector" length="12">
+    <NumericField name="Ez" type="float32" units="percentage"/>
+    <NumericField name="Ey" type="float32" units="percentage"/>
+    <NumericField name="Phase" type="float32" units="radians"/>
+  </FixedRecord>
+
+  <FixedRecord type="Shape Data" length="16">
+    <EnumField name="Shape" type="enum8" enumTableUID="790"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Lobe Width" type="float32" units="radians"/>
+    <NumericField name="Side Lobe Down" type="float32" units="dB"/>
+    <NumericField name="Boresight Offset" type="float32" units="radians"/>
+  </FixedRecord>
+
+  <FixedRecord type="Custom Lobe" length="16">
+    <EnumField name="Lobe Type" type="enum8" enumTableUID="791"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Angle" type="float32" units="radians"/>
+    <NumericField name="Width" type="float32" units="radians"/>
+    <NumericField name="Amplitude" type="float32" units="dB"/>
+  </FixedRecord>
+
+   <ExtensionRecord name="EE Fundamental Parameters List" recordTypeEnum="3508" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Fundamental Parameters" type="uint8"/>
+      <FixedRecordField name="Fundamental Parameters" length="20" type="EE Fundamental Parameter Data"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="EE Fundamental Parameter Data" length="20">
+    <NumericField name="Frequency" type="float32" units="Hertz"/>
+    <NumericField name="Frequency Range" type="float32" units="Hertz"/>
+    <NumericField name="Pulse Repetition Interval" type="float32" units="microseconds"/>
+    <NumericField name="Pulse Width" type="float32" units="microseconds"/>
+    <NumericField name="Effective Radiated Power" type="float32" units="dBm"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="AZ/EL List" recordTypeEnum="3509" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of AZ/EL Pairs" type="uint8"/>
+      <FixedRecordField name="AZ/EL" length="8" type="AZ/EL"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="AZ/EL" length="8">
+    <NumericField name="Relative Azimuth" type="float32" units="radians"/>
+    <NumericField name="Relative Elevation" type="float32" units="radians"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Beam Activity" recordTypeEnum="3510" baseLength="12" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Current Activity Sequence Elapsed Time" type="float32" units="milliseconds"/>
+    <NumericField name="Sequence Number" type="uint16"/>
+    <NumericField name="Beam Number" type="uint8"/>
+    <Array>
+      <CountField name="Number of Beam Activities" type="uint8"/>
+      <FixedRecordField name="Beam Activity" length="18" type="Beam Activity"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Beam Activity" length="18">
+    <FixedRecordField name="Tracked Entity ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Beam Function" type="enum8" enumTableUID="78"/>
+    <BitRecordField name="Flags" size="8" type="Beam Activity Flags"/>
+    <NumericField name="Beam Parameter Index" type="uint16"/>
+    <NumericField name="AZ/EL Index" type="uint8"/>
+    <NumericField name="Fundamental Parameter Index" type="uint8"/>
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <NumericField name="Pulse Table ID" type="uint8"/>
+    <NumericField name="Start Time" type="uint16" units="milliseconds"/>
+    <NumericField name="Duration" type="uint16" units="milliseconds"/>
+  </FixedRecord>
+
+  <BitRecord type="Beam Activity Flags" size="8">
+    <BooleanBitField name="On and Radiating" bitPosition="0"/>
+    <EnumBitField name="Scan Mode" bitPosition="1" size="3" enumTableUID="EREF"/>
+    <EnumBitField name="Track Mode" bitPosition="4" size="2" enumTableUID="EREF"/>
+    <BooleanBitField name="Restart Pulse Table" bitPosition="6"/>
+    <IntBitField name="Padding" bitPosition="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Jammer Activation" recordTypeEnum="3511" baseLength="24" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Jammer Status" size="8" type="Jammer Status"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Receiver Sensitivity" type="float32" units="dBm"/>
+    <NumericField name="Min Receiver Frequency" type="float32" units="Hertz"/>
+    <NumericField name="Max Receiver Frequency" type="float32" units="Hertz"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="Jammer Status" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <IntBitField name="Padding" bitPosition="1" size="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Jammer False Targets" recordTypeEnum="3512" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Victim Radar Targets" type="uint8"/>
+      <FixedRecordField name="Victim Radar Targets" length="4" type="Victim Radar Targets"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Victim Radar Targets" length="4">
+    <EnumField name="Victim Radar Emitter Name" type="enum16" enumTableUID="75"/>
+    <NumericField name="Number of False Targets for Victim Radar" type="uint16"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Jammer Triggered" recordTypeEnum="3513" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Triggered Jammers" type="uint8"/>
+      <FixedRecordField name="Triggered Jammer" length="10" type="Triggered Jammer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Triggered Jammer" length="10">
+    <FixedRecordField name="Emitter Entity ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Emitter Name (Jammer)" type="enum16" enumTableUID="75"/>
+    <EnumField name="Emitter Status (Jammer)" type="enum8" enumTableUID="716"/>
+    <NumericField name="Activated by Beam" type="uint8"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Blanking Sectors" recordTypeEnum="3514" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Sectors" type="uint8"/>
+      <FixedRecordField name="Sector" length="24" type="Sector"/>
+    </Array>
+  </ExtensionRecord>
+
+   <FixedRecord type="Sector" length="24">
+    <NumericField name="Beam Number" type="uint8"/>
+    <BitRecordField name="Flags" size="8" type="Blanking Sectors Flags"/>
+    <NumericField name="Blanking Sector ID" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Left Azimuth" type="float32" units="radians"/>
+    <NumericField name="Right Azimuth" type="float32" units="radians"/>
+    <NumericField name="Lower Elevation" type="float32" units="radians"/>
+    <NumericField name="Upper Elevation" type="float32" units="radians"/>
+    <NumericField name="Residual Power" type="float32" units="dBm"/>
+  </FixedRecord>
+
+  <BitRecord type="Blanking Sectors Flags" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <IntBitField name="Padding" bitPosition="1" size="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Angle Deception Parameters" recordTypeEnum="3515" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Parameter Sets" type="uint8"/>
+      <FixedRecordField name="Angle Parameter Set" length="36" type="Angle Parameter Set"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Angle Parameter Set" length="36">
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <BitRecordField name="Flags" size="8" type="Angle Deception Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Azimuth Offset" type="float32" units="radians"/>
+    <NumericField name="Azimuth Width" type="float32" units="radians"/>
+    <NumericField name="Azimuth Pull Rate" type="float32" units="radians/sec"/>
+    <NumericField name="Azimuth Pull Acceleration" type="float32" units="radians/sec/sec"/>
+    <NumericField name="Elevation Offset" type="float32" units="radians"/>
+    <NumericField name="Elevation Width" type="float32" units="radians"/>
+    <NumericField name="Elevation Pull Rate" type="float32" units="radians/sec"/>
+    <NumericField name="Elevation Pull Acceleration" type="float32" units="radians/sec/sec"/>
+  </FixedRecord>
+
+  <BitRecord type="Angle Deception Flags" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <IntBitField name="Padding" bitPosition="1" size="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Range Deception" recordTypeEnum="3516" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Parameter Sets" type="uint8"/>
+      <FixedRecordField name="Range Parameter Set" length="20" type="Range Parameter Set"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Range Parameter Set" length="20">
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <BitRecordField name="Flags" size="8" type="Range Deception Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Range Offset" type="float32" units="meters"/>
+    <NumericField name="Range Extent" type="float32" units="meters"/>
+    <NumericField name="Range Pull Rate" type="float32" units="meters/sec"/>
+    <NumericField name="Range Pull Acceleration" type="float32" units="meters/sec/sec"/>
+  </FixedRecord>
+
+  <BitRecord type="Range Deception Flags" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <IntBitField name="Padding" bitPosition="1" size="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Velocity Deception" recordTypeEnum="3517" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Parameter Sets" type="uint8"/>
+      <FixedRecordField name="Velocity Parameter Set" length="20" type="Velocity Parameter Set"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Velocity Parameter Set" length="20">
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <BitRecordField name="Flags" size="8" type="Velocity Deception Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Velocity Offset" type="float32" units="meters/sec"/>
+    <NumericField name="Velocity Extent" type="float32" units="meters/sec"/>
+    <NumericField name="Velocity Pull Rate" type="float32" units="meters/sec/sec"/>
+    <NumericField name="Velocity Pull Acceleration" type="float32" units="meters/sec/sec/sec"/>
+  </FixedRecord>
+
+  <BitRecord type="Velocity Deception Flags" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <IntBitField name="Padding" bitPosition="1" size="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="False Targets Parameters" recordTypeEnum="3518" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Parameter Sets" type="uint8"/>
+      <FixedRecordField name="False Targets Parameter Set" length="28" type="False Target Parameter Set"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="False Target Parameter Set" length="28">
+    <NumericField name="Jammer Parameters ID" type="uint8"/>
+    <BitRecordField name="Flags" size="8" type="False Targets Parameters Flags"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="First Target Offset" type="float32" units="meters"/>
+    <NumericField name="Walk Speed" type="float32" units="meters/sec"/>
+    <NumericField name="Walk Acceleration" type="float32" units="meters/sec/sec"/>
+    <NumericField name="Maximum Walk Distance" type="float32" units="meters"/>
+    <NumericField name="Keep Time" type="float32" units="seconds"/>
+    <NumericField name="Echo Spacing" type="float32" units="meters"/>
+  </FixedRecord>
+
+  <BitRecord type="False Targets Parameters Flags" size="8">
+    <BooleanBitField name="Deactivated" bitPosition="0"/>
+    <IntBitField name="Padding" bitPosition="1" size="7"/>
+  </BitRecord>
+
+</DISsyntax>

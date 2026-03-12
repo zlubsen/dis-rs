@@ -65,7 +65,7 @@ where
     let formatted_name = format_name(
         overrides
             .get(&item.uid)
-            .and_then(|ov| ov.name.map(ToString::to_string))
+            .and_then(|ov| ov.name.clone())
             .unwrap_or(item.name.clone())
             .as_str(),
         item.uid,
@@ -101,7 +101,7 @@ where
     let name = format_name(
         overrides
             .get(&e.uid)
-            .and_then(|ov| ov.name.map(ToString::to_string))
+            .and_then(|ov| ov.name.clone())
             .unwrap_or(e.name.clone())
             .as_str(),
         e.uid,

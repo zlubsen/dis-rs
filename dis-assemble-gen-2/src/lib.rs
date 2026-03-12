@@ -1,0 +1,48 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::float_cmp,
+    reason = "Parsing, writing, encoding, decoding PDUs uses many valid conversions"
+)]
+
+extern crate core;
+
+mod common;
+mod constants;
+mod fixed_parameters;
+pub mod utils;
+mod v6;
+mod v7;
+mod variable_parameters;
+
+include!(concat!(
+    env!("OUT_DIR"),
+    "/",
+    env!("TARGET_GENERATED_SISO_REF_010_FILENAME")
+));
+
+#[cfg(feature = "v8")]
+include!(concat!(
+    env!("OUT_DIR"),
+    "/",
+    env!("TARGET_GENERATED_SISO_1278_V8_FILENAME")
+));
+
+pub use common::entity_state::parser::dr_other_parameters as parse_dr_other_parameters;
+pub use common::parse;
+pub use common::parse_v6 as parse_v6_pdus;
+pub use common::parse_v7 as parse_v7_pdus;
+pub use common::supported_protocol_versions;
+pub use common::Serialize;
+pub use v7::entity_state::entity_capabilities_from_bytes;
+pub use v7::parser::parse_pdu_status_fields;
+pub use v7::writer::serialize_pdu_status;
+
+pub use common::*;
+
+pub use fixed_parameters::*;
+pub use variable_parameters::VariableParameters;
+
+pub use common::errors::*;

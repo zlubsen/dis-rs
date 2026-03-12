@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<DISsyntax
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
+  title="DIS Syntax Logistics"
+  release="0.3"
+  date="2025-12-29"
+  description="PDUs and records for the Logistics family. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  organization="Simulation Interoperability Standards Organization">
+
+  <copyright><![CDATA[
+Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+All rights reserved.
+
+Schema and API: SISO hereby grants a general, royalty-free license to copy, distribute, display, and
+make derivative works from this material, for all purposes, provided that any use of the material
+contains the following attribution: "Reprinted with permission from SISO Inc." Should
+a reader require additional information, contact the SISO Inc. Board of Directors.
+
+Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
+display, and make derivative works from this material, for noncommercial purposes, provided that
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+The material may not be used for a commercial purpose without express written
+permission from the SISO Inc Board of Directors.
+
+SISO Inc. Board of Directors
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+]]></copyright>
+
+  <PDU name="Service Request" PDUType="5" protocolFamily="3" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Requesting Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Servicing Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Service Type Requested" type="enum8" enumTableUID="63"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Resupply Offer" PDUType="6" protocolFamily="3" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Receiving Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Supplying Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Resupply Received" PDUType="7" protocolFamily="3" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Receiving Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Supplying Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Resupply Cancel" PDUType="8" protocolFamily="3" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Receiving Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Supplying Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Repair Complete" PDUType="9" protocolFamily="3" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Receiving Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Repairing Entity ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Repair" type="enum16" enumTableUID="64"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Repair Response" PDUType="10" protocolFamily="3" baseLength="32">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Receiving Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Repairing Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Repair Result" type="enum8" enumTableUID="65"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <ExtensionRecord name="Supply Quantity" recordTypeEnum="6000" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Supplies" type="uint8"/>
+      <FixedRecordField name="Supply" length="12" type="Supply"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Supply" length="12">
+    <FixedRecordField name="Supply Type" length="8" type="Entity Type"/>
+    <NumericField name="Quantity" type="float32"/>
+  </FixedRecord>
+
+</DISsyntax>

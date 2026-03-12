@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<DISsyntax
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
+  title="DIS Syntax Identification Friend or Foe PDUs"
+  release="0.3"
+  date="2025-12-29"
+  description="IFF and IFF-I PDUs and associated records. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  organization="Simulation Interoperability Standards Organization">
+
+  <copyright><![CDATA[
+Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+All rights reserved.
+
+Schema and API: SISO hereby grants a general, royalty-free license to copy, distribute, display, and
+make derivative works from this material, for all purposes, provided that any use of the material
+contains the following attribution: "Reprinted with permission from SISO Inc." Should
+a reader require additional information, contact the SISO Inc. Board of Directors.
+
+Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
+display, and make derivative works from this material, for noncommercial purposes, provided that
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+The material may not be used for a commercial purpose without express written
+permission from the SISO Inc Board of Directors.
+
+SISO Inc. Board of Directors
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+]]></copyright>
+
+  <PDU name="IFF" PDUType="28" protocolFamily="6" baseLength="40">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Emitting Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="IFF System Number" type="uint16"/>
+    <FixedRecordField name="IFF System" length="5" type="IFF System Identifier"/>
+    <BitRecordField name="Attributes" size="8" type="IFF Attributes"/>
+    <NumericField name="Padding" type="uint16"/>
+    <BitRecordField name="System Capabilities" size="32" type="IFF System Capabilities"/>
+    <BitRecordField name="System Status" size="8" type="IFF System Status"/>
+    <EnumField name="System Mode" type="enum8" enumTableUID="84"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="IFF Interactive" PDUType="74" protocolFamily="6" baseLength="56">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Emitting Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="IFF System Number" type="uint16"/>
+    <FixedRecordField name="Interrogation Event ID" length="6"  type="Event Identifier"/>
+    <FixedRecordField name="Interrogating Entity ID" length="6" type="Entity Identifier"/>
+    <FixedRecordField name="Interrogated Entity ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Transmission Indicator" type="enum8" enumTableUID="372" isDiscriminant="true"/>
+    <AdaptiveRecordField name="Transmission Parameters" length="4" type="IFF Interactive Transmission Parameters" discriminant="Transmission Indicator"/>
+    <NumericField name="Padding" type="uint32"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <FixedRecord type="IFF System Identifier" length="5">
+    <EnumField name="System Type" type="enum16" enumTableUID="82"/>
+    <EnumField name="System Name" type="enum16" enumTableUID="83"/>
+    <EnumField name="Surrogate Group" type="enum8" enumTableUID="169"/>
+  </FixedRecord>
+
+  <BitRecord type="IFF Attributes" size="8">
+    <BooleanBitField name="Permanently Associated" bitPosition="0"/>
+    <BooleanBitField name="Location Provided" bitPosition="1"/>
+    <IntBitField name="Padding" bitPosition="2" size="6"/>
+  </BitRecord>
+
+  <BitRecord type="IFF System Capabilities" size="32">
+    <BooleanBitField name="Transponder" bitPosition="0"/>
+    <BooleanBitField name="Interrogator" bitPosition="1"/>
+    <BooleanBitField name="Mode 1 Capable" bitPosition="2"/>
+    <BooleanBitField name="Mode 2 Capable" bitPosition="3"/>
+    <BooleanBitField name="Mode 3/A Capable" bitPosition="4"/>
+    <BooleanBitField name="Mode 4 Capable" bitPosition="5"/>
+    <BooleanBitField name="Mode 5 Capable" bitPosition="6"/>
+    <BooleanBitField name="Mode C Capable" bitPosition="7"/>
+    <BooleanBitField name="Mode S Capable" bitPosition="8"/>
+    <BooleanBitField name="TCAS/ACAS Capable" bitPosition="9"/>
+    <BooleanBitField name="RRB Capable" bitPosition="10"/>
+    <BooleanBitField name="Soviet Capable" bitPosition="11"/>
+    <IntBitField name="Padding" bitPosition="12" size="20"/>
+  </BitRecord>
+
+  <BitRecord type="IFF System Status" size="8">
+    <BooleanBitField name="Interactive Capable" bitPosition="0"/>
+    <BooleanBitField name="System Failed" bitPosition="1"/>
+    <BooleanBitField name="Test Mode" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="2"/>
+    <BooleanBitField name="Military Emergency" bitPosition="5"/>
+    <BooleanBitField name="Identification of Position (I/P)" bitPosition="6"/>
+    <BooleanBitField name="Unmanned Aircraft (X)" bitPosition="7"/>
+  </BitRecord>
+
+  <AdaptiveRecord type="IFF Interactive Transmission Parameters" length="4">
+    <AdaptiveFormat discriminantStartValue="1">
+      <BitRecordField name="IFF Interactive Original Interrogation" size="32" type="IFF Interactive Original Interrogation"/>
+      <BitRecordField name="IFF Interactive Interrogation Reply" size="32" type="IFF Interactive Interrogation Reply"/>
+      <BitRecordField name="IFF Interactive Squitter Transmission" size="32" type="IFF Interactive Squitter Transmission"/>
+    </AdaptiveFormat>
+  </AdaptiveRecord>
+
+  <BitRecord type="IFF Interactive Original Interrogation" size="32">
+    <BooleanBitField name="Mode 1" bitPosition="0"/>
+    <BooleanBitField name="Mode 2" bitPosition="1"/>
+    <BooleanBitField name="Mode 3/A" bitPosition="2"/>
+    <BooleanBitField name="Mode 4" bitPosition="3"/>
+    <BooleanBitField name="Mode 5" bitPosition="4"/>
+    <BooleanBitField name="Mode C" bitPosition="5"/>
+    <BooleanBitField name="Mode S" bitPosition="6"/>
+    <BooleanBitField name="TCAS/ACAS" bitPosition="7"/>
+    <IntBitField name="Not used" bitPosition="8"/>
+    <BooleanBitField name="Soviet" bitPosition="9"/>
+    <IntBitField name="Padding" bitPosition="10" size="6"/>
+    <IntBitField name="Not used" bitPosition="16" size="3"/>
+    <IntBitField name="Padding" bitPosition="19" size="13"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Interactive Interrogation Reply" size="32">
+    <BooleanBitField name="Mode 1" bitPosition="0"/>
+    <BooleanBitField name="Mode 2" bitPosition="1"/>
+    <BooleanBitField name="Mode 3/A" bitPosition="2"/>
+    <BooleanBitField name="Mode 4" bitPosition="3"/>
+    <BooleanBitField name="Mode 5" bitPosition="4"/>
+    <BooleanBitField name="Mode C" bitPosition="5"/>
+    <BooleanBitField name="Mode S" bitPosition="6"/>
+    <BooleanBitField name="TCAS/ACAS" bitPosition="7"/>
+    <BooleanBitField name="RRB" bitPosition="8"/>
+    <BooleanBitField name="Soviet" bitPosition="9"/>
+    <IntBitField name="Padding" bitPosition="10" size="6"/>
+    <BooleanBitField name="Military Emergency" bitPosition="16"/>
+    <BooleanBitField name="Identification of Position (I/P)" bitPosition="17"/>
+    <BooleanBitField name="Unmanned Aircraft (X)" bitPosition="18"/>
+    <IntBitField name="Padding" bitPosition="19" size="5"/>
+    <EnumBitField name="Reply Amplification" bitPosition="24" size="8" enumTableUID="373"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Interactive Squitter Transmission" size="32">
+    <BooleanBitField name="Mode 5" bitPosition="4"/>
+    <BooleanBitField name="Mode S" bitPosition="6"/>
+    <BooleanBitField name="TCAS/ACAS" bitPosition="7"/>
+    <BooleanBitField name="Soviet" bitPosition="9"/>
+    <IntBitField name="Padding" bitPosition="10" size="6"/>
+    <IntBitField name="Padding" bitPosition="19" size="13"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode 5 Message Formats" size="32">
+    <BooleanBitField name="Message Format 0 Present" bitPosition="0"/>
+    <BooleanBitField name="Message Format 1 Present" bitPosition="1"/>
+    <BooleanBitField name="Message Format 2 Present" bitPosition="2"/>
+    <BooleanBitField name="Message Format 3 Present" bitPosition="3"/>
+    <BooleanBitField name="Message Format 4 Present" bitPosition="4"/>
+    <BooleanBitField name="Message Format 5 Present" bitPosition="5"/>
+    <BooleanBitField name="Message Format 6 Present" bitPosition="6"/>
+    <BooleanBitField name="Message Format 7 Present" bitPosition="7"/>
+    <BooleanBitField name="Message Format 8 Present" bitPosition="8"/>
+    <BooleanBitField name="Message Format 9 Present" bitPosition="9"/>
+    <BooleanBitField name="Message Format 10 Present" bitPosition="10"/>
+    <BooleanBitField name="Message Format 11 Present" bitPosition="11"/>
+    <BooleanBitField name="Message Format 12 Present" bitPosition="12"/>
+    <BooleanBitField name="Message Format 13 Present" bitPosition="13"/>
+    <BooleanBitField name="Message Format 14 Present" bitPosition="14"/>
+    <BooleanBitField name="Message Format 15 Present" bitPosition="15"/>
+    <BooleanBitField name="Message Format 16 Present" bitPosition="16"/>
+    <BooleanBitField name="Message Format 17 Present" bitPosition="17"/>
+    <BooleanBitField name="Message Format 18 Present" bitPosition="18"/>
+    <BooleanBitField name="Message Format 19 Present" bitPosition="19"/>
+    <BooleanBitField name="Message Format 20 Present" bitPosition="20"/>
+    <BooleanBitField name="Message Format 21 Present" bitPosition="21"/>
+    <BooleanBitField name="Message Format 22 Present" bitPosition="22"/>
+    <BooleanBitField name="Message Format 23 Present" bitPosition="23"/>
+    <BooleanBitField name="Message Format 24 Present" bitPosition="24"/>
+    <BooleanBitField name="Message Format 25 Present" bitPosition="25"/>
+    <BooleanBitField name="Message Format 26 Present" bitPosition="26"/>
+    <BooleanBitField name="Message Format 27 Present" bitPosition="27"/>
+    <BooleanBitField name="Message Format 28 Present" bitPosition="28"/>
+    <BooleanBitField name="Message Format 29 Present" bitPosition="29"/>
+    <BooleanBitField name="Message Format 30 Present" bitPosition="30"/>
+    <BooleanBitField name="Message Format 31 Present" bitPosition="31"/>
+  </BitRecord>
+
+  <BitRecord type="IFF DAP Source" size="16">
+    <EnumBitField name="Indicated Air Speed (IAS)" bitPosition="0" enumTableUID="360"/>
+    <EnumBitField name="Mach Number" bitPosition="1" enumTableUID="360"/>
+    <EnumBitField name="Ground Speed" bitPosition="2" enumTableUID="360"/>
+    <EnumBitField name="Magnetic Heading" bitPosition="3" enumTableUID="360"/>
+    <EnumBitField name="Track Angle Rate" bitPosition="4" enumTableUID="360"/>
+    <EnumBitField name="True Track Angle" bitPosition="5" enumTableUID="360"/>
+    <EnumBitField name="True Airspeed" bitPosition="6" enumTableUID="360"/>
+    <EnumBitField name="Vertical Rate" bitPosition="7" enumTableUID="360"/>
+    <IntBitField name="Padding" bitPosition="8" size="8"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode S Interrogator Code" size="8">
+    <EnumBitField name="Interrogator Code Type" bitPosition="0" enumTableUID="348"/>
+    <IntBitField name="Interrogator Code" bitPosition="1" size="6"/>
+    <BooleanBitField name="Interrogator Code Not Set" bitPosition="7"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode S Levels Present" size="8">
+    <IntBitField name="Padding" bitPosition="0"/>
+    <BooleanBitField name="Level 1" bitPosition="1"/>
+    <BooleanBitField name="Level 2 (Elementary Surveillance sublevel)" bitPosition="2"/>
+    <BooleanBitField name="Level 2 (Enhanced Surveillance sublevel)" bitPosition="3"/>
+    <BooleanBitField name="Level 3" bitPosition="4"/>
+    <BooleanBitField name="Level 4" bitPosition="5"/>
+    <BooleanBitField name="Level 5" bitPosition="6"/>
+    <IntBitField name="Padding" bitPosition="7"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Mark XII Transponder" recordTypeEnum="5015" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Mode 1 Status" size="8" type="IFF Mode 1 Transponder Status"/>
+    <BitRecordField name="Mode 2 Status" size="8" type="IFF Mode 2 Transponder Status"/>
+    <BitRecordField name="Mode 4 Status" size="8" type="IFF Mode 4 Transponder Status"/>
+    <EnumField name="Mode 4 Alternate Reply" type="enum8" enumTableUID="96"/>
+    <NumericField name="Mode 1 Code" type="uint16"/>
+    <NumericField name="Mode 2 Code" type="uint16"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode 1 Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Extended Mode 1" bitPosition="3"/>
+    <IntBitField name="Padding" bitPosition="4" size="4"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode 2 Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode 4 Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Pseudo Crypto Available" bitPosition="3"/>
+    <EnumBitField name="Active Code Key" bitPosition="4" size="2" enumTableUID="95"/>
+    <IntBitField name="Padding" bitPosition="6" size="2"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Mark XII Interrogator" recordTypeEnum="5016" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Mode 1 Status" size="8" type="IFF Mode 1 Interrogator Status"/>
+    <BitRecordField name="Mode 2 Status" size="8" type="IFF Mode 2 Interrogator Status"/>
+    <BitRecordField name="Mode 4 Status" size="8" type="IFF Mode 4 Interrogator Status"/>
+    <EnumField name="Mode 4 Alternate Challenge" type="enum8" enumTableUID="96"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode 1 Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode 2 Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode 4 Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Pseudo Crypto Available" bitPosition="3"/>
+    <EnumBitField name="Active Code Key" bitPosition="4" size="2" enumTableUID="95"/>
+    <IntBitField name="Padding" bitPosition="6" size="2"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF ATCRBS Transponder" recordTypeEnum="5017" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Mode 3/A Status" size="8" type="IFF Mode 3/A Transponder Status"/>
+    <BitRecordField name="Mode C Status" size="8" type="IFF Mode C Transponder Status"/>
+    <NumericField name="Mode 3/A Code" type="uint16"/>
+    <BitRecordField name="Mode C Altitude" size="16" type="IFF Mode C Altitude"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode 3/A Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode C Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Altitude Available" bitPosition="3"/>
+    <IntBitField name="Padding" bitPosition="4" size="4"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode C Altitude" size="16">
+    <EnumBitField name="Positive/Negative Indicator" bitPosition="0" enumTableUID="340"/>
+    <IntBitField name="Mode C Altitude" bitPosition="1" size="11"/>
+    <IntBitField name="Padding" bitPosition="12" size="4"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF ATCRBS Interrogator" recordTypeEnum="5018" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Mode 3/A Status" size="8" type="IFF Mode 3/A Interrogator Status"/>
+    <BitRecordField name="Mode C Status" size="8" type="IFF Mode C Interrogator Status"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode 3/A Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode C Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Mode 5 Transponder" recordTypeEnum="5019" baseLength="24" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="16" type="IFF Mode 5 Transponder Status"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Reply" type="enum8" enumTableUID="350"/>
+    <BitRecordField name="Message Formats Present" size="32" type="IFF Mode 5 Message Formats"/>
+    <NumericField name="Platform Identification Number" type="uint16"/>
+    <NumericField name="National Origin" type="uint16"/>
+    <NumericField name="Figure of Merit" type="uint8"/>
+    <EnumField name="Navigation Source" type="enum8" enumTableUID="359"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode 5 Transponder Status" size="16">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Pseudo Crypto Available" bitPosition="3"/>
+    <BooleanBitField name="Line Test" bitPosition="4"/>
+    <EnumBitField name="Antenna Selection" bitPosition="5" size="2" enumTableUID="351"/>
+    <EnumBitField name="Mode 5 Level Selection" bitPosition="7" size="2" enumTableUID="412"/>
+    <BooleanBitField name="Squitter On" bitPosition="9"/>
+    <EnumBitField name="Platform Type" bitPosition="10" enumTableUID="396"/>
+    <BooleanBitField name="Transponder Location Available" bitPosition="11"/>
+    <BooleanBitField name="Transponder Location Error Available" bitPosition="12"/>
+    <IntBitField name="Padding" bitPosition="13" size="3"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Mode 5 Interrogator" recordTypeEnum="5020" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="16" type="IFF Mode 5 Interrogator Status"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <BitRecordField name="Message Formats Present" size="32" type="IFF Mode 5 Message Formats"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode 5 Interrogator Status" size="16">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Pseudo Crypto Available" bitPosition="3"/>
+    <IntBitField name="Padding" bitPosition="4" size="12"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Mode S Transponder" recordTypeEnum="5021" baseLength="32" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="8" type="IFF Mode S Transponder Status"/>
+    <BitRecordField name="Levels Present" size="8" type="IFF Mode S Levels Present"/>
+    <BitRecordField name="Mode S Altitude" size="16" type="IFF Mode S Altitude"/>
+    <NumericField name="Aircraft Address" type="uint32"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Capability Report" type="enum8" enumTableUID="358"/>
+    <EnumField name="Aircraft Present Domain" type="enum8" enumTableUID="356"/>
+    <EnumField name="Aircraft Identification Type" type="enum8" enumTableUID="357"/>
+    <FixedStringField name="Aircraft Identification" length="8"/>
+    <BitRecordField name="Squitter Reports" size="32" type="IFF Mode S Squitter Reports"/>
+    <BitRecordField name="DAP Source" size="16" type="IFF DAP Source"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode S Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Altitude Available" bitPosition="3"/>
+    <BooleanBitField name="Squitter On" bitPosition="4"/>
+    <EnumBitField name="Squitter Type" bitPosition="5" size="3" enumTableUID="354"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode S Altitude" size="16">
+    <EnumBitField name="Positive/Negative Indicator" bitPosition="0" enumTableUID="340"/>
+    <IntBitField name="Mode S Altitude" bitPosition="1" size="11"/>
+    <EnumBitField name="Altitude Resolution" bitPosition="12" enumTableUID="361"/>
+    <IntBitField name="Padding" bitPosition="13" size="3"/>
+  </BitRecord>
+
+  <BitRecord type="IFF Mode S Squitter Reports" size="32">
+    <EnumBitField name="Airborne Position Report" bitPosition="0" size="2" enumTableUID="93"/>
+    <EnumBitField name="Airborne Velocity Report" bitPosition="2" size="2" enumTableUID="93"/>
+    <EnumBitField name="Surface Position Report" bitPosition="4" size="2" enumTableUID="93"/>
+    <EnumBitField name="Identification Report" bitPosition="6" size="2" enumTableUID="93"/>
+    <EnumBitField name="Event-Driven Report" bitPosition="8" size="2" enumTableUID="93"/>
+    <IntBitField name="Padding" bitPosition="10" size="22"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Mode S Interrogator" recordTypeEnum="5022" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="8" type="IFF Mode S Interrogator Status"/>
+    <BitRecordField name="Levels Present" size="8" type="IFF Mode S Levels Present"/>
+    <BitRecordField name="Mode S Primary Interrogator Code" size="8" type="IFF Mode S Interrogator Code"/>
+    <BitRecordField name="Mode S Secondary Interrogator Code" size="8" type="IFF Mode S Interrogator Code"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Mode S Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <EnumBitField name="Transmit State" bitPosition="3" size="3" enumTableUID="374"/>
+    <IntBitField name="Padding" bitPosition="6" size="2"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF TCAS/ACAS Data" recordTypeEnum="5023" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="16" type="IFF TCAS/ACAS Status"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF TCAS/ACAS Status" size="16">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <EnumBitField name="Type" bitPosition="3" size="6" enumTableUID="94"/>
+    <EnumBitField name="Software Version" bitPosition="9" size="7" enumTableUID="343"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF RRB Transponder" recordTypeEnum="5024" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="8" type="IFF RRB Transponder Status"/>
+    <NumericField name="Code" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF RRB Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <BooleanBitField name="Radar Enhancement Enabled" bitPosition="3"/>
+    <BooleanBitField name="Power Reduction Enabled" bitPosition="4"/>
+    <IntBitField name="Padding" bitPosition="5" size="3"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Soviet Transponder" recordTypeEnum="5025" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="8" type="IFF Soviet Transponder Status"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Soviet Transponder Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Soviet Interrogator" recordTypeEnum="5026" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Status" size="8" type="IFF Soviet Interrogator Status"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <BitRecord type="IFF Soviet Interrogator Status" size="8">
+    <BooleanBitField name="On" bitPosition="0"/>
+    <BooleanBitField name="Damaged" bitPosition="1"/>
+    <BooleanBitField name="Malfunctioning" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <ExtensionRecord name="IFF Interactive Mode 4" recordTypeEnum="5038" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="Interactive Mode 4 Reply" type="enum8" enumTableUID="96"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="IFF Interactive Mode 5" recordTypeEnum="5039" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <EnumField name="Interactive Mode 5 Reply" type="enum8" enumTableUID="350"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <BitRecordField name="Mode 5 Message Formats" size="32" type="IFF Mode 5 Message Formats"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="IFF Interactive Mode S" recordTypeEnum="5040" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <BitRecordField name="Mode S Levels" size="8" type="IFF Mode S Levels Present"/>
+    <EnumField name="Mode S Interrogator Transmit State" type="enum8" enumTableUID="347"/>
+    <BitRecordField name="Mode S Interrogator Code" size="8" type="IFF Mode S Interrogator Code"/>
+    <NumericField name="Padding" type="uint8"/>
+    <BitRecordField name="DAP Source" size="16" type="IFF DAP Source"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+</DISsyntax>

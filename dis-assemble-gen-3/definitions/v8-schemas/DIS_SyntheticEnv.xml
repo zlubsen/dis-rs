@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<DISsyntax
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
+  title="DIS Syntax Synthetic Environment"
+  release="0.3"
+  date="2025-12-29"
+  description="PDUs and records for the Synthetic Environment family. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  organization="Simulation Interoperability Standards Organization">
+
+  <copyright><![CDATA[
+Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+All rights reserved.
+
+Schema and API: SISO hereby grants a general, royalty-free license to copy, distribute, display, and
+make derivative works from this material, for all purposes, provided that any use of the material
+contains the following attribution: "Reprinted with permission from SISO Inc." Should
+a reader require additional information, contact the SISO Inc. Board of Directors.
+
+Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
+display, and make derivative works from this material, for noncommercial purposes, provided that
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+The material may not be used for a commercial purpose without express written
+permission from the SISO Inc Board of Directors.
+
+SISO Inc. Board of Directors
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+]]></copyright>
+
+  <PDU name="Environmental Process" PDUType="41" protocolFamily="9" baseLength="40">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Environmental Process ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Sequence Number" type="uint16"/>
+    <FixedRecordField name="Environment Type" length="8" type="Entity Type"/>
+    <NumericField name="Padding" type="uint32"/>
+    <NumericField name="Padding" type="uint8"/>
+    <BitRecordField name="Environment Status" size="8" enumTableUID="249"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Gridded Data" PDUType="42" protocolFamily="9" baseLength="72">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Environmental Simulation ID" length="6" type="Entity Identifier"/>
+    <NumericField name="Tile ID" type="uint16"/>
+    <NumericField name="Sample Time" type="int64" units="microseconds"/>
+    <EnumField name="Domain" type="enum8" enumTableUID="898"/>
+    <EnumField name="Category" type="enum8"  hierarchyDependency="Domain"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Vertical Reference" type="enum8" enumTableUID="53"/>
+    <NumericField name="Approximate Horizontal Resolution" type="uint8" units="square root meters"/>
+    <NumericField name="Approximate Vertical Resolution" type="uint8" units="square root meters"/>
+    <NumericField name="Tile North Latitude" type="float32" units="degrees"/>
+    <NumericField name="Tile South Latitude" type="float32" units="degrees"/>
+    <NumericField name="Tile East Longitude" type="float32" units="degrees"/>
+    <NumericField name="Tile West Longitude" type="float32" units="degrees"/>
+    <NumericField name="Tile Lower Vertical Value" type="float32" units="meters"/>
+    <NumericField name="Tile Upper Vertical Value" type="float32" units="meters"/>
+    <NumericField name="Change Number" type="uint16"/>
+    <NumericField name="Series Total" type="uint16"/>
+    <NumericField name="Series ID" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Weather" PDUType="77" protocolFamily="9" baseLength="40">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Source Entity ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Domain" type="enum8" enumTableUID="8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Time Weather Takes Effect" type="int64" units="microseconds"/>
+    <NumericField name="Change Number" type="uint16"/>
+    <NumericField name="Series Total" type="uint16"/>
+    <NumericField name="Series ID" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <BitRecord type="Weather Merge" size="8">
+    <BooleanBitField name="Merge Weather Atmospheric" bitPosition="0"/>
+    <BooleanBitField name="Merge Aerosol Concentrations" bitPosition="1"/>
+    <BooleanBitField name="Merge Terrestrial Surface Conditions" bitPosition="2"/>
+    <IntBitField name="Padding" bitPosition="3" size="5"/>
+  </BitRecord>
+
+  <ExtensionRecord name="Combined Weather" recordTypeEnum="8201" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Combined Weather Layers" type="uint8"/>
+      <FixedRecordField name="Combined Weather Layer" length="24" type="Combined Weather Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Combined Weather Layer" length="24">
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Coverage" type="uint8"/>
+    <NumericField name="Humidity" type="uint8"/>
+    <EnumField name="Cloud Type" type="enum8" enumTableUID="657"/>
+    <NumericField name="Air Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Barometric Pressure" type="uint16" units="millibars x 10"/>
+    <NumericField name="Visibility Range" type="float32" units="meters"/>
+    <NumericField name="Aerosol Concentration" type="uint8" units="percent"/>
+    <NumericField name="Severity" type="uint8"/>
+    <NumericField name="Top Scud Frequency" type="uint8" units="percent"/>
+    <NumericField name="Bottom Scud Frequency" type="uint8" units="percent"/>
+    <NumericField name="East Wind Speed" type="int16" units="centimeters/sec"/>
+    <NumericField name="North Wind Speed" type="int16" units="centimeters/sec"/>
+    <NumericField name="Up Wind Speed" type="int16" units="centimeters/sec"/>
+    <NumericField name="Random Winds" type="uint8" units="percent"/>
+    <NumericField name="Random Lightning" type="uint8" units="percent"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Cloud" recordTypeEnum="8202" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Cloud Layers" type="uint8"/>
+      <FixedRecordField name="Cloud Layer" length="6" type="Cloud Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Cloud Layer" length="6">
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Top Scud Frequency" type="uint8" units="percent"/>
+    <NumericField name="Bottom Scud Frequency" type="uint8" units="percent"/>
+    <NumericField name="Coverage" type="uint8" units="percent"/>
+    <EnumField name="Cloud Type" type="enum8" enumTableUID="657"/>
+    <NumericField name="Aerosol Concentration" type="uint8" units="percent"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Visibility" recordTypeEnum="8203" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Visibility Layers" type="uint8"/>
+      <FixedRecordField name="Visibility Layer" length="8" type="Visibility Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Visibility Layer" length="8">
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Visibility Range" type="float32" units="meters"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Temp/Baro" recordTypeEnum="8204" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Temp/Baro/Humidity Layers" type="uint8"/>
+      <FixedRecordField name="Temp/Baro/Humidity Layer" length="6" type="Temp/Baro/Humidity Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Temp/Baro/Humidity Layer" length="6">
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Humidity" type="uint8" units="percent"/>
+    <NumericField name="Air Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Barometric Pressure" type="uint16" units="millibars x 10"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Wind" recordTypeEnum="8205" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Wind Layers" type="uint8"/>
+      <FixedRecordField name="Wind Layer" length="8" type="Wind Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Wind Layer" length="8">
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Random Wind" type="uint8" units="percent"/>
+    <NumericField name="East Wind" type="int16" units="centimeters/sec"/>
+    <NumericField name="North Wind" type="int16" units="centimeters/sec"/>
+    <NumericField name="Up Wind" type="int16" units="centimeters/sec"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Weather Events" recordTypeEnum="8206" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Event Layers" type="uint8"/>
+      <FixedRecordField name="Event Layer" length="2" type="Event Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Event Layer" length="2">
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Random Lightning" type="uint8" units="percent"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Atmospheric" recordTypeEnum="8207" baseLength="24" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Atmosphere Enabled" type="uint8"/>
+    <NumericField name="Humidity" type="uint8" units="percent"/>
+    <NumericField name="Air Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Barometric Pressure" type="uint16" units="millibars x 10"/>
+    <NumericField name="East Wind Speed" type="int16" units="centimeters/sec"/>
+    <NumericField name="North Wind Speed" type="int16" units="centimeters/sec"/>
+    <NumericField name="Up Wind Speed" type="int16" units="centimeters/sec"/>
+    <NumericField name="Visibility Range" type="float32" units="meters"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Maritime Surface Conditions" recordTypeEnum="8208" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <NumericField name="Surface Conditions Enabled" type="uint8"/>
+    <NumericField name="White Caps Enabled" type="uint8"/>
+    <NumericField name="Surface Clarity" type="uint8" units="percent"/>
+    <NumericField name="Sea Surface Height" type="int16" units="centimeters MSL"/>
+    <NumericField name="Surface Water Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Wave State" recordTypeEnum="8209" baseLength="32" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Wave ID" type="uint8"/>
+    <NumericField name="Wave Enabled" type="uint8"/>
+    <EnumField name="Breaker Type" type="enum8" enumTableUID="668"/>
+    <NumericField name="Wave Height" type="uint16" units="centimeters"/>
+    <NumericField name="Wave Length" type="uint16" units="centimeters"/>
+    <NumericField name="Period" type="float32" units="seconds"/>
+    <NumericField name="Direction" type="float32" units="degrees"/>
+    <NumericField name="Phase Offset" type="float32" units="degrees"/>
+    <NumericField name="Leading" type="float32" units="degrees"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Terrestrial Surface Conditions" recordTypeEnum="8210" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Surface Conditions" type="uint8"/>
+      <FixedRecordField name="Surface Condition" length="5" type="Surface Condition"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Surface Condition" length="5">
+    <NumericField name="Surface Condition ID" type="uint8"/>
+    <NumericField name="Surface Condition Enabled" type="uint8"/>
+    <EnumField name="Surface Condition Type" type="enum8" enumTableUID="667"/>
+    <NumericField name="Coverage" type="uint8" units="percent"/>
+    <NumericField name="Severity" type="uint8" units="0 min, 255 max"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Rounded Rectangle Region" recordTypeEnum="8220" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Rounded Rectangle Regions" type="uint16"/>
+      <FixedRecordField name="Rounded Rectangle"  length="28" type="Rounded Rectangle"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Rounded Rectangle" length="28">
+    <NumericField name="Region ID" type="uint16"/>
+    <EnumField name="Region State" type="enum8" enumTableUID="669"/>
+    <BitRecordField name="Merge Flags" size="8" type="Weather Merge"/>
+    <NumericField name="Latitude" type="float32" units="degrees"/>
+    <NumericField name="Longitude" type="float32" units="degrees"/>
+    <NumericField name="Size x" type="float32" units="meters"/>
+    <NumericField name="Size y" type="float32" units="meters"/>
+    <NumericField name="Corner Radius" type="float32" units="meters"/>
+    <NumericField name="Transition Perimeter Size" type="uint16" units="meters"/>
+    <NumericField name="Padding" type="uint16"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Rectangular Region" recordTypeEnum="8221" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Rectangle Regions" type="uint16"/>
+      <FixedRecordField name="Rectangle Region" length="20" type="Rectangle Region"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Rectangle Region" length="20">
+    <NumericField name="Region ID" type="uint16"/>
+    <EnumField name="Region State" type="enum8" enumTableUID="669"/>
+    <BitRecordField name="Merge Flags" size="8" type="Weather Merge"/>
+    <NumericField name="Latitude" type="float32" units="degrees"/>
+    <NumericField name="Longitude" type="float32" units="degrees"/>
+    <NumericField name="Size x" type="float32" units="meters"/>
+    <NumericField name="Size y" type="float32" units="meters"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Polygon Region" recordTypeEnum="8222" baseLength="16" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Region ID" type="uint16"/>
+    <NumericField name="Region State" type="uint8"/>
+    <BitRecordField name="Merge Flags" size="8" type="Weather Merge"/>
+    <NumericField name="Padding" type="uint32"/>
+    <NumericField name="Transition Perimeter Size" type="uint16" units="meters"/>
+    <Array>
+      <CountField name="Number of Vertices" type="uint16"/>
+      <FixedRecordField name="Vertex" length="8" type="Vertex"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Vertex" length="8">
+    <NumericField name="Latitude" type="float32" units="degrees"/>
+    <NumericField name="Longitude" type="float32" units="degrees"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Fixed Linear Region" recordTypeEnum="8223" baseLength="16" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Region ID" type="uint16"/>
+    <NumericField name="Region State" type="uint8"/>
+    <BitRecordField name="Merge Flags" size="8" type="Weather Merge"/>
+    <NumericField name="Width" type="float32" units="meters"/>
+    <NumericField name="Transition Perimeter Size" type="uint16" units="meters"/>
+    <Array>
+      <CountField name="Number of Points" type="uint16"/>
+      <FixedRecordField name="Point" length="8" type="Point"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Point" length="8">
+    <NumericField name="Latitude" type="float32" units="degrees"/>
+    <NumericField name="Longitude" type="float32" units="degrees"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Variable Linear Region" recordTypeEnum="8224" baseLength="12" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Region ID" type="uint16"/>
+    <NumericField name="Region State" type="uint8"/>
+    <BitRecordField name="Merge Flags" size="8" type="Weather Merge"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Points" type="uint16"/>
+      <FixedRecordField name="Point and Width" length="16" type="Point and Width"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Point and Width" length="16">
+    <NumericField name="Latitude" type="float32" units="degrees"/>
+    <NumericField name="Longitude" type="float32" units="degrees"/>
+    <NumericField name="Width" type="float32" units="meters"/>
+    <NumericField name="Transition Perimeter Size" type="uint16" units="meters"/>
+    <NumericField name="Padding" type="uint16"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Circular Region" recordTypeEnum="8225" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Circular Regions" type="uint16"/>
+      <FixedRecordField name="Circular Region" length="24" type="Circular Region"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Circular Region" length="24">
+    <NumericField name="Region ID" type="uint16"/>
+    <EnumField name="Region State" type="enum8" enumTableUID="669"/>
+    <BitRecordField name="Merge Flags" size="8" type="Weather Merge"/>
+    <NumericField name="Inside Radius" type="float32" units="meters"/>
+    <NumericField name="Outside Radius" type="float32" units="meters"/>
+    <NumericField name="Inside Transition Perimeter Size" type="uint16" units="meters"/>
+    <NumericField name="Outside Transition Perimeter Size" type="uint16" units="meters"/>
+    <NumericField name="Latitude" type="float32" units="degrees"/>
+    <NumericField name="Longitude" type="float32" units="degrees"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Layer Geometry" recordTypeEnum="8226" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <Array>
+      <CountField name="Number of Layers" type="uint8"/>
+      <FixedRecordField name="Layer" length="14" type="Layer"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="Layer" length="14">
+    <NumericField name="ID" type="uint16"/>
+    <NumericField name="Layer ID" type="uint8"/>
+    <NumericField name="Enable" type="uint8"/>
+    <EnumField name="Layer Type" type="enum8" enumTableUID="665"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Base Elevation" type="uint16" units="meters MSL"/>
+    <NumericField name="Thickness" type="uint16" units="meters"/>
+    <NumericField name="Top Transition Thickness" type="uint16" units="meters"/>
+    <NumericField name="Bottom Transition Thickness" type="uint16" units="meters"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Region Rotation" recordTypeEnum="8230" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Rotations" type="uint16"/>
+      <FixedRecordField name="Rotation" length="16" type="Rotation"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Rotation" length="16">
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID Type" type="enum8" enumTableUID="666"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Rotation" type="float32" units="degrees"/>
+    <NumericField name="Center of Rotation Latitude" type="float32" units="degrees"/>
+    <NumericField name="Center of Rotation Longitude" type="float32" units="degrees"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Region Rotation Rate" recordTypeEnum="8231" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Rotation Rates" type="uint16"/>
+      <FixedRecordField name="Rotation Rate" length="16" type="Rotation Rate"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Rotation Rate" length="16">
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID type" type="enum8" enumTableUID="666"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Rotation Rate" type="float32" units="degrees/sec"/>
+    <NumericField name="Center of Rotation Latitude" type="float32" units="degrees"/>
+    <NumericField name="Center of Rotation Longitude" type="float32" units="degrees"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Region Linear Velocity" recordTypeEnum="8232" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Velocities" type="uint16"/>
+      <FixedRecordField name="Velocity" length="8" type="Velocity"/>
+    </Array>
+  </ExtensionRecord>
+
+  <FixedRecord type="Velocity" length="8">
+    <NumericField name="ID" type="uint16"/>
+    <EnumField name="ID type" type="enum8" enumTableUID="666"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="East Velocity" type="int16" units="centimeters/second"/>
+    <NumericField name="North Velocity" type="int16" units="centimeters/second"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Region Group" recordTypeEnum="8233" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <Array>
+      <CountField name="Number of Regions" type="uint16"/>
+      <NumericField name="Region" type="uint16"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Geodetic Grid Descriptor" recordTypeEnum="8501" baseLength="32" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Number of Latitude Samples" type="uint16"/>
+    <NumericField name="Number of Longitude Samples" type="uint16"/>
+    <NumericField name="Sample Latitude Delta" type="float32" units="degrees"/>
+    <NumericField name="Sample Longitude Delta" type="float32" units="degrees"/>
+    <NumericField name="Tile Origin Latitude" type="float64" units="degrees"/>
+    <NumericField name="Tile Origin Longitude" type="float64" units="degrees"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Horizontal Cartesian Axis Descriptor" recordTypeEnum="8502" baseLength="40" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Number of u Axis Points" type="uint16"/>
+    <NumericField name="Number of v Axis Points" type="uint16"/>
+    <NumericField name="u Axis Delta" type="float32" units="meters"/>
+    <NumericField name="v Axis Delta" type="float32" units="meters"/>
+    <NumericField name="Origin Longitude" type="float64" units="degrees"/>
+    <NumericField name="Origin Latitude" type="float64" units="degrees"/>
+    <NumericField name="Rotation" type="float32" units="degrees"/>
+    <NumericField name="Padding" type="uint32"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Regular Vertical Axis Descriptor" recordTypeEnum="8510" baseLength="16" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Vertical Reference" type="enum8" enumTableUID="53"/>
+    <NumericField name="Number of Vertical Samples" type="uint16"/>
+    <NumericField name="Vertical Origin" type="float32" units="meters"/>
+    <NumericField name="Vertical Delta" type="float32" units="meters"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Irregular Vertical Axis Descriptor" recordTypeEnum="8511" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <EnumField name="Vertical Reference" type="enum8" enumTableUID="53"/>
+    <Array>
+      <CountField name="Number of Vertical Samples" type="uint16"/>
+      <NumericField name="Vertical Value" type="float32" units="meters"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Gridded Data 2D Wind" recordTypeEnum="8520" baseLength="8" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+    <NumericField name="Padding" type="uint8"/>
+    <Array>
+      <CountField name="Number of Samples" type="uint8"/>
+      <FixedRecordField name="2D Wind Sample" length="4" type="2D Wind Sample"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <FixedRecord type="2D Wind Sample" length="4">
+    <NumericField name="Speed" type="uint8" units="0.5 meters/sec"/>
+    <NumericField name="Gust" type="uint8" units="0.5 meters/sec"/>
+    <NumericField name="Direction" type="uint16" units="360/65536 degrees"/>
+  </FixedRecord>
+
+</DISsyntax>

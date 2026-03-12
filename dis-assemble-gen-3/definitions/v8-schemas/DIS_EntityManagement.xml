@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<DISsyntax
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
+  title="DIS Syntax Entity Management"
+  release="0.3"
+  date="2025-12-29"
+  description="PDUs and records for the Entity Management family. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  organization="Simulation Interoperability Standards Organization">
+
+  <copyright><![CDATA[
+Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+All rights reserved.
+
+Schema and API: SISO hereby grants a general, royalty-free license to copy, distribute, display, and
+make derivative works from this material, for all purposes, provided that any use of the material
+contains the following attribution: "Reprinted with permission from SISO Inc." Should
+a reader require additional information, contact the SISO Inc. Board of Directors.
+
+Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
+display, and make derivative works from this material, for noncommercial purposes, provided that
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+The material may not be used for a commercial purpose without express written
+permission from the SISO Inc Board of Directors.
+
+SISO Inc. Board of Directors
+7901 4th St N, Suite 300-4043
+St. Petersburg, FL 33702
+]]></copyright>
+
+  <PDU name="Aggregate State" PDUType="33" protocolFamily="7" baseLength="104">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Aggregate ID" length="6" type="Entity Identifier"/>
+    <EnumField name="Force ID" type="enum8" enumTableUID="6"/>
+    <EnumField name="Aggregate State" type="enum8" enumTableUID="204"/>
+    <FixedRecordField name="Aggregate Type" length="8" type="Aggregate Type"/>
+    <FixedRecordField name="Aggregate Location" length="24" type="World Coordinates"/>
+    <FixedRecordField name="Aggregate Orientation" length="12" type="Euler Angles"/>
+    <FixedRecordField name="Aggregate Velocity" length="12" type="Linear Velocity Vector"/>
+    <FixedRecordField name="Bounding Volume" length="12" type="Bounding Volume"/>
+    <EnumField name="Aggregate Formation" type="enum32" enumTableUID="205"/>
+    <NumericField name="Padding" type="uint32"/>
+    <NumericField name="Padding" type="uint16"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <PDU name="Transfer Ownership" PDUType="35" protocolFamily="7" baseLength="40">
+    <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
+    <FixedRecordField name="Originating Simulation Address" length="4" type="Simulation Address"/>
+    <FixedRecordField name="Receiving Simulation Address" length="4" type="Simulation Address"/>
+    <NumericField name="Request ID" type="uint32"/>
+    <EnumField name="Transfer Type" type="enum8" enumTableUID="224"/>
+    <NumericField name="Padding" type="uint8"/>
+    <NumericField name="Padding" type="uint16"/>
+    <FixedRecordField name="Transfer Entity ID" length="6" type="Entity Identifier"/>
+    <ExtensionRecordSet>
+      <CountField name="Number Of Extension Records" type="uint16"/>
+      <ExtensionRecordFields/>
+    </ExtensionRecordSet>
+  </PDU>
+
+  <FixedRecord type="Aggregate Type" length="8">
+    <EnumField name="Entity Kind" type="enum8" enumTableUID="206"/>
+    <EnumField name="Domain" type="enum8" enumTableUID="8"/>
+    <EnumField name="Country" type="enum16" enumTableUID="29"/>
+    <EnumField name="Category" type="enum8" hierarchyDependency="Entity Kind"/>
+    <EnumField name="Subcategory" type="enum8" hierarchyDependency="Category"/>
+    <EnumField name="Specific" type="enum8" hierarchyDependency="Subcategory"/>
+    <EnumField name="Extra" type="enum8" hierarchyDependency="Entity Kind, Domain, Country, Category, Subcategory, Specific"/>
+  </FixedRecord>
+
+  <FixedRecord type="Bounding Volume" length="12">
+    <NumericField name="x-component" type="float32" units="meters"/>
+    <NumericField name="y-component" type="float32" units="meters"/>
+    <NumericField name="z-component" type="float32" units="meters"/>
+  </FixedRecord>
+
+  <ExtensionRecord name="Transfer Records" recordTypeEnum="7500" baseLength="8" isVariable="false">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <NumericField name="Number of Transfer Records" type="uint16"/>
+    <NumericField name="Padding" type="uint16"/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Constituent Entity" recordTypeEnum="7800" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <Array>
+      <CountField name="Number of Entities" type="uint16"/>
+      <FixedRecordField name="Entity ID" length="6" type="Entity Identifier"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+  <ExtensionRecord name="Subaggregate" recordTypeEnum="7801" baseLength="6" isVariable="true">
+    <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
+    <NumericField name="Record Length" type="uint16"/>
+    <Array>
+      <CountField name="Number of Subaggregates" type="uint16"/>
+      <FixedRecordField name="Aggregate ID" length="6" type="Entity Identifier"/>
+    </Array>
+    <PaddingTo64/>
+  </ExtensionRecord>
+
+</DISsyntax>

@@ -20,6 +20,8 @@ prettyplease = "0.2.37"
 syn = "2.0.106"
 tempfile = "3.26.0"
 dis-gen-utils = { path = "../dis-gen-utils" }
+toml = "1.0.6+spec-1.1.0"
+serde = { version = "1.0.228", features = ["derive"] }
 
 [lints]
 workspace = true
