@@ -1,0 +1,40 @@
+[package]
+name = "dis-assemble-gen-3"
+version = "0.14.0"
+description = """
+A generation 3 implementation of the Distributed Interactive Simulation protocol (IEEE-1278.1) in Rust.
+
+This main Gen-3 crate contains PDU implementations and facilities to read/write PDUs
+from Rust data structures to the wire format and vice versa. It supports version 8 of the protocol.
+
+Support for DIS version 8 is experimental, based on draft 5.
+"""
+readme = "README.md"
+keywords = ["simulation", "DIS"]
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
+
+[features]
+serde = ["dep:serde"]
+pcap-file = ["dep:pcap-file"]
+hotpath = ["dep:hotpath", "hotpath/hotpath", "hotpath/hotpath-alloc"]
+_test_no_instrumentation = []
+
+[dependencies]
+bytes = "1.11.1"
+nom = "8.0.0"
+thiserror = "2.0.18"
+serde = { version = "1.0.228", features = ["derive"], optional = true }
+hotpath = { version = "0.10.1", optional = true }
+pcap-file = { version = "2.0.0", optional = true }
+
+[build-dependencies]
+dis-gen-siso-ref-010 = { path = "../dis-gen-siso-ref-010" }
+dis-gen-ieee-1278-v8 = { path = "../dis-gen-ieee-1278-v8" }
+
+[lints]
+workspace = true
