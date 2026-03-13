@@ -23,7 +23,7 @@ mod tests {
             .with_receiving_id(EntityId::new(20, 20, 20))
             .with_request_id(5)
             .with_fixed_datums(vec![FixedDatum::new(
-                VariableRecordType::_7_62mm_Quantity_24010,
+                VariableRecordType::_7_62mmQuantity_24010,
                 100,
             )])
             .with_variable_datums(vec![VariableDatum::new(

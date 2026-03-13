@@ -45,6 +45,7 @@ pub fn generate(items: &[GenerationItem], overrides: &Overrides) -> TokenStream 
         #[allow(clippy::uninlined_format_args)]
         #[allow(clippy::unreadable_literal)]
         #[allow(clippy::write_literal)]
+        #[expect(arithmetic_overflow, reason = "Shifting for bitfields")]
         pub mod enumerations {
             use std::fmt::{Display, Formatter};
             #[cfg(feature = "serde")]
@@ -110,7 +111,11 @@ where
     let needs_postfix = overrides
         .get(&e.uid)
         .is_some_and(|entry| entry.postfix_value);
-    let arms = quote_enum_decl_arms(&e.items, e.size, needs_postfix, lookup_xref);
+    let data_size = overrides
+        .get(&e.uid)
+        .and_then(|entry| entry.size)
+        .unwrap_or(e.size);
+    let arms = quote_enum_decl_arms(&e.items, data_size, needs_postfix, lookup_xref);
     let uid_doc_comment = format!(" UID {}", e.uid);
     quote!(
         #[doc = #uid_doc_comment]
@@ -181,11 +186,15 @@ where
 fn quote_enum_from_impl(e: &Enum, name_ident: &Ident, overrides: &Overrides) -> TokenStream {
     let needs_postfix = overrides
         .get(&e.uid)
-        .map(|entry| entry.postfix_value)
-        .unwrap_or(false);
-    let arms = quote_enum_from_arms(name_ident, &e.items, e.size, needs_postfix);
-    let discriminant_type = size_to_type(e.size);
+        .is_some_and(|entry| entry.postfix_value);
+    let data_size = overrides
+        .get(&e.uid)
+        .and_then(|entry| entry.size)
+        .unwrap_or(e.size);
+    let arms = quote_enum_from_arms(name_ident, &e.items, data_size, needs_postfix);
+    let discriminant_type = size_to_type(data_size);
     let discriminant_ident = format_ident!("{}", discriminant_type);
+
     quote!(
         impl From<#discriminant_ident> for #name_ident {
             fn from(value: #discriminant_ident) -> Self {
@@ -246,10 +255,13 @@ fn quote_enum_from_arms(
 fn quote_enum_into_impl(e: &Enum, name_ident: &Ident, overrides: &Overrides) -> TokenStream {
     let needs_postfix = overrides
         .get(&e.uid)
-        .map(|entry| entry.postfix_value)
-        .unwrap_or(false);
-    let arms = quote_enum_into_arms(name_ident, &e.items, e.size, needs_postfix);
-    let discriminant_type = size_to_type(e.size);
+        .is_some_and(|entry| entry.postfix_value);
+    let data_size = overrides
+        .get(&e.uid)
+        .and_then(|entry| entry.size)
+        .unwrap_or(e.size);
+    let arms = quote_enum_into_arms(name_ident, &e.items, data_size, needs_postfix);
+    let discriminant_type = size_to_type(data_size);
     let discriminant_ident = format_ident!("{}", discriminant_type);
     quote!(
         impl From<#name_ident> for #discriminant_ident {
@@ -456,9 +468,14 @@ where
             quote!(#ident)
         })
         .collect();
+    let value_ident = if field_assignments.is_empty() {
+        format_ident!("_value")
+    } else {
+        format_ident!("value")
+    };
     quote!(
         impl From<#size_ident> for #name_ident {
-            fn from(value: #size_ident) -> Self {
+            fn from(#value_ident: #size_ident) -> Self {
                 #(#field_assignments)*
 
                 Self {
@@ -514,9 +531,14 @@ where
         })
         .collect();
     let base_size_literal = discriminant_literal(0, item.size);
+    let value_ident = if field_assignments.is_empty() {
+        format_ident!("_value")
+    } else {
+        format_ident!("value")
+    };
     quote!(
         impl From<#name_ident> for #size_ident {
-            fn from(value: #name_ident) -> Self {
+            fn from(#value_ident: #name_ident) -> Self {
                 #(#field_assignments)*
 
                 #base_size_literal #( | #field_names)*

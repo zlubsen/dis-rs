@@ -22,7 +22,7 @@ mod tests {
         let body = Signal::builder()
             .with_encoding_scheme(EncodingScheme::EncodedAudio {
                 encoding_class: SignalEncodingClass::EncodedAudio,
-                encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_BigEndian_4,
+                encoding_type: SignalEncodingType::_16bitLinearPCM2sComplementBigEndian_4,
             })
             .with_samples(20)
             .with_sample_rate(20000)
@@ -60,7 +60,7 @@ mod tests {
         let body = Signal::builder()
             .with_encoding_scheme(EncodingScheme::EncodedAudio {
                 encoding_class: SignalEncodingClass::EncodedAudio,
-                encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_BigEndian_4,
+                encoding_type: SignalEncodingType::_16bitLinearPCM2sComplementBigEndian_4,
             })
             .with_samples(20)
             .with_sample_rate(20000)

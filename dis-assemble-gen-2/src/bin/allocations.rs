@@ -1,4 +1,4 @@
-use dis_rs::model::Pdu;
+use dis_assemble_gen_2::model::Pdu;
 
 const FILE_EXT_PCAP: &str = "pcap";
 const FILE_EXT_XMSN: &str = "xmsn";
@@ -64,5 +64,5 @@ fn read_xmsn_file(file_name: &str) -> Vec<u8> {
 }
 
 fn parse_dis(bytes: &Vec<u8>) -> Vec<Pdu> {
-    dis_rs::parse(bytes.as_slice()).expect("Expected well formed PDUs.")
+    dis_assemble_gen_2::parse(bytes.as_slice()).expect("Expected well formed PDUs.")
 }

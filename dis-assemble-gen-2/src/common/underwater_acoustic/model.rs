@@ -1,9 +1,9 @@
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, TWENTY_OCTETS};
 use crate::enumerations::{
-    APAStatus, PduType, UAAcousticEmitterSystemFunction, UAAcousticSystemName,
+    APAParameterIndexAPAStatus, PduType, UAAcousticEmitterSystemFunction, UAAcousticSystemName,
     UAActiveEmissionParameterIndex, UAAdditionalPassiveActivityParameterIndex,
-    UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAScanPattern,
+    UAPassiveParameterIndex, UAPropulsionPlantConfigurationConfiguration, UAScanPattern,
     UAStateChangeUpdateIndicator,
 };
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
@@ -77,13 +77,16 @@ impl Interaction for UnderwaterAcoustic {
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PropulsionPlantConfiguration {
-    pub configuration: UAPropulsionPlantConfiguration,
+    pub configuration: UAPropulsionPlantConfigurationConfiguration,
     pub hull_mounted_masker: bool,
 }
 
 impl PropulsionPlantConfiguration {
     #[must_use]
-    pub fn with_configuration(mut self, configuration: UAPropulsionPlantConfiguration) -> Self {
+    pub fn with_configuration(
+        mut self,
+        configuration: UAPropulsionPlantConfigurationConfiguration,
+    ) -> Self {
         self.configuration = configuration;
         self
     }
@@ -143,7 +146,7 @@ impl Shaft {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct APA {
     pub parameter: UAAdditionalPassiveActivityParameterIndex,
-    pub status: APAStatus,
+    pub status: APAParameterIndexAPAStatus,
     pub value: i16,
 }
 
@@ -155,7 +158,7 @@ impl APA {
     }
 
     #[must_use]
-    pub fn with_status(mut self, status: APAStatus) -> Self {
+    pub fn with_status(mut self, status: APAParameterIndexAPAStatus) -> Self {
         self.status = status;
         self
     }

@@ -588,3 +588,9 @@ fn format_field_name(name: &str) -> String {
 fn escape_description(description: &str) -> String {
     description.replace('{', "{{").replace('}', "}}")
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_format_name() {}
+}

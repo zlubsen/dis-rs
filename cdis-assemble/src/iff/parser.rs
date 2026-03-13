@@ -331,12 +331,12 @@ fn mode_5_basic_data(
                 let (input, basic_data) = mode_5_interrogator_basic_data(input)?;
                 (input, Ok(Mode5BasicData::Interrogator(basic_data)))
             }
-            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_
-            | IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_
+            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT
+            | IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT
             | IffSystemType::TCASACASTransceiver => {
                 (input, Err(DisError::IffUndeterminedSystemType))
             }
-            IffSystemType::NotUsed_InvalidValue_ => (input, Err(DisError::IffIncorrectSystemType)),
+            IffSystemType::NotUsed_InvalidValue => (input, Err(DisError::IffIncorrectSystemType)),
             IffSystemType::Unspecified(_) => (input, Err(DisError::IffIncorrectSystemType)),
         };
 
@@ -466,12 +466,12 @@ fn mode_s_basic_data(
                 let (input, basic_data) = mode_s_interrogator_basic_data(input)?;
                 (input, Ok(ModeSBasicData::Interrogator(basic_data)))
             }
-            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT_
-            | IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_
+            IffSystemType::MarkXIIACombinedInterrogatorTransponder_CIT
+            | IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT
             | IffSystemType::TCASACASTransceiver => {
                 (input, Err(DisError::IffUndeterminedSystemType))
             }
-            IffSystemType::NotUsed_InvalidValue_ => (input, Err(DisError::IffIncorrectSystemType)),
+            IffSystemType::NotUsed_InvalidValue => (input, Err(DisError::IffIncorrectSystemType)),
             IffSystemType::Unspecified(_) => (input, Err(DisError::IffIncorrectSystemType)),
         };
 

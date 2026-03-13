@@ -102,7 +102,7 @@ mod tests {
             entity_orientation: Some(Orientation::new(4, 3, 2)),
             entity_appearance: None,
             dr_algorithm:
-                DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity,
+                DeadReckoningAlgorithm::DRM_FPWConstantVelocityLowAccelerationLinearMotionEntity,
             dr_params_other: None,
             dr_params_entity_linear_acceleration: None,
             dr_params_entity_angular_velocity: None,

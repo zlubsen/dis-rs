@@ -27,7 +27,7 @@ mod tests {
                 MunitionDescriptor::default()
                     .with_entity_type(EntityType::default().with_kind(EntityKind::Munition))
                     .with_warhead(MunitionDescriptorWarhead::Blank)
-                    .with_fuse(MunitionDescriptorFuse::Contact_Nose_1960)
+                    .with_fuse(MunitionDescriptorFuse::ContactNose_1960)
                     .with_quantity(10),
             ))
             .with_velocity(VectorF32::new(50.0, 60.0, 70.0))
@@ -108,7 +108,7 @@ mod tests {
                 MunitionDescriptor::default()
                     .with_entity_type(EntityType::default().with_kind(EntityKind::Munition))
                     .with_warhead(MunitionDescriptorWarhead::Blank)
-                    .with_fuse(MunitionDescriptorFuse::Contact_Nose_1960)
+                    .with_fuse(MunitionDescriptorFuse::ContactNose_1960)
                     .with_quantity(10),
             ))
             .with_velocity(VectorF32::new(50.0, 60.0, 70.0))

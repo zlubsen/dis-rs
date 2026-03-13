@@ -157,16 +157,16 @@ pub fn dr_other_parameters(
     // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
     let (input, other_parameters) = match algorithm {
         DeadReckoningAlgorithm::StaticNonmovingEntity |
-        DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
-        DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity |
-        DeadReckoningAlgorithm::DRM_FPB_SimilarToFPWExceptInBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWExceptInBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_FPWConstantVelocityLowAccelerationLinearMotionEntity |
+        DeadReckoningAlgorithm::DRM_FVWHighSpeedOrManeuveringEntity |
+        DeadReckoningAlgorithm::DRM_FPBSimilarToFPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVBSimilarToFVWExceptInBodyCoordinates => {
             dr_other_parameters_euler(input)?
         }
-        DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntityWithExtrapolationOfOrientation |
-        DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
-        DeadReckoningAlgorithm::DRM_RPB_SimilarToRPWExceptInBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RPWConstantVelocityLowAccelerationLinearMotionEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RVWHighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_RPBSimilarToRPWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_RVBSimilarToRVWExceptInBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
         DeadReckoningAlgorithm::Other | DeadReckoningAlgorithm::Unspecified(_) => {
@@ -262,7 +262,7 @@ mod tests {
                 EntityType {
                     kind: EntityKind::Platform,
                     domain: PlatformDomain::Air,
-                    country: Country::Netherlands_NLD_,
+                    country: Country::Netherlands_NLD,
                     category: 50,
                     subcategory: 4,
                     specific: 4,
@@ -275,7 +275,7 @@ mod tests {
                 assert!(!appearance.propulsion_killed);
                 assert_eq!(
                     appearance.nvg_mode,
-                    AppearanceNVGMode::CovertLighting_NightVisionGoggles_
+                    AppearanceNVGMode::CovertLighting_NightVisionGoggles
                 );
                 assert_eq!(appearance.damage, AppearanceDamage::NoDamage);
                 assert!(!appearance.is_smoke_emanating);
@@ -297,7 +297,7 @@ mod tests {
                 panic!();
             }
 
-            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation);
+            assert_eq!(pdu.dead_reckoning_parameters.algorithm, DeadReckoningAlgorithm::DRM_RVWHighSpeedOrManeuveringEntityWithExtrapolationOfOrientation);
             assert_eq!(pdu.entity_marking.marking_string, String::from("EYE 10"));
             let capabilities: EntityCapabilities = pdu.entity_capabilities;
             if let EntityCapabilities::AirPlatformEntityCapabilities(capabilities) = capabilities {

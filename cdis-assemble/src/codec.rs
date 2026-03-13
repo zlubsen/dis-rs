@@ -625,7 +625,7 @@ mod tests {
             .with_entity_type(
                 EntityType::default()
                     .with_domain(PlatformDomain::Air)
-                    .with_country(Country::Netherlands_NLD_)
+                    .with_country(Country::Netherlands_NLD)
                     .with_kind(EntityKind::Platform),
             )
             .with_force_id(ForceId::Friendly8)
@@ -706,7 +706,7 @@ mod tests {
             entity_type: Some(crate::records::model::EntityType::new(
                 u8::from(EntityKind::Platform),
                 u8::from(PlatformDomain::Air),
-                u16::from(Country::Netherlands_NLD_),
+                u16::from(Country::Netherlands_NLD),
                 UVINT8::from(0),
                 UVINT8::from(0),
                 UVINT8::from(0),
@@ -722,7 +722,7 @@ mod tests {
             entity_orientation: Some(Orientation::new(4, 3, 2)),
             entity_appearance: None,
             dr_algorithm:
-                DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity,
+                DeadReckoningAlgorithm::DRM_FPWConstantVelocityLowAccelerationLinearMotionEntity,
             dr_params_other: None,
             dr_params_entity_linear_acceleration: None,
             dr_params_entity_angular_velocity: None,

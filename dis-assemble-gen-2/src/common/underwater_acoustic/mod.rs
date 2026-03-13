@@ -9,7 +9,7 @@ mod tests {
     use crate::common::model::{Pdu, PduHeader};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{
-        PduType, UAPassiveParameterIndex, UAPropulsionPlantConfiguration,
+        PduType, UAPassiveParameterIndex, UAPropulsionPlantConfigurationConfiguration,
         UAStateChangeUpdateIndicator,
     };
     use crate::model::{EntityId, EventId};
@@ -31,7 +31,7 @@ mod tests {
             .with_passive_parameter_index(UAPassiveParameterIndex::Other)
             .with_propulsion_plant_configuration(
                 PropulsionPlantConfiguration::default()
-                    .with_configuration(UAPropulsionPlantConfiguration::Battery)
+                    .with_configuration(UAPropulsionPlantConfigurationConfiguration::Battery)
                     .with_hull_mounted_masker(false),
             )
             .with_shafts(vec![

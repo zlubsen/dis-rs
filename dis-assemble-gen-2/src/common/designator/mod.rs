@@ -22,7 +22,7 @@ mod tests {
             .with_designated_entity_id(EntityId::new(2, 2, 2))
             .with_power(45.5)
             .with_dead_reckoning_algorithm(
-                DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity,
+                DeadReckoningAlgorithm::DRM_FPWConstantVelocityLowAccelerationLinearMotionEntity,
             )
             .build()
             .into_pdu_body();

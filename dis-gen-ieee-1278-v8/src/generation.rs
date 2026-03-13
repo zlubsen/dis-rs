@@ -98,10 +98,10 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
         .iter()
         .filter(|&item| (item.family().as_str() == family) && !item.is_pdu())
         .map(|item| match item {
-            GenerationItem::FixedRecord(record, family) => generate_fixed_record(record, lookup),
-            GenerationItem::ExtensionRecord(record, family) => quote! {},
-            GenerationItem::BitRecord(record, family) => generate_bit_record(record, lookup),
-            GenerationItem::AdaptiveRecord(record, family) => quote! {},
+            GenerationItem::FixedRecord(record, _family) => generate_fixed_record(record, lookup),
+            GenerationItem::ExtensionRecord(record, _family) => quote! {},
+            GenerationItem::BitRecord(record, _family) => generate_bit_record(record, lookup),
+            GenerationItem::AdaptiveRecord(record, _family) => quote! {},
             GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record."),
         })
         .collect::<TokenStream>();

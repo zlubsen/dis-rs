@@ -28,8 +28,8 @@ mod tests {
             .with_time(TimeStamp::new(123_456))
             .with_record_query_specification(RecordQuerySpecification::default().with_record_ids(
                 vec![
-                    VariableRecordType::_7_62mmM62_Quantity_24005,
-                    VariableRecordType::_7_62mmM80_Quantity_24008,
+                    VariableRecordType::_7_62mmM62Quantity_24005,
+                    VariableRecordType::_7_62mmM80Quantity_24008,
                 ],
             ))
             .build()

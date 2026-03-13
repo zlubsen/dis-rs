@@ -2,11 +2,11 @@
 name = "dis-rs"
 version = "0.14.0"
 description = """
-An implementation of the Distributed Interactive Simulation protocol (IEEE-1278.1) in Rust.
+Implementations of the Distributed Interactive Simulation protocol (IEEE-1278.1) versions in Rust.
 
 This main crate contains PDU implementations and facilities to read/write PDUs
-from Rust data structures to the wire format and vice versa. It supports versions 6 and 7 of the protocol.
-Support for DIS version 8 is experimental, based on draft 5.
+from Rust data structures to the wire format and vice versa. It supports versions 6 and 7 of the protocol ('generation 2').
+Support for DIS version 8 ('generation 3') is experimental, based on draft 5. Enable feature 'gen3' to use.
 """
 readme = "README.md"
 keywords = ["simulation", "DIS"]
@@ -18,17 +18,12 @@ repository.workspace = true
 categories.workspace = true
 
 [features]
-serde = []
-gen3 = ["dep:dis-assemble-gen-3"]
-#pcap-file = ["dep:pcap-file"]
-#hotpath = ["dep:hotpath", "hotpath/hotpath", "hotpath/hotpath-alloc"]
-#_test_no_instrumentation = []
+serde = ["dis-assemble-gen-2/serde"]
+#gen3 = ["dep:dis-assemble-gen-3"]
 
 [dependencies]
-dis-assemble-gen-2 = { path = "../dis-assemble-gen-2", features = ["serde"] }
-dis-assemble-gen-3 = { path = "../dis-assemble-gen-3", features = ["serde"], optional = true }
-#hotpath = { version = "0.14.0" , optional = true }
-#pcap-file = { version = "2.0.0" , optional = true }
+dis-assemble-gen-2 = { path = "../dis-assemble-gen-2" }
+#dis-assemble-gen-3 = { path = "../dis-assemble-gen-3", features = ["serde"], optional = true }
 
 [lints]
 workspace = true

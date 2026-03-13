@@ -1,9 +1,9 @@
 use crate::common::parser::{entity_id, event_id, vec3_f32};
 use crate::constants::LEAST_SIGNIFICANT_BIT;
 use crate::enumerations::{
-    APAStatus, UAAcousticEmitterSystemFunction, UAAcousticSystemName,
+    APAParameterIndexAPAStatus, UAAcousticEmitterSystemFunction, UAAcousticSystemName,
     UAActiveEmissionParameterIndex, UAAdditionalPassiveActivityParameterIndex,
-    UAPassiveParameterIndex, UAPropulsionPlantConfiguration, UAScanPattern,
+    UAPassiveParameterIndex, UAPropulsionPlantConfigurationConfiguration, UAScanPattern,
     UAStateChangeUpdateIndicator,
 };
 use crate::model::PduBody;
@@ -55,7 +55,7 @@ pub(crate) fn underwater_acoustic_body(input: &[u8]) -> IResult<&[u8], PduBody> 
 fn propulsion_plant_configuration(input: &[u8]) -> IResult<&[u8], PropulsionPlantConfiguration> {
     let (input, field) = be_u8(input)?;
     let configuration = field >> 1;
-    let configuration = UAPropulsionPlantConfiguration::from(configuration);
+    let configuration = UAPropulsionPlantConfigurationConfiguration::from(configuration);
     let hull_mounted_masker_on = field & LEAST_SIGNIFICANT_BIT as u8 != 0;
 
     Ok((
@@ -84,7 +84,8 @@ fn apa(input: &[u8]) -> IResult<&[u8], APA> {
     const LAST_TWO_BITS_MASK: u16 = 0x0003;
     let (input, parameter_index) = be_u16(input)?;
     let parameter = UAAdditionalPassiveActivityParameterIndex::from(parameter_index >> 2);
-    let parameter_status = APAStatus::from((parameter_index & LAST_TWO_BITS_MASK) as u8);
+    let parameter_status =
+        APAParameterIndexAPAStatus::from((parameter_index & LAST_TWO_BITS_MASK) as u8);
     let (input, value) = be_i16(input)?;
 
     Ok((

@@ -97,7 +97,7 @@ impl Serialize for DrOtherParameters {
 
 impl Serialize for DrEulerAngles {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        buf.put_u8(DrParametersType::LocalEulerAngles_Yaw_Pitch_Roll_.into());
+        buf.put_u8(DrParametersType::LocalEulerAngles_YawPitchRoll.into());
         buf.put_u16(0u16);
         buf.put_f32(self.local_yaw);
         buf.put_f32(self.local_pitch);
@@ -219,10 +219,10 @@ mod tests {
             .with_entity_id(EntityId::new(500, 900, 14))
             .with_force_id(ForceId::Friendly)
             .with_entity_type(EntityType {
-                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
+                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .with_alternative_entity_type(EntityType {
-                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD_, category: 50, subcategory: 4, specific: 4, extra: 0
+                kind: EntityKind::Platform, domain: PlatformDomain::Air, country: Country::Netherlands_NLD, category: 50, subcategory: 4, specific: 4, extra: 0
             })
             .with_velocity(VectorF32 {
                 first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32
@@ -264,7 +264,7 @@ mod tests {
                 weightonwheels: true,
             }))
             .with_dead_reckoning_parameters(DrParameters {
-                algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
+                algorithm: DeadReckoningAlgorithm::DRM_RVWHighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
                 other_parameters: DrOtherParameters::None([0u8;15]),
                 linear_acceleration: VectorF32 {
                     first_vector_component: 0f32, second_vector_component: 0f32, third_vector_component: 0f32

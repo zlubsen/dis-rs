@@ -53,7 +53,7 @@ fn encode_dis_to_cdis_entity_state_full_mode() {
         .with_entity_type(
             EntityType::default()
                 .with_domain(PlatformDomain::Air)
-                .with_country(Country::Netherlands_NLD_)
+                .with_country(Country::Netherlands_NLD)
                 .with_kind(EntityKind::Platform),
         )
         .with_force_id(ForceId::Friendly8)
@@ -82,7 +82,7 @@ fn encode_dis_to_cdis_entity_state_full_mode() {
         );
         assert_eq!(
             es.entity_type.unwrap().country,
-            u16::from(Country::Netherlands_NLD_)
+            u16::from(Country::Netherlands_NLD)
         );
         assert_eq!(es.entity_marking.as_ref().unwrap().marking.as_str(), "TEST");
     } else {
@@ -131,7 +131,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         entity_orientation: Some(Orientation::new(4, 3, 2)),
         entity_appearance: None,
         dr_algorithm:
-            DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity,
+            DeadReckoningAlgorithm::DRM_FPWConstantVelocityLowAccelerationLinearMotionEntity,
         dr_params_other: None,
         dr_params_entity_linear_acceleration: None,
         dr_params_entity_angular_velocity: None,
@@ -187,7 +187,7 @@ fn codec_consistency_entity_state_full_mode() {
         .with_entity_type(
             EntityType::default()
                 .with_domain(PlatformDomain::Air)
-                .with_country(Country::Netherlands_NLD_)
+                .with_country(Country::Netherlands_NLD)
                 .with_kind(EntityKind::Platform),
         )
         .with_force_id(ForceId::Friendly8)
@@ -1137,7 +1137,7 @@ fn codec_consistency_designator_full_mode() {
         .with_spot_wrt_designated_entity(VectorF32::new(10.0, 10.0, 0.0))
         .with_spot_location(Location::new(0.0, 0.0, 5_000_000.0))
         .with_dead_reckoning_algorithm(
-            DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity,
+            DeadReckoningAlgorithm::DRM_FPWConstantVelocityLowAccelerationLinearMotionEntity,
         )
         .with_linear_acceleration(VectorF32::new(0.0, 0.0, 0.0))
         .build()
@@ -1414,11 +1414,9 @@ fn codec_consistency_iff_full_mode() {
         .with_relative_antenna_location(VectorF32::new(1.0, 2.0, 3.0))
         .with_system_id(
             SystemId::builder()
-                .with_system_name(
-                    IffSystemName::GenericMarkXIIACombinedInterrogatorTransponder_CIT_,
-                )
+                .with_system_name(IffSystemName::GenericMarkXIIACombinedInterrogatorTransponder_CIT)
                 .with_system_mode(IffSystemMode::Normal)
-                .with_system_type(IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT_)
+                .with_system_type(IffSystemType::MarkXIICombinedInterrogatorTransponder_CIT)
                 .with_change_options(ChangeOptionsRecord::default())
                 .build(),
         )

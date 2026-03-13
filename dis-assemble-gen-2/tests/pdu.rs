@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use dis_rs::{
+use dis_assemble_gen_2::{
     enumerations::{PduType, SignalEncodingClass, SignalEncodingType},
     model::{Pdu, PduBody, PduHeader},
     signal::model::{EncodingScheme, Signal},
@@ -16,7 +16,7 @@ fn test_pdu() {
             Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
                     encoding_class: SignalEncodingClass::EncodedAudio,
-                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
+                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplementLittleEndian_100,
                 })
                 .with_data(data.clone())
                 .build(),
@@ -24,7 +24,7 @@ fn test_pdu() {
     };
     let mut buf = BytesMut::with_capacity(pdu.pdu_length() as usize);
     let _ = pdu.serialize(&mut buf);
-    let pdus = dis_rs::parse(buf.as_bytes()).unwrap();
+    let pdus = dis_assemble_gen_2::parse(buf.as_bytes()).unwrap();
 
     assert_eq!(pdus.len(), 1);
 
@@ -46,7 +46,7 @@ fn test_two_pdus() {
             Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
                     encoding_class: SignalEncodingClass::EncodedAudio,
-                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
+                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplementLittleEndian_100,
                 })
                 .with_data(data.clone())
                 .build(),
@@ -60,7 +60,7 @@ fn test_two_pdus() {
 
     let buf = [buf_a, buf_b].concat();
 
-    let pdus = dis_rs::parse(buf.as_bytes()).unwrap();
+    let pdus = dis_assemble_gen_2::parse(buf.as_bytes()).unwrap();
 
     assert_eq!(pdus.len(), 2);
 
@@ -84,7 +84,7 @@ fn test_insufficient_buffer_capacity() {
             Signal::builder()
                 .with_encoding_scheme(EncodingScheme::EncodedAudio {
                     encoding_class: SignalEncodingClass::EncodedAudio,
-                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplement_LittleEndian_100,
+                    encoding_type: SignalEncodingType::_16bitLinearPCM2sComplementLittleEndian_100,
                 })
                 .with_data(data.clone())
                 .build(),

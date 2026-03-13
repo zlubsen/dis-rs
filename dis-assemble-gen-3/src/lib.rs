@@ -1,14 +1,15 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+include!(concat!(
+    env!("OUT_DIR"),
+    "/",
+    env!("TARGET_GENERATED_SISO_REF_010_FILENAME")
+));
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+include!(concat!(
+    env!("OUT_DIR"),
+    "/",
+    env!("TARGET_GENERATED_SISO_1278_V8_FILENAME")
+));
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+fn gen_3() {
+    println!("Hi from Gen3!");
 }

@@ -24,7 +24,7 @@ mod tests {
             .with_required_reliability_service(RequiredReliabilityService::Unacknowledged)
             .with_request_id(5)
             .with_fixed_datums(vec![FixedDatum::new(
-                VariableRecordType::_7_62mm_Quantity_24010,
+                VariableRecordType::_7_62mmQuantity_24010,
                 100,
             )])
             .with_variable_datums(vec![VariableDatum::new(
