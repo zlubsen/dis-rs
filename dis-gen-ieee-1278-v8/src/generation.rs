@@ -4,7 +4,9 @@ use super::{
     FixedRecordField, FixedStringField, GenerationItem, IntBitField, Lookup, NumericField, Pdu,
     PduAndFixedRecordFieldsEnum,
 };
-use dis_gen_utils::{enum_type_to_field_type, format_field_name, format_type_name};
+use dis_gen_utils::{
+    enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
+};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 // Module tree of generated sources:
@@ -116,9 +118,8 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
 fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
     let formatted_pdu_name = format_type_name(item.name_attr.as_str());
     let ident_pdu_name = format_ident!("{}", formatted_pdu_name);
-    let pdu_module_name = formatted_pdu_name.to_lowercase();
+    let pdu_module_name = format_pdu_module_name(item.name_attr.as_str());
 
-    // TODO decide if the header is part of the PDU struct >> No, consistent with v6/v7 implementation
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
 
     let fields = item

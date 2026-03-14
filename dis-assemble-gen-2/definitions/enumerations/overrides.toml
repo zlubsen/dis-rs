@@ -11,6 +11,7 @@
 5 = { name = "ProtocolFamily" }
 6 = { name = "ForceId" }
 16 = { postfix = true }
+55 = { embed_xref = true }
 58 = { size = 32 }
 61 = { postfix = true }
 64 = { postfix = true }
@@ -29,6 +30,7 @@
 140 = { skip = true } # TODO enum that defines the type of the subsequent field (UIDs 450-462)
 141 = { skip = true }
 142 = { skip = true }
+155 = { embed_xref = true }
 178 = { name = "SignalTdlType", postfix = true }
 179 = { name = "ReceiverState" }
 212 = { name = "StationName" }
