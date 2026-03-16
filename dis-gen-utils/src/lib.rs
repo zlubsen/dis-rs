@@ -191,7 +191,9 @@ pub fn format_type_name(name: &str) -> String {
 pub fn format_field_name(name: &str) -> String {
     let name = move_non_alpha_prefix_to_suffix(name);
     let name = replace_rust_keywords(name.to_lowercase().as_str());
-    name.replace(['/', '(', ')'], " ").replace([' ', '-'], "_")
+    name.replace([':'], "")
+        .replace(['/', '(', ')'], " ")
+        .replace([' ', '-'], "_")
 }
 
 /// Formats the name for a PDU module. PDU module names are in `snake_case`.

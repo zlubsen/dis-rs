@@ -1,4 +1,10 @@
-use super::{numeric_type_to_field_type, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord, BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField, GenerationItem, IntBitField, Lookup, NumericField, Pdu, PduAndFixedRecordFieldsEnum, VariableStringField};
+use super::{
+    AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
+    BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecord,
+    ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField, GenerationItem,
+    IntBitField, Lookup, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
+    VariableStringField,
+};
 use dis_gen_utils::{
     enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
 };
@@ -221,7 +227,7 @@ fn generate_extension_record_field_decl(
             generate_fixed_record_field_decl(field, lookup)
         }
         ExtensionRecordFieldEnum::BitRecord(field) => generate_bit_record_field_decl(field, lookup),
-        ExtensionRecordFieldEnum::Array(field) => generate_array_field_decl(field),
+        ExtensionRecordFieldEnum::Array(field) => generate_array_field_decl(field, lookup),
         ExtensionRecordFieldEnum::AdaptiveRecord(field) => {
             generate_adaptive_record_field_decl(field, lookup)
         }
@@ -240,11 +246,7 @@ fn generate_numeric_field_decl(field: &NumericField) -> TokenStream {
         return quote! {};
     }
     let field_ident = format_ident!("{}", format_field_name(&field.name));
-    let type_decl = format_ident!(
-        "{}",
-        numeric_type_to_field_type(&field.primitive_type)
-            .expect("Expected valid numeric field type.")
-    );
+    let type_decl = type_for_numeric_field(field);
     let doc_units = &field
         .units
         .as_ref()
@@ -259,26 +261,7 @@ fn generate_numeric_field_decl(field: &NumericField) -> TokenStream {
 
 fn generate_enum_field_decl(field: &EnumField, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
-    let type_decl = if let Some(uids) = &field.enum_uid {
-        let enum_type = uids
-            .iter()
-            .map(|uid| lookup_uid(*uid, lookup).to_string())
-            .collect::<Vec<String>>();
-        let enum_type = enum_type
-            .first()
-            .expect("Expected at least one type for an EnumField declaration.");
-        let enum_type = lookup_fqn(enum_type, lookup);
-        let ty: syn::Type =
-            syn::parse_str(enum_type).expect("Expected a valid type for an EnumField declaration.");
-        ty
-    } else {
-        let ty: syn::Type = syn::parse_str(
-            &enum_type_to_field_type(&field.field_type)
-                .expect("Expected a valid type for an EnumField declaration."),
-        )
-        .expect("Expected valid input to parse a Type for an EnumField declaration.");
-        ty
-    };
+    let type_decl = type_for_enum_field(field, lookup);
 
     quote! {
         pub #field_ident : #type_decl,
@@ -287,19 +270,18 @@ fn generate_enum_field_decl(field: &EnumField, lookup: &Lookup) -> TokenStream {
 
 fn generate_fixed_string_field_decl(field: &FixedStringField) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
+    let type_decl = type_for_fixed_string_field();
     let length_doc_comment = format!("Fixed String with length {}", field.length);
 
     quote! {
         #[doc = #length_doc_comment]
-        pub #field_ident : String,
+        pub #field_ident : #type_decl,
     }
 }
 
 fn generate_fixed_record_field_decl(field: &FixedRecordField, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
-    let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
-    let type_decl: syn::Type = syn::parse_str(fqn_field_type)
-        .expect("Expected a valid Type for a FixedRecordField declaration.");
+    let type_decl = type_for_fixed_record_field(field, lookup);
 
     quote! {
         pub #field_ident : #type_decl,
@@ -308,26 +290,7 @@ fn generate_fixed_record_field_decl(field: &FixedRecordField, lookup: &Lookup) -
 
 fn generate_bit_record_field_decl(field: &BitRecordField, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.name));
-    let type_decl =
-        if let Some(uids) = &field.enum_uid {
-            let enum_type = uids
-                .iter()
-                .map(|uid| lookup_uid(*uid, lookup).to_string())
-                .collect::<Vec<String>>();
-            let enum_type = enum_type
-                .first()
-                .expect("Expected at least one Type for an EnumField declaration.");
-            let enum_type = lookup_fqn(enum_type, lookup);
-            let ty: syn::Type = syn::parse_str(enum_type)
-                .expect("Expected a valid Type for an EnumField declaration.");
-            ty
-        } else {
-            let ty: syn::Type = syn::parse_str(format_type_name(field.field_type.as_ref().expect(
-                "Expected a type name for BitRecordField to be present as there is also no UID.",
-            )).as_str())
-                .expect("Expected valid input to parse a Type for a BitRecordField declaration.");
-            ty
-        };
+    let type_decl = type_for_bit_record_field(field, lookup);
 
     quote! {
         pub #field_ident : #type_decl,
@@ -341,25 +304,7 @@ fn generate_adaptive_record_field_decl(
     // TODO figure out where the discriminant attribute is needed.
     // It is what makes the record 'adaptive', determining the contents (based on UID) of what follows in the record.
     let field_ident = format_ident!("{}", format_field_name(&field.name));
-    let type_decl = if let Some(uids) = &field.enum_uid {
-        let enum_type = uids
-            .iter()
-            .map(|uid| lookup_uid(*uid, lookup).to_string())
-            .collect::<Vec<String>>();
-        let enum_type = enum_type
-            .first()
-            .expect("Expected at least one Type for an AdaptiveRecordField declaration.");
-        let enum_type = lookup_fqn(enum_type, lookup);
-        let ty: syn::Type = syn::parse_str(enum_type)
-            .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
-        ty
-    } else {
-        let ty: syn::Type = syn::parse_str(format_type_name(field.field_type.as_ref().expect(
-            "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
-        )).as_str())
-            .expect("Expected valid input to parse a Type for a AdaptiveRecordField declaration.");
-        ty
-    };
+    let type_decl = type_for_adaptive_record_field(field, lookup);
 
     quote! {
         pub #field_ident : #type_decl,
@@ -374,19 +319,26 @@ fn generate_variable_string_field_decl(field: &VariableStringField) -> TokenStre
     }
 }
 
-fn generate_array_field_decl(field: &Array) -> TokenStream {
+fn generate_array_field_decl(field: &Array, lookup: &Lookup) -> TokenStream {
     let field_ident = format_ident!("{}", format_field_name(&field.count_field.name));
-    let type_decl = match field.type_field {
-        ArrayFieldEnum::Numeric(inner) => { &inner.primitive_type }
-        ArrayFieldEnum::Enum(inner) => { inner. }
-        ArrayFieldEnum::FixedString(inner) => { "String" }
-        ArrayFieldEnum::FixedRecord(inner) => { &inner.field_type }
-        // TODO create macros / helper functions to easily get the right type for a field
-        ArrayFieldEnum::BitRecord(inner) => { inner. }
+    let type_decl = match &field.type_field {
+        ArrayFieldEnum::Numeric(inner) => type_for_numeric_field(inner),
+        ArrayFieldEnum::Enum(inner) => type_for_enum_field(inner, lookup),
+        ArrayFieldEnum::FixedString(inner) => type_for_fixed_string_field(),
+        ArrayFieldEnum::FixedRecord(inner) => type_for_fixed_record_field(inner, lookup),
+        ArrayFieldEnum::BitRecord(inner) => type_for_bit_record_field(inner, lookup),
     };
 
     quote! {
         pub #field_ident : Vec<#type_decl>,
+    }
+}
+
+fn generate_opaque_field_decl(field: &OpaqueData) -> TokenStream {
+    let field_ident = format_ident!("{}", format_field_name(&field.opaque_data_field.name));
+
+    quote! {
+        pub #field_ident : Vec<u8>,
     }
 }
 
@@ -418,10 +370,8 @@ fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenS
     let field_name = format_ident!("{}", format_field_name(field.name.as_str()));
     let field_type = match (field.size, &field.enum_uid) {
         (Some(size), None) => {
-            let field_type = bit_field_size_to_primitive_type(size);
-            let ty: syn::Type = syn::parse_str(field_type.as_str())
-                .expect("Expected a valid Rust primitive type for a bit field declaration with a given size.");
-            quote! { #ty }
+            let field_type = field_size_to_primitive_type(size);
+            quote! { #field_type }
         }
         (_, Some(uids)) => {
             let field_type = lookup_first_uid(uids, lookup);
@@ -443,18 +393,38 @@ fn generate_bool_bit_field_decl(field: &BoolBitField, lookup: &Lookup) -> TokenS
 
 fn generate_int_bit_field_decl(field: &IntBitField, lookup: &Lookup) -> TokenStream {
     let field_name = format_ident!("{}", format_field_name(field.name.as_str()));
-    let field_type = bit_field_size_to_primitive_type(field.size.unwrap_or(1));
-    let ty: syn::Type = syn::parse_str(field_type.as_str())
-        .expect("Expected a valid primitive type for an IntBitField declaration.");
-    quote! { pub #field_name: #ty, }
+    let field_type = field_size_to_primitive_type(field.size.unwrap_or(1));
+    quote! { pub #field_name: #field_type, }
 }
 
 fn generate_adaptive_record(item: &AdaptiveRecord, lookup: &Lookup) -> TokenStream {
-    todo!()
+    let record_name = format_ident!("{}", format_type_name(&item.record_type));
+
+    let fields = item
+        .fields
+        .iter()
+        .map(|field| generate_adaptive_record_fields(field, lookup))
+        .collect::<Vec<TokenStream>>();
+
+    quote! {
+        pub struct #record_name {
+            #(#fields)*
+        }
+    }
 }
 
-fn bit_field_size_to_primitive_type(size: usize) -> String {
-    if size > 64 {
+fn generate_adaptive_record_fields(field: &AdaptiveFormatEnum, lookup: &Lookup) -> TokenStream {
+    match field {
+        AdaptiveFormatEnum::Numeric(field) => generate_numeric_field_decl(field),
+        AdaptiveFormatEnum::Enum(field) => generate_enum_field_decl(field, lookup),
+        AdaptiveFormatEnum::FixedString(field) => generate_fixed_string_field_decl(field),
+        AdaptiveFormatEnum::FixedRecord(field) => generate_fixed_record_field_decl(field, lookup),
+        AdaptiveFormatEnum::BitRecord(field) => generate_bit_record_field_decl(field, lookup),
+    }
+}
+
+fn field_size_to_primitive_type(size: usize) -> syn::Type {
+    let field_type = if size > 64 {
         "u128"
     } else if size <= 64 && size > 32 {
         "u64"
@@ -464,8 +434,9 @@ fn bit_field_size_to_primitive_type(size: usize) -> String {
         "u16"
     } else {
         "u8"
-    }
-    .to_string()
+    };
+    syn::parse_str(field_type)
+        .unwrap_or_else(|_| panic!("Expected a valid Rust primitive type for a bit field declaration with a given size, found size {size}."))
 }
 
 fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
@@ -498,19 +469,155 @@ fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
         .unwrap_or_else(|| panic!("Expected full qualified name for type {type_name}"))
 }
 
+#[inline]
+fn type_for_numeric_field(field: &NumericField) -> syn::Type {
+    match field.primitive_type.as_str() {
+        "uint8" => syn::parse_str("u8"),
+        "uint16" => syn::parse_str("u16"),
+        "uint32" => syn::parse_str("u32"),
+        "uint64" => syn::parse_str("u64"),
+        "int8" => syn::parse_str("i8"),
+        "int16" => syn::parse_str("i16"),
+        "int32" => syn::parse_str("i32"),
+        "int64" => syn::parse_str("i64"),
+        "float32" => syn::parse_str("f32"),
+        "float64" => syn::parse_str("f64"),
+        _ => syn::parse_str("Type Unknown"), // fail on purpose
+    }
+    .unwrap_or_else(|_| {
+        panic!(
+            "Expected a valid Type for NumericField {}, found {}.",
+            field.name, field.primitive_type
+        )
+    })
+}
+
+#[inline]
+fn type_for_enum_field(field: &EnumField, lookup: &Lookup) -> syn::Type {
+    if let Some(uids) = &field.enum_uid {
+        let enum_type = uids
+            .iter()
+            .map(|uid| lookup_uid(*uid, lookup).to_string())
+            .collect::<Vec<String>>();
+        let enum_type = enum_type
+            .first()
+            .expect("Expected at least one type for an EnumField declaration.");
+        let enum_type = lookup_fqn(enum_type, lookup);
+        let ty: syn::Type =
+            syn::parse_str(enum_type).expect("Expected a valid type for an EnumField declaration.");
+        ty
+    } else {
+        let ty: syn::Type = syn::parse_str(
+            &enum_type_to_field_type(&field.field_type)
+                .expect("Expected a valid type for an EnumField declaration."),
+        )
+        .expect("Expected valid input to parse a Type for an EnumField declaration.");
+        ty
+    }
+}
+
+#[inline]
+fn type_for_fixed_string_field() -> syn::Type {
+    syn::parse_str("String").expect("Expected valid type 'String' for FixedString field.")
+}
+
+#[inline]
+fn type_for_fixed_record_field(field: &FixedRecordField, lookup: &Lookup) -> syn::Type {
+    let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
+    syn::parse_str(fqn_field_type).unwrap_or_else(|_| {
+        panic!(
+            "Expected a valid Type for a FixedRecordField declaration, found '{fqn_field_type}'."
+        )
+    })
+}
+
+#[inline]
+fn type_for_bit_record_field(field: &BitRecordField, lookup: &Lookup) -> syn::Type {
+    if let Some(uids) = &field.enum_uid {
+        let enum_type = uids
+            .iter()
+            .map(|uid| lookup_uid(*uid, lookup).to_string())
+            .collect::<Vec<String>>();
+        let enum_type = enum_type
+            .first()
+            .expect("Expected at least one Type for a BitRecordField declaration.");
+        let enum_type = lookup_fqn(enum_type, lookup);
+        let ty: syn::Type = syn::parse_str(enum_type)
+            .expect("Expected a valid Type for a BitRecordField declaration.");
+        ty
+    } else {
+        let ty: syn::Type = syn::parse_str(
+            format_type_name(field.field_type.as_ref().expect(
+                "Expected a type name for BitRecordField to be present as there is also no UID.",
+            ))
+            .as_str(),
+        )
+        .expect("Expected valid input to parse a Type for a BitRecordField declaration.");
+        ty
+    }
+}
+
+#[inline]
+fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) -> syn::Type {
+    if let Some(uids) = &field.enum_uid {
+        let enum_type = uids
+            .iter()
+            .map(|uid| lookup_uid(*uid, lookup).to_string())
+            .collect::<Vec<String>>();
+        let enum_type = enum_type
+            .first()
+            .expect("Expected at least one Type for an AdaptiveRecordField declaration.");
+        let enum_type = lookup_fqn(enum_type, lookup);
+        let ty: syn::Type = syn::parse_str(enum_type)
+            .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
+        ty
+    } else {
+        let ty: syn::Type = syn::parse_str(format_type_name(field.field_type.as_ref().expect(
+            "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
+        )).as_str())
+            .expect("Expected valid input to parse a Type for a AdaptiveRecordField declaration.");
+        ty
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::generation::bit_field_size_to_primitive_type;
+    use crate::generation::field_size_to_primitive_type;
+    use std::any::Any;
 
     #[test]
     fn test_int_bit_field_type_to_primitive() {
-        assert_eq!(bit_field_size_to_primitive_type(4), "u8".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(8), "u8".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(9), "u16".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(16), "u16".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(17), "u32".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(32), "u32".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(33), "u64".to_string());
-        assert_eq!(bit_field_size_to_primitive_type(100), "u128".to_string());
+        let type_u8: syn::Type = syn::parse_str("u8").unwrap();
+        let type_u16: syn::Type = syn::parse_str("u16").unwrap();
+        let type_u32: syn::Type = syn::parse_str("u32").unwrap();
+        let type_u64: syn::Type = syn::parse_str("u64").unwrap();
+        let type_u128: syn::Type = syn::parse_str("u128").unwrap();
+
+        assert_eq!(field_size_to_primitive_type(4).type_id(), type_u8.type_id());
+        assert_eq!(field_size_to_primitive_type(8).type_id(), type_u8.type_id());
+        assert_eq!(
+            field_size_to_primitive_type(9).type_id(),
+            type_u16.type_id()
+        );
+        assert_eq!(
+            field_size_to_primitive_type(16).type_id(),
+            type_u16.type_id()
+        );
+        assert_eq!(
+            field_size_to_primitive_type(17).type_id(),
+            type_u32.type_id()
+        );
+        assert_eq!(
+            field_size_to_primitive_type(32).type_id(),
+            type_u32.type_id()
+        );
+        assert_eq!(
+            field_size_to_primitive_type(33).type_id(),
+            type_u64.type_id()
+        );
+        assert_eq!(
+            field_size_to_primitive_type(100).type_id(),
+            type_u128.type_id()
+        );
     }
 }

@@ -446,25 +446,6 @@ fn format_full_qualified_name(item: &GenerationItem) -> String {
     }
 }
 
-/// Maps DIS schema primitive field types to Rust primitive types
-fn numeric_type_to_field_type(ty: &str) -> Result<String, ()> {
-    let field_type = match ty {
-        "uint8" => Ok("u8"),
-        "uint16" => Ok("u16"),
-        "uint32" => Ok("u32"),
-        "uint64" => Ok("u64"),
-        "int8" => Ok("i8"),
-        "int16" => Ok("i16"),
-        "int32" => Ok("i32"),
-        "int64" => Ok("i64"),
-        "float32" => Ok("f32"),
-        "float64" => Ok("f64"),
-        _ => Err(()),
-    };
-
-    field_type.map(ToString::to_string)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{CountField, ExtensionRecordSet, FixedRecordField, GenerationItem, Pdu};

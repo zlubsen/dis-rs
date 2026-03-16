@@ -441,14 +441,24 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
     uid_index.insert(142, "Enumeration<u8>".to_string());
     uid_index.insert(490, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(544, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(554, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(567, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(569, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(570, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(571, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(572, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(579, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(702, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(790, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
     uid_index.insert(791, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(880, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(881, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(882, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(883, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(884, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
 
     uid_index
 }
