@@ -35,7 +35,7 @@ use quote::{format_ident, quote};
 // - add field for extension records to PDUs; requires uniform handling of PDU extension records (trait/enum), with the 2 standard fields and so on
 
 pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) -> TokenStream {
-    // let core_contents = generate_core_units();
+    let core_contents = generate_core_units(items, lookup);
     let family_contents: Vec<TokenStream> = families
         .iter()
         .map(|family| {
@@ -47,39 +47,62 @@ pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) 
         })
         .collect();
     quote! {
+        #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
+
+        #core_contents
 
         #(#family_contents)*
 
     }
 }
 
-fn generate_core_units() -> TokenStream {
+fn generate_core_units(items: &[GenerationItem], lookup: &Lookup) -> TokenStream {
     // FIXME these parts should be in the lib itself as regular code, whenever possible
     // TODO design required core data structures
     // TODO PduBody: list all PDUs (and their headers) in a main enum, analogous to v7
     // TODO ExtensionRecordBody: list all extension records in an enum, analogous to PduBody
+
+    let pdu_body_variants = items
+        .iter()
+        .filter(|&it| it.is_pdu())
+        .map(|pdu| {
+            let variant_name = format_type_name(&pdu.name());
+            let fqn_name = lookup_fqn(&variant_name, lookup);
+            let variant_name = format_ident!("{variant_name}");
+            let variant_type: syn::Type = syn::parse_str(fqn_name)
+                .expect("Expected a valid PDU FQN name to build PduBody variants.");
+
+            quote! {
+                #variant_name ( #variant_type ),
+            }
+        })
+        .collect::<TokenStream>();
+
     quote! {
-        use crate::common_records::PduHeader;
+        use crate::common_records::PDUHeader;
 
         #[derive(Debug, Clone)]
         pub struct Pdu {
-            pub header: PduHeader,
+            pub header: PDUHeader,
             pub body: PduBody,
         }
 
         #[derive(Debug, Clone)]
         pub enum PduBody {
-            Dummy,
+            Other(Vec<u8>),
+            #pdu_body_variants
         }
 
+        #[derive(Debug, Clone)]
         pub struct ExtensionRecord {
             pub record_type: crate::enumerations::ExtensionRecordTypes,
             pub record_length: usize,
-            pub body: ExtensionRecordBody,
+            pub body: crate::ExtensionRecordBody,
         }
 
+        #[derive(Debug, Clone)]
         pub enum ExtensionRecordBody {
-            ...
+            Dummy,
         }
     }
 }
@@ -129,9 +152,7 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
     // 3. Filter the remaining non-PDU items for this family and generate the records in the family module
     let records = items
         .iter()
-        .filter(|&item| {
-            (item.family().as_str() == family) && !item.is_pdu() && !item.is_extension_record()
-        })
+        .filter(|&item| (item.family().as_str() == family) && item.is_record())
         .map(|item| match item {
             GenerationItem::FixedRecord(record, _family) => generate_fixed_record(record, lookup),
             GenerationItem::BitRecord(record, _family) => generate_bit_record(record, lookup),
@@ -166,9 +187,10 @@ fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     let contents = quote! {
+        #[derive(Debug, Clone)]
         pub struct #ident_pdu_name {
             #(#fields)*
-            pub extension_record_count: usize,
+            pub extension_records: Vec<crate::ExtensionRecord>,
         }
     };
 
@@ -190,6 +212,7 @@ fn generate_fixed_record(item: &FixedRecord, lookup: &Lookup) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     quote! {
+        #[derive(Debug, Clone)]
         pub struct #record_name {
             #(#fields)*
         }
@@ -207,6 +230,7 @@ fn generate_extension_record(item: &ExtensionRecord, lookup: &Lookup) -> TokenSt
 
     quote! {
         #[doc = #record_type_doc_comment]
+        #[derive(Debug, Clone)]
         pub struct #record_name {
             #(#fields)*
         }
@@ -343,13 +367,27 @@ fn generate_variable_string_field_decl(field: &VariableStringField) -> TokenStre
 }
 
 fn generate_array_field_decl(field: &Array, lookup: &Lookup) -> TokenStream {
-    let field_ident = format_ident!("{}", format_field_name(&field.count_field.name));
-    let type_decl = match &field.type_field {
-        ArrayFieldEnum::Numeric(inner) => type_for_numeric_field(inner),
-        ArrayFieldEnum::Enum(inner) => type_for_enum_field(inner, lookup),
-        ArrayFieldEnum::FixedString(inner) => type_for_fixed_string_field(),
-        ArrayFieldEnum::FixedRecord(inner) => type_for_fixed_record_field(inner, lookup),
-        ArrayFieldEnum::BitRecord(inner) => type_for_bit_record_field(inner, lookup),
+    let (field_ident, type_decl) = match &field.type_field {
+        ArrayFieldEnum::Numeric(inner) => (
+            format_ident!("{}", format_field_name(&inner.name)),
+            type_for_numeric_field(inner),
+        ),
+        ArrayFieldEnum::Enum(inner) => (
+            format_ident!("{}", format_field_name(&inner.name)),
+            type_for_enum_field(inner, lookup),
+        ),
+        ArrayFieldEnum::FixedString(inner) => (
+            format_ident!("{}", format_field_name(&inner.name)),
+            type_for_fixed_string_field(),
+        ),
+        ArrayFieldEnum::FixedRecord(inner) => (
+            format_ident!("{}", format_field_name(&inner.name)),
+            type_for_fixed_record_field(inner, lookup),
+        ),
+        ArrayFieldEnum::BitRecord(inner) => (
+            format_ident!("{}", format_field_name(&inner.name)),
+            type_for_bit_record_field(inner, lookup),
+        ),
     };
 
     quote! {
@@ -375,6 +413,7 @@ fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     quote! {
+        #[derive(Debug, Clone)]
         pub struct #record_name {
             #(#fields)*
         }
@@ -442,6 +481,7 @@ fn generate_adaptive_record(item: &AdaptiveRecord, lookup: &Lookup) -> TokenStre
         .collect::<Vec<TokenStream>>();
 
     quote! {
+        #[derive(Debug, Clone)]
         pub enum #record_name {
             None,
             #(#variants)*

@@ -9,7 +9,3 @@ include!(concat!(
     "/",
     env!("TARGET_GENERATED_SISO_1278_V8_FILENAME")
 ));
-
-fn gen_3() {
-    println!("Hi from Gen3!");
-}

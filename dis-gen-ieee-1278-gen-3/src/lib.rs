@@ -129,7 +129,7 @@ fn format_full_qualified_name(item: &GenerationItem) -> String {
         format!(
             "crate::{}::{}::{}",
             item.family(),
-            dis_gen_utils::format_field_name(item.name().as_str()),
+            dis_gen_utils::format_pdu_module_name(item.name().as_str()),
             dis_gen_utils::format_type_name(item.name().as_str())
         )
     } else if item.is_extension_record() {
@@ -177,16 +177,19 @@ impl GenerationItem {
         }
     }
 
+    /// Returns true when the item is a `PDU`
     fn is_pdu(&self) -> bool {
         matches!(self, GenerationItem::Pdu(_, _))
     }
 
+    /// Returns true when the item is an `ExtensionRecord`
     fn is_extension_record(&self) -> bool {
         matches!(self, GenerationItem::ExtensionRecord(_, _))
     }
 
+    /// Returns true when the item is not a PDU or an `ExtensionRecord`
     fn is_record(&self) -> bool {
-        !self.is_pdu()
+        !self.is_pdu() && !self.is_extension_record()
     }
 }
 
@@ -344,9 +347,13 @@ struct AdaptiveRecord {
 
 #[derive(Debug, Clone)]
 enum AdaptiveFormatEnum {
+    #[allow(dead_code)]
     Numeric(NumericField),
+    #[allow(dead_code)]
     Enum(EnumField),
+    #[allow(dead_code)]
     FixedString(FixedStringField),
+    #[allow(dead_code)]
     FixedRecord(FixedRecordField),
     BitRecord(BitRecordField),
 }
@@ -367,7 +374,9 @@ enum ExtensionRecordFieldEnum {
     Array(Array),
     AdaptiveRecord(AdaptiveRecordField),
     Opaque(OpaqueData),
+    #[allow(dead_code)]
     PaddingTo16,
+    #[allow(dead_code)]
     PaddingTo32,
 }
 

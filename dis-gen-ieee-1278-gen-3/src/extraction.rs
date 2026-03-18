@@ -40,7 +40,9 @@ const ARRAY_ELEMENT: QName = QName(b"Array");
 const COUNT_FIELD_ELEMENT: QName = QName(b"CountField");
 const OPAQUE_DATA_ELEMENT: QName = QName(b"OpaqueData");
 const OPAQUE_DATA_FIELD_ELEMENT: QName = QName(b"OpaqueDataField");
+#[allow(dead_code)]
 const PADDING_TO_16_ELEMENT: QName = QName(b"PaddingTo16");
+#[allow(dead_code)]
 const PADDING_TO_32_ELEMENT: QName = QName(b"PaddingTo32");
 const PADDING_TO_64_ELEMENT: QName = QName(b"PaddingTo64");
 // Bit Records
@@ -999,11 +1001,13 @@ fn extract_opaque_data_field(element: &BytesStart) -> OpaqueDataField {
     }
 }
 
+#[allow(dead_code)]
 #[inline]
 fn extract_padding_16_field() -> PaddingTo16 {
     PaddingTo16
 }
 
+#[allow(dead_code)]
 #[inline]
 fn extract_padding_32_field() -> PaddingTo32 {
     PaddingTo32
