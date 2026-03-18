@@ -17,6 +17,7 @@ type FqnLookup = HashMap<String, String>;
 
 struct Lookup {
     fqn: FqnLookup,
+    enum_fqn: FqnLookup,
     uid: UidLookup,
 }
 
@@ -64,7 +65,7 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
             })
             .collect::<Vec<GenerationItem>>();
 
-        let fqn_lookup = create_fqn_lookup(&generation_items, &uid_lookup);
+        let (fqn_lookup, enum_fqn_lookup) = create_fqn_lookup(&generation_items, &uid_lookup);
 
         for fqn in &fqn_lookup {
             println!("{} => {}", fqn.0, fqn.1);
@@ -72,6 +73,7 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
 
         let lookup = Lookup {
             fqn: fqn_lookup,
+            enum_fqn: enum_fqn_lookup,
             uid: uid_lookup,
         };
 
@@ -97,25 +99,52 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
     }
 }
 
-fn create_fqn_lookup(items: &Vec<GenerationItem>, uid_lookup: &UidLookup) -> FqnLookup {
-    let mut lookup = HashMap::new();
+fn create_fqn_lookup(
+    items: &Vec<GenerationItem>,
+    uid_lookup: &UidLookup,
+) -> (FqnLookup, FqnLookup) {
+    let mut gen3_lookup = HashMap::new();
+    let mut enum_lookup = HashMap::new();
 
     for item in items {
         let name = dis_gen_utils::format_type_name(&item.name());
         let fqn_name = format_full_qualified_name(item);
-        lookup.entry(name.clone()).or_insert(fqn_name);
+        gen3_lookup.entry(name.clone()).or_insert(fqn_name);
     }
 
     for uid in uid_lookup {
         let fqn_name = format!("crate::enumerations::{}", uid.1);
-        lookup.entry(uid.1.clone()).or_insert(fqn_name);
+        enum_lookup.entry(uid.1.clone()).or_insert(fqn_name);
     }
 
     // FIXME remove these placeholder lookups when the normal stuff works
-    lookup.insert("u8".to_string(), "u8".to_string());
-    lookup.insert("u16".to_string(), "u16".to_string());
+    gen3_lookup.insert("u8".to_string(), "u8".to_string());
+    gen3_lookup.insert("u16".to_string(), "u16".to_string());
 
-    lookup
+    (gen3_lookup, enum_lookup)
+}
+
+fn format_full_qualified_name(item: &GenerationItem) -> String {
+    if item.is_pdu() {
+        format!(
+            "crate::{}::{}::{}",
+            item.family(),
+            dis_gen_utils::format_field_name(item.name().as_str()),
+            dis_gen_utils::format_type_name(item.name().as_str())
+        )
+    } else if item.is_extension_record() {
+        format!(
+            "crate::{}::extension_records::{}",
+            item.family(),
+            dis_gen_utils::format_type_name(item.name().as_str())
+        )
+    } else {
+        format!(
+            "crate::{}::{}",
+            item.family(),
+            dis_gen_utils::format_type_name(item.name().as_str())
+        )
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -372,29 +401,6 @@ struct Pdu {
     pub header_field: FixedRecordField,
     pub fields: Vec<PduAndFixedRecordFieldsEnum>,
     pub extension_record_set: ExtensionRecordSet,
-}
-
-fn format_full_qualified_name(item: &GenerationItem) -> String {
-    if item.is_pdu() {
-        format!(
-            "crate::{}::{}::{}",
-            item.family(),
-            dis_gen_utils::format_field_name(item.name().as_str()),
-            dis_gen_utils::format_type_name(item.name().as_str())
-        )
-    } else if item.is_extension_record() {
-        format!(
-            "crate::{}::extension_records::{}",
-            item.family(),
-            dis_gen_utils::format_type_name(item.name().as_str())
-        )
-    } else {
-        format!(
-            "crate::{}::{}",
-            item.family(),
-            dis_gen_utils::format_type_name(item.name().as_str())
-        )
-    }
 }
 
 #[cfg(test)]

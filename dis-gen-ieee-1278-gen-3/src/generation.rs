@@ -513,10 +513,19 @@ fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
 
 #[inline]
 fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
-    lookup
-        .fqn
-        .get(type_name)
-        .unwrap_or_else(|| panic!("Expected full qualified name for type '{type_name}'"))
+    if let Some(fqn) = lookup.fqn.get(type_name) {
+        fqn
+    } else if let Some(fqn) = lookup.enum_fqn.get(type_name) {
+        fqn
+    } else {
+        panic!("Expected full qualified name for type '{type_name}'")
+    }
+}
+
+fn lookup_enum_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+    lookup.enum_fqn.get(type_name).unwrap_or_else(|| {
+        panic!("Expected full qualified enumeration name for type '{type_name}'")
+    })
 }
 
 #[inline]
@@ -552,7 +561,7 @@ fn type_for_enum_field(field: &EnumField, lookup: &Lookup) -> syn::Type {
         let enum_type = enum_type
             .first()
             .expect("Expected at least one type for an EnumField declaration.");
-        let enum_type = lookup_fqn(enum_type, lookup);
+        let enum_type = lookup_enum_fqn(enum_type, lookup);
         let ty: syn::Type =
             syn::parse_str(enum_type).expect("Expected a valid type for an EnumField declaration.");
         ty
@@ -591,7 +600,7 @@ fn type_for_bit_record_field(field: &BitRecordField, lookup: &Lookup) -> syn::Ty
         let enum_type = enum_type
             .first()
             .expect("Expected at least one Type for a BitRecordField declaration.");
-        let enum_type = lookup_fqn(enum_type, lookup);
+        let enum_type = lookup_enum_fqn(enum_type, lookup);
         let ty: syn::Type = syn::parse_str(enum_type)
             .expect("Expected a valid Type for a BitRecordField declaration.");
         ty
@@ -618,7 +627,7 @@ fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) 
         let enum_type = enum_type
             .first()
             .expect("Expected at least one Type for an AdaptiveRecordField declaration.");
-        let enum_type = lookup_fqn(enum_type, lookup);
+        let enum_type = lookup_enum_fqn(enum_type, lookup);
         let ty: syn::Type = syn::parse_str(enum_type)
             .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
         ty
