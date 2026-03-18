@@ -13,6 +13,8 @@ const TARGET_OUT_FILE: &str = "siso_1278_v8.rs";
 type UidLookup = HashMap<usize, String>;
 type FqnLookup = HashMap<String, String>;
 
+// TODO create a lookup for discriminants - field name mapped to 1) uid?, 2) enum generation item (to generate variants with contained elements), ...
+
 struct Lookup {
     fqn: FqnLookup,
     uid: UidLookup,
@@ -36,6 +38,7 @@ struct Lookup {
 /// The functions in the call stack beneath this function panic when encountering
 /// inconsistent states or values in the schema files.
 pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
+    println!("{schema_dir}");
     if std::path::Path::new(schema_dir).is_dir() {
         // Find all files in the provided directory. Files must be .xml files.
         let mut file_paths = std::fs::read_dir(schema_dir)
@@ -62,9 +65,6 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
             .collect::<Vec<GenerationItem>>();
 
         let fqn_lookup = create_fqn_lookup(&generation_items, &uid_lookup);
-        // todo!("Uniformly make sure all items are put in the FQN lookup - BitRecords");
-        // todo!("Generate all enumerations instead of a subselection");
-        // todo!("remove all 'Padding' and 'Not used' fields from records");
 
         for fqn in &fqn_lookup {
             println!("{} => {}", fqn.0, fqn.1);
@@ -84,9 +84,9 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
         let generated = generation::generate(&generation_items, &families, &lookup);
 
         // Format generated code using prettyplease
-        let ast = syn::parse_file(&generated.to_string())
+        let generated = syn::parse_file(&generated.to_string())
             .expect("Error parsing generated code for pretty printing.");
-        let contents = prettyplease::unparse(&ast);
+        let contents = prettyplease::unparse(&generated);
 
         // Save to file
         let dest_path = std::path::Path::new(&env::var(OUT_DIR).unwrap()).join(TARGET_OUT_FILE);
@@ -111,6 +111,7 @@ fn create_fqn_lookup(items: &Vec<GenerationItem>, uid_lookup: &UidLookup) -> Fqn
         lookup.entry(uid.1.clone()).or_insert(fqn_name);
     }
 
+    // FIXME remove these placeholder lookups when the normal stuff works
     lookup.insert("u8".to_string(), "u8".to_string());
     lookup.insert("u16".to_string(), "u16".to_string());
 
@@ -151,55 +152,14 @@ impl GenerationItem {
         matches!(self, GenerationItem::Pdu(_, _))
     }
 
+    fn is_extension_record(&self) -> bool {
+        matches!(self, GenerationItem::ExtensionRecord(_, _))
+    }
+
     fn is_record(&self) -> bool {
         !self.is_pdu()
     }
 }
-
-// enum Items {
-//     Pdu(Pdu),
-//     Record(),
-//     Field,
-//     SpecialType,
-//     Type,
-// }
-
-// enum Record {
-//     FixedRecord,
-//     BitRecord,
-//     AdaptiveRecord,
-//     ExtensionRecord,
-// }
-
-// enum Field {
-//     NumericField,
-//     CountField,
-//     EnumField,
-//     FixedStringField,
-//     // IntBitField,
-//     // EnumBitField,
-//     // BoolBitField,
-//     FixedRecordField,
-//     BitRecordField(BitRecordField),
-//     AdaptiveRecordField, // AdaptiveRecordField can occur in other records
-//     AdaptiveFormat,      // Can occur within an AdaptiveRecord
-//     VariableString,      // VariableStringField is contained within VariableString
-//     OpaqueData,          // OpaqueDataField is contained within OpaqueData
-//     Array,
-// }
-
-// enum SpecialType {
-//     Array,
-//     VariableString,
-//     OpaqueData,
-//     AdaptiveFormat,
-// }
-
-// enum Primitive {
-//     Numeric,
-//     Enum,
-//     Count,
-// }
 
 #[derive(Debug, Clone)]
 struct NumericField {
@@ -347,7 +307,7 @@ struct BitRecord {
 
 #[derive(Debug, Clone)]
 struct AdaptiveRecord {
-    pub fields: Vec<AdaptiveFormatEnum>,
+    pub variants: Vec<AdaptiveFormatEnum>,
     pub record_type: String,
     pub length: usize,
     pub discriminant_start_value: usize,
@@ -414,32 +374,23 @@ struct Pdu {
     pub extension_record_set: ExtensionRecordSet,
 }
 
-// TODO define a scope attribute for generation items so we can fit them into the module tree
-
-// Approach:
-// 1. V When generating SISO-REF-010 enumerations, build an index of uids to the names of the structs/enums.
-//     - this can be done after extracting the values from the XML,
-//          V making a loop over all GenerationItems,
-//          V already formatting the decl names (instead of in the generate step, >> just applied the formatting again, could be more efficient naturally.
-//          V and building the index of UID to names as used in the generated code.
-//          V The resulting index must be made available to the PDU generator.
-// 2.a V Build intermediate representation model (IR) based on the XSD
-// 2.b Store in the IR to which rust module the generated code should be placed (common, v8, based on PduType...)
-// 3. Extract and generate all basic types and records (from DIS_CommonRecords.xml)
-// 4. Extract and generate all types in the other XML files that define the schema, per family/category.
-// 5. Generate all serialization, deserialization, Display, Default, and (optional) builder code.
-
 fn format_full_qualified_name(item: &GenerationItem) -> String {
     if item.is_pdu() {
         format!(
-            "crate::v8::{}::{}::{}",
+            "crate::{}::{}::{}",
             item.family(),
             dis_gen_utils::format_field_name(item.name().as_str()),
             dis_gen_utils::format_type_name(item.name().as_str())
         )
+    } else if item.is_extension_record() {
+        format!(
+            "crate::{}::extension_records::{}",
+            item.family(),
+            dis_gen_utils::format_type_name(item.name().as_str())
+        )
     } else {
         format!(
-            "crate::v8::{}::{}",
+            "crate::{}::{}",
             item.family(),
             dis_gen_utils::format_type_name(item.name().as_str())
         )
@@ -476,7 +427,7 @@ mod tests {
         let pdu_fqn = crate::format_full_qualified_name(&pdu);
         assert_eq!(
             pdu_fqn.as_str(),
-            "crate::v8::entity_info_interaction::entity_state::EntityState"
+            "crate::entity_info_interaction::entity_state::EntityState"
         );
     }
 }

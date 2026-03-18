@@ -14,6 +14,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
+// TODO extraction of uids: there is only one occurrence where the UID field has two uids (in Entity Status, depending on platform or life form); better to always select one UID instead of a Vec
+
 // Top-level elements
 const DIS_SYNTAX_ELEMENT: QName = QName(b"DISsyntax");
 const COPYRIGHT_ELEMENT: QName = QName(b"copyright");
@@ -502,7 +504,7 @@ fn extract_adaptive_record(
     AdaptiveRecord {
         record_type: attr_type.expect("Expected AdaptiveRecord attribute 'type' to be present."),
         length: attr_length.expect("Expected AdaptiveRecord attribute 'length' to be present."),
-        fields,
+        variants: fields,
         discriminant_start_value: discriminant_start_value
             .expect("Expected AdaptiveFormat attribute 'discriminantStartValue' to be present."),
     }

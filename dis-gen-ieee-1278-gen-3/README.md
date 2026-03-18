@@ -1,6 +1,7 @@
-# DIS v8 IEEE-1278 Generator
+# DIS IEEE-1278 Generation 3 (v8) Generator
 
-This generator extracts PDU and record definitions from a DIS v8 schema definitions in XML format and generates the code
+This generator extracts PDU and record definitions from a DIS v8 ('gen 3') schema definitions in XML format and
+generates the code
 to use all these items.
 
 Intended usage is to be called from a build script, as done by the `dis-rs` crate.

@@ -1,5 +1,5 @@
 [workspace]
-members = ["cdis-assemble", "cdis-gateway", "dis-rs", "gateway-core", "examples/*", "dis-gen-siso-ref-010", "dis-gen-ieee-1278-v8", "dis-gen-utils", "dis-assemble-gen-2", "dis-assemble-gen-3"]
+members = ["cdis-assemble", "cdis-gateway", "dis-rs", "gateway-core", "examples/*", "dis-gen-siso-ref-010", "dis-gen-ieee-1278-gen-3", "dis-gen-utils", "dis-assemble-gen-2", "dis-assemble-gen-3"]
 resolver = "2"
 
 [workspace.package]

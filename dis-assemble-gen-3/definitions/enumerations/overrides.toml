@@ -28,7 +28,7 @@
 #82 = { name = "IffSystemType" }
 #83 = { name = "IffSystemName" }
 #84 = { name = "IffSystemMode" }
-140 = { skip = true } # TODO enum that defines the type of the subsequent field (UIDs 450-462)
+#140 = { skip = true } # TODO enum that defines the type of the subsequent field (UIDs 450-462)
 141 = { skip = true }
 142 = { skip = true }
 155 = { embed_xref = true }
@@ -63,8 +63,9 @@
 #361 = { name = "Mode5SAltitudeResolution" }
 #389 = { name = "Active Interrogation Indicator" }
 463 = { postfix = true }
-590 = { skip = true }
-615 = { skip = true }
+590 = { embed_xref = false }
+591 = { skip = true } # Re-defined in DIS v8 schemas
+615 = { embed_xref = false }
 637 = { postfix = true }
 740 = { postfix = true }
 344 = { name = "TCASACASType344" }

@@ -11,7 +11,7 @@ use dis_gen_utils::{
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 // Module tree of generated sources:
-// src/v8
+// src/
 //    common_records/           // Containing all common records
 //        builder.rs
 //        model.rs
@@ -30,23 +30,27 @@ use quote::{format_ident, quote};
 //            writer.rs
 
 // TODO
-// - experiment with xsd_parser to generate the intermediate representation, again in separate crates
+// - put extension records in a separate module per family, to avoid name clashes
+// - fix/generate Appearance enums and fields
+// - add field for extension records to PDUs; requires uniform handling of PDU extension records (trait/enum), with the 2 standard fields and so on
 
 pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) -> TokenStream {
-    let core_contents = generate_core_units();
+    // let core_contents = generate_core_units();
     let family_contents: Vec<TokenStream> = families
         .iter()
-        .map(|family| generate_family_module(items, family.as_str(), lookup))
+        .map(|family| {
+            let generated = generate_family_module(items, family.as_str(), lookup);
+            println!("{generated}");
+            let _ = syn::parse_file(&generated.to_string())
+                .expect("Error parsing intermediate generated code for pretty printing.");
+            generated
+        })
         .collect();
-    let contents = quote! {
-
-        #core_contents
+    quote! {
 
         #(#family_contents)*
 
-    };
-
-    generate_module_with_name("v8", &contents)
+    }
 }
 
 fn generate_core_units() -> TokenStream {
@@ -55,7 +59,7 @@ fn generate_core_units() -> TokenStream {
     // TODO PduBody: list all PDUs (and their headers) in a main enum, analogous to v7
     // TODO ExtensionRecordBody: list all extension records in an enum, analogous to PduBody
     quote! {
-        use crate::v8::common_records::PduHeader;
+        use crate::common_records::PduHeader;
 
         #[derive(Debug, Clone)]
         pub struct Pdu {
@@ -108,25 +112,41 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
         })
         .collect::<TokenStream>();
 
-    // 2. Filter the non-PDU items for this family and generate the records in the family module
+    // 3. Filter the ExtensionRecord items for this family and generate the records in a separate (sub)module
+    let extension_records = items
+        .iter()
+        .filter(|&item| (item.family().as_str() == family) && item.is_extension_record())
+        .map(|item| {
+            if let GenerationItem::ExtensionRecord(record, _family) = item {
+                generate_extension_record(record, lookup)
+            } else {
+                panic!("GenerationItem is not an ExtensionRecord.")
+            }
+        })
+        .collect::<TokenStream>();
+    let extension_records = generate_module_with_name("extension_records", &extension_records);
+
+    // 3. Filter the remaining non-PDU items for this family and generate the records in the family module
     let records = items
         .iter()
-        .filter(|&item| (item.family().as_str() == family) && !item.is_pdu())
+        .filter(|&item| {
+            (item.family().as_str() == family) && !item.is_pdu() && !item.is_extension_record()
+        })
         .map(|item| match item {
             GenerationItem::FixedRecord(record, _family) => generate_fixed_record(record, lookup),
-            GenerationItem::ExtensionRecord(record, _family) => {
-                generate_extension_record(record, lookup)
-            }
             GenerationItem::BitRecord(record, _family) => generate_bit_record(record, lookup),
             GenerationItem::AdaptiveRecord(record, _family) => {
                 generate_adaptive_record(record, lookup)
+            }
+            GenerationItem::ExtensionRecord(record, _family) => {
+                panic!("GenerationItem is an ExtensionRecord.")
             }
             GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record."),
         })
         .collect::<TokenStream>();
 
     // 3. Merge resulting TokenStreams
-    let contents = quote! { #pdus #records };
+    let contents = quote! { #pdus #extension_records #records };
 
     generate_module_with_name(family, &contents)
 }
@@ -186,6 +206,7 @@ fn generate_extension_record(item: &ExtensionRecord, lookup: &Lookup) -> TokenSt
         .map(|field| generate_extension_record_field_decl(field, lookup));
 
     quote! {
+        #[doc = #record_type_doc_comment]
         pub struct #record_name {
             #(#fields)*
         }
@@ -280,6 +301,10 @@ fn generate_fixed_string_field_decl(field: &FixedStringField) -> TokenStream {
 }
 
 fn generate_fixed_record_field_decl(field: &FixedRecordField, lookup: &Lookup) -> TokenStream {
+    if must_skip_field_decl(field.name.as_str()) {
+        return quote! {};
+    }
+
     let field_ident = format_ident!("{}", format_field_name(&field.name));
     let type_decl = type_for_fixed_record_field(field, lookup);
 
@@ -301,8 +326,6 @@ fn generate_adaptive_record_field_decl(
     field: &AdaptiveRecordField,
     lookup: &Lookup,
 ) -> TokenStream {
-    // TODO figure out where the discriminant attribute is needed.
-    // It is what makes the record 'adaptive', determining the contents (based on UID) of what follows in the record.
     let field_ident = format_ident!("{}", format_field_name(&field.name));
     let type_decl = type_for_adaptive_record_field(field, lookup);
 
@@ -367,6 +390,10 @@ fn generate_bit_record_item_decl(item: &BitRecordFieldEnum, lookup: &Lookup) -> 
 }
 
 fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenStream {
+    if must_skip_field_decl(field.name.as_str()) {
+        return quote! {};
+    }
+
     let field_name = format_ident!("{}", format_field_name(field.name.as_str()));
     let field_type = match (field.size, &field.enum_uid) {
         (Some(size), None) => {
@@ -387,11 +414,19 @@ fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenS
 }
 
 fn generate_bool_bit_field_decl(field: &BoolBitField, lookup: &Lookup) -> TokenStream {
+    if must_skip_field_decl(field.name.as_str()) {
+        return quote! {};
+    }
+
     let field_name = format_ident!("{}", format_field_name(field.name.as_str()));
     quote! { pub #field_name: bool, }
 }
 
 fn generate_int_bit_field_decl(field: &IntBitField, lookup: &Lookup) -> TokenStream {
+    if must_skip_field_decl(field.name.as_str()) {
+        return quote! {};
+    }
+
     let field_name = format_ident!("{}", format_field_name(field.name.as_str()));
     let field_type = field_size_to_primitive_type(field.size.unwrap_or(1));
     quote! { pub #field_name: #field_type, }
@@ -400,26 +435,41 @@ fn generate_int_bit_field_decl(field: &IntBitField, lookup: &Lookup) -> TokenStr
 fn generate_adaptive_record(item: &AdaptiveRecord, lookup: &Lookup) -> TokenStream {
     let record_name = format_ident!("{}", format_type_name(&item.record_type));
 
-    let fields = item
-        .fields
+    let variants = item
+        .variants
         .iter()
-        .map(|field| generate_adaptive_record_fields(field, lookup))
+        .map(|field| generate_adaptive_record_variant(field, lookup))
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        pub struct #record_name {
-            #(#fields)*
+        pub enum #record_name {
+            None,
+            #(#variants)*
         }
     }
 }
 
-fn generate_adaptive_record_fields(field: &AdaptiveFormatEnum, lookup: &Lookup) -> TokenStream {
-    match field {
-        AdaptiveFormatEnum::Numeric(field) => generate_numeric_field_decl(field),
-        AdaptiveFormatEnum::Enum(field) => generate_enum_field_decl(field, lookup),
-        AdaptiveFormatEnum::FixedString(field) => generate_fixed_string_field_decl(field),
-        AdaptiveFormatEnum::FixedRecord(field) => generate_fixed_record_field_decl(field, lookup),
-        AdaptiveFormatEnum::BitRecord(field) => generate_bit_record_field_decl(field, lookup),
+fn generate_adaptive_record_variant(variant: &AdaptiveFormatEnum, lookup: &Lookup) -> TokenStream {
+    if let AdaptiveFormatEnum::BitRecord(bit_variant) = variant {
+        let variant_name = format_ident!("{}", format_type_name(&bit_variant.name));
+        let variant_type = match (&bit_variant.enum_uid, &bit_variant.field_type) {
+            (Some(uids), None) => lookup_fqn(lookup_first_uid(uids, lookup), lookup),
+            (None, Some(type_name)) => lookup_fqn(&format_type_name(type_name), lookup),
+            (_, _) => {
+                panic!(
+                    "Cannot determine the type of AdaptiveRecord BitRecordField {}",
+                    bit_variant.name
+                );
+            }
+        };
+        let variant_type: syn::Type = syn::parse_str(variant_type)
+            .expect("Expected a valid Type for an AdaptiveRecord enum variant declaration.");
+
+        quote! {
+            #variant_name ( #variant_type ),
+        }
+    } else {
+        todo!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
     }
 }
 
@@ -466,7 +516,7 @@ fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
     lookup
         .fqn
         .get(type_name)
-        .unwrap_or_else(|| panic!("Expected full qualified name for type {type_name}"))
+        .unwrap_or_else(|| panic!("Expected full qualified name for type '{type_name}'"))
 }
 
 #[inline]
@@ -546,12 +596,13 @@ fn type_for_bit_record_field(field: &BitRecordField, lookup: &Lookup) -> syn::Ty
             .expect("Expected a valid Type for a BitRecordField declaration.");
         ty
     } else {
-        let ty: syn::Type = syn::parse_str(
+        let ty: syn::Type = syn::parse_str(lookup_fqn(
             format_type_name(field.field_type.as_ref().expect(
                 "Expected a type name for BitRecordField to be present as there is also no UID.",
             ))
             .as_str(),
-        )
+            lookup,
+        ))
         .expect("Expected valid input to parse a Type for a BitRecordField declaration.");
         ty
     }
@@ -572,9 +623,9 @@ fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) 
             .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
         ty
     } else {
-        let ty: syn::Type = syn::parse_str(format_type_name(field.field_type.as_ref().expect(
+        let ty: syn::Type = syn::parse_str(lookup_fqn(format_type_name(field.field_type.as_ref().expect(
             "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
-        )).as_str())
+        )).as_str(), lookup))
             .expect("Expected valid input to parse a Type for a AdaptiveRecordField declaration.");
         ty
     }

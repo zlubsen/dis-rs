@@ -1,8 +1,8 @@
 [package]
-name = "dis-gen-ieee-1278-v8"
+name = "dis-gen-ieee-1278-gen-3"
 version = "0.1.0"
 description = """
-Code generator for Distributed Interactive Simulation (IEEE-1278.1) protocol version 8 schema definitions, as used in the dis-rs crate.
+Code generator for Distributed Interactive Simulation (IEEE-1278.1) protocol version 8 ('gen 3') schema definitions, as used in the dis-rs crate.
 """
 edition.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 categories.workspace = true
-keywords = ["IEEE-1278-1", "generator", "DIS"]
+keywords = ["IEEE-1278-1", "generator", "DIS", "v8"]
 
 [dependencies]
 quote = "1.0.41"
@@ -19,6 +19,7 @@ proc-macro2 = "1.0.101"
 prettyplease = "0.2.37"
 syn = "2.0.106"
 dis-gen-utils = { path = "../dis-gen-utils" }
+dis-gen-siso-ref-010 = { path = "../dis-gen-siso-ref-010" }
 
 [lints]
 workspace = true
