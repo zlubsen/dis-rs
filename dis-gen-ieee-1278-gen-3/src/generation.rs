@@ -65,45 +65,53 @@ fn generate_core_units(items: &[GenerationItem], lookup: &Lookup) -> TokenStream
     let pdu_body_variants = items
         .iter()
         .filter(|&it| it.is_pdu())
-        .map(|pdu| {
-            let variant_name = format_type_name(&pdu.name());
-            let fqn_name = lookup_fqn(&variant_name, lookup);
-            let variant_name = format_ident!("{variant_name}");
-            let variant_type: syn::Type = syn::parse_str(fqn_name)
-                .expect("Expected a valid PDU FQN name to build PduBody variants.");
+        .map(|pdu| generate_body_variant(pdu, lookup))
+        .collect::<TokenStream>();
 
-            quote! {
-                #variant_name ( #variant_type ),
-            }
-        })
+    let extension_record_variants = items
+        .iter()
+        .filter(|&it| it.is_extension_record())
+        .map(|er| generate_body_variant(er, lookup))
         .collect::<TokenStream>();
 
     quote! {
         use crate::common_records::PDUHeader;
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct Pdu {
             pub header: PDUHeader,
             pub body: PduBody,
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, PartialEq)]
         pub enum PduBody {
             Other(Vec<u8>),
             #pdu_body_variants
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct ExtensionRecord {
             pub record_type: crate::enumerations::ExtensionRecordTypes,
             pub record_length: usize,
             pub body: crate::ExtensionRecordBody,
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, PartialEq)]
         pub enum ExtensionRecordBody {
-            Dummy,
+            #extension_record_variants
         }
+    }
+}
+
+fn generate_body_variant(variant: &GenerationItem, lookup: &Lookup) -> TokenStream {
+    let variant_name = format_type_name(&variant.name());
+    let fqn_name = lookup_fqn(&variant_name, lookup);
+    let variant_name = format_ident!("{variant_name}");
+    let variant_type: syn::Type = syn::parse_str(fqn_name)
+        .expect("Expected a valid PDU/ExtensionRecord FQN name to build PduBody or ExtensionRecordBody variants.");
+
+    quote! {
+        #variant_name ( #variant_type ),
     }
 }
 
@@ -187,7 +195,7 @@ fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     let contents = quote! {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Default, Clone, PartialEq)]
         pub struct #ident_pdu_name {
             #(#fields)*
             pub extension_records: Vec<crate::ExtensionRecord>,
@@ -212,7 +220,7 @@ fn generate_fixed_record(item: &FixedRecord, lookup: &Lookup) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Default, Clone, PartialEq)]
         pub struct #record_name {
             #(#fields)*
         }
@@ -230,7 +238,7 @@ fn generate_extension_record(item: &ExtensionRecord, lookup: &Lookup) -> TokenSt
 
     quote! {
         #[doc = #record_type_doc_comment]
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Default, Clone, PartialEq)]
         pub struct #record_name {
             #(#fields)*
         }
@@ -413,7 +421,7 @@ fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Default, Clone, PartialEq)]
         pub struct #record_name {
             #(#fields)*
         }
@@ -481,8 +489,9 @@ fn generate_adaptive_record(item: &AdaptiveRecord, lookup: &Lookup) -> TokenStre
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Default, Clone, PartialEq)]
         pub enum #record_name {
+            #[default]
             None,
             #(#variants)*
         }

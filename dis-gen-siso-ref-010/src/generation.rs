@@ -643,7 +643,7 @@ fn discriminant_literal(value: usize, data_size: usize) -> Literal {
 /// Generates wrapper types for `u8`/`u16` enumerations or bitfields
 fn generate_type_placeholder() -> TokenStream {
     quote! {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, PartialEq)]
         pub struct Enumeration<T: Display>(T);
 
         impl<T: Display> From<T> for Enumeration<T> {
@@ -651,12 +651,6 @@ fn generate_type_placeholder() -> TokenStream {
                 Self(value)
             }
         }
-
-        // impl<T> From<Enumeration<T>> for T {
-        //     fn from(value: Enumeration<T>) -> Self {
-        //         value.0
-        //     }
-        // }
 
         impl<T: Default + Display> Default for Enumeration<T> {
             fn default() -> Self {

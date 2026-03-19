@@ -1,67 +1,29 @@
 # Format for Overrides. All attributes are optional, absence means no override of the original value.
-# 'postfix' and 'skip' default to <false>.
-# uid = { name = "NewName", size = <usize>, postfix = <bool>, skip = <bool> }
-# uid = { name = "NewName" }
-# uid = { size = <usize> }
-# uid = { postfix = <bool> }
-# uid = { skip = <bool> }
+# 'postfix', 'skip' and 'embed_xref' default to <false>.
+# uid = { name = "NewName", size = <usize>, postfix = <bool>, skip = <bool>, embed_xref = true }
+# uid = { name = "NewName" }        ## Override the name of a UID item
+# uid = { size = <usize> }          ## Override the data size of a UID item
+# uid = { postfix = <bool> }        ## Postfix the enum variant value to the variant name, to avoid name clashes.
+# uid = { skip = <bool> }           ## Skip the UID item completely
+# uid = { embed_xref = <bool> }     ## Embed the cross-referenced UID item in the enum variant (eg `Variant(XRefItem)` in the code)
 [overrides]
-#3 = { name = "ProtocolVersion" }
-#4 = { name = "PduType" }
-#5 = { name = "ProtocolFamily" }
-#6 = { name = "ForceId" }
 16 = { postfix = true }
-#58 = { size = 32 }
 55 = { embed_xref = true }
 61 = { postfix = true }
 64 = { postfix = true }
-#66 = { name = "VariableRecordType", postfix = true }
 66 = { postfix = true }
-#69 = { name = "AcknowledgeFlag" }
-#70 = { name = "ResponseFlag" }
-#71 = { name = "ActionId" }
-#72 = { name = "RequestStatus" }
-#73 = { name = "EventType" }
 75 = { postfix = true }
 76 = { postfix = true }
-#81 = { name = "DesignatorCode" }
-#82 = { name = "IffSystemType" }
-#83 = { name = "IffSystemName" }
-#84 = { name = "IffSystemMode" }
-#140 = { skip = true } # TODO enum that defines the type of the subsequent field (UIDs 450-462)
-141 = { skip = true }
-142 = { skip = true }
+#140 = { embed_xref = true } # TODO enum that defines the type of the subsequent field (UIDs 450-462)
+#141 = { embed_xref = true }
+#142 = { embed_xref = true }
 155 = { embed_xref = true }
-#178 = { name = "SignalTdlType", postfix = true }
 178 = { postfix = true }
-#179 = { name = "ReceiverState" }
-#212 = { name = "StationName" }
 224 = { postfix = true }
-#270 = { size = 16 }
-#271 = { size = 16, postfix = true }
 271 = { postfix = true }
-#282 = { name = "SeparationReasonForSeparation" }
-#283 = { name = "SeparationPreEntityIndicator" }
-#295 = { name = "AttributeActionCode" }
-#296 = { name = "DrParametersType" }
-#301 = { name = "TransferredEntityIndicator" }
-#302 = { name = "LvcIndicator" }
-#303 = { name = "CoupledExtensionIndicator" }
-#304 = { name = "FireTypeIndicator" }
-#305 = { name = "DetonationTypeIndicator" }
-#306 = { name = "RadioAttachedIndicator" }
-#307 = { name = "IntercomAttachedIndicator" }
-#308 = { name = "IffSimulationMode" }
-#320 = { name = "ChangeIndicator" }
 326 = { postfix = true }
-# 335 = { name = "UAPropulsionPlantConfiguration" }
-#339 = { name = "IffApplicableModes" }
-#346 = { name = "Mode5IffMission" }
-#347 = { name = "ModeSTransmitState", size = 8 }
 358 = { postfix = true }
 359 = { postfix = true }
-#361 = { name = "Mode5SAltitudeResolution" }
-#389 = { name = "Active Interrogation Indicator" }
 463 = { postfix = true }
 590 = { embed_xref = false }
 591 = { skip = true } # Re-defined in DIS v8 schemas

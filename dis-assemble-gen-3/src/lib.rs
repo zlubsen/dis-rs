@@ -7,5 +7,5 @@ include!(concat!(
 include!(concat!(
     env!("OUT_DIR"),
     "/",
-    env!("TARGET_GENERATED_SISO_1278_V8_FILENAME")
+    env!("TARGET_GENERATED_SISO_1278_GEN3_FILENAME")
 ));

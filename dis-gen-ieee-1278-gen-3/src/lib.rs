@@ -7,8 +7,8 @@ mod generation;
 
 const XML_FILE_EXTENSION: &str = "xml";
 const OUT_DIR: &str = "OUT_DIR";
-const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_V8_FILENAME";
-const TARGET_OUT_FILE: &str = "siso_1278_v8.rs";
+const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_GEN3_FILENAME";
+const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
 
 type UidLookup = HashMap<usize, String>;
 type FqnLookup = HashMap<String, String>;

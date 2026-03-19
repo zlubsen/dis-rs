@@ -40,22 +40,23 @@ pub fn extract(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref element)) => match element.name() {
                 ENUM_ELEMENT => {
-                    if let Some(item) = extract_enum(element, reader) {
-                        items.push(GenerationItem::Enum(item));
-                    }
+                    items.push(GenerationItem::Enum(extract_enum(element, reader)));
                 }
-                BITFIELD_ELEMENT => {
-                    if let Some(item) = extract_bitfield(element, reader) {
-                        items.push(GenerationItem::Bitfield(item));
-                    }
-                }
+                BITFIELD_ELEMENT => items.push(GenerationItem::Bitfield(extract_bitfield(
+                    element, reader, false,
+                ))),
                 _ => (), // REVISIONS, REVISION, DICT, EBV, CET and COT elements, among others
             },
             Ok(Event::End(ref _element)) => {
                 // REVISIONS, REVISION, DICT, EBV, etc
             }
-            Ok(Event::Empty(ref _element)) => {
-                // CR, CR_RANGE
+            Ok(Event::Empty(ref element)) => {
+                if element.name() == BITFIELD_ELEMENT {
+                    items.push(GenerationItem::Bitfield(extract_bitfield(
+                        element, reader, true,
+                    )));
+                    // CR, CR_RANGE
+                }
             }
             Ok(Event::Eof) => break, // exits the loop when reaching end of file
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
@@ -65,7 +66,7 @@ pub fn extract(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
     items
 }
 
-fn extract_enum(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Option<Enum> {
+fn extract_enum(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> Enum {
     let uid = extract_attr_as_usize(element, ELEMENT_ATTR_UID, reader);
 
     let name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
@@ -73,12 +74,12 @@ fn extract_enum(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> O
     let items = extract_enum_rows(reader);
 
     if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
-        Some(Enum {
+        Enum {
             uid,
             name,
             size,
             items,
-        })
+        }
     } else {
         panic!("Encountered an error extracting an '{ENUM_ELEMENT:?}'.");
     }
@@ -164,21 +165,26 @@ fn extract_enum_range_row(element: &BytesStart, reader: &Reader<BufReader<File>>
 fn extract_bitfield(
     element: &BytesStart,
     reader: &mut Reader<BufReader<File>>,
-) -> Option<Bitfield> {
+    empty_element: bool,
+) -> Bitfield {
     let uid = extract_attr_as_usize(element, ELEMENT_ATTR_UID, reader);
 
     let name = extract_attr_as_string(element, ELEMENT_ATTR_NAME);
     let size = extract_attr_as_usize(element, ELEMENT_ATTR_SIZE, reader);
 
-    let fields = extract_bitfield_rows(reader);
+    let fields = if empty_element {
+        vec![]
+    } else {
+        extract_bitfield_rows(reader)
+    };
 
     if let (Some(uid), Some(name), Some(size)) = (uid, name, size) {
-        Some(Bitfield {
+        Bitfield {
             uid,
             name,
             size,
             fields,
-        })
+        }
     } else {
         panic!("Encountered an error extracting an '{BITFIELD_ELEMENT:?}'.");
     }
