@@ -1,6 +1,6 @@
 use super::{
     escape_description, format_field_name, format_name, format_name_postfix, Bitfield,
-    BitfieldItem, Enum, EnumItem, GenerationItem, Overrides,
+    BitfieldItem, Enum, EnumItem, GenerationItem, OverrideXrefHandling, Overrides,
 };
 use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote};
@@ -12,7 +12,8 @@ macro_rules! override_postfix {
 }
 macro_rules! override_embed_xref {
     ($map:ident, $uid:expr) => {
-        $map.get(&$uid).is_some_and(|entry| entry.embed_xref)
+        $map.get(&$uid)
+            .is_some_and(|entry| entry.xref == OverrideXrefHandling::Embed)
     };
 }
 macro_rules! override_size {
@@ -88,11 +89,10 @@ fn generate_enum<'a, F>(item: &Enum, lookup_xref: F, overrides: &Overrides) -> T
 where
     F: Fn(usize) -> Option<&'a GenerationItem>,
 {
-    // let formatted_name = format_name(item.name.as_str(), item.uid);
     let formatted_name = format_name(override_name!(overrides, item.uid, item.name), item.uid);
     let name_ident = format_ident!("{}", formatted_name);
     // generate enum declarations
-    let decl = quote_enum_decl(item, lookup_xref, overrides);
+    let decl = quote_enum_decl(item, &name_ident, lookup_xref, overrides);
     // generate From impls (2x)
     let from_impl = quote_enum_from_impl(item, &name_ident, overrides);
     let into_impl = quote_enum_into_impl(item, &name_ident, overrides);
@@ -114,12 +114,15 @@ where
     )
 }
 
-fn quote_enum_decl<'a, F>(e: &Enum, lookup_xref: F, overrides: &Overrides) -> TokenStream
+fn quote_enum_decl<'a, F>(
+    e: &Enum,
+    name_ident: &Ident,
+    lookup_xref: F,
+    overrides: &Overrides,
+) -> TokenStream
 where
     F: Fn(usize) -> Option<&'a GenerationItem>,
 {
-    let name = format_name(override_name!(overrides, e.uid, e.name), e.uid);
-    let name_ident = format_ident!("{}", name);
     let needs_postfix = override_postfix!(overrides, e.uid);
     let data_size = override_size!(overrides, e.uid, e.size);
     let embed_xref = override_embed_xref!(overrides, e.uid);
@@ -134,6 +137,19 @@ where
             #(#arms),*
         }
     )
+}
+
+fn quote_enum_wrapper_decl<'a, F>(
+    name: &str,
+    data_size: usize,
+    postfix_items: bool,
+    lookup_xref: F,
+) -> TokenStream
+where
+    F: Fn(usize) -> Option<&'a GenerationItem>,
+{
+    blah blah blah hier verder
+    quote! {}
 }
 
 fn quote_enum_decl_arms<'a, F>(

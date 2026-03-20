@@ -431,8 +431,8 @@ fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
 fn generate_bit_record_item_decl(item: &BitRecordFieldEnum, lookup: &Lookup) -> TokenStream {
     match item {
         BitRecordFieldEnum::Enum(field) => generate_enum_bit_field_decl(field, lookup),
-        BitRecordFieldEnum::Int(field) => generate_int_bit_field_decl(field, lookup),
-        BitRecordFieldEnum::Bool(field) => generate_bool_bit_field_decl(field, lookup),
+        BitRecordFieldEnum::Int(field) => generate_int_bit_field_decl(field),
+        BitRecordFieldEnum::Bool(field) => generate_bool_bit_field_decl(field),
     }
 }
 
@@ -460,7 +460,7 @@ fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenS
     quote! { pub #field_name: #field_type, }
 }
 
-fn generate_bool_bit_field_decl(field: &BoolBitField, lookup: &Lookup) -> TokenStream {
+fn generate_bool_bit_field_decl(field: &BoolBitField) -> TokenStream {
     if must_skip_field_decl(field.name.as_str()) {
         return quote! {};
     }
@@ -469,7 +469,7 @@ fn generate_bool_bit_field_decl(field: &BoolBitField, lookup: &Lookup) -> TokenS
     quote! { pub #field_name: bool, }
 }
 
-fn generate_int_bit_field_decl(field: &IntBitField, lookup: &Lookup) -> TokenStream {
+fn generate_int_bit_field_decl(field: &IntBitField) -> TokenStream {
     if must_skip_field_decl(field.name.as_str()) {
         return quote! {};
     }

@@ -1,23 +1,26 @@
 # Format for Overrides. All attributes are optional, absence means no override of the original value.
-# 'postfix', 'skip' and 'embed_xref' default to <false>.
+# 'postfix', and 'skip' default to <false>.
+# 'xref' indicates how to handle enums with cross-references to other UIDs (for adaptive records / fields). By default the xrefs are ignored.
+#   The value "embed" generates the enum with the xref'ed item embedded in the enum variant (eg `Variant(XRefItem)` in the code.
+#   The value "wrap" generates the enum normally for use in an EnumField, and also generates a 'wrapper' enum with the contained xref'ed UID for use in an AdaptiveRecordField.
 # uid = { name = "NewName", size = <usize>, postfix = <bool>, skip = <bool>, embed_xref = true }
 # uid = { name = "NewName" }        ## Override the name of a UID item
 # uid = { size = <usize> }          ## Override the data size of a UID item
 # uid = { postfix = <bool> }        ## Postfix the enum variant value to the variant name, to avoid name clashes.
 # uid = { skip = <bool> }           ## Skip the UID item completely
-# uid = { embed_xref = <bool> }     ## Embed the cross-referenced UID item in the enum variant (eg `Variant(XRefItem)` in the code)
+# uid = { xref = "embed" | "wrap" } ## Method to handle the cross-referenced UID item. "embed" in the enum variant (eg `Variant(XRefItem)` in the code)
 [overrides]
 16 = { postfix = true }
-55 = { embed_xref = true }
+55 = { xref = "embed" }
 61 = { postfix = true }
 64 = { postfix = true }
 66 = { postfix = true }
 75 = { postfix = true }
 76 = { postfix = true }
-#140 = { embed_xref = true } # TODO enum that defines the type of the subsequent field (UIDs 450-462)
-#141 = { embed_xref = true }
-#142 = { embed_xref = true }
-155 = { embed_xref = true }
+140 = { xref = "wrapper" }
+141 = { xref = "wrapper" }
+142 = { xref = "wrapper" }
+155 = { xref = "embed" }
 178 = { postfix = true }
 224 = { postfix = true }
 271 = { postfix = true }
@@ -25,9 +28,9 @@
 358 = { postfix = true }
 359 = { postfix = true }
 463 = { postfix = true }
-590 = { embed_xref = false }
+#590 = { embed_xref = false }
 591 = { skip = true } # Re-defined in DIS v8 schemas
-615 = { embed_xref = false }
+#615 = { embed_xref = false }
 637 = { postfix = true }
 740 = { postfix = true }
 344 = { name = "TCASACASType344" }

@@ -346,14 +346,16 @@ type Overrides = HashMap<usize, UidOverride>;
 /// - `size`: Change the data size of the to-be generated item (e.g. '5' becomes '16').
 /// - `postfix_value` Postfix fields of enumeration items with their value, because duplicate fields names exist in the SISO-REF-010 definitions.
 /// - `skip`: Completely skip the item of being generated.
-/// - `embed_xref`: Embed cross-referenced (`xref`) UID items in the enum variant. By default these xref'ed items are not considered.
+/// - `xref`: Handling of cross-referenced (`xref`) UID items in the enum variant. By default these xref'ed items are not considered.
+///     - the value `"embed"` contains the xref UID in the enum variant.
+///     - the value `"wrapper"` generates the enum as default, and also generates a similar enum that does embed the xrefs, for use in enum type and adaptive fields, respectively.
 #[derive(Default, Debug)]
 struct UidOverride {
     name: Option<String>,
     size: Option<usize>, // TODO see if we can derive this override when extracting or generating.
     postfix_value: bool,
     skip: bool,
-    embed_xref: bool,
+    xref: OverrideXrefHandling,
 }
 
 impl From<OverrideEntry> for UidOverride {
@@ -363,7 +365,27 @@ impl From<OverrideEntry> for UidOverride {
             size: entry.size,
             postfix_value: entry.postfix.unwrap_or(false),
             skip: entry.skip.unwrap_or(false),
-            embed_xref: entry.embed_xref.unwrap_or(false),
+            xref: OverrideXrefHandling::from(&entry.xref),
+        }
+    }
+}
+
+#[derive(Default, Debug, PartialEq)]
+enum OverrideXrefHandling {
+    #[default]
+    None,
+    Embed,
+    Wrap,
+}
+
+impl From<&Option<String>> for OverrideXrefHandling {
+    fn from(value: &Option<String>) -> Self {
+        const EMBED_CONFIG_STR: &str = "embed";
+        const WRAPPER_CONFIG_STR: &str = "wrapper";
+        match value {
+            Some(s) if s == EMBED_CONFIG_STR => OverrideXrefHandling::Embed,
+            Some(s) if s == WRAPPER_CONFIG_STR => OverrideXrefHandling::Wrap,
+            None | _ => OverrideXrefHandling::None,
         }
     }
 }
@@ -379,7 +401,7 @@ struct OverrideEntry {
     size: Option<usize>,
     postfix: Option<bool>,
     skip: Option<bool>,
-    embed_xref: Option<bool>,
+    xref: Option<String>,
 }
 
 fn init_overrides(path: &Path) -> Overrides {
