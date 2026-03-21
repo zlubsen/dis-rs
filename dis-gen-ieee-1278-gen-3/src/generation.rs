@@ -8,7 +8,7 @@ use super::{
 use dis_gen_utils::{
     enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
 };
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 // Module tree of generated sources:
 // src/
@@ -34,13 +34,16 @@ use quote::{format_ident, quote};
 // - fix/generate Appearance enums and fields
 // - add field for extension records to PDUs; requires uniform handling of PDU extension records (trait/enum), with the 2 standard fields and so on
 
+pub const EXTENSION_RECORDS_MODULE_NAME: &str = "extension_records";
+pub const BUILDER_MODULE_NAME: &str = "builder";
+pub const BUILDER_TYPE_SUFFIX: &str = "Builder";
+
 pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) -> TokenStream {
     let core_contents = generate_core_units(items, lookup);
     let family_contents: Vec<TokenStream> = families
         .iter()
         .map(|family| {
             let generated = generate_family_module(items, family.as_str(), lookup);
-            println!("{generated}");
             let _ = syn::parse_file(&generated.to_string())
                 .expect("Error parsing intermediate generated code for pretty printing.");
             generated
@@ -76,6 +79,19 @@ fn generate_core_units(items: &[GenerationItem], lookup: &Lookup) -> TokenStream
 
     quote! {
         use crate::common_records::PDUHeader;
+
+        pub trait BodyRaw {
+            type Builder;
+
+            #[must_use]
+            fn builder() -> Self::Builder;
+
+            #[must_use]
+            fn into_builder(self) -> Self::Builder;
+
+            #[must_use]
+            fn into_pdu_body(self) -> PduBody;
+        }
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct Pdu {
@@ -155,7 +171,8 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
             }
         })
         .collect::<TokenStream>();
-    let extension_records = generate_module_with_name("extension_records", &extension_records);
+    let extension_records =
+        generate_module_with_name(EXTENSION_RECORDS_MODULE_NAME, &extension_records);
 
     // 3. Filter the remaining non-PDU items for this family and generate the records in the family module
     let records = items
@@ -183,10 +200,18 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
 /// Generates all code related a PDU
 fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
     let formatted_pdu_name = format_type_name(item.name_attr.as_str());
-    let ident_pdu_name = format_ident!("{}", formatted_pdu_name);
+    let fqn_pdu_name = lookup_fqn(&formatted_pdu_name, lookup);
+    let pdu_name_ident = format_ident!("{}", formatted_pdu_name);
+    let fqn_pdu_name_ident: syn::Type =
+        syn::parse_str(&fqn_pdu_name).expect("Expected a valid FQN type");
     let pdu_module_name = format_pdu_module_name(item.name_attr.as_str());
+    let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", formatted_pdu_name);
 
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
+    let pdu_trait_impls = generate_pdu_trait_impls(&pdu_name_ident, &builder_name_ident);
+    let builder_content =
+        builders::generate_pdu_builder(item, &fqn_pdu_name_ident, &builder_name_ident, lookup);
+    let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
 
     let fields = item
         .fields
@@ -196,10 +221,14 @@ fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
 
     let contents = quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
-        pub struct #ident_pdu_name {
+        pub struct #pdu_name_ident {
             #(#fields)*
             pub extension_records: Vec<crate::ExtensionRecord>,
         }
+
+        #pdu_trait_impls
+
+        #builder_module
     };
 
     generate_module_with_name(pdu_module_name.as_str(), &contents)
@@ -522,6 +551,27 @@ fn generate_adaptive_record_variant(variant: &AdaptiveFormatEnum, lookup: &Looku
     }
 }
 
+fn generate_pdu_trait_impls(pdu_name_ident: &Ident, builder_name_ident: &Ident) -> TokenStream {
+    // TODO further develop the core traits (as in gen 2: BodyInfo, Interaction)
+    quote! {
+        impl crate::BodyRaw for #pdu_name_ident {
+            type Builder = builder::#builder_name_ident;
+
+            fn builder() -> Self::Builder {
+                Self::Builder::new()
+            }
+
+            fn into_builder(self) -> Self::Builder {
+                Self::Builder::new_from_body(self)
+            }
+
+            fn into_pdu_body(self) -> crate::PduBody {
+                crate::PduBody::#pdu_name_ident(self)
+            }
+        }
+    }
+}
+
 fn field_size_to_primitive_type(size: usize) -> syn::Type {
     let field_type = if size > 64 {
         "u128"
@@ -551,7 +601,6 @@ fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
 
 #[inline]
 fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
-    println!("lookup_uid({uid})");
     let val = lookup
         .uid
         .get(&uid)
@@ -686,6 +735,47 @@ fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) 
         )).as_str(), lookup))
             .expect("Expected valid input to parse a Type for a AdaptiveRecordField declaration.");
         ty
+    }
+}
+
+mod builders {
+    use crate::{Lookup, Pdu};
+    use proc_macro2::{Ident, TokenStream};
+    use quote::quote;
+
+    pub fn generate_pdu_builder(
+        item: &Pdu,
+        fqn_pdu_name_ident: &syn::Type,
+        builder_name_ident: &Ident,
+        lookup: &Lookup,
+    ) -> TokenStream {
+        // TODO generate with_ functions for all fields
+        quote! {
+            pub struct #builder_name_ident(#fqn_pdu_name_ident);
+
+            impl Default for #builder_name_ident {
+                fn default() -> Self {
+                    Self::new()
+                }
+            }
+
+            impl #builder_name_ident {
+                #[must_use]
+                pub fn new() -> Self {
+                    #builder_name_ident(#fqn_pdu_name_ident::default())
+                }
+
+                #[must_use]
+                pub fn new_from_body(body: #fqn_pdu_name_ident) -> Self {
+                    #builder_name_ident(body)
+                }
+
+                #[must_use]
+                pub fn build(self) -> #fqn_pdu_name_ident {
+                    self.0
+                }
+            }
+        }
     }
 }
 
