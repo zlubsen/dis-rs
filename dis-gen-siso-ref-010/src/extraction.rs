@@ -79,6 +79,7 @@ fn extract_enum(element: &BytesStart, reader: &mut Reader<BufReader<File>>) -> E
             name,
             size,
             items,
+            discriminant: None,
         }
     } else {
         panic!("Encountered an error extracting an '{ENUM_ELEMENT:?}'.");

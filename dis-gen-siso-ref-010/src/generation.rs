@@ -92,14 +92,14 @@ where
     let formatted_name = format_name(override_name!(overrides, item.uid, item.name), item.uid);
     let name_ident = format_ident!("{}", formatted_name);
     // generate enum declarations
-    let decl = quote_enum_decl(item, &name_ident, lookup_xref, overrides);
+    let decl = quote_enum_decl(item, &name_ident, &lookup_xref, overrides);
     // generate From impls (2x)
-    let from_impl = quote_enum_from_impl(item, &name_ident, overrides);
+    let from_impl = quote_enum_from_impl(item, &name_ident, &lookup_xref, overrides);
     let into_impl = quote_enum_into_impl(item, &name_ident, overrides);
     // generate Display impl
     let display_impl = quote_enum_display_impl(item, &name_ident, overrides);
     // generate Default impl
-    let default_impl = quote_enum_default_impl(&name_ident);
+    let default_impl = quote_enum_default_impl(&name_ident, item.discriminant.is_some());
     quote!(
         #decl
 
@@ -117,7 +117,7 @@ where
 fn quote_enum_decl<'a, F>(
     e: &Enum,
     name_ident: &Ident,
-    lookup_xref: F,
+    lookup_xref: &F,
     overrides: &Overrides,
 ) -> TokenStream
 where
@@ -139,25 +139,12 @@ where
     )
 }
 
-fn quote_enum_wrapper_decl<'a, F>(
-    name: &str,
-    data_size: usize,
-    postfix_items: bool,
-    lookup_xref: F,
-) -> TokenStream
-where
-    F: Fn(usize) -> Option<&'a GenerationItem>,
-{
-    blah blah blah hier verder
-    quote! {}
-}
-
 fn quote_enum_decl_arms<'a, F>(
     items: &[EnumItem],
     data_size: usize,
     postfix_items: bool,
     embed_xref: bool,
-    lookup_xref: F,
+    lookup_xref: &F,
 ) -> Vec<TokenStream>
 where
     F: Fn(usize) -> Option<&'a GenerationItem>,
@@ -210,42 +197,87 @@ where
     arms
 }
 
-fn quote_enum_from_impl(e: &Enum, name_ident: &Ident, overrides: &Overrides) -> TokenStream {
+fn quote_enum_from_impl<'a, F>(
+    e: &Enum,
+    name_ident: &Ident,
+    lookup_xref: &F,
+    overrides: &Overrides,
+) -> TokenStream
+where
+    F: Fn(usize) -> Option<&'a GenerationItem>,
+{
     let needs_postfix = override_postfix!(overrides, e.uid);
     let data_size = override_size!(overrides, e.uid, e.size);
     let embed_xref = override_embed_xref!(overrides, e.uid);
-    let arms = quote_enum_from_arms(name_ident, &e.items, data_size, needs_postfix, embed_xref);
-    let discriminant_type = size_to_type(data_size);
-    let discriminant_ident = format_ident!("{}", discriminant_type);
+    let arms = quote_enum_from_arms(
+        e,
+        name_ident,
+        &e.items,
+        data_size,
+        needs_postfix,
+        embed_xref,
+        lookup_xref,
+    );
 
-    quote!(
-        impl From<#discriminant_ident> for #name_ident {
-            fn from(value: #discriminant_ident) -> Self {
-                match value {
-                    #(#arms),*
+    let from_type = size_to_type(data_size);
+    let from_ident = format_ident!("{}", from_type);
+
+    if let Some(discriminant) = &e.discriminant {
+        let discriminant_name = format_name(discriminant, 0);
+        let discriminant_ident = format_ident!("{discriminant_name}");
+
+        quote! {
+            impl From<(#discriminant_ident, #from_ident)> for #name_ident {
+                fn from((discriminant, value): (#discriminant_ident, #from_ident)) -> Self {
+                    match discriminant {
+                        #(#arms),*
+                    }
                 }
             }
         }
-    )
+    } else {
+        quote!(
+            impl From<#from_ident> for #name_ident {
+                fn from(value: #from_ident) -> Self {
+                    match value {
+                        #(#arms),*
+                    }
+                }
+            }
+        )
+    }
 }
 
-fn quote_enum_from_arms(
+fn quote_enum_from_arms<'a, F>(
+    parent_enum: &Enum,
     name_ident: &Ident,
     items: &[EnumItem],
     data_size: usize,
     postfix_items: bool,
     embed_xref: bool,
-) -> Vec<TokenStream> {
+    lookup_xref: F,
+) -> Vec<TokenStream>
+where
+    F: Fn(usize) -> Option<&'a GenerationItem>,
+{
     #[allow(clippy::unnecessary_filter_map)]
     let mut arms: Vec<TokenStream> = items.iter().filter_map(|item| {
         match item {
             EnumItem::Basic(item) => {
                 let item_name = format_name_postfix(item.description.as_str(), item.value, postfix_items);
                 let item_ident = format_ident!("{}", item_name);
-                let discriminant_literal = discriminant_literal(item.value, data_size);
-                Some(quote!(
+                if let Some(discriminant) = &parent_enum.discriminant {
+                    let discriminant_ident = format_ident!("{}", format_name(discriminant, 0));
+                    Some(quote! {
+                        #discriminant_ident::#item_ident => #name_ident::#item_ident
+                    })
+                } else {
+                    let discriminant_literal = discriminant_literal(item.value, data_size);
+                    Some(quote!(
                         #discriminant_literal => #name_ident::#item_ident
                     ))
+                }
+
             }
             EnumItem::Range(item) => {
                 let item_name = format_name(item.description.as_str(), *item.range.start());
@@ -257,28 +289,48 @@ fn quote_enum_from_arms(
                     ))
             }
             EnumItem::CrossRef(item) => {
-                // Aside from this code a manual impl is required for crossref'ed bitfields, cannot be determined based on discriminant value alone (e.g., need domain enum for capabilities and appearance)
-                // Here we set a default value for the contained CrossRef item
                 let item_name = format_name(item.description.as_str(), item.value);
                 let item_ident = format_ident!("{}", item_name);
-                let discriminant_literal = discriminant_literal(item.value, data_size);
-                if embed_xref {
-                    Some(quote!(
-                        #discriminant_literal => #name_ident::#item_ident(Default::default())
-                    ))
-                } else {
-                    Some(quote! {
-                        #discriminant_literal => #name_ident::#item_ident
-                    })
+
+                match (embed_xref, parent_enum.discriminant.as_ref()) {
+                    (true, None) => {
+                        let discriminant_literal = discriminant_literal(item.value, data_size);
+                        Some(quote!(
+                            #discriminant_literal => #name_ident::#item_ident(Default::default())
+                        ))
+                    }
+                    (true, Some(discriminant)) => {
+                        let discriminant_ident = format_ident!("{}", format_name(discriminant, 0));
+                        let xref_item = lookup_xref(item.xref).expect("Failed to lookup xref for wrapper Enum");
+                        let xref_name = format_name(xref_item.name(), xref_item.size());
+                        let xref_ident = format_ident!("{}", xref_name);
+                        Some(quote! {
+                            #discriminant_ident::#item_ident => #name_ident::#item_ident(#xref_ident::from(value))
+                        })
+                    }
+                    (false, _) => {
+                        let discriminant_literal = discriminant_literal(item.value, data_size);
+                        Some(quote! {
+                            #discriminant_literal => #name_ident::#item_ident
+                        })
+                    }
                 }
             }
         }
     }).collect();
     // For conversion from bytes to enum, add exhaustive arm resulting in the Unspecified variant of the enum
-    let unspecified_ident = format_ident!("{}", "unspecified_value");
-    arms.push(quote!(
-        #unspecified_ident => #name_ident::Unspecified(#unspecified_ident)
-    ));
+    if parent_enum.discriminant.is_some() {
+        let unspecified_ident = format_ident!("{}", "_unspecified_value");
+        let value_ident = format_ident!("{}", "value");
+        arms.push(quote!(
+            #unspecified_ident => #name_ident::Unspecified(#value_ident)
+        ));
+    } else {
+        let unspecified_ident = format_ident!("{}", "unspecified_value");
+        arms.push(quote!(
+            #unspecified_ident => #name_ident::Unspecified(#unspecified_ident)
+        ));
+    };
     arms
 }
 
@@ -421,11 +473,16 @@ fn quote_enum_display_arms(
     arms
 }
 
-fn quote_enum_default_impl(name_ident: &Ident) -> TokenStream {
+fn quote_enum_default_impl(name_ident: &Ident, adaptive_record: bool) -> TokenStream {
+    let from = if adaptive_record {
+        quote! { ( Default::default(), 0 ) }
+    } else {
+        quote! { 0 }
+    };
     quote!(
         impl Default for #name_ident {
             fn default() -> Self {
-                #name_ident::from(0)
+                #name_ident::from(#from)
             }
         }
     )

@@ -12,6 +12,10 @@ const OUT_DIR: &str = "OUT_DIR";
 const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_REF_010_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 
+const WRAP_ENUM_UID_OFFSET: usize = 0xFFFF_0000_0000_0000;
+const WRAP_ENUM_TRIM_NAME: &str = " Type";
+const WRAP_ENUM_SIZE: usize = 32; // Now a hardcoded size, as both capabilities and (extended) appearance are 32 bits.
+
 // TODO 1) generate enums based on 'overrides' instead of listing all that need to be generated (inverse) (521 items).
 //  - less usage of name overrides
 //  - auto infer data size overrides
@@ -278,6 +282,7 @@ pub struct Enum {
     pub name: String,
     pub size: usize,
     pub items: Vec<EnumItem>,
+    pub discriminant: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -431,6 +436,7 @@ fn init_overrides(path: &Path) -> Overrides {
 pub fn execute(siso_ref_010_dir: &str) -> HashMap<usize, String> {
     let ref_path: PathBuf = [siso_ref_010_dir, "SISO-REF-010.xml"].iter().collect();
     let config_path: PathBuf = [siso_ref_010_dir, "overrides.toml"].iter().collect();
+    let overrides = init_overrides(config_path.as_path());
 
     let mut reader = Reader::from_file(ref_path.as_path()).unwrap();
     reader.config_mut().trim_text(true);
@@ -438,11 +444,51 @@ pub fn execute(siso_ref_010_dir: &str) -> HashMap<usize, String> {
     // Extract enums and bitfields from the source file
     let generation_items = extraction::extract(&mut reader);
 
+    let wrapper_items = generation_items
+        .iter()
+        .filter_map(|item| {
+            if let GenerationItem::Enum(e) = item {
+                if overrides
+                    .get(&e.uid)
+                    .is_some_and(|entry| entry.xref == OverrideXrefHandling::Wrap)
+                {
+                    let wrapper_item = Enum {
+                        uid: e.uid + WRAP_ENUM_UID_OFFSET,
+                        name: e.name.trim_end_matches(WRAP_ENUM_TRIM_NAME).to_string(),
+                        size: WRAP_ENUM_SIZE,
+                        items: e.items.clone(),
+                        discriminant: Some(e.name.clone()),
+                    };
+                    Some(wrapper_item)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<Enum>>();
+    println!("wrapper uids: {wrapper_items:?}");
+    let mut overrides = overrides;
+    let mut generation_items = generation_items;
+    for it in wrapper_items {
+        overrides.insert(
+            it.uid,
+            UidOverride {
+                xref: OverrideXrefHandling::Embed,
+                ..Default::default()
+            },
+        );
+        generation_items.push(GenerationItem::Enum(it));
+    }
+    let overrides = overrides;
+    let generation_items = generation_items;
+
     // Build the index of UIDs and their code names
     let uid_index = generate_uid_index(&generation_items);
 
     // Generate the code for the enumerations
-    generate_and_save(&generation_items, config_path.as_path());
+    generate_and_save(&generation_items, &overrides);
 
     uid_index
 }
@@ -484,8 +530,7 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
 }
 
 /// Generates code for all provided `GenerationItem`s, formats the code and stores it in `OUT_DIR`.
-fn generate_and_save(generation_items: &[GenerationItem], overrides_file: &Path) {
-    let overrides = init_overrides(overrides_file);
+fn generate_and_save(generation_items: &[GenerationItem], overrides: &Overrides) {
     // Generate all code for enums
     let generated = generation::generate(generation_items, &overrides);
 
