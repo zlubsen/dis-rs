@@ -1,10 +1,10 @@
-use super::{
-    AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
-    BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecord,
-    ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField, GenerationItem,
-    IntBitField, Lookup, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
-    VariableStringField,
-};
+use super::Lookup;
+// use crate::extraction::{
+//     AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
+//     BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecord,
+//     ExtensionRecordFieldEnum, ExtractionItem, FixedRecord, FixedRecordField, FixedStringField,
+//     IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum, VariableStringField,
+// };
 use dis_gen_utils::{
     enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
 };
@@ -29,16 +29,285 @@ use quote::{format_ident, quote};
 //            parser.rs
 //            writer.rs
 
-// TODO
-// - put extension records in a separate module per family, to avoid name clashes
-// - fix/generate Appearance enums and fields
-// - add field for extension records to PDUs; requires uniform handling of PDU extension records (trait/enum), with the 2 standard fields and so on
-
 pub const EXTENSION_RECORDS_MODULE_NAME: &str = "extension_records";
 pub const BUILDER_MODULE_NAME: &str = "builder";
 pub const BUILDER_TYPE_SUFFIX: &str = "Builder";
 
-pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) -> TokenStream {
+pub enum GenerationItem {
+    Pdu(Pdu, String),
+    FixedRecord(FixedRecord, String),
+    BitRecord(BitRecord, String),
+    AdaptiveRecord(AdaptiveRecord, String),
+    ExtensionRecord(ExtensionRecord, String),
+}
+
+impl GenerationItem {
+    pub(crate) fn family(&self) -> String {
+        match self {
+            GenerationItem::Pdu(_, fam) => fam.clone(),
+            GenerationItem::FixedRecord(_, fam) => fam.clone(),
+            GenerationItem::BitRecord(_, fam) => fam.clone(),
+            GenerationItem::AdaptiveRecord(_, fam) => fam.clone(),
+            GenerationItem::ExtensionRecord(_, fam) => fam.clone(),
+        }
+    }
+
+    pub(crate) fn name(&self) -> String {
+        match self {
+            GenerationItem::Pdu(item, _) => item.name_attr.clone(),
+            GenerationItem::FixedRecord(item, _) => item.record_type.clone(),
+            GenerationItem::BitRecord(item, _) => item.record_type.clone(),
+            GenerationItem::AdaptiveRecord(item, _) => item.record_type.clone(),
+            GenerationItem::ExtensionRecord(item, _) => item.name_attr.clone(),
+        }
+    }
+
+    /// Returns true when the item is a `PDU`
+    pub(crate) fn is_pdu(&self) -> bool {
+        matches!(self, GenerationItem::Pdu(_, _))
+    }
+
+    /// Returns true when the item is an `ExtensionRecord`
+    pub(crate) fn is_extension_record(&self) -> bool {
+        matches!(self, GenerationItem::ExtensionRecord(_, _))
+    }
+
+    /// Returns true when the item is not a PDU or an `ExtensionRecord`
+    fn is_record(&self) -> bool {
+        !self.is_pdu() && !self.is_extension_record()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NumericField {
+    pub field_name: String,
+    pub primitive_type: syn::Type,
+    pub units: Option<String>,
+    pub is_padding: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CountField {
+    pub field_name: String,
+    pub primitive_type: syn::Type,
+}
+
+#[derive(Debug, Clone)]
+pub struct EnumField {
+    pub field_name: String,
+    pub field_type_fqn: syn::Type,
+    pub is_discriminant: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct FixedStringField {
+    pub field_name: String,
+    pub field_type: &'static str, // `String`
+    pub length: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct IntBitField {
+    pub field_name: String,
+    pub bit_position: usize,
+    pub size: usize,
+    pub units: Option<String>,
+    pub is_padding: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct EnumBitField {
+    pub field_name: String,
+    pub field_type: syn::Type,
+    pub field_type_fqn: syn::Type,
+    pub bit_position: usize,
+    pub size: usize,
+    pub is_discriminant: bool, // FIXME 'true' does not occur in the schemas
+}
+
+#[derive(Debug, Clone)]
+pub struct BoolBitField {
+    pub field_name: String,
+    pub bit_position: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct FixedRecordField {
+    pub field_name: String,
+    pub field_type: syn::Type,
+    pub field_type_fqn: syn::Type,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct BitRecordField {
+    pub field_name: String,
+    pub field_type: syn::Type,
+    pub field_type_fqn: syn::Type,
+    pub size: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdaptiveRecordField {
+    pub field_name: String,
+    pub field_type: syn::Type,
+    pub field_type_fqn: syn::Type,
+    pub length: usize,
+    pub discriminant_field_name: String,
+}
+
+#[derive(Debug, Clone)]
+struct VariableString {
+    pub count_field: CountField,
+    pub string_field: VariableStringField,
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableStringField {
+    pub field_name: String,
+    pub field_type: &'static str,       // `String`
+    pub fixed_number_of_strings: usize, // FIXME attribute does not occur in the schemas
+}
+
+#[derive(Debug, Clone)]
+struct OpaqueDataField {
+    pub field_name: String,
+    pub field_type: &'static str, // `Vec<u8>`
+}
+
+#[derive(Debug, Clone)]
+pub enum PduAndFixedRecordFieldsEnum {
+    Numeric(NumericField),
+    Enum(EnumField),
+    FixedString(FixedStringField),
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+    AdaptiveRecord(AdaptiveRecordField),
+}
+
+#[derive(Debug, Clone)]
+pub enum ArrayFieldEnum {
+    Numeric(NumericField),
+    Enum(EnumField),
+    FixedString(FixedStringField),
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+}
+
+#[derive(Debug, Clone)]
+pub enum BitRecordFieldEnum {
+    Enum(EnumBitField),
+    Int(IntBitField),
+    Bool(BoolBitField),
+}
+
+#[derive(Debug, Clone)]
+pub enum AdaptiveFormatEnum {
+    #[allow(dead_code)]
+    Numeric(NumericField),
+    #[allow(dead_code)]
+    Enum(EnumField),
+    #[allow(dead_code)]
+    FixedString(FixedStringField),
+    #[allow(dead_code)]
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+}
+
+#[derive(Debug, Clone)]
+pub enum ExtensionRecordFieldEnum {
+    Numeric(NumericField),
+    Enum(EnumField),
+    FixedString(FixedStringField),
+    VariableString(VariableString),
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+    Array(Array),
+    AdaptiveRecord(AdaptiveRecordField),
+    Opaque(OpaqueData),
+    #[allow(dead_code)]
+    PaddingTo16,
+    #[allow(dead_code)]
+    PaddingTo32,
+}
+
+#[derive(Debug, Clone)]
+pub struct Array {
+    pub count_field: CountField,
+    pub type_field: ArrayFieldEnum,
+}
+
+#[derive(Debug, Clone)]
+pub struct OpaqueData {
+    pub count_field: CountField,
+    pub opaque_data_field: OpaqueDataField,
+}
+
+#[derive(Debug, Clone)]
+pub struct FixedRecord {
+    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
+    pub record_type: syn::Type,
+    pub record_type_fqn: syn::Type,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct BitRecord {
+    pub fields: Vec<BitRecordFieldEnum>,
+    pub record_type: syn::Type,
+    pub record_type_fqn: syn::Type,
+    pub size: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdaptiveRecord {
+    pub variants: Vec<AdaptiveFormatEnum>,
+    pub record_type: syn::Type,
+    pub record_type_fqn: syn::Type,
+    pub length: usize,
+    pub discriminant_start_value: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExtensionRecordSet {
+    pub count_field: CountField,
+}
+
+#[derive(Debug, Clone)]
+struct PaddingTo16;
+
+#[derive(Debug, Clone)]
+struct PaddingTo32;
+
+#[derive(Debug, Clone)]
+struct PaddingTo64;
+
+#[derive(Debug, Clone)]
+pub struct ExtensionRecord {
+    pub record_name: String,
+    pub record_name_fqn: syn::Type,
+    pub record_type_enum: usize,
+    pub base_length: usize,
+    pub is_variable: bool,
+    pub record_type_field: EnumField,
+    pub record_length_field: NumericField,
+    pub fields: Vec<ExtensionRecordFieldEnum>,
+    pub padding_to_64_field: Option<PaddingTo64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Pdu {
+    pub pdu_name: String,
+    pub pdu_name_fqn: syn::Type,
+    pub pdu_type: usize,
+    pub protocol_family: usize,
+    pub base_length: usize,
+    pub header_field: FixedRecordField,
+    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
+    pub extension_record_set: ExtensionRecordSet,
+}
+
+pub fn generate(items: &[ExtractionItem], families: &[String], lookup: &Lookup) -> TokenStream {
     let core_contents = generate_core_units(items, lookup);
     let family_contents: Vec<TokenStream> = families
         .iter()
@@ -59,7 +328,7 @@ pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) 
     }
 }
 
-fn generate_core_units(items: &[GenerationItem], lookup: &Lookup) -> TokenStream {
+fn generate_core_units(items: &[ExtractionItem], lookup: &Lookup) -> TokenStream {
     // FIXME these parts should be in the lib itself as regular code, whenever possible
     // TODO design required core data structures
     // TODO PduBody: list all PDUs (and their headers) in a main enum, analogous to v7
@@ -126,7 +395,7 @@ fn generate_core_units(items: &[GenerationItem], lookup: &Lookup) -> TokenStream
     }
 }
 
-fn generate_body_variant(variant: &GenerationItem, lookup: &Lookup) -> TokenStream {
+fn generate_body_variant(variant: &ExtractionItem, lookup: &Lookup) -> TokenStream {
     let variant_name = format_type_name(&variant.name());
     let fqn_name = lookup_fqn(&variant_name, lookup);
     let variant_name = format_ident!("{variant_name}");
@@ -152,16 +421,16 @@ fn generate_module_with_name(name: &str, contents: &TokenStream) -> TokenStream 
 }
 
 /// Generates a module for a PDU Family of PDUs and records, plus all its contents
-fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Lookup) -> TokenStream {
+fn generate_family_module(items: &[ExtractionItem], family: &str, lookup: &Lookup) -> TokenStream {
     // 1. Filter the PDUs for this family and generate these in separate modules
     let pdus = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
         .map(|pdu| {
-            if let GenerationItem::Pdu(pdu, _) = pdu {
+            if let ExtractionItem::Pdu(pdu, _) = pdu {
                 generate_pdu_module(pdu, lookup)
             } else {
-                panic!("GenerationItem is not a PDU.")
+                panic!("ExtractionItem is not a PDU.")
             }
         })
         .collect::<TokenStream>();
@@ -171,10 +440,10 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_extension_record())
         .map(|item| {
-            if let GenerationItem::ExtensionRecord(record, _family) = item {
+            if let ExtractionItem::ExtensionRecord(record, _family) = item {
                 generate_extension_record(record, lookup)
             } else {
-                panic!("GenerationItem is not an ExtensionRecord.")
+                panic!("ExtractionItem is not an ExtensionRecord.")
             }
         })
         .collect::<TokenStream>();
@@ -186,15 +455,15 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_record())
         .map(|item| match item {
-            GenerationItem::FixedRecord(record, _family) => generate_fixed_record(record, lookup),
-            GenerationItem::BitRecord(record, _family) => generate_bit_record(record, lookup),
-            GenerationItem::AdaptiveRecord(record, _family) => {
+            ExtractionItem::FixedRecord(record, _family) => generate_fixed_record(record, lookup),
+            ExtractionItem::BitRecord(record, _family) => generate_bit_record(record, lookup),
+            ExtractionItem::AdaptiveRecord(record, _family) => {
                 generate_adaptive_record(record, lookup)
             }
-            GenerationItem::ExtensionRecord(record, _family) => {
-                panic!("GenerationItem is an ExtensionRecord.")
+            ExtractionItem::ExtensionRecord(record, _family) => {
+                panic!("ExtractionItem is an ExtensionRecord.")
             }
-            GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record."),
+            ExtractionItem::Pdu(_, _) => panic!("ExtractionItem is not a Record."),
         })
         .collect::<TokenStream>();
 
@@ -746,8 +1015,9 @@ fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) 
 }
 
 mod builders {
+    use crate::extraction::{Pdu, PduAndFixedRecordFieldsEnum};
     use crate::generation::{lookup_first_uid, lookup_fqn, type_for_enum_field};
-    use crate::{Lookup, Pdu, PduAndFixedRecordFieldsEnum};
+    use crate::Lookup;
     use dis_gen_utils::{format_field_name, format_type_name};
     use proc_macro2::{Ident, TokenStream};
     use quote::{format_ident, quote};

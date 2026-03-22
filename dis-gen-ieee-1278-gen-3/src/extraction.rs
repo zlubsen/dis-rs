@@ -1,11 +1,3 @@
-use crate::{
-    AdaptiveFormatEnum, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
-    BitRecordField, BitRecordFieldEnum, BoolBitField, CountField, EnumBitField, EnumField,
-    ExtensionRecord, ExtensionRecordFieldEnum, ExtensionRecordSet, FixedRecord, FixedRecordField,
-    FixedStringField, GenerationItem, IntBitField, NumericField, OpaqueData, OpaqueDataField,
-    PaddingTo16, PaddingTo32, PaddingTo64, Pdu, PduAndFixedRecordFieldsEnum, VariableString,
-    VariableStringField,
-};
 use dis_gen_utils::extract_attr_as_usize;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::name::QName;
@@ -68,7 +60,272 @@ const ELEMENT_ATTR_IS_VARIABLE: QName = QName(b"isVariable");
 const ELEMENT_ATTR_PDU_TYPE: QName = QName(b"PDUType");
 const ELEMENT_ATTR_PROTOCOL_FAMILY: QName = QName(b"protocolFamily");
 
-pub(crate) fn extract_from_file(path: &PathBuf) -> (Vec<GenerationItem>, String) {
+#[derive(Debug, Clone)]
+pub enum ExtractionItem {
+    Pdu(Pdu, String),
+    FixedRecord(FixedRecord, String),
+    BitRecord(BitRecord, String),
+    AdaptiveRecord(AdaptiveRecord, String),
+    ExtensionRecord(ExtensionRecord, String),
+}
+
+impl ExtractionItem {
+    pub(crate) fn family(&self) -> String {
+        match self {
+            ExtractionItem::Pdu(_, fam) => fam.clone(),
+            ExtractionItem::FixedRecord(_, fam) => fam.clone(),
+            ExtractionItem::BitRecord(_, fam) => fam.clone(),
+            ExtractionItem::AdaptiveRecord(_, fam) => fam.clone(),
+            ExtractionItem::ExtensionRecord(_, fam) => fam.clone(),
+        }
+    }
+
+    pub(crate) fn name(&self) -> String {
+        match self {
+            ExtractionItem::Pdu(item, _) => item.name_attr.clone(),
+            ExtractionItem::FixedRecord(item, _) => item.record_type.clone(),
+            ExtractionItem::BitRecord(item, _) => item.record_type.clone(),
+            ExtractionItem::AdaptiveRecord(item, _) => item.record_type.clone(),
+            ExtractionItem::ExtensionRecord(item, _) => item.name_attr.clone(),
+        }
+    }
+
+    /// Returns true when the item is a `PDU`
+    pub(crate) fn is_pdu(&self) -> bool {
+        matches!(self, ExtractionItem::Pdu(_, _))
+    }
+
+    /// Returns true when the item is an `ExtensionRecord`
+    pub(crate) fn is_extension_record(&self) -> bool {
+        matches!(self, ExtractionItem::ExtensionRecord(_, _))
+    }
+
+    /// Returns true when the item is not a PDU or an `ExtensionRecord`
+    fn is_record(&self) -> bool {
+        !self.is_pdu() && !self.is_extension_record()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NumericField {
+    pub name: String,
+    pub primitive_type: String,
+    pub units: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CountField {
+    pub name: String,
+    pub primitive_type: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct EnumField {
+    pub name: String,
+    pub field_type: String,
+    pub enum_uid: Option<Vec<usize>>,
+    pub hierarchy_dependency: Option<String>,
+    pub is_discriminant: Option<bool>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FixedStringField {
+    pub name: String,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct IntBitField {
+    pub name: String,
+    pub bit_position: usize,
+    pub size: Option<usize>,
+    pub units: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct EnumBitField {
+    pub name: String,
+    pub bit_position: usize,
+    pub size: Option<usize>,
+    pub enum_uid: Option<Vec<usize>>,
+    pub is_discriminant: Option<bool>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BoolBitField {
+    pub name: String,
+    pub bit_position: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct FixedRecordField {
+    pub name: String,
+    pub length: usize,
+    pub field_type: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct BitRecordField {
+    pub name: String,
+    pub size: usize,
+    pub field_type: Option<String>,
+    pub enum_uid: Option<Vec<usize>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdaptiveRecordField {
+    pub name: String,
+    pub length: usize,
+    pub field_type: Option<String>,
+    pub enum_uid: Option<Vec<usize>>,
+    pub discriminant: String,
+}
+
+#[derive(Debug, Clone)]
+struct VariableString {
+    pub count_field: CountField,
+    pub string_field: VariableStringField,
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableStringField {
+    pub name: String,
+    pub fixed_number_of_strings: Option<usize>,
+}
+
+#[derive(Debug, Clone)]
+struct OpaqueDataField {
+    pub name: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum PduAndFixedRecordFieldsEnum {
+    Numeric(NumericField),
+    Enum(EnumField),
+    FixedString(FixedStringField),
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+    AdaptiveRecord(AdaptiveRecordField),
+}
+
+#[derive(Debug, Clone)]
+pub enum ArrayFieldEnum {
+    Numeric(NumericField),
+    Enum(EnumField),
+    FixedString(FixedStringField),
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+}
+
+#[derive(Debug, Clone)]
+pub struct Array {
+    pub count_field: CountField,
+    pub type_field: ArrayFieldEnum,
+}
+
+#[derive(Debug, Clone)]
+pub struct OpaqueData {
+    pub count_field: CountField,
+    pub opaque_data_field: OpaqueDataField,
+}
+
+#[derive(Debug, Clone)]
+pub struct FixedRecord {
+    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
+    pub record_type: String,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone)]
+pub enum BitRecordFieldEnum {
+    Enum(EnumBitField),
+    Int(IntBitField),
+    Bool(BoolBitField),
+}
+
+#[derive(Debug, Clone)]
+pub struct BitRecord {
+    pub fields: Vec<BitRecordFieldEnum>,
+    pub record_type: String,
+    pub size: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct AdaptiveRecord {
+    pub variants: Vec<AdaptiveFormatEnum>,
+    pub record_type: String,
+    pub length: usize,
+    pub discriminant_start_value: usize,
+}
+
+#[derive(Debug, Clone)]
+pub enum AdaptiveFormatEnum {
+    #[allow(dead_code)]
+    Numeric(NumericField),
+    #[allow(dead_code)]
+    Enum(EnumField),
+    #[allow(dead_code)]
+    FixedString(FixedStringField),
+    #[allow(dead_code)]
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+}
+
+#[derive(Debug, Clone)]
+pub struct ExtensionRecordSet {
+    pub count_field: CountField,
+}
+
+#[derive(Debug, Clone)]
+pub enum ExtensionRecordFieldEnum {
+    Numeric(NumericField),
+    Enum(EnumField),
+    FixedString(FixedStringField),
+    VariableString(VariableString),
+    FixedRecord(FixedRecordField),
+    BitRecord(BitRecordField),
+    Array(Array),
+    AdaptiveRecord(AdaptiveRecordField),
+    Opaque(OpaqueData),
+    #[allow(dead_code)]
+    PaddingTo16,
+    #[allow(dead_code)]
+    PaddingTo32,
+}
+
+#[derive(Debug, Clone)]
+struct PaddingTo16;
+
+#[derive(Debug, Clone)]
+struct PaddingTo32;
+
+#[derive(Debug, Clone)]
+struct PaddingTo64;
+
+#[derive(Debug, Clone)]
+pub struct ExtensionRecord {
+    pub name_attr: String,
+    pub record_type_attr: usize,
+    pub base_length_attr: usize,
+    pub is_variable_attr: bool,
+    pub record_type_field: EnumField,
+    pub record_length_field: NumericField,
+    pub fields: Vec<ExtensionRecordFieldEnum>,
+    pub padding_to_64_field: Option<PaddingTo64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Pdu {
+    pub name_attr: String,
+    pub type_attr: usize,
+    pub protocol_family_attr: usize,
+    pub base_length_attr: usize,
+    pub header_field: FixedRecordField,
+    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
+    pub extension_record_set: ExtensionRecordSet,
+}
+
+pub(crate) fn extract_from_file(path: &PathBuf) -> (Vec<ExtractionItem>, String) {
     let mut reader = Reader::from_file(path).unwrap();
     reader.config_mut().trim_text(true);
 
@@ -119,13 +376,13 @@ fn all_upper(string: &str) -> bool {
         .all(char::is_uppercase)
 }
 
-/// Extract all `GenerationItems`, starting from the root of an XML document.
+/// Extract all `ExtractionItem`, starting from the root of an XML document.
 fn extract_from_root(
     reader: &mut Reader<BufReader<File>>,
     family_name: &str,
-) -> Vec<GenerationItem> {
+) -> Vec<ExtractionItem> {
     let mut buf = Vec::new();
-    let mut items: Vec<GenerationItem> = Vec::new();
+    let mut items: Vec<ExtractionItem> = Vec::new();
 
     loop {
         match reader.read_event_into(&mut buf) {
@@ -155,11 +412,11 @@ fn extract_from_root(
 
 /// Extract all DIS protocol items possible within the first level of the XML schema.
 ///
-/// `GenerationItems` are annotated with the PDU Family these items belong to.
+/// `ExtractionItem`s are annotated with the PDU Family these items belong to.
 fn extract_protocol_items(
     reader: &mut Reader<BufReader<File>>,
     family_name: &str,
-) -> Vec<GenerationItem> {
+) -> Vec<ExtractionItem> {
     let mut buf = Vec::new();
     let mut items = Vec::new();
 
@@ -167,31 +424,31 @@ fn extract_protocol_items(
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(ref element)) => match element.name() {
                 PDU_ELEMENT => {
-                    items.push(GenerationItem::Pdu(
+                    items.push(ExtractionItem::Pdu(
                         extract_pdu(element, reader),
                         family_name.to_string(),
                     ));
                 }
                 FIXED_RECORD_ELEMENT => {
-                    items.push(GenerationItem::FixedRecord(
+                    items.push(ExtractionItem::FixedRecord(
                         extract_fixed_record(element, reader),
                         family_name.to_string(),
                     ));
                 }
                 BIT_RECORD_ELEMENT => {
-                    items.push(GenerationItem::BitRecord(
+                    items.push(ExtractionItem::BitRecord(
                         extract_bit_record(element, reader),
                         family_name.to_string(),
                     ));
                 }
                 ADAPTIVE_RECORD_ELEMENT => {
-                    items.push(GenerationItem::AdaptiveRecord(
+                    items.push(ExtractionItem::AdaptiveRecord(
                         extract_adaptive_record(element, reader),
                         family_name.to_string(),
                     ));
                 }
                 EXTENSION_RECORD_ELEMENT => {
-                    items.push(GenerationItem::ExtensionRecord(
+                    items.push(ExtractionItem::ExtensionRecord(
                         extract_extension_record(element, reader),
                         family_name.to_string(),
                     ));

@@ -1,3 +1,4 @@
+use extraction::ExtractionItem;
 use std::collections::HashMap;
 use std::env;
 use std::fmt::Debug;
@@ -12,8 +13,6 @@ const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
 
 type UidLookup = HashMap<usize, String>;
 type FqnLookup = HashMap<String, String>;
-
-// TODO create a lookup for discriminants - field name mapped to 1) uid?, 2) enum generation item (to generate variants with contained elements), ...
 
 struct Lookup {
     fqn: FqnLookup,
@@ -63,13 +62,9 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
                 families.push(family);
                 items
             })
-            .collect::<Vec<GenerationItem>>();
+            .collect::<Vec<ExtractionItem>>();
 
-        let (fqn_lookup, enum_fqn_lookup) = create_fqn_lookup(&generation_items, &uid_lookup);
-
-        for fqn in &fqn_lookup {
-            println!("{} => {}", fqn.0, fqn.1);
-        }
+        let (fqn_lookup, enum_fqn_lookup) = intermediate_processing::create_fqn_lookup(&generation_items, &uid_lookup);
 
         let lookup = Lookup {
             fqn: fqn_lookup,
@@ -99,326 +94,15 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
     }
 }
 
-fn create_fqn_lookup(
-    items: &Vec<GenerationItem>,
-    uid_lookup: &UidLookup,
-) -> (FqnLookup, FqnLookup) {
-    let mut gen3_lookup = HashMap::new();
-    let mut enum_lookup = HashMap::new();
-
-    for item in items {
-        let name = dis_gen_utils::format_type_name(&item.name());
-        let fqn_name = format_full_qualified_name(item);
-        gen3_lookup.entry(name.clone()).or_insert(fqn_name);
-    }
-
-    for uid in uid_lookup {
-        let fqn_name = format!("crate::enumerations::{}", uid.1);
-        enum_lookup.entry(uid.1.clone()).or_insert(fqn_name);
-    }
-
-    // FIXME remove these placeholder lookups when the normal stuff works
-    gen3_lookup.insert("u8".to_string(), "u8".to_string());
-    gen3_lookup.insert("u16".to_string(), "u16".to_string());
-
-    (gen3_lookup, enum_lookup)
-}
-
-fn format_full_qualified_name(item: &GenerationItem) -> String {
-    if item.is_pdu() {
-        format!(
-            "crate::{}::{}::{}",
-            item.family(),
-            dis_gen_utils::format_pdu_module_name(item.name().as_str()),
-            dis_gen_utils::format_type_name(item.name().as_str())
-        )
-    } else if item.is_extension_record() {
-        format!(
-            "crate::{}::extension_records::{}",
-            item.family(),
-            dis_gen_utils::format_type_name(item.name().as_str())
-        )
-    } else {
-        format!(
-            "crate::{}::{}",
-            item.family(),
-            dis_gen_utils::format_type_name(item.name().as_str())
-        )
-    }
-}
-
-#[derive(Debug, Clone)]
-enum GenerationItem {
-    Pdu(Pdu, String),
-    FixedRecord(FixedRecord, String),
-    BitRecord(BitRecord, String),
-    AdaptiveRecord(AdaptiveRecord, String),
-    ExtensionRecord(ExtensionRecord, String),
-}
-
-impl GenerationItem {
-    fn family(&self) -> String {
-        match self {
-            GenerationItem::Pdu(_, fam) => fam.clone(),
-            GenerationItem::FixedRecord(_, fam) => fam.clone(),
-            GenerationItem::BitRecord(_, fam) => fam.clone(),
-            GenerationItem::AdaptiveRecord(_, fam) => fam.clone(),
-            GenerationItem::ExtensionRecord(_, fam) => fam.clone(),
-        }
-    }
-
-    fn name(&self) -> String {
-        match self {
-            GenerationItem::Pdu(item, _) => item.name_attr.clone(),
-            GenerationItem::FixedRecord(item, _) => item.record_type.clone(),
-            GenerationItem::BitRecord(item, _) => item.record_type.clone(),
-            GenerationItem::AdaptiveRecord(item, _) => item.record_type.clone(),
-            GenerationItem::ExtensionRecord(item, _) => item.name_attr.clone(),
-        }
-    }
-
-    /// Returns true when the item is a `PDU`
-    fn is_pdu(&self) -> bool {
-        matches!(self, GenerationItem::Pdu(_, _))
-    }
-
-    /// Returns true when the item is an `ExtensionRecord`
-    fn is_extension_record(&self) -> bool {
-        matches!(self, GenerationItem::ExtensionRecord(_, _))
-    }
-
-    /// Returns true when the item is not a PDU or an `ExtensionRecord`
-    fn is_record(&self) -> bool {
-        !self.is_pdu() && !self.is_extension_record()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct NumericField {
-    pub name: String,
-    pub primitive_type: String,
-    pub units: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-struct CountField {
-    pub name: String,
-    pub primitive_type: String,
-}
-
-#[derive(Debug, Clone)]
-struct EnumField {
-    pub name: String,
-    pub field_type: String,
-    pub enum_uid: Option<Vec<usize>>,
-    pub hierarchy_dependency: Option<String>,
-    pub is_discriminant: Option<bool>,
-}
-
-#[derive(Debug, Clone)]
-struct FixedStringField {
-    pub name: String,
-    pub length: usize,
-}
-
-#[derive(Debug, Clone)]
-struct IntBitField {
-    pub name: String,
-    pub bit_position: usize,
-    pub size: Option<usize>,
-    pub units: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-struct EnumBitField {
-    pub name: String,
-    pub bit_position: usize,
-    pub size: Option<usize>,
-    pub enum_uid: Option<Vec<usize>>,
-    pub is_discriminant: Option<bool>,
-}
-
-#[derive(Debug, Clone)]
-struct BoolBitField {
-    pub name: String,
-    pub bit_position: usize,
-}
-
-#[derive(Debug, Clone)]
-struct FixedRecordField {
-    pub name: String,
-    pub length: usize,
-    pub field_type: String,
-}
-
-#[derive(Debug, Clone)]
-struct BitRecordField {
-    pub name: String,
-    pub size: usize,
-    pub field_type: Option<String>,
-    pub enum_uid: Option<Vec<usize>>,
-}
-
-#[derive(Debug, Clone)]
-struct AdaptiveRecordField {
-    pub name: String,
-    pub length: usize,
-    pub field_type: Option<String>,
-    pub enum_uid: Option<Vec<usize>>,
-    pub discriminant: String,
-}
-
-#[derive(Debug, Clone)]
-struct VariableString {
-    pub count_field: CountField,
-    pub string_field: VariableStringField,
-}
-
-#[derive(Debug, Clone)]
-struct VariableStringField {
-    pub name: String,
-    pub fixed_number_of_strings: Option<usize>,
-}
-
-#[derive(Debug, Clone)]
-struct OpaqueDataField {
-    pub name: String,
-}
-
-#[derive(Debug, Clone)]
-enum PduAndFixedRecordFieldsEnum {
-    Numeric(NumericField),
-    Enum(EnumField),
-    FixedString(FixedStringField),
-    FixedRecord(FixedRecordField),
-    BitRecord(BitRecordField),
-    AdaptiveRecord(AdaptiveRecordField),
-}
-
-#[derive(Debug, Clone)]
-enum ArrayFieldEnum {
-    Numeric(NumericField),
-    Enum(EnumField),
-    FixedString(FixedStringField),
-    FixedRecord(FixedRecordField),
-    BitRecord(BitRecordField),
-}
-
-#[derive(Debug, Clone)]
-struct Array {
-    pub count_field: CountField,
-    pub type_field: ArrayFieldEnum,
-}
-
-#[derive(Debug, Clone)]
-struct OpaqueData {
-    pub count_field: CountField,
-    pub opaque_data_field: OpaqueDataField,
-}
-
-#[derive(Debug, Clone)]
-struct FixedRecord {
-    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
-    pub record_type: String,
-    pub length: usize,
-}
-
-#[derive(Debug, Clone)]
-enum BitRecordFieldEnum {
-    Enum(EnumBitField),
-    Int(IntBitField),
-    Bool(BoolBitField),
-}
-
-#[derive(Debug, Clone)]
-struct BitRecord {
-    pub fields: Vec<BitRecordFieldEnum>,
-    pub record_type: String,
-    pub size: usize,
-}
-
-#[derive(Debug, Clone)]
-struct AdaptiveRecord {
-    pub variants: Vec<AdaptiveFormatEnum>,
-    pub record_type: String,
-    pub length: usize,
-    pub discriminant_start_value: usize,
-}
-
-#[derive(Debug, Clone)]
-enum AdaptiveFormatEnum {
-    #[allow(dead_code)]
-    Numeric(NumericField),
-    #[allow(dead_code)]
-    Enum(EnumField),
-    #[allow(dead_code)]
-    FixedString(FixedStringField),
-    #[allow(dead_code)]
-    FixedRecord(FixedRecordField),
-    BitRecord(BitRecordField),
-}
-
-#[derive(Debug, Clone)]
-struct ExtensionRecordSet {
-    pub count_field: CountField,
-}
-
-#[derive(Debug, Clone)]
-enum ExtensionRecordFieldEnum {
-    Numeric(NumericField),
-    Enum(EnumField),
-    FixedString(FixedStringField),
-    VariableString(VariableString),
-    FixedRecord(FixedRecordField),
-    BitRecord(BitRecordField),
-    Array(Array),
-    AdaptiveRecord(AdaptiveRecordField),
-    Opaque(OpaqueData),
-    #[allow(dead_code)]
-    PaddingTo16,
-    #[allow(dead_code)]
-    PaddingTo32,
-}
-
-#[derive(Debug, Clone)]
-struct PaddingTo16;
-
-#[derive(Debug, Clone)]
-struct PaddingTo32;
-
-#[derive(Debug, Clone)]
-struct PaddingTo64;
-
-#[derive(Debug, Clone)]
-struct ExtensionRecord {
-    pub name_attr: String,
-    pub record_type_attr: usize,
-    pub base_length_attr: usize,
-    pub is_variable_attr: bool,
-    pub record_type_field: EnumField,
-    pub record_length_field: NumericField,
-    pub fields: Vec<ExtensionRecordFieldEnum>,
-    pub padding_to_64_field: Option<PaddingTo64>,
-}
-
-#[derive(Debug, Clone)]
-struct Pdu {
-    pub name_attr: String,
-    pub type_attr: usize,
-    pub protocol_family_attr: usize,
-    pub base_length_attr: usize,
-    pub header_field: FixedRecordField,
-    pub fields: Vec<PduAndFixedRecordFieldsEnum>,
-    pub extension_record_set: ExtensionRecordSet,
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{CountField, ExtensionRecordSet, FixedRecordField, GenerationItem, Pdu};
+    use crate::extraction::{
+        CountField, ExtensionRecordSet, ExtractionItem, FixedRecordField, Pdu,
+    };
 
     #[test]
     fn format_full_qualified_name() {
-        let pdu = GenerationItem::Pdu(
+        let pdu = ExtractionItem::Pdu(
             Pdu {
                 name_attr: "Entity State".to_string(),
                 type_attr: 0,
@@ -445,4 +129,251 @@ mod tests {
             "crate::entity_info_interaction::entity_state::EntityState"
         );
     }
+}
+
+mod intermediate_processing {
+    use std::collections::HashMap;
+    use dis_gen_utils::{enum_type_to_field_type, format_field_name, format_type_name};
+    use crate::extraction::{EnumField, ExtractionItem};
+    use crate::generation::GenerationItem;
+    use crate::{FqnLookup, Lookup, UidLookup};
+
+    pub(crate) fn create_fqn_lookup(
+        items: &[ExtractionItem],
+        uid_lookup: &UidLookup,
+    ) -> (FqnLookup, FqnLookup) {
+        let mut gen3_lookup = HashMap::new();
+        let mut enum_lookup = HashMap::new();
+
+        for item in items {
+            let name = format_type_name(&item.name());
+            let fqn_name = format_full_qualified_name(item);
+            gen3_lookup.entry(name.clone()).or_insert(fqn_name);
+        }
+
+        for uid in uid_lookup {
+            let fqn_name = format!("crate::enumerations::{}", uid.1);
+            enum_lookup.entry(uid.1.clone()).or_insert(fqn_name);
+        }
+
+        // FIXME remove these placeholder lookups when the normal stuff works
+        gen3_lookup.insert("u8".to_string(), "u8".to_string());
+        gen3_lookup.insert("u16".to_string(), "u16".to_string());
+
+        (gen3_lookup, enum_lookup)
+    }
+
+    fn format_full_qualified_name(item: &ExtractionItem) -> String {
+        if item.is_pdu() {
+            format!(
+                "crate::{}::{}::{}",
+                item.family(),
+                dis_gen_utils::format_pdu_module_name(item.name().as_str()),
+                format_type_name(item.name().as_str())
+            )
+        } else if item.is_extension_record() {
+            format!(
+                "crate::{}::extension_records::{}",
+                item.family(),
+                format_type_name(item.name().as_str())
+            )
+        } else {
+            format!(
+                "crate::{}::{}",
+                item.family(),
+                format_type_name(item.name().as_str())
+            )
+        }
+    }
+
+    fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
+        let the_type = uids
+            .iter()
+            .map(|uid| lookup_uid(*uid, lookup).to_string())
+            .collect::<Vec<String>>();
+        let the_type = the_type
+            .first()
+            .expect("Expected at least one Type for an UID lookup.");
+        lookup_fqn(the_type, lookup)
+    }
+
+    #[inline]
+    fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
+        let val = lookup
+            .uid
+            .get(&uid)
+            .expect("Expected an existing type for uid.");
+        val
+    }
+
+    #[inline]
+    fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+        if let Some(fqn) = lookup.fqn.get(type_name) {
+            fqn
+        } else if let Some(fqn) = lookup.enum_fqn.get(type_name) {
+            fqn
+        } else {
+            panic!("Expected full qualified name for type '{type_name}'")
+        }
+    }
+
+    fn lookup_enum_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+        lookup.enum_fqn.get(type_name).unwrap_or_else(|| {
+            panic!("Expected full qualified enumeration name for type '{type_name}'")
+        })
+    }
+
+    #[inline]
+    fn type_for_primitive_type_field(primitive_type: &str) -> syn::Type {
+        let ty = match primitive_type {
+            "uint8" => "u8",
+            "uint16" => "u16",
+            "uint32" => "u32",
+            "uint64" => "u64",
+            "int8" => "i8",
+            "int16" => "i16",
+            "int32" => "i32",
+            "int64" => "i64",
+            "float32" => "f32",
+            "float64" => "f64",
+            _ => panic!("Invalid primitive type in NumericField"),
+        };
+        syn::parse_str(ty).unwrap_or_else(|_| {
+            panic!(
+                "Expected a valid Type for a NumericField, found {primitive_type}."
+            )}
+        )
+    }
+
+    #[inline]
+    fn type_for_enum_field(field: &crate::extraction::EnumField, lookup: &Lookup) -> syn::Type {
+        if let Some(uids) = &field.enum_uid {
+            let enum_type = uids
+                .iter()
+                .map(|uid| lookup_uid(*uid, lookup).to_string())
+                .collect::<Vec<String>>();
+            let enum_type = enum_type
+                .first()
+                .expect("Expected at least one type for an EnumField declaration.");
+            let enum_type = lookup_enum_fqn(enum_type, lookup);
+            let ty: syn::Type =
+                syn::parse_str(enum_type).expect("Expected a valid type for an EnumField declaration.");
+            ty
+        } else {
+            let ty: syn::Type = syn::parse_str(
+                &enum_type_to_field_type(&field.field_type)
+                    .expect("Expected a valid type for an EnumField declaration."),
+            )
+                .expect("Expected valid input to parse a Type for an EnumField declaration.");
+            ty
+        }
+    }
+
+    #[inline]
+    fn type_for_fixed_string_field() -> syn::Type {
+        syn::parse_str("String").expect("Expected valid type 'String' for FixedString field.")
+    }
+
+    #[inline]
+    fn type_for_fixed_record_field(field: &crate::extraction::FixedRecordField, lookup: &Lookup) -> syn::Type {
+        let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
+        fqn_field_type).unwrap_or_else(|_| {
+            panic!(
+                "Expected a valid Type for a FixedRecordField declaration, found '{fqn_field_type}'."
+            )
+        })
+    }
+
+    #[inline]
+    fn type_for_bit_record_field(field: &crate::extraction::BitRecordField, lookup: &Lookup) -> syn::Type {
+        if let Some(uids) = &field.enum_uid {
+            let enum_type = uids
+                .iter()
+                .map(|uid| lookup_uid(*uid, lookup).to_string())
+                .collect::<Vec<String>>();
+            let enum_type = enum_type
+                .first()
+                .expect("Expected at least one Type for a BitRecordField declaration.");
+            let enum_type = lookup_enum_fqn(enum_type, lookup);
+            let ty: syn::Type = syn::parse_str(enum_type)
+                .expect("Expected a valid Type for a BitRecordField declaration.");
+            ty
+        } else {
+            let ty: syn::Type = syn::parse_str(lookup_fqn(
+                format_type_name(field.field_type.as_ref().expect(
+                    "Expected a type name for BitRecordField to be present as there is also no UID.",
+                ))
+                    .as_str(),
+                lookup,
+            ))
+                .expect("Expected valid input to parse a Type for a BitRecordField declaration.");
+            ty
+        }
+    }
+
+    #[inline]
+    fn type_for_adaptive_record_field(field: &crate::extraction::AdaptiveRecordField, lookup: &Lookup) -> syn::Type {
+        if let Some(uids) = &field.enum_uid {
+            let enum_type = uids
+                .iter()
+                .map(|uid| lookup_uid(*uid, lookup).to_string())
+                .collect::<Vec<String>>();
+            let enum_type = enum_type
+                .first()
+                .expect("Expected at least one Type for an AdaptiveRecordField declaration.");
+            let enum_type = lookup_enum_fqn(enum_type, lookup);
+            let ty: syn::Type = syn::parse_str(enum_type)
+                .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
+            ty
+        } else {
+            let ty: syn::Type = syn::parse_str(lookup_fqn(format_type_name(field.field_type.as_ref().expect(
+                "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
+            )).as_str(), lookup))
+                .expect("Expected valid input to parse a Type for a AdaptiveRecordField declaration.");
+            ty
+        }
+    }
+
+    #[inline]
+    fn must_skip_field_decl(field_name: &str) -> bool {
+        ["Padding", "Padding1", "Padding2", "Not used"].contains(&field_name)
+    }
+
+    pub fn process_extracted(extracts: &[ExtractionItem]) -> Vec<GenerationItem> {
+        todo!()
+    }
+
+    fn process_numeric_field(field: crate::extraction::NumericField) -> crate::generation::NumericField {
+        crate::generation::NumericField {
+            field_name: format_field_name(&field.name),
+            primitive_type: type_for_primitive_type_field(&field.primitive_type),
+            units: field.units,
+            is_padding: must_skip_field_decl(&field.name),
+        }
+    }
+
+    fn process_count_field(field: crate::extraction::CountField) -> crate::generation::CountField {
+        crate::generation::CountField {
+            field_name: format_field_name(&field.name),
+            primitive_type: type_for_primitive_type_field(&field.primitive_type),
+        }
+    }
+
+    fn process_enum_field(field: crate::extraction::EnumField, lookup: &Lookup) -> crate::generation::EnumField {
+        crate::generation::EnumField {
+            field_name: format_field_name(&field.name),
+            field_type_fqn: type_for_enum_field(&field, lookup),
+            is_discriminant: false,
+        }
+    }
+
+    fn process_fixed_string_field(field: crate::extraction::FixedStringField) -> crate::generation::FixedStringField {
+        crate::generation::FixedStringField {
+            field_name: format_field_name(&field.name),
+            field_type: "String",
+            length: field.length,
+        }
+    }
+
+
 }
