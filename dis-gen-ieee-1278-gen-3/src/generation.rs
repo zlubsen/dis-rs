@@ -93,6 +93,13 @@ fn generate_core_units(items: &[GenerationItem], lookup: &Lookup) -> TokenStream
             fn into_pdu_body(self) -> PduBody;
         }
 
+        impl<T: BodyRaw> From<T> for PduBody {
+            #[inline]
+            fn from(value: T) -> Self {
+                value.into_pdu_body()
+            }
+        }
+
         #[derive(Debug, Clone, PartialEq)]
         pub struct Pdu {
             pub header: PDUHeader,
@@ -739,9 +746,11 @@ fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) 
 }
 
 mod builders {
-    use crate::{Lookup, Pdu};
+    use crate::generation::{lookup_first_uid, lookup_fqn, type_for_enum_field};
+    use crate::{Lookup, Pdu, PduAndFixedRecordFieldsEnum};
+    use dis_gen_utils::{format_field_name, format_type_name};
     use proc_macro2::{Ident, TokenStream};
-    use quote::quote;
+    use quote::{format_ident, quote};
 
     pub fn generate_pdu_builder(
         item: &Pdu,
@@ -750,6 +759,12 @@ mod builders {
         lookup: &Lookup,
     ) -> TokenStream {
         // TODO generate with_ functions for all fields
+        let with_functions = item
+            .fields
+            .iter()
+            .map(|field| generate_pdu_builder_functions(field, lookup))
+            .collect::<Vec<TokenStream>>();
+
         quote! {
             pub struct #builder_name_ident(#fqn_pdu_name_ident);
 
@@ -774,7 +789,72 @@ mod builders {
                 pub fn build(self) -> #fqn_pdu_name_ident {
                     self.0
                 }
+
+                #(#with_functions)*
             }
+        }
+    }
+
+    fn generate_pdu_builder_functions(
+        field: &PduAndFixedRecordFieldsEnum,
+        lookup: &Lookup,
+    ) -> TokenStream {
+        println!("{field:?}");
+        let tokens = match field {
+            PduAndFixedRecordFieldsEnum::Numeric(field) => generate_pdu_builder_with_function(
+                &format_field_name(&field.name),
+                &field.primitive_type,
+            ),
+            PduAndFixedRecordFieldsEnum::Enum(field) => generate_pdu_builder_with_function(
+                &format_field_name(&field.name),
+                type_for_enum_field(field, lookup),
+            ),
+            PduAndFixedRecordFieldsEnum::FixedString(field) => {
+                generate_pdu_builder_with_function(&format_field_name(&field.name), "Into<String>")
+            }
+            PduAndFixedRecordFieldsEnum::FixedRecord(field) => generate_pdu_builder_with_function(
+                &format_field_name(&field.name),
+                lookup_fqn(&format_type_name(&field.field_type), lookup),
+            ),
+            PduAndFixedRecordFieldsEnum::BitRecord(field) => {
+                let type_name = match (&field.enum_uid, &field.field_type) {
+                    (Some(uids), None) => lookup_first_uid(uids, lookup),
+                    (None, Some(enum_type)) => lookup_fqn(&format_type_name(enum_type), lookup),
+                    _ => panic!("BitRecordField has no valid type"),
+                };
+                generate_pdu_builder_with_function(&format_field_name(&field.name), type_name)
+            }
+            PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => {
+                let type_name = match (&field.enum_uid, &field.field_type) {
+                    (Some(uids), None) => lookup_first_uid(uids, lookup),
+                    (None, Some(enum_type)) => lookup_fqn(&format_type_name(enum_type), lookup),
+                    _ => panic!("BitRecordField has no valid type"),
+                };
+                generate_pdu_builder_with_function(&format_field_name(&field.name), type_name)
+            }
+        };
+        println!("{tokens}");
+        syn::parse_file(&tokens.to_string()).unwrap();
+        tokens
+    }
+
+    fn generate_pdu_builder_with_function(field_name: &str, type_name: &str) -> TokenStream {
+        let function_name_ident = format_ident!("with_{field_name}");
+        let field_ident = format_ident!("{field_name}");
+        let field_type: syn::Type = syn::parse_str(type_name).unwrap_or_else(|_| {
+            panic!("Expected a valid field Type for Builder function 'with_{field_name}', found '{type_name}'")
+        });
+        let assignment_value = if type_name.starts_with("Into<") {
+            quote! { #field_ident.into() }
+        } else {
+            quote! { #field_ident }
+        };
+        quote! {
+                #[must_use]
+                pub fn #function_name_ident(mut self, #field_ident: #field_type) -> Self {
+                    self.0.#field_ident = #assignment_value;
+                    self
+                }
         }
     }
 }
