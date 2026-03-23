@@ -109,6 +109,7 @@ pub struct FixedStringField {
 #[derive(Debug, Clone)]
 pub struct IntBitField {
     pub field_name: String,
+    pub field_type: syn::Type,
     pub bit_position: usize,
     pub size: usize,
     pub units: Option<String>,
@@ -134,7 +135,6 @@ pub struct BoolBitField {
 #[derive(Debug, Clone)]
 pub struct FixedRecordField {
     pub field_name: String,
-    pub field_type: syn::Type,
     pub field_type_fqn: syn::Type,
     pub length: usize,
 }
@@ -142,7 +142,6 @@ pub struct FixedRecordField {
 #[derive(Debug, Clone)]
 pub struct BitRecordField {
     pub field_name: String,
-    pub field_type: syn::Type,
     pub field_type_fqn: syn::Type,
     pub size: usize,
 }
@@ -150,14 +149,13 @@ pub struct BitRecordField {
 #[derive(Debug, Clone)]
 pub struct AdaptiveRecordField {
     pub field_name: String,
-    pub field_type: syn::Type,
     pub field_type_fqn: syn::Type,
     pub length: usize,
     pub discriminant_field_name: String,
 }
 
 #[derive(Debug, Clone)]
-struct VariableString {
+pub struct VariableString {
     pub count_field: CountField,
     pub string_field: VariableStringField,
 }
@@ -170,7 +168,7 @@ pub struct VariableStringField {
 }
 
 #[derive(Debug, Clone)]
-struct OpaqueDataField {
+pub struct OpaqueDataField {
     pub field_name: String,
     pub field_type: &'static str, // `Vec<u8>`
 }

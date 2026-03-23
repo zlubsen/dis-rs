@@ -64,7 +64,7 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
             })
             .collect::<Vec<ExtractionItem>>();
 
-        let (fqn_lookup, enum_fqn_lookup) = intermediate_processing::create_fqn_lookup(&generation_items, &uid_lookup);
+        let (fqn_lookup, enum_fqn_lookup) = pre_processing::create_fqn_lookup(&generation_items, &uid_lookup);
 
         let lookup = Lookup {
             fqn: fqn_lookup,
@@ -131,8 +131,9 @@ mod tests {
     }
 }
 
-mod intermediate_processing {
+mod pre_processing {
     use std::collections::HashMap;
+    use quote::quote;
     use dis_gen_utils::{enum_type_to_field_type, format_field_name, format_type_name};
     use crate::extraction::{EnumField, ExtractionItem};
     use crate::generation::GenerationItem;
@@ -245,6 +246,22 @@ mod intermediate_processing {
         )
     }
 
+    fn field_size_to_primitive_type(size: usize) -> syn::Type {
+        let field_type = if size > 64 {
+            "u128"
+        } else if size <= 64 && size > 32 {
+            "u64"
+        } else if size <= 32 && size > 16 {
+            "u32"
+        } else if size <= 16 && size > 8 {
+            "u16"
+        } else {
+            "u8"
+        };
+        syn::parse_str(field_type)
+            .unwrap_or_else(|_| panic!("Expected a valid Rust primitive type for a bit field declaration with a given size, found size {size}."))
+    }
+
     #[inline]
     fn type_for_enum_field(field: &crate::extraction::EnumField, lookup: &Lookup) -> syn::Type {
         if let Some(uids) = &field.enum_uid {
@@ -277,7 +294,7 @@ mod intermediate_processing {
     #[inline]
     fn type_for_fixed_record_field(field: &crate::extraction::FixedRecordField, lookup: &Lookup) -> syn::Type {
         let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
-        fqn_field_type).unwrap_or_else(|_| {
+        syn::parse_str(fqn_field_type).unwrap_or_else(|_| {
             panic!(
                 "Expected a valid Type for a FixedRecordField declaration, found '{fqn_field_type}'."
             )
@@ -287,14 +304,7 @@ mod intermediate_processing {
     #[inline]
     fn type_for_bit_record_field(field: &crate::extraction::BitRecordField, lookup: &Lookup) -> syn::Type {
         if let Some(uids) = &field.enum_uid {
-            let enum_type = uids
-                .iter()
-                .map(|uid| lookup_uid(*uid, lookup).to_string())
-                .collect::<Vec<String>>();
-            let enum_type = enum_type
-                .first()
-                .expect("Expected at least one Type for a BitRecordField declaration.");
-            let enum_type = lookup_enum_fqn(enum_type, lookup);
+            let enum_type = lookup_first_uid(&uids, lookup);
             let ty: syn::Type = syn::parse_str(enum_type)
                 .expect("Expected a valid Type for a BitRecordField declaration.");
             ty
@@ -314,14 +324,7 @@ mod intermediate_processing {
     #[inline]
     fn type_for_adaptive_record_field(field: &crate::extraction::AdaptiveRecordField, lookup: &Lookup) -> syn::Type {
         if let Some(uids) = &field.enum_uid {
-            let enum_type = uids
-                .iter()
-                .map(|uid| lookup_uid(*uid, lookup).to_string())
-                .collect::<Vec<String>>();
-            let enum_type = enum_type
-                .first()
-                .expect("Expected at least one Type for an AdaptiveRecordField declaration.");
-            let enum_type = lookup_enum_fqn(enum_type, lookup);
+            let enum_type = lookup_first_uid(&uids, lookup);
             let ty: syn::Type = syn::parse_str(enum_type)
                 .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
             ty
@@ -343,7 +346,7 @@ mod intermediate_processing {
         todo!()
     }
 
-    fn process_numeric_field(field: crate::extraction::NumericField) -> crate::generation::NumericField {
+    fn process_numeric_field(field: &crate::extraction::NumericField) -> crate::generation::NumericField {
         crate::generation::NumericField {
             field_name: format_field_name(&field.name),
             primitive_type: type_for_primitive_type_field(&field.primitive_type),
@@ -352,22 +355,22 @@ mod intermediate_processing {
         }
     }
 
-    fn process_count_field(field: crate::extraction::CountField) -> crate::generation::CountField {
+    fn process_count_field(field: &crate::extraction::CountField) -> crate::generation::CountField {
         crate::generation::CountField {
             field_name: format_field_name(&field.name),
             primitive_type: type_for_primitive_type_field(&field.primitive_type),
         }
     }
 
-    fn process_enum_field(field: crate::extraction::EnumField, lookup: &Lookup) -> crate::generation::EnumField {
+    fn process_enum_field(field: &crate::extraction::EnumField, lookup: &Lookup) -> crate::generation::EnumField {
         crate::generation::EnumField {
             field_name: format_field_name(&field.name),
             field_type_fqn: type_for_enum_field(&field, lookup),
-            is_discriminant: false,
+            is_discriminant: field.is_discriminant.unwrap_or(false),
         }
     }
 
-    fn process_fixed_string_field(field: crate::extraction::FixedStringField) -> crate::generation::FixedStringField {
+    fn process_fixed_string_field(field: &crate::extraction::FixedStringField) -> crate::generation::FixedStringField {
         crate::generation::FixedStringField {
             field_name: format_field_name(&field.name),
             field_type: "String",
@@ -375,5 +378,96 @@ mod intermediate_processing {
         }
     }
 
+    fn process_int_bitfield(field: &crate::extraction::IntBitField) -> crate::generation::IntBitField {
+        crate::generation::IntBitField {
+            field_name: format_field_name(&field.name),
+            field_type: field_size_to_primitive_type(size.unwrap_or(1)),
+            bit_position: field.bit_position,
+            size: field.size.unwrap_or(1),
+            units: field.units,
+            is_padding: must_skip_field_decl(&field.name),
+        }
+    }
 
+    fn process_enum_bitfield(field: &crate::extraction::EnumBitField, lookup: &Lookup) -> crate::generation::EnumBitField {
+        let (field_type, field_type_fqn) = match (field.size, &field.enum_uid) {
+            (Some(size), None) => {
+                let primitive = field_size_to_primitive_type(size);
+                (primitive.clone(), primitive)
+            }
+            (_, Some(uids)) => {
+                let field_type = lookup_first_uid(uids, lookup);
+                let ty: syn::Type = syn::parse_str(field_type)
+                    .expect("Expected a valid Type for an EnumBitField declaration.");
+                (ty, syn::parse_str(lookup_enum_fqn(field_type, lookup)).expect("Expected a valid Enum Type"))
+            }
+            (None, None) => {
+                panic!("EnumBitField neither has a size or an enumTableUid attribute");
+            }
+        };
+        crate::generation::EnumBitField {
+            field_name: format_field_name(&field.name),
+            field_type,
+            field_type_fqn,
+            bit_position: field.bit_position,
+            size: field.size.unwrap_or(1),
+            is_discriminant: field.is_discriminant.unwrap_or(false),
+        }
+    }
+
+    fn process_bool_bitfield(field: &crate::extraction::BoolBitField) -> crate::generation::BoolBitField {
+        crate::generation::BoolBitField {
+            field_name: format_field_name(&field.name),
+            bit_position: field.bit_position,
+        }
+    }
+
+    fn process_fixed_record_field(field: &crate::extraction::FixedRecordField, lookup: &Lookup) -> crate::generation::FixedRecordField {
+        crate::generation::FixedRecordField {
+            field_name: format_field_name(&field.name),
+            field_type_fqn: type_for_fixed_record_field(&field, lookup),
+            length: field.length,
+        }
+    }
+
+    fn process_bit_record_field(field: &crate::extraction::BitRecordField, lookup: &Lookup) -> crate::generation::BitRecordField {
+        crate::generation::BitRecordField {
+            field_name: format_field_name(&field.name),
+            field_type_fqn: type_for_bit_record_field(field, lookup),
+            size: field.size,
+        }
+    }
+
+    fn process_adaptive_record_field(field: &crate::extraction::AdaptiveRecordField, lookup: &Lookup) -> crate::generation::AdaptiveRecordField {
+        crate::generation::AdaptiveRecordField {
+            field_name: format_field_name(&field.name),
+            field_type_fqn: type_for_adaptive_record_field(field, lookup),
+            length: field.length,
+            discriminant_field_name: format_field_name(&field.discriminant),
+        }
+    }
+
+    fn process_variable_string_field(field: &crate::extraction::VariableStringField) -> crate::generation::VariableStringField {
+        crate::generation::VariableStringField {
+            field_name: format_field_name(&field.name),
+            field_type: "String",
+            fixed_number_of_strings: field.fixed_number_of_strings.unwrap_or(0),
+        }
+    }
+
+    fn process_variable_string(element: &crate::extraction::VariableString) -> crate::generation::VariableString {
+        crate::generation::VariableString {
+            count_field: process_count_field(&element.count_field),
+            string_field: process_variable_string_field(&element.string_field),
+        }
+    }
+    
+    fn process_opaque_data_field(field: &crate::extraction::OpaqueDataField) -> crate::generation::OpaqueDataField {
+        crate::generation::OpaqueDataField {
+            field_name: format_field_name(&field.name),
+            field_type: "Vec<u8>",
+        }
+    }
+    
+    === TODO === Array
 }

@@ -182,7 +182,7 @@ pub struct AdaptiveRecordField {
 }
 
 #[derive(Debug, Clone)]
-struct VariableString {
+pub struct VariableString {
     pub count_field: CountField,
     pub string_field: VariableStringField,
 }
@@ -194,7 +194,7 @@ pub struct VariableStringField {
 }
 
 #[derive(Debug, Clone)]
-struct OpaqueDataField {
+pub struct OpaqueDataField {
     pub name: String,
 }
 
