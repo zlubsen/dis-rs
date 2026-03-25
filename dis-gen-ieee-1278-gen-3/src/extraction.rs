@@ -293,14 +293,14 @@ pub enum ExtensionRecordFieldEnum {
     PaddingTo32,
 }
 
-#[derive(Debug, Clone)]
-struct PaddingTo16;
+#[derive(Debug, Copy, Clone)]
+pub struct PaddingTo16;
 
-#[derive(Debug, Clone)]
-struct PaddingTo32;
+#[derive(Debug, Copy, Clone)]
+pub struct PaddingTo32;
 
-#[derive(Debug, Clone)]
-struct PaddingTo64;
+#[derive(Debug, Copy, Clone)]
+pub struct PaddingTo64;
 
 #[derive(Debug, Clone)]
 pub struct ExtensionRecord {
