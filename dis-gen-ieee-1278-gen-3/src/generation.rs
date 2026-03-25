@@ -1,7 +1,3 @@
-use super::Lookup;
-use dis_gen_utils::{
-    enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
-};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
@@ -148,6 +144,7 @@ pub struct FixedRecordField {
 pub struct BitRecordField {
     pub field_name: String,
     pub field_type_fqn: syn::Type,
+    pub as_variant_name: String,
     pub size: usize,
 }
 
@@ -186,6 +183,15 @@ pub enum PduAndFixedRecordFieldsEnum {
     FixedRecord(FixedRecordField),
     BitRecord(BitRecordField),
     AdaptiveRecord(AdaptiveRecordField),
+}
+
+impl PduAndFixedRecordFieldsEnum {
+    pub fn is_padding(&self) -> bool {
+        match self {
+            PduAndFixedRecordFieldsEnum::Numeric(f) => f.is_padding,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -300,6 +306,7 @@ pub struct ExtensionRecord {
 
 #[derive(Clone)]
 pub struct Pdu {
+    pub pdu_module_name: String,
     pub pdu_name: String,
     pub pdu_name_fqn: syn::Type,
     pub pdu_type: usize,
@@ -310,12 +317,12 @@ pub struct Pdu {
     pub extension_record_set: ExtensionRecordSet,
 }
 
-pub fn generate(items: &[GenerationItem], families: &[String], lookup: &Lookup) -> TokenStream {
+pub fn generate(items: &[GenerationItem], families: &[String]) -> TokenStream {
     let core_contents = generate_core_units(items);
     let family_contents: Vec<TokenStream> = families
         .iter()
         .map(|family| {
-            let generated = generate_family_module(items, family.as_str(), lookup);
+            let generated = generate_family_module(items, family.as_str());
 
             // FIXME remove when finished
             let _ = syn::parse_file(&generated.to_string())
@@ -401,9 +408,14 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
 }
 
 fn generate_body_variant(variant: &GenerationItem) -> TokenStream {
-    let variant_name = variant.type_name().clone().expect("Type name for variants can only be called for PDUs and ExtensionRecords");
+    let variant_name = variant
+        .type_name()
+        .clone()
+        .expect("Type name for variants can only be called for PDUs and ExtensionRecords");
     let variant_name = format_ident!("{variant_name}");
-    let variant_type = variant.fqn_type_name().expect("FQN Type name for variants can only be called for PDUs and ExtensionRecords");
+    let variant_type = variant
+        .fqn_type_name()
+        .expect("FQN Type name for variants can only be called for PDUs and ExtensionRecords");
 
     quote! {
         #variant_name ( #variant_type ),
@@ -424,14 +436,14 @@ fn generate_module_with_name(name: &str, contents: &TokenStream) -> TokenStream 
 }
 
 /// Generates a module for a PDU Family of PDUs and records, plus all its contents
-fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Lookup) -> TokenStream {
+fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream {
     // 1. Filter the PDUs for this family and generate these in separate modules
     let pdus = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
         .map(|pdu| {
             if let GenerationItem::Pdu(pdu, _) = pdu {
-                generate_pdu_module(pdu, lookup)
+                generate_pdu_module(pdu)
             } else {
                 panic!("GenerationItem is not a PDU.")
             }
@@ -444,7 +456,7 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
         .filter(|&item| (item.family().as_str() == family) && item.is_extension_record())
         .map(|item| {
             if let GenerationItem::ExtensionRecord(record, _family) = item {
-                generate_extension_record(record, lookup)
+                generate_extension_record(record)
             } else {
                 panic!("GenerationItem is not an ExtensionRecord.")
             }
@@ -459,11 +471,9 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
         .filter(|&item| (item.family().as_str() == family) && item.is_record())
         .map(|item| match item {
             GenerationItem::FixedRecord(record, _family) => generate_fixed_record(record),
-            GenerationItem::BitRecord(record, _family) => generate_bit_record(record, lookup),
-            GenerationItem::AdaptiveRecord(record, _family) => {
-                generate_adaptive_record(record)
-            }
-            GenerationItem::ExtensionRecord(record, _family) => {
+            GenerationItem::BitRecord(record, _family) => generate_bit_record(record),
+            GenerationItem::AdaptiveRecord(record, _family) => generate_adaptive_record(record),
+            GenerationItem::ExtensionRecord(_record, _family) => {
                 panic!("GenerationItem is an ExtensionRecord.")
             }
             GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record."),
@@ -477,22 +487,21 @@ fn generate_family_module(items: &[GenerationItem], family: &str, lookup: &Looku
 }
 
 /// Generates all code related a PDU
-fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
+fn generate_pdu_module(item: &Pdu) -> TokenStream {
     let pdu_name_ident = format_ident!("{}", item.pdu_name);
     let pdu_name_fqn = &item.pdu_name_fqn;
-    let pdu_module_name = format_pdu_module_name(item.pdu_name.as_str());
+    let pdu_module_name = &item.pdu_module_name;
     let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", item.pdu_name);
 
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
     let pdu_trait_impls = generate_pdu_trait_impls(&pdu_name_ident, &builder_name_ident);
-    let builder_content =
-        builders::generate_pdu_builder(item, pdu_name_fqn, &builder_name_ident, lookup);
+    let builder_content = builders::generate_pdu_builder(item, pdu_name_fqn, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
 
     let fields = item
         .fields
         .iter()
-        .map(|field| generate_pdu_and_fixed_field_decl(field))
+        .map(generate_pdu_and_fixed_field_decl)
         .collect::<Vec<TokenStream>>();
 
     let contents = quote! {
@@ -507,22 +516,16 @@ fn generate_pdu_module(item: &Pdu, lookup: &Lookup) -> TokenStream {
         #builder_module
     };
 
-    generate_module_with_name(pdu_module_name.as_str(), &contents)
-}
-
-#[inline]
-fn must_skip_field_decl(field_name: &str) -> bool {
-    ["Padding", "Padding1", "Padding2", "Not used"].contains(&field_name)
+    generate_module_with_name(pdu_module_name, &contents)
 }
 
 fn generate_fixed_record(item: &FixedRecord) -> TokenStream {
-    // let record_name = format_ident!("{}", item.record_type);
     let record_name = &item.record_type;
 
     let fields = item
         .fields
         .iter()
-        .map(|field| generate_pdu_and_fixed_field_decl(field))
+        .map(generate_pdu_and_fixed_field_decl)
         .collect::<Vec<TokenStream>>();
 
     quote! {
@@ -556,12 +559,8 @@ fn generate_pdu_and_fixed_field_decl(field: &PduAndFixedRecordFieldsEnum) -> Tok
         PduAndFixedRecordFieldsEnum::Numeric(field) => generate_numeric_field_decl(field),
         PduAndFixedRecordFieldsEnum::Enum(field) => generate_enum_field_decl(field),
         PduAndFixedRecordFieldsEnum::FixedString(field) => generate_fixed_string_field_decl(field),
-        PduAndFixedRecordFieldsEnum::FixedRecord(field) => {
-            generate_fixed_record_field_decl(field)
-        }
-        PduAndFixedRecordFieldsEnum::BitRecord(field) => {
-            generate_bit_record_field_decl(field)
-        }
+        PduAndFixedRecordFieldsEnum::FixedRecord(field) => generate_fixed_record_field_decl(field),
+        PduAndFixedRecordFieldsEnum::BitRecord(field) => generate_bit_record_field_decl(field),
         PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => {
             generate_adaptive_record_field_decl(field)
         }
@@ -576,9 +575,7 @@ fn generate_extension_record_field_decl(field: &ExtensionRecordFieldEnum) -> Tok
         ExtensionRecordFieldEnum::VariableString(field) => {
             generate_variable_string_field_decl(&field.string_field)
         }
-        ExtensionRecordFieldEnum::FixedRecord(field) => {
-            generate_fixed_record_field_decl(field)
-        }
+        ExtensionRecordFieldEnum::FixedRecord(field) => generate_fixed_record_field_decl(field),
         ExtensionRecordFieldEnum::BitRecord(field) => generate_bit_record_field_decl(field),
         ExtensionRecordFieldEnum::Array(field) => generate_array_field_decl(field),
         ExtensionRecordFieldEnum::AdaptiveRecord(field) => {
@@ -649,8 +646,7 @@ fn generate_bit_record_field_decl(field: &BitRecordField) -> TokenStream {
     }
 }
 
-fn generate_adaptive_record_field_decl(
-    field: &AdaptiveRecordField) -> TokenStream {
+fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
     let field_type = &field.field_type_fqn;
 
@@ -669,26 +665,22 @@ fn generate_variable_string_field_decl(field: &VariableStringField) -> TokenStre
 
 fn generate_array_field_decl(field: &Array) -> TokenStream {
     let (field_ident, field_type) = match &field.type_field {
-        ArrayFieldEnum::Numeric(inner) => (
-            format_ident!("{}", inner.field_name),
-            &inner.primitive_type,
-        ),
-        ArrayFieldEnum::Enum(inner) => (
-            format_ident!("{}", inner.field_name),
-            &inner.field_type_fqn,
-        ),
+        ArrayFieldEnum::Numeric(inner) => {
+            (format_ident!("{}", inner.field_name), &inner.primitive_type)
+        }
+        ArrayFieldEnum::Enum(inner) => {
+            (format_ident!("{}", inner.field_name), &inner.field_type_fqn)
+        }
         ArrayFieldEnum::FixedString(inner) => (
             format_ident!("{}", inner.field_name),
-            syn::parse_str(&inner.field_type).unwrap(),
+            &syn::parse_str(&inner.field_type).unwrap(),
         ),
-        ArrayFieldEnum::FixedRecord(inner) => (
-            format_ident!("{}", inner.field_name),
-            &inner.field_type_fqn,
-        ),
-        ArrayFieldEnum::BitRecord(inner) => (
-            format_ident!("{}", inner.field_name),
-            &inner.field_type_fqn,
-        ),
+        ArrayFieldEnum::FixedRecord(inner) => {
+            (format_ident!("{}", inner.field_name), &inner.field_type_fqn)
+        }
+        ArrayFieldEnum::BitRecord(inner) => {
+            (format_ident!("{}", inner.field_name), &inner.field_type_fqn)
+        }
     };
 
     quote! {
@@ -704,13 +696,13 @@ fn generate_opaque_field_decl(field: &OpaqueData) -> TokenStream {
     }
 }
 
-fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
+fn generate_bit_record(item: &BitRecord) -> TokenStream {
     let record_name = &item.record_type;
 
     let fields = item
         .fields
         .iter()
-        .map(|field| generate_bit_record_item_decl(field, lookup))
+        .map(generate_bit_record_item_decl)
         .collect::<Vec<TokenStream>>();
 
     quote! {
@@ -721,15 +713,15 @@ fn generate_bit_record(item: &BitRecord, lookup: &Lookup) -> TokenStream {
     }
 }
 
-fn generate_bit_record_item_decl(item: &BitRecordFieldEnum, lookup: &Lookup) -> TokenStream {
+fn generate_bit_record_item_decl(item: &BitRecordFieldEnum) -> TokenStream {
     match item {
-        BitRecordFieldEnum::Enum(field) => generate_enum_bit_field_decl(field, lookup),
+        BitRecordFieldEnum::Enum(field) => generate_enum_bit_field_decl(field),
         BitRecordFieldEnum::Int(field) => generate_int_bit_field_decl(field),
         BitRecordFieldEnum::Bool(field) => generate_bool_bit_field_decl(field),
     }
 }
 
-fn generate_enum_bit_field_decl(field: &EnumBitField, lookup: &Lookup) -> TokenStream {
+fn generate_enum_bit_field_decl(field: &EnumBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
     let field_type = &field.field_type_fqn;
 
@@ -751,7 +743,9 @@ fn generate_int_bit_field_decl(field: &IntBitField) -> TokenStream {
     let field_type = &field.field_type;
     let units_doc_comment = if let Some(units) = &field.units {
         units.as_str()
-    } else { "No units defined" };
+    } else {
+        "No units defined"
+    };
 
     quote! {
         #[doc = #units_doc_comment]
@@ -765,7 +759,7 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
     let variants = item
         .variants
         .iter()
-        .map(|field| generate_adaptive_record_variant(field))
+        .map(generate_adaptive_record_variant)
         .collect::<Vec<TokenStream>>();
 
     quote! {
@@ -780,7 +774,7 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
 
 fn generate_adaptive_record_variant(variant: &AdaptiveFormatEnum) -> TokenStream {
     if let AdaptiveFormatEnum::BitRecord(bit_variant) = variant {
-        let variant_name = format_ident!("{}", bit_variant.field_name);
+        let variant_name = format_ident!("{}", bit_variant.as_variant_name);
         let variant_type = &bit_variant.field_type_fqn;
 
         quote! {
@@ -812,176 +806,8 @@ fn generate_pdu_trait_impls(pdu_name_ident: &Ident, builder_name_ident: &Ident) 
     }
 }
 
-// fn field_size_to_primitive_type(size: usize) -> syn::Type {
-//     let field_type = if size > 64 {
-//         "u128"
-//     } else if size <= 64 && size > 32 {
-//         "u64"
-//     } else if size <= 32 && size > 16 {
-//         "u32"
-//     } else if size <= 16 && size > 8 {
-//         "u16"
-//     } else {
-//         "u8"
-//     };
-//     syn::parse_str(field_type)
-//         .unwrap_or_else(|_| panic!("Expected a valid Rust primitive type for a bit field declaration with a given size, found size {size}."))
-// }
-//
-// fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
-//     let the_type = uids
-//         .iter()
-//         .map(|uid| lookup_uid(*uid, lookup).to_string())
-//         .collect::<Vec<String>>();
-//     let the_type = the_type
-//         .first()
-//         .expect("Expected at least one Type for an UID lookup.");
-//     lookup_fqn(the_type, lookup)
-// }
-//
-// #[inline]
-// fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
-//     let val = lookup
-//         .uid
-//         .get(&uid)
-//         .expect("Expected an existing type for uid.");
-//
-//     val
-// }
-//
-// #[inline]
-// fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
-//     if let Some(fqn) = lookup.fqn.get(type_name) {
-//         fqn
-//     } else if let Some(fqn) = lookup.enum_fqn.get(type_name) {
-//         fqn
-//     } else {
-//         panic!("Expected full qualified name for type '{type_name}'")
-//     }
-// }
-//
-// fn lookup_enum_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
-//     lookup.enum_fqn.get(type_name).unwrap_or_else(|| {
-//         panic!("Expected full qualified enumeration name for type '{type_name}'")
-//     })
-// }
-//
-// #[inline]
-// fn type_for_numeric_field(field: &NumericField) -> syn::Type {
-//     match field.primitive_type.as_str() {
-//         "uint8" => syn::parse_str("u8"),
-//         "uint16" => syn::parse_str("u16"),
-//         "uint32" => syn::parse_str("u32"),
-//         "uint64" => syn::parse_str("u64"),
-//         "int8" => syn::parse_str("i8"),
-//         "int16" => syn::parse_str("i16"),
-//         "int32" => syn::parse_str("i32"),
-//         "int64" => syn::parse_str("i64"),
-//         "float32" => syn::parse_str("f32"),
-//         "float64" => syn::parse_str("f64"),
-//         _ => syn::parse_str("Type Unknown"), // fail on purpose
-//     }
-//     .unwrap_or_else(|_| {
-//         panic!(
-//             "Expected a valid Type for NumericField {}, found {}.",
-//             field.name, field.primitive_type
-//         )
-//     })
-// }
-//
-// #[inline]
-// fn type_for_enum_field(field: &EnumField, lookup: &Lookup) -> syn::Type {
-//     if let Some(uids) = &field.enum_uid {
-//         let enum_type = uids
-//             .iter()
-//             .map(|uid| lookup_uid(*uid, lookup).to_string())
-//             .collect::<Vec<String>>();
-//         let enum_type = enum_type
-//             .first()
-//             .expect("Expected at least one type for an EnumField declaration.");
-//         let enum_type = lookup_enum_fqn(enum_type, lookup);
-//         let ty: syn::Type =
-//             syn::parse_str(enum_type).expect("Expected a valid type for an EnumField declaration.");
-//         ty
-//     } else {
-//         let ty: syn::Type = syn::parse_str(
-//             &enum_type_to_field_type(&field.field_type)
-//                 .expect("Expected a valid type for an EnumField declaration."),
-//         )
-//         .expect("Expected valid input to parse a Type for an EnumField declaration.");
-//         ty
-//     }
-// }
-//
-// #[inline]
-// fn type_for_fixed_string_field() -> syn::Type {
-//     syn::parse_str("String").expect("Expected valid type 'String' for FixedString field.")
-// }
-//
-// #[inline]
-// fn type_for_fixed_record_field(field: &FixedRecordField, lookup: &Lookup) -> syn::Type {
-//     let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
-//     syn::parse_str(fqn_field_type).unwrap_or_else(|_| {
-//         panic!(
-//             "Expected a valid Type for a FixedRecordField declaration, found '{fqn_field_type}'."
-//         )
-//     })
-// }
-//
-// #[inline]
-// fn type_for_bit_record_field(field: &BitRecordField, lookup: &Lookup) -> syn::Type {
-//     if let Some(uids) = &field.enum_uid {
-//         let enum_type = uids
-//             .iter()
-//             .map(|uid| lookup_uid(*uid, lookup).to_string())
-//             .collect::<Vec<String>>();
-//         let enum_type = enum_type
-//             .first()
-//             .expect("Expected at least one Type for a BitRecordField declaration.");
-//         let enum_type = lookup_enum_fqn(enum_type, lookup);
-//         let ty: syn::Type = syn::parse_str(enum_type)
-//             .expect("Expected a valid Type for a BitRecordField declaration.");
-//         ty
-//     } else {
-//         let ty: syn::Type = syn::parse_str(lookup_fqn(
-//             format_type_name(field.field_type.as_ref().expect(
-//                 "Expected a type name for BitRecordField to be present as there is also no UID.",
-//             ))
-//             .as_str(),
-//             lookup,
-//         ))
-//         .expect("Expected valid input to parse a Type for a BitRecordField declaration.");
-//         ty
-//     }
-// }
-//
-// #[inline]
-// fn type_for_adaptive_record_field(field: &AdaptiveRecordField, lookup: &Lookup) -> syn::Type {
-//     if let Some(uids) = &field.enum_uid {
-//         let enum_type = uids
-//             .iter()
-//             .map(|uid| lookup_uid(*uid, lookup).to_string())
-//             .collect::<Vec<String>>();
-//         let enum_type = enum_type
-//             .first()
-//             .expect("Expected at least one Type for an AdaptiveRecordField declaration.");
-//         let enum_type = lookup_enum_fqn(enum_type, lookup);
-//         let ty: syn::Type = syn::parse_str(enum_type)
-//             .expect("Expected a valid Type for an AdaptiveRecordField declaration.");
-//         ty
-//     } else {
-//         let ty: syn::Type = syn::parse_str(lookup_fqn(format_type_name(field.field_type.as_ref().expect(
-//             "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
-//         )).as_str(), lookup))
-//             .expect("Expected valid input to parse a Type for a AdaptiveRecordField declaration.");
-//         ty
-//     }
-// }
-
 mod builders {
     use crate::generation::{Pdu, PduAndFixedRecordFieldsEnum};
-    use crate::Lookup;
-    use dis_gen_utils::{format_field_name, format_type_name};
     use proc_macro2::{Ident, TokenStream};
     use quote::{format_ident, quote};
 
@@ -989,13 +815,12 @@ mod builders {
         item: &Pdu,
         fqn_pdu_name_ident: &syn::Type,
         builder_name_ident: &Ident,
-        lookup: &Lookup,
     ) -> TokenStream {
-        // TODO generate with_ functions for all fields
         let with_functions = item
             .fields
             .iter()
-            .map(|field| generate_pdu_builder_functions(field, lookup))
+            .filter(|field| !field.is_padding())
+            .map(generate_pdu_builder_functions)
             .collect::<Vec<TokenStream>>();
 
         quote! {
@@ -1024,45 +849,43 @@ mod builders {
                 }
 
                 #(#with_functions)*
+
+                #[must_use]
+                pub fn with_extension_record(mut self, record: crate::ExtensionRecord) -> Self {
+                    self.0.extension_records.push(record);
+                    self
+                }
+
+                #[must_use]
+                pub fn with_extension_records(mut self, records: Vec<crate::ExtensionRecord>) -> Self {
+                    self.0.extension_records = records;
+                    self
+                }
             }
         }
     }
 
-    fn generate_pdu_builder_functions(
-        field: &PduAndFixedRecordFieldsEnum,
-        lookup: &Lookup,
-    ) -> TokenStream {
+    fn generate_pdu_builder_functions(field: &PduAndFixedRecordFieldsEnum) -> TokenStream {
         let tokens = match field {
-            PduAndFixedRecordFieldsEnum::Numeric(field) => generate_pdu_builder_with_function(
-                &format_field_name(&field.),
-                &field.primitive_type,
-            ),
-            PduAndFixedRecordFieldsEnum::Enum(field) => generate_pdu_builder_with_function(
-                &format_field_name(&field.name),
-                type_for_enum_field(field, lookup),
-            ),
-            PduAndFixedRecordFieldsEnum::FixedString(field) => {
-                generate_pdu_builder_with_function(&format_field_name(&field.name), "Into<String>")
+            PduAndFixedRecordFieldsEnum::Numeric(field) => {
+                generate_pdu_builder_with_function(&field.field_name, &field.primitive_type, false)
             }
-            PduAndFixedRecordFieldsEnum::FixedRecord(field) => generate_pdu_builder_with_function(
-                &format_field_name(&field.name),
-                lookup_fqn(&format_type_name(&field.field_type), lookup),
+            PduAndFixedRecordFieldsEnum::Enum(field) => {
+                generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
+            }
+            PduAndFixedRecordFieldsEnum::FixedString(field) => generate_pdu_builder_with_function(
+                &field.field_name,
+                &syn::parse_str("impl Into<String>").unwrap(),
+                true,
             ),
+            PduAndFixedRecordFieldsEnum::FixedRecord(field) => {
+                generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
+            }
             PduAndFixedRecordFieldsEnum::BitRecord(field) => {
-                let type_name = match (&field.enum_uid, &field.field_type) {
-                    (Some(uids), None) => lookup_first_uid(uids, lookup),
-                    (None, Some(enum_type)) => lookup_fqn(&format_type_name(enum_type), lookup),
-                    _ => panic!("BitRecordField has no valid type"),
-                };
-                generate_pdu_builder_with_function(&format_field_name(&field.name), type_name)
+                generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
             }
             PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => {
-                let type_name = match (&field.enum_uid, &field.field_type) {
-                    (Some(uids), None) => lookup_first_uid(uids, lookup),
-                    (None, Some(enum_type)) => lookup_fqn(&format_type_name(enum_type), lookup),
-                    _ => panic!("BitRecordField has no valid type"),
-                };
-                generate_pdu_builder_with_function(&format_field_name(&field.name), type_name)
+                generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
             }
         };
         println!("{tokens}");
@@ -1070,13 +893,14 @@ mod builders {
         tokens
     }
 
-    fn generate_pdu_builder_with_function(field_name: &str, type_name: &str) -> TokenStream {
+    fn generate_pdu_builder_with_function(
+        field_name: &str,
+        field_type: &syn::Type,
+        into: bool,
+    ) -> TokenStream {
         let function_name_ident = format_ident!("with_{field_name}");
         let field_ident = format_ident!("{field_name}");
-        let field_type: syn::Type = syn::parse_str(type_name).unwrap_or_else(|_| {
-            panic!("Expected a valid field Type for Builder function 'with_{field_name}', found '{type_name}'")
-        });
-        let assignment_value = if type_name.starts_with("Into<") {
+        let assignment_value = if into {
             quote! { #field_ident.into() }
         } else {
             quote! { #field_ident }
