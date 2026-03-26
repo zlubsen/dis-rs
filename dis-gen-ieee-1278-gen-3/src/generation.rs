@@ -34,6 +34,7 @@ pub enum GenerationItem {
 
 impl GenerationItem {
     pub(crate) fn family(&self) -> String {
+        #[allow(clippy::match_same_arms)]
         match self {
             GenerationItem::Pdu(_, fam) => fam.clone(),
             GenerationItem::FixedRecord(_, fam) => fam.clone(),
@@ -315,11 +316,13 @@ pub struct Pdu {
     pub header_field: FixedRecordField,
     pub fields: Vec<PduAndFixedRecordFieldsEnum>,
     pub extension_record_set: ExtensionRecordSet,
+    pub fqn_path: TokenStream,
+    pub parser_function: TokenStream,
 }
 
 pub fn generate(items: &[GenerationItem], families: &[String]) -> TokenStream {
     let core_contents = generate_core_units(items);
-    let family_contents: Vec<TokenStream> = families
+    let family_model_contents: Vec<TokenStream> = families
         .iter()
         .map(|family| {
             let generated = generate_family_module(items, family.as_str());
@@ -330,13 +333,15 @@ pub fn generate(items: &[GenerationItem], families: &[String]) -> TokenStream {
             generated
         })
         .collect();
+    let parsers = parsers::generate_common_parsers(items);
     quote! {
         #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
 
         #core_contents
 
-        #(#family_contents)*
+        #(#family_model_contents)*
 
+        #parsers
     }
 }
 
@@ -489,14 +494,15 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
 /// Generates all code related a PDU
 fn generate_pdu_module(item: &Pdu) -> TokenStream {
     let pdu_name_ident = format_ident!("{}", item.pdu_name);
-    let pdu_name_fqn = &item.pdu_name_fqn;
     let pdu_module_name = &item.pdu_module_name;
     let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", item.pdu_name);
 
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
     let pdu_trait_impls = generate_pdu_trait_impls(&pdu_name_ident, &builder_name_ident);
-    let builder_content = builders::generate_pdu_builder(item, pdu_name_fqn, &builder_name_ident);
+    let builder_content = builders::generate_pdu_builder(item, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
+
+    let parser_module = parsers::generate_pdu_parser(item);
 
     let fields = item
         .fields
@@ -514,6 +520,8 @@ fn generate_pdu_module(item: &Pdu) -> TokenStream {
         #pdu_trait_impls
 
         #builder_module
+
+        #parser_module
     };
 
     generate_module_with_name(pdu_module_name, &contents)
@@ -811,11 +819,8 @@ mod builders {
     use proc_macro2::{Ident, TokenStream};
     use quote::{format_ident, quote};
 
-    pub fn generate_pdu_builder(
-        item: &Pdu,
-        fqn_pdu_name_ident: &syn::Type,
-        builder_name_ident: &Ident,
-    ) -> TokenStream {
+    pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStream {
+        let fqn_pdu_name_ident = &item.pdu_name_fqn;
         let with_functions = item
             .fields
             .iter()
@@ -912,5 +917,79 @@ mod builders {
                     self
                 }
         }
+    }
+}
+
+mod parsers {
+    use crate::generation::{generate_module_with_name, GenerationItem, Pdu};
+    use proc_macro2::TokenStream;
+    use quote::{format_ident, quote};
+
+    const PDU_HEADER: &str = "PDUHeader";
+    const PDU_TYPE: &str = "DISPDUType";
+
+    pub fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
+        let pdu_body_parser = generate_pdu_body_parser(items);
+
+        let contents = quote! {
+            #pdu_body_parser
+        };
+
+        generate_module_with_name("parser", &contents)
+    }
+
+    pub fn generate_pdu_body_parser(items: &[GenerationItem]) -> TokenStream {
+        let pdu_type = format_ident!("{PDU_TYPE}");
+        let pdu_type_arms = items
+            .iter()
+            .filter(|&it| it.is_pdu())
+            .map(generate_pdu_body_parser_arm)
+            .collect::<TokenStream>();
+
+        quote! {
+            use crate::PduBody;
+            use crate::common_records::PDUHeader;
+            use crate::enumerations::#pdu_type;
+            use nom::IResult;
+
+            pub fn pdu_body(header: &PDUHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
+                move |input: &[u8]| {
+                    let (input, body) = match header.pdu_type {
+                        DISPDUType::Other => crate::other::parser::other_body(input)?,
+                        #pdu_type_arms
+                        _ => crate::other::parser::other_body(input)?,
+                    };
+                    Ok((input, body))
+                }
+            }
+        }
+    }
+
+    fn generate_pdu_body_parser_arm(pdu: &GenerationItem) -> TokenStream {
+        if let GenerationItem::Pdu(pdu, _) = pdu {
+            let pdu_type: TokenStream = format!("{PDU_TYPE}::{}", pdu.pdu_name)
+                .parse()
+                .expect("Expected valid Rust code for PDUType variant");
+            let pdu_path = pdu.fqn_path.clone();
+            let parser_function = pdu.parser_function.clone();
+            quote! {
+                #pdu_type => #pdu_path::parser::#parser_function(input)?,
+            }
+        } else {
+            panic!("GenerationItem is not a PDU.")
+        }
+    }
+
+    pub fn generate_pdu_parser(pdu: &Pdu) -> TokenStream {
+        let parser_function = pdu.parser_function.clone();
+        let parser = quote! {
+            use nom::IResult;
+
+            pub fn #parser_function(input: &[u8]) -> IResult<&[u8], crate::PduBody> {
+                todo!()
+            }
+        };
+
+        generate_module_with_name("parser", &parser)
     }
 }

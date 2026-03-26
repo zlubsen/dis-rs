@@ -347,22 +347,24 @@ mod pre_processing {
         extracts
             .iter()
             .map(|e| match e {
-                ExtractionItem::Pdu(pdu, s) => {
-                    GenerationItem::Pdu(process_pdu(pdu, lookup), s.clone())
+                ExtractionItem::Pdu(pdu, family) => {
+                    GenerationItem::Pdu(process_pdu(pdu, family, lookup), family.clone())
                 }
-                ExtractionItem::FixedRecord(record, s) => {
-                    GenerationItem::FixedRecord(process_fixed_record(record, lookup), s.clone())
-                }
-                ExtractionItem::BitRecord(record, s) => {
-                    GenerationItem::BitRecord(process_bit_record(record, lookup), s.clone())
-                }
-                ExtractionItem::AdaptiveRecord(record, s) => GenerationItem::AdaptiveRecord(
-                    process_adaptive_record(record, lookup),
-                    s.clone(),
+                ExtractionItem::FixedRecord(record, family) => GenerationItem::FixedRecord(
+                    process_fixed_record(record, family, lookup),
+                    family.clone(),
                 ),
-                ExtractionItem::ExtensionRecord(record, s) => GenerationItem::ExtensionRecord(
-                    process_extension_record(record, lookup),
-                    s.clone(),
+                ExtractionItem::BitRecord(record, family) => GenerationItem::BitRecord(
+                    process_bit_record(record, family, lookup),
+                    family.clone(),
+                ),
+                ExtractionItem::AdaptiveRecord(record, family) => GenerationItem::AdaptiveRecord(
+                    process_adaptive_record(record, family, lookup),
+                    family.clone(),
+                ),
+                ExtractionItem::ExtensionRecord(record, family) => GenerationItem::ExtensionRecord(
+                    process_extension_record(record, family, lookup),
+                    family.clone(),
                 ),
             })
             .collect()
@@ -543,6 +545,7 @@ mod pre_processing {
 
     fn process_fixed_record(
         record: &crate::extraction::FixedRecord,
+        family: &str,
         lookup: &Lookup,
     ) -> crate::generation::FixedRecord {
         let formatted_record_type = format_type_name(&record.record_type);
@@ -562,6 +565,7 @@ mod pre_processing {
 
     fn process_bit_record(
         record: &crate::extraction::BitRecord,
+        family: &str,
         lookup: &Lookup,
     ) -> crate::generation::BitRecord {
         let formatted_record_type = format_type_name(&record.record_type);
@@ -581,6 +585,7 @@ mod pre_processing {
 
     fn process_adaptive_record(
         record: &crate::extraction::AdaptiveRecord,
+        family: &str,
         lookup: &Lookup,
     ) -> crate::generation::AdaptiveRecord {
         let formatted_record_type = format_type_name(&record.record_type);
@@ -609,6 +614,7 @@ mod pre_processing {
 
     fn process_extension_record(
         record: &crate::extraction::ExtensionRecord,
+        family: &str,
         lookup: &Lookup,
     ) -> crate::generation::ExtensionRecord {
         let formatted_record_name = format_type_name(&record.name_attr);
@@ -630,10 +636,15 @@ mod pre_processing {
         }
     }
 
-    fn process_pdu(pdu: &crate::extraction::Pdu, lookup: &Lookup) -> crate::generation::Pdu {
+    fn process_pdu(
+        pdu: &crate::extraction::Pdu,
+        family: &str,
+        lookup: &Lookup,
+    ) -> crate::generation::Pdu {
         let formatted_pdu_name = format_type_name(&pdu.name_attr);
+        let formatted_pdu_module_name = format_pdu_module_name(&pdu.name_attr);
         crate::generation::Pdu {
-            pdu_module_name: format_pdu_module_name(&pdu.name_attr),
+            pdu_module_name: formatted_pdu_module_name.clone(),
             pdu_name: formatted_pdu_name.clone(),
             pdu_name_fqn: syn::parse_str(lookup_fqn(&formatted_pdu_name, lookup))
                 .expect("Expected a valid FQN PDU Type"),
@@ -647,6 +658,10 @@ mod pre_processing {
                 .map(|field| process_pdu_fixed_record_fields_enum(field, lookup))
                 .collect(),
             extension_record_set: process_extension_record_set(&pdu.extension_record_set),
+            fqn_path: format!("crate::{family}::{formatted_pdu_module_name}")
+                .parse()
+                .unwrap(),
+            parser_function: format!("{formatted_pdu_module_name}_body").parse().unwrap(),
         }
     }
 
