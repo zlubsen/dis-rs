@@ -83,22 +83,25 @@ impl GenerationItem {
 #[derive(Clone)]
 pub struct NumericField {
     pub field_name: String,
-    pub primitive_type: syn::Type,
+    pub primitive_type: TokenStream,
     pub units: Option<String>,
     pub is_padding: bool,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
 pub struct CountField {
     pub field_name: String,
-    pub primitive_type: syn::Type,
+    pub primitive_type: TokenStream,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
 pub struct EnumField {
     pub field_name: String,
-    pub field_type_fqn: syn::Type,
+    pub field_type_fqn: TokenStream,
     pub is_discriminant: bool,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -139,6 +142,7 @@ pub struct FixedRecordField {
     pub field_name: String,
     pub field_type_fqn: syn::Type,
     pub length: usize,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -147,6 +151,7 @@ pub struct BitRecordField {
     pub field_type_fqn: syn::Type,
     pub as_variant_name: String,
     pub size: usize,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -187,6 +192,17 @@ pub enum PduAndFixedRecordFieldsEnum {
 }
 
 impl PduAndFixedRecordFieldsEnum {
+    pub fn field_name(&self) -> &str {
+        match self {
+            PduAndFixedRecordFieldsEnum::Numeric(f) => &f.field_name,
+            PduAndFixedRecordFieldsEnum::Enum(f) => &f.field_name,
+            PduAndFixedRecordFieldsEnum::FixedString(f) => &f.field_name,
+            PduAndFixedRecordFieldsEnum::FixedRecord(f) => &f.field_name,
+            PduAndFixedRecordFieldsEnum::BitRecord(f) => &f.field_name,
+            PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => &f.field_name,
+        }
+    }
+
     pub fn is_padding(&self) -> bool {
         match self {
             PduAndFixedRecordFieldsEnum::Numeric(f) => f.is_padding,
@@ -921,7 +937,11 @@ mod builders {
 }
 
 mod parsers {
-    use crate::generation::{generate_module_with_name, GenerationItem, Pdu};
+    use crate::generation::{
+        generate_module_with_name, AdaptiveRecordField, BitRecordField, EnumField,
+        FixedRecordField, FixedStringField, GenerationItem, NumericField, Pdu,
+        PduAndFixedRecordFieldsEnum,
+    };
     use proc_macro2::TokenStream;
     use quote::{format_ident, quote};
 
@@ -980,16 +1000,105 @@ mod parsers {
         }
     }
 
+    // TODO:
+    // - separate fqn path and name in the GenerationItems, store as String or TokenStream
+    // -
+
     pub fn generate_pdu_parser(pdu: &Pdu) -> TokenStream {
         let parser_function = pdu.parser_function.clone();
+        let pdu_name_fqn = &pdu.pdu_name_fqn;
+        let field_parsers = pdu
+            .fields
+            .iter()
+            .map(|field| generate_pdu_field_parser(field))
+            .collect::<Vec<TokenStream>>();
+        let field_builders = pdu
+            .fields
+            .iter()
+            .map(|field| field.field_name().parse::<TokenStream>().unwrap())
+            .collect::<Vec<TokenStream>>();
+
         let parser = quote! {
             use nom::IResult;
 
             pub fn #parser_function(input: &[u8]) -> IResult<&[u8], crate::PduBody> {
-                todo!()
+                #(#field_parsers)*
+                // FIXME extension_record_set parser, add fqn and/or UID
+                let (input, extension_records) = extension_record_set(input)?
+
+                let body = #pdu_name_fqn {
+                    #(#field_builders)*,
+                }
+                Ok((input, body.into_pdu_body()))
             }
         };
 
         generate_module_with_name("parser", &parser)
+    }
+
+    fn generate_pdu_field_parser(field: &PduAndFixedRecordFieldsEnum) -> TokenStream {
+        match field {
+            PduAndFixedRecordFieldsEnum::Numeric(f) => generate_numeric_field_parser(f),
+            PduAndFixedRecordFieldsEnum::Enum(f) => generate_enum_field_parser(f),
+            PduAndFixedRecordFieldsEnum::FixedString(f) => generate_fixed_string_parser(f),
+            PduAndFixedRecordFieldsEnum::FixedRecord(f) => generate_fixed_record_field_parser(f),
+            PduAndFixedRecordFieldsEnum::BitRecord(f) => generate_bit_record_field_parser(f),
+            PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => (f),
+        }
+    }
+
+    fn generate_numeric_field_parser(field: &NumericField) -> TokenStream {
+        let field_name = &field.field_name;
+        let parser = &field.parser_function;
+
+        quote! {
+            let (input, #field_name) = #parser(input)?;
+        }
+    }
+
+    fn generate_enum_field_parser(field: &EnumField) -> TokenStream {
+        let field_name = &field.field_name;
+        let parser = &field.parser_function;
+        quote! {
+            let (input, #field_name) = #parser(input)?;
+        }
+    }
+
+    fn generate_fixed_string_parser(field: &FixedStringField) -> TokenStream {
+        let field_name = &field.field_name;
+        let length = field.length;
+
+        quote! {
+            let (input, #field_name) = nom::bytes::complete::take(#length)(input)?;
+            let #field_name = String::from_utf8(#field_name);
+        }
+    }
+
+    fn generate_fixed_record_field_parser(field: &FixedRecordField) -> TokenStream {
+        let field_name = &field.field_name;
+        let parser = &field.parser_function;
+
+        quote! {
+            let (input, #field_name) = #parser(input)?;
+        }
+    }
+
+    fn generate_bit_record_field_parser(field: &BitRecordField) -> TokenStream {
+        let field_name = &field.field_name;
+        let parser = &field.parser_function;
+
+        quote! {
+            let (input, #field_name) = #parser(input)?;
+        }
+    }
+
+    fn generate_adaptive_record_field_parser(field: &AdaptiveRecordField) -> TokenStream {
+        let field_name = &field.field_name;
+        // FIXME implement this parser
+        let parser = &field.parser_function;
+
+        quote! {
+            let (input, #field_name) = #parser(input)?;
+        }
     }
 }

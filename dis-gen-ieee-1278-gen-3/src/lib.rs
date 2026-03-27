@@ -136,6 +136,7 @@ mod pre_processing {
     use dis_gen_utils::{
         enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
     };
+    use proc_macro2::TokenStream;
     use std::collections::HashMap;
 
     pub(crate) fn create_fqn_lookup(
@@ -223,9 +224,14 @@ mod pre_processing {
         })
     }
 
-    #[inline]
-    fn type_for_primitive_type_field(primitive_type: &str) -> syn::Type {
-        let ty = match primitive_type {
+    fn to_tokens(value: &str) -> TokenStream {
+        value
+            .parse()
+            .expect(format!("Could not parse TokenStream '{value}'").as_str())
+    }
+
+    fn dis_type_to_rust_type(dis_type: &str) -> &'static str {
+        match dis_type {
             "uint8" => "u8",
             "uint16" => "u16",
             "uint32" => "u32",
@@ -236,11 +242,24 @@ mod pre_processing {
             "int64" => "i64",
             "float32" => "f32",
             "float64" => "f64",
-            _ => panic!("Invalid primitive type in NumericField"),
-        };
-        syn::parse_str(ty).unwrap_or_else(|_| {
-            panic!("Expected a valid Type for a NumericField, found {primitive_type}.")
-        })
+            _ => panic!("Invalid primitive type"),
+        }
+    }
+
+    fn type_for_primitive_type_field(primitive_type: &str) -> &str {
+        match primitive_type {
+            "uint8" => "u8",
+            "uint16" => "u16",
+            "uint32" => "u32",
+            "uint64" => "u64",
+            "int8" => "i8",
+            "int16" => "i16",
+            "int32" => "i32",
+            "int64" => "i64",
+            "float32" => "f32",
+            "float64" => "f64",
+            _ => panic!("Invalid primitive type"),
+        }
     }
 
     pub(crate) fn field_size_to_primitive_type(size: usize) -> syn::Type {
@@ -260,7 +279,10 @@ mod pre_processing {
     }
 
     #[inline]
-    fn type_for_enum_field(field: &crate::extraction::EnumField, lookup: &Lookup) -> syn::Type {
+    fn type_for_enum_field<'l>(
+        field: &crate::extraction::EnumField,
+        lookup: &'l Lookup,
+    ) -> (&'l str, bool) {
         if let Some(uids) = &field.enum_uid {
             let enum_type = uids
                 .iter()
@@ -270,16 +292,18 @@ mod pre_processing {
                 .first()
                 .expect("Expected at least one type for an EnumField declaration.");
             let enum_type = lookup_enum_fqn(enum_type, lookup);
-            let ty: syn::Type = syn::parse_str(enum_type)
-                .expect("Expected a valid type for an EnumField declaration.");
-            ty
+            // let ty: syn::Type = syn::parse_str(enum_type)
+            //     .expect("Expected a valid type for an EnumField declaration.");
+            (enum_type, false)
         } else {
-            let ty: syn::Type = syn::parse_str(
-                &enum_type_to_field_type(&field.field_type)
-                    .expect("Expected a valid type for an EnumField declaration."),
-            )
-            .expect("Expected valid input to parse a Type for an EnumField declaration.");
-            ty
+            let ty = enum_type_to_field_type(&field.field_type)
+                .expect("Expected a valid type for an EnumField declaration.");
+            // let ty: syn::Type = syn::parse_str(
+            //     &enum_type_to_field_type(&field.field_type)
+            //         .expect("Expected a valid type for an EnumField declaration."),
+            // )
+            // .expect("Expected valid input to parse a Type for an EnumField declaration.");
+            (ty, true)
         }
     }
 
@@ -373,18 +397,22 @@ mod pre_processing {
     fn process_numeric_field(
         field: &crate::extraction::NumericField,
     ) -> crate::generation::NumericField {
+        let field_type = type_for_primitive_type_field(&field.primitive_type);
         crate::generation::NumericField {
             field_name: format_field_name(&field.name),
-            primitive_type: type_for_primitive_type_field(&field.primitive_type),
+            primitive_type: to_tokens(field_type),
             units: field.units.clone(),
             is_padding: must_skip_field_decl(&field.name),
+            parser_function: to_tokens(format!("nom::number::le_{field_type}").as_str()),
         }
     }
 
     fn process_count_field(field: &crate::extraction::CountField) -> crate::generation::CountField {
+        let field_type = type_for_primitive_type_field(&field.primitive_type);
         crate::generation::CountField {
             field_name: format_field_name(&field.name),
-            primitive_type: type_for_primitive_type_field(&field.primitive_type),
+            primitive_type: to_tokens(field_type),
+            parser_function: to_tokens(format!("nom::number::le_{field_type}").as_str()),
         }
     }
 
@@ -392,10 +420,17 @@ mod pre_processing {
         field: &crate::extraction::EnumField,
         lookup: &Lookup,
     ) -> crate::generation::EnumField {
+        let (enum_type, is_primitive_type) = type_for_enum_field(&field, lookup);
+        let parser_function = if is_primitive_type {
+            format!("nom::number::le_{enum_type}")
+        } else {
+            format!("{enum_type}")
+        };
         crate::generation::EnumField {
             field_name: format_field_name(&field.name),
-            field_type_fqn: type_for_enum_field(&field, lookup),
+            field_type_fqn: to_tokens(enum_type),
             is_discriminant: field.is_discriminant.unwrap_or(false),
+            parser_function: to_tokens(&parser_function),
         }
     }
 
@@ -467,10 +502,13 @@ mod pre_processing {
         field: &crate::extraction::FixedRecordField,
         lookup: &Lookup,
     ) -> crate::generation::FixedRecordField {
+        let field_name = format_field_name(&field.name);
+        let parser_function = to_tokens(&field_name);
         crate::generation::FixedRecordField {
-            field_name: format_field_name(&field.name),
+            field_name,
             field_type_fqn: type_for_fixed_record_field(&field, lookup),
             length: field.length,
+            parser_function,
         }
     }
 
@@ -478,11 +516,14 @@ mod pre_processing {
         field: &crate::extraction::BitRecordField,
         lookup: &Lookup,
     ) -> crate::generation::BitRecordField {
+        let field_name = format_field_name(&field.name);
+        let parser_function = to_tokens(&field_name)
         crate::generation::BitRecordField {
             field_name: format_field_name(&field.name),
             field_type_fqn: type_for_bit_record_field(field, lookup),
             as_variant_name: format_type_name(&field.name),
             size: field.size,
+            parser_function,
         }
     }
 

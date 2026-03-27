@@ -161,15 +161,13 @@ fn expand_uid_string(uid_string: &str) -> Result<Vec<usize>, ()> {
 /// # Errors
 /// Returns an `Error(())` when the type argument `ty` does not match a valid DIS enum type.
 #[allow(clippy::result_unit_err)]
-pub fn enum_type_to_field_type(ty: &str) -> Result<String, ()> {
-    let field_type = match ty {
+pub fn enum_type_to_field_type(ty: &str) -> Result<&'static str, ()> {
+    match ty {
         "enum8" => Ok("u8"),
         "enum16" => Ok("u16"),
         "enum32" => Ok("u32"),
         _ => Err(()),
-    };
-
-    field_type.map(ToString::to_string)
+    }
 }
 
 /// Formats the name of a PDU or Record from the defined format into the code representation
