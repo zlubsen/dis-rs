@@ -502,29 +502,29 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
         uid_index.insert(item.uid(), format_name(item.name(), item.uid()));
     }
 
-    uid_index.insert(93, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(94, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(95, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(490, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(544, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(554, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(567, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(569, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(570, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(571, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(572, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(573, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(579, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(657, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(665, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(702, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(790, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(791, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(880, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(881, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(882, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(883, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
-    uid_index.insert(884, "Enumeration<u8>".to_string()); // FIXME not defined in SISO-REF-010 v36
+    uid_index.insert(93, "EnumerationU32".to_string()); // FIXME not defined in SISO-REF-010 v36 - Mode S Squitter Reports p436 l17 - u32
+    uid_index.insert(94, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - TCAS/ACAS system Type - p440 l22 - u8
+    uid_index.insert(95, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Mode 4 Status - Active Cde Key - p418 l20 - u8
+    uid_index.insert(490, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - SIMAN Radar Track Status - u8
+    uid_index.insert(544, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EII Thermal Part Part - u8
+    uid_index.insert(554, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Current/Requested Application Mode - p341 l12 - u8
+    uid_index.insert(567, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Current/Requested Application/exercise State - p339 - u8
+    uid_index.insert(569, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Application General Status - p189/354/357 - u8
+    uid_index.insert(570, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Application Specific Status - p189/354/357 - u8
+    uid_index.insert(571, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Application Transition - p351/353 - u8
+    uid_index.insert(572, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Exercise Transition - p351 - u8
+    uid_index.insert(573, "EnumerationU16".to_string()); // FIXME not defined in SISO-REF-010 v36 - Status Type - p354/356/357/360 - u16
+    uid_index.insert(579, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - SIMAN General Status - u8
+    uid_index.insert(657, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - Synth Env Cloud Type - u8
+    uid_index.insert(665, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Layer type - p509 l31 - u8
+    uid_index.insert(702, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Collision Origin - p78 l16 - u8
+    uid_index.insert(790, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EE Shape - u8
+    uid_index.insert(791, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EE Lobe Type - u8
+    uid_index.insert(880, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Motion Pattern - p454 l30 - u8
+    uid_index.insert(881, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Beam Shape - p454 l6 - u8
+    uid_index.insert(882, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Spot Type - p454 l28 - u8
+    uid_index.insert(883, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Beam Function - p454 l3 - u8
+    uid_index.insert(884, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Flash Pattern - p454 l8 - u8
 
     uid_index
 }

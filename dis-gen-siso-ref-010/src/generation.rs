@@ -713,25 +713,47 @@ fn discriminant_literal(value: usize, data_size: usize) -> Literal {
 }
 
 // FIXME: placeholder values for currently unsupported UIDs
-/// Generates wrapper types for `u8`/`u16` enumerations or bitfields
+/// Generates wrapper types for `u8`/`u16`/`u32` enumerations or bitfields
 fn generate_type_placeholder() -> TokenStream {
     quote! {
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct Enumeration<T: Display>(T);
+        #[derive(Debug, Default, Clone, PartialEq)]
+        pub struct EnumerationU8(u8);
+        #[derive(Debug, Default, Clone, PartialEq)]
+        pub struct EnumerationU16(u16);
+        #[derive(Debug, Default, Clone, PartialEq)]
+        pub struct EnumerationU32(u32);
 
-        impl<T: Display> From<T> for Enumeration<T> {
-            fn from(value: T) -> Self {
+        impl From<u8> for EnumerationU8 {
+            fn from(value: u8) -> Self {
                 Self(value)
             }
         }
 
-        impl<T: Default + Display> Default for Enumeration<T> {
-            fn default() -> Self {
-                Self(T::default())
+        impl From<u16> for EnumerationU16 {
+            fn from(value: u16) -> Self {
+                Self(value)
             }
         }
 
-        impl<T: Display> Display for Enumeration<T> {
+        impl From<u32> for EnumerationU32 {
+            fn from(value: u32) -> Self {
+                Self(value)
+            }
+        }
+
+        impl Display for EnumerationU8 {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+
+        impl Display for EnumerationU16 {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+
+        impl Display for EnumerationU32 {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 write!(f, "{}", self.0)
             }
