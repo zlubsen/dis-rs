@@ -18,6 +18,8 @@ struct Lookup {
     fqn: FqnLookup,
     enum_fqn: FqnLookup,
     uid: UidLookup,
+    pdu_types: UidLookup,
+    er_types: UidLookup,
 }
 
 /// This is the main entry point for the generation of the DIS v8 code units.
@@ -37,7 +39,12 @@ struct Lookup {
 /// # Panics
 /// The functions in the call stack beneath this function panic when encountering
 /// inconsistent states or values in the schema files.
-pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
+pub fn execute(
+    schema_dir: &str,
+    uid_lookup: UidLookup,
+    pdu_types_lookup: UidLookup,
+    er_types_lookup: UidLookup,
+) {
     println!("{schema_dir}");
     if std::path::Path::new(schema_dir).is_dir() {
         // Find all files in the provided directory. Files must be .xml files.
@@ -67,10 +74,15 @@ pub fn execute(schema_dir: &str, uid_lookup: UidLookup) {
         let (fqn_lookup, enum_fqn_lookup) =
             pre_processing::create_fqn_lookup(&extracted_items, &uid_lookup);
 
+        println!("{pdu_types_lookup:?}");
+        println!("{er_types_lookup:?}");
+
         let lookup = Lookup {
             fqn: fqn_lookup,
             enum_fqn: enum_fqn_lookup,
             uid: uid_lookup,
+            pdu_types: pdu_types_lookup,
+            er_types: er_types_lookup,
         };
 
         // Pre-process all items (formatting, expanding of field, type, variant names)

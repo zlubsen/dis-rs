@@ -311,6 +311,7 @@ pub struct ExtensionRecord {
     pub record_name: String,
     pub record_name_fqn: TokenStream,
     pub record_type_enum: usize,
+    pub record_type_variant_name: TokenStream,
     pub base_length: usize,
     pub is_variable: bool,
     pub record_type_field: EnumField,
@@ -321,12 +322,14 @@ pub struct ExtensionRecord {
     pub parser_function: TokenStream,
 }
 
+#[allow(clippy::struct_field_names)]
 #[derive(Clone)]
 pub struct Pdu {
     pub pdu_module_name: String,
     pub pdu_name: String,
     pub pdu_name_fqn: TokenStream,
     pub pdu_type: usize,
+    pub pdu_type_name: TokenStream,
     pub protocol_family: usize,
     pub base_length: usize,
     pub header_field: FixedRecordField,
@@ -377,13 +380,13 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
     let pdu_body_variants = items
         .iter()
         .filter(|&it| it.is_pdu())
-        .map(|pdu| generate_body_variant(pdu))
+        .map(generate_body_variant)
         .collect::<TokenStream>();
 
     let extension_record_variants = items
         .iter()
         .filter(|&it| it.is_extension_record())
-        .map(|er| generate_body_variant(er))
+        .map(generate_body_variant)
         .collect::<TokenStream>();
 
     quote! {

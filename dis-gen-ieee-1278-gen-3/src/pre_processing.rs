@@ -95,6 +95,19 @@ fn lookup_enum_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
     })
 }
 
+fn lookup_er_type<'a>(uid: &usize, lookup: &'a Lookup) -> &'a str {
+    lookup.er_types.get(uid).unwrap_or_else(|| {
+        panic!("Expected a ExtensionRecord name for Record Type Enum value {uid}")
+    })
+}
+
+fn lookup_pdu_type<'a>(uid: &usize, lookup: &'a Lookup) -> &'a str {
+    lookup
+        .pdu_types
+        .get(uid)
+        .unwrap_or_else(|| panic!("Expected a PDU name for DIS-PDU Type Enum value {uid}"))
+}
+
 fn to_tokens(value: &str) -> TokenStream {
     value
         .parse()
@@ -511,10 +524,12 @@ fn process_extension_record(
 ) -> crate::generation::models::ExtensionRecord {
     let formatted_record_name = format_type_name(&record.name_attr);
     let formatted_function_name = format_field_name(&record.name_attr);
+    let record_type_variant_name = lookup_er_type(&record.record_type_attr, lookup);
     crate::generation::models::ExtensionRecord {
         record_name: formatted_record_name.clone(),
         record_name_fqn: to_tokens(lookup_fqn(&formatted_record_name, lookup)),
         record_type_enum: record.record_type_attr,
+        record_type_variant_name: to_tokens(record_type_variant_name),
         base_length: record.base_length_attr,
         is_variable: record.is_variable_attr,
         record_type_field: process_enum_field(&record.record_type_field, lookup),
@@ -544,6 +559,7 @@ fn process_pdu(
         pdu_name: formatted_pdu_name.clone(),
         pdu_name_fqn: to_tokens(lookup_fqn(&formatted_pdu_name, lookup)),
         pdu_type: pdu.type_attr,
+        pdu_type_name: to_tokens(lookup_pdu_type(&pdu.type_attr, lookup)),
         protocol_family: pdu.protocol_family_attr,
         base_length: pdu.base_length_attr,
         header_field: process_fixed_record_field(&pdu.header_field, lookup),

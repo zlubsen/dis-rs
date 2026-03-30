@@ -2,9 +2,9 @@ const SISO_REF_DIR: &str = "./definitions/enumerations/";
 const SISO_SCHEMA_DIR: &str = "./definitions/v8-schemas";
 
 fn main() {
-    let uid_index = dis_gen_siso_ref_010::execute(SISO_REF_DIR);
+    let (uid_index, pdu_types_index, er_types_index) = dis_gen_siso_ref_010::execute(SISO_REF_DIR);
 
-    dis_gen_ieee_1278_gen_3::execute(SISO_SCHEMA_DIR, uid_index);
+    dis_gen_ieee_1278_gen_3::execute(SISO_SCHEMA_DIR, uid_index, pdu_types_index, er_types_index);
 
     // println!("cargo::rerun-if-changed=build.rs");
     // println!("cargo::rerun-if-changed=./definitions/enumerations/overrides.toml");

@@ -87,8 +87,8 @@ pub fn generate_common_extension_record_body_parser(items: &[GenerationItem]) ->
             move |input: &[u8]| {
                 let (input, body) = match er_record_type {
                     // FIXME parser for 'Other' PDU
-                    #extension_record_type::Other => temp_other_parser(input)?,//crate::other::parser::other_body(input)?,
-                    // FIXME these arms generate incorrect ER Type variants. Variant names do not match SISO-REF-010 enum items.
+                    #extension_record_type::NotSpecified => temp_other_parser(input)?,//crate::other::parser::other_body(input)?,
+                    // TODO reserved for C-DIS, range 1-255
                     #extension_record_types_arms
                     _ => temp_other_parser(input)?,//crate::other::parser::other_body(input)?,
                 };
@@ -100,13 +100,11 @@ pub fn generate_common_extension_record_body_parser(items: &[GenerationItem]) ->
 
 fn generate_common_extension_record_body_parser_arm(er: &GenerationItem) -> TokenStream {
     if let GenerationItem::ExtensionRecord(er, _) = er {
-        let er_type: TokenStream = format!("{EXTENSION_RECORD_TYPE}::{}", er.record_name)
-            .parse()
-            .expect("Expected valid Rust code for PDUType variant");
+        let er_variant_name = &er.record_type_variant_name;
         let er_path = er.fqn_path.clone();
         let parser_function = er.parser_function.clone();
         quote! {
-            #er_type => #er_path::parser::#parser_function(input)?,
+            #EXTENSION_RECORD_TYPE::#er_variant_name => #er_path::parser::#parser_function(input)?,
         }
     } else {
         panic!("GenerationItem is not an Extension Record.")

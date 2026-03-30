@@ -14,226 +14,9 @@ const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 
 const WRAP_ENUM_UID_OFFSET: usize = 0xFFFF_0000_0000_0000;
 const WRAP_ENUM_TRIM_NAME: &str = " Type";
-const WRAP_ENUM_SIZE: usize = 32; // Now a hardcoded size, as both capabilities and (extended) appearance are 32 bits.
+const WRAP_ENUM_SIZE: usize = 32; // NOTE Now a hardcoded size, as both capabilities and (extended) appearance are 32 bits.
 
-// TODO 1) generate enums based on 'overrides' instead of listing all that need to be generated (inverse) (521 items).
-//  - less usage of name overrides
-//  - auto infer data size overrides
-//  - flag indicating to not generate the UID
-//  - uniform way of handling for all UID types (enums, bitfields, records)
-//  - adding `footnotes` to the code; check what we now do with `description`s of bitfieldrows
-// V 2) generate all bitfields (60 items).
-// TODO 3) generate the record types as well (31 items).
-
-/// Array containing all the uids of enumerations that should be generated.
-/// Each entry is a tuple containing:
-/// - the uid,
-/// - an Optional string literal to override the name of the resulting enum,
-/// - an Optional data size (in bits),
-/// - a bool flag to indicate that the value of an enum item must be appended to the name.
-///
-/// For example, the '`DISPDUType`' enum (having uid 4) has an override
-/// to `PduType`, which is nicer in code. The entry thus is (4, Some("PduType"), None, false)
-///
-/// Also, the 'Articulated Parts-Type Metric' enum has a defined size of 5,
-/// but needs to be aligned with a 32-bit field.
-///
-/// Finally, some enums have variants that result in empty names (`""`) or duplicate names (such as 'Emitter Name').
-/// The bool flag will append `"_value"` to the name of the variant to make it unique
-// const ENUM_UIDS: [(usize, Option<&str>, Option<usize>, bool); 155] = [
-//     (3, Some("ProtocolVersion"), None, false), // DIS-Protocol Version
-//     (4, Some("PduType"), None, false),         // DIS-PDU Type
-//     (5, Some("ProtocolFamily"), None, false),  // DIS-PDU Family
-//     (6, Some("ForceId"), None, false),         // Force ID
-//     (7, None, None, false),                    // Entity Kind
-//     (8, None, None, false),                    // Domain
-//     // 9-28 // (Sub-)Categories
-//     (29, None, None, false), // Country
-//     // 30 // Entity Types records
-//     // 31-43 // Bitfields, see `BITFIELD_UIDS`
-//     (44, None, None, false),                      // Dead Reckoning Algorithm
-//     (45, None, None, false),                      // Entity Marking Character Set
-//     (46, None, None, false),                      // Location Definition
-//     (52, None, None, false),                      // Entity Clamping Type
-//     (53, None, None, false),                      // Vertical Reference
-//     (55, None, None, false), // Entity Capabilities (together with bitfields 450-462)
-//     (56, None, None, false), // Variable Parameter Record Type
-//     (57, None, None, false), // Attached Parts
-//     (58, None, Some(32), false), // Articulated Parts-Type Metric
-//     (59, None, None, false), // Articulated Parts-Type Class
-//     (60, None, None, false), // Munition Descriptor-Warhead
-//     (61, None, None, true),  // Munition Descriptor-Fuse
-//     (62, None, None, false), // Detonation result
-//     (63, None, None, false), // Service Type Requested
-//     (64, None, None, true),  // Repair Complete-Repair
-//     (65, None, None, false), // Repair Complete-Repair Result
-//     (66, Some("VariableRecordType"), None, true), // Variable Record Types
-//     (67, None, None, false), // Stop/Freeze Reason
-//     (69, Some("AcknowledgeFlag"), None, false), // Acknowledge-Acknowledge Flag
-//     (70, Some("ResponseFlag"), None, false), // Acknowledge-Response Flag
-//     (71, Some("ActionId"), None, false), // Action Request-Action ID
-//     (72, Some("RequestStatus"), None, false), // Action Request-Request Status
-//     (73, Some("EventType"), None, false), // Event Report-Event Type
-//     (74, None, None, false), // Required Reliability Service
-//     (75, None, None, true),  // Emitter Name
-//     (76, None, None, true),  // Emitter System Function
-//     (77, None, None, false), // Electromagnetic Emission-State Update Indicator
-//     (78, None, None, false), // Electromagnetic Emission-Beam Function
-//     (79, None, None, false), // High Density Track/Jam
-//     (80, None, None, false), // Designator System Name
-//     (81, Some("DesignatorCode"), None, false), // Designator Code
-//     (82, Some("IffSystemType"), None, false), // IFF-System Type
-//     (83, Some("IffSystemName"), None, false), // IFF-System Name
-//     (84, Some("IffSystemMode"), None, false), // IFF-System Mode
-//     // 87, 96-98 // IFF stuff
-//     // 100-106, // Subcategories
-//     // (141, None, None, false), // Appearance Type
-//     // (142, None, None, false), // Extended Appearance Type
-//     (143, None, None, false), // UA-State/Change Update Indicator
-//     (144, None, None, false), // UA-Acoustic System Name
-//     (145, None, None, false), // UA-Acoustic Emitter System Function
-//     (146, None, None, false), // UA-Active Emission Parameter Index
-//     (147, None, None, false), // UA-Scan Pattern
-//     (148, None, None, false), // UA-Passive Parameter Index
-//     (150, None, None, false), // UA-Additional Passive Activity Parameter Index
-//     // (151, None, None, false), // Channel Type
-//     // (152, None, None, false), // Channel Detail
-//     // (153, None, None, false), // Transmitter Waveform Type
-//     // (154, None, None, false), // Transmitter Waveform Detail
-//     (155, None, None, false), // Transmitter Major Modulation
-//     (156, None, None, false), // Transmitter-Detail-Amplitude Modulation
-//     (
-//         157,
-//         Some("TransmitterDetailAmplitudeAngleModulation"),
-//         None,
-//         false,
-//     ), // Transmitter-Detail-Amplitude and Angle Modulation
-//     (158, Some("TransmitterDetailAngleModulation"), None, false), // Transmitter-Detail-Angle modulation
-//     (159, None, None, false), // Transmitter-Detail-Combination Modulation
-//     (160, None, None, false), // Transmitter-Detail-Pulse Modulation
-//     (161, None, None, false), // Transmitter-Detail-Unmodulated Modulation
-//     (162, None, None, false), // Transmitter-Detail-Carrier Phase Shift Modulation
-//     (163, None, None, false), // Transmitter-Modulation Type System
-//     (164, None, None, false), // Transmitter Transmit State
-//     (165, None, None, false), // Transmitter Input Source
-//     (166, None, None, false), // Transmitter Crypto System
-//     (167, None, None, false), // Transmitter Antenna Pattern Type
-//     (168, None, None, false), // Transmitter Antenna Pattern Reference System
-//     // (169, None, None, false), // Surrogate Group
-//     // (176, None, None, false), // Message Type Identifier
-//     (177, None, None, false), // Signal User Protocol Identification Number
-//     (178, Some("SignalTdlType"), None, true), // Signal TDL Type
-//     (179, Some("ReceiverState"), None, false), // Receiver Receiver State
-//     (189, None, None, false), // Collision Type
-//     (204, None, None, false), // Aggregate State-Aggregate State
-//     (205, None, None, false), // Aggregate State-Formation
-//     (206, None, None, false), // Aggregate State-Aggregate Kind
-//     // (207, None, None, false), // Aggregate State-Aggregate Types -- not supported
-//     (208, None, None, false),                // Aggregate State-Subcategory
-//     (209, None, None, false),                // Aggregate State-Specific
-//     (210, None, None, false),                // IsPartOf-Nature
-//     (211, None, None, false),                // IsPartOf-Position
-//     (212, Some("StationName"), None, false), // IsPartOf-Station Name
-//     (213, None, None, false),                // IsGroupOf-Grouped Entity Category
-//     (224, None, None, true),                 // Transfer Control-Transfer Type
-//     (270, None, Some(16), false),            // Signal Encoding Class
-//     (271, None, Some(16), true),             // Signal Encoding Type
-//     (281, Some("APAStatus"), None, false),   // APA Parameter Index-APA Status
-//     (282, Some("SeparationReasonForSeparation"), None, false), // Separation VP-Reason for Separation
-//     (283, Some("SeparationPreEntityIndicator"), None, false),  // Separation VP-Pre-Entity Indicator
-//     (295, Some("AttributeActionCode"), None, false),           // Attribute Action Code
-//     (296, Some("DrParametersType"), None, false),              // Dead Reckoning Parameters Type
-//     (301, Some("TransferredEntityIndicator"), None, false), // DIS-PDU Status-Transferred Entity Indicator (TEI)
-//     (302, Some("LvcIndicator"), None, false),               // DIS-PDU Status-LVC Indicator (LVC)
-//     (303, Some("CoupledExtensionIndicator"), None, false), // DIS-PDU Status-Coupled Extension Indicator (CEI)
-//     (304, Some("FireTypeIndicator"), None, false), // DIS-PDU Status-Fire Type Indicator (FTI)
-//     (305, Some("DetonationTypeIndicator"), None, false), // DIS-PDU Status-Detonation Type Indicator (DTI)
-//     (306, Some("RadioAttachedIndicator"), None, false),  // Radio Attached Indicator
-//     (307, Some("IntercomAttachedIndicator"), None, false), // DIS-PDU Status-Intercom Attached Indicator (IAI)
-//     (308, Some("IffSimulationMode"), None, false), // DIS-PDU Status-IFF Simulation Mode (ISM)
-//     (310, None, None, false),                      // Explosive Material Categories
-//     (318, None, None, false),                      // Beam Status-Beam State
-//     (319, None, None, false),                      // Entity Association-Association Status
-//     (320, Some("ChangeIndicator"), None, false),   // Entity VP Record-Change Indicator
-//     (321, None, None, false),                      // Entity Association-Group Member Type
-//     (323, None, None, false),                      // Entity Association-Physical Association Type
-//     (324, None, None, false),                      // Entity Association-Physical Connection Type
-//     (334, None, None, false),                      // Record Query-R-Event Type
-//     (335, Some("UAPropulsionPlantConfiguration"), None, false), // UA Propulsion Plant Configuration-Configuration
-//     (339, Some("IffApplicableModes"), None, false),             // IFF Applicable Modes
-//     (346, Some("Mode5IffMission"), None, false),                // IFF Mission
-//     (347, Some("ModeSTransmitState"), Some(8), false), // Mode S Interrogator Status Transmit State
-//     (350, None, None, false),                          // Mode 5 Reply
-//     (351, None, None, false),                          // Antenna Selection
-//     (353, None, None, false),                          // Mode S Squitter Type
-//     (354, None, None, false),                          // Mode S Squitter Type
-//     (355, None, None, false),                          // Mode S Squitter Record Source
-//     (356, None, None, false),                          // Aircraft Present Domain
-//     (357, None, None, false),                          // Aircraft Identification Type
-//     (358, None, None, true),                           // Capability Report
-//     (359, None, None, true),                           // Navigation Source
-//     (361, Some("Mode5SAltitudeResolution"), None, false), // Mode 5/S Altitude Resolution
-//     (369, None, None, false),                          // Data Category
-//     (378, None, None, false),                          // Appearance-Paint Scheme
-//     (379, None, None, false),                          // Appearance-Damage
-//     (380, None, None, false),                          // Mode 5 Message Formats Status
-//     (381, None, None, false),                          // Appearance-Trailing Effects
-//     (382, None, None, false),                          // Appearance-Hatch
-//     (383, None, None, false),                          // Appearance-Launcher/Operational
-//     (384, None, None, false),                          // Appearance-Camouflage Type
-//     (385, None, None, false),                          // Appearance-Concealed Position
-//     (386, None, None, false),                          // Appearance-Entity or Object State
-//     (387, None, None, false),                          // Appearance-Canopy
-//     (388, None, None, false),                          // Appearance-Subsurface Hatch
-//     (389, Some("Active Interrogation Indicator"), None, false), // DIS-PDU Status-Active Interrogation Indicator (AII)
-//     (390, None, None, false),                                   // Appearance-Lifeform Health
-//     (391, None, None, false), // Appearance-Life Form Compliance Status
-//     (392, None, None, false), // Appearance-Life Form Posture
-//     (393, None, None, false), // Appearance-Life Form Weapon/Implement
-//     (394, None, None, false), // Appearance-Concealed Movement
-//     (395, None, None, false), // Appearance-Environmental Density
-//     (396, None, None, false), // Mode 5 Platform Type
-//     (397, None, None, false), // Appearance-Anti-Collision Day/Night
-//     (398, None, None, false), // Appearance-Navigation/Position Brightness
-//     (399, None, None, false), // Appearance-Supply Deployed
-//     (400, None, None, false), // Appearance-NVG Mode
-//     (401, None, None, false), // Parachute
-//     (402, None, None, false), // Flare/Smoke Color
-//     (403, None, None, false), // Flare/Smoke Status
-//     (404, None, None, false), // Spot Chaff Status
-//     (405, None, None, false), // Appearance-Object General-Damage
-//     (406, None, None, false), // Appearance-Object General-Predistributed
-//     (407, None, None, false), // Appearance-Object Specific-Breach State
-//     (408, None, None, false), // Appearance-Object Specific-Chemical Type
-//     (409, None, None, false), // Appearance-Linear Object Tank Ditch Breach
-//     (410, None, None, false), // Appearance-Linear Object Lane Marker Visible
-//     (411, None, None, false), // Appearance-Object General-IED Present
-//     (412, None, None, false), // Mode 5 Level Selection
-//     (415, None, None, false), // Attached Part-Detached Indicator
-//     (423, None, None, false), // Mode 5 Location Errors
-//     (426, None, None, false), // Cover/Shroud Status
-//     // 427 - 448, 478 - 479 // SubCategories (EntityType)
-//     // 481 - 482, 505 - 527 // Specifics (EntityType)
-//     (589, None, None, false), // Transmitter-Detail-SATCOM-Modulation
-//     // 800 // Link 16 Version
-//     // 801 // Aircraft ID Source
-//     (802, None, None, false), // Clothing IR Signature
-//     // 803-887 // Do not exist
-//     (889, None, None, false), // Damage Area
-// ];
-
-// const BITFIELD_UIDS: [RangeInclusive<usize>; 4] = [
-//     31..=43, // Appearances
-//     68..=68, // StopFreeze Frozen Behavior
-//     // 230..=239, // Point Object Appearance - Linear Object Appearance - Areal Object Appearance
-//     450..=462, // Capabilities
-//     // 483..=487, // Point Object Appearances
-//     // 488..=489, // Linear Object Appearances
-//     // 149..=149, // UA-Propulsion Plant Configuration -- TODO does not compile as of yet
-//     // TODO 54 - Cultural Feature General Appearance
-//     // TODO 480 - Non-Human Life Forms Appearance
-//     591..=591, // NET ID Record
-// ];
+// TODO generate the record types as well (31 items), and implement xref's to these records
 
 /// Some enums cross-reference "record" elements.
 /// Such records are not generated by this script
@@ -433,7 +216,13 @@ fn init_overrides(path: &Path) -> Overrides {
 /// As this function is to be called from within a build script,
 /// aborting by panicking is acceptable.
 #[must_use]
-pub fn execute(siso_ref_010_dir: &str) -> HashMap<usize, String> {
+pub fn execute(
+    siso_ref_010_dir: &str,
+) -> (
+    HashMap<usize, String>,
+    HashMap<usize, String>,
+    HashMap<usize, String>,
+) {
     let ref_path: PathBuf = [siso_ref_010_dir, "SISO-REF-010.xml"].iter().collect();
     let config_path: PathBuf = [siso_ref_010_dir, "overrides.toml"].iter().collect();
     let overrides = init_overrides(config_path.as_path());
@@ -485,17 +274,19 @@ pub fn execute(siso_ref_010_dir: &str) -> HashMap<usize, String> {
     let generation_items = generation_items;
 
     // Build the index of UIDs and their code names
-    let uid_index = generate_uid_index(&generation_items);
+    let uid_index = create_uid_index(&generation_items);
+    let pdu_index = create_pdu_types_index(&generation_items);
+    let er_index = create_extension_record_types_index(&generation_items);
 
     // Generate the code for the enumerations
     generate_and_save(&generation_items, &overrides);
 
-    uid_index
+    (uid_index, pdu_index, er_index)
 }
 
-/// Generate an index of UIDs to the name of the generated code items
+/// Create an index of UIDs to the name of the generated code items
 /// for use in further generation functions.
-fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, String> {
+fn create_uid_index(generation_items: &[GenerationItem]) -> HashMap<usize, String> {
     let mut uid_index = HashMap::new();
 
     for item in generation_items {
@@ -527,6 +318,52 @@ fn generate_uid_index(generation_items: &Vec<GenerationItem>) -> HashMap<usize, 
     uid_index.insert(884, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Flash Pattern - p454 l8 - u8
 
     uid_index
+}
+
+fn create_pdu_types_index(generation_items: &[GenerationItem]) -> HashMap<usize, String> {
+    let pdu_type_enum = generation_items.iter().find(|&item| {
+        if let GenerationItem::Enum(e) = item {
+            e.uid == 4
+        } else {
+            false
+        }
+    });
+
+    let mut pdu_types_index = HashMap::new();
+
+    if let Some(GenerationItem::Enum(e)) = pdu_type_enum {
+        for item in &e.items {
+            if let EnumItem::Basic(variant) = item {
+                pdu_types_index.insert(variant.value, format_name(&variant.description, 0));
+            }
+        }
+    }
+
+    pdu_types_index
+}
+
+fn create_extension_record_types_index(
+    generation_items: &[GenerationItem],
+) -> HashMap<usize, String> {
+    let er_type_enum = generation_items.iter().find(|&item| {
+        if let GenerationItem::Enum(e) = item {
+            e.uid == 99
+        } else {
+            false
+        }
+    });
+
+    let mut er_types_index = HashMap::new();
+
+    if let Some(GenerationItem::Enum(e)) = er_type_enum {
+        for item in &e.items {
+            if let EnumItem::Basic(variant) = item {
+                er_types_index.insert(variant.value, format_name(&variant.description, 0));
+            }
+        }
+    }
+
+    er_types_index
 }
 
 /// Generates code for all provided `GenerationItem`s, formats the code and stores it in `OUT_DIR`.
