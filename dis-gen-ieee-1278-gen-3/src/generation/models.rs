@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-
+use crate::generation::parsers::{generate_common_extension_record_body_parser, generate_extension_record_body_parser};
 // Module tree of generated sources:
 // src/
 //    common_records/           // Containing all common records
@@ -218,6 +218,18 @@ pub enum ArrayFieldEnum {
     BitRecord(BitRecordField),
 }
 
+impl ArrayFieldEnum {
+    pub fn field_name(&self) -> &str {
+        match self {
+            ArrayFieldEnum::Numeric(f) => { &f.field_name }
+            ArrayFieldEnum::Enum(f) => { &f.field_name }
+            ArrayFieldEnum::FixedString(f) => { &f.field_name }
+            ArrayFieldEnum::FixedRecord(f) => { &f.field_name }
+            ArrayFieldEnum::BitRecord(f) => { &f.field_name }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum BitRecordFieldEnum {
     Enum(EnumBitField),
@@ -254,6 +266,26 @@ pub enum ExtensionRecordFieldEnum {
     #[allow(dead_code)]
     PaddingTo32,
 }
+
+impl ExtensionRecordFieldEnum {
+    pub fn field_name(&self) -> &str {
+        match self {
+            ExtensionRecordFieldEnum::Numeric(f) => { &f.field_name }
+            ExtensionRecordFieldEnum::Enum(f) => { &f.field_name }
+            ExtensionRecordFieldEnum::FixedString(f) => { &f.field_name }
+            ExtensionRecordFieldEnum::VariableString(f) => { &f.string_field.field_name }
+            ExtensionRecordFieldEnum::FixedRecord(f) => { &f.field_name }
+            ExtensionRecordFieldEnum::BitRecord(f) => { &f.field_name }
+            ExtensionRecordFieldEnum::Array(f) => { &f.type_field.field_name() }
+            ExtensionRecordFieldEnum::AdaptiveRecord(f) => { &f.field_name }
+            ExtensionRecordFieldEnum::Opaque(f) => { &f.opaque_data_field.field_name }
+            // TODO are these correct names?
+            ExtensionRecordFieldEnum::PaddingTo16 => { "padding" }
+            ExtensionRecordFieldEnum::PaddingTo32 => { "padding" }
+        }
+    }
+}
+
 
 #[derive(Clone)]
 pub struct Array {
@@ -491,25 +523,38 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         .expect("Error parsing 'PDU' intermediate generated code for pretty printing.");
 
     // 3. Filter the ExtensionRecord items for this family and generate the records in a separate (sub)module
-    let extension_records = items
+    // TODO extract into separate function
+    let generated = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_extension_record())
         .map(|item| {
             if let GenerationItem::ExtensionRecord(record, _family) = item {
-                generate_extension_record(record)
+                (generate_extension_record(record), generate_extension_record_body_parser(record))
             } else {
                 panic!("GenerationItem is not an ExtensionRecord.")
             }
         })
-        .collect::<TokenStream>();
+        .collect::<Vec<(TokenStream, TokenStream)>>();
+
+    let (extension_records, extension_record_parsers):  (Vec<_>, Vec<_>) = itertools::multiunzip(generated);
+
+    let extension_records = extension_records.into_iter().collect::<TokenStream>();
+    // TODO remove
+    let _ = syn::parse_file(&extension_records.to_string()).expect(
+        "Error parsing 'extension_records models' intermediate generated code for pretty printing.",
+    );
+    let extension_record_parsers = extension_record_parsers.into_iter().flatten().collect::<TokenStream>();
+    // TODO remove
+    let _ = syn::parse_file(&extension_record_parsers.to_string()).expect(
+        "Error parsing 'extension_records parsers' intermediate generated code for pretty printing.",
+    );
+    let er_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &extension_record_parsers);
+    let extension_records = quote! { #extension_records #er_parser_module };
     let extension_records =
         generate_module_with_name(EXTENSION_RECORDS_MODULE_NAME, &extension_records);
 
-    let _ = syn::parse_file(&extension_records.to_string()).expect(
-        "Error parsing 'extension_records' intermediate generated code for pretty printing.",
-    );
-
     // 3. Filter the remaining non-PDU items for this family and generate the records in the family module
+    // TODO extract into separate function
     let records = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_record())
@@ -524,29 +569,28 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         })
         .collect::<TokenStream>();
 
-    // 3. Merge resulting TokenStreams
     let contents = quote! { #pdus #extension_records #records };
 
     generate_module_with_name(family, &contents)
 }
 
 /// Generates all code related a PDU
-fn generate_pdu_module(item: &Pdu) -> TokenStream {
-    let pdu_name_ident = format_ident!("{}", item.pdu_name);
-    let pdu_module_name = &item.pdu_module_name;
-    let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", item.pdu_name);
+fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
+    let pdu_name_ident = format_ident!("{}", pdu.pdu_name);
+    let pdu_module_name = &pdu.pdu_module_name;
+    let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.pdu_name);
 
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
     let pdu_trait_impls = generate_pdu_trait_impls(&pdu_name_ident, &builder_name_ident);
-    let builder_content = super::builders::generate_pdu_builder(item, &builder_name_ident);
+    let builder_content = super::builders::generate_pdu_builder(pdu, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
 
-    println!("PDU: {}", item.pdu_name);
+    println!("PDU: {}", pdu.pdu_name);
     let _ = syn::parse_file(&builder_module.to_string()).expect(
         "Error parsing 'pdu builder module' intermediate generated code for pretty printing.",
     );
 
-    let parser_content = super::parsers::generate_pdu_body_parser(item);
+    let parser_content = super::parsers::generate_pdu_body_parser(pdu);
     let parser_module = generate_module_with_name(PARSER_MODULE_NAME, &parser_content);
 
     println!("{parser_module}");
@@ -554,7 +598,7 @@ fn generate_pdu_module(item: &Pdu) -> TokenStream {
         "Error parsing 'pdu parser module' intermediate generated code for pretty printing.",
     );
 
-    let fields = item
+    let fields = pdu
         .fields
         .iter()
         .map(generate_pdu_and_fixed_field_decl)
@@ -577,16 +621,17 @@ fn generate_pdu_module(item: &Pdu) -> TokenStream {
     generate_module_with_name(pdu_module_name, &contents)
 }
 
-fn generate_fixed_record(item: &FixedRecord) -> TokenStream {
-    let record_name = &item.record_type;
+fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
+    let record_name = format_ident!("{}", record.record_name);
+    let record_type_doc_comment = format!("Record Type Enum {}", record.record_type_enum);
 
-    let fields = item
+    let fields = record
         .fields
         .iter()
-        .map(generate_pdu_and_fixed_field_decl)
-        .collect::<Vec<TokenStream>>();
+        .map(|field| generate_extension_record_field_decl(field));
 
     quote! {
+        #[doc = #record_type_doc_comment]
         #[derive(Debug, Default, Clone, PartialEq)]
         pub struct #record_name {
             #(#fields)*
@@ -594,17 +639,16 @@ fn generate_fixed_record(item: &FixedRecord) -> TokenStream {
     }
 }
 
-fn generate_extension_record(item: &ExtensionRecord) -> TokenStream {
-    let record_name = format_ident!("{}", item.record_name);
-    let record_type_doc_comment = format!("Record Type Enum {}", item.record_type_enum);
+fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
+    let record_name = &record.record_type;
 
-    let fields = item
+    let fields = record
         .fields
         .iter()
-        .map(|field| generate_extension_record_field_decl(field));
+        .map(generate_pdu_and_fixed_field_decl)
+        .collect::<Vec<TokenStream>>();
 
     quote! {
-        #[doc = #record_type_doc_comment]
         #[derive(Debug, Default, Clone, PartialEq)]
         pub struct #record_name {
             #(#fields)*

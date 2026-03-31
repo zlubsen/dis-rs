@@ -13,6 +13,7 @@ categories.workspace = true
 keywords = ["IEEE-1278-1", "generator", "DIS", "v8"]
 
 [dependencies]
+itertools = "0.14.0"
 quote = "1.0.41"
 quick-xml = "0.39.0"
 proc-macro2 = "1.0.101"

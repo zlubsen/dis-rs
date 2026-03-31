@@ -22,7 +22,7 @@ a reader require additional information, contact the SISO Inc. Board of Director
 
 Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
 display, and make derivative works from this material, for noncommercial purposes, provided that
-any use of the material contains the following attribution: "Reprinted with permission from SISO Inc." 
+any use of the material contains the following attribution: "Reprinted with permission from SISO Inc."
 The material may not be used for a commercial purpose without express written
 permission from the SISO Inc Board of Directors.
 
@@ -117,7 +117,7 @@ St. Petersburg, FL 33702
     <BooleanBitField name="Lossless Propagation" bitPosition="5"/>
     <BooleanBitField name="Spread Spectrum" bitPosition="6"/>
     <BooleanBitField name="Audio" bitPosition="7"/>
-    <BooleanBitField name="Video" bitPosition="8"/> 
+    <BooleanBitField name="Video" bitPosition="8"/>
     <BooleanBitField name="Data" bitPosition="9"/>
     <BooleanBitField name="Navigation" bitPosition="10"/>
     <BooleanBitField name="Jammer" bitPosition="11"/>
@@ -174,7 +174,7 @@ St. Petersburg, FL 33702
     </OpaqueData>
     <PaddingTo64/>
   </ExtensionRecord>
-  
+
    <ExtensionRecord name="Database Index" recordTypeEnum="3101" baseLength="16" isVariable="false">
     <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
     <NumericField name="Record Length" type="uint16"/>
@@ -182,8 +182,8 @@ St. Petersburg, FL 33702
     <NumericField name="Offset" type="uint32"/>
     <NumericField name="Duration" type="uint32"/>
   </ExtensionRecord>
-  
-  <ExtensionRecord name="Mulitple Nodes" recordTypeEnum="3102" baseLength="8" isVariable="true">
+
+  <ExtensionRecord name="Multiple Nodes" recordTypeEnum="3102" baseLength="8" isVariable="true">
     <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
     <NumericField name="Record Length" type="uint16"/>
     <NumericField name="Padding" type="uint16"/>

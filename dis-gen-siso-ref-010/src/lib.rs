@@ -293,6 +293,7 @@ fn create_uid_index(generation_items: &[GenerationItem]) -> HashMap<usize, Strin
         uid_index.insert(item.uid(), format_name(item.name(), item.uid()));
     }
 
+    // FIXME remove these placeholders when the v8 standard is complete
     uid_index.insert(93, "EnumerationU32".to_string()); // FIXME not defined in SISO-REF-010 v36 - Mode S Squitter Reports p436 l17 - u32
     uid_index.insert(94, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - TCAS/ACAS system Type - p440 l22 - u8
     uid_index.insert(95, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Mode 4 Status - Active Cde Key - p418 l20 - u8
@@ -362,6 +363,11 @@ fn create_extension_record_types_index(
             }
         }
     }
+
+    // FIXME remove these placeholders when the v8 standard is complete - added by hand to SISO-REF-010.xml file
+    // er_types_index.insert(2042, format_name("AnimationControl", 0)); // v36 UID 99 does not contain this type variant
+    // er_types_index.insert(3102, format_name("MultipleNodes", 0)); // v36 UID 99 does not contain this type variant
+    // er_types_index.insert(5503, format_name("IOComputedEffects", 0)); // v36 UID 99 does not contain this type variant
 
     er_types_index
 }
