@@ -311,7 +311,10 @@ fn process_fixed_string_field(
         field_name: format_field_name(&field.name),
         field_type: "String",
         length: field.length,
-        parser_function: to_tokens(&format!("crate::parser::fixed_string({} as usize)", field.length)),
+        parser_function: to_tokens(&format!(
+            "crate::parser::fixed_string({} as usize)",
+            field.length
+        )),
     }
 }
 
@@ -436,6 +439,7 @@ fn process_opaque_data_field(
     crate::generation::models::OpaqueDataField {
         field_name: format_field_name(&field.name),
         field_type: "Vec<u8>",
+        parser_function: to_tokens("crate::parser::opaque_data"),
     }
 }
 
@@ -531,7 +535,7 @@ fn process_extension_record(
         record_name: formatted_record_name.clone(),
         record_name_fqn: to_tokens(lookup_fqn(&formatted_record_name, lookup)),
         record_type_enum: record.record_type_attr,
-        record_type_variant_name: to_tokens(record_type_variant_name),
+        record_type_variant_name: record_type_variant_name.to_string(),
         base_length: record.base_length_attr,
         is_variable: record.is_variable_attr,
         record_type_field: process_enum_field(&record.record_type_field, lookup),

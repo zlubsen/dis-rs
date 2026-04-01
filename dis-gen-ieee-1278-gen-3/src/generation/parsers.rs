@@ -1,5 +1,10 @@
-use crate::generation::models::{generate_module_with_name, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecordField, EnumField, ExtensionRecord, ExtensionRecordFieldEnum, FixedRecordField, FixedStringField, GenerationItem, NumericField, OpaqueDataField, Pdu, PduAndFixedRecordFieldsEnum, VariableString, PARSER_MODULE_NAME};
-use proc_macro2::TokenStream;
+use crate::generation::models::{
+    generate_module_with_name, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecordField,
+    EnumField, ExtensionRecord, ExtensionRecordFieldEnum, FixedRecordField, FixedStringField,
+    GenerationItem, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum, VariableString,
+    PARSER_MODULE_NAME,
+};
+use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 
 // TODO:
@@ -28,9 +33,9 @@ pub fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
         #pdu_body_parser
 
-        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::ExtensionRecord> {
+        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::ExtensionRecord>> {
             let (input, number_of_er) = nom::number::complete::le_u16(input)?;
-            let (input, records) = nom::multi::count(extension_record(input), number_of_er)?;
+            let (input, records) = nom::multi::count(extension_record(input), number_of_er.into())?;
 
             Ok((input, records))
         }
@@ -60,8 +65,11 @@ pub fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
             }
         }
 
-        pub(crate) fn variable_string(input: &[u8]) -> IResult<&[u8], String> {
-            let (input, count) =
+        pub(crate) fn opaque_data(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<u8>> {
+            move |input: &[u8]| {
+                let (input, bytes) = nom::bytes::complete::take(length)(input)?;
+                bytes.to_vec()
+            }
         }
     };
 
@@ -119,7 +127,7 @@ pub fn generate_common_extension_record_body_parser(items: &[GenerationItem]) ->
             todo!("Implement parser for Other PDU")
         }
 
-        pub fn extension_record_body(record_type: &ExtensionRecordTypes) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> + '_ {
+        pub fn extension_record_body(record_type: &ExtensionRecordTypes, record_length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match record_type {
                     // FIXME parser for 'Other' PDU
@@ -137,11 +145,11 @@ pub fn generate_common_extension_record_body_parser(items: &[GenerationItem]) ->
 fn generate_common_extension_record_body_parser_arm(er: &GenerationItem) -> TokenStream {
     if let GenerationItem::ExtensionRecord(er, _) = er {
         let er_record_type_ident = format_ident!("{}", EXTENSION_RECORD_TYPE);
-        let er_variant_name = &er.record_type_variant_name;
-        let er_path = er.fqn_path.clone();
-        let parser_function = er.parser_function.clone();
+        let er_variant_name = format_ident!("{}", er.record_type_variant_name);
+        let er_path = &er.fqn_path;
+        let parser_function = &er.parser_function;
         quote! {
-            #er_record_type_ident::#er_variant_name => #er_path::parser::#parser_function(input)?,
+            #er_record_type_ident::#er_variant_name => #er_path::parser::#parser_function(record_length)(input)?,
         }
     } else {
         panic!("GenerationItem is not an Extension Record.")
@@ -195,41 +203,72 @@ fn generate_pdu_field_parser(field: &PduAndFixedRecordFieldsEnum) -> TokenStream
 pub fn generate_extension_record_body_parser(record: &ExtensionRecord) -> TokenStream {
     let parser_function = &record.parser_function;
     let record_name_fqn = &record.record_name_fqn;
+    let record_type_variant = format_ident!("{}", record.record_type_variant_name);
 
-    let field_parsers = record.fields
+    let field_parsers = record
+        .fields
         .iter()
         .map(generate_extension_record_field_parser)
         .collect::<Vec<TokenStream>>();
-    let fields = record.fields
+    let fields = record
+        .fields
         .iter()
-        .map(|field| field.field_name().parse::<TokenStream>().expect("Failed to tokenise field name for extension record parser") )
+        .filter(|field| !field.is_padding())
+        .map(|field| {
+            field
+                .field_name()
+                .parse::<TokenStream>()
+                .expect("Failed to tokenise field name for extension record parser")
+        })
         .collect::<Vec<TokenStream>>();
 
-    quote! {
-        pub fn #parser_function(input: &[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> {
-            #(#field_parsers)*
+    let padding_to_64 = if record.is_variable {
+        quote! {
+            let padded_record = crate::utils::length_padded_to_num(record_length, 8);
+            let (input, _padding_to_64) = nom::bytes::complete::take(padded_record.padding_length)(input)?;
+        }
+    } else {
+        let length = Literal::usize_suffixed(record.base_length);
 
-            let body = #record_name_fqn {
-                #(#fields),*,
-            };
-            Ok((input, body.into_pdu_body()))
+        quote! {
+            let (input, _padding_to_64) = nom::bytes::complete::take(#length)(input)?;
+        }
+    };
+
+    quote! {
+        pub fn #parser_function(record_length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> {
+            move |input: &[u8]| {
+                #(#field_parsers)*
+
+                #padding_to_64
+
+                let body = #record_name_fqn {
+                    #(#fields),*,
+                };
+
+                Ok((input, crate::ExtensionRecordBody::#record_type_variant(body)))
+            }
         }
     }
 }
 
 fn generate_extension_record_field_parser(field: &ExtensionRecordFieldEnum) -> TokenStream {
     match field {
-        ExtensionRecordFieldEnum::Numeric(f) => { generate_numeric_field_parser(f) }
-        ExtensionRecordFieldEnum::Enum(f) => { generate_enum_field_parser(f) }
-        ExtensionRecordFieldEnum::FixedString(f) => { generate_fixed_string_field_parser(f) }
-        ExtensionRecordFieldEnum::VariableString(f) => { generate_variable_string_field_parser(f) }
-        ExtensionRecordFieldEnum::FixedRecord(f) => { generate_fixed_record_field_parser(f) }
-        ExtensionRecordFieldEnum::BitRecord(f) => { generate_bit_record_field_parser(f) }
-        ExtensionRecordFieldEnum::Array(f) => { generate_array_field_parser(f) }
-        ExtensionRecordFieldEnum::AdaptiveRecord(f) => { generate_adaptive_record_field_parser(f) }
-        ExtensionRecordFieldEnum::Opaque(f) => { generate_opaque_field_parser(f) }
-        ExtensionRecordFieldEnum::PaddingTo16 => { generate_padding_to_16_parser() }
-        ExtensionRecordFieldEnum::PaddingTo32 => { generate_padding_to_32_parser() }
+        ExtensionRecordFieldEnum::Numeric(f) => generate_numeric_field_parser(f),
+        ExtensionRecordFieldEnum::Enum(f) => generate_enum_field_parser(f),
+        ExtensionRecordFieldEnum::FixedString(f) => generate_fixed_string_field_parser(f),
+        ExtensionRecordFieldEnum::VariableString(f) => generate_variable_string_parser(f),
+        ExtensionRecordFieldEnum::FixedRecord(f) => generate_fixed_record_field_parser(f),
+        ExtensionRecordFieldEnum::BitRecord(f) => generate_bit_record_field_parser(f),
+        ExtensionRecordFieldEnum::Array(f) => generate_array_field_parser(f),
+        ExtensionRecordFieldEnum::AdaptiveRecord(f) => generate_adaptive_record_field_parser(f),
+        ExtensionRecordFieldEnum::Opaque(f) => generate_opaque_data_parser(f),
+        ExtensionRecordFieldEnum::PaddingTo16 => unimplemented!(
+            "Unimplemented as element <PaddingTo16> does not occur in the schema definitions"
+        ),
+        ExtensionRecordFieldEnum::PaddingTo32 => unimplemented!(
+            "Unimplemented as element <PaddingTo32> does not occur in the schema definitions"
+        ),
     }
 }
 
@@ -301,7 +340,7 @@ fn generate_adaptive_record_field_parser(field: &AdaptiveRecordField) -> TokenSt
     }
 }
 
-fn generate_variable_string_field_parser(field: &VariableString) -> TokenStream {
+fn generate_variable_string_parser(field: &VariableString) -> TokenStream {
     let string_field_name = format_ident!("{}", field.string_field.field_name);
     let count_field_name = format_ident!("{}", field.count_field.field_name);
     let count_parser = &field.count_field.parser_function;
@@ -320,32 +359,28 @@ fn generate_array_field_parser(array: &Array) -> TokenStream {
 
     quote! {
         let (input, count) = #count_parser_function(input)?;
-        let (input, #field_name) = nom::multi::count(#type_parser_function(input), count)?;
+        let (input, #field_name) = nom::multi::count(#type_parser_function(input), count.into())?;
     }
 }
 
 fn generate_array_field_type_parser_function(e: &ArrayFieldEnum) -> &TokenStream {
     match e {
-        ArrayFieldEnum::Numeric(f) => { &f.parser_function }
-        ArrayFieldEnum::Enum(f) => { &f.parser_function }
-        ArrayFieldEnum::FixedString(f) => { &f.parser_function }
-        ArrayFieldEnum::FixedRecord(f) => { &f.parser_function }
-        ArrayFieldEnum::BitRecord(f) => { &f.parser_function }
+        ArrayFieldEnum::Numeric(f) => &f.parser_function,
+        ArrayFieldEnum::Enum(f) => &f.parser_function,
+        ArrayFieldEnum::FixedString(f) => &f.parser_function,
+        ArrayFieldEnum::FixedRecord(f) => &f.parser_function,
+        ArrayFieldEnum::BitRecord(f) => &f.parser_function,
     }
 }
 
-fn generate_opaque_field_parser(field: &OpaqueDataField) -> TokenStream {
-    todo!()
-}
+fn generate_opaque_data_parser(field: &OpaqueData) -> TokenStream {
+    let count_field_name = format_ident!("{}", &field.count_field.field_name);
+    let count_parser_function = &field.count_field.parser_function;
+    let data_field_name = format_ident!("{}", &field.opaque_data_field.field_name);
+    let data_parser_function = &field.opaque_data_field.parser_function;
 
-fn generate_padding_to_16_parser() -> TokenStream {
-    todo!()
-}
-
-fn generate_padding_to_32_parser() -> TokenStream {
-    todo!()
-}
-
-fn generate_padding_to_64_parser() -> TokenStream {
-    todo!()
+    quote! {
+        let (input, #count_field_name) = #count_parser_function(input)?;
+        let (input, #data_field_name) = #data_parser_function(#count_field_name as usize)(input)?;
+    }
 }

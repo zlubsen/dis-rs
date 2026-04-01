@@ -1,6 +1,6 @@
+use crate::generation::parsers::generate_extension_record_body_parser;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-use crate::generation::parsers::{generate_common_extension_record_body_parser, generate_extension_record_body_parser};
 // Module tree of generated sources:
 // src/
 //    common_records/           // Containing all common records
@@ -47,6 +47,16 @@ impl GenerationItem {
             GenerationItem::BitRecord(_item, _) => None,
             GenerationItem::AdaptiveRecord(_item, _) => None,
             GenerationItem::ExtensionRecord(item, _) => Some(item.record_name.clone()),
+        }
+    }
+
+    pub(crate) fn variant_name(&self) -> Option<String> {
+        match self {
+            GenerationItem::Pdu(item, _) => Some(item.pdu_name.clone()),
+            GenerationItem::FixedRecord(_item, _) => None,
+            GenerationItem::BitRecord(_item, _) => None,
+            GenerationItem::AdaptiveRecord(_item, _) => None,
+            GenerationItem::ExtensionRecord(item, _) => Some(item.record_type_variant_name.clone()),
         }
     }
 
@@ -179,6 +189,7 @@ pub struct VariableStringField {
 pub struct OpaqueDataField {
     pub field_name: String,
     pub field_type: &'static str, // `Vec<u8>`
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -223,11 +234,11 @@ pub enum ArrayFieldEnum {
 impl ArrayFieldEnum {
     pub fn field_name(&self) -> &str {
         match self {
-            ArrayFieldEnum::Numeric(f) => { &f.field_name }
-            ArrayFieldEnum::Enum(f) => { &f.field_name }
-            ArrayFieldEnum::FixedString(f) => { &f.field_name }
-            ArrayFieldEnum::FixedRecord(f) => { &f.field_name }
-            ArrayFieldEnum::BitRecord(f) => { &f.field_name }
+            ArrayFieldEnum::Numeric(f) => &f.field_name,
+            ArrayFieldEnum::Enum(f) => &f.field_name,
+            ArrayFieldEnum::FixedString(f) => &f.field_name,
+            ArrayFieldEnum::FixedRecord(f) => &f.field_name,
+            ArrayFieldEnum::BitRecord(f) => &f.field_name,
         }
     }
 }
@@ -272,22 +283,28 @@ pub enum ExtensionRecordFieldEnum {
 impl ExtensionRecordFieldEnum {
     pub fn field_name(&self) -> &str {
         match self {
-            ExtensionRecordFieldEnum::Numeric(f) => { &f.field_name }
-            ExtensionRecordFieldEnum::Enum(f) => { &f.field_name }
-            ExtensionRecordFieldEnum::FixedString(f) => { &f.field_name }
-            ExtensionRecordFieldEnum::VariableString(f) => { &f.string_field.field_name }
-            ExtensionRecordFieldEnum::FixedRecord(f) => { &f.field_name }
-            ExtensionRecordFieldEnum::BitRecord(f) => { &f.field_name }
-            ExtensionRecordFieldEnum::Array(f) => { &f.type_field.field_name() }
-            ExtensionRecordFieldEnum::AdaptiveRecord(f) => { &f.field_name }
-            ExtensionRecordFieldEnum::Opaque(f) => { &f.opaque_data_field.field_name }
+            ExtensionRecordFieldEnum::Numeric(f) => &f.field_name,
+            ExtensionRecordFieldEnum::Enum(f) => &f.field_name,
+            ExtensionRecordFieldEnum::FixedString(f) => &f.field_name,
+            ExtensionRecordFieldEnum::VariableString(f) => &f.string_field.field_name,
+            ExtensionRecordFieldEnum::FixedRecord(f) => &f.field_name,
+            ExtensionRecordFieldEnum::BitRecord(f) => &f.field_name,
+            ExtensionRecordFieldEnum::Array(f) => &f.type_field.field_name(),
+            ExtensionRecordFieldEnum::AdaptiveRecord(f) => &f.field_name,
+            ExtensionRecordFieldEnum::Opaque(f) => &f.opaque_data_field.field_name,
             // TODO are these correct names?
-            ExtensionRecordFieldEnum::PaddingTo16 => { "padding" }
-            ExtensionRecordFieldEnum::PaddingTo32 => { "padding" }
+            ExtensionRecordFieldEnum::PaddingTo16 => "padding",
+            ExtensionRecordFieldEnum::PaddingTo32 => "padding",
+        }
+    }
+
+    pub fn is_padding(&self) -> bool {
+        match self {
+            ExtensionRecordFieldEnum::Numeric(f) => f.is_padding,
+            _ => false,
         }
     }
 }
-
 
 #[derive(Clone)]
 pub struct Array {
@@ -345,7 +362,7 @@ pub struct ExtensionRecord {
     pub record_name: String,
     pub record_name_fqn: TokenStream,
     pub record_type_enum: usize,
-    pub record_type_variant_name: TokenStream,
+    pub record_type_variant_name: String,
     pub base_length: usize,
     pub is_variable: bool,
     pub record_type_field: EnumField,
@@ -474,7 +491,7 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
 
 fn generate_body_variant(variant: &GenerationItem) -> TokenStream {
     let variant_name = variant
-        .type_name()
+        .variant_name()
         .clone()
         .expect("Type name for variants can only be called for PDUs and ExtensionRecords");
     let variant_name = format_ident!("{variant_name}");
@@ -531,21 +548,32 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         .filter(|&item| (item.family().as_str() == family) && item.is_extension_record())
         .map(|item| {
             if let GenerationItem::ExtensionRecord(record, _family) = item {
-                (generate_extension_record(record), generate_extension_record_body_parser(record))
+                (
+                    generate_extension_record(record),
+                    generate_extension_record_body_parser(record),
+                )
             } else {
                 panic!("GenerationItem is not an ExtensionRecord.")
             }
         })
         .collect::<Vec<(TokenStream, TokenStream)>>();
 
-    let (extension_records, extension_record_parsers):  (Vec<_>, Vec<_>) = itertools::multiunzip(generated);
+    let (extension_records, extension_record_parsers): (Vec<_>, Vec<_>) =
+        itertools::multiunzip(generated);
 
     let extension_records = extension_records.into_iter().collect::<TokenStream>();
     // TODO remove
     let _ = syn::parse_file(&extension_records.to_string()).expect(
         "Error parsing 'extension_records models' intermediate generated code for pretty printing.",
     );
-    let extension_record_parsers = extension_record_parsers.into_iter().flatten().collect::<TokenStream>();
+    let extension_record_parsers = extension_record_parsers
+        .into_iter()
+        .flatten()
+        .collect::<TokenStream>();
+    let extension_record_parsers = quote! {
+        use nom::IResult;
+        #extension_record_parsers
+    };
     // TODO remove
     let _ = syn::parse_file(&extension_record_parsers.to_string()).expect(
         "Error parsing 'extension_records parsers' intermediate generated code for pretty printing.",
@@ -557,19 +585,34 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
 
     // 3. Filter the remaining non-PDU items for this family and generate the records in the family module
     // TODO extract into separate function
-    let records = items
+    let (records, record_parsers) = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_record())
         .map(|item| match item {
-            GenerationItem::FixedRecord(record, _family) => generate_fixed_record(record),
-            GenerationItem::BitRecord(record, _family) => generate_bit_record(record),
-            GenerationItem::AdaptiveRecord(record, _family) => generate_adaptive_record(record),
+            GenerationItem::FixedRecord(record, _family) => (
+                generate_fixed_record(record),
+                generate_fixed_record_parser(record),
+            ),
+            GenerationItem::BitRecord(record, _family) => (
+                generate_bit_record(record),
+                generate_bit_record_parser(record),
+            ),
+            GenerationItem::AdaptiveRecord(record, _family) => (
+                generate_adaptive_record(record),
+                generate_adaptive_record_parser(record),
+            ),
             GenerationItem::ExtensionRecord(_record, _family) => {
-                panic!("GenerationItem is an ExtensionRecord.")
+                panic!("GenerationItem is not a Record (found ExtensionRecord).")
             }
-            GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record."),
+            GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record (found PDU)."),
         })
         .collect::<TokenStream>();
+    let record_parsers = record_parsers
+        .into_iter()
+        .flatten()
+        .collect::<TokenStream>();
+    let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
+    let records = quote! { #records #records_parser_module };
 
     let contents = quote! { #pdus #extension_records #records };
 
@@ -657,6 +700,12 @@ fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
         }
     }
 }
+
+fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream {}
+
+fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {}
+
+fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenStream {}
 
 fn generate_pdu_and_fixed_field_decl(field: &PduAndFixedRecordFieldsEnum) -> TokenStream {
     match field {
