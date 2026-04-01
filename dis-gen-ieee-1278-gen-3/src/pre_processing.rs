@@ -311,6 +311,7 @@ fn process_fixed_string_field(
         field_name: format_field_name(&field.name),
         field_type: "String",
         length: field.length,
+        parser_function: to_tokens(&format!("crate::parser::fixed_string({} as usize)", field.length)),
     }
 }
 
@@ -416,6 +417,7 @@ fn process_variable_string_field(
         field_name: format_field_name(&field.name),
         field_type: "String",
         fixed_number_of_strings: field.fixed_number_of_strings.unwrap_or(0),
+        parser_function: to_tokens("crate::parser::fixed_string"),
     }
 }
 

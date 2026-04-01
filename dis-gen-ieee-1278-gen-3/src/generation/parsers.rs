@@ -28,14 +28,14 @@ pub fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
         #pdu_body_parser
 
-        pub fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::ExtensionRecord> {
+        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::ExtensionRecord> {
             let (input, number_of_er) = nom::number::complete::le_u16(input)?;
             let (input, records) = nom::multi::count(extension_record(input), number_of_er)?;
 
             Ok((input, records))
         }
 
-        pub fn extension_record(input: &[u8]) -> IResult<&[u8], crate::ExtensionRecord> {
+        pub(crate) fn extension_record(input: &[u8]) -> IResult<&[u8], crate::ExtensionRecord> {
             let (input, record_type) = nom::number::complete::le_u16(input)?;
             let record_type = crate::enumerations::ExtensionRecordTypes::from(record_type);
             let (input, record_length) = nom::number::complete::le_u16(input)?;
@@ -50,6 +50,19 @@ pub fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
         }
 
         #extension_record_body_parser
+
+        pub(crate) fn fixed_string(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
+            move |input: &[u8]| {
+                let (input, bytes) = nom::bytes::complete::take(length)(input)?;
+                let string = String::from_utf8_lossy(bytes).into_string();
+
+                Ok((input, string))
+            }
+        }
+
+        pub(crate) fn variable_string(input: &[u8]) -> IResult<&[u8], String> {
+            let (input, count) =
+        }
     };
 
     generate_module_with_name(PARSER_MODULE_NAME, &contents)
@@ -172,7 +185,7 @@ fn generate_pdu_field_parser(field: &PduAndFixedRecordFieldsEnum) -> TokenStream
     match field {
         PduAndFixedRecordFieldsEnum::Numeric(f) => generate_numeric_field_parser(f),
         PduAndFixedRecordFieldsEnum::Enum(f) => generate_enum_field_parser(f),
-        PduAndFixedRecordFieldsEnum::FixedString(f) => generate_fixed_string_parser(f),
+        PduAndFixedRecordFieldsEnum::FixedString(f) => generate_fixed_string_field_parser(f),
         PduAndFixedRecordFieldsEnum::FixedRecord(f) => generate_fixed_record_field_parser(f),
         PduAndFixedRecordFieldsEnum::BitRecord(f) => generate_bit_record_field_parser(f),
         PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => generate_adaptive_record_field_parser(f),
@@ -189,7 +202,6 @@ pub fn generate_extension_record_body_parser(record: &ExtensionRecord) -> TokenS
         .collect::<Vec<TokenStream>>();
     let fields = record.fields
         .iter()
-        // TODO list all records fields, comma separated
         .map(|field| field.field_name().parse::<TokenStream>().expect("Failed to tokenise field name for extension record parser") )
         .collect::<Vec<TokenStream>>();
 
@@ -209,8 +221,8 @@ fn generate_extension_record_field_parser(field: &ExtensionRecordFieldEnum) -> T
     match field {
         ExtensionRecordFieldEnum::Numeric(f) => { generate_numeric_field_parser(f) }
         ExtensionRecordFieldEnum::Enum(f) => { generate_enum_field_parser(f) }
-        ExtensionRecordFieldEnum::FixedString(f) => { generate_fixed_string_parser(f) }
-        ExtensionRecordFieldEnum::VariableString(f) => { generate_variable_string_parser(f) }
+        ExtensionRecordFieldEnum::FixedString(f) => { generate_fixed_string_field_parser(f) }
+        ExtensionRecordFieldEnum::VariableString(f) => { generate_variable_string_field_parser(f) }
         ExtensionRecordFieldEnum::FixedRecord(f) => { generate_fixed_record_field_parser(f) }
         ExtensionRecordFieldEnum::BitRecord(f) => { generate_bit_record_field_parser(f) }
         ExtensionRecordFieldEnum::Array(f) => { generate_array_field_parser(f) }
@@ -243,21 +255,19 @@ fn generate_enum_field_parser(field: &EnumField) -> TokenStream {
     } else {
         quote! {}
     };
-    let a = quote! {
-        let (input, #field_name) = #parser(input)?;
-        #conversion
-    };
-    println!("enum field parser {a}");
-    a
-}
-
-fn generate_fixed_string_parser(field: &FixedStringField) -> TokenStream {
-    let field_name = format_ident!("{}", &field.field_name);
-    let length = field.length;
 
     quote! {
-        let (input, #field_name) = nom::bytes::complete::take(#length)(input)?;
-        let #field_name = String::from_utf8_lossy(#field_name).unwrap_or("Invalid UTF8");
+        let (input, #field_name) = #parser(input)?;
+        #conversion
+    }
+}
+
+fn generate_fixed_string_field_parser(field: &FixedStringField) -> TokenStream {
+    let field_name = format_ident!("{}", &field.field_name);
+    let parser_function = &field.parser_function;
+
+    quote! {
+        let (input, #field_name) = #parser_function(input)?;
     }
 }
 
@@ -291,17 +301,26 @@ fn generate_adaptive_record_field_parser(field: &AdaptiveRecordField) -> TokenSt
     }
 }
 
-fn generate_variable_string_parser(field: &VariableString) -> TokenStream {
-    todo!()
+fn generate_variable_string_field_parser(field: &VariableString) -> TokenStream {
+    let string_field_name = format_ident!("{}", field.string_field.field_name);
+    let count_field_name = format_ident!("{}", field.count_field.field_name);
+    let count_parser = &field.count_field.parser_function;
+    let string_parser = &field.string_field.parser_function;
+
+    quote! {
+        let (input, #count_field_name) = #count_parser(input)?;
+        let (input, #string_field_name) = #string_parser(#count_field_name as usize)(input)?;
+    }
 }
 
 fn generate_array_field_parser(array: &Array) -> TokenStream {
     let count_parser_function = &array.count_field.parser_function;
     let field_name = format_ident!("{}", array.type_field.field_name());
     let type_parser_function = generate_array_field_type_parser_function(&array.type_field);
+
     quote! {
         let (input, count) = #count_parser_function(input)?;
-        let (input, #field_name) = nom::multi::count(#parser_function(input), count)?;
+        let (input, #field_name) = nom::multi::count(#type_parser_function(input), count)?;
     }
 }
 
@@ -309,7 +328,6 @@ fn generate_array_field_type_parser_function(e: &ArrayFieldEnum) -> &TokenStream
     match e {
         ArrayFieldEnum::Numeric(f) => { &f.parser_function }
         ArrayFieldEnum::Enum(f) => { &f.parser_function }
-        // FIXME crate a 'built-in' parser function for fixed and variable strings, store it in the GenerationItem
         ArrayFieldEnum::FixedString(f) => { &f.parser_function }
         ArrayFieldEnum::FixedRecord(f) => { &f.parser_function }
         ArrayFieldEnum::BitRecord(f) => { &f.parser_function }

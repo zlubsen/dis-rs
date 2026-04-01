@@ -106,6 +106,7 @@ pub struct FixedStringField {
     pub field_name: String,
     pub field_type: &'static str, // `String`
     pub length: usize,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -171,6 +172,7 @@ pub struct VariableStringField {
     pub field_name: String,
     pub field_type: &'static str,       // `String`
     pub fixed_number_of_strings: usize, // FIXME attribute does not occur in the schemas
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
