@@ -1,11 +1,13 @@
 use crate::extraction::ExtractionItem;
-use crate::generation::models::{GenerationItem, EXTENSION_RECORDS_MODULE_NAME};
+use crate::generation::models::{
+    GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME,
+};
 use crate::{FqnLookup, Lookup, UidLookup};
 use dis_gen_utils::{
     enum_type_to_field_type, format_field_name, format_pdu_module_name, format_type_name,
 };
 use proc_macro2::TokenStream;
-use quote::format_ident;
+use quote::{format_ident, quote};
 use std::collections::HashMap;
 
 const NOM_LE_PARSER_PATH: &str = "nom::number::complete::le_";
@@ -375,7 +377,7 @@ fn process_fixed_record_field(
     let parser_function = to_tokens(&field_name);
     crate::generation::models::FixedRecordField {
         field_name,
-        field_type_fqn: type_for_fixed_record_field(&field, lookup),
+        field_type_fqn: type_for_fixed_record_field(field, lookup),
         length: field.length,
         parser_function,
     }
@@ -400,6 +402,11 @@ fn process_adaptive_record_field(
     field: &crate::extraction::AdaptiveRecordField,
     lookup: &Lookup,
 ) -> crate::generation::models::AdaptiveRecordField {
+    let discriminant_field_type = if let Some(name) = &field.enum_uid {
+        to_tokens(lookup_first_uid(name, lookup))
+    } else {
+        quote! {}
+    };
     let parser_function = to_tokens(&format!(
         "{NOM_LE_PARSER_PATH}{}",
         field_length_to_primitive(field.length)
@@ -409,6 +416,7 @@ fn process_adaptive_record_field(
         field_type_fqn: type_for_adaptive_record_field(field, lookup),
         length: field.length,
         discriminant_field_name: format_field_name(&field.discriminant),
+        discriminant_field_type,
         parser_function,
     }
 }
@@ -466,15 +474,43 @@ fn process_fixed_record(
     lookup: &Lookup,
 ) -> crate::generation::models::FixedRecord {
     let formatted_record_type = format_type_name(&record.record_type);
+    let fields = record
+        .fields
+        .iter()
+        .map(|field| process_pdu_fixed_record_fields_enum(field, lookup))
+        .collect::<Vec<PduAndFixedRecordFieldsEnum>>();
+
+    // determine if the record has fields with a discriminant
+    let discriminants = fields
+        .iter()
+        .filter(|&f| f.has_discriminant())
+        .map(|f| {
+            if let PduAndFixedRecordFieldsEnum::AdaptiveRecord(arf) = f {
+                let discriminant_name = format_ident!("{}", arf.discriminant_field_name);
+                let field_type = &arf.discriminant_field_type;
+                quote! { #discriminant_name: #field_type, }
+            } else { panic!("Expected only AdaptiveRecords to have discriminant dependencies on fields outside of the record itself") }
+        } )
+        .collect::<TokenStream>();
+
+    let parser_name = to_tokens(&format_field_name(&record.record_type));
+    let record_type_fqn = to_tokens(lookup_fqn(&formatted_record_type, lookup));
+
+    let parser_function = if discriminants.is_empty() {
+        quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #record_type_fqn> }
+    } else {
+        quote! {
+            #parser_name(#discriminants) -> impl Fn(&[u8]) -> IResult<&[u8], #record_type_fqn>
+        }
+    };
+
     crate::generation::models::FixedRecord {
-        fields: record
-            .fields
-            .iter()
-            .map(|field| process_pdu_fixed_record_fields_enum(field, lookup))
-            .collect(),
+        fields,
         record_type: to_tokens(&formatted_record_type),
-        record_type_fqn: to_tokens(lookup_fqn(&formatted_record_type, lookup)),
+        record_type_fqn,
         length: record.length,
+        parser_function,
+        external_discriminants: !discriminants.is_empty(),
     }
 }
 

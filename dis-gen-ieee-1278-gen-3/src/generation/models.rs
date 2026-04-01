@@ -168,6 +168,7 @@ pub struct AdaptiveRecordField {
     pub field_type_fqn: TokenStream,
     pub length: usize,
     pub discriminant_field_name: String,
+    pub discriminant_field_type: TokenStream,
     pub parser_function: TokenStream,
 }
 
@@ -211,6 +212,13 @@ impl PduAndFixedRecordFieldsEnum {
             PduAndFixedRecordFieldsEnum::FixedRecord(f) => &f.field_name,
             PduAndFixedRecordFieldsEnum::BitRecord(f) => &f.field_name,
             PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => &f.field_name,
+        }
+    }
+
+    pub fn has_discriminant(&self) -> bool {
+        match self {
+            PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => true,
+            _ => false,
         }
     }
 
@@ -324,6 +332,8 @@ pub struct FixedRecord {
     pub record_type: TokenStream,
     pub record_type_fqn: TokenStream,
     pub length: usize,
+    pub parser_function: TokenStream,
+    pub external_discriminants: bool,
 }
 
 #[derive(Clone)]
@@ -591,27 +601,32 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         .map(|item| match item {
             GenerationItem::FixedRecord(record, _family) => (
                 generate_fixed_record(record),
-                generate_fixed_record_parser(record),
+                super::parsers::generate_fixed_record_parser(record),
             ),
             GenerationItem::BitRecord(record, _family) => (
                 generate_bit_record(record),
-                generate_bit_record_parser(record),
+                super::parsers::generate_bit_record_parser(record),
             ),
             GenerationItem::AdaptiveRecord(record, _family) => (
                 generate_adaptive_record(record),
-                generate_adaptive_record_parser(record),
+                super::parsers::generate_adaptive_record_parser(record),
             ),
             GenerationItem::ExtensionRecord(_record, _family) => {
                 panic!("GenerationItem is not a Record (found ExtensionRecord).")
             }
             GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record (found PDU)."),
         })
-        .collect::<TokenStream>();
+        .collect::<(Vec<TokenStream>, Vec<TokenStream>)>();
+    let records = records.into_iter().collect::<TokenStream>();
     let record_parsers = record_parsers
         .into_iter()
         .flatten()
         .collect::<TokenStream>();
+    let record_parsers = quote! { use nom::IResult; #record_parsers };
     let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
+    // TODO remove
+    let _ = syn::parse_file(&records_parser_module.to_string())
+        .expect("Error parsing 'records parsers' intermediate generated code for pretty printing.");
     let records = quote! { #records #records_parser_module };
 
     let contents = quote! { #pdus #extension_records #records };
@@ -700,12 +715,6 @@ fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
         }
     }
 }
-
-fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream {}
-
-fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {}
-
-fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenStream {}
 
 fn generate_pdu_and_fixed_field_decl(field: &PduAndFixedRecordFieldsEnum) -> TokenStream {
     match field {
