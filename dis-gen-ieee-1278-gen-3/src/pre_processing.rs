@@ -13,51 +13,73 @@ use std::collections::HashMap;
 const NOM_LE_PARSER_PATH: &str = "nom::number::complete::le_";
 
 pub(crate) fn create_fqn_lookup(
-    items: &[ExtractionItem],
-    uid_lookup: &UidLookup,
-) -> (FqnLookup, FqnLookup) {
-    let mut gen3_lookup = HashMap::new();
-    let mut enum_lookup = HashMap::new();
+    items: &[ExtractionItem]
+) -> (FqnLookup, FqnLookup, FqnLookup) {
+    let mut pdu_lookup = HashMap::new();
+    let mut er_lookup = HashMap::new();
+    let mut rec_lookup = HashMap::new();
 
     for item in items {
-        let name = format_type_name(&item.name());
-        let fqn_name = format_full_qualified_name(item);
-        gen3_lookup.entry(name.clone()).or_insert(fqn_name);
+        match item {
+            ExtractionItem::Pdu(pdu, _) => {
+                let name = format_type_name(&item.name());
+                let fqn_name = format_fqn_pdu(item);
+                pdu_lookup.entry(name.clone()).or_insert(fqn_name);
+            }
+            ExtractionItem::ExtensionRecord(_, _) => {
+                let name = format_type_name(&item.name());
+                let fqn_name = format_fqn_extension_record(item);
+                er_lookup.entry(name.clone()).or_insert(fqn_name);
+            }
+            _ => {
+                let name = format_type_name(&item.name());
+                let fqn_name = format_fqn_record(item);
+                rec_lookup.entry(name.clone()).or_insert(fqn_name);
+            }
+        }
     }
+
+    // FIXME remove these placeholder lookups when the normal stuff works
+    rec_lookup.insert("u8".to_string(), "u8".to_string());
+    rec_lookup.insert("u16".to_string(), "u16".to_string());
+
+    (pdu_lookup, er_lookup, rec_lookup)
+}
+
+pub(crate) fn create_enum_lookup(uid_lookup: &UidLookup) -> FqnLookup {
+    let mut enum_lookup = HashMap::new();
 
     for uid in uid_lookup {
         let fqn_name = format!("crate::enumerations::{}", uid.1);
         enum_lookup.entry(uid.1.clone()).or_insert(fqn_name);
     }
 
-    // FIXME remove these placeholder lookups when the normal stuff works
-    gen3_lookup.insert("u8".to_string(), "u8".to_string());
-    gen3_lookup.insert("u16".to_string(), "u16".to_string());
-
-    (gen3_lookup, enum_lookup)
+    enum_lookup
 }
 
-pub(crate) fn format_full_qualified_name(item: &ExtractionItem) -> String {
-    if item.is_pdu() {
-        format!(
-            "crate::{}::{}::{}",
-            item.family(),
-            dis_gen_utils::format_pdu_module_name(item.name().as_str()),
-            format_type_name(item.name().as_str())
-        )
-    } else if item.is_extension_record() {
-        format!(
-            "crate::{}::extension_records::{}",
-            item.family(),
-            format_type_name(item.name().as_str())
-        )
-    } else {
-        format!(
-            "crate::{}::{}",
-            item.family(),
-            format_type_name(item.name().as_str())
-        )
-    }
+pub(crate) fn format_fqn_pdu(item: &ExtractionItem) -> String {
+    format!(
+        "crate::{}::{}::{}",
+        item.family(),
+        dis_gen_utils::format_pdu_module_name(item.name().as_str()),
+        format_type_name(item.name().as_str())
+    )
+}
+
+pub(crate) fn format_fqn_extension_record(item: &ExtractionItem) -> String {
+    format!(
+        "crate::{}::extension_records::{}",
+        item.family(),
+        format_type_name(item.name().as_str())
+    )
+}
+
+pub(crate) fn format_fqn_record(item: &ExtractionItem) -> String {
+    format!(
+        "crate::{}::{}",
+        item.family(),
+        format_type_name(item.name().as_str())
+    )
 }
 
 fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
@@ -68,7 +90,7 @@ fn lookup_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l str {
     let the_type = the_type
         .first()
         .expect("Expected at least one Type for an UID lookup.");
-    lookup_fqn(the_type, lookup)
+    lookup_record_fqn(the_type, lookup)
 }
 
 #[inline]
@@ -81,14 +103,26 @@ fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
 }
 
 #[inline]
-fn lookup_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
-    if let Some(fqn) = lookup.fqn.get(type_name) {
+fn lookup_record_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+    if let Some(fqn) = lookup.records_fqn.get(type_name) {
         fqn
     } else if let Some(fqn) = lookup.enum_fqn.get(type_name) {
         fqn
     } else {
-        panic!("Expected full qualified name for type '{type_name}'")
+        panic!("Expected full qualified name for type or enum '{type_name}'")
     }
+}
+
+fn lookup_er_fqn<'fqn>(er_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+    lookup.er_fqn.get(er_name).unwrap_or_else(|| {
+        panic!("Expected full qualified name for Extension Record '{er_name}'")
+    })
+}
+
+fn lookup_pdu_fqn<'fqn>(pdu_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
+    lookup.pdu_fqn.get(pdu_name).unwrap_or_else(|| {
+        panic!("Expected full qualified name for PDU '{pdu_name}'")
+    })
 }
 
 fn lookup_enum_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn str {
@@ -185,7 +219,7 @@ fn type_for_fixed_record_field(
     field: &crate::extraction::FixedRecordField,
     lookup: &Lookup,
 ) -> TokenStream {
-    let fqn_field_type = lookup_fqn(format_type_name(&field.field_type).as_str(), lookup);
+    let fqn_field_type = lookup_record_fqn(format_type_name(&field.field_type).as_str(), lookup);
     fqn_field_type.parse().expect(&format!(
         "Expected a valid Type for a FixedRecordField declaration, found '{fqn_field_type}'."
     ))
@@ -200,7 +234,7 @@ fn type_for_bit_record_field(
         let enum_type = lookup_first_uid(&uids, lookup);
         to_tokens(enum_type)
     } else {
-        let field_type = lookup_fqn(
+        let field_type = lookup_record_fqn(
             format_type_name(field.field_type.as_ref().expect(
                 "Expected a type name for BitRecordField to be present as there is also no UID.",
             ))
@@ -220,7 +254,7 @@ fn type_for_adaptive_record_field(
         let enum_type = lookup_first_uid(&uids, lookup);
         to_tokens(enum_type)
     } else {
-        let field_type = lookup_fqn(format_type_name(field.field_type.as_ref().expect(
+        let field_type = lookup_record_fqn(format_type_name(field.field_type.as_ref().expect(
             "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
         )).as_str(), lookup);
         to_tokens(field_type)
@@ -468,6 +502,7 @@ fn process_opaque_data(o: &crate::extraction::OpaqueData) -> crate::generation::
     }
 }
 
+// TODO parser
 fn process_fixed_record(
     record: &crate::extraction::FixedRecord,
     family: &str,
@@ -494,7 +529,7 @@ fn process_fixed_record(
         .collect::<TokenStream>();
 
     let parser_name = to_tokens(&format_field_name(&record.record_type));
-    let record_type_fqn = to_tokens(lookup_fqn(&formatted_record_type, lookup));
+    let record_type_fqn = to_tokens(lookup_record_fqn(&formatted_record_type, lookup));
 
     let parser_function = if discriminants.is_empty() {
         quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #record_type_fqn> }
@@ -514,6 +549,7 @@ fn process_fixed_record(
     }
 }
 
+// TODO parser
 fn process_bit_record(
     record: &crate::extraction::BitRecord,
     family: &str,
@@ -527,11 +563,12 @@ fn process_bit_record(
             .map(|field| process_bit_record_field_enum(field, lookup))
             .collect(),
         record_type: to_tokens(&formatted_record_type),
-        record_type_fqn: to_tokens(lookup_fqn(&formatted_record_type, lookup)),
+        record_type_fqn: to_tokens(lookup_record_fqn(&formatted_record_type, lookup)),
         size: record.size,
     }
 }
 
+// TODO parser
 fn process_adaptive_record(
     record: &crate::extraction::AdaptiveRecord,
     family: &str,
@@ -545,7 +582,7 @@ fn process_adaptive_record(
             .map(|variant| process_adaptive_format_enum(variant, lookup))
             .collect(),
         record_type: to_tokens(&formatted_record_type),
-        record_type_fqn: to_tokens(lookup_fqn(&formatted_record_type, lookup)),
+        record_type_fqn: to_tokens(lookup_record_fqn(&formatted_record_type, lookup)),
         length: record.length,
         discriminant_start_value: record.discriminant_start_value,
     }
@@ -569,7 +606,7 @@ fn process_extension_record(
     let record_type_variant_name = lookup_er_type(&record.record_type_attr, lookup);
     crate::generation::models::ExtensionRecord {
         record_name: formatted_record_name.clone(),
-        record_name_fqn: to_tokens(lookup_fqn(&formatted_record_name, lookup)),
+        record_name_fqn: to_tokens(lookup_er_fqn(&formatted_record_name, lookup)),
         record_type_enum: record.record_type_attr,
         record_type_variant_name: record_type_variant_name.to_string(),
         base_length: record.base_length_attr,
@@ -599,7 +636,7 @@ fn process_pdu(
     crate::generation::models::Pdu {
         pdu_module_name: formatted_pdu_module_name.clone(),
         pdu_name: formatted_pdu_name.clone(),
-        pdu_name_fqn: to_tokens(lookup_fqn(&formatted_pdu_name, lookup)),
+        pdu_name_fqn: to_tokens(lookup_pdu_fqn(&formatted_pdu_name, lookup)),
         pdu_type: pdu.type_attr,
         pdu_type_name: to_tokens(lookup_pdu_type(&pdu.type_attr, lookup)),
         protocol_family: pdu.protocol_family_attr,

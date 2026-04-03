@@ -15,7 +15,9 @@ type UidLookup = HashMap<usize, String>;
 type FqnLookup = HashMap<String, String>;
 
 struct Lookup {
-    fqn: FqnLookup,
+    pdu_fqn: FqnLookup,
+    er_fqn: FqnLookup,
+    records_fqn: FqnLookup,
     enum_fqn: FqnLookup,
     uid: UidLookup,
     pdu_types: UidLookup,
@@ -71,14 +73,13 @@ pub fn execute(
             })
             .collect::<Vec<ExtractionItem>>();
 
-        let (fqn_lookup, enum_fqn_lookup) =
-            pre_processing::create_fqn_lookup(&extracted_items, &uid_lookup);
-
-        println!("{pdu_types_lookup:?}");
-        println!("{er_types_lookup:?}");
+        let (pdu_fqn_lookup, er_fqn_lookup, records_fqn_lookup) = pre_processing::create_fqn_lookup(&extracted_items);
+        let enum_fqn_lookup = pre_processing::create_enum_lookup(&uid_lookup);
 
         let lookup = Lookup {
-            fqn: fqn_lookup,
+            pdu_fqn: pdu_fqn_lookup,
+            er_fqn: er_fqn_lookup,
+            records_fqn: records_fqn_lookup,
             enum_fqn: enum_fqn_lookup,
             uid: uid_lookup,
             pdu_types: pdu_types_lookup,
@@ -134,7 +135,7 @@ mod tests {
             },
             "entity_info_interaction".to_string(),
         );
-        let pdu_fqn = crate::pre_processing::format_full_qualified_name(&pdu);
+        let pdu_fqn = crate::pre_processing::format_fqn_pdu(&pdu);
         assert_eq!(
             pdu_fqn.as_str(),
             "crate::entity_info_interaction::entity_state::EntityState"
