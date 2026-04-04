@@ -161,7 +161,7 @@ fn expand_uid_string(uid_string: &str) -> Result<Vec<usize>, ()> {
 /// # Errors
 /// Returns an `Error(())` when the type argument `ty` does not match a valid DIS enum type.
 #[allow(clippy::result_unit_err)]
-pub fn enum_type_to_field_type(ty: &str) -> Result<&'static str, ()> {
+pub fn enum_type_to_primitive_type(ty: &str) -> Result<&'static str, ()> {
     match ty {
         "enum8" => Ok("u8"),
         "enum16" => Ok("u16"),

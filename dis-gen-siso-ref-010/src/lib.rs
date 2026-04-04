@@ -257,7 +257,7 @@ pub fn execute(
             }
         })
         .collect::<Vec<Enum>>();
-    println!("wrapper uids: {wrapper_items:?}");
+
     let mut overrides = overrides;
     let mut generation_items = generation_items;
     for it in wrapper_items {

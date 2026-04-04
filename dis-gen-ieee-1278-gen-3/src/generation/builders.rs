@@ -59,28 +59,52 @@ fn generate_pdu_builder_functions(field: &PduAndFixedRecordFieldsEnum) -> TokenS
             generate_pdu_builder_with_function(&field.field_name, &field.primitive_type, false)
         }
         PduAndFixedRecordFieldsEnum::Enum(field) => {
-            generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
+            let type_name = &field.type_name;
+            let type_path = &field.type_path;
+            generate_pdu_builder_with_function(
+                &field.field_name,
+                &quote! { #type_path::#type_name },
+                false,
+            )
         }
         PduAndFixedRecordFieldsEnum::FixedString(field) => generate_pdu_builder_with_function(
             &field.field_name,
-            &syn::parse_str("impl Into<String>").unwrap(),
+            &quote! { impl Into<String> },
             true,
         ),
         PduAndFixedRecordFieldsEnum::FixedRecord(field) => {
-            generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
+            let type_name = &field.type_name;
+            let type_path = &field.type_path;
+            generate_pdu_builder_with_function(
+                &field.field_name,
+                &quote! { #type_path::#type_name },
+                false,
+            )
         }
         PduAndFixedRecordFieldsEnum::BitRecord(field) => {
-            generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
+            let type_name = &field.type_name;
+            let type_path = &field.type_path;
+            generate_pdu_builder_with_function(
+                &field.field_name,
+                &quote! { #type_path::#type_name },
+                false,
+            )
         }
         PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => {
-            generate_pdu_builder_with_function(&field.field_name, &field.field_type_fqn, false)
+            let type_name = &field.type_name;
+            let type_path = &field.type_path;
+            generate_pdu_builder_with_function(
+                &field.field_name,
+                &quote! { #type_path::#type_name },
+                false,
+            )
         }
     }
 }
 
 fn generate_pdu_builder_with_function(
     field_name: &str,
-    field_type: &TokenStream,
+    field_path_and_type: &TokenStream,
     into: bool,
 ) -> TokenStream {
     let function_name_ident = format_ident!("with_{field_name}");
@@ -90,9 +114,10 @@ fn generate_pdu_builder_with_function(
     } else {
         quote! { #field_ident }
     };
+
     quote! {
             #[must_use]
-            pub fn #function_name_ident(mut self, #field_ident: #field_type) -> Self {
+            pub fn #function_name_ident(mut self, #field_ident: #field_path_and_type) -> Self {
                 self.0.#field_ident = #assignment_value;
                 self
             }

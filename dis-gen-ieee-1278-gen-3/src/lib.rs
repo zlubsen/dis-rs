@@ -1,10 +1,10 @@
-use extraction::ExtractionItem;
-use std::collections::HashMap;
-use std::env;
-
 mod extraction;
 mod generation;
 mod pre_processing;
+
+use extraction::ExtractionItem;
+use std::collections::HashMap;
+use std::env;
 
 const XML_FILE_EXTENSION: &str = "xml";
 const OUT_DIR: &str = "OUT_DIR";
@@ -12,7 +12,23 @@ const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_GEN3_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
 
 type UidLookup = HashMap<usize, String>;
-type FqnLookup = HashMap<String, String>;
+type FqnLookup = HashMap<String, Fqn>;
+
+#[derive(PartialEq)]
+struct Fqn {
+    path: String,
+    type_name: String,
+}
+
+impl Fqn {
+    pub(crate) fn to_full_type(&self) -> String {
+        if self.path.is_empty() {
+            self.type_name.clone()
+        } else {
+            format!("{}::{}", self.path, self.type_name)
+        }
+    }
+}
 
 struct Lookup {
     pdu_fqn: FqnLookup,
@@ -47,7 +63,6 @@ pub fn execute(
     pdu_types_lookup: UidLookup,
     er_types_lookup: UidLookup,
 ) {
-    println!("{schema_dir}");
     if std::path::Path::new(schema_dir).is_dir() {
         // Find all files in the provided directory. Files must be .xml files.
         let mut file_paths = std::fs::read_dir(schema_dir)
@@ -73,7 +88,8 @@ pub fn execute(
             })
             .collect::<Vec<ExtractionItem>>();
 
-        let (pdu_fqn_lookup, er_fqn_lookup, records_fqn_lookup) = pre_processing::create_fqn_lookup(&extracted_items);
+        let (pdu_fqn_lookup, er_fqn_lookup, records_fqn_lookup) =
+            pre_processing::create_fqn_lookup(&extracted_items);
         let enum_fqn_lookup = pre_processing::create_enum_lookup(&uid_lookup);
 
         let lookup = Lookup {
@@ -103,42 +119,5 @@ pub fn execute(
 
         // Set file name to an environment variable, for inclusion in the to-be compiled library
         println!("cargo:rustc-env={TARGET_ENV_VAR}={TARGET_OUT_FILE}");
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::extraction::{
-        CountField, ExtensionRecordSet, ExtractionItem, FixedRecordField, Pdu,
-    };
-
-    #[test]
-    fn format_full_qualified_name() {
-        let pdu = ExtractionItem::Pdu(
-            Pdu {
-                name_attr: "Entity State".to_string(),
-                type_attr: 0,
-                protocol_family_attr: 0,
-                base_length_attr: 0,
-                header_field: FixedRecordField {
-                    name: String::new(),
-                    length: 0,
-                    field_type: String::new(),
-                },
-                fields: vec![],
-                extension_record_set: ExtensionRecordSet {
-                    count_field: CountField {
-                        name: String::new(),
-                        primitive_type: String::new(),
-                    },
-                },
-            },
-            "entity_info_interaction".to_string(),
-        );
-        let pdu_fqn = crate::pre_processing::format_fqn_pdu(&pdu);
-        assert_eq!(
-            pdu_fqn.as_str(),
-            "crate::entity_info_interaction::entity_state::EntityState"
-        );
     }
 }

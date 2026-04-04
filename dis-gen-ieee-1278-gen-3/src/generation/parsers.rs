@@ -25,17 +25,16 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
     // TODO 'Other' parsers
 
     let contents = quote! {
-        use crate::PduBody;
         use crate::common_records::PDUHeader;
         use crate::enumerations::#pdu_type;
         use crate::enumerations::#extension_record_type;
-        use nom::IResult;
+        use nom::{IResult, Parser};
 
         #pdu_body_parser
 
         pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::ExtensionRecord>> {
             let (input, number_of_er) = nom::number::complete::le_u16(input)?;
-            let (input, records) = nom::multi::count(extension_record(input), number_of_er.into())?;
+            let (input, records) = nom::multi::count(extension_record, number_of_er.into()).parse(input)?;
 
             Ok((input, records))
         }
@@ -45,7 +44,7 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
             let record_type = crate::enumerations::ExtensionRecordTypes::from(record_type);
             let (input, record_length) = nom::number::complete::le_u16(input)?;
 
-            let (input, body) = extension_record_body(&record_type)?;
+            let (input, body) = extension_record_body(&record_type, record_length.into())(input)?;
 
             Ok((input, crate::ExtensionRecord {
                 record_type,
@@ -56,10 +55,10 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
         #extension_record_body_parser
 
-        pub(crate) fn fixed_string(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
+        pub(crate) fn fixed_string_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
             move |input: &[u8]| {
                 let (input, bytes) = nom::bytes::complete::take(length)(input)?;
-                let string = String::from_utf8_lossy(bytes).into_string();
+                let string = String::from_utf8_lossy(bytes).to_string();
 
                 Ok((input, string))
             }
@@ -255,7 +254,7 @@ pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) ->
 }
 
 pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream {
-    let record_type_fqn = &record.record_type_fqn;
+    let record_type_fqn = &record.type_path;
     let parser_function = &record.parser_function;
 
     let field_parsers = record
@@ -285,7 +284,7 @@ pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream 
 
         Ok((input, record))
     };
-    let body = if record.external_discriminants {
+    let body = if record.has_external_discriminants {
         quote! {
             move |input: &[u8]| {
                 #body
@@ -345,7 +344,7 @@ fn generate_numeric_field_parser(field: &NumericField) -> TokenStream {
 
 fn generate_enum_field_parser(field: &EnumField) -> TokenStream {
     let field_name = format_ident!("{}", &field.field_name);
-    let field_type_fqn = &field.field_type_fqn;
+    let field_type_fqn = &field.type_path;
     let parser = &field.parser_function;
     let conversion = if field.parser_must_convert_to_enum {
         quote! { let #field_name = #field_type_fqn::from(#field_name); }
@@ -388,13 +387,14 @@ fn generate_bit_record_field_parser(field: &BitRecordField) -> TokenStream {
 
 fn generate_adaptive_record_field_parser(field: &AdaptiveRecordField) -> TokenStream {
     let field_name = format_ident!("{}", &field.field_name);
-    let field_type = &field.field_type_fqn;
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
     let discriminant_field_name = format_ident!("{}", &field.discriminant_field_name);
     let parser = &field.parser_function;
 
     quote! {
         let (input, #field_name) = #parser(input)?;
-        let #field_name = #field_type::from((#discriminant_field_name, #field_name));
+        let #field_name = #type_path::#type_name::from((#discriminant_field_name, #field_name));
     }
 }
 
@@ -417,7 +417,7 @@ fn generate_array_field_parser(array: &Array) -> TokenStream {
 
     quote! {
         let (input, count) = #count_parser_function(input)?;
-        let (input, #field_name) = nom::multi::count(#type_parser_function(input), count.into())?;
+        let (input, #field_name) = nom::multi::count(#type_parser_function, count.into()).parse(input);
     }
 }
 

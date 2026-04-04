@@ -105,7 +105,8 @@ pub struct CountField {
 #[derive(Clone)]
 pub struct EnumField {
     pub field_name: String,
-    pub field_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub is_discriminant: bool,
     pub parser_function: TokenStream,
     pub parser_must_convert_to_enum: bool,
@@ -132,8 +133,8 @@ pub struct IntBitField {
 #[derive(Clone)]
 pub struct EnumBitField {
     pub field_name: String,
-    pub field_type: TokenStream,
-    pub field_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub bit_position: usize,
     pub size: usize,
     pub is_discriminant: bool, // FIXME 'true' does not occur in the schemas
@@ -148,7 +149,8 @@ pub struct BoolBitField {
 #[derive(Clone)]
 pub struct FixedRecordField {
     pub field_name: String,
-    pub field_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub length: usize,
     pub parser_function: TokenStream,
 }
@@ -156,16 +158,18 @@ pub struct FixedRecordField {
 #[derive(Clone)]
 pub struct BitRecordField {
     pub field_name: String,
-    pub field_type_fqn: TokenStream,
-    pub as_variant_name: String,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub size: usize,
     pub parser_function: TokenStream,
+    pub parser_must_convert_to_enum: bool,
 }
 
 #[derive(Clone)]
 pub struct AdaptiveRecordField {
     pub field_name: String,
-    pub field_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub length: usize,
     pub discriminant_field_name: String,
     pub discriminant_field_type: TokenStream,
@@ -215,10 +219,17 @@ impl PduAndFixedRecordFieldsEnum {
         }
     }
 
-    pub fn has_discriminant(&self) -> bool {
+    pub fn is_discriminant(&self) -> Option<&EnumField> {
         match self {
-            PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => true,
-            _ => false,
+            PduAndFixedRecordFieldsEnum::Enum(field) => Some(field),
+            _ => None,
+        }
+    }
+
+    pub fn has_discriminant(&self) -> Option<&AdaptiveRecordField> {
+        match self {
+            PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => Some(field),
+            _ => None,
         }
     }
 
@@ -329,28 +340,30 @@ pub struct OpaqueData {
 #[derive(Clone)]
 pub struct FixedRecord {
     pub fields: Vec<PduAndFixedRecordFieldsEnum>,
-    pub record_type: TokenStream,
-    pub record_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub length: usize,
     pub parser_function: TokenStream,
-    pub external_discriminants: bool,
+    pub has_external_discriminants: bool,
 }
 
 #[derive(Clone)]
 pub struct BitRecord {
     pub fields: Vec<BitRecordFieldEnum>,
-    pub record_type: TokenStream,
-    pub record_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub size: usize,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
 pub struct AdaptiveRecord {
     pub variants: Vec<AdaptiveFormatEnum>,
-    pub record_type: TokenStream,
-    pub record_type_fqn: TokenStream,
+    pub type_name: TokenStream,
+    pub type_path: TokenStream,
     pub length: usize,
     pub discriminant_start_value: usize,
+    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -700,7 +713,7 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
 }
 
 fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
-    let record_name = &record.record_type;
+    let record_name = &record.type_name;
 
     let fields = record
         .fields
@@ -773,10 +786,11 @@ fn generate_numeric_field_decl(field: &NumericField) -> TokenStream {
 
 fn generate_enum_field_decl(field: &EnumField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let field_type = &field.field_type_fqn;
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
 
     quote! {
-        pub #field_ident : #field_type,
+        pub #field_ident : #type_path::#type_name,
     }
 }
 
@@ -792,28 +806,31 @@ fn generate_fixed_string_field_decl(field: &FixedStringField) -> TokenStream {
 
 fn generate_fixed_record_field_decl(field: &FixedRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let field_type = &field.field_type_fqn;
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
 
     quote! {
-        pub #field_ident : #field_type,
+        pub #field_ident : #type_path::#type_name,
     }
 }
 
 fn generate_bit_record_field_decl(field: &BitRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let field_type = &field.field_type_fqn;
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
 
     quote! {
-        pub #field_ident : #field_type,
+        pub #field_ident : #type_path::#type_name,
     }
 }
 
 fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let field_type = &field.field_type_fqn;
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
 
     quote! {
-        pub #field_ident : #field_type,
+        pub #field_ident : #type_path::#type_name,
     }
 }
 
@@ -830,18 +847,26 @@ fn generate_array_field_decl(field: &Array) -> TokenStream {
         ArrayFieldEnum::Numeric(inner) => {
             (format_ident!("{}", inner.field_name), &inner.primitive_type)
         }
-        ArrayFieldEnum::Enum(inner) => {
-            (format_ident!("{}", inner.field_name), &inner.field_type_fqn)
-        }
+        ArrayFieldEnum::Enum(inner) => (format_ident!("{}", inner.field_name), &inner.type_path),
         ArrayFieldEnum::FixedString(inner) => (
             format_ident!("{}", inner.field_name),
             &syn::parse_str(&inner.field_type).unwrap(),
         ),
         ArrayFieldEnum::FixedRecord(inner) => {
-            (format_ident!("{}", inner.field_name), &inner.field_type_fqn)
+            let type_name = &inner.type_name;
+            let type_path = &inner.type_path;
+            (
+                format_ident!("{}", inner.field_name),
+                &quote! { #type_path::#type_name },
+            )
         }
         ArrayFieldEnum::BitRecord(inner) => {
-            (format_ident!("{}", inner.field_name), &inner.field_type_fqn)
+            let type_name = &inner.type_name;
+            let type_path = &inner.type_path;
+            (
+                format_ident!("{}", inner.field_name),
+                &quote! { #type_path::#type_name },
+            )
         }
     };
 
@@ -859,7 +884,7 @@ fn generate_opaque_field_decl(field: &OpaqueData) -> TokenStream {
 }
 
 fn generate_bit_record(item: &BitRecord) -> TokenStream {
-    let record_name = &item.record_type;
+    let record_name = &item.type_name;
 
     let fields = item
         .fields
@@ -885,7 +910,7 @@ fn generate_bit_record_item_decl(item: &BitRecordFieldEnum) -> TokenStream {
 
 fn generate_enum_bit_field_decl(field: &EnumBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
-    let field_type = &field.field_type_fqn;
+    let field_type = &field.type_path;
 
     quote! { pub #field_name: #field_type, }
 }
@@ -916,7 +941,7 @@ fn generate_int_bit_field_decl(field: &IntBitField) -> TokenStream {
 }
 
 fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
-    let record_name = &item.record_type;
+    let record_name = &item.type_name;
 
     let variants = item
         .variants
@@ -936,14 +961,14 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
 
 fn generate_adaptive_record_variant(variant: &AdaptiveFormatEnum) -> TokenStream {
     if let AdaptiveFormatEnum::BitRecord(bit_variant) = variant {
-        let variant_name = format_ident!("{}", bit_variant.as_variant_name);
-        let variant_type = &bit_variant.field_type_fqn;
+        let variant_name = &bit_variant.type_name;
+        let variant_type_path = &bit_variant.type_path;
 
         quote! {
-            #variant_name ( #variant_type ),
+            #variant_name ( #variant_type_path::#variant_name ),
         }
     } else {
-        todo!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
+        unimplemented!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
     }
 }
 
