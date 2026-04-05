@@ -4,12 +4,11 @@ use crate::generation::models::{
     FixedRecordField, FixedStringField, GenerationItem, NumericField, OpaqueData, Pdu,
     PduAndFixedRecordFieldsEnum, VariableString, PARSER_MODULE_NAME,
 };
+use crate::pre_processing::to_tokens;
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
-
-// TODO:
-// - separate fqn path and name in the GenerationItems, store as String or TokenStream
-// - parsers for 'Other' PDU and Extension Records(?)
+// TODO 'Other' Pdu parser
+// TODO 'Other' ExtensionRecord parser
 
 const PDU_HEADER: &str = "PDUHeader";
 const PDU_TYPE: &str = "DISPDUType";
@@ -21,8 +20,6 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
     let pdu_body_parser = generate_common_pdu_body_parser(items);
     let extension_record_body_parser = generate_common_extension_record_body_parser(items);
-
-    // TODO 'Other' parsers
 
     let contents = quote! {
         use crate::common_records::PDUHeader;
@@ -82,12 +79,13 @@ pub(crate) fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> Token
         .filter(|&it| it.is_pdu())
         .map(generate_common_pdu_body_parser_arm)
         .collect::<TokenStream>();
+    let dis_pdu_type_ident = format_ident!("{PDU_TYPE}");
 
     quote! {
         pub fn pdu_body(header: &PDUHeader) -> impl Fn(&[u8]) -> IResult<&[u8], crate::PduBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match header.pdu_type {
-                    DISPDUType::Other => crate::other::#parser_module::other_body(input)?,
+                    #dis_pdu_type_ident::Other => crate::other::#parser_module::other_body(input)?,
                     #pdu_type_arms
                     _ => crate::other::#parser_module::other_body(input)?,
                 };
@@ -99,14 +97,13 @@ pub(crate) fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> Token
 
 fn generate_common_pdu_body_parser_arm(pdu: &GenerationItem) -> TokenStream {
     if let GenerationItem::Pdu(pdu, _) = pdu {
-        let pdu_type: TokenStream = format!("{PDU_TYPE}::{}", pdu.pdu_name)
-            .parse()
-            .expect("Expected valid Rust code for PDUType variant");
-        let pdu_path = pdu.fqn_path.clone();
-        let parser_function = pdu.parser_function.clone();
+        let dis_pdu_type_ident = format_ident!("{PDU_TYPE}");
+        let pdu_type = &pdu.pdu_type_name;
+        let pdu_path = &pdu.type_path;
         let parser_module = format_ident!("{PARSER_MODULE_NAME}");
+        let parser_function = &pdu.parser_function;
         quote! {
-            #pdu_type => #pdu_path::#parser_module::#parser_function(input)?,
+            #dis_pdu_type_ident::#pdu_type => #pdu_path::#parser_module::#parser_function(input)?,
         }
     } else {
         panic!("GenerationItem is not a PDU.")
@@ -124,6 +121,7 @@ pub(crate) fn generate_common_extension_record_body_parser(
         .collect::<TokenStream>();
 
     quote! {
+        // TODO parser for 'Other' PDU
         fn temp_other_parser(input: &[u8]) -> IResult<&[u8], ()> {
             todo!("Implement parser for Other PDU")
         }
@@ -145,12 +143,13 @@ pub(crate) fn generate_common_extension_record_body_parser(
 
 fn generate_common_extension_record_body_parser_arm(er: &GenerationItem) -> TokenStream {
     if let GenerationItem::ExtensionRecord(er, _) = er {
-        let er_record_type_ident = format_ident!("{}", EXTENSION_RECORD_TYPE);
+        let er_record_type_ident = format_ident!("{EXTENSION_RECORD_TYPE}");
         let er_variant_name = format_ident!("{}", er.record_type_variant_name);
-        let er_path = &er.fqn_path;
+        let er_path = &er.type_path;
+        let parser_module = format_ident!("{PARSER_MODULE_NAME}");
         let parser_function = &er.parser_function;
         quote! {
-            #er_record_type_ident::#er_variant_name => #er_path::parser::#parser_function(record_length)(input)?,
+            #er_record_type_ident::#er_variant_name => #er_path::#parser_module::#parser_function(record_length)(input)?,
         }
     } else {
         panic!("GenerationItem is not an Extension Record.")
@@ -158,8 +157,9 @@ fn generate_common_extension_record_body_parser_arm(er: &GenerationItem) -> Toke
 }
 
 pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
-    let parser_function = pdu.parser_function.clone();
-    let pdu_name_fqn = &pdu.pdu_name_fqn;
+    let parser_function = &pdu.parser_function;
+    let type_name = to_tokens(&pdu.type_name);
+    let type_path = &pdu.type_path;
     let field_parsers = pdu
         .fields
         .iter()
@@ -171,7 +171,7 @@ pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
         .filter(|field| !field.is_padding())
         .map(|field| field.field_name().parse::<TokenStream>().unwrap())
         .collect::<Vec<TokenStream>>();
-    let parser_module = format_ident!("{PARSER_MODULE_NAME}");
+    let parser_module = to_tokens(PARSER_MODULE_NAME);
 
     quote! {
         use crate::BodyRaw;
@@ -181,7 +181,7 @@ pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
             #(#field_parsers)*
             let (input, extension_records) = crate::#parser_module::extension_record_set(input)?;
 
-            let body = #pdu_name_fqn {
+            let body = #type_path::#type_name {
                 #(#field_builders),*,
                 extension_records,
             };
@@ -203,8 +203,9 @@ fn generate_pdu_field_parser(field: &PduAndFixedRecordFieldsEnum) -> TokenStream
 
 pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) -> TokenStream {
     let parser_function = &record.parser_function;
-    let record_name_fqn = &record.record_name_fqn;
-    let record_type_variant = format_ident!("{}", record.record_type_variant_name);
+    let type_name = to_tokens(&record.type_name);
+    let type_path = &record.type_path;
+    let record_type_variant = to_tokens(&record.record_type_variant_name);
 
     let field_parsers = record
         .fields
@@ -219,7 +220,7 @@ pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) ->
             field
                 .field_name()
                 .parse::<TokenStream>()
-                .expect("Failed to tokenise field name for Extension Record parser")
+                .expect("Failed to tokenise field name for Extension Record body parser")
         })
         .collect::<Vec<TokenStream>>();
 
@@ -243,7 +244,7 @@ pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) ->
 
                 #padding_to_64
 
-                let body = #record_name_fqn {
+                let body = #type_path::#type_name {
                     #(#fields),*,
                 };
 
@@ -254,7 +255,8 @@ pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) ->
 }
 
 pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream {
-    let record_type_fqn = &record.type_path;
+    let type_name = &record.type_name;
+    let type_path = &record.type_path;
     let parser_function = &record.parser_function;
 
     let field_parsers = record
@@ -278,7 +280,7 @@ pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream 
     let body = quote! {
         #(#field_parsers)*
 
-        let record = #record_type_fqn {
+        let record = #type_path::#type_name {
                 #(#fields),*,
             };
 
@@ -301,10 +303,12 @@ pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream 
     }
 }
 
+// TODO
 pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
     quote! {}
 }
 
+// TODO
 pub(crate) fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenStream {
     quote! {}
 }

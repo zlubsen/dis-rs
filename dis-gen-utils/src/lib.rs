@@ -195,6 +195,8 @@ pub fn format_field_name(name: &str) -> String {
         .replace([' ', '-'], "_")
         .replace("___", "_")
         .replace("__", "_")
+        .trim_end_matches('_')
+        .to_string()
 }
 
 /// Formats the name for a PDU module. PDU module names are in `snake_case`.

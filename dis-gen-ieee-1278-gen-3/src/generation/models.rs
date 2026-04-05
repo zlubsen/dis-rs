@@ -42,17 +42,17 @@ impl GenerationItem {
 
     pub(crate) fn type_name(&self) -> Option<String> {
         match self {
-            GenerationItem::Pdu(item, _) => Some(item.pdu_name.clone()),
+            GenerationItem::Pdu(item, _) => Some(item.type_name.clone()),
             GenerationItem::FixedRecord(_item, _) => None,
             GenerationItem::BitRecord(_item, _) => None,
             GenerationItem::AdaptiveRecord(_item, _) => None,
-            GenerationItem::ExtensionRecord(item, _) => Some(item.record_name.clone()),
+            GenerationItem::ExtensionRecord(item, _) => Some(item.type_name.clone()),
         }
     }
 
     pub(crate) fn variant_name(&self) -> Option<String> {
         match self {
-            GenerationItem::Pdu(item, _) => Some(item.pdu_name.clone()),
+            GenerationItem::Pdu(item, _) => Some(item.type_name.clone()),
             GenerationItem::FixedRecord(_item, _) => None,
             GenerationItem::BitRecord(_item, _) => None,
             GenerationItem::AdaptiveRecord(_item, _) => None,
@@ -62,11 +62,11 @@ impl GenerationItem {
 
     pub(crate) fn fqn_type_name(&self) -> Option<&TokenStream> {
         match self {
-            GenerationItem::Pdu(item, _) => Some(&item.pdu_name_fqn),
+            GenerationItem::Pdu(item, _) => Some(&item.type_path),
             GenerationItem::FixedRecord(_item, _) => None,
             GenerationItem::BitRecord(_item, _) => None,
             GenerationItem::AdaptiveRecord(_item, _) => None,
-            GenerationItem::ExtensionRecord(item, _) => Some(&item.record_name_fqn),
+            GenerationItem::ExtensionRecord(item, _) => Some(&item.type_path),
         }
     }
 
@@ -102,7 +102,7 @@ pub struct CountField {
     pub parser_function: TokenStream,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EnumField {
     pub field_name: String,
     pub type_name: TokenStream,
@@ -221,7 +221,13 @@ impl PduAndFixedRecordFieldsEnum {
 
     pub fn is_discriminant(&self) -> Option<&EnumField> {
         match self {
-            PduAndFixedRecordFieldsEnum::Enum(field) => Some(field),
+            PduAndFixedRecordFieldsEnum::Enum(field) => {
+                if field.is_discriminant {
+                    Some(field)
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
@@ -382,8 +388,8 @@ pub struct PaddingTo64;
 
 #[derive(Clone)]
 pub struct ExtensionRecord {
-    pub record_name: String,
-    pub record_name_fqn: TokenStream,
+    pub type_name: String,
+    pub type_path: TokenStream,
     pub record_type_enum: usize,
     pub record_type_variant_name: String,
     pub base_length: usize,
@@ -392,7 +398,6 @@ pub struct ExtensionRecord {
     pub record_length_field: NumericField,
     pub fields: Vec<ExtensionRecordFieldEnum>,
     pub padding_to_64_field: Option<PaddingTo64>,
-    pub fqn_path: TokenStream,
     pub parser_function: TokenStream,
 }
 
@@ -400,8 +405,8 @@ pub struct ExtensionRecord {
 #[derive(Clone)]
 pub struct Pdu {
     pub pdu_module_name: String,
-    pub pdu_name: String,
-    pub pdu_name_fqn: TokenStream,
+    pub type_name: String,
+    pub type_path: TokenStream,
     pub pdu_type: usize,
     pub pdu_type_name: TokenStream,
     pub protocol_family: usize,
@@ -409,7 +414,6 @@ pub struct Pdu {
     pub header_field: FixedRecordField,
     pub fields: Vec<PduAndFixedRecordFieldsEnum>,
     pub extension_record_set: ExtensionRecordSet,
-    pub fqn_path: TokenStream,
     pub parser_function: TokenStream,
 }
 
@@ -519,6 +523,7 @@ fn generate_body_variant(variant: &GenerationItem) -> TokenStream {
         .expect("Type name for variants can only be called for PDUs and ExtensionRecords");
     let variant_name = format_ident!("{variant_name}");
     let variant_type = variant
+        aaaa hier moet het juiste path + type name komen
         .fqn_type_name()
         .expect("FQN Type name for variants can only be called for PDUs and ExtensionRecords");
 
@@ -552,7 +557,7 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
 
                 println!("{module}");
                 let _ = syn::parse_file(&module.to_string())
-                    .unwrap_or_else(|_|panic!("Error parsing 'pdu module - {}' intermediate generated code for pretty printing.", &pdu.pdu_name));
+                    .unwrap_or_else(|_|panic!("Error parsing 'pdu module - {}' intermediate generated code for pretty printing.", &pdu.type_name));
 
                 module
             } else {
@@ -639,26 +644,37 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
     // TODO remove
     let _ = syn::parse_file(&records_parser_module.to_string())
-        .expect("Error parsing 'records parsers' intermediate generated code for pretty printing.");
+        .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
+    println!("{records}");
+    println!("{records_parser_module}");
     let records = quote! { #records #records_parser_module };
 
+    println!("{records}");
+    let _ = syn::parse_file(&records.to_string())
+        .expect("Error parsing 'family records and parsers' intermediate generated code for pretty printing.");
+
     let contents = quote! { #pdus #extension_records #records };
+
+    println!("{contents}");
+    let _ = syn::parse_file(&contents.to_string())
+        .expect("Error parsing 'family contents' intermediate generated code for pretty printing.");
 
     generate_module_with_name(family, &contents)
 }
 
 /// Generates all code related a PDU
 fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
-    let pdu_name_ident = format_ident!("{}", pdu.pdu_name);
+    let pdu_name_ident = format_ident!("{}", pdu.type_name);
     let pdu_module_name = &pdu.pdu_module_name;
-    let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.pdu_name);
+    let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.type_name);
 
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
     let pdu_trait_impls = generate_pdu_trait_impls(&pdu_name_ident, &builder_name_ident);
     let builder_content = super::builders::generate_pdu_builder(pdu, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
 
-    println!("PDU: {}", pdu.pdu_name);
+    // TODO remove
+    println!("PDU: {}", pdu.type_name);
     let _ = syn::parse_file(&builder_module.to_string()).expect(
         "Error parsing 'pdu builder module' intermediate generated code for pretty printing.",
     );
@@ -666,6 +682,7 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     let parser_content = super::parsers::generate_pdu_body_parser(pdu);
     let parser_module = generate_module_with_name(PARSER_MODULE_NAME, &parser_content);
 
+    // TODO remove
     println!("{parser_module}");
     let _ = syn::parse_file(&parser_module.to_string()).expect(
         "Error parsing 'pdu parser module' intermediate generated code for pretty printing.",
@@ -695,7 +712,7 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
 }
 
 fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
-    let record_name = format_ident!("{}", record.record_name);
+    let record_name = format_ident!("{}", record.type_name);
     let record_type_doc_comment = format!("Record Type Enum {}", record.record_type_enum);
 
     let fields = record
@@ -789,8 +806,14 @@ fn generate_enum_field_decl(field: &EnumField) -> TokenStream {
     let type_name = &field.type_name;
     let type_path = &field.type_path;
 
-    quote! {
-        pub #field_ident : #type_path::#type_name,
+    if type_path.is_empty() {
+        quote! {
+            pub #field_ident : #type_name,
+        }
+    } else {
+        quote! {
+            pub #field_ident : #type_path::#type_name,
+        }
     }
 }
 
@@ -910,9 +933,14 @@ fn generate_bit_record_item_decl(item: &BitRecordFieldEnum) -> TokenStream {
 
 fn generate_enum_bit_field_decl(field: &EnumBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
-    let field_type = &field.type_path;
+    let type_path = &field.type_path;
+    let type_name = &field.type_name;
 
-    quote! { pub #field_name: #field_type, }
+    if type_path.is_empty() {
+        quote! { pub #field_name: #type_name, }
+    } else {
+        quote! { pub #field_name: #type_path::#type_name, }
+    }
 }
 
 fn generate_bool_bit_field_decl(field: &BoolBitField) -> TokenStream {

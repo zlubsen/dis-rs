@@ -3,7 +3,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
 pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStream {
-    let fqn_pdu_name_ident = &item.pdu_name_fqn;
+    let fqn_pdu_name_ident = &item.type_path;
     let with_functions = item
         .fields
         .iter()
