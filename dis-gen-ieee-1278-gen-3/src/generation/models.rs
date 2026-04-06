@@ -40,33 +40,33 @@ impl GenerationItem {
         }
     }
 
-    pub(crate) fn type_name(&self) -> Option<String> {
+    pub(crate) fn variant_name(&self) -> Option<&str> {
         match self {
-            GenerationItem::Pdu(item, _) => Some(item.type_name.clone()),
+            GenerationItem::Pdu(item, _) => Some(&item.type_name),
             GenerationItem::FixedRecord(_item, _) => None,
             GenerationItem::BitRecord(_item, _) => None,
             GenerationItem::AdaptiveRecord(_item, _) => None,
-            GenerationItem::ExtensionRecord(item, _) => Some(item.type_name.clone()),
+            GenerationItem::ExtensionRecord(item, _) => Some(&item.record_type_variant_name),
         }
     }
 
-    pub(crate) fn variant_name(&self) -> Option<String> {
+    pub(crate) fn type_name(&self) -> Option<&str> {
         match self {
-            GenerationItem::Pdu(item, _) => Some(item.type_name.clone()),
+            GenerationItem::Pdu(item, _) => Some(&item.type_name),
             GenerationItem::FixedRecord(_item, _) => None,
             GenerationItem::BitRecord(_item, _) => None,
             GenerationItem::AdaptiveRecord(_item, _) => None,
-            GenerationItem::ExtensionRecord(item, _) => Some(item.record_type_variant_name.clone()),
+            GenerationItem::ExtensionRecord(item, _) => Some(&item.type_name),
         }
     }
 
-    pub(crate) fn fqn_type_name(&self) -> Option<&TokenStream> {
+    pub(crate) fn type_path(&self) -> &TokenStream {
         match self {
-            GenerationItem::Pdu(item, _) => Some(&item.type_path),
-            GenerationItem::FixedRecord(_item, _) => None,
-            GenerationItem::BitRecord(_item, _) => None,
-            GenerationItem::AdaptiveRecord(_item, _) => None,
-            GenerationItem::ExtensionRecord(item, _) => Some(&item.type_path),
+            GenerationItem::Pdu(item, _) => &item.type_path,
+            GenerationItem::FixedRecord(item, _) => &item.type_path,
+            GenerationItem::BitRecord(item, _) => &item.type_path,
+            GenerationItem::AdaptiveRecord(item, _) => &item.type_path,
+            GenerationItem::ExtensionRecord(item, _) => &item.type_path,
         }
     }
 
@@ -518,17 +518,13 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
 
 fn generate_body_variant(variant: &GenerationItem) -> TokenStream {
     let variant_name = variant
-        .variant_name()
-        .clone()
+        .type_name()
         .expect("Type name for variants can only be called for PDUs and ExtensionRecords");
     let variant_name = format_ident!("{variant_name}");
-    let variant_type = variant
-        aaaa hier moet het juiste path + type name komen
-        .fqn_type_name()
-        .expect("FQN Type name for variants can only be called for PDUs and ExtensionRecords");
+    let type_path = variant.type_path();
 
     quote! {
-        #variant_name ( #variant_type ),
+        #variant_name ( #type_path::#variant_name ),
     }
 }
 

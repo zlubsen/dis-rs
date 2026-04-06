@@ -18,6 +18,7 @@ type FqnLookup = HashMap<String, Fqn>;
 struct Fqn {
     path: String,
     type_name: String,
+    field_name: String,
 }
 
 impl Fqn {

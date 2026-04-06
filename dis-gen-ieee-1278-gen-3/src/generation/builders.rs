@@ -1,9 +1,12 @@
 use crate::generation::models::{Pdu, PduAndFixedRecordFieldsEnum};
+use crate::pre_processing::to_tokens;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
 pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStream {
     let fqn_pdu_name_ident = &item.type_path;
+    let type_path = &item.type_path;
+    let type_name = to_tokens(&item.type_name);
     let with_functions = item
         .fields
         .iter()
@@ -12,7 +15,7 @@ pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStre
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        pub struct #builder_name_ident(#fqn_pdu_name_ident);
+        pub struct #builder_name_ident(#type_path::#type_name);
 
         impl Default for #builder_name_ident {
             fn default() -> Self {
@@ -23,16 +26,16 @@ pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStre
         impl #builder_name_ident {
             #[must_use]
             pub fn new() -> Self {
-                #builder_name_ident(#fqn_pdu_name_ident::default())
+                #builder_name_ident(#type_path::#type_name::default())
             }
 
             #[must_use]
-            pub fn new_from_body(body: #fqn_pdu_name_ident) -> Self {
+            pub fn new_from_body(body: #type_path::#type_name) -> Self {
                 #builder_name_ident(body)
             }
 
             #[must_use]
-            pub fn build(self) -> #fqn_pdu_name_ident {
+            pub fn build(self) -> #type_path::#type_name {
                 self.0
             }
 

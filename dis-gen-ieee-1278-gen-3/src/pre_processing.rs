@@ -1,6 +1,6 @@
 use crate::extraction::ExtractionItem;
 use crate::generation::models::{
-    GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME,
+    GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME,
 };
 use crate::{Fqn, FqnLookup, Lookup, UidLookup};
 use dis_gen_utils::{
@@ -18,29 +18,31 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
     let mut rec_lookup = HashMap::new();
 
     for item in items {
+        let name = format_type_name(&item.name());
+        let field_name = format_field_name(&item.name());
         match item {
             ExtractionItem::Pdu(_pdu, _) => {
-                let name = format_type_name(&item.name());
                 let path = format_fqn_path_pdu(item);
                 pdu_lookup.entry(name.clone()).or_insert(Fqn {
                     path,
                     type_name: name,
+                    field_name,
                 });
             }
             ExtractionItem::ExtensionRecord(_, _) => {
-                let name = format_type_name(&item.name());
                 let path = format_fqn_path_extension_record(item);
                 er_lookup.entry(name.clone()).or_insert(Fqn {
                     path,
                     type_name: name,
+                    field_name,
                 });
             }
             _ => {
-                let name = format_type_name(&item.name());
                 let path = format_fqn_path_record(item);
                 rec_lookup.entry(name.clone()).or_insert(Fqn {
                     path,
                     type_name: name,
+                    field_name,
                 });
             }
         }
@@ -50,15 +52,17 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
     rec_lookup.insert(
         "u8".to_string(),
         Fqn {
-            path: "".to_string(),
+            path: String::default(),
             type_name: "u8".to_string(),
+            field_name: String::default(),
         },
     );
     rec_lookup.insert(
         "u16".to_string(),
         Fqn {
-            path: "".to_string(),
+            path: String::default(),
             type_name: "u16".to_string(),
+            field_name: String::default(),
         },
     );
 
@@ -74,6 +78,7 @@ pub(crate) fn create_enum_lookup(uid_lookup: &UidLookup) -> FqnLookup {
         enum_lookup.entry(uid.1.clone()).or_insert(Fqn {
             path,
             type_name: name,
+            field_name: String::default(), // FIXME not so nice to have this here
         });
     }
 
@@ -142,7 +147,7 @@ fn lookup_er_fqn<'fqn>(er_name: &str, lookup: &'fqn Lookup) -> &'fqn Fqn {
 
 /// Look up the path and name for the given _PDU_ name.
 fn lookup_pdu_fqn<'fqn>(pdu_name: &str, lookup: &'fqn Lookup) -> &'fqn Fqn {
-    &lookup
+    lookup
         .pdu_fqn
         .get(pdu_name)
         .unwrap_or_else(|| panic!("Expected full qualified path for PDU '{pdu_name}'"))
@@ -150,34 +155,39 @@ fn lookup_pdu_fqn<'fqn>(pdu_name: &str, lookup: &'fqn Lookup) -> &'fqn Fqn {
 
 /// Look up the path for the given _Enumeration_ type name.
 fn lookup_enum_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn Fqn {
-    &lookup.enum_fqn.get(type_name).unwrap_or_else(|| {
+    lookup.enum_fqn.get(type_name).unwrap_or_else(|| {
         panic!("Expected full qualified enumeration path for type '{type_name}'")
     })
 }
 
 /// Lookup the name for the `ExtensionRecordTypes` variant with UID `uid` (UID 99)
-fn lookup_er_type<'a>(uid: &usize, lookup: &'a Lookup) -> &'a str {
-    lookup.er_types.get(uid).unwrap_or_else(|| {
+fn lookup_er_type(uid: usize, lookup: &Lookup) -> &str {
+    lookup.er_types.get(&uid).unwrap_or_else(|| {
         panic!("Expected a ExtensionRecord name for Record Type Enum value {uid}")
     })
 }
 
 /// Lookup the name for the `DIS-PDUType` variant with UID `uid` (UID 4)
-fn lookup_pdu_type<'a>(uid: &usize, lookup: &'a Lookup) -> &'a str {
+fn lookup_pdu_type(uid: usize, lookup: &Lookup) -> &str {
     lookup
         .pdu_types
-        .get(uid)
+        .get(&uid)
         .unwrap_or_else(|| panic!("Expected a PDU name for DIS-PDU Type Enum value {uid}"))
 }
 
-pub(crate) fn to_tokens(value: &str) -> TokenStream {
-    value
+/// Helper function to create a `TokenStream` from a `&str`.
+///
+/// # Panics
+/// The passed `token_string` value must be valid Rust code, otherwise the function panics.
+pub(crate) fn to_tokens(token_string: &str) -> TokenStream {
+    token_string
         .parse()
-        .expect(format!("Could not parse TokenStream '{value}'").as_str())
+        .expect(format!("Could not parse TokenStream '{token_string}'").as_str())
 }
 
-fn type_for_primitive_type_field(primitive_type: &str) -> &'static str {
-    match primitive_type {
+/// Maps the DIS schema primitive data types to Rust primitive data types.
+fn type_for_primitive_type_field(dis_primitive_type: &str) -> &'static str {
+    match dis_primitive_type {
         "uint8" => "u8",
         "uint16" => "u16",
         "uint32" => "u32",
@@ -188,10 +198,11 @@ fn type_for_primitive_type_field(primitive_type: &str) -> &'static str {
         "int64" => "i64",
         "float32" => "f32",
         "float64" => "f64",
-        _ => panic!("Invalid primitive type"),
+        _ => panic!("Invalid primitive type '{dis_primitive_type}'"),
     }
 }
 
+/// Maps DIS field sizes (in number of bits) to Rust primitive data types.
 pub(crate) fn field_size_to_primitive_type(size: usize) -> &'static str {
     if size > 64 {
         "u128"
@@ -206,6 +217,7 @@ pub(crate) fn field_size_to_primitive_type(size: usize) -> &'static str {
     }
 }
 
+/// Maps DIS field lengths (in number of bytes) to Rust primitive data types.
 fn field_length_to_primitive(length: usize) -> &'static str {
     match length {
         1 => "u8",
@@ -221,8 +233,8 @@ enum EnumFieldType<'e, 'p> {
     Primitive(&'p str),
 }
 
-/// Determine the type of an enum field. Presence of a UID has precedence over a primitive type attribute.
-/// Returns the found type name and a bool indicating whether the returned value is a primitive type
+/// Determine the Type of an Enum field. Presence of a UID has precedence over a primitive type attribute.
+/// Returns the either the found Enum `&Fqn` type data or a primitive type (as `&str`).
 #[inline]
 fn type_for_enum_field<'l>(
     field: &crate::extraction::EnumField,
@@ -243,6 +255,8 @@ enum BitRecordFieldType<'l> {
     Record(&'l Fqn),
 }
 
+/// Determine the Type of a Bit Record field. Presence of a UID has precedence over a Bit Record type.
+/// Returns the either the found Enum `&Fqn` type data or a Bit Record `&Fqn` type data.
 #[inline]
 fn type_for_bit_record_field<'l>(
     field: &crate::extraction::BitRecordField,
@@ -262,6 +276,7 @@ fn type_for_bit_record_field<'l>(
     }
 }
 
+/// Determine and retrieve the associated `Fqn` data for an Adaptive Record field
 #[inline]
 fn type_for_adaptive_record_field<'l>(
     field: &crate::extraction::AdaptiveRecordField,
@@ -277,6 +292,7 @@ fn type_for_adaptive_record_field<'l>(
     }
 }
 
+/// Returns true when the `field_name` contains name patterns that indicate the field is not used or used as padding.
 #[inline]
 fn must_skip_field_decl(field_name: &str) -> bool {
     ["Padding", "Padding1", "Padding2", "Not used"].contains(&field_name)
@@ -376,6 +392,7 @@ fn process_fixed_string_field(
     }
 }
 
+// TODO parser impl and pre-processing
 fn process_int_bitfield(
     field: &crate::extraction::IntBitField,
 ) -> crate::generation::models::IntBitField {
@@ -389,6 +406,7 @@ fn process_int_bitfield(
     }
 }
 
+// TODO parser impl and pre-processing
 fn process_enum_bitfield(
     field: &crate::extraction::EnumBitField,
     lookup: &Lookup,
@@ -417,7 +435,7 @@ fn process_enum_bitfield(
     }
 }
 
-// TODO parser
+// TODO parser impl and pre-processing
 fn process_bool_bitfield(
     field: &crate::extraction::BoolBitField,
 ) -> crate::generation::models::BoolBitField {
@@ -435,9 +453,10 @@ fn process_fixed_record_field(
     let fqn = lookup_record_fqn(&format_type_name(&field.field_type), lookup);
     let type_name = to_tokens(&fqn.type_name);
     let type_path = to_tokens(&fqn.path);
-    let parser_name = to_tokens(&field_name);
+    let parser_name = to_tokens(&fqn.field_name);
     // TODO determine if this fixed record parser needs to be called with discriminant fields
-    let parser_function = quote! { #type_path::#parser_name };
+    let parser_module = to_tokens(PARSER_MODULE_NAME);
+    let parser_function = quote! { #type_path::#parser_module::#parser_name };
 
     crate::generation::models::FixedRecordField {
         field_name,
@@ -467,8 +486,9 @@ fn process_bit_record_field(
         }
         BitRecordFieldType::Record(fqn) => {
             let type_path = to_tokens(&fqn.path);
-            let parser_name = to_tokens(&field_name);
-            let function = quote! { #type_path::#parser_name };
+            let parser_name = to_tokens(&fqn.field_name);
+            let parser_module = to_tokens(PARSER_MODULE_NAME);
+            let function = quote! { #type_path::#parser_module::#parser_name };
             (type_path, to_tokens(&fqn.type_name), false, function)
         }
     };
@@ -516,7 +536,7 @@ fn process_variable_string_field(
         field_name: format_field_name(&field.name),
         field_type: "String",
         fixed_number_of_strings: field.fixed_number_of_strings.unwrap_or(0),
-        parser_function: to_tokens("crate::parser::fixed_string"),
+        parser_function: to_tokens("crate::parser::fixed_string_with_length"),
     }
 }
 
@@ -708,7 +728,7 @@ fn process_extension_record(
     let formatted_record_name = format_type_name(&record.name_attr);
     let fqn = lookup_er_fqn(&formatted_record_name, lookup);
     let formatted_function_name = format_field_name(&record.name_attr);
-    let record_type_variant_name = lookup_er_type(&record.record_type_attr, lookup);
+    let record_type_variant_name = lookup_er_type(record.record_type_attr, lookup);
     crate::generation::models::ExtensionRecord {
         type_name: fqn.type_name.clone(),
         type_path: to_tokens(&fqn.path),
@@ -739,7 +759,7 @@ fn process_pdu(pdu: &crate::extraction::Pdu, lookup: &Lookup) -> crate::generati
         type_name: pdu_type_name.clone(),
         type_path: to_tokens(&fqn.path),
         pdu_type: pdu.type_attr,
-        pdu_type_name: to_tokens(lookup_pdu_type(&pdu.type_attr, lookup)),
+        pdu_type_name: to_tokens(lookup_pdu_type(pdu.type_attr, lookup)),
         protocol_family: pdu.protocol_family_attr,
         base_length: pdu.base_length_attr,
         header_field: process_fixed_record_field(&pdu.header_field, lookup),
