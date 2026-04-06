@@ -15,12 +15,12 @@ use quote::{format_ident, quote};
 //            parser
 //            writer
 
-pub const EXTENSION_RECORDS_MODULE_NAME: &str = "extension_records";
-pub const BUILDER_MODULE_NAME: &str = "builder";
-pub const BUILDER_TYPE_SUFFIX: &str = "Builder";
-pub const PARSER_MODULE_NAME: &str = "parser";
+pub(crate) const EXTENSION_RECORDS_MODULE_NAME: &str = "extension_records";
+pub(crate) const BUILDER_MODULE_NAME: &str = "builder";
+pub(crate) const BUILDER_TYPE_SUFFIX: &str = "Builder";
+pub(crate) const PARSER_MODULE_NAME: &str = "parser";
 
-pub enum GenerationItem {
+pub(crate) enum GenerationItem {
     Pdu(Pdu, String),
     FixedRecord(FixedRecord, String),
     BitRecord(BitRecord, String),
@@ -87,7 +87,7 @@ impl GenerationItem {
 }
 
 #[derive(Clone)]
-pub struct NumericField {
+pub(crate) struct NumericField {
     pub field_name: String,
     pub primitive_type: TokenStream,
     pub units: Option<String>,
@@ -96,14 +96,14 @@ pub struct NumericField {
 }
 
 #[derive(Clone)]
-pub struct CountField {
+pub(crate) struct CountField {
     pub field_name: String,
     pub primitive_type: TokenStream,
     pub parser_function: TokenStream,
 }
 
 #[derive(Clone, Debug)]
-pub struct EnumField {
+pub(crate) struct EnumField {
     pub field_name: String,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -113,7 +113,7 @@ pub struct EnumField {
 }
 
 #[derive(Clone)]
-pub struct FixedStringField {
+pub(crate) struct FixedStringField {
     pub field_name: String,
     pub field_type: &'static str, // `String`
     pub length: usize,
@@ -121,7 +121,7 @@ pub struct FixedStringField {
 }
 
 #[derive(Clone)]
-pub struct IntBitField {
+pub(crate) struct IntBitField {
     pub field_name: String,
     pub field_type: TokenStream,
     pub bit_position: usize,
@@ -131,7 +131,7 @@ pub struct IntBitField {
 }
 
 #[derive(Clone)]
-pub struct EnumBitField {
+pub(crate) struct EnumBitField {
     pub field_name: String,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -141,13 +141,13 @@ pub struct EnumBitField {
 }
 
 #[derive(Clone)]
-pub struct BoolBitField {
+pub(crate) struct BoolBitField {
     pub field_name: String,
     pub bit_position: usize,
 }
 
 #[derive(Clone)]
-pub struct FixedRecordField {
+pub(crate) struct FixedRecordField {
     pub field_name: String,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -156,7 +156,7 @@ pub struct FixedRecordField {
 }
 
 #[derive(Clone)]
-pub struct BitRecordField {
+pub(crate) struct BitRecordField {
     pub field_name: String,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -166,7 +166,7 @@ pub struct BitRecordField {
 }
 
 #[derive(Clone)]
-pub struct AdaptiveRecordField {
+pub(crate) struct AdaptiveRecordField {
     pub field_name: String,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -177,13 +177,13 @@ pub struct AdaptiveRecordField {
 }
 
 #[derive(Clone)]
-pub struct VariableString {
+pub(crate) struct VariableString {
     pub count_field: CountField,
     pub string_field: VariableStringField,
 }
 
 #[derive(Clone)]
-pub struct VariableStringField {
+pub(crate) struct VariableStringField {
     pub field_name: String,
     pub field_type: &'static str,       // `String`
     pub fixed_number_of_strings: usize, // FIXME attribute does not occur in the schemas
@@ -191,14 +191,14 @@ pub struct VariableStringField {
 }
 
 #[derive(Clone)]
-pub struct OpaqueDataField {
+pub(crate) struct OpaqueDataField {
     pub field_name: String,
     pub field_type: &'static str, // `Vec<u8>`
     pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
-pub enum PduAndFixedRecordFieldsEnum {
+pub(crate) enum PduAndFixedRecordFieldsEnum {
     Numeric(NumericField),
     Enum(EnumField),
     FixedString(FixedStringField),
@@ -208,7 +208,7 @@ pub enum PduAndFixedRecordFieldsEnum {
 }
 
 impl PduAndFixedRecordFieldsEnum {
-    pub fn field_name(&self) -> &str {
+    pub(crate) fn field_name(&self) -> &str {
         match self {
             PduAndFixedRecordFieldsEnum::Numeric(f) => &f.field_name,
             PduAndFixedRecordFieldsEnum::Enum(f) => &f.field_name,
@@ -219,7 +219,7 @@ impl PduAndFixedRecordFieldsEnum {
         }
     }
 
-    pub fn is_discriminant(&self) -> Option<&EnumField> {
+    pub(crate) fn is_discriminant(&self) -> Option<&EnumField> {
         match self {
             PduAndFixedRecordFieldsEnum::Enum(field) => {
                 if field.is_discriminant {
@@ -232,14 +232,14 @@ impl PduAndFixedRecordFieldsEnum {
         }
     }
 
-    pub fn has_discriminant(&self) -> Option<&AdaptiveRecordField> {
+    pub(crate) fn has_discriminant(&self) -> Option<&AdaptiveRecordField> {
         match self {
             PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => Some(field),
             _ => None,
         }
     }
 
-    pub fn is_padding(&self) -> bool {
+    pub(crate) fn is_padding(&self) -> bool {
         match self {
             PduAndFixedRecordFieldsEnum::Numeric(f) => f.is_padding,
             _ => false,
@@ -269,14 +269,32 @@ impl ArrayFieldEnum {
 }
 
 #[derive(Clone)]
-pub enum BitRecordFieldEnum {
+pub(crate) enum BitRecordFieldEnum {
     Enum(EnumBitField),
     Int(IntBitField),
     Bool(BoolBitField),
 }
 
+impl BitRecordFieldEnum {
+    pub(crate) fn field_name(&self) -> &str {
+        match self {
+            BitRecordFieldEnum::Enum(f) => &f.field_name,
+            BitRecordFieldEnum::Int(f) => &f.field_name,
+            BitRecordFieldEnum::Bool(f) => &f.field_name,
+        }
+    }
+
+    pub(crate) fn is_padding(&self) -> bool {
+        match self {
+            BitRecordFieldEnum::Enum(_f) => false,
+            BitRecordFieldEnum::Int(f) => f.is_padding,
+            BitRecordFieldEnum::Bool(_f) => false,
+        }
+    }
+}
+
 #[derive(Clone)]
-pub enum AdaptiveFormatEnum {
+pub(crate) enum AdaptiveFormatEnum {
     #[allow(dead_code)]
     Numeric(NumericField),
     #[allow(dead_code)]
@@ -289,7 +307,7 @@ pub enum AdaptiveFormatEnum {
 }
 
 #[derive(Clone)]
-pub enum ExtensionRecordFieldEnum {
+pub(crate) enum ExtensionRecordFieldEnum {
     Numeric(NumericField),
     Enum(EnumField),
     FixedString(FixedStringField),
@@ -306,7 +324,7 @@ pub enum ExtensionRecordFieldEnum {
 }
 
 impl ExtensionRecordFieldEnum {
-    pub fn field_name(&self) -> &str {
+    pub(crate) fn field_name(&self) -> &str {
         match self {
             ExtensionRecordFieldEnum::Numeric(f) => &f.field_name,
             ExtensionRecordFieldEnum::Enum(f) => &f.field_name,
@@ -323,7 +341,7 @@ impl ExtensionRecordFieldEnum {
         }
     }
 
-    pub fn is_padding(&self) -> bool {
+    pub(crate) fn is_padding(&self) -> bool {
         match self {
             ExtensionRecordFieldEnum::Numeric(f) => f.is_padding,
             _ => false,
@@ -332,19 +350,19 @@ impl ExtensionRecordFieldEnum {
 }
 
 #[derive(Clone)]
-pub struct Array {
+pub(crate) struct Array {
     pub count_field: CountField,
     pub type_field: ArrayFieldEnum,
 }
 
 #[derive(Clone)]
-pub struct OpaqueData {
+pub(crate) struct OpaqueData {
     pub count_field: CountField,
     pub opaque_data_field: OpaqueDataField,
 }
 
 #[derive(Clone)]
-pub struct FixedRecord {
+pub(crate) struct FixedRecord {
     pub fields: Vec<PduAndFixedRecordFieldsEnum>,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -354,16 +372,17 @@ pub struct FixedRecord {
 }
 
 #[derive(Clone)]
-pub struct BitRecord {
+pub(crate) struct BitRecord {
     pub fields: Vec<BitRecordFieldEnum>,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
     pub size: usize,
     pub parser_function: TokenStream,
+    pub value_parser: TokenStream,
 }
 
 #[derive(Clone)]
-pub struct AdaptiveRecord {
+pub(crate) struct AdaptiveRecord {
     pub variants: Vec<AdaptiveFormatEnum>,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
@@ -373,21 +392,21 @@ pub struct AdaptiveRecord {
 }
 
 #[derive(Clone)]
-pub struct ExtensionRecordSet {
+pub(crate) struct ExtensionRecordSet {
     pub count_field: CountField,
 }
 
 #[derive(Clone)]
-pub struct PaddingTo16;
+pub(crate) struct PaddingTo16;
 
 #[derive(Clone)]
-pub struct PaddingTo32;
+pub(crate) struct PaddingTo32;
 
 #[derive(Clone)]
-pub struct PaddingTo64;
+pub(crate) struct PaddingTo64;
 
 #[derive(Clone)]
-pub struct ExtensionRecord {
+pub(crate) struct ExtensionRecord {
     pub type_name: String,
     pub type_path: TokenStream,
     pub record_type_enum: usize,
@@ -403,7 +422,7 @@ pub struct ExtensionRecord {
 
 #[allow(clippy::struct_field_names)]
 #[derive(Clone)]
-pub struct Pdu {
+pub(crate) struct Pdu {
     pub pdu_module_name: String,
     pub type_name: String,
     pub type_path: TokenStream,
@@ -417,7 +436,7 @@ pub struct Pdu {
     pub parser_function: TokenStream,
 }
 
-pub fn generate(items: &[GenerationItem], families: &[String]) -> TokenStream {
+pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenStream {
     let core_contents = generate_core_units(items);
     let family_model_contents: Vec<TokenStream> = families
         .iter()

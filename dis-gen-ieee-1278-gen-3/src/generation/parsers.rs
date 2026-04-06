@@ -1,8 +1,9 @@
 use crate::generation::models::{
     generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum,
-    BitRecord, BitRecordField, EnumField, ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord,
-    FixedRecordField, FixedStringField, GenerationItem, NumericField, OpaqueData, Pdu,
-    PduAndFixedRecordFieldsEnum, VariableString, PARSER_MODULE_NAME,
+    BitRecord, BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
+    ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField,
+    GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
+    VariableString, PARSER_MODULE_NAME,
 };
 use crate::pre_processing::to_tokens;
 use proc_macro2::{Literal, TokenStream};
@@ -305,7 +306,87 @@ pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream 
 
 // TODO
 pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
-    quote! {}
+    let type_name = &record.type_name;
+    let type_path = &record.type_path;
+    let parser_function = &record.parser_function;
+    let value_parser = &record.value_parser;
+
+    let field_extractors = record
+        .fields
+        .iter()
+        .map(bit_record_field_enum_parser)
+        .collect::<TokenStream>();
+
+    let fields = record
+        .fields
+        .iter()
+        .filter(|field| !field.is_padding())
+        .map(|field| {
+            field
+                .field_name()
+                .parse::<TokenStream>()
+                .expect("Failed to tokenise field name for Fixed Record parser")
+        })
+        .collect::<Vec<TokenStream>>();
+
+    quote! {
+        pub(crate) fn #parser_function(input: &[u8]) -> IResult<&[u8], #type_path::#type_name> {
+            let (input, value) = #value_parser(input)?;
+
+            #field_extractors
+
+            #type_path::#type_name {
+                #(#fields),*
+            }
+        }
+    }
+}
+
+fn bit_record_field_enum_parser(field: &BitRecordFieldEnum) -> TokenStream {
+    match field {
+        BitRecordFieldEnum::Enum(f) => generate_enum_bit_field_parser(f),
+        BitRecordFieldEnum::Int(f) => generate_int_bit_field_parser(f),
+        BitRecordFieldEnum::Bool(f) => generate_bool_bit_field_parser(f),
+    }
+}
+
+fn generate_enum_bit_field_parser(field: &EnumBitField) -> TokenStream {
+    let field_name = format_ident!("{}", field.field_name);
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
+
+    let shift_literal = Literal::usize_unsuffixed(field.bit_position);
+    let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.size as u32) - 1);
+
+    // TODO determine correct shift direction for v8, including enumerations
+    quote! {
+        let #field_name = #type_path::#type_name::from(((value >> #shift_literal ) & #bitmask_literal).into());
+    }
+}
+
+fn generate_int_bit_field_parser(field: &IntBitField) -> TokenStream {
+    let field_name = format_ident!("{}", field.field_name);
+
+    let shift_literal = Literal::usize_unsuffixed(field.bit_position);
+    let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.size as u32) - 1);
+
+    // TODO determine correct shift direction for v8, including enumerations
+    // TODO determine field size, based on record
+    quote! {
+        let #field_name = ((value >> #shift_literal ) & #bitmask_literal).into();
+    }
+}
+
+fn generate_bool_bit_field_parser(field: &BoolBitField) -> TokenStream {
+    let field_name = format_ident!("{}", field.field_name);
+
+    let shift_literal = Literal::usize_unsuffixed(field.bit_position);
+    let bitmask_literal = Literal::usize_unsuffixed(1);
+
+    // TODO determine correct shift direction for v8, including enumerations
+    quote! {
+        let #field_name = ((value >> #shift_literal ) & #bitmask_literal) != 0;
+    }
 }
 
 // TODO
@@ -348,10 +429,11 @@ fn generate_numeric_field_parser(field: &NumericField) -> TokenStream {
 
 fn generate_enum_field_parser(field: &EnumField) -> TokenStream {
     let field_name = format_ident!("{}", &field.field_name);
-    let field_type_fqn = &field.type_path;
+    let type_name = &field.type_name;
+    let type_path = &field.type_path;
     let parser = &field.parser_function;
     let conversion = if field.parser_must_convert_to_enum {
-        quote! { let #field_name = #field_type_fqn::from(#field_name); }
+        quote! { let #field_name = #type_path::#type_name::from(#field_name); }
     } else {
         quote! {}
     };

@@ -454,7 +454,7 @@ fn process_fixed_record_field(
     let type_name = to_tokens(&fqn.type_name);
     let type_path = to_tokens(&fqn.path);
     let parser_name = to_tokens(&fqn.field_name);
-    // TODO determine if this fixed record parser needs to be called with discriminant fields
+    // TODO determine if this fixed record parser needs to be called with discriminant fields; information needs to be collected and stored during extraction
     let parser_module = to_tokens(PARSER_MODULE_NAME);
     let parser_function = quote! { #type_path::#parser_module::#parser_name };
 
@@ -576,7 +576,6 @@ fn process_opaque_data(o: &crate::extraction::OpaqueData) -> crate::generation::
     }
 }
 
-// TODO parser
 fn process_fixed_record(
     record: &crate::extraction::FixedRecord,
     lookup: &Lookup,
@@ -672,10 +671,12 @@ fn process_bit_record(
         .collect();
     let type_name = to_tokens(&record_type_fqn.type_name);
     let type_path = to_tokens(&record_type_fqn.path);
-    let parser_name = to_tokens(&format_field_name(&record.record_type));
-    let record_full_type = to_tokens(&record_type_fqn.to_full_type());
+    let parser_name = to_tokens(&record_type_fqn.field_name);
     let parser_function =
-        quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #record_full_type> };
+        quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #type_path::#type_name> };
+
+    let value_primitive_type = field_size_to_primitive_type(record.size);
+    let value_parser = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
 
     crate::generation::models::BitRecord {
         fields,
@@ -683,6 +684,7 @@ fn process_bit_record(
         type_path,
         size: record.size,
         parser_function,
+        value_parser,
     }
 }
 
