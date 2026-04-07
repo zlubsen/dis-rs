@@ -65,7 +65,7 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
         pub(crate) fn opaque_data(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<u8>> {
             move |input: &[u8]| {
                 let (input, bytes) = nom::bytes::complete::take(length)(input)?;
-                bytes.to_vec()
+                Ok((input, bytes.to_vec()))
             }
         }
     };
@@ -350,6 +350,10 @@ fn bit_record_field_enum_parser(field: &BitRecordFieldEnum) -> TokenStream {
     }
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Exponent value will not overflow u32::MAX"
+)]
 fn generate_enum_bit_field_parser(field: &EnumBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
     let type_name = &field.type_name;
@@ -358,19 +362,27 @@ fn generate_enum_bit_field_parser(field: &EnumBitField) -> TokenStream {
     let shift_literal = Literal::usize_unsuffixed(field.bit_position);
     let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.size as u32) - 1);
 
-    // TODO determine correct shift direction for v8, including enumerations
+    let final_type = if type_path.is_empty() {
+        quote! { #type_name }
+    } else {
+        quote! { #type_path::#type_name }
+    };
+
     quote! {
-        let #field_name = #type_path::#type_name::from(((value >> #shift_literal ) & #bitmask_literal).into());
+        let #field_name = #final_type::from(((value >> #shift_literal ) & #bitmask_literal).into());
     }
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Exponent value will not overflow u32::MAX"
+)]
 fn generate_int_bit_field_parser(field: &IntBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
 
     let shift_literal = Literal::usize_unsuffixed(field.bit_position);
     let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.size as u32) - 1);
 
-    // TODO determine correct shift direction for v8, including enumerations
     // TODO determine field size, based on record
     quote! {
         let #field_name = ((value >> #shift_literal ) & #bitmask_literal).into();
@@ -383,7 +395,6 @@ fn generate_bool_bit_field_parser(field: &BoolBitField) -> TokenStream {
     let shift_literal = Literal::usize_unsuffixed(field.bit_position);
     let bitmask_literal = Literal::usize_unsuffixed(1);
 
-    // TODO determine correct shift direction for v8, including enumerations
     quote! {
         let #field_name = ((value >> #shift_literal ) & #bitmask_literal) != 0;
     }

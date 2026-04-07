@@ -1,12 +1,11 @@
 use crate::generation::models::{Pdu, PduAndFixedRecordFieldsEnum};
-use crate::pre_processing::to_tokens;
+use crate::pre_processing::{finalise_type, to_tokens};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
 pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStream {
-    let fqn_pdu_name_ident = &item.type_path;
-    let type_path = &item.type_path;
     let type_name = to_tokens(&item.type_name);
+    let final_type = finalise_type(&item.type_path, &type_name);
     let with_functions = item
         .fields
         .iter()
@@ -15,7 +14,7 @@ pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStre
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        pub struct #builder_name_ident(#type_path::#type_name);
+        pub struct #builder_name_ident(#final_type);
 
         impl Default for #builder_name_ident {
             fn default() -> Self {
@@ -26,16 +25,16 @@ pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStre
         impl #builder_name_ident {
             #[must_use]
             pub fn new() -> Self {
-                #builder_name_ident(#type_path::#type_name::default())
+                #builder_name_ident(#final_type::default())
             }
 
             #[must_use]
-            pub fn new_from_body(body: #type_path::#type_name) -> Self {
+            pub fn new_from_body(body: #final_type) -> Self {
                 #builder_name_ident(body)
             }
 
             #[must_use]
-            pub fn build(self) -> #type_path::#type_name {
+            pub fn build(self) -> #final_type {
                 self.0
             }
 
@@ -62,13 +61,8 @@ fn generate_pdu_builder_functions(field: &PduAndFixedRecordFieldsEnum) -> TokenS
             generate_pdu_builder_with_function(&field.field_name, &field.primitive_type, false)
         }
         PduAndFixedRecordFieldsEnum::Enum(field) => {
-            let type_name = &field.type_name;
-            let type_path = &field.type_path;
-            generate_pdu_builder_with_function(
-                &field.field_name,
-                &quote! { #type_path::#type_name },
-                false,
-            )
+            let final_type = finalise_type(&field.type_path, &field.type_name);
+            generate_pdu_builder_with_function(&field.field_name, &quote! { #final_type }, false)
         }
         PduAndFixedRecordFieldsEnum::FixedString(field) => generate_pdu_builder_with_function(
             &field.field_name,
@@ -76,31 +70,16 @@ fn generate_pdu_builder_functions(field: &PduAndFixedRecordFieldsEnum) -> TokenS
             true,
         ),
         PduAndFixedRecordFieldsEnum::FixedRecord(field) => {
-            let type_name = &field.type_name;
-            let type_path = &field.type_path;
-            generate_pdu_builder_with_function(
-                &field.field_name,
-                &quote! { #type_path::#type_name },
-                false,
-            )
+            let final_type = finalise_type(&field.type_path, &field.type_name);
+            generate_pdu_builder_with_function(&field.field_name, &quote! { #final_type }, false)
         }
         PduAndFixedRecordFieldsEnum::BitRecord(field) => {
-            let type_name = &field.type_name;
-            let type_path = &field.type_path;
-            generate_pdu_builder_with_function(
-                &field.field_name,
-                &quote! { #type_path::#type_name },
-                false,
-            )
+            let final_type = finalise_type(&field.type_path, &field.type_name);
+            generate_pdu_builder_with_function(&field.field_name, &quote! { #final_type }, false)
         }
         PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => {
-            let type_name = &field.type_name;
-            let type_path = &field.type_path;
-            generate_pdu_builder_with_function(
-                &field.field_name,
-                &quote! { #type_path::#type_name },
-                false,
-            )
+            let final_type = finalise_type(&field.type_path, &field.type_name);
+            generate_pdu_builder_with_function(&field.field_name, &quote! { #final_type }, false)
         }
     }
 }

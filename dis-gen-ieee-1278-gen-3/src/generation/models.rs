@@ -1,4 +1,5 @@
 use crate::generation::parsers::generate_extension_record_body_parser;
+use crate::pre_processing::finalise_type;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 // Module tree of generated sources:
@@ -658,10 +659,10 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     let record_parsers = quote! { use nom::IResult; #record_parsers };
     let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
     // TODO remove
-    let _ = syn::parse_file(&records_parser_module.to_string())
-        .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
     println!("{records}");
     println!("{records_parser_module}");
+    let _ = syn::parse_file(&records_parser_module.to_string())
+        .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
     let records = quote! { #records #records_parser_module };
 
     println!("{records}");
@@ -733,7 +734,7 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
     let fields = record
         .fields
         .iter()
-        .map(|field| generate_extension_record_field_decl(field));
+        .map(generate_extension_record_field_decl);
 
     quote! {
         #[doc = #record_type_doc_comment]
@@ -818,17 +819,10 @@ fn generate_numeric_field_decl(field: &NumericField) -> TokenStream {
 
 fn generate_enum_field_decl(field: &EnumField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let type_name = &field.type_name;
-    let type_path = &field.type_path;
+    let final_type = finalise_type(&field.type_path, &field.type_name);
 
-    if type_path.is_empty() {
-        quote! {
-            pub #field_ident : #type_name,
-        }
-    } else {
-        quote! {
-            pub #field_ident : #type_path::#type_name,
-        }
+    quote! {
+        pub #field_ident : #final_type,
     }
 }
 
@@ -844,31 +838,28 @@ fn generate_fixed_string_field_decl(field: &FixedStringField) -> TokenStream {
 
 fn generate_fixed_record_field_decl(field: &FixedRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let type_name = &field.type_name;
-    let type_path = &field.type_path;
+    let final_type = finalise_type(&field.type_path, &field.type_name);
 
     quote! {
-        pub #field_ident : #type_path::#type_name,
+        pub #field_ident : #final_type,
     }
 }
 
 fn generate_bit_record_field_decl(field: &BitRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let type_name = &field.type_name;
-    let type_path = &field.type_path;
+    let final_type = finalise_type(&field.type_path, &field.type_name);
 
     quote! {
-        pub #field_ident : #type_path::#type_name,
+        pub #field_ident : #final_type,
     }
 }
 
 fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStream {
     let field_ident = format_ident!("{}", field.field_name);
-    let type_name = &field.type_name;
-    let type_path = &field.type_path;
+    let final_type = finalise_type(&field.type_path, &field.type_name);
 
     quote! {
-        pub #field_ident : #type_path::#type_name,
+        pub #field_ident : #final_type,
     }
 }
 
@@ -885,25 +876,29 @@ fn generate_array_field_decl(field: &Array) -> TokenStream {
         ArrayFieldEnum::Numeric(inner) => {
             (format_ident!("{}", inner.field_name), &inner.primitive_type)
         }
-        ArrayFieldEnum::Enum(inner) => (format_ident!("{}", inner.field_name), &inner.type_path),
-        ArrayFieldEnum::FixedString(inner) => (
-            format_ident!("{}", inner.field_name),
-            &syn::parse_str(&inner.field_type).unwrap(),
-        ),
-        ArrayFieldEnum::FixedRecord(inner) => {
-            let type_name = &inner.type_name;
-            let type_path = &inner.type_path;
+        ArrayFieldEnum::Enum(inner) => {
+            let final_type = finalise_type(&inner.type_path, &inner.type_name);
             (
                 format_ident!("{}", inner.field_name),
-                &quote! { #type_path::#type_name },
+                &quote! { #final_type },
+            )
+        }
+        ArrayFieldEnum::FixedString(inner) => (
+            format_ident!("{}", inner.field_name),
+            &syn::parse_str(inner.field_type).unwrap(),
+        ),
+        ArrayFieldEnum::FixedRecord(inner) => {
+            let final_type = finalise_type(&inner.type_path, &inner.type_name);
+            (
+                format_ident!("{}", inner.field_name),
+                &quote! { #final_type },
             )
         }
         ArrayFieldEnum::BitRecord(inner) => {
-            let type_name = &inner.type_name;
-            let type_path = &inner.type_path;
+            let final_type = finalise_type(&inner.type_path, &inner.type_name);
             (
                 format_ident!("{}", inner.field_name),
-                &quote! { #type_path::#type_name },
+                &quote! { #final_type },
             )
         }
     };
@@ -948,14 +943,9 @@ fn generate_bit_record_item_decl(item: &BitRecordFieldEnum) -> TokenStream {
 
 fn generate_enum_bit_field_decl(field: &EnumBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
-    let type_path = &field.type_path;
-    let type_name = &field.type_name;
+    let final_type = finalise_type(&field.type_path, &field.type_name);
 
-    if type_path.is_empty() {
-        quote! { pub #field_name: #type_name, }
-    } else {
-        quote! { pub #field_name: #type_path::#type_name, }
-    }
+    quote! { pub #field_name: #final_type, }
 }
 
 fn generate_bool_bit_field_decl(field: &BoolBitField) -> TokenStream {

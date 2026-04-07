@@ -185,6 +185,14 @@ pub(crate) fn to_tokens(token_string: &str) -> TokenStream {
         .expect(format!("Could not parse TokenStream '{token_string}'").as_str())
 }
 
+pub(crate) fn finalise_type<'a>(path: &'a TokenStream, name: &'a TokenStream) -> TokenStream {
+    if path.is_empty() {
+        quote! { #name }
+    } else {
+        quote! { #path::#name }
+    }
+}
+
 /// Maps the DIS schema primitive data types to Rust primitive data types.
 fn type_for_primitive_type_field(dis_primitive_type: &str) -> &'static str {
     match dis_primitive_type {
@@ -671,9 +679,7 @@ fn process_bit_record(
         .collect();
     let type_name = to_tokens(&record_type_fqn.type_name);
     let type_path = to_tokens(&record_type_fqn.path);
-    let parser_name = to_tokens(&record_type_fqn.field_name);
-    let parser_function =
-        quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #type_path::#type_name> };
+    let parser_function = to_tokens(&record_type_fqn.field_name);
 
     let value_primitive_type = field_size_to_primitive_type(record.size);
     let value_parser = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
