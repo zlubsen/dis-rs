@@ -12,6 +12,7 @@ const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_GEN3_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
 
 type UidLookup = HashMap<usize, String>;
+type BodyTypeLookup = HashMap<usize, String>; // TODO merge with Uidlookup again
 type FqnLookup = HashMap<String, Fqn>;
 
 #[derive(PartialEq)]
@@ -19,6 +20,7 @@ struct Fqn {
     path: String,
     type_name: String,
     field_name: String,
+    // data_size: usize,
 }
 
 impl Fqn {
@@ -37,8 +39,8 @@ struct Lookup {
     records_fqn: FqnLookup,
     enum_fqn: FqnLookup,
     uid: UidLookup,
-    pdu_types: UidLookup,
-    er_types: UidLookup,
+    pdu_types: BodyTypeLookup,
+    er_types: BodyTypeLookup,
 }
 
 /// This is the main entry point for the generation of the DIS v8 code units.
@@ -61,8 +63,8 @@ struct Lookup {
 pub fn execute(
     schema_dir: &str,
     uid_lookup: UidLookup,
-    pdu_types_lookup: UidLookup,
-    er_types_lookup: UidLookup,
+    pdu_types_lookup: BodyTypeLookup,
+    er_types_lookup: BodyTypeLookup,
 ) {
     if std::path::Path::new(schema_dir).is_dir() {
         // Find all files in the provided directory. Files must be .xml files.

@@ -5,11 +5,13 @@ use crate::generation::models::{
     GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
     VariableString, PARSER_MODULE_NAME,
 };
-use crate::pre_processing::to_tokens;
+use crate::pre_processing::{field_size_to_primitive_type, finalise_type, to_tokens};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 // TODO 'Other' Pdu parser
 // TODO 'Other' ExtensionRecord parser
+// TODO parser function call to parsers that take a discriminant, need to add the arguments in the call.
+// TODO ExtensionRecord body parsers format an incorrect ExtensionRecordBody variant type on returning
 
 const PDU_HEADER: &str = "PDUHeader";
 const PDU_TYPE: &str = "DISPDUType";
@@ -177,6 +179,8 @@ pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
     quote! {
         use crate::BodyRaw;
         use nom::IResult;
+        #[allow(unused_imports, reason = "Imported in every parser module instead of finding out the use of specific nom functions per module")]
+        use nom::Parser;
 
         pub fn #parser_function(input: &[u8]) -> IResult<&[u8], crate::PduBody> {
             #(#field_parsers)*
@@ -225,21 +229,31 @@ pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) ->
         })
         .collect::<Vec<TokenStream>>();
 
-    let padding_to_64 = if record.is_variable {
-        quote! {
-            let padded_record = crate::utils::length_padded_to_num(record_length, 8);
-            let (input, _padding_to_64) = nom::bytes::complete::take(padded_record.padding_length)(input)?;
-        }
+    let (record_length_argument, padding_to_64) = if record.is_variable {
+        (
+            quote! {
+                record_length
+            },
+            quote! {
+                let padded_record = crate::utils::length_padded_to_num(record_length, 8);
+                let (input, _padding_to_64) = nom::bytes::complete::take(padded_record.padding_length)(input)?;
+            },
+        )
     } else {
         let length = Literal::usize_suffixed(record.base_length);
 
-        quote! {
-            let (input, _padding_to_64) = nom::bytes::complete::take(#length)(input)?;
-        }
+        (
+            quote! {
+                _record_length
+            },
+            quote! {
+                let (input, _padding_to_64) = nom::bytes::complete::take(#length)(input)?;
+            },
+        )
     };
 
     quote! {
-        pub fn #parser_function(record_length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> {
+        pub fn #parser_function(#record_length_argument: usize) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> {
             move |input: &[u8]| {
                 #(#field_parsers)*
 
@@ -335,9 +349,9 @@ pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
 
             #field_extractors
 
-            #type_path::#type_name {
+            Ok((input, #type_path::#type_name {
                 #(#fields),*
-            }
+            }))
         }
     }
 }
@@ -358,6 +372,7 @@ fn generate_enum_bit_field_parser(field: &EnumBitField) -> TokenStream {
     let field_name = format_ident!("{}", field.field_name);
     let type_name = &field.type_name;
     let type_path = &field.type_path;
+    let bit_type = to_tokens(field_size_to_primitive_type(field.size));
 
     let shift_literal = Literal::usize_unsuffixed(field.bit_position);
     let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.size as u32) - 1);
@@ -369,7 +384,8 @@ fn generate_enum_bit_field_parser(field: &EnumBitField) -> TokenStream {
     };
 
     quote! {
-        let #field_name = #final_type::from(((value >> #shift_literal ) & #bitmask_literal).into());
+        let #field_name = ((value >> #shift_literal ) & #bitmask_literal) as #bit_type;
+        let #field_name = #final_type::from(#field_name);
     }
 }
 
@@ -378,14 +394,18 @@ fn generate_enum_bit_field_parser(field: &EnumBitField) -> TokenStream {
     reason = "Exponent value will not overflow u32::MAX"
 )]
 fn generate_int_bit_field_parser(field: &IntBitField) -> TokenStream {
-    let field_name = format_ident!("{}", field.field_name);
+    let field_name = if field.is_padding {
+        format_ident!("_{}", &field.field_name)
+    } else {
+        format_ident!("{}", &field.field_name)
+    };
+    let field_type = &field.field_type;
 
     let shift_literal = Literal::usize_unsuffixed(field.bit_position);
     let bitmask_literal = Literal::usize_unsuffixed(2usize.pow(field.size as u32) - 1);
 
-    // TODO determine field size, based on record
     quote! {
-        let #field_name = ((value >> #shift_literal ) & #bitmask_literal).into();
+        let #field_name = ((value >> #shift_literal ) & #bitmask_literal) as #field_type;
     }
 }
 
@@ -476,9 +496,16 @@ fn generate_fixed_record_field_parser(field: &FixedRecordField) -> TokenStream {
 fn generate_bit_record_field_parser(field: &BitRecordField) -> TokenStream {
     let field_name = format_ident!("{}", &field.field_name);
     let parser = &field.parser_function;
+    let conversion = if field.parser_must_convert_to_enum {
+        let final_type = finalise_type(&field.type_path, &field.type_name);
+        quote! { let #field_name = #final_type::from(#field_name); }
+    } else {
+        quote! {}
+    };
 
     quote! {
         let (input, #field_name) = #parser(input)?;
+        #conversion
     }
 }
 
@@ -514,7 +541,7 @@ fn generate_array_field_parser(array: &Array) -> TokenStream {
 
     quote! {
         let (input, count) = #count_parser_function(input)?;
-        let (input, #field_name) = nom::multi::count(#type_parser_function, count.into()).parse(input);
+        let (input, #field_name) = nom::multi::count(#type_parser_function, count.into()).parse(input)?;
     }
 }
 

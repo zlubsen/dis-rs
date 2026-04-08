@@ -1,5 +1,5 @@
 use crate::generation::parsers::generate_extension_record_body_parser;
-use crate::pre_processing::finalise_type;
+use crate::pre_processing::{finalise_type, to_tokens};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 // Module tree of generated sources:
@@ -538,13 +538,18 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
 
 fn generate_body_variant(variant: &GenerationItem) -> TokenStream {
     let variant_name = variant
-        .type_name()
-        .expect("Type name for variants can only be called for PDUs and ExtensionRecords");
+        .variant_name()
+        .expect("Variant name for variants can only be called for PDUs and ExtensionRecords");
     let variant_name = format_ident!("{variant_name}");
     let type_path = variant.type_path();
+    let type_name = to_tokens(
+        variant
+            .type_name()
+            .expect("Type name for variants can only be called for PDUs and ExtensionRecords"),
+    );
 
     quote! {
-        #variant_name ( #type_path::#variant_name ),
+        #variant_name ( #type_path::#type_name ),
     }
 }
 
@@ -616,6 +621,9 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         .collect::<TokenStream>();
     let extension_record_parsers = quote! {
         use nom::IResult;
+        #[allow(unused_imports, reason = "Imported in every parser module instead of finding out the use of specific nom functions per module")]
+        use nom::Parser;
+
         #extension_record_parsers
     };
     // TODO remove

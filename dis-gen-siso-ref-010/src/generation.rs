@@ -692,10 +692,10 @@ fn quote_bitfield_display_impl(item: &Bitfield) -> TokenStream {
 fn size_to_type(data_size: usize) -> &'static str {
     #[allow(clippy::match_same_arms)]
     match data_size {
-        64 => "u64",
-        32 => "u32",
-        16 => "u16",
-        8 => "u8",
+        33..=64 => "u64",
+        17..=32 => "u32",
+        9..=16 => "u16",
+        0..=8 => "u8",
         _ => "u8",
     }
 }
@@ -704,10 +704,10 @@ fn discriminant_literal(value: usize, data_size: usize) -> Literal {
     #[allow(clippy::match_same_arms)]
     #[allow(clippy::cast_possible_truncation)]
     match data_size {
-        64 => Literal::u64_suffixed(value as u64),
-        32 => Literal::u32_suffixed(value as u32),
-        16 => Literal::u16_suffixed(value as u16),
-        8 => Literal::u8_suffixed(value as u8),
+        33..=64 => Literal::u64_suffixed(value as u64),
+        17..=32 => Literal::u32_suffixed(value as u32),
+        9..=16 => Literal::u16_suffixed(value as u16),
+        0..=8 => Literal::u8_suffixed(value as u8),
         _ => Literal::u8_suffixed(value as u8),
     }
 }
@@ -729,15 +729,15 @@ fn generate_type_placeholder() -> TokenStream {
             }
         }
 
-        impl From<u16> for EnumerationU16 {
-            fn from(value: u16) -> Self {
-                Self(value)
+        impl <T: Into<u16>> From<T> for EnumerationU16 {
+            fn from(value: T) -> Self {
+                Self(value.into())
             }
         }
 
-        impl From<u32> for EnumerationU32 {
-            fn from(value: u32) -> Self {
-                Self(value)
+        impl <T: Into<u32>> From<T> for EnumerationU32 {
+            fn from(value: T) -> Self {
+                Self(value.into())
             }
         }
 

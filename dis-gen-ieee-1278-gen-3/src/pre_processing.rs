@@ -27,6 +27,7 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
                     path,
                     type_name: name,
                     field_name,
+                    // data_size: Default::default(),
                 });
             }
             ExtractionItem::ExtensionRecord(_, _) => {
@@ -35,6 +36,7 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
                     path,
                     type_name: name,
                     field_name,
+                    // data_size: Default::default(),
                 });
             }
             _ => {
@@ -43,6 +45,7 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
                     path,
                     type_name: name,
                     field_name,
+                    // data_size: Default::default(),
                 });
             }
         }
@@ -55,6 +58,7 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
             path: String::default(),
             type_name: "u8".to_string(),
             field_name: String::default(),
+            // data_size: Default::default(),
         },
     );
     rec_lookup.insert(
@@ -63,6 +67,7 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
             path: String::default(),
             type_name: "u16".to_string(),
             field_name: String::default(),
+            // data_size: Default::default(),
         },
     );
 
@@ -112,7 +117,6 @@ fn lookup_enum_fqn_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l Fqn 
         .expect("Expected at least one Type for an UID lookup.");
     let fqn = lookup_enum_fqn(the_type, lookup);
     fqn
-    // format!("{}::{}", fqn.path, fqn.type_name)
 }
 
 /// Looks up the type name of the Enumeration UID `uid`.
@@ -271,7 +275,7 @@ fn type_for_bit_record_field<'l>(
     lookup: &'l Lookup,
 ) -> BitRecordFieldType<'l> {
     if let Some(uids) = &field.enum_uid {
-        let fqn = lookup_enum_fqn_first_uid(&uids, lookup);
+        let fqn = lookup_enum_fqn_first_uid(uids, lookup);
         BitRecordFieldType::Enum(fqn)
     } else {
         let field_fqn = lookup_record_fqn(

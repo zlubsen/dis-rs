@@ -476,6 +476,6 @@ fn escape_description(description: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn test_format_name() {}
+    // #[test]
+    // fn test_format_name() {}
 }
