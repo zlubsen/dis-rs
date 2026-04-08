@@ -295,6 +295,13 @@ fn type_for_adaptive_record_field<'l>(
     lookup: &'l Lookup,
 ) -> &'l Fqn {
     if let Some(uids) = &field.enum_uid {
+        // We apply the `WRAP_ENUM_UID_OFFSET` to the UID value to obtain
+        // the Fqn type information for the wrapper (Capabilities, Appearance, Extended Appearance).
+        const WRAP_ENUM_UID_OFFSET: usize = 100_000; // FIXME put in a better place, or define in utils for reuse in both siso-ref-010 and v8
+        let uids = uids
+            .iter()
+            .map(|&uid| uid + WRAP_ENUM_UID_OFFSET)
+            .collect::<Vec<usize>>();
         lookup_enum_fqn_first_uid(&uids, lookup)
     } else {
         let field_fqn = lookup_record_fqn(format_type_name(field.field_type.as_ref().expect(
@@ -485,6 +492,9 @@ fn process_bit_record_field(
 ) -> crate::generation::models::BitRecordField {
     let field_name = format_field_name(&field.name);
     let field_type = type_for_bit_record_field(field, lookup);
+
+    // FIXME make uniform for all bitrecordfields that we use the From<> impl
+    aaaaaaa
     let (type_path, type_name, parser_must_convert_to_enum, parser_function) = match field_type {
         BitRecordFieldType::Enum(fqn) => {
             let primitive_type = field_size_to_primitive_type(field.size);

@@ -990,6 +990,25 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
         .map(generate_adaptive_record_variant)
         .collect::<Vec<TokenStream>>();
 
+    // let from_arms = item.variants
+    //     .iter()
+    //     .enumerate()
+    //     .filter_map(|(index, format)| {
+    //         if item.discriminant_start_value >= index {
+    //             if let AdaptiveFormatEnum::BitRecord(bit_variant) = format {
+    //                 let parser_path = &bit_variant.type_path;
+    //                 let parser_function = &bit_variant.parser_function;
+    //
+    //                 Some((index, quote! {
+    //                     #index => #parser_path::#PARSER_MODULE_NAME::#parser_function
+    //                 }))
+    //             } else {
+    //                 unimplemented!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
+    //             }
+    //         } else { None }
+    //     })
+    //     .collect::<Vec<TokenStream>>();
+
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
         pub enum #record_name {
@@ -997,6 +1016,13 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
             None,
             #(#variants)*
         }
+        // impl From<(#discriminant_length, #value_primitive_type)> for #record_name {
+        //     fn from((discriminant: #discriminant_length, value: #value_primitive_type)) -> Self {
+        //         match discriminant {
+        //             #(#arms),*
+        //         }
+        //     }
+        // }
     }
 }
 

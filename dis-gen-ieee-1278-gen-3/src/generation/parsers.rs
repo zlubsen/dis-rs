@@ -318,12 +318,12 @@ pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream 
     }
 }
 
-// TODO
 pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
     let type_name = &record.type_name;
     let type_path = &record.type_path;
     let parser_function = &record.parser_function;
     let value_parser = &record.value_parser;
+    let size_primitive = to_tokens(field_size_to_primitive_type(record.size));
 
     let field_extractors = record
         .fields
@@ -344,15 +344,26 @@ pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     quote! {
-        pub(crate) fn #parser_function(input: &[u8]) -> IResult<&[u8], #type_path::#type_name> {
-            let (input, value) = #value_parser(input)?;
+        impl From<#size_primitive> for #type_path::#type_name {
+            fn from(value: #size_primitive) -> Self {
+                #field_extractors
 
-            #field_extractors
-
-            Ok((input, #type_path::#type_name {
-                #(#fields),*
-            }))
+                #type_path::#type_name {
+                    #(#fields),*
+                }
+            }
         }
+
+        // TODO remove
+        // pub(crate) fn #parser_function(input: &[u8]) -> IResult<&[u8], #type_path::#type_name> {
+        //     let (input, value) = #value_parser(input)?;
+        //
+        //     #field_extractors
+        //
+        //     Ok((input, #type_path::#type_name {
+        //         #(#fields),*
+        //     }))
+        // }
     }
 }
 

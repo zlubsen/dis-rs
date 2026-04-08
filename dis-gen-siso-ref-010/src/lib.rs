@@ -12,7 +12,7 @@ const OUT_DIR: &str = "OUT_DIR";
 const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_REF_010_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_ref_010.rs";
 
-const WRAP_ENUM_UID_OFFSET: usize = 0xFFFF_0000_0000_0000;
+const WRAP_ENUM_UID_OFFSET: usize = 100_000;
 const WRAP_ENUM_TRIM_NAME: &str = " Type";
 const WRAP_ENUM_SIZE: usize = 32; // NOTE Now a hardcoded size, as both capabilities and (extended) appearance are 32 bits.
 
@@ -173,7 +173,7 @@ impl From<&Option<String>> for OverrideXrefHandling {
         match value {
             Some(s) if s == EMBED_CONFIG_STR => OverrideXrefHandling::Embed,
             Some(s) if s == WRAPPER_CONFIG_STR => OverrideXrefHandling::Wrap,
-            None | _ => OverrideXrefHandling::None,
+            _ => OverrideXrefHandling::None,
         }
     }
 }
