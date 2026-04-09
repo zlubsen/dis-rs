@@ -321,8 +321,6 @@ pub(crate) fn generate_fixed_record_parser(record: &FixedRecord) -> TokenStream 
 pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
     let type_name = &record.type_name;
     let type_path = &record.type_path;
-    let parser_function = &record.parser_function;
-    let value_parser = &record.value_parser;
     let size_primitive = to_tokens(field_size_to_primitive_type(record.size));
 
     let field_extractors = record
@@ -339,7 +337,7 @@ pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
             field
                 .field_name()
                 .parse::<TokenStream>()
-                .expect("Failed to tokenise field name for Fixed Record parser")
+                .expect("Failed to tokenise field name for BitRecord From<primitive> impl")
         })
         .collect::<Vec<TokenStream>>();
 
@@ -353,17 +351,6 @@ pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
                 }
             }
         }
-
-        // TODO remove
-        // pub(crate) fn #parser_function(input: &[u8]) -> IResult<&[u8], #type_path::#type_name> {
-        //     let (input, value) = #value_parser(input)?;
-        //
-        //     #field_extractors
-        //
-        //     Ok((input, #type_path::#type_name {
-        //         #(#fields),*
-        //     }))
-        // }
     }
 }
 
@@ -507,16 +494,11 @@ fn generate_fixed_record_field_parser(field: &FixedRecordField) -> TokenStream {
 fn generate_bit_record_field_parser(field: &BitRecordField) -> TokenStream {
     let field_name = format_ident!("{}", &field.field_name);
     let parser = &field.parser_function;
-    let conversion = if field.parser_must_convert_to_enum {
-        let final_type = finalise_type(&field.type_path, &field.type_name);
-        quote! { let #field_name = #final_type::from(#field_name); }
-    } else {
-        quote! {}
-    };
+    let final_type = finalise_type(&field.type_path, &field.type_name);
 
     quote! {
         let (input, #field_name) = #parser(input)?;
-        #conversion
+        let #field_name = #final_type::from(#field_name);
     }
 }
 

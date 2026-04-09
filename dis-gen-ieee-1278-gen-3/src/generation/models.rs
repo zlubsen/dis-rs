@@ -163,7 +163,6 @@ pub(crate) struct BitRecordField {
     pub type_path: TokenStream,
     pub size: usize,
     pub parser_function: TokenStream,
-    pub parser_must_convert_to_enum: bool,
 }
 
 #[derive(Clone)]

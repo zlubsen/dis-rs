@@ -493,26 +493,15 @@ fn process_bit_record_field(
     let field_name = format_field_name(&field.name);
     let field_type = type_for_bit_record_field(field, lookup);
 
-    // FIXME make uniform for all bitrecordfields that we use the From<> impl
-    aaaaaaa
-    let (type_path, type_name, parser_must_convert_to_enum, parser_function) = match field_type {
-        BitRecordFieldType::Enum(fqn) => {
-            let primitive_type = field_size_to_primitive_type(field.size);
-            let function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{primitive_type}"));
-            (
-                to_tokens(&fqn.path),
-                to_tokens(&fqn.type_name),
-                true,
-                function,
-            )
-        }
-        BitRecordFieldType::Record(fqn) => {
-            let type_path = to_tokens(&fqn.path);
-            let parser_name = to_tokens(&fqn.field_name);
-            let parser_module = to_tokens(PARSER_MODULE_NAME);
-            let function = quote! { #type_path::#parser_module::#parser_name };
-            (type_path, to_tokens(&fqn.type_name), false, function)
-        }
+    let primitive_type = field_size_to_primitive_type(field.size);
+    let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{primitive_type}"));
+
+    let (type_path, type_name) = {
+        let fqn = match field_type {
+            // TODO there is no practical difference in handling the two defined variants; distinction could be removed.
+            BitRecordFieldType::Enum(fqn) | BitRecordFieldType::Record(fqn) => fqn,
+        };
+        (to_tokens(&fqn.path), to_tokens(&fqn.type_name))
     };
 
     crate::generation::models::BitRecordField {
@@ -521,7 +510,6 @@ fn process_bit_record_field(
         type_path,
         size: field.size,
         parser_function,
-        parser_must_convert_to_enum,
     }
 }
 
