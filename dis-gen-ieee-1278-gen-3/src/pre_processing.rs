@@ -1,8 +1,9 @@
 use crate::extraction::ExtractionItem;
 use crate::generation::models::{
-    GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME,
+    AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME,
+    PARSER_MODULE_NAME,
 };
-use crate::{Fqn, FqnLookup, Lookup, UidLookup};
+use crate::{Fqn, FqnLookup, Lookup, UidLookup, ADAPTIVE_RECORD_DISCRIMINANT_TYPES};
 use dis_gen_utils::{
     enum_type_to_primitive_type, format_field_name, format_pdu_module_name, format_type_name,
 };
@@ -230,7 +231,7 @@ pub(crate) fn field_size_to_primitive_type(size: usize) -> &'static str {
 }
 
 /// Maps DIS field lengths (in number of bytes) to Rust primitive data types.
-fn field_length_to_primitive(length: usize) -> &'static str {
+pub(crate) fn field_length_to_primitive(length: usize) -> &'static str {
     match length {
         1 => "u8",
         2 => "u16",
@@ -705,13 +706,29 @@ fn process_adaptive_record(
         .variants
         .iter()
         .map(|variant| process_adaptive_format_enum(variant, lookup))
+        .map(|variant| {
+            if let AdaptiveFormatEnum::BitRecord(field) = variant {
+                field
+            } else {
+                unimplemented!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
+            }
+        })
         .collect();
     let type_name = to_tokens(&record_type_fqn.type_name);
     let type_path = to_tokens(&record_type_fqn.path);
-    let parser_name = to_tokens(&format_field_name(&record.record_type));
-    let record_full_type = to_tokens(&record_type_fqn.to_full_type());
-    let parser_function =
-        quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #record_full_type> };
+
+    let discriminant_uid = ADAPTIVE_RECORD_DISCRIMINANT_TYPES
+        .iter()
+        .find(|&entry| entry.0 == record.record_type)
+        .expect("Discriminant type for AdaptiveRecord cannot be determined")
+        .1;
+    let discriminant_fqn = lookup_enum_fqn(lookup_uid(discriminant_uid, lookup), lookup);
+    let discriminant_path = to_tokens(&discriminant_fqn.path);
+    let discriminant_name = to_tokens(&discriminant_fqn.type_name);
+    let discriminant_type = quote! { #discriminant_path::#discriminant_name };
+
+    let value_primitive_type = field_length_to_primitive(record.length);
+    let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
 
     crate::generation::models::AdaptiveRecord {
         variants,
@@ -719,6 +736,7 @@ fn process_adaptive_record(
         type_path,
         length: record.length,
         discriminant_start_value: record.discriminant_start_value,
+        discriminant_type,
         parser_function,
     }
 }

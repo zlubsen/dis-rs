@@ -11,6 +11,13 @@ const OUT_DIR: &str = "OUT_DIR";
 const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_GEN3_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
 
+/// Hardcoded values for the discriminant type values of Adaptive Records.
+/// Tuple consists of ( <type of the AdaptiveRecord> , <UID of the discriminant> )
+const ADAPTIVE_RECORD_DISCRIMINANT_TYPES: [(&str, usize); 2] = [
+    ("Net ID", 590),                                  // Net ID Type
+    ("IFF Interactive Transmission Parameters", 372), // Transmission Indicator
+];
+
 type UidLookup = HashMap<usize, String>;
 type BodyTypeLookup = HashMap<usize, String>; // TODO merge with Uidlookup again
 type FqnLookup = HashMap<String, Fqn>;
@@ -20,7 +27,6 @@ struct Fqn {
     path: String,
     type_name: String,
     field_name: String,
-    // data_size: usize,
 }
 
 impl Fqn {

@@ -5,7 +5,9 @@ use crate::generation::models::{
     GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
     VariableString, PARSER_MODULE_NAME,
 };
-use crate::pre_processing::{field_size_to_primitive_type, finalise_type, to_tokens};
+use crate::pre_processing::{
+    field_length_to_primitive, field_size_to_primitive_type, finalise_type, to_tokens,
+};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 // TODO 'Other' Pdu parser
@@ -420,7 +422,32 @@ fn generate_bool_bit_field_parser(field: &BoolBitField) -> TokenStream {
 
 // TODO
 pub(crate) fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenStream {
-    quote! {}
+    let type_path = &record.type_path;
+    let type_name = &record.type_name;
+
+    let discriminant_type = &record.discriminant_type;
+    let primitive_size = to_tokens(field_length_to_primitive(record.length));
+
+    let variant_arms = record
+        .variants
+        .iter()
+        .map(|variant| {
+            let type_path = &variant.type_path;
+            let type_name = &variant.type_name;
+            quote! { #type_name => #type_path::#type_name::from(value), }
+        })
+        .collect::<Vec<TokenStream>>();
+
+    quote! {
+        impl From<(#discriminant_type, #primitive_size)> for #type_path::#type_name {
+            fn from((discriminant, value): (#discriminant_type, #primitive_size)) -> Self {
+                match discriminant {
+                    #(#variant_arms)*
+                    _ => Self::None,
+                }
+            }
+        }
+    }
 }
 
 fn generate_extension_record_field_parser(field: &ExtensionRecordFieldEnum) -> TokenStream {

@@ -383,11 +383,12 @@ pub(crate) struct BitRecord {
 
 #[derive(Clone)]
 pub(crate) struct AdaptiveRecord {
-    pub variants: Vec<AdaptiveFormatEnum>,
+    pub variants: Vec<BitRecordField>,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
     pub length: usize,
     pub discriminant_start_value: usize,
+    pub discriminant_type: TokenStream,
     pub parser_function: TokenStream,
 }
 
@@ -989,25 +990,6 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
         .map(generate_adaptive_record_variant)
         .collect::<Vec<TokenStream>>();
 
-    // let from_arms = item.variants
-    //     .iter()
-    //     .enumerate()
-    //     .filter_map(|(index, format)| {
-    //         if item.discriminant_start_value >= index {
-    //             if let AdaptiveFormatEnum::BitRecord(bit_variant) = format {
-    //                 let parser_path = &bit_variant.type_path;
-    //                 let parser_function = &bit_variant.parser_function;
-    //
-    //                 Some((index, quote! {
-    //                     #index => #parser_path::#PARSER_MODULE_NAME::#parser_function
-    //                 }))
-    //             } else {
-    //                 unimplemented!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
-    //             }
-    //         } else { None }
-    //     })
-    //     .collect::<Vec<TokenStream>>();
-
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
         pub enum #record_name {
@@ -1015,26 +997,17 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
             None,
             #(#variants)*
         }
-        // impl From<(#discriminant_length, #value_primitive_type)> for #record_name {
-        //     fn from((discriminant: #discriminant_length, value: #value_primitive_type)) -> Self {
-        //         match discriminant {
-        //             #(#arms),*
-        //         }
-        //     }
-        // }
     }
 }
 
-fn generate_adaptive_record_variant(variant: &AdaptiveFormatEnum) -> TokenStream {
-    if let AdaptiveFormatEnum::BitRecord(bit_variant) = variant {
-        let variant_name = &bit_variant.type_name;
-        let variant_type_path = &bit_variant.type_path;
+/// Note: this function takes a `BitRecordField` as argument instead of an `AdaptiveFormatEnum`, because
+/// at the time of writing the schema definitions only have `BitRecord`s occurring in `AdaptiveRecord`s.
+fn generate_adaptive_record_variant(variant: &BitRecordField) -> TokenStream {
+    let variant_name = &variant.type_name;
+    let variant_type_path = &variant.type_path;
 
-        quote! {
-            #variant_name ( #variant_type_path::#variant_name ),
-        }
-    } else {
-        unimplemented!("There are no AdaptiveRecords having variants other than BitRecordFields in the schema definitions at this moment.")
+    quote! {
+        #variant_name ( #variant_type_path::#variant_name ),
     }
 }
 
