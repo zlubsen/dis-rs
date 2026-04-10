@@ -389,6 +389,7 @@ pub(crate) struct AdaptiveRecord {
     pub length: usize,
     pub discriminant_start_value: usize,
     pub discriminant_type: TokenStream,
+    pub discriminant_primitive_type: TokenStream,
     pub parser_function: TokenStream,
 }
 

@@ -717,15 +717,15 @@ fn process_adaptive_record(
     let type_name = to_tokens(&record_type_fqn.type_name);
     let type_path = to_tokens(&record_type_fqn.path);
 
-    let discriminant_uid = ADAPTIVE_RECORD_DISCRIMINANT_TYPES
+    let &(_, discriminant_uid, discriminant_primitive_type) = ADAPTIVE_RECORD_DISCRIMINANT_TYPES
         .iter()
         .find(|&entry| entry.0 == record.record_type)
-        .expect("Discriminant type for AdaptiveRecord cannot be determined")
-        .1;
+        .expect("Discriminant type for AdaptiveRecord cannot be determined");
     let discriminant_fqn = lookup_enum_fqn(lookup_uid(discriminant_uid, lookup), lookup);
     let discriminant_path = to_tokens(&discriminant_fqn.path);
     let discriminant_name = to_tokens(&discriminant_fqn.type_name);
     let discriminant_type = quote! { #discriminant_path::#discriminant_name };
+    let discriminant_primitive_type = to_tokens(discriminant_primitive_type);
 
     let value_primitive_type = field_length_to_primitive(record.length);
     let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
@@ -737,6 +737,7 @@ fn process_adaptive_record(
         length: record.length,
         discriminant_start_value: record.discriminant_start_value,
         discriminant_type,
+        discriminant_primitive_type,
         parser_function,
     }
 }

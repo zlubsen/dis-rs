@@ -426,24 +426,29 @@ pub(crate) fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenS
     let type_name = &record.type_name;
 
     let discriminant_type = &record.discriminant_type;
+    let discriminant_primitive = &record.discriminant_primitive_type;
     let primitive_size = to_tokens(field_length_to_primitive(record.length));
 
     let variant_arms = record
         .variants
         .iter()
-        .map(|variant| {
-            let type_path = &variant.type_path;
-            let type_name = &variant.type_name;
-            quote! { #type_name => #type_path::#type_name::from(value), }
+        .enumerate()
+        .map(|(index, variant)| {
+            let index = Literal::usize_unsuffixed(index + record.discriminant_start_value);
+            let variant_type_path = &variant.type_path;
+            let variant_type_name = &variant.type_name;
+            quote! { #index => #type_path::#type_name::#variant_type_name(#variant_type_path::#variant_type_name::from(value)), }
+            // quote! { #discriminant_type::#variant_type_name => #type_path::#type_name::#variant_type_name(#variant_type_path::#variant_type_name::from(value)), }
         })
         .collect::<Vec<TokenStream>>();
 
     quote! {
         impl From<(#discriminant_type, #primitive_size)> for #type_path::#type_name {
             fn from((discriminant, value): (#discriminant_type, #primitive_size)) -> Self {
-                match discriminant {
+                let discriminant_value = #discriminant_primitive::from(discriminant);
+                match discriminant_value {
                     #(#variant_arms)*
-                    _ => Self::None,
+                    _ => { Self::None }
                 }
             }
         }
