@@ -18,6 +18,16 @@ const ADAPTIVE_RECORD_DISCRIMINANT_TYPES: [(&str, usize, &str); 2] = [
     ("IFF Interactive Transmission Parameters", 372, "u8"), // Transmission Indicator
 ];
 
+/// Tuple: ( <fixed record field type> , <parser call arguments shim> , <parser declaration arguments shim> )
+const SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS: [(&str, &str, &str); 4] = [
+    ("Entity with Extended Appearance",
+     "appearance_type, extended_appearance_type",
+     "appearance_type: crate::enumerations::AppearanceType, extended_appearance_type: crate::enumerations::ExtendedAppearanceType" ),
+    ("Basic Multiple Entity", "appearance_type", "appearance_type: crate::enumerations::AppearanceType"),
+    ("Moving Entity", "appearance_type", "appearance_type: crate::enumerations::AppearanceType"),
+    ("Accelerating Entity", "appearance_type", "appearance_type: crate::enumerations::AppearanceType"),
+];
+
 type UidLookup = HashMap<usize, String>;
 type BodyTypeLookup = HashMap<usize, String>; // TODO merge with Uidlookup again
 type FqnLookup = HashMap<String, Fqn>;

@@ -8,6 +8,6 @@ fn main() {
     let ieee_dir_path = std::env::args()
         .nth(2)
         .expect("Expected (2nd) argument of the path to the IEEE schema directory");
-    let uid_lookup = dis_gen_siso_ref_010::execute(&siso_dir_path);
-    dis_gen_ieee_1278_gen_3::execute(&ieee_dir_path, uid_lookup);
+    let (uid_lookup, pdu_types, er_types) = dis_gen_siso_ref_010::execute(&siso_dir_path);
+    dis_gen_ieee_1278_gen_3::execute(&ieee_dir_path, uid_lookup, pdu_types, er_types);
 }

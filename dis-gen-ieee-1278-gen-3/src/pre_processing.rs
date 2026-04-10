@@ -3,7 +3,10 @@ use crate::generation::models::{
     AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME,
     PARSER_MODULE_NAME,
 };
-use crate::{Fqn, FqnLookup, Lookup, UidLookup, ADAPTIVE_RECORD_DISCRIMINANT_TYPES};
+use crate::{
+    Fqn, FqnLookup, Lookup, UidLookup, ADAPTIVE_RECORD_DISCRIMINANT_TYPES,
+    SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS,
+};
 use dis_gen_utils::{
     enum_type_to_primitive_type, format_field_name, format_pdu_module_name, format_type_name,
 };
@@ -474,9 +477,19 @@ fn process_fixed_record_field(
     let type_name = to_tokens(&fqn.type_name);
     let type_path = to_tokens(&fqn.path);
     let parser_name = to_tokens(&fqn.field_name);
-    // TODO determine if this fixed record parser needs to be called with discriminant fields; information needs to be collected and stored during extraction
+
+    let discriminants = if let Some(&(_, arguments, _)) = SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS
+        .iter()
+        .find(|&shim| shim.0 == field.field_type)
+    {
+        let arguments = to_tokens(arguments);
+        quote! { (#arguments) }
+    } else {
+        quote! {}
+    };
+
     let parser_module = to_tokens(PARSER_MODULE_NAME);
-    let parser_function = quote! { #type_path::#parser_module::#parser_name };
+    let parser_function = quote! { #type_path::#parser_module::#parser_name #discriminants };
 
     crate::generation::models::FixedRecordField {
         field_name,
@@ -646,7 +659,15 @@ fn process_fixed_record(
             }
         })
         .collect::<Vec<TokenStream>>();
-
+    let external_discriminants = if let Some(&(_, _, arguments)) =
+        SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS
+            .iter()
+            .find(|shim| shim.0 == record.record_type)
+    {
+        to_tokens(arguments)
+    } else {
+        quote! {}
+    };
     let parser_name = to_tokens(&format_field_name(&record.record_type));
     let record_full_type = to_tokens(&record_type_fqn.to_full_type());
 
@@ -654,7 +675,7 @@ fn process_fixed_record(
         quote! { #parser_name(input: &[u8]) -> IResult<&[u8], #record_full_type> }
     } else {
         quote! {
-            #parser_name(#(#external_discriminants),*) -> impl Fn(&[u8]) -> IResult<&[u8], #record_full_type>
+            #parser_name(#external_discriminants) -> impl Fn(&[u8]) -> IResult<&[u8], #record_full_type>
         }
     };
 

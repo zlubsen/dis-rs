@@ -420,7 +420,6 @@ fn generate_bool_bit_field_parser(field: &BoolBitField) -> TokenStream {
     }
 }
 
-// TODO
 pub(crate) fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenStream {
     let type_path = &record.type_path;
     let type_name = &record.type_name;

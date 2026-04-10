@@ -2,19 +2,20 @@ use crate::generation::parsers::generate_extension_record_body_parser;
 use crate::pre_processing::{finalise_type, to_tokens};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
-// Module tree of generated sources:
-// src/
-//    common_records/           // Containing all common records
-//        parser
-//        writer
-//    family_x/
-//        parser
-//        writer
-//        pdu_x/                // Containing specific PDU x.
-//            builder
-//            model
-//            parser
-//            writer
+
+/// Module tree of generated sources:
+/// `src/`
+///    `common_records/`           // Containing all common records
+///        `parser`
+///        `writer`
+///    `family_x/`
+///        `parser`
+///        `writer`
+///        `pdu_x/`                // Containing specific PDU x.
+///            `builder`
+///            `model`
+///            `parser`
+///            `writer`
 
 pub(crate) const EXTENSION_RECORDS_MODULE_NAME: &str = "extension_records";
 pub(crate) const BUILDER_MODULE_NAME: &str = "builder";
@@ -332,7 +333,7 @@ impl ExtensionRecordFieldEnum {
             ExtensionRecordFieldEnum::VariableString(f) => &f.string_field.field_name,
             ExtensionRecordFieldEnum::FixedRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::BitRecord(f) => &f.field_name,
-            ExtensionRecordFieldEnum::Array(f) => &f.type_field.field_name(),
+            ExtensionRecordFieldEnum::Array(f) => f.type_field.field_name(),
             ExtensionRecordFieldEnum::AdaptiveRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::Opaque(f) => &f.opaque_data_field.field_name,
             // TODO are these correct names?
