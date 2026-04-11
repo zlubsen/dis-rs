@@ -666,7 +666,11 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         .into_iter()
         .flatten()
         .collect::<TokenStream>();
-    let record_parsers = quote! { use nom::IResult; #record_parsers };
+    let record_parsers = quote! {
+        #[allow(unused_imports, reason = "It is so much easier to allow than figuring out which modules use specific nom imports")]
+        use nom::IResult;
+        #record_parsers
+    };
     let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
     // TODO remove
     println!("{records}");

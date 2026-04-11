@@ -127,7 +127,7 @@ pub(crate) fn generate_common_extension_record_body_parser(
 
     quote! {
         // TODO parser for 'Other' PDU
-        fn temp_other_parser(input: &[u8]) -> IResult<&[u8], ()> {
+        fn temp_other_parser(input: &[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> {
             todo!("Implement parser for Other PDU")
         }
 
@@ -562,10 +562,12 @@ fn generate_array_field_parser(array: &Array) -> TokenStream {
     let count_parser_function = &array.count_field.parser_function;
     let field_name = format_ident!("{}", array.type_field.field_name());
     let type_parser_function = generate_array_field_type_parser_function(&array.type_field);
+    let conversion_function = generate_array_field_type_conversion_function(&array.type_field);
 
     quote! {
         let (input, count) = #count_parser_function(input)?;
         let (input, #field_name) = nom::multi::count(#type_parser_function, count.into()).parse(input)?;
+        #conversion_function
     }
 }
 
@@ -576,6 +578,26 @@ fn generate_array_field_type_parser_function(e: &ArrayFieldEnum) -> &TokenStream
         ArrayFieldEnum::FixedString(f) => &f.parser_function,
         ArrayFieldEnum::FixedRecord(f) => &f.parser_function,
         ArrayFieldEnum::BitRecord(f) => &f.parser_function,
+    }
+}
+
+fn generate_array_field_type_conversion_function(e: &ArrayFieldEnum) -> TokenStream {
+    match e {
+        ArrayFieldEnum::Enum(f) => {
+            let field_name = to_tokens(&f.field_name);
+            let field_type = finalise_type(&f.type_path, &f.type_name);
+            quote! {
+                let #field_name = #field_name.iter().map(|&item| #field_type::from(item) ).collect::<Vec<#field_type>>();
+            }
+        }
+        ArrayFieldEnum::BitRecord(f) => {
+            let field_name = to_tokens(&f.field_name);
+            let field_type = finalise_type(&f.type_path, &f.type_name);
+            quote! {
+                let #field_name = #field_name.iter().map(|&item| #field_type::from(item) ).collect::<Vec<#field_type>>();
+            }
+        }
+        _ => quote! {},
     }
 }
 

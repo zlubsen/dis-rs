@@ -611,54 +611,6 @@ fn process_fixed_record(
         .map(|field| process_pdu_fixed_record_fields_enum(field, lookup))
         .collect::<Vec<PduAndFixedRecordFieldsEnum>>();
 
-    // Determine if the record has (AdaptiveRecordField) fields that depend on a discriminant
-    // Only AdaptiveRecordFields can be dependent on EnumField discriminants
-    let depending_on_discriminants = fields
-        .iter()
-        .filter_map(|field| field.has_discriminant())
-        .map(|field| field.discriminant_field_name.as_str())
-        .collect::<Vec<&str>>();
-
-    // Determine the fields that are defining discriminants
-    let defining_discriminants = fields
-        .iter()
-        .filter_map(|field| field.is_discriminant())
-        .map(|field| field.field_name.as_str())
-        .collect::<Vec<&str>>();
-
-    // Determine if dependent fields are not matched by a defining field, e.g. the discriminant is external to the record
-    let external_discriminants = depending_on_discriminants
-        .into_iter()
-        .filter(|&item| !defining_discriminants.contains(&item))
-        .collect::<Vec<&str>>();
-
-    // Find the externally dependent AdaptiveRecordField and retrieve the discriminant info as `discriminant_name: discriminant_type`
-    // E.g. a TokenStream that fits the parser arguments for this record.
-    let external_discriminants = external_discriminants
-        .iter()
-        .filter_map(|&discriminant| {
-            let dependent_field = fields.iter().find(|field| {
-                if let PduAndFixedRecordFieldsEnum::AdaptiveRecord(arf) = field {
-                    arf.discriminant_field_name == discriminant
-                } else {
-                    false
-                }
-            });
-            dependent_field
-        })
-        .filter_map(|field| {
-            if let PduAndFixedRecordFieldsEnum::AdaptiveRecord(arf) = field {
-                let discriminant_field = format_ident!("{}", arf.discriminant_field_name);
-                let discriminant_type = &arf.discriminant_field_type;
-                let argument = quote! {
-                    #discriminant_field: #discriminant_type
-                };
-                Some(argument)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<TokenStream>>();
     let external_discriminants = if let Some(&(_, _, arguments)) =
         SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS
             .iter()
