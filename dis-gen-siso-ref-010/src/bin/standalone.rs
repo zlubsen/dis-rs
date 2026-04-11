@@ -5,10 +5,7 @@ fn main() {
     let file_path = std::env::args()
         .nth(1)
         .expect("Expected argument of the path to the SISO-REF-010.xml file");
-    let uid_lookup = dis_gen_siso_ref_010::execute(&file_path);
+    let (uid_lookup, _pdu_types, _er_types) = dis_gen_siso_ref_010::execute(&file_path);
 
-    for entry in &uid_lookup {
-        println!("{}\t{}", entry.0, entry.1);
-    }
     println!("Nr of items: {}", uid_lookup.len());
 }

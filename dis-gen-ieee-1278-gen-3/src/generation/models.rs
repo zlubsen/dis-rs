@@ -1,6 +1,6 @@
 use crate::generation::parsers::generate_extension_record_body_parser;
 use crate::pre_processing::{finalise_type, to_tokens};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 
 /// Module tree of generated sources:
@@ -461,6 +461,8 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
 
     quote! {
         #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
+        #[cfg(feature = "serde")]
+        use serde::{Deserialize, Serialize};
 
         #core_contents
 
@@ -490,48 +492,19 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
         .collect::<TokenStream>();
 
     quote! {
-        use crate::common_records::PDUHeader;
-
-        pub trait BodyRaw {
-            type Builder;
-
-            #[must_use]
-            fn builder() -> Self::Builder;
-
-            #[must_use]
-            fn into_builder(self) -> Self::Builder;
-
-            #[must_use]
-            fn into_pdu_body(self) -> PduBody;
-        }
-
-        impl<T: BodyRaw> From<T> for PduBody {
-            #[inline]
-            fn from(value: T) -> Self {
-                value.into_pdu_body()
-            }
-        }
-
         #[derive(Debug, Clone, PartialEq)]
-        pub struct Pdu {
-            pub header: PDUHeader,
-            pub body: PduBody,
-        }
-
-        #[derive(Debug, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+        #[cfg_attr(feature = "serde", serde(tag = "type"))]
         pub enum PduBody {
             Other(Vec<u8>),
             #pdu_body_variants
         }
 
         #[derive(Debug, Clone, PartialEq)]
-        pub struct ExtensionRecord {
-            pub record_type: crate::enumerations::ExtensionRecordTypes,
-            pub record_length: usize,
-            pub body: crate::ExtensionRecordBody,
-        }
-
-        #[derive(Debug, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+        #[cfg_attr(feature = "serde", serde(tag = "type"))]
         pub enum ExtensionRecordBody {
             #extension_record_variants
         }
@@ -633,7 +606,13 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         "Error parsing 'extension_records parsers' intermediate generated code for pretty printing.",
     );
     let er_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &extension_record_parsers);
-    let extension_records = quote! { #extension_records #er_parser_module };
+    let extension_records = quote! {
+        #[cfg(feature = "serde")]
+        use serde::{Deserialize, Serialize};
+
+        #extension_records
+        #er_parser_module
+    };
     let extension_records =
         generate_module_with_name(EXTENSION_RECORDS_MODULE_NAME, &extension_records);
 
@@ -677,7 +656,12 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     println!("{records_parser_module}");
     let _ = syn::parse_file(&records_parser_module.to_string())
         .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
-    let records = quote! { #records #records_parser_module };
+    let records = quote! {
+    #[cfg(feature = "serde")]
+    use serde::{Deserialize, Serialize};
+
+    #records
+    #records_parser_module };
 
     println!("{records}");
     let _ = syn::parse_file(&records.to_string())
@@ -699,7 +683,7 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.type_name);
 
     // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
-    let pdu_trait_impls = generate_pdu_trait_impls(&pdu_name_ident, &builder_name_ident);
+    let pdu_trait_impls = generate_pdu_trait_impls(pdu);
     let builder_content = super::builders::generate_pdu_builder(pdu, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
 
@@ -725,7 +709,11 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     let contents = quote! {
+        #[cfg(feature = "serde")]
+        use serde::{Deserialize, Serialize};
+
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #pdu_name_ident {
             #(#fields)*
             pub extension_records: Vec<crate::ExtensionRecord>,
@@ -741,6 +729,41 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     generate_module_with_name(pdu_module_name, &contents)
 }
 
+// TODO further develop the core traits (as in gen 2: BodyInfo, Interaction)
+fn generate_pdu_trait_impls(pdu: &Pdu) -> TokenStream {
+    const PDU_HEADER_LEN_BYTES: usize = 16;
+
+    let pdu_name_ident = format_ident!("{}", pdu.type_name);
+    let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.type_name);
+    let pdu_type = &pdu.pdu_type_name;
+    let base_body_length = Literal::usize_unsuffixed(pdu.base_length - PDU_HEADER_LEN_BYTES);
+    quote! {
+        impl crate::BodyRaw for #pdu_name_ident {
+            type Builder = builder::#builder_name_ident;
+
+            fn builder() -> Self::Builder {
+                Self::Builder::new()
+            }
+
+            fn into_builder(self) -> Self::Builder {
+                Self::Builder::new_from_body(self)
+            }
+
+            fn into_pdu_body(self) -> crate::PduBody {
+                crate::PduBody::#pdu_name_ident(self)
+            }
+
+            fn body_length(&self) -> u16 {
+                #base_body_length + self.extension_records.iter().map(|er| er.record_length() ).sum()
+            }
+
+            fn body_type(&self) -> crate::enumerations::DISPDUType {
+                crate::enumerations::DISPDUType::#pdu_type
+            }
+        }
+    }
+}
+
 fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
     let record_name = format_ident!("{}", record.type_name);
     let record_type_doc_comment = format!("Record Type Enum {}", record.record_type_enum);
@@ -753,6 +776,7 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
     quote! {
         #[doc = #record_type_doc_comment]
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {
             #(#fields)*
         }
@@ -770,6 +794,7 @@ fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
 
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {
             #(#fields)*
         }
@@ -941,6 +966,7 @@ fn generate_bit_record(item: &BitRecord) -> TokenStream {
 
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {
             #(#fields)*
         }
@@ -998,6 +1024,7 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
 
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub enum #record_name {
             #[default]
             None,
@@ -1014,26 +1041,5 @@ fn generate_adaptive_record_variant(variant: &BitRecordField) -> TokenStream {
 
     quote! {
         #variant_name ( #variant_type_path::#variant_name ),
-    }
-}
-
-fn generate_pdu_trait_impls(pdu_name_ident: &Ident, builder_name_ident: &Ident) -> TokenStream {
-    // TODO further develop the core traits (as in gen 2: BodyInfo, Interaction)
-    quote! {
-        impl crate::BodyRaw for #pdu_name_ident {
-            type Builder = builder::#builder_name_ident;
-
-            fn builder() -> Self::Builder {
-                Self::Builder::new()
-            }
-
-            fn into_builder(self) -> Self::Builder {
-                Self::Builder::new_from_body(self)
-            }
-
-            fn into_pdu_body(self) -> crate::PduBody {
-                crate::PduBody::#pdu_name_ident(self)
-            }
-        }
     }
 }

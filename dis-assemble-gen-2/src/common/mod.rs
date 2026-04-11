@@ -142,9 +142,9 @@ pub trait Serialize {
 
 /// Parses the contents of the input, determining the DIS version by itself.
 /// This function tries to parse as many PDUs as there are in the buffer,
-/// assuming there are only complete PDUs present in the input.
+/// expecting there are only complete PDUs present in the input.
 ///
-/// Assumes there will only be a single DIS version of PDUs in a buffer (packet).
+/// Expects there will only be a single DIS version of PDUs in a buffer (packet).
 ///
 /// # Errors
 /// Returns a `DisError` when parsing fails
@@ -154,7 +154,7 @@ pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 
 /// Parses the contents of the input as DIS version 6.
 /// This function tries to parse as many PDUs as there are in the buffer,
-/// assuming there are only complete PDUs present in the input.
+/// expecting there are only complete PDUs present in the input.
 ///
 /// This function will filter out any non-v6 PDUs in a buffer (packet).
 ///
@@ -170,7 +170,7 @@ pub fn parse_v6(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
 
 /// Parses the contents of the input as DIS version 7.
 /// This function tries to parse as many PDUs as there are in the buffer,
-/// assuming there are only complete PDUs present in the input.
+/// expecting there are only complete PDUs present in the input.
 ///
 /// This function will filter out any non-v7 PDUs in a buffer (packet).
 ///

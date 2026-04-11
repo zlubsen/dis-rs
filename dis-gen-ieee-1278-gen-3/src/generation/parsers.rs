@@ -90,9 +90,9 @@ pub(crate) fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> Token
         pub fn pdu_body(header: &PDUHeader) -> impl Fn(&[u8]) -> IResult<&[u8], crate::PduBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match header.pdu_type {
-                    #dis_pdu_type_ident::Other => crate::other::#parser_module::other_body(input)?,
+                    #dis_pdu_type_ident::Other => crate::other_pdu::#parser_module::other_body(input)?,
                     #pdu_type_arms
-                    _ => crate::other::#parser_module::other_body(input)?,
+                    _ => crate::other_pdu::#parser_module::other_body(input)?,
                 };
                 Ok((input, body))
             }

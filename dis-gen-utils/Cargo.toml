@@ -1,12 +1,17 @@
 [package]
 name = "dis-gen-utils"
 version = "0.1.0"
+description = """
+Code generator utilities for dis-assemble-gen-3.
+"""
+keywords = ["generator", "DIS"]
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
 categories.workspace = true
+readme = "README.md"
 
 [dependencies]
 quick-xml = "0.39.0"
