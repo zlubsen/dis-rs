@@ -6,6 +6,7 @@ use crate::core::errors::DisError;
 use crate::core::parser::parse_multiple_pdu;
 use crate::enumerations::{DISPDUType, DISProtocolVersion};
 use crate::{PduBody, PDU_HEADER_LEN_BYTES};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
@@ -126,10 +127,23 @@ impl PDUHeader {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "serde", serde(tag = "type"))]
 pub struct ExtensionRecord {
     pub record_type: crate::enumerations::ExtensionRecordTypes,
     pub record_length: usize,
     pub body: crate::ExtensionRecordBody,
+}
+
+impl ExtensionRecord {
+    // TODO match the field value with actual data length (variable fields), when manually constructing an ER.
+    pub fn record_length(&self) -> u16 {
+        self.body.record_length() as u16
+    }
+
+    pub fn record_type(&self) -> crate::enumerations::ExtensionRecordTypes {
+        self.record_type
+    }
 }
 
 /// Parses the contents of the input, determining the DIS version by itself.

@@ -15,7 +15,6 @@ use quote::{format_ident, quote};
 // TODO parser function call to parsers that take a discriminant, need to add the arguments in the call.
 // TODO ExtensionRecord body parsers format an incorrect ExtensionRecordBody variant type on returning
 
-const PDU_HEADER: &str = "PDUHeader";
 const PDU_TYPE: &str = "DISPDUType";
 const EXTENSION_RECORD_TYPE: &str = "ExtensionRecordTypes";
 
@@ -90,9 +89,9 @@ pub(crate) fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> Token
         pub fn pdu_body(header: &PDUHeader) -> impl Fn(&[u8]) -> IResult<&[u8], crate::PduBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match header.pdu_type {
-                    #dis_pdu_type_ident::Other => crate::other_pdu::#parser_module::other_body(input)?,
+                    #dis_pdu_type_ident::Other => crate::other_pdu::#parser_module::other_body(header)(input)?,
                     #pdu_type_arms
-                    _ => crate::other_pdu::#parser_module::other_body(input)?,
+                    _ => crate::other_pdu::#parser_module::other_body(header)(input)?,
                 };
                 Ok((input, body))
             }
@@ -126,19 +125,13 @@ pub(crate) fn generate_common_extension_record_body_parser(
         .collect::<TokenStream>();
 
     quote! {
-        // TODO parser for 'Other' PDU
-        fn temp_other_parser(input: &[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> {
-            todo!("Implement parser for Other PDU")
-        }
-
         pub fn extension_record_body(record_type: &ExtensionRecordTypes, record_length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match record_type {
-                    // FIXME parser for 'Other' PDU
-                    #extension_record_type::NotSpecified => temp_other_parser(input)?,//crate::other::parser::other_body(input)?,
+                    #extension_record_type::NotSpecified => crate::other_extension_record::parser::other_body(record_length)(input)?,
                     // TODO reserved for C-DIS, range 1-255
                     #extension_record_types_arms
-                    _ => temp_other_parser(input)?,//crate::other::parser::other_body(input)?,
+                    _ => crate::other_extension_record::parser::other_body(record_length)(input)?,
                 };
                 Ok((input, body))
             }

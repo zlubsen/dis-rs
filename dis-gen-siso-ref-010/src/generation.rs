@@ -717,10 +717,13 @@ fn discriminant_literal(value: usize, data_size: usize) -> Literal {
 fn generate_type_placeholder() -> TokenStream {
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct EnumerationU8(u8);
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct EnumerationU16(u16);
         #[derive(Debug, Default, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct EnumerationU32(u32);
 
         impl From<u8> for EnumerationU8 {

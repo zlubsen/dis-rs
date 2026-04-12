@@ -8,7 +8,8 @@ use crate::{
     SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS,
 };
 use dis_gen_utils::{
-    enum_type_to_primitive_type, format_field_name, format_pdu_module_name, format_type_name,
+    enum_type_to_length, enum_type_to_primitive_type, format_field_name, format_pdu_module_name,
+    format_type_name,
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -218,6 +219,23 @@ fn type_for_primitive_type_field(dis_primitive_type: &str) -> &'static str {
     }
 }
 
+/// Maps the DIS schema primitive data types to its data length in octets.
+fn length_for_primitive_type_field(dis_primitive_type: &str) -> usize {
+    match dis_primitive_type {
+        "uint8" => 1,
+        "uint16" => 2,
+        "uint32" => 4,
+        "uint64" => 8,
+        "int8" => 1,
+        "int16" => 2,
+        "int32" => 4,
+        "int64" => 8,
+        "float32" => 4,
+        "float64" => 8,
+        _ => panic!("Invalid primitive type '{dis_primitive_type}'"),
+    }
+}
+
 /// Maps DIS field sizes (in number of bits) to Rust primitive data types.
 pub(crate) fn field_size_to_primitive_type(size: usize) -> &'static str {
     if size > 64 {
@@ -231,6 +249,11 @@ pub(crate) fn field_size_to_primitive_type(size: usize) -> &'static str {
     } else {
         "u8"
     }
+}
+
+/// Maps DIS field sizes (in number of bits) to the corresponding length in bytes.
+pub(crate) fn field_size_to_number_of_octets(size: usize) -> usize {
+    size.div_ceil(8)
 }
 
 /// Maps DIS field lengths (in number of bytes) to Rust primitive data types.
@@ -356,6 +379,7 @@ fn process_numeric_field(
         units: field.units.clone(),
         is_padding: must_skip_field_decl(&field.name),
         parser_function: to_tokens(format!("{NOM_LE_PARSER_PATH}{field_primitive_type}").as_str()),
+        length: length_for_primitive_type_field(&field.primitive_type),
     }
 }
 
@@ -367,6 +391,7 @@ fn process_count_field(
         field_name: format_field_name(&field.name),
         primitive_type: to_tokens(field_primitive_type),
         parser_function: to_tokens(format!("{NOM_LE_PARSER_PATH}{field_primitive_type}").as_str()),
+        length: length_for_primitive_type_field(&field.primitive_type),
     }
 }
 
@@ -398,6 +423,7 @@ fn process_enum_field(
         is_discriminant: field.is_discriminant.unwrap_or(false),
         parser_function,
         parser_must_convert_to_enum,
+        length: enum_type_to_length(&field.field_type).expect("Expected a valid enum data size"),
     }
 }
 

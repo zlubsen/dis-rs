@@ -1,6 +1,7 @@
-mod constants;
+pub(crate) mod constants;
 mod core;
-mod other_pdu;
+pub(crate) mod other_extension_record;
+pub(crate) mod other_pdu;
 pub(crate) mod utils;
 
 include!(concat!(

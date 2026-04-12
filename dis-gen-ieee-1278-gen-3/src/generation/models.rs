@@ -95,6 +95,7 @@ pub(crate) struct NumericField {
     pub units: Option<String>,
     pub is_padding: bool,
     pub parser_function: TokenStream,
+    pub length: usize,
 }
 
 #[derive(Clone)]
@@ -102,6 +103,7 @@ pub(crate) struct CountField {
     pub field_name: String,
     pub primitive_type: TokenStream,
     pub parser_function: TokenStream,
+    pub length: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -112,6 +114,7 @@ pub(crate) struct EnumField {
     pub is_discriminant: bool,
     pub parser_function: TokenStream,
     pub parser_must_convert_to_enum: bool,
+    pub length: usize,
 }
 
 #[derive(Clone)]
@@ -479,17 +482,33 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
 
     // TODO Generate From<(discriminant, value)> for ... - Adaptive records, to be able to parse it
 
-    let pdu_body_variants = items
+    let (pdu_body_variants, pdu_body_type_variants, pdu_body_length_variants) = items
         .iter()
         .filter(|&it| it.is_pdu())
-        .map(generate_body_variant)
-        .collect::<TokenStream>();
+        .map(|pdu| {
+            (
+                generate_body_variant(pdu),
+                generate_body_type_variant(pdu),
+                generate_body_length_variant(pdu),
+            )
+        })
+        .collect::<(TokenStream, TokenStream, TokenStream)>();
 
-    let extension_record_variants = items
+    let (
+        extension_record_variants,
+        extension_record_type_variants, // TODO record_type impl for determining header values
+        extension_record_length_variants,
+    ) = items
         .iter()
         .filter(|&it| it.is_extension_record())
-        .map(generate_body_variant)
-        .collect::<TokenStream>();
+        .map(|er| {
+            (
+                generate_body_variant(er),
+                generate_body_type_variant(er),
+                generate_body_length_variant(er),
+            )
+        })
+        .collect::<(TokenStream, TokenStream, TokenStream)>();
 
     quote! {
         #[derive(Debug, Clone, PartialEq)]
@@ -497,8 +516,24 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
         #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
         #[cfg_attr(feature = "serde", serde(tag = "type"))]
         pub enum PduBody {
-            Other(Vec<u8>),
+            Other(crate::other_pdu::model::Other),
             #pdu_body_variants
+        }
+
+        impl PduBody {
+            pub fn body_length(&self) -> u16 {
+                match self {
+                    #pdu_body_length_variants
+                    PduBody::Other(body) => body.body_length(),
+                }
+            }
+
+            pub fn body_type(&self) -> crate::enumerations::DISPDUType {
+                match self {
+                    #pdu_body_type_variants
+                    PduBody::Other(body) => body.body_type(),
+                }
+            }
         }
 
         #[derive(Debug, Clone, PartialEq)]
@@ -506,7 +541,17 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
         #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
         #[cfg_attr(feature = "serde", serde(tag = "type"))]
         pub enum ExtensionRecordBody {
+            Other(crate::other_extension_record::model::Other),
             #extension_record_variants
+        }
+
+        impl ExtensionRecordBody {
+            pub fn record_length(&self) -> u16 {
+                match self {
+                    #extension_record_length_variants
+                    ExtensionRecordBody::Other(body) => body.record_length(),
+                }
+            }
         }
     }
 }
@@ -525,6 +570,44 @@ fn generate_body_variant(variant: &GenerationItem) -> TokenStream {
 
     quote! {
         #variant_name ( #type_path::#type_name ),
+    }
+}
+
+fn generate_body_type_variant(variant: &GenerationItem) -> TokenStream {
+    let variant_name = to_tokens(
+        variant
+            .variant_name()
+            .expect("Variant name for variants can only be called for PDUs and ExtensionRecords"),
+    );
+    let (body_type, function) = match variant {
+        GenerationItem::Pdu(_, _) => (quote! { PduBody }, quote! { body_type }),
+        GenerationItem::ExtensionRecord(_, _) => {
+            (quote! { ExtensionRecordBody }, quote! { record_type })
+        }
+        _ => panic!("Body type for variants can only be called for PDUs and ExtensionRecords"),
+    };
+
+    quote! {
+        #body_type::#variant_name(body) => body.#function(),
+    }
+}
+
+fn generate_body_length_variant(variant: &GenerationItem) -> TokenStream {
+    let variant_name = to_tokens(
+        variant
+            .variant_name()
+            .expect("Variant name for variants can only be called for PDUs and ExtensionRecords"),
+    );
+    let (body_type, function) = match variant {
+        GenerationItem::Pdu(_, _) => (quote! { PduBody }, quote! { body_length }),
+        GenerationItem::ExtensionRecord(_, _) => {
+            (quote! { ExtensionRecordBody }, quote! { record_length })
+        }
+        _ => panic!("Body length for variants can only be called for PDUs and ExtensionRecords"),
+    };
+
+    quote! {
+        #body_type::#variant_name(body) => body.#function(),
     }
 }
 
@@ -657,11 +740,12 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     let _ = syn::parse_file(&records_parser_module.to_string())
         .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
     let records = quote! {
-    #[cfg(feature = "serde")]
-    use serde::{Deserialize, Serialize};
+        #[cfg(feature = "serde")]
+        use serde::{Deserialize, Serialize};
 
-    #records
-    #records_parser_module };
+        #records
+        #records_parser_module
+    };
 
     println!("{records}");
     let _ = syn::parse_file(&records.to_string())
@@ -736,7 +820,11 @@ fn generate_pdu_trait_impls(pdu: &Pdu) -> TokenStream {
     let pdu_name_ident = format_ident!("{}", pdu.type_name);
     let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.type_name);
     let pdu_type = &pdu.pdu_type_name;
-    let base_body_length = Literal::usize_unsuffixed(pdu.base_length - PDU_HEADER_LEN_BYTES);
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "Length are within u16::MAX "
+    )]
+    let base_body_length = Literal::u16_suffixed((pdu.base_length - PDU_HEADER_LEN_BYTES) as u16);
     quote! {
         impl crate::BodyRaw for #pdu_name_ident {
             type Builder = builder::#builder_name_ident;
@@ -754,7 +842,7 @@ fn generate_pdu_trait_impls(pdu: &Pdu) -> TokenStream {
             }
 
             fn body_length(&self) -> u16 {
-                #base_body_length + self.extension_records.iter().map(|er| er.record_length() ).sum()
+                #base_body_length + self.extension_records.iter().map(|er| er.record_length() as u16).sum::<u16>()
             }
 
             fn body_type(&self) -> crate::enumerations::DISPDUType {
@@ -773,6 +861,24 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
         .iter()
         .map(generate_extension_record_field_decl);
 
+    let record_type = to_tokens(&record.record_type_variant_name);
+
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "Length are within u16::MAX "
+    )]
+    let base_length = Literal::u16_suffixed(record.base_length as u16);
+    let length_calculation = if record.is_variable {
+        let variable_fields = record
+            .fields
+            .iter()
+            .filter_map(generate_extension_record_variable_field_length_calculation)
+            .collect::<Vec<TokenStream>>();
+        quote! { #base_length + #(#variable_fields)+* }
+    } else {
+        quote! { #base_length }
+    };
+
     quote! {
         #[doc = #record_type_doc_comment]
         #[derive(Debug, Default, Clone, PartialEq)]
@@ -780,6 +886,52 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
         pub struct #record_name {
             #(#fields)*
         }
+
+        impl #record_name {
+            pub fn record_length(&self) -> u16 {
+                #length_calculation
+            }
+
+            pub fn record_type(&self) -> crate::enumerations::ExtensionRecordTypes {
+                crate::enumerations::ExtensionRecordTypes::#record_type
+            }
+        }
+    }
+}
+
+fn generate_extension_record_variable_field_length_calculation(
+    field: &ExtensionRecordFieldEnum,
+) -> Option<TokenStream> {
+    const OCTET_IN_BITS: usize = 8;
+
+    match field {
+        ExtensionRecordFieldEnum::Numeric(_) => None,
+        ExtensionRecordFieldEnum::Enum(_) => None,
+        ExtensionRecordFieldEnum::FixedString(_) => None,
+        ExtensionRecordFieldEnum::VariableString(f) => {
+            let field_name = to_tokens(&f.string_field.field_name);
+            Some(quote! { (self.#field_name.len() as u16) })
+        }
+        ExtensionRecordFieldEnum::FixedRecord(_) => None,
+        ExtensionRecordFieldEnum::BitRecord(_) => None,
+        ExtensionRecordFieldEnum::Array(f) => {
+            let element_length = match &f.type_field {
+                ArrayFieldEnum::Numeric(af) => af.length,
+                ArrayFieldEnum::Enum(af) => af.length,
+                ArrayFieldEnum::FixedString(af) => af.length,
+                ArrayFieldEnum::FixedRecord(af) => af.length,
+                ArrayFieldEnum::BitRecord(af) => af.size / OCTET_IN_BITS,
+            };
+            let field_name = to_tokens(f.type_field.field_name());
+            Some(quote! { ((self.#field_name.len() * #element_length) as u16) })
+        }
+        ExtensionRecordFieldEnum::AdaptiveRecord(_) => None,
+        ExtensionRecordFieldEnum::Opaque(f) => {
+            let field_name = to_tokens(&f.opaque_data_field.field_name);
+            Some(quote! { (self.#field_name.len() as u16) })
+        }
+        ExtensionRecordFieldEnum::PaddingTo16 => None,
+        ExtensionRecordFieldEnum::PaddingTo32 => None,
     }
 }
 
