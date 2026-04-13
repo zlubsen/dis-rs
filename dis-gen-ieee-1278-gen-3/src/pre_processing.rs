@@ -1,7 +1,7 @@
+use crate::constants::NOM_LE_PARSER_PATH;
 use crate::extraction::ExtractionItem;
 use crate::generation::models::{
-    AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum, EXTENSION_RECORDS_MODULE_NAME,
-    PARSER_MODULE_NAME,
+    AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum,
 };
 use crate::{
     Fqn, FqnLookup, Lookup, UidLookup, ADAPTIVE_RECORD_DISCRIMINANT_TYPES,
@@ -14,8 +14,7 @@ use dis_gen_utils::{
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::HashMap;
-
-const NOM_LE_PARSER_PATH: &str = "nom::number::complete::le_";
+use crate::constants::{EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
 
 pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLookup, FqnLookup) {
     let mut pdu_lookup = HashMap::new();

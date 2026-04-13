@@ -3,20 +3,14 @@ use crate::generation::models::{
     BitRecord, BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
     ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField,
     GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
-    VariableString, PARSER_MODULE_NAME,
+    VariableString,
 };
 use crate::pre_processing::{
     field_length_to_primitive, field_size_to_primitive_type, finalise_type, to_tokens,
 };
+use crate::constants::{EXTENSION_RECORD_TYPE, PDU_TYPE, PARSER_MODULE_NAME};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
-// TODO 'Other' Pdu parser
-// TODO 'Other' ExtensionRecord parser
-// TODO parser function call to parsers that take a discriminant, need to add the arguments in the call.
-// TODO ExtensionRecord body parsers format an incorrect ExtensionRecordBody variant type on returning
-
-const PDU_TYPE: &str = "DISPDUType";
-const EXTENSION_RECORD_TYPE: &str = "ExtensionRecordTypes";
 
 pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
     let pdu_type = format_ident!("{PDU_TYPE}");
@@ -76,7 +70,7 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
     generate_module_with_name(PARSER_MODULE_NAME, &contents)
 }
 
-pub(crate) fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> TokenStream {
+fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> TokenStream {
     let parser_module = format_ident!("{PARSER_MODULE_NAME}");
     let pdu_type_arms = items
         .iter()
@@ -114,7 +108,7 @@ fn generate_common_pdu_body_parser_arm(pdu: &GenerationItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_common_extension_record_body_parser(
+fn generate_common_extension_record_body_parser(
     items: &[GenerationItem],
 ) -> TokenStream {
     let extension_record_type = format_ident!("{EXTENSION_RECORD_TYPE}");
@@ -154,7 +148,7 @@ fn generate_common_extension_record_body_parser_arm(er: &GenerationItem) -> Toke
     }
 }
 
-pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
+fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
     let parser_function = &pdu.parser_function;
     let type_name = to_tokens(&pdu.type_name);
     let type_path = &pdu.type_path;

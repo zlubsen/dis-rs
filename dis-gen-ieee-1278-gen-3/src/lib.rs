@@ -1,3 +1,4 @@
+pub(crate) mod constants;
 mod extraction;
 mod generation;
 mod pre_processing;
@@ -12,7 +13,7 @@ const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_GEN3_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
 
 /// Hardcoded values for the discriminant type values of Adaptive Records.
-/// Tuple consists of ( <type of the AdaptiveRecord> , <UID of the discriminant> )
+/// Tuple consists of ( <type of the AdaptiveRecord> , <UID of the discriminant> , <primitive type of the discriminant> )
 const ADAPTIVE_RECORD_DISCRIMINANT_TYPES: [(&str, usize, &str); 2] = [
     ("Net ID", 590, "u8"),                                  // Net ID Type
     ("IFF Interactive Transmission Parameters", 372, "u8"), // Transmission Indicator

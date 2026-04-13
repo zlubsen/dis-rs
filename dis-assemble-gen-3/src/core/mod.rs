@@ -1,5 +1,6 @@
 mod errors;
 mod parser;
+mod writer;
 
 use crate::common_records::{PDUHeader, PDUStatus};
 use crate::core::errors::DisError;

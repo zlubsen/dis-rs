@@ -2,6 +2,7 @@ use crate::generation::parsers::generate_extension_record_body_parser;
 use crate::pre_processing::{finalise_type, to_tokens};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
+use crate::constants::{BUILDER_MODULE_NAME, EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
 
 /// Module tree of generated sources:
 /// `src/`
@@ -16,11 +17,6 @@ use quote::{format_ident, quote};
 ///            `model`
 ///            `parser`
 ///            `writer`
-
-pub(crate) const EXTENSION_RECORDS_MODULE_NAME: &str = "extension_records";
-pub(crate) const BUILDER_MODULE_NAME: &str = "builder";
-pub(crate) const BUILDER_TYPE_SUFFIX: &str = "Builder";
-pub(crate) const PARSER_MODULE_NAME: &str = "parser";
 
 pub(crate) enum GenerationItem {
     Pdu(Pdu, String),
