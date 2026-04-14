@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `MSRV 1.90`
+- Enhanced `TimeStamp` (_DIS_) and `CdisTimeStamp` (_C-DIS_)
+
 ### Deprecated
 
 ### Removed
