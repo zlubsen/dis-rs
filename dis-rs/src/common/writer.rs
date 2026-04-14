@@ -18,7 +18,7 @@ impl Serialize for PduHeader {
         buf.put_u8(self.exercise_id);
         buf.put_u8(self.pdu_type.into());
         buf.put_u8(self.protocol_family.into());
-        buf.put_u32(self.time_stamp);
+        buf.put_u32(self.timestamp.into());
         buf.put_u16(self.pdu_length);
         match self.protocol_version {
             ProtocolVersion::IEEE1278_12012 => {
@@ -407,7 +407,7 @@ impl Serialize for RecordSet {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::PduHeader;
+    use crate::common::model::{PduHeader, Timestamp};
     use crate::common::Serialize;
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{LvcIndicator, PduType};
@@ -417,7 +417,7 @@ mod tests {
     #[test]
     fn serialize_header() {
         let header = PduHeader::new_v6(1, PduType::EntityState)
-            .with_time_stamp(10u32)
+            .with_timestamp(Timestamp::new(10u32))
             .with_length(0);
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
@@ -432,7 +432,7 @@ mod tests {
     #[test]
     fn serialize_header_v7_no_status() {
         let header = PduHeader::new_v7(1, PduType::EntityState)
-            .with_time_stamp(10u32)
+            .with_timestamp(Timestamp::new(10u32))
             .with_length(0);
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);
 
@@ -447,7 +447,7 @@ mod tests {
     #[test]
     fn serialize_header_v7_with_status() {
         let header = PduHeader::new_v7(1, PduType::EntityState)
-            .with_time_stamp(10u32)
+            .with_timestamp(Timestamp::new(10u32))
             .with_length(0)
             .with_pdu_status(PduStatus::default().with_lvc_indicator(LvcIndicator::Live));
         let mut buf = BytesMut::with_capacity(PDU_HEADER_LEN_BYTES as usize);

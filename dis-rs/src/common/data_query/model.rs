@@ -1,5 +1,5 @@
 use crate::common::data_query::builder::DataQueryBuilder;
-use crate::common::model::{EntityId, PduBody};
+use crate::common::model::{EntityId, PduBody, Timestamp};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{PduType, VariableRecordType};
@@ -15,7 +15,7 @@ pub struct DataQuery {
     pub originating_id: EntityId,
     pub receiving_id: EntityId,
     pub request_id: u32,
-    pub time_interval: u32,
+    pub time_interval: Timestamp,
     pub fixed_datum_records: Vec<VariableRecordType>,
     pub variable_datum_records: Vec<VariableRecordType>,
 }

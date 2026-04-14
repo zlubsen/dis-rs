@@ -5,7 +5,7 @@ use crate::constants::{
 };
 use crate::records::model::{
     AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP,
-    CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion, CdisTimeStamp,
+    CdisEntitySeparationVP, CdisEntityTypeVP, CdisHeader, CdisProtocolVersion,
     CdisVariableParameter, EntityCoordinateVector, EntityId, EntityType, LinearAcceleration,
     LinearVelocity, Orientation, ParameterValueFloat, UnitsDekameters, WorldCoordinates,
 };
@@ -15,8 +15,8 @@ use crate::types::model::{
 };
 use dis_rs::enumerations::{ChangeIndicator, Country, EntityKind, PlatformDomain};
 use dis_rs::model::{
-    ArticulatedPart, AttachedPart, DisTimeStamp, EntityAssociationParameter, EntityTypeParameter,
-    Location, PduHeader, SeparationParameter, TimeStamp, VariableParameter, VectorF32,
+    ArticulatedPart, AttachedPart, EntityAssociationParameter, EntityTypeParameter, Location,
+    PduHeader, SeparationParameter, VariableParameter, VectorF32,
 };
 use dis_rs::utils::{ecef_to_geodetic_lla, geodetic_lla_to_ecef};
 use num_traits::FromPrimitive;
@@ -30,7 +30,7 @@ impl Codec for CdisHeader {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(item.exercise_id),
             pdu_type: item.pdu_type,
-            timestamp: TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(item.time_stamp))),
+            timestamp: item.timestamp.into(),
             length: 0,
             pdu_status: item.pdu_status.unwrap_or_default(),
         }
@@ -38,7 +38,7 @@ impl Codec for CdisHeader {
 
     fn decode(&self) -> Self::Counterpart {
         PduHeader::new_v7(self.exercise_id.value, self.pdu_type)
-            .with_time_stamp(DisTimeStamp::from(CdisTimeStamp::from(self.timestamp)))
+            .with_timestamp(self.timestamp.into())
             .with_pdu_status(self.pdu_status)
     }
 }
@@ -664,13 +664,12 @@ mod tests {
         decode_world_coordinates, encode_world_coordinates, normalize_radians_to_plus_minus_pi,
     };
     use crate::records::model::{
-        cdis_to_dis_u32_timestamp, dis_to_cdis_u32_timestamp, AngularVelocity, CdisHeader,
-        CdisProtocolVersion, LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters,
-        WorldCoordinates,
+        AngularVelocity, CdisHeader, CdisProtocolVersion, CdisTimestamp, LinearAcceleration,
+        LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates,
     };
     use crate::types::model::{SVINT12, SVINT14, SVINT16, SVINT24, UVINT8};
     use dis_rs::enumerations::{PduType, ProtocolVersion};
-    use dis_rs::model::{PduHeader, PduStatus, TimeStamp, VectorF32};
+    use dis_rs::model::{PduHeader, PduStatus, Timestamp, VectorF32};
 
     #[test]
     fn test_normalize_radians_to_plus_minus_pi() {
@@ -696,17 +695,14 @@ mod tests {
     fn cdis_header_encode() {
         let dis = PduHeader::new_v7(7, PduType::EntityState)
             .with_length(140)
-            .with_time_stamp(20000u32);
+            .with_timestamp(Timestamp::new(20000u32));
         let cdis = CdisHeader::encode(&dis);
 
         assert_eq!(dis.protocol_version, ProtocolVersion::IEEE1278_12012);
         assert_eq!(cdis.protocol_version, CdisProtocolVersion::SISO_023_2023);
         assert_eq!(dis.exercise_id, cdis.exercise_id.value);
         assert_eq!(dis.pdu_type, cdis.pdu_type);
-        assert_eq!(
-            dis_to_cdis_u32_timestamp(dis.time_stamp),
-            cdis.timestamp.raw_timestamp
-        );
+        assert_eq!(CdisTimestamp::from(dis.timestamp), cdis.timestamp);
     }
 
     #[test]
@@ -715,7 +711,7 @@ mod tests {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(5),
             pdu_type: PduType::Acknowledge,
-            timestamp: TimeStamp::from(20000),
+            timestamp: CdisTimestamp::new(20000),
             length: 140,
             pdu_status: PduStatus::default(),
         };
@@ -724,7 +720,7 @@ mod tests {
         assert_eq!(dis.protocol_version, ProtocolVersion::IEEE1278_12012);
         assert_eq!(dis.exercise_id, 5);
         assert_eq!(dis.pdu_type, PduType::Acknowledge);
-        assert_eq!(dis.time_stamp, cdis_to_dis_u32_timestamp(20000));
+        assert_eq!(dis.timestamp, Timestamp::from(CdisTimestamp::new(20000)));
         assert!(dis.pdu_status.is_some());
         assert!(dis.pdu_status.unwrap().fire_type_indicator.is_none());
     }

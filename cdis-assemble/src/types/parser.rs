@@ -229,7 +229,7 @@ mod tests {
             let mut mantissa = float;
             let mut exponent = 0i32;
             let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-            while (mantissa > max_mantissa) & (exponent as usize <= Self::EXPONENT_BITS) {
+            while (mantissa > max_mantissa) && (exponent as usize <= Self::EXPONENT_BITS) {
                 mantissa /= 10.0;
                 exponent += 1;
             }

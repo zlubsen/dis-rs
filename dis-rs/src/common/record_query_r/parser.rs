@@ -1,7 +1,6 @@
-use crate::common::model::PduBody;
+use crate::common::model::{PduBody, Timestamp};
 use crate::common::parser::entity_id;
 use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService, VariableRecordType};
-use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
 use crate::BodyRaw;
 use nom::multi::count;
@@ -19,7 +18,7 @@ pub(crate) fn record_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, event_type) = be_u16(input)?;
     let event_type = RecordQueryREventType::from(event_type);
     let (input, time) = be_u32(input)?;
-    let time = TimeStamp::from(time);
+    let time = Timestamp::new(time);
     let (input, record_query_specification) = record_query_specification(input)?;
 
     let body = RecordQueryR::builder()

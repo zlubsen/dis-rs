@@ -1,6 +1,5 @@
-use crate::common::model::EntityId;
+use crate::common::model::{EntityId, Timestamp};
 use crate::enumerations::{RecordQueryREventType, RequiredReliabilityService};
-use crate::model::TimeStamp;
 use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
 
 pub struct RecordQueryRBuilder(RecordQueryR);
@@ -61,7 +60,7 @@ impl RecordQueryRBuilder {
     }
 
     #[must_use]
-    pub fn with_time(mut self, time: TimeStamp) -> Self {
+    pub fn with_time(mut self, time: Timestamp) -> Self {
         self.0.time = time;
         self
     }
