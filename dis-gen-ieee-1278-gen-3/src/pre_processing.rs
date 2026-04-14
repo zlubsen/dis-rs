@@ -378,6 +378,7 @@ fn process_numeric_field(
         units: field.units.clone(),
         is_padding: must_skip_field_decl(&field.name),
         parser_function: to_tokens(format!("{NOM_LE_PARSER_PATH}{field_primitive_type}").as_str()),
+        writer_function: to_tokens(format!("put_{field_primitive_type}_le").as_str()),
         length: length_for_primitive_type_field(&field.primitive_type),
     }
 }
@@ -389,7 +390,7 @@ fn process_count_field(
     crate::generation::models::CountField {
         field_name: format_field_name(&field.name),
         primitive_type: to_tokens(field_primitive_type),
-        parser_function: to_tokens(format!("{NOM_LE_PARSER_PATH}{field_primitive_type}").as_str()),
+        parser_function: to_tokens(&format!("{NOM_LE_PARSER_PATH}{field_primitive_type}")),
         length: length_for_primitive_type_field(&field.primitive_type),
     }
 }
@@ -404,16 +405,13 @@ fn process_enum_field(
         EnumFieldType::Enum(fqn) => (to_tokens(&fqn.path), to_tokens(&fqn.type_name), true),
         EnumFieldType::Primitive(fqn) => (quote! {}, to_tokens(fqn), false),
     };
-    println!(
-        "enumfield: {:?}, {:?}",
-        type_path.to_string(),
-        type_name.to_string()
-    );
+
     let enum_data_size = format_ident!(
         "{}",
         enum_type_to_primitive_type(&field.field_type).expect("Expected a valid enum data size")
     );
     let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{enum_data_size}"));
+    let writer_function = to_tokens(&format!("put_{enum_data_size}_le"));
 
     crate::generation::models::EnumField {
         field_name,
@@ -422,6 +420,7 @@ fn process_enum_field(
         is_discriminant: field.is_discriminant.unwrap_or(false),
         parser_function,
         parser_must_convert_to_enum,
+        writer_function,
         length: enum_type_to_length(&field.field_type).expect("Expected a valid enum data size"),
     }
 }

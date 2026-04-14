@@ -1,8 +1,9 @@
+use itertools::Itertools;
 use crate::generation::parsers::generate_extension_record_body_parser;
 use crate::pre_processing::{finalise_type, to_tokens};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
-use crate::constants::{BUILDER_MODULE_NAME, EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
+use crate::constants::{BUILDER_MODULE_NAME, BUILDER_TYPE_SUFFIX, EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
 
 /// Module tree of generated sources:
 /// `src/`
@@ -91,6 +92,7 @@ pub(crate) struct NumericField {
     pub units: Option<String>,
     pub is_padding: bool,
     pub parser_function: TokenStream,
+    pub writer_function: TokenStream,
     pub length: usize,
 }
 
@@ -110,6 +112,7 @@ pub(crate) struct EnumField {
     pub is_discriminant: bool,
     pub parser_function: TokenStream,
     pub parser_must_convert_to_enum: bool,
+    pub writer_function: TokenStream,
     pub length: usize,
 }
 
@@ -453,10 +456,15 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
         })
         .collect();
     let parsers = super::parsers::generate_common_parsers(items);
+    let writers = super::writers::generate_common_writers(items);
 
     println!("{parsers}");
     let _ = syn::parse_file(&parsers.to_string())
         .expect("Error parsing 'parsers' intermediate generated code for pretty printing.");
+
+    println!("{writers}");
+    let _ = syn::parse_file(&writers.to_string())
+        .expect("Error parsing 'writers' intermediate generated code for pretty printing.");
 
     quote! {
         #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
@@ -468,16 +476,12 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
         #(#family_model_contents)*
 
         #parsers
+
+        #writers
     }
 }
 
 fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
-    // FIXME these parts should be in the lib itself as regular code, whenever possible
-    // TODO Other PDU
-    // TODO Other ExtensionRecord
-
-    // TODO Generate From<(discriminant, value)> for ... - Adaptive records, to be able to parse it
-
     let (pdu_body_variants, pdu_body_type_variants, pdu_body_length_variants) = items
         .iter()
         .filter(|&it| it.is_pdu())
@@ -577,7 +581,7 @@ fn generate_body_type_variant(variant: &GenerationItem) -> TokenStream {
     );
     let (body_type, function) = match variant {
         GenerationItem::Pdu(_, _) => (quote! { PduBody }, quote! { body_type }),
-        GenerationItem::ExtensionRecord(_, _) => {
+        GenerationItem::ExtensionRecord(er, _) => {
             (quote! { ExtensionRecordBody }, quote! { record_type })
         }
         _ => panic!("Body type for variants can only be called for PDUs and ExtensionRecords"),
@@ -623,29 +627,40 @@ pub(crate) fn generate_module_with_name(name: &str, contents: &TokenStream) -> T
 /// Generates a module for a PDU Family of PDUs and records, plus all its contents
 fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream {
     // 1. Filter the PDUs for this family and generate these in separate modules
-    let pdus = items
-        .iter()
-        .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
-        .map(|pdu| {
-            if let GenerationItem::Pdu(pdu, _) = pdu {
-                let module = generate_pdu_module(pdu);
-
-                println!("{module}");
-                let _ = syn::parse_file(&module.to_string())
-                    .unwrap_or_else(|_|panic!("Error parsing 'pdu module - {}' intermediate generated code for pretty printing.", &pdu.type_name));
-
-                module
-            } else {
-                panic!("GenerationItem is not a PDU.")
-            }
-        })
-        .collect::<TokenStream>();
+    let pdus = generate_family_pdus(items, family);
 
     let _ = syn::parse_file(&pdus.to_string())
         .expect("Error parsing 'PDU' intermediate generated code for pretty printing.");
 
-    // 3. Filter the ExtensionRecord items for this family and generate the records in a separate (sub)module
-    // TODO extract into separate function
+    let extension_records = generate_family_extension_records(items, family);
+    
+    let records = generate_family_records(items, family);
+
+    let contents = quote! { #pdus #extension_records #records };
+
+    println!("{contents}");
+    let _ = syn::parse_file(&contents.to_string())
+        .expect("Error parsing 'family contents' intermediate generated code for pretty printing.");
+
+    generate_module_with_name(family, &contents)
+}
+
+fn generate_family_pdus(items: &[GenerationItem], family: &str) -> TokenStream {
+    items
+        .iter()
+        .filter(|&item| (item.family().as_str() == family) && item.is_pdu())
+        .map(|pdu| {
+            if let GenerationItem::Pdu(pdu, _) = pdu {
+                generate_pdu_module(pdu)
+            } else {
+                panic!("GenerationItem is not a PDU.")
+            }
+        })
+        .collect::<TokenStream>()
+}
+
+fn generate_family_extension_records(items: &[GenerationItem], family: &str) -> TokenStream {
+    // Filter the ExtensionRecord items for this family and generate the records in a separate (sub)module
     let generated = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_extension_record())
@@ -664,15 +679,21 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     let (extension_records, extension_record_parsers): (Vec<_>, Vec<_>) =
         itertools::multiunzip(generated);
 
+    // Flatten the Vec<TokenStream> to a TokenStream
     let extension_records = extension_records.into_iter().collect::<TokenStream>();
+    
     // TODO remove
     let _ = syn::parse_file(&extension_records.to_string()).expect(
         "Error parsing 'extension_records models' intermediate generated code for pretty printing.",
     );
+
+    // Flatten the Vec<TokenStream> to a TokenStream
     let extension_record_parsers = extension_record_parsers
         .into_iter()
         .flatten()
         .collect::<TokenStream>();
+    
+    // Add imports for parsers
     let extension_record_parsers = quote! {
         use nom::IResult;
         #[allow(unused_imports, reason = "Imported in every parser module instead of finding out the use of specific nom functions per module")]
@@ -680,11 +701,15 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
 
         #extension_record_parsers
     };
+    
     // TODO remove
     let _ = syn::parse_file(&extension_record_parsers.to_string()).expect(
         "Error parsing 'extension_records parsers' intermediate generated code for pretty printing.",
     );
+    
+    // Put parsers into a module
     let er_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &extension_record_parsers);
+    // Finalise ExtensionRecords imports and module
     let extension_records = quote! {
         #[cfg(feature = "serde")]
         use serde::{Deserialize, Serialize};
@@ -692,11 +717,12 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
         #extension_records
         #er_parser_module
     };
-    let extension_records =
-        generate_module_with_name(EXTENSION_RECORDS_MODULE_NAME, &extension_records);
+    
+    generate_module_with_name(EXTENSION_RECORDS_MODULE_NAME, &extension_records)
+}
 
-    // 3. Filter the remaining non-PDU items for this family and generate the records in the family module
-    // TODO extract into separate function
+fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStream {
+    // Filter the remaining non-PDU items for this family and generate the records in the family module
     let (records, record_parsers) = items
         .iter()
         .filter(|&item| (item.family().as_str() == family) && item.is_record())
@@ -719,22 +745,27 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
             GenerationItem::Pdu(_, _) => panic!("GenerationItem is not a Record (found PDU)."),
         })
         .collect::<(Vec<TokenStream>, Vec<TokenStream>)>();
+    // Flatten the Vec<TokenStream> to a TokenStream
     let records = records.into_iter().collect::<TokenStream>();
     let record_parsers = record_parsers
         .into_iter()
         .flatten()
         .collect::<TokenStream>();
+    // Add imports for the parser module
     let record_parsers = quote! {
         #[allow(unused_imports, reason = "It is so much easier to allow than figuring out which modules use specific nom imports")]
         use nom::IResult;
         #record_parsers
     };
     let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
+    
     // TODO remove
     println!("{records}");
     println!("{records_parser_module}");
     let _ = syn::parse_file(&records_parser_module.to_string())
         .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
+    
+    // Add imports for the records (not wrapped in a module)
     let records = quote! {
         #[cfg(feature = "serde")]
         use serde::{Deserialize, Serialize};
@@ -746,14 +777,8 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     println!("{records}");
     let _ = syn::parse_file(&records.to_string())
         .expect("Error parsing 'family records and parsers' intermediate generated code for pretty printing.");
-
-    let contents = quote! { #pdus #extension_records #records };
-
-    println!("{contents}");
-    let _ = syn::parse_file(&contents.to_string())
-        .expect("Error parsing 'family contents' intermediate generated code for pretty printing.");
-
-    generate_module_with_name(family, &contents)
+    
+    records
 }
 
 /// Generates all code related a PDU
@@ -762,7 +787,6 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     let pdu_module_name = &pdu.pdu_module_name;
     let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.type_name);
 
-    // TODO design PduBody traits: size, family, pduType. See BodyRaw, BodyInfo, blanket impls, serialisation, Interaction.
     let pdu_trait_impls = generate_pdu_trait_impls(pdu);
     let builder_content = super::builders::generate_pdu_builder(pdu, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);

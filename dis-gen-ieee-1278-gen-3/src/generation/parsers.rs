@@ -148,7 +148,7 @@ fn generate_common_extension_record_body_parser_arm(er: &GenerationItem) -> Toke
     }
 }
 
-fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
+pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
     let parser_function = &pdu.parser_function;
     let type_name = to_tokens(&pdu.type_name);
     let type_path = &pdu.type_path;
