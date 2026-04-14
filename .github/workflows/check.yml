@@ -54,7 +54,7 @@ jobs:
                     - ubuntu-latest
                     - windows-latest
                 toolchain:
-                    - "1.84.1"
+                    - "1.90.0"
                     - stable
                 profile:
                     - dev
