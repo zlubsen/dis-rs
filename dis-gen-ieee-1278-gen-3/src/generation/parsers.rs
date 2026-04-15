@@ -1,3 +1,4 @@
+use crate::constants::{EXTENSION_RECORD_TYPE, PARSER_MODULE_NAME, PDU_TYPE};
 use crate::generation::models::{
     generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum,
     BitRecord, BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
@@ -8,7 +9,6 @@ use crate::generation::models::{
 use crate::pre_processing::{
     field_length_to_primitive, field_size_to_primitive_type, finalise_type, to_tokens,
 };
-use crate::constants::{EXTENSION_RECORD_TYPE, PDU_TYPE, PARSER_MODULE_NAME};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 
@@ -108,9 +108,7 @@ fn generate_common_pdu_body_parser_arm(pdu: &GenerationItem) -> TokenStream {
     }
 }
 
-fn generate_common_extension_record_body_parser(
-    items: &[GenerationItem],
-) -> TokenStream {
+fn generate_common_extension_record_body_parser(items: &[GenerationItem]) -> TokenStream {
     let extension_record_type = format_ident!("{EXTENSION_RECORD_TYPE}");
     let extension_record_types_arms = items
         .iter()
@@ -446,7 +444,7 @@ fn generate_extension_record_field_parser(field: &ExtensionRecordFieldEnum) -> T
         ExtensionRecordFieldEnum::Numeric(f) => generate_numeric_field_parser(f),
         ExtensionRecordFieldEnum::Enum(f) => generate_enum_field_parser(f),
         ExtensionRecordFieldEnum::FixedString(f) => generate_fixed_string_field_parser(f),
-        ExtensionRecordFieldEnum::VariableString(f) => generate_variable_string_parser(f),
+        ExtensionRecordFieldEnum::VariableString(f) => generate_variable_string_field_parser(f),
         ExtensionRecordFieldEnum::FixedRecord(f) => generate_fixed_record_field_parser(f),
         ExtensionRecordFieldEnum::BitRecord(f) => generate_bit_record_field_parser(f),
         ExtensionRecordFieldEnum::Array(f) => generate_array_field_parser(f),
@@ -533,7 +531,7 @@ fn generate_adaptive_record_field_parser(field: &AdaptiveRecordField) -> TokenSt
     }
 }
 
-fn generate_variable_string_parser(field: &VariableString) -> TokenStream {
+fn generate_variable_string_field_parser(field: &VariableString) -> TokenStream {
     let string_field_name = format_ident!("{}", field.string_field.field_name);
     let count_field_name = format_ident!("{}", field.count_field.field_name);
     let count_parser = &field.count_field.parser_function;

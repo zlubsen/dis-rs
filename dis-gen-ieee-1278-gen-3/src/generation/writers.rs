@@ -1,8 +1,13 @@
+use crate::constants::{ARRAY_ELEMENT_IDENT, WRITER_MODULE_NAME};
+use crate::generation::models::{
+    generate_module_with_name, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecordField,
+    EnumField, ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField,
+    FixedStringField, GenerationItem, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
+    VariableString,
+};
+use crate::pre_processing::to_tokens;
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
-use crate::constants::{PDU_TYPE, WRITER_MODULE_NAME};
-use crate::generation::models::{generate_module_with_name, AdaptiveRecordField, BitRecordField, EnumField, FixedRecordField, FixedStringField, GenerationItem, NumericField, Pdu, PduAndFixedRecordFieldsEnum};
-use crate::pre_processing::to_tokens;
 
 pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
     let pdu_body_writer = generate_common_pdu_body_writer(items);
@@ -10,7 +15,7 @@ pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
     let contents = quote! {
         use crate::PduBody;
         use crate::core::writer::Serialize;
-        use bytes::BytesMut;
+        use bytes::{BytesMut, BufMut};
 
         #pdu_body_writer
     };
@@ -44,19 +49,24 @@ fn generate_common_pdu_body_writer_arm(pdu: &GenerationItem) -> TokenStream {
     }
 }
 
-fn generate_pdu_body_writer(pdu: &Pdu) -> TokenStream {
+pub(crate) fn generate_pdu_body_writer(pdu: &Pdu) -> TokenStream {
     let type_name = to_tokens(&pdu.type_name);
     let type_path = &pdu.type_path;
-    let field_writers = pdu.fields
+    let field_writers = pdu
+        .fields
         .iter()
-        .map(generate_pdu_field_writer)
+        .map(generate_pdu_and_fixed_record_field_writer)
         .collect::<Vec<TokenStream>>();
 
     quote! {
+        use bytes::{BytesMut, BufMut};
+        use crate::core::BodyRaw;
+        use crate::core::writer::Serialize;
+
         impl Serialize for #type_path::#type_name {
             fn serialize(&self, buf: &mut BytesMut) -> u16 {
                 #(#field_writers)*
-                self.extension_records.serialize(buf)
+                self.extension_records.serialize(buf);
 
                 self.body_length()
             }
@@ -64,68 +74,207 @@ fn generate_pdu_body_writer(pdu: &Pdu) -> TokenStream {
     }
 }
 
-fn generate_pdu_field_writer(field: &PduAndFixedRecordFieldsEnum) -> TokenStream {
+pub(crate) fn generate_extension_record_body_writer(record: &ExtensionRecord) -> TokenStream {
+    let type_name = to_tokens(&record.type_name);
+    let type_path = &record.type_path;
+    let field_writers = record
+        .fields
+        .iter()
+        .map(generate_extension_record_field_writer)
+        .collect::<Vec<TokenStream>>();
+
+    quote! {
+        impl Serialize for #type_path::#type_name {
+            fn serialize(&self, buf: &mut BytesMut) -> u16 {
+                #(#field_writers)*
+
+                self.record_length()
+            }
+        }
+    }
+}
+
+fn generate_pdu_and_fixed_record_field_writer(field: &PduAndFixedRecordFieldsEnum) -> TokenStream {
     match field {
-        PduAndFixedRecordFieldsEnum::Numeric(f) => generate_numeric_field_writer(f),
-        PduAndFixedRecordFieldsEnum::Enum(f) => generate_enum_field_writer(f),
-        PduAndFixedRecordFieldsEnum::FixedString(f) => generate_fixed_string_field_writer(f),
-        PduAndFixedRecordFieldsEnum::FixedRecord(f) => generate_fixed_record_field_writer(f),
-        PduAndFixedRecordFieldsEnum::BitRecord(f) => generate_bit_record_field_writer(f),
-        PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => generate_adaptive_record_writer(f),
+        PduAndFixedRecordFieldsEnum::Numeric(f) => {
+            generate_numeric_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        PduAndFixedRecordFieldsEnum::Enum(f) => {
+            generate_enum_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        PduAndFixedRecordFieldsEnum::FixedString(f) => {
+            generate_fixed_string_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        PduAndFixedRecordFieldsEnum::FixedRecord(f) => {
+            generate_fixed_record_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        PduAndFixedRecordFieldsEnum::BitRecord(f) => {
+            generate_bit_record_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        PduAndFixedRecordFieldsEnum::AdaptiveRecord(f) => generate_adaptive_record_field_writer(f),
     }
 }
 
-fn generate_numeric_field_writer(field: &NumericField) -> TokenStream {
-    let field_name = to_tokens(&field.field_name);
+fn generate_extension_record_field_writer(field: &ExtensionRecordFieldEnum) -> TokenStream {
+    match field {
+        ExtensionRecordFieldEnum::Numeric(f) => {
+            generate_numeric_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        ExtensionRecordFieldEnum::Enum(f) => {
+            generate_enum_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        ExtensionRecordFieldEnum::FixedString(f) => {
+            generate_fixed_string_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        ExtensionRecordFieldEnum::VariableString(f) => generate_variable_string_field_writer(f),
+        ExtensionRecordFieldEnum::FixedRecord(f) => {
+            generate_fixed_record_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        ExtensionRecordFieldEnum::BitRecord(f) => {
+            generate_bit_record_field_writer(f, &to_tokens(&format!("self.{}", &f.field_name)))
+        }
+        ExtensionRecordFieldEnum::Array(f) => generate_array_field_writer(f),
+        ExtensionRecordFieldEnum::AdaptiveRecord(f) => generate_adaptive_record_field_writer(f),
+        ExtensionRecordFieldEnum::Opaque(f) => generate_opaque_field_writer(f),
+        ExtensionRecordFieldEnum::PaddingTo16 => {
+            unimplemented!(
+                "Unimplemented as element <PaddingTo16> does not occur in the schema definitions"
+            )
+        }
+        ExtensionRecordFieldEnum::PaddingTo32 => {
+            unimplemented!(
+                "Unimplemented as element <PaddingTo32> does not occur in the schema definitions"
+            )
+        }
+    }
+}
+
+pub(crate) fn generate_fixed_record_writer(record: &FixedRecord) -> TokenStream {
+    println!("gen fixed record writer {}", record.type_name);
+    let type_name = &record.type_name;
+    let type_path = &record.type_path;
+
+    let field_writers = record
+        .fields
+        .iter()
+        .map(generate_pdu_and_fixed_record_field_writer)
+        .collect::<Vec<TokenStream>>();
+
+    quote! {
+        impl Serialize for #type_path::#type_name {
+            fn serialize(&self, buf: &mut BytesMut) -> u16 {
+                #(#field_writers)*
+                self.record_length()
+            }
+        }
+    }
+}
+
+fn generate_numeric_field_writer(field: &NumericField, field_name: &TokenStream) -> TokenStream {
+    let writer_function = &field.writer_function;
+
+    if field.is_padding {
+        quote! {
+            buf.#writer_function(0);
+        }
+    } else {
+        quote! {
+            buf.#writer_function(#field_name);
+        }
+    }
+}
+
+fn generate_enum_field_writer(field: &EnumField, field_name: &TokenStream) -> TokenStream {
     let writer_function = &field.writer_function;
 
     quote! {
-        buf.#writer_function(self.#field_name);
+        buf.#writer_function(#field_name.into());
     }
 }
 
-fn generate_enum_field_writer(field: &EnumField) -> TokenStream {
-    let field_name = to_tokens(&field.field_name);
-    let writer_function = &field.writer_function;
-
-    quote! {
-        buf.#writer_function(self.#field_name.into());
-    }
-}
-
-fn generate_fixed_string_field_writer(field: &FixedStringField) -> TokenStream {
-    let field_name = to_tokens(&field.field_name);
+fn generate_fixed_string_field_writer(
+    field: &FixedStringField,
+    field_name: &TokenStream,
+) -> TokenStream {
     let length = Literal::usize_unsuffixed(field.length);
 
     quote! {
-        let num_pad = #length.saturating_sub(self.#field_name.len());
+        let num_pad = #length.saturating_sub(#field_name.len());
 
-        buf.put_slice(self.#field_name.as_bytes()[..]);
+        buf.put_slice(#field_name.as_bytes()[..]);
         (0..num_pad).for_each(|_i| buf.put_u8(0x00));
     }
 }
 
-fn generate_fixed_record_field_writer(field: &FixedRecordField) -> TokenStream {
-    let field_name = to_tokens(&field.field_name);
-
+fn generate_fixed_record_field_writer(
+    _field: &FixedRecordField,
+    field_name: &TokenStream,
+) -> TokenStream {
     quote! {
-        self.#field_name.serialize(buf);
+        #field_name.serialize(buf);
     }
 }
 
-fn generate_bit_record_field_writer(field: &BitRecordField) -> TokenStream {
-    let field_name = to_tokens(&field.field_name);
-
+fn generate_bit_record_field_writer(
+    _field: &BitRecordField,
+    field_name: &TokenStream,
+) -> TokenStream {
     quote! {
-        self.#field_name.serialize(buf);
+        #field_name.serialize(buf);
     }
 }
 
-fn generate_adaptive_record_writer(field: &AdaptiveRecordField) -> TokenStream {
+fn generate_adaptive_record_field_writer(field: &AdaptiveRecordField) -> TokenStream {
     let field_name = to_tokens(&field.field_name);
     let discriminant_field = to_tokens(&field.discriminant_field_name);
 
     quote! {
         self.#field_name.serialize(buf, &self.#discriminant_field);
+    }
+}
+
+fn generate_variable_string_field_writer(field: &VariableString) -> TokenStream {
+    let count_writer_function = &field.count_field.writer_function;
+    let count_primitive_type = &field.count_field.primitive_type;
+    let str_field_name = to_tokens(&field.string_field.field_name);
+
+    quote! {
+        buf.#count_writer_function(self.#str_field_name.len() as #count_primitive_type);
+        buf.put_slice(self.#str_field_name.as_bytes()[..]);
+    }
+}
+
+fn generate_array_field_writer(field: &Array) -> TokenStream {
+    let count_writer_function = &field.count_field.writer_function;
+    let count_primitive_type = &field.count_field.primitive_type;
+    let type_field_name = to_tokens(field.type_field.field_name());
+    let field_writer_function = generate_array_field_type_writer_function(&field.type_field);
+    let item_ident = format_ident!("{ARRAY_ELEMENT_IDENT}");
+
+    quote! {
+        buf.#count_writer_function(self.#type_field_name.len() as #count_primitive_type);
+        self.#type_field_name.iter().for_each(|#item_ident| { #field_writer_function } );
+    }
+}
+
+fn generate_array_field_type_writer_function(field: &ArrayFieldEnum) -> TokenStream {
+    let ident = &to_tokens(ARRAY_ELEMENT_IDENT);
+    match field {
+        ArrayFieldEnum::Numeric(f) => generate_numeric_field_writer(f, ident),
+        ArrayFieldEnum::Enum(f) => generate_enum_field_writer(f, ident),
+        ArrayFieldEnum::FixedString(f) => generate_fixed_string_field_writer(f, ident),
+        ArrayFieldEnum::FixedRecord(f) => generate_fixed_record_field_writer(f, ident),
+        ArrayFieldEnum::BitRecord(f) => generate_bit_record_field_writer(f, ident),
+    }
+}
+
+fn generate_opaque_field_writer(field: &OpaqueData) -> TokenStream {
+    let count_writer_function = &field.count_field.writer_function;
+    let count_primitive_type = &field.count_field.primitive_type;
+    let field_name = to_tokens(&field.opaque_data_field.field_name);
+
+    quote! {
+        buf.#count_writer_function(self.#field_name.len() as #count_primitive_type);
+        buf.put_slice(self.#field_name.as_bytes()[..]);
     }
 }

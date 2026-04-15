@@ -1,8 +1,7 @@
 use crate::constants::NOM_LE_PARSER_PATH;
+use crate::constants::{EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
 use crate::extraction::ExtractionItem;
-use crate::generation::models::{
-    AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum,
-};
+use crate::generation::models::{AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum};
 use crate::{
     Fqn, FqnLookup, Lookup, UidLookup, ADAPTIVE_RECORD_DISCRIMINANT_TYPES,
     SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS,
@@ -14,7 +13,6 @@ use dis_gen_utils::{
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::HashMap;
-use crate::constants::{EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
 
 pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLookup, FqnLookup) {
     let mut pdu_lookup = HashMap::new();
@@ -220,6 +218,7 @@ fn type_for_primitive_type_field(dis_primitive_type: &str) -> &'static str {
 
 /// Maps the DIS schema primitive data types to its data length in octets.
 fn length_for_primitive_type_field(dis_primitive_type: &str) -> usize {
+    #[allow(clippy::match_same_arms)]
     match dis_primitive_type {
         "uint8" => 1,
         "uint16" => 2,
@@ -343,6 +342,16 @@ fn must_skip_field_decl(field_name: &str) -> bool {
     ["Padding", "Padding1", "Padding2", "Not used"].contains(&field_name)
 }
 
+/// Formats, as tokens, the function used to write primitive types to the wire format.
+///
+/// The function has the form `put_<primitive type><optional Little Endian postfix>`.
+///
+/// `u8` values are written as-is, while larger types need to be written in Little Endian (e.g. functions end with '_le').
+fn format_primitive_writer_function(primitive_type: &str) -> TokenStream {
+    let writer_postfix = if primitive_type == "u8" { "" } else { "_le" };
+    to_tokens(&format!("put_{primitive_type}{writer_postfix}"))
+}
+
 pub fn process_extracted(extracts: &[ExtractionItem], lookup: &Lookup) -> Vec<GenerationItem> {
     extracts
         .iter()
@@ -378,7 +387,7 @@ fn process_numeric_field(
         units: field.units.clone(),
         is_padding: must_skip_field_decl(&field.name),
         parser_function: to_tokens(format!("{NOM_LE_PARSER_PATH}{field_primitive_type}").as_str()),
-        writer_function: to_tokens(format!("put_{field_primitive_type}_le").as_str()),
+        writer_function: format_primitive_writer_function(field_primitive_type),
         length: length_for_primitive_type_field(&field.primitive_type),
     }
 }
@@ -391,7 +400,7 @@ fn process_count_field(
         field_name: format_field_name(&field.name),
         primitive_type: to_tokens(field_primitive_type),
         parser_function: to_tokens(&format!("{NOM_LE_PARSER_PATH}{field_primitive_type}")),
-        length: length_for_primitive_type_field(&field.primitive_type),
+        writer_function: format_primitive_writer_function(field_primitive_type),
     }
 }
 
@@ -406,12 +415,11 @@ fn process_enum_field(
         EnumFieldType::Primitive(fqn) => (quote! {}, to_tokens(fqn), false),
     };
 
-    let enum_data_size = format_ident!(
-        "{}",
-        enum_type_to_primitive_type(&field.field_type).expect("Expected a valid enum data size")
-    );
+    let enum_primitive_type =
+        enum_type_to_primitive_type(&field.field_type).expect("Expected a valid enum data size");
+    let enum_data_size = format_ident!("{enum_primitive_type}");
     let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{enum_data_size}"));
-    let writer_function = to_tokens(&format!("put_{enum_data_size}_le"));
+    let writer_function = format_primitive_writer_function(enum_primitive_type);
 
     crate::generation::models::EnumField {
         field_name,
