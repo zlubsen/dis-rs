@@ -21,7 +21,7 @@ const TIME_UNITS_PER_CDIS_TIME_UNIT: u32 = TIME_UNITS_PER_HOUR / CDIS_TIME_UNITS
 /// Reference time at which the data contained in the *PDU* was generated.
 ///
 /// Time is represented as [`CdisTimeUnits`] elapsed since the beginning of the current hour in the selected time reference.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CdisTimestamp {
     /// Time is *relative* to the simulation application issuing the *PDU*.
     ///
@@ -229,6 +229,20 @@ impl PartialEq<CdisTimestamp> for u32 {
     #[inline]
     fn eq(&self, other: &CdisTimestamp) -> bool {
         self.eq(&other.to_u32())
+    }
+}
+
+impl PartialOrd<u32> for CdisTimestamp {
+    #[inline]
+    fn partial_cmp(&self, other: &u32) -> Option<std::cmp::Ordering> {
+        self.to_u32().partial_cmp(other)
+    }
+}
+
+impl PartialOrd<CdisTimestamp> for u32 {
+    #[inline]
+    fn partial_cmp(&self, other: &CdisTimestamp) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(&other.to_u32())
     }
 }
 
@@ -716,6 +730,79 @@ mod tests {
     ) {
         assert_eq!(timestamp == value, expected);
         assert_eq!(value == timestamp, expected);
+    }
+
+    #[rstest]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::ZERO), 0, Ordering::Equal)]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::new(CDIS_TIME_UNITS_PER_HOUR / 2).unwrap()), 33_554_432, Ordering::Equal)]
+    #[case(
+        CdisTimestamp::Relative(CdisTimeUnits::MAX),
+        67_108_862,
+        Ordering::Equal
+    )]
+    #[case(
+        CdisTimestamp::Relative(CdisTimeUnits::ZERO),
+        67_108_862,
+        Ordering::Less
+    )]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::new(CDIS_TIME_UNITS_PER_HOUR / 2).unwrap()), 33_554_431, Ordering::Greater)]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::new(CDIS_TIME_UNITS_PER_HOUR / 2).unwrap()), 33_554_433, Ordering::Less)]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::MAX), 0, Ordering::Greater)]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::ZERO), 1, Ordering::Equal)]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::new(CDIS_TIME_UNITS_PER_HOUR / 2).unwrap()), 33_554_433, Ordering::Equal)]
+    #[case(
+        CdisTimestamp::Absolute(CdisTimeUnits::MAX),
+        67_108_863,
+        Ordering::Equal
+    )]
+    #[case(
+        CdisTimestamp::Absolute(CdisTimeUnits::ZERO),
+        67_108_863,
+        Ordering::Less
+    )]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::new(CDIS_TIME_UNITS_PER_HOUR / 2).unwrap()), 33_554_432, Ordering::Greater)]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::new(CDIS_TIME_UNITS_PER_HOUR / 2).unwrap()), 33_554_434, Ordering::Less)]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::MAX), 0, Ordering::Greater)]
+    fn timestamp_partial_ord(
+        #[case] timestamp: CdisTimestamp,
+        #[case] value: u32,
+        #[case] expected: Ordering,
+    ) {
+        let expected = Some(expected);
+
+        assert_eq!(timestamp.partial_cmp(&value), expected);
+        assert_eq!(
+            value.partial_cmp(&timestamp),
+            expected.map(Ordering::reverse)
+        );
+    }
+
+    #[rstest]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::ZERO), 1, CdisTimestamp::Relative(CdisTimeUnits::new(1).unwrap()))]
+    #[case(
+        CdisTimestamp::Relative(CdisTimeUnits::ZERO),
+        33_554_432,
+        CdisTimestamp::Relative(CdisTimeUnits::MAX)
+    )]
+    #[case(CdisTimestamp::Relative(CdisTimeUnits::new(33_554_430).unwrap()), 67_108_861, CdisTimestamp::Relative(CdisTimeUnits::MAX))]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::ZERO), 2, CdisTimestamp::Absolute(CdisTimeUnits::new(1).unwrap()))]
+    #[case(
+        CdisTimestamp::Absolute(CdisTimeUnits::ZERO),
+        33_554_432,
+        CdisTimestamp::Absolute(CdisTimeUnits::MAX)
+    )]
+    #[case(CdisTimestamp::Absolute(CdisTimeUnits::new(33_554_430).unwrap()), 67_108_862, CdisTimestamp::Absolute(CdisTimeUnits::MAX))]
+    fn timestamp_partial_ord_transitive(
+        #[case] a: CdisTimestamp,
+        #[case] b: u32,
+        #[case] c: CdisTimestamp,
+    ) {
+        assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+        assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
+        assert_eq!(b.partial_cmp(&c), Some(Ordering::Less));
+        assert_eq!(c.partial_cmp(&b), Some(Ordering::Greater));
+        assert_eq!(a.partial_cmp(&c.to_u32()), Some(Ordering::Less));
+        assert_eq!(c.partial_cmp(&a.to_u32()), Some(Ordering::Greater));
     }
 
     #[rstest]
