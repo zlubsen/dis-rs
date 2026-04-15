@@ -10,7 +10,7 @@ resolver = "2"
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.90"
+rust-version = "1.91"
 license = "MIT"
 authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 repository = "https://github.com/zlubsen/dis-rs"
