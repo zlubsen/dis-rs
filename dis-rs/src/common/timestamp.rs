@@ -18,7 +18,7 @@ const MAX_NANOS: u64 = NANOS_PER_HOUR - (NANOS_PER_TIME_UNIT.round() as u64);
 /// Reference time at which the data contained in the *PDU* was generated.
 ///
 /// Time is represented as [`TimeUnits`] elapsed since the beginning of the current hour in the selected time reference.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Timestamp {
     /// Time is *relative* to the simulation application issuing the *PDU*.
     ///
@@ -622,20 +622,20 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Timestamp::Relative(TimeUnits::ZERO), 1, Timestamp::Relative(TimeUnits::new(2).unwrap()))]
+    #[case(Timestamp::Relative(TimeUnits::ZERO), 1, Timestamp::Relative(TimeUnits::new(1).unwrap()))]
     #[case(
         Timestamp::Relative(TimeUnits::ZERO),
-        2_147_483_647,
+        2_147_483_648,
         Timestamp::Relative(TimeUnits::MAX)
     )]
-    #[case(Timestamp::Relative(TimeUnits::new(2_147_483_645).unwrap()), 4_294_967_292, Timestamp::Relative(TimeUnits::MAX))]
-    #[case(Timestamp::Absolute(TimeUnits::ZERO), 3, Timestamp::Absolute(TimeUnits::new(2).unwrap()))]
+    #[case(Timestamp::Relative(TimeUnits::new(2_147_483_646).unwrap()), 4_294_967_293, Timestamp::Relative(TimeUnits::MAX))]
+    #[case(Timestamp::Absolute(TimeUnits::ZERO), 2, Timestamp::Absolute(TimeUnits::new(1).unwrap()))]
     #[case(
         Timestamp::Absolute(TimeUnits::ZERO),
         2_147_483_648,
         Timestamp::Absolute(TimeUnits::MAX)
     )]
-    #[case(Timestamp::Absolute(TimeUnits::new(2_147_483_645).unwrap()), 4_294_967_293, Timestamp::Absolute(TimeUnits::MAX))]
+    #[case(Timestamp::Absolute(TimeUnits::new(2_147_483_646).unwrap()), 4_294_967_294, Timestamp::Absolute(TimeUnits::MAX))]
     fn timestamp_partial_ord_transitive(
         #[case] a: Timestamp,
         #[case] b: u32,
@@ -645,8 +645,8 @@ mod tests {
         assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
         assert_eq!(b.partial_cmp(&c), Some(Ordering::Less));
         assert_eq!(c.partial_cmp(&b), Some(Ordering::Greater));
-        assert_eq!(a.partial_cmp(&c), Some(Ordering::Less));
-        assert_eq!(c.partial_cmp(&a), Some(Ordering::Greater));
+        assert_eq!(a.partial_cmp(&c.to_u32()), Some(Ordering::Less));
+        assert_eq!(c.partial_cmp(&a.to_u32()), Some(Ordering::Greater));
     }
 
     #[cfg(feature = "serde")]
