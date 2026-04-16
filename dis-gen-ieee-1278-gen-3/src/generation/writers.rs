@@ -1,11 +1,12 @@
 use crate::constants::{ARRAY_ELEMENT_IDENT, WRITER_MODULE_NAME};
 use crate::generation::models::{
-    generate_module_with_name, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecordField,
-    EnumField, ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField,
-    FixedStringField, GenerationItem, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
-    VariableString,
+    generate_module_with_name, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
+    BitRecordField, BitRecordFieldEnum, EnumField, ExtensionRecord, ExtensionRecordFieldEnum,
+    FixedRecord, FixedRecordField, FixedStringField, GenerationItem, NumericField, OpaqueData, Pdu,
+    PduAndFixedRecordFieldsEnum, VariableString,
 };
 use crate::pre_processing::to_tokens;
+use itertools::Itertools;
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 
@@ -149,8 +150,27 @@ fn generate_extension_record_field_writer(field: &ExtensionRecordFieldEnum) -> T
     }
 }
 
+fn generate_bit_record_field_enum_writer(field: &BitRecordFieldEnum) -> TokenStream {
+    match field {
+        BitRecordFieldEnum::Enum(e) => {
+            let field_name = to_tokens(&e.field_name);
+            quote! {
+                // 1- enum to primitive based on it's size
+                // 2- optionally convert to record size
+                // 3- shift into position
+                let #field_name =
+            }
+        }
+        BitRecordFieldEnum::Int(i) => {
+            todo!()
+        }
+        BitRecordFieldEnum::Bool(b) => {
+            todo!()
+        }
+    }
+}
+
 pub(crate) fn generate_fixed_record_writer(record: &FixedRecord) -> TokenStream {
-    println!("gen fixed record writer {}", record.type_name);
     let type_name = &record.type_name;
     let type_path = &record.type_path;
 
@@ -164,6 +184,39 @@ pub(crate) fn generate_fixed_record_writer(record: &FixedRecord) -> TokenStream 
         impl Serialize for #type_path::#type_name {
             fn serialize(&self, buf: &mut BytesMut) -> u16 {
                 #(#field_writers)*
+                self.record_length()
+            }
+        }
+    }
+}
+
+pub(crate) fn generate_bit_record_writer(record: &BitRecord) -> TokenStream {
+    let type_name = &record.type_name;
+    let type_path = &record.type_path;
+    let writer_function = &record.writer_function;
+
+    let field_values = record
+        .fields
+        .iter()
+        .map(generate_bit_record_field_enum_writer)
+        .collect::<Vec<TokenStream>>();
+
+    let fields_or = to_tokens(
+        &record
+            .fields
+            .iter()
+            .map(|field| field.field_name())
+            .join(" | "),
+    );
+
+    quote! {
+        impl Serialize for #type_path::#type_name {
+            fn serialize(&self, buf: &mut BytesMut) -> u16 {
+                #(#field_values)*
+
+                let value = #fields_or;
+                buf.#writer_function(value)
+
                 self.record_length()
             }
         }
@@ -196,12 +249,14 @@ fn generate_fixed_string_field_writer(
     field: &FixedStringField,
     field_name: &TokenStream,
 ) -> TokenStream {
-    let length = Literal::usize_unsuffixed(field.length);
+    let length = Literal::usize_suffixed(field.length);
 
+    // Too long strings will be truncated, leaving no padding in the fixed string field
     quote! {
         let num_pad = #length.saturating_sub(#field_name.len());
+        let string_length = #length - num_pad;
 
-        buf.put_slice(#field_name.as_bytes()[..]);
+        buf.put(&#field_name.as_bytes()[..string_length]);
         (0..num_pad).for_each(|_i| buf.put_u8(0x00));
     }
 }
@@ -240,7 +295,7 @@ fn generate_variable_string_field_writer(field: &VariableString) -> TokenStream 
 
     quote! {
         buf.#count_writer_function(self.#str_field_name.len() as #count_primitive_type);
-        buf.put_slice(self.#str_field_name.as_bytes()[..]);
+        buf.put(&self.#str_field_name.as_bytes()[..]);
     }
 }
 
@@ -258,13 +313,22 @@ fn generate_array_field_writer(field: &Array) -> TokenStream {
 }
 
 fn generate_array_field_type_writer_function(field: &ArrayFieldEnum) -> TokenStream {
-    let ident = &to_tokens(ARRAY_ELEMENT_IDENT);
     match field {
-        ArrayFieldEnum::Numeric(f) => generate_numeric_field_writer(f, ident),
-        ArrayFieldEnum::Enum(f) => generate_enum_field_writer(f, ident),
-        ArrayFieldEnum::FixedString(f) => generate_fixed_string_field_writer(f, ident),
-        ArrayFieldEnum::FixedRecord(f) => generate_fixed_record_field_writer(f, ident),
-        ArrayFieldEnum::BitRecord(f) => generate_bit_record_field_writer(f, ident),
+        ArrayFieldEnum::Numeric(f) => {
+            generate_numeric_field_writer(f, &to_tokens(&format!("*{ARRAY_ELEMENT_IDENT}")))
+        }
+        ArrayFieldEnum::Enum(f) => {
+            generate_enum_field_writer(f, &to_tokens(&format!("*{ARRAY_ELEMENT_IDENT}")))
+        }
+        ArrayFieldEnum::FixedString(f) => {
+            generate_fixed_string_field_writer(f, &to_tokens(ARRAY_ELEMENT_IDENT))
+        }
+        ArrayFieldEnum::FixedRecord(f) => {
+            generate_fixed_record_field_writer(f, &to_tokens(ARRAY_ELEMENT_IDENT))
+        }
+        ArrayFieldEnum::BitRecord(f) => {
+            generate_bit_record_field_writer(f, &to_tokens(ARRAY_ELEMENT_IDENT))
+        }
     }
 }
 
@@ -275,6 +339,6 @@ fn generate_opaque_field_writer(field: &OpaqueData) -> TokenStream {
 
     quote! {
         buf.#count_writer_function(self.#field_name.len() as #count_primitive_type);
-        buf.put_slice(self.#field_name.as_bytes()[..]);
+        buf.put(&self.#field_name[..]);
     }
 }

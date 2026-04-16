@@ -692,6 +692,8 @@ fn process_bit_record(
     let value_primitive_type = field_size_to_primitive_type(record.size);
     let value_parser = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
 
+    let writer_function = format_primitive_writer_function(value_primitive_type);
+
     crate::generation::models::BitRecord {
         fields,
         type_name,
@@ -699,6 +701,7 @@ fn process_bit_record(
         size: record.size,
         parser_function,
         value_parser,
+        writer_function,
     }
 }
 

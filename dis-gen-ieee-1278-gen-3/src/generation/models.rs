@@ -7,6 +7,7 @@ use crate::generation::writers::generate_extension_record_body_writer;
 use crate::pre_processing::{finalise_type, to_tokens};
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
+use std::ops::Div;
 
 /// Module tree of generated sources:
 /// `src/`
@@ -385,6 +386,7 @@ pub(crate) struct BitRecord {
     pub size: usize,
     pub parser_function: TokenStream,
     pub value_parser: TokenStream,
+    pub writer_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -767,7 +769,7 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
             GenerationItem::BitRecord(record, _family) => (
                 generate_bit_record(record),
                 super::parsers::generate_bit_record_parser(record),
-                quote! {}, // TODO bit record writer
+                super::writers::generate_bit_record_writer(record),
             ),
             GenerationItem::AdaptiveRecord(record, _family) => (
                 generate_adaptive_record(record),
@@ -1027,11 +1029,19 @@ fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
         .map(generate_pdu_and_fixed_field_decl)
         .collect::<Vec<TokenStream>>();
 
+    let record_length = Literal::usize_unsuffixed(record.length);
+
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {
             #(#fields)*
+        }
+
+        impl #record_name {
+            pub fn record_length(&self) -> u16 {
+                #record_length
+            }
         }
     }
 }
@@ -1190,20 +1200,28 @@ fn generate_opaque_field_decl(field: &OpaqueData) -> TokenStream {
     }
 }
 
-fn generate_bit_record(item: &BitRecord) -> TokenStream {
-    let record_name = &item.type_name;
+fn generate_bit_record(record: &BitRecord) -> TokenStream {
+    let record_name = &record.type_name;
 
-    let fields = item
+    let fields = record
         .fields
         .iter()
         .map(generate_bit_record_item_decl)
         .collect::<Vec<TokenStream>>();
+
+    let record_length = Literal::usize_unsuffixed(record.size.div(8));
 
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {
             #(#fields)*
+        }
+
+        impl #record_name {
+            pub fn record_length(&self) -> u16 {
+                #record_length
+            }
         }
     }
 }
@@ -1248,14 +1266,16 @@ fn generate_int_bit_field_decl(field: &IntBitField) -> TokenStream {
     }
 }
 
-fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
-    let record_name = &item.type_name;
+fn generate_adaptive_record(record: &AdaptiveRecord) -> TokenStream {
+    let record_name = &record.type_name;
 
-    let variants = item
+    let variants = record
         .variants
         .iter()
         .map(generate_adaptive_record_variant)
         .collect::<Vec<TokenStream>>();
+
+    let record_length = Literal::usize_unsuffixed(record.length);
 
     quote! {
         #[derive(Debug, Default, Clone, PartialEq)]
@@ -1264,6 +1284,12 @@ fn generate_adaptive_record(item: &AdaptiveRecord) -> TokenStream {
             #[default]
             None,
             #(#variants)*
+        }
+
+        impl #record_name {
+            pub fn record_length(&self) -> u16 {
+                #record_length
+            }
         }
     }
 }
