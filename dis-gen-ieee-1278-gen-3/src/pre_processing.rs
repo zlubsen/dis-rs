@@ -542,12 +542,30 @@ fn process_bit_record_field(
     let primitive_type = field_size_to_primitive_type(field.size);
     let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{primitive_type}"));
 
-    let (type_path, type_name) = {
-        let fqn = match field_type {
-            // TODO there is no practical difference in handling the two defined variants; distinction could be removed.
-            BitRecordFieldType::Enum(fqn) | BitRecordFieldType::Record(fqn) => fqn,
+    let (type_path, type_name, writer_function) = {
+        let field_name_tokens = to_tokens(&field_name);
+        let (fqn, writer_function) = match field_type {
+            BitRecordFieldType::Enum(fqn) => {
+                let put_function = format_primitive_writer_function(primitive_type);
+                (
+                    fqn,
+                    quote! {
+                        buf.#put_function(self.#field_name_tokens.into());
+                    },
+                )
+            }
+            BitRecordFieldType::Record(fqn) => (
+                fqn,
+                quote! {
+                    self.#field_name_tokens.serialize(buf);
+                },
+            ),
         };
-        (to_tokens(&fqn.path), to_tokens(&fqn.type_name))
+        (
+            to_tokens(&fqn.path),
+            to_tokens(&fqn.type_name),
+            writer_function,
+        )
     };
 
     crate::generation::models::BitRecordField {
@@ -556,6 +574,7 @@ fn process_bit_record_field(
         type_path,
         size: field.size,
         parser_function,
+        writer_function,
     }
 }
 

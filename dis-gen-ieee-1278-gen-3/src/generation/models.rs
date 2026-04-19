@@ -170,6 +170,7 @@ pub(crate) struct BitRecordField {
     pub type_path: TokenStream,
     pub size: usize,
     pub parser_function: TokenStream,
+    pub writer_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -816,7 +817,7 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
     // TODO remove
     println!("{records_writer_module}");
     let _ = syn::parse_file(&records_writer_module.to_string())
-        .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
+        .expect("Error parsing 'family record writer module' intermediate generated code for pretty printing.");
 
     // Add imports for the records (not wrapped in a module)
     let records = quote! {

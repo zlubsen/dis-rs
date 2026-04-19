@@ -5,7 +5,7 @@ use crate::generation::models::{
     FixedRecord, FixedRecordField, FixedStringField, GenerationItem, NumericField, OpaqueData, Pdu,
     PduAndFixedRecordFieldsEnum, VariableString,
 };
-use crate::pre_processing::to_tokens;
+use crate::pre_processing::{field_size_to_primitive_type, to_tokens};
 use itertools::Itertools;
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
@@ -150,22 +150,40 @@ fn generate_extension_record_field_writer(field: &ExtensionRecordFieldEnum) -> T
     }
 }
 
-fn generate_bit_record_field_enum_writer(field: &BitRecordFieldEnum) -> TokenStream {
+fn generate_bit_record_field_enum_writer(
+    field: &BitRecordFieldEnum,
+    record_primitive: &str,
+) -> TokenStream {
+    let record_primitive_literal = to_tokens(record_primitive);
     match field {
         BitRecordFieldEnum::Enum(e) => {
             let field_name = to_tokens(&e.field_name);
+            let field_primitive = to_tokens(field_size_to_primitive_type(e.size));
+            let shift_literal = Literal::usize_unsuffixed(e.bit_position);
             quote! {
-                // 1- enum to primitive based on it's size
-                // 2- optionally convert to record size
-                // 3- shift into position
-                let #field_name =
+                let #field_name: #record_primitive_literal = #field_primitive::from(self.#field_name).into();
+                let #field_name = #field_name << #shift_literal;
             }
         }
         BitRecordFieldEnum::Int(i) => {
-            todo!()
+            if i.is_padding {
+                quote! {}
+            } else {
+                let field_name = to_tokens(&i.field_name);
+                let shift_literal = Literal::usize_unsuffixed(i.bit_position);
+                quote! {
+                    let #field_name: #record_primitive_literal = self.#field_name.into();
+                    let #field_name = #field_name << #shift_literal;
+                }
+            }
         }
         BitRecordFieldEnum::Bool(b) => {
-            todo!()
+            let field_name = to_tokens(&b.field_name);
+            let shift_literal = Literal::usize_unsuffixed(b.bit_position);
+            quote! {
+                let #field_name: #record_primitive_literal = self.#field_name.into();
+                let #field_name = #field_name << #shift_literal;
+            }
         }
     }
 }
@@ -198,14 +216,17 @@ pub(crate) fn generate_bit_record_writer(record: &BitRecord) -> TokenStream {
     let field_values = record
         .fields
         .iter()
-        .map(generate_bit_record_field_enum_writer)
+        .map(|field| {
+            generate_bit_record_field_enum_writer(field, field_size_to_primitive_type(record.size))
+        })
         .collect::<Vec<TokenStream>>();
 
     let fields_or = to_tokens(
         &record
             .fields
             .iter()
-            .map(|field| field.field_name())
+            .filter(|&field| !field.is_padding())
+            .map(super::models::BitRecordFieldEnum::field_name)
             .join(" | "),
     );
 
@@ -215,7 +236,7 @@ pub(crate) fn generate_bit_record_writer(record: &BitRecord) -> TokenStream {
                 #(#field_values)*
 
                 let value = #fields_or;
-                buf.#writer_function(value)
+                buf.#writer_function(value);
 
                 self.record_length()
             }
@@ -271,11 +292,12 @@ fn generate_fixed_record_field_writer(
 }
 
 fn generate_bit_record_field_writer(
-    _field: &BitRecordField,
-    field_name: &TokenStream,
+    field: &BitRecordField,
+    _field_name: &TokenStream,
 ) -> TokenStream {
+    let writer_function = &field.writer_function;
     quote! {
-        #field_name.serialize(buf);
+        #writer_function
     }
 }
 
