@@ -13,17 +13,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated dependencies
-
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
-- All kinds of code style changes due to applying `rustfmt` and `clippy`
-
 ### Security
+
+## [0.4.0] - 2026-04-22
+
+### Changed
+
+- Updated dependencies
+- Enhanced `TimeStamp` (_DIS_) and `CdisTimeStamp` (_C-DIS_).
+- `CdisPdu::finalize_from_parts` now takes a `CdisTimestamp` directly instead of `Option<impl Into<CdisTimestamp>>`.
+- Upgraded to Rust Edition 2024
+
+### Fixed
+
+- All kinds of code style changes due to applying `rustfmt` and `clippy`
+- Fixed encodings that used `^` instead of `.pow(..)` for calculating powers.
 
 ## [0.3.0] - 2024-11-27
 
