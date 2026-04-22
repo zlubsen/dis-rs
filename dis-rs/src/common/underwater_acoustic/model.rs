@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, TWENTY_OCTETS};
 use crate::enumerations::{
@@ -8,7 +9,6 @@ use crate::enumerations::{
 };
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::underwater_acoustic::builder::UnderwaterAcousticBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

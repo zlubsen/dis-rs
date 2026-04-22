@@ -1,7 +1,7 @@
 use crate::constants::{EIGHT_BITS, ONE_BIT};
 use crate::detonation::model::Detonation;
 use crate::types::model::CdisFloat;
-use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, serialize_when_present, write_value_unsigned};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 
 impl SerializeCdisPdu for Detonation {
@@ -75,7 +75,7 @@ mod tests {
         EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters,
         WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
     use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
     use bitvec::prelude::BitArray;
     use dis_rs::enumerations::DetonationResult;

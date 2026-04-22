@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::attribute::builder::AttributeBuilder;
 use crate::common::model::{EntityId, PduBody, SimulationAddress};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, VariableRecordType};
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

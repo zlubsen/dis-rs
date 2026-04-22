@@ -3,12 +3,12 @@ use crate::records::model::{
     AngularVelocity, CdisEntityMarking, CdisRecord, CdisVariableParameter, EntityId, EntityType,
     LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates,
 };
-use crate::types::model::{VarInt, UVINT32, UVINT8};
+use crate::types::model::{UVINT8, UVINT32, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use bytes::{BufMut, BytesMut};
+use dis_rs::Serialize;
 use dis_rs::entity_state::model::{DrOtherParameters, EntityAppearance};
 use dis_rs::enumerations::DeadReckoningAlgorithm;
-use dis_rs::Serialize;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct EntityState {
@@ -218,12 +218,10 @@ impl CdisDRParametersOther {
             .as_ref()
             .try_into()
             .unwrap_or(Default::default());
-        let dr_params_other = match dis_rs::parse_dr_other_parameters(&other, algorithm) {
+        match dis_rs::parse_dr_other_parameters(&other, algorithm) {
             Ok((_input, params)) => params,
             Err(_) => DrOtherParameters::default(), // when something goes wrong in parsing (although we parse exactly 15 bytes of input), just return zeroes (default).
-        };
-
-        dr_params_other
+        }
     }
 }
 

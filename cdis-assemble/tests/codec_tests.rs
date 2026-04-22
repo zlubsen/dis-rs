@@ -8,8 +8,9 @@ use cdis_assemble::records::model::{
     CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisTimeUnits, CdisTimestamp,
     LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates,
 };
-use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
 use cdis_assemble::{BitBuffer, BodyProperties, CdisBody, CdisPdu, SerializeCdisPdu};
+use dis_rs::BodyRaw;
 use dis_rs::designator::model::Designator;
 use dis_rs::electromagnetic_emission::model::{
     Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam,
@@ -41,7 +42,6 @@ use dis_rs::signal::model::EncodingScheme;
 use dis_rs::transmitter::model::{
     BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter,
 };
-use dis_rs::BodyRaw;
 
 #[test]
 fn encode_dis_to_cdis_entity_state_full_mode() {

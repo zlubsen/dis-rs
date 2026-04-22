@@ -175,7 +175,7 @@ pub trait NodeRunner {
         async move {
             match channel_opt {
                 None => None,
-                Some(ref mut channel) => match channel.recv().await {
+                Some(channel) => match channel.recv().await {
                     Ok(message) => Some(message),
                     Err(err) => {
                         error!("Node {node_id} incoming channel: {err}");

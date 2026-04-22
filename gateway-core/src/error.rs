@@ -38,7 +38,9 @@ pub enum SpecificationError {
     NoChannelsSpecified(&'static str),
     #[error("Channel specification misses field '{0}'.")]
     ChannelEntryMissingField(String),
-    #[error("The channel specification field '{field}' references a node with name '{name}', which is not defined.")]
+    #[error(
+        "The channel specification field '{field}' references a node with name '{name}', which is not defined."
+    )]
     ChannelEntryUndefinedNodeName { field: String, name: String },
     #[error("Cannot register external input channel, no node named '{0}' is defined.")]
     ExternalInputChannelUndefinedNodeName(String),
@@ -59,7 +61,9 @@ pub trait NodeError: Error {}
 
 #[derive(Debug, Error)]
 pub enum CreationError {
-    #[error("Node {node_name} could not subscribe to channel, because it has a wrong data type. Expected '{data_type_expected}'.")]
+    #[error(
+        "Node {node_name} could not subscribe to channel, because it has a wrong data type. Expected '{data_type_expected}'."
+    )]
     SubscribeToChannel {
         instance_id: InstanceId,
         node_name: String,

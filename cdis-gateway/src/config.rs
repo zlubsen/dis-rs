@@ -420,13 +420,22 @@ impl Display for ConfigError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ConfigError::GatewayMode => {
-                write!(f, "Configured Gateway mode is invalid. Valid values are 'full_update', and 'partial_update'.")
+                write!(
+                    f,
+                    "Configured Gateway mode is invalid. Valid values are 'full_update', and 'partial_update'."
+                )
             }
             ConfigError::UdpMode => {
-                write!(f, "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'.")
+                write!(
+                    f,
+                    "Configured UDP mode is invalid. Valid values are 'unicast', 'broadcast' and 'multicast'."
+                )
             }
             ConfigError::OptimizationMode => {
-                write!(f, "Configured encoder Optimization mode is invalid. Valid values are 'bandwidth' and 'completeness'.")
+                write!(
+                    f,
+                    "Configured encoder Optimization mode is invalid. Valid values are 'bandwidth' and 'completeness'."
+                )
             }
         }
     }

@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{
     PduType, RequiredReliabilityService, StopFreezeFrozenBehavior, StopFreezeReason,
 };
 use crate::stop_freeze_r::builder::StopFreezeRBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

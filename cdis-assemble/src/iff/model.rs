@@ -1,11 +1,11 @@
 use crate::constants::{
-    EIGHTY_SIX_BITS, EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS,
-    NINETY_EIGHT_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TWENTY_BITS, TWENTY_FOUR_BITS,
+    EIGHT_BITS, EIGHTY_SIX_BITS, FIFTEEN_BITS, FIVE_BITS, FORTY_BITS, HUNDRED_TWELVE_BITS,
+    NINETY_EIGHT_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TWENTY_BITS, TWENTY_FOUR_BITS,
 };
 use crate::records::model::FrequencyFloat;
 use crate::records::model::{BeamData, CdisRecord, LayerHeader};
 use crate::records::model::{EntityCoordinateVector, EntityId, UnitsMeters};
-use crate::types::model::{VarInt, UVINT16};
+use crate::types::model::{UVINT16, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::{DataCategory, IffApplicableModes};
 use dis_rs::iff::model::{

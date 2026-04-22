@@ -15,11 +15,11 @@ use crate::records::model::{
 };
 use crate::types::model::{CdisFloat, UVINT16};
 use crate::{BodyProperties, CdisBody};
+use dis_rs::BodyRaw;
 use dis_rs::iff::model::{
     FundamentalOperationalData, IffDataSpecification, Mode5TransponderBasicData, SystemId,
 };
 use dis_rs::model::{EventId, PduBody, SimulationAddress, VectorF32};
-use dis_rs::BodyRaw;
 use num_traits::{ToPrimitive, Zero};
 use std::time::Instant;
 

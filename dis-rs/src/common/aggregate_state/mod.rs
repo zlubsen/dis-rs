@@ -5,6 +5,7 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::aggregate_state::model::{
         AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem,
     };
@@ -17,7 +18,6 @@ mod tests {
     };
     use crate::model::{EntityId, EntityType, Location, Orientation, VariableDatum, VectorF32};
     use crate::v7::model::PduStatus;
-    use crate::BodyRaw;
     use bytes::BytesMut;
     use std::str::FromStr;
 

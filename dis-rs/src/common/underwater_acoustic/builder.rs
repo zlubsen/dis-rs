@@ -1,7 +1,7 @@
 use crate::enumerations::{UAPassiveParameterIndex, UAStateChangeUpdateIndicator};
 use crate::model::{EntityId, EventId};
 use crate::underwater_acoustic::model::{
-    PropulsionPlantConfiguration, Shaft, UAEmitterSystem, UnderwaterAcoustic, APA,
+    APA, PropulsionPlantConfiguration, Shaft, UAEmitterSystem, UnderwaterAcoustic,
 };
 
 pub struct UnderwaterAcousticBuilder(UnderwaterAcoustic);

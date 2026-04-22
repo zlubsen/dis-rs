@@ -56,3 +56,8 @@ Thumbs.db
 # Coverage
 cobertura.xml
 tarpaulin-report.html
+
+# Custom output directories
+/dis-gen-ieee-1278-gen-3/out/*
+/dis-gen-siso-ref-010/out/*
+/dis-gen-ieee-1278-gen-3/src/bin/temp.rs

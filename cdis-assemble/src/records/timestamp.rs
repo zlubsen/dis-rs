@@ -1,6 +1,6 @@
-use crate::writing::{write_value_unsigned, BitBuffer, SerializeCdis};
+use crate::writing::{BitBuffer, SerializeCdis, write_value_unsigned};
 use core::{fmt::Display, time::Duration};
-use dis_rs::timestamp::{TimeUnits, Timestamp, TIME_UNITS_PER_HOUR};
+use dis_rs::timestamp::{TIME_UNITS_PER_HOUR, TimeUnits, Timestamp};
 
 /// Number of [`CdisTimeUnits`] in one hour.
 pub const CDIS_TIME_UNITS_PER_HOUR: u32 = 1 << 25;

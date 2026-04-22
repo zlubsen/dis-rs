@@ -13,13 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `MSRV 1.91`
-- Enhanced `TimeStamp` (_DIS_) and `CdisTimeStamp` (_C-DIS_).
-- `Pdu::finalize_from_parts` now takes a `Timestamp` directly instead of `impl Into<Timestamp>`.
-- `CdisPdu::finalize_from_parts` now takes a `CdisTimestamp` directly instead of `Option<impl Into<CdisTimestamp>>`.
-- `DataQuery` PDU `timestamp` field type is `Timestamp` instead of `u32`.
-- Removed constants related to `TimeStamp` and `CdisTimeStamp`.
-
 ### Deprecated
 
 ### Removed
@@ -27,6 +20,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+## [0.14.0] - 2026-04-22
+
+### Changed
+
+- `MSRV 1.91`
+- Enhanced `TimeStamp` (_DIS_) and `CdisTimeStamp` (_C-DIS_).
+- `Pdu::finalize_from_parts` now takes a `Timestamp` directly instead of `impl Into<Timestamp>`.
+- `DataQuery` PDU `timestamp` field type is `Timestamp` instead of `u32`.
+- Removed constants related to `TimeStamp` and `CdisTimeStamp`.
+- Upgraded to Rust Edition 2024
+
+### Fixed
+
+- Fixed Variable Parameter `ArticulatedPart` field `change_indicator` to be of type `u8` instead of enumeration
+  `ChangeIndicator`.
 
 ## [0.13.0] - 2026-02-11
 

@@ -71,9 +71,9 @@ use crate::stop_freeze::model::StopFreeze;
 use crate::transmitter::model::Transmitter;
 use crate::unsupported::Unsupported;
 pub use parsing::parse;
-pub use writing::create_bit_buffer;
 pub use writing::BitBuffer;
 pub use writing::SerializeCdisPdu;
+pub use writing::create_bit_buffer;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -262,7 +262,9 @@ pub enum CdisError {
     InsufficientHeaderLength(u16), // the input was too small to contain a valid CDIS header; (u16 found)
     #[error("C-DIS PDU has insufficient length. Expected {0} bits, found {1} bits.")]
     InsufficientPduLength(u16, u16), // the input was too small to contain a valid CDIS PDU based on the header and parsing; (u16 expected, u16 found)
-    #[error("C-DIS PDU is larger than size of the buffer for serialisation. Needs {0} bits, available {1} bits.")]
+    #[error(
+        "C-DIS PDU is larger than size of the buffer for serialisation. Needs {0} bits, available {1} bits."
+    )]
     InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided CDIS PDU; (u16 PDU size, usize available capacity)
     #[error("Encountered a C-DIS PDU of an unsupported type: {0}.")]
     UnsupportedPdu(u8), // encountered a CDIS PDU of an unsupported type; (u8 PduType found)

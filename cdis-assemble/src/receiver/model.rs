@@ -1,5 +1,5 @@
 use crate::records::model::{CdisRecord, EntityId};
-use crate::types::model::{VarInt, UVINT16};
+use crate::types::model::{UVINT16, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::ReceiverState;
 

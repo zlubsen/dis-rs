@@ -1,9 +1,9 @@
+use crate::BodyRaw;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
-use crate::model::{SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
+use crate::model::{SUPPLY_QUANTITY_RECORD_LENGTH, SupplyQuantity};
 use crate::resupply_received::builder::ResupplyReceivedBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

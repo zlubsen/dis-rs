@@ -1,5 +1,5 @@
 use crate::constants::{
-    EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTY_TWO_BITS,
+    EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS,
     THREE_BITS, TWELVE_BITS,
 };
 use crate::iff::model::{
@@ -7,7 +7,7 @@ use crate::iff::model::{
     IffLayer2, IffLayer3, IffLayer4, IffLayer5, Mode5BasicData, Mode5InterrogatorBasicData,
     ModeSBasicData,
 };
-use crate::parsing::{parse_field_when_present, BitInput};
+use crate::parsing::{BitInput, parse_field_when_present};
 use crate::records::model::FrequencyFloat;
 use crate::records::model::UnitsMeters;
 use crate::records::parser::{
@@ -16,6 +16,7 @@ use crate::records::parser::{
 use crate::types::model::CdisFloat;
 use crate::types::parser::uvint16;
 use crate::{BodyProperties, CdisBody};
+use dis_rs::DisError;
 use dis_rs::enumerations::{
     AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory,
     IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource,
@@ -28,7 +29,6 @@ use dis_rs::iff::model::{
     ModeSAltitude, ModeSInterrogatorBasicData, ModeSInterrogatorStatus, ModeSLevelsPresent,
     ModeSTransponderBasicData, ModeSTransponderStatus, SystemId, SystemSpecificData, SystemStatus,
 };
-use dis_rs::DisError;
 use nom::bits::complete::take;
 use nom::multi::count;
 use nom::{IResult, Parser};

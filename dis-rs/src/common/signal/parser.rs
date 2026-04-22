@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::common::signal::model::{EncodingScheme, Signal};
@@ -6,9 +7,8 @@ use crate::enumerations::{
     SignalEncodingClass, SignalEncodingType, SignalTdlType, SignalUserProtocolIdentificationNumber,
 };
 use crate::model::length_padded_to_num;
-use crate::BodyRaw;
-use nom::number::complete::{be_u16, be_u32};
 use nom::IResult;
+use nom::number::complete::{be_u16, be_u32};
 
 #[cfg_attr(
     all(feature = "hotpath", not(feature = "_test_no_instrumentation")),

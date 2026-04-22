@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::electromagnetic_emission::model::{
     Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, JammingTechnique,
     TrackJam,
@@ -10,11 +11,10 @@ use crate::enumerations::{
     ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
     HighDensityTrackJam,
 };
-use crate::BodyRaw;
-use nom::multi::count;
-use nom::number::complete::{be_f32, be_u16, be_u8};
 use nom::IResult;
 use nom::Parser;
+use nom::multi::count;
+use nom::number::complete::{be_f32, be_u8, be_u16};
 
 pub(crate) fn emission_body(_header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input| {

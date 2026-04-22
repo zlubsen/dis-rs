@@ -1,11 +1,11 @@
+use crate::BodyRaw;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{PduType, RequiredReliabilityService, TransferControlTransferType};
 use crate::model::{
-    length_padded_to_num, EntityId, PduBody, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH,
+    BASE_RECORD_SPEC_RECORD_LENGTH, EntityId, PduBody, RecordSpecification, length_padded_to_num,
 };
 use crate::transfer_ownership::builder::TransferOwnershipBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

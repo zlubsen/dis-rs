@@ -1,9 +1,9 @@
+use crate::BodyRaw;
 use crate::common::designator::builder::DesignatorBuilder;
 use crate::common::model::{EntityId, Location, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::enumerations::{DeadReckoningAlgorithm, DesignatorCode, DesignatorSystemName};
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

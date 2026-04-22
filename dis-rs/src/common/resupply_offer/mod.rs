@@ -5,12 +5,12 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{EntityId, Pdu, PduHeader, SupplyQuantity, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{EntityKind, PduType};
     use crate::model::EntityType;
     use crate::resupply_offer::model::ResupplyOffer;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RepairCompleteRepair};
 use crate::repair_complete::builder::RepairCompleteBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

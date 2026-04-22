@@ -1,5 +1,5 @@
 use crate::constants::{EIGHT_BITS, FOURTEEN_BITS, TWO_BITS};
-use crate::parsing::{parse_field_when_present, BitInput};
+use crate::parsing::{BitInput, parse_field_when_present};
 use crate::records::parser::{encoding_scheme, entity_identification};
 use crate::signal::model::{Signal, SignalFieldsPresent};
 use crate::types::parser::{uvint16, uvint32};

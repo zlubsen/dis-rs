@@ -5,6 +5,7 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::iff::model::{
         FundamentalOperationalData, Iff, IffLayer2, InformationLayers, LayerHeader,
         LayersPresenceApplicability, SystemId,
@@ -16,7 +17,6 @@ mod tests {
         LvcIndicator, PduType, TransferredEntityIndicator,
     };
     use crate::v7::model::PduStatus;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

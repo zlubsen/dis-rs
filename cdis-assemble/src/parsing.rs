@@ -27,9 +27,9 @@ use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 use crate::{CdisBody, CdisError, CdisPdu};
 use dis_rs::enumerations::PduType;
+use nom::IResult;
 use nom::bits::complete::take;
 use nom::error::ErrorKind;
-use nom::IResult;
 use std::ops::BitAnd;
 
 /// Attempts to parse the provided buffer for CDIS PDUs
@@ -205,7 +205,8 @@ mod tests {
         model::{CdisTimeUnits, CdisTimestamp},
         parser::entity_identification,
     };
-    use crate::{parse, CdisPdu, SerializeCdisPdu};
+    use crate::{CdisPdu, SerializeCdisPdu, parse};
+    use dis_rs::BodyRaw;
     use dis_rs::enumerations::{
         EntityKind, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType,
         PlatformDomain,
@@ -215,7 +216,6 @@ mod tests {
         EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader,
         PduStatus, TimeUnits, Timestamp,
     };
-    use dis_rs::BodyRaw;
 
     fn build_default_fire_header() -> PduHeader {
         PduHeader::new_v7(7, PduType::Fire).with_pdu_status(

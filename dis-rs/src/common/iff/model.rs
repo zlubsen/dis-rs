@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::iff::builder::{
     ChangeOptionsRecordBuilder, DapSourceBuilder, EnhancedMode1CodeBuilder,
     FundamentalOperationalDataBuilder, IffBuilder, IffDataRecordBuilder,
@@ -11,7 +12,7 @@ use crate::common::iff::builder::{
     SystemSpecificDataBuilder, SystemStatusBuilder,
 };
 use crate::common::model::{
-    length_padded_to_num, BeamData, EntityId, EventId, PduBody, SimulationAddress, VectorF32,
+    BeamData, EntityId, EventId, PduBody, SimulationAddress, VectorF32, length_padded_to_num,
 };
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{
@@ -26,7 +27,6 @@ use crate::enumerations::{
     ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduType,
     VariableRecordType,
 };
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

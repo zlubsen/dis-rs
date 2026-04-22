@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::model::{ClockTime, EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, RequiredReliabilityService};
 use crate::start_resume_r::builder::StartResumeRBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

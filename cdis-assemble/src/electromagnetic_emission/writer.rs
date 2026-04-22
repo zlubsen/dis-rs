@@ -1,10 +1,10 @@
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS};
 use crate::electromagnetic_emission::model::{
     ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, SiteAppPair,
     TrackJam,
 };
 use crate::types::model::{CdisFloat, UVINT8};
-use crate::writing::{write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, write_value_unsigned};
 use crate::{BitBuffer, SerializeCdisPdu};
 
 impl SerializeCdisPdu for ElectromagneticEmission {

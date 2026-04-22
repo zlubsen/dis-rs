@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::data_query::model::DataQuery;
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, timestamp};
 use crate::enumerations::VariableRecordType;
-use crate::BodyRaw;
 use nom::multi::count;
 use nom::number::complete::be_u32;
 use nom::{IResult, Parser};

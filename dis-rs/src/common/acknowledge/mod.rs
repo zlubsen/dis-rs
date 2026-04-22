@@ -5,10 +5,10 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::common::BodyRaw;
     use crate::common::acknowledge::model::Acknowledge;
     use crate::common::model::{EntityId, Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
-    use crate::common::BodyRaw;
     use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
     use bytes::BytesMut;
 

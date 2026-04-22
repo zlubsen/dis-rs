@@ -1,6 +1,6 @@
+use crate::BitBuffer;
 use crate::constants::{EIGHT_BITS, FOUR_BITS, ONE_BIT, TWO_BITS};
 use crate::parsing::BitInput;
-use crate::BitBuffer;
 use nom::IResult;
 use num_traits::FromPrimitive;
 

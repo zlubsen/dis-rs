@@ -393,12 +393,12 @@ fn format_field_name(name: &str) -> String {
 
 mod extraction {
     use crate::{
-        BasicEnumItem, Bitfield, BitfieldItem, CrossRefEnumItem, Enum, EnumItem, GenerationItem,
-        RangeEnumItem, BITFIELD_UIDS, ENUM_UIDS, SKIP_XREF_UIDS,
+        BITFIELD_UIDS, BasicEnumItem, Bitfield, BitfieldItem, CrossRefEnumItem, ENUM_UIDS, Enum,
+        EnumItem, GenerationItem, RangeEnumItem, SKIP_XREF_UIDS,
     };
+    use quick_xml::Reader;
     use quick_xml::events::{BytesStart, Event};
     use quick_xml::name::QName;
-    use quick_xml::Reader;
     use std::fs::File;
     use std::io::BufReader;
     use std::ops::RangeInclusive;
@@ -689,11 +689,11 @@ mod extraction {
         } else {
             None
         };
-        if let Some(uid) = uid {
-            if !BITFIELD_UIDS.iter().any(|range| range.contains(&uid)) {
-                // uid is not in the list, skip this bitfield, not to be generated
-                return Err(());
-            }
+        if let Some(uid) = uid
+            && !BITFIELD_UIDS.iter().any(|range| range.contains(&uid))
+        {
+            // uid is not in the list, skip this bitfield, not to be generated
+            return Err(());
         }
 
         let name = if let Ok(Some(attr_name)) = element.try_get_attribute(ELEMENT_ATTR_NAME) {
@@ -764,8 +764,8 @@ mod extraction {
 
 mod generation {
     use crate::{
-        format_field_name, format_name, format_name_postfix, Bitfield, BitfieldItem, Enum,
-        EnumItem, GenerationItem, Ident, Literal, TokenStream,
+        Bitfield, BitfieldItem, Enum, EnumItem, GenerationItem, Ident, Literal, TokenStream,
+        format_field_name, format_name, format_name_postfix,
     };
     use quote::{format_ident, quote};
 

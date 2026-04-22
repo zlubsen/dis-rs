@@ -8,8 +8,8 @@ use crate::enumerations::{
     PduType, PlatformDomain,
 };
 use crate::model::{
-    length_padded_to_num, EntityId, EntityType, Location, Orientation, PduBody, VariableDatum,
-    VectorF32, BASE_VARIABLE_DATUM_LENGTH,
+    BASE_VARIABLE_DATUM_LENGTH, EntityId, EntityType, Location, Orientation, PduBody,
+    VariableDatum, VectorF32, length_padded_to_num,
 };
 use crate::{BodyRaw, DisError};
 #[cfg(feature = "serde")]

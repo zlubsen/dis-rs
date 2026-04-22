@@ -10,13 +10,13 @@ use crate::transmitter::model::{
     ModulationType, TransmitFrequencyBandwidthFloat, Transmitter, TransmitterFrequencyFloat,
     TransmitterUnits,
 };
-use crate::types::model::{CdisFloat, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, UVINT8, UVINT16};
 use crate::{BodyProperties, CdisBody};
+use dis_rs::BodyRaw;
 use dis_rs::enumerations::{TransmitterCryptoSystem, TransmitterInputSource};
 use dis_rs::model::{
     EntityType as DisEntityType, Location as DisLocation, Location, Orientation, PduBody, VectorF32,
 };
-use dis_rs::BodyRaw;
 use std::time::Instant;
 
 type Counterpart = dis_rs::transmitter::model::Transmitter;

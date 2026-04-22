@@ -9,16 +9,16 @@ use std::sync::Arc;
 use crate::codec::{Decoder, Encoder};
 use crate::config::{Arguments, Config, ConfigError, ConfigSpec, UdpEndpoint, UdpMode};
 use crate::site::run_site;
-use crate::stats::{run_stats, SseStat};
+use crate::stats::{SseStat, run_stats};
 use bytes::{Bytes, BytesMut};
 use clap::Parser;
 use dis_rs::enumerations::PduType;
 use tokio::net::UdpSocket;
 use tokio::select;
 use tracing::log::trace;
-use tracing::{error, event, info, Level};
-use tracing_subscriber::filter::LevelFilter;
+use tracing::{Level, error, event, info};
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::LevelFilter;
 
 mod codec;
 mod config;
@@ -295,14 +295,14 @@ fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             }
         }
         (true, UdpMode::MultiCast) => {
-            if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
-                if let IpAddr::V4(interface_v4) = endpoint.interface.ip() {
-                    socket
-                        .join_multicast_v4(&ip_address_v4, &interface_v4)
-                        .unwrap_or_else(|_| {
-                            panic!("Failed to join multicast group {ip_address_v4} using interface {interface_v4}.")
-                        });
-                }
+            if let IpAddr::V4(ip_address_v4) = endpoint.address.ip()
+                && let IpAddr::V4(interface_v4) = endpoint.interface.ip()
+            {
+                socket
+                    .join_multicast_v4(&ip_address_v4, &interface_v4)
+                    .unwrap_or_else(|_| {
+                        panic!("Failed to join multicast group {ip_address_v4} using interface {interface_v4}.")
+                    });
             }
         }
         (false, UdpMode::UniCast) => {
@@ -321,15 +321,15 @@ fn create_udp_socket(endpoint: &UdpEndpoint) -> Arc<UdpSocket> {
             });
         }
         (false, UdpMode::MultiCast) => {
-            if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
-                if let IpAddr::V6(interface_v6) = endpoint.interface.ip() {
-                    // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
-                    socket
-                        .join_multicast_v6(&ip_address_v6, 0)
-                        .unwrap_or_else(|_| {
-                            panic!("Failed to join multicast group {ip_address_v6} using interface 0 ({interface_v6}).")
-                        });
-                }
+            if let IpAddr::V6(ip_address_v6) = endpoint.address.ip()
+                && let IpAddr::V6(interface_v6) = endpoint.interface.ip()
+            {
+                // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
+                socket
+                    .join_multicast_v6(&ip_address_v6, 0)
+                    .unwrap_or_else(|_| {
+                        panic!("Failed to join multicast group {ip_address_v6} using interface 0 ({interface_v6}).")
+                    });
             }
         }
     }

@@ -1,6 +1,6 @@
 use crate::collision::model::Collision;
 use crate::constants::ONE_BIT;
-use crate::writing::{write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, write_value_unsigned};
 use crate::{BitBuffer, SerializeCdisPdu};
 use dis_rs::enumerations::CollisionType;
 

@@ -5,8 +5,8 @@ use crate::records::parser::entity_identification;
 use crate::types::parser::uvint32;
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{AcknowledgeFlag, ResponseFlag};
-use nom::bits::complete::take;
 use nom::IResult;
+use nom::bits::complete::take;
 
 pub(crate) fn acknowledge_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, originating_id) = entity_identification(input)?;

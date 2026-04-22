@@ -6,7 +6,7 @@ use crate::records::model::{BeamAntennaPattern, CdisRecord};
 use crate::transmitter::model::Transmitter;
 use crate::types::model::{CdisFloat, UVINT8};
 use crate::writing::{
-    serialize_when_present, write_value_signed, write_value_unsigned, SerializeCdis,
+    SerializeCdis, serialize_when_present, write_value_signed, write_value_unsigned,
 };
 use crate::{BitBuffer, BodyProperties};
 use dis_rs::transmitter::model::VariableTransmitterParameter;
@@ -149,9 +149,8 @@ impl SerializeCdis for VariableTransmitterParameter {
         let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, record_type);
         let record_length = self.fields.len() + SIX_OCTETS;
         let cursor = write_value_unsigned(buf, cursor, SIXTEEN_BITS, record_length);
-        let cursor = self.fields.iter().fold(cursor, |cursor, byte| {
+        self.fields.iter().fold(cursor, |cursor, byte| {
             write_value_unsigned(buf, cursor, EIGHT_BITS, *byte)
-        });
-        cursor
+        })
     }
 }

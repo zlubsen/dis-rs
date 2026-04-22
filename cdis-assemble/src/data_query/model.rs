@@ -1,6 +1,6 @@
 use crate::constants::{THIRTY_TWO_BITS, TWENTY_SIX_BITS};
 use crate::records::model::{CdisRecord, CdisTimestamp, EntityId};
-use crate::types::model::{VarInt, UVINT32, UVINT8};
+use crate::types::model::{UVINT8, UVINT32, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::VariableRecordType;
 use num_traits::FromPrimitive;

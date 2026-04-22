@@ -5,13 +5,13 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{PduType, SignalEncodingClass, SignalEncodingType};
     use crate::model::EntityId;
     use crate::parser::parse_multiple_pdu;
     use crate::signal::model::{EncodingScheme, Signal};
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

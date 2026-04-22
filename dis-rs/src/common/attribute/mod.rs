@@ -5,11 +5,11 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::attribute::model::Attribute;
     use crate::common::model::{Pdu, PduHeader, SimulationAddress, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion};
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

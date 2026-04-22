@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::parser::{entity_id, event_id, vec3_f32};
 use crate::constants::LEAST_SIGNIFICANT_BIT;
 use crate::enumerations::{
@@ -8,12 +9,11 @@ use crate::enumerations::{
 };
 use crate::model::PduBody;
 use crate::underwater_acoustic::model::{
-    AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
-    UAFundamentalParameterData, UnderwaterAcoustic, APA,
+    APA, AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
+    UAFundamentalParameterData, UnderwaterAcoustic,
 };
-use crate::BodyRaw;
 use nom::multi::count;
-use nom::number::complete::{be_f32, be_i16, be_i32, be_u16, be_u8};
+use nom::number::complete::{be_f32, be_i16, be_i32, be_u8, be_u16};
 use nom::{IResult, Parser};
 
 pub(crate) fn underwater_acoustic_body(input: &[u8]) -> IResult<&[u8], PduBody> {

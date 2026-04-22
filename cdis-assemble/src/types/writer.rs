@@ -1,8 +1,8 @@
 use crate::constants::THIRTY_TWO_BITS;
 use crate::types::model::VarInt;
-use crate::types::model::{SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+use crate::types::model::{SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
 use crate::writing::SerializeCdis;
-use crate::writing::{write_value_signed, write_value_unsigned, BitBuffer};
+use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
 use dis_rs::model::ClockTime;
 
 impl SerializeCdis for UVINT8 {
@@ -106,7 +106,7 @@ pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: Clo
 mod tests {
     use crate::records::model::ParameterValueFloat;
     use crate::types::model::CdisFloat;
-    use crate::types::model::{SVINT12, UVINT16, UVINT8};
+    use crate::types::model::{SVINT12, UVINT8, UVINT16};
     use crate::writing::BitBuffer;
     use crate::writing::SerializeCdis;
     use bitvec::prelude::BitArray;

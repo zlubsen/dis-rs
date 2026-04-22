@@ -5,12 +5,12 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::PduType;
     use crate::model::EntityId;
-    use crate::sees::model::{PropulsionSystemData, VectoringNozzleSystemData, SEES};
-    use crate::BodyRaw;
+    use crate::sees::model::{PropulsionSystemData, SEES, VectoringNozzleSystemData};
     use bytes::BytesMut;
 
     #[test]

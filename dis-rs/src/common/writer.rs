@@ -1,15 +1,15 @@
+use crate::DisError;
 use crate::common::model::{
-    length_padded_to_num, ArticulatedPart, AttachedPart, BeamData, ClockTime,
-    EntityAssociationParameter, EntityId, EntityTypeParameter, EventId, ExpendableDescriptor,
-    ExplosionDescriptor, FixedDatum, Location, MunitionDescriptor, Orientation,
-    SeparationParameter, SimulationAddress, VariableDatum, VariableParameter, VectorF32,
+    ArticulatedPart, AttachedPart, BeamData, ClockTime, EntityAssociationParameter, EntityId,
+    EntityTypeParameter, EventId, ExpendableDescriptor, ExplosionDescriptor, FixedDatum, Location,
+    MunitionDescriptor, Orientation, SeparationParameter, SimulationAddress, VariableDatum,
+    VariableParameter, VectorF32, length_padded_to_num,
 };
 use crate::common::model::{Pdu, PduBody, PduHeader};
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{EIGHT_OCTETS, FOUR_OCTETS, ONE_BYTE_IN_BITS, PDU_HEADER_LEN_BYTES};
 use crate::enumerations::{ProtocolVersion, VariableParameterRecordType};
 use crate::model::{RecordSet, RecordSpecification, SupplyQuantity};
-use crate::DisError;
 use bytes::{BufMut, BytesMut};
 
 impl Serialize for PduHeader {
@@ -407,8 +407,8 @@ impl Serialize for RecordSet {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{PduHeader, Timestamp};
     use crate::common::Serialize;
+    use crate::common::model::{PduHeader, Timestamp};
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{LvcIndicator, PduType};
     use crate::v7::model::PduStatus;

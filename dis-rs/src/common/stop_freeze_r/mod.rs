@@ -5,6 +5,7 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{EntityId, Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{
@@ -12,7 +13,6 @@ mod tests {
     };
     use crate::model::ClockTime;
     use crate::stop_freeze_r::model::StopFreezeR;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

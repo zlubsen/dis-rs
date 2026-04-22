@@ -1,7 +1,7 @@
 use crate::core::{
-    BaseNode, BaseNodeSpec, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer,
-    NodeData, NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
-    DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    BaseNode, BaseNodeSpec, BaseStatistics, DEFAULT_AGGREGATE_STATS_INTERVAL_MS,
+    DEFAULT_NODE_CHANNEL_CAPACITY, DEFAULT_OUTPUT_STATS_INTERVAL_MS, InstanceId, NodeConstructor,
+    NodeConstructorPointer, NodeData, NodeRunner, UntypedNode,
 };
 use crate::error::{CreationError, ExecutionError, SpecificationError};
 use crate::node_data_impl;
@@ -9,7 +9,7 @@ use crate::runtime::{Command, Event};
 use bytes::Bytes;
 use std::any::Any;
 use std::time::Duration;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 
 const SPEC_PASS_THROUGH_NODE_TYPE: &str = "pass_through";

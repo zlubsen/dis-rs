@@ -5,13 +5,13 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{EntityId, Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{
         PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType,
     };
     use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

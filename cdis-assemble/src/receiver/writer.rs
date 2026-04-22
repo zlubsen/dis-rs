@@ -1,7 +1,7 @@
+use crate::BitBuffer;
 use crate::constants::{NINE_BITS, TWO_BITS};
 use crate::receiver::model::Receiver;
-use crate::writing::{write_value_signed, write_value_unsigned, SerializeCdis};
-use crate::BitBuffer;
+use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
 
 impl SerializeCdis for Receiver {
     #[allow(clippy::let_and_return)]

@@ -1,11 +1,11 @@
+use crate::BodyRaw;
 use crate::common::comment::builder::CommentBuilder;
 use crate::common::model::{
-    length_padded_to_num, EntityId, PduBody, VariableDatum, BASE_VARIABLE_DATUM_LENGTH,
+    BASE_VARIABLE_DATUM_LENGTH, EntityId, PduBody, VariableDatum, length_padded_to_num,
 };
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

@@ -23,11 +23,11 @@ use crate::common::event_report::parser::event_report_body;
 use crate::common::fire::parser::fire_body;
 use crate::common::iff::parser::iff_body;
 use crate::common::model::{
-    length_padded_to_num, ArticulatedPart, AttachedPart, BeamData, ClockTime, DatumSpecification,
+    ArticulatedPart, AttachedPart, BeamData, ClockTime, DatumSpecification,
     EntityAssociationParameter, EntityId, EntityType, EntityTypeParameter, EventId,
     ExpendableDescriptor, ExplosionDescriptor, FixedDatum, Location, MunitionDescriptor,
     Orientation, Pdu, PduBody, PduHeader, SeparationParameter, SimulationAddress, Timestamp,
-    VariableDatum, VariableParameter, VectorF32,
+    VariableDatum, VariableParameter, VectorF32, length_padded_to_num,
 };
 use crate::common::other::parser::other_body;
 use crate::common::receiver::parser::receiver_body;
@@ -76,12 +76,12 @@ use crate::stop_freeze_r::parser::stop_freeze_r_body;
 use crate::transfer_ownership::parser::transfer_ownership_body;
 use crate::underwater_acoustic::parser::underwater_acoustic_body;
 use crate::v7::parser::parse_pdu_status;
+use nom::IResult;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
-use nom::number::complete::{be_f32, be_f64, be_i32, be_u16, be_u32, be_u64, be_u8};
-use nom::IResult;
+use nom::number::complete::{be_f32, be_f64, be_i32, be_u8, be_u16, be_u32, be_u64};
 use nom::{Err, Parser};
 
 pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
@@ -104,10 +104,10 @@ pub(crate) fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisE
     match many1(pdu_header_skip_body).parse(input) {
         Ok((_, headers)) => Ok(headers),
         Err(parse_error) => {
-            if let Err::Error(ref error) = parse_error {
-                if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
-                }
+            if let Err::Error(ref error) = parse_error
+                && error.code == Eof
+            {
+                return Err(DisError::InsufficientHeaderLength(input.len() as u16));
             }
             Err(DisError::ParseError(parse_error.to_string()))
         }
@@ -135,10 +135,10 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
             Ok(header)
         }
         Err(parse_error) => {
-            if let Err::Error(ref error) = parse_error {
-                if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
-                }
+            if let Err::Error(ref error) = parse_error
+                && error.code == Eof
+            {
+                return Err(DisError::InsufficientHeaderLength(input.len() as u16));
             }
             Err(DisError::ParseError(parse_error.to_string()))
         }

@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::event_report::model::EventReport;
 use crate::common::model::PduBody;
 use crate::common::parser::{datum_specification, entity_id};
 use crate::enumerations::EventType;
-use crate::BodyRaw;
-use nom::number::complete::be_u32;
 use nom::IResult;
+use nom::number::complete::be_u32;
 
 pub(crate) fn event_report_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

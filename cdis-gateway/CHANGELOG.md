@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.4.0] - 2026-04-22
+
+### Changed
+
+- Updated dependencies
+
+### Fixed
+
+- Includes fixed in C-DIS encodings (see crate `cdis-assemble`)
+
 ## [0.3.1] - 2025-11-05
 
 ### Changed
