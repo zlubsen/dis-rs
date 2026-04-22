@@ -309,7 +309,7 @@ mod tests {
             assert_eq!(pdu.variable_parameters.len(), 4);
             let parameter_1 = pdu.variable_parameters.first().unwrap();
             if let VariableParameter::Articulated(part) = parameter_1 {
-                assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
+                assert_eq!(part.change_indicator, 0u8);
                 assert_eq!(part.attachment_id, 0u16);
                 assert_eq!(part.type_metric, ArticulatedPartsTypeMetric::Position);
                 assert_eq!(part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
@@ -455,10 +455,7 @@ mod tests {
         let (input, parameter) = parameter.expect("should be Ok");
 
         if let VariableParameter::Articulated(articulated_part) = parameter {
-            assert_eq!(
-                articulated_part.change_indicator,
-                ChangeIndicator::from(0u8)
-            );
+            assert_eq!(articulated_part.change_indicator, 0u8);
             assert_eq!(articulated_part.attachment_id, 0);
             assert_eq!(
                 articulated_part.type_class,
@@ -490,10 +487,7 @@ mod tests {
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
         if let VariableParameter::Articulated(articulated_part) = parameter {
-            assert_eq!(
-                articulated_part.change_indicator,
-                ChangeIndicator::from(0u8)
-            );
+            assert_eq!(articulated_part.change_indicator, 0u8);
             assert_eq!(articulated_part.attachment_id, 0);
             assert_eq!(
                 articulated_part.type_class,

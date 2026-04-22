@@ -12,7 +12,7 @@ use crate::records::model::{BeamData, EncodingScheme, LayerHeader, UnitsMeters};
 use crate::types::model::{
     CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8,
 };
-use dis_rs::enumerations::{ChangeIndicator, Country, EntityKind, PlatformDomain};
+use dis_rs::enumerations::{Country, EntityKind, PlatformDomain};
 use dis_rs::model::{
     ArticulatedPart, AttachedPart, EntityAssociationParameter, EntityTypeParameter, Location,
     PduHeader, SeparationParameter, VariableParameter, VectorF32,
@@ -518,7 +518,7 @@ impl Codec for CdisArticulatedPartVP {
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            change_indicator: item.change_indicator.into(),
+            change_indicator: item.change_indicator,
             attachment_id: item.attachment_id,
             type_class: item.type_class,
             type_metric: item.type_metric,
@@ -528,7 +528,7 @@ impl Codec for CdisArticulatedPartVP {
 
     fn decode(&self) -> Self::Counterpart {
         ArticulatedPart::default()
-            .with_change_indicator(ChangeIndicator::from(self.change_indicator))
+            .with_change_indicator(self.change_indicator)
             .with_attachment_id(self.attachment_id)
             .with_type_class(self.type_class)
             .with_type_metric(self.type_metric)
