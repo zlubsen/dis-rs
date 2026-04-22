@@ -1,3 +1,4 @@
+use crate::DisError;
 use crate::common::iff::model::{
     ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code,
     FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification,
@@ -15,7 +16,6 @@ use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{
     EIGHT_OCTETS, FOUR_OCTETS, ONE_OCTET, SIX_OCTETS, THREE_OCTETS, TWO_OCTETS,
 };
-use crate::DisError;
 use bytes::{BufMut, BytesMut};
 
 impl SerializePdu for Iff {

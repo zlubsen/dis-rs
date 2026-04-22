@@ -1,6 +1,6 @@
 use crate::constants::ONE_BIT;
 use crate::fire::model::Fire;
-use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, serialize_when_present, write_value_unsigned};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 
 impl SerializeCdisPdu for Fire {
@@ -41,7 +41,7 @@ mod tests {
     use crate::records::model::{
         EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
     use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
     use bitvec::prelude::BitArray;
 

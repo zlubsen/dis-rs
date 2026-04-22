@@ -1,4 +1,5 @@
-use crate::common::model::{length_padded_to_num, EntityId, PduBody};
+use crate::BodyRaw;
+use crate::common::model::{EntityId, PduBody, length_padded_to_num};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{
@@ -6,7 +7,6 @@ use crate::enumerations::{
     SignalUserProtocolIdentificationNumber,
 };
 use crate::signal::builder::SignalBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

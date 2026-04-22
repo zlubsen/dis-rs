@@ -1,8 +1,8 @@
 use crate::common::model::EntityType;
 use crate::enumerations::EntityCapabilities;
 use crate::v7::entity_state::entity_capabilities_from_bytes;
-use nom::number::complete::be_u32;
 use nom::IResult;
+use nom::number::complete::be_u32;
 
 pub fn entity_capabilities(
     entity_type: EntityType,

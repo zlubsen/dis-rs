@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::model::{BeamData, EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::electromagnetic_emission::builder::ElectromagneticEmissionBuilder;
@@ -6,7 +7,6 @@ use crate::enumerations::{
     ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
     HighDensityTrackJam, PduType,
 };
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

@@ -5,8 +5,8 @@ use crate::stop_freeze::model::StopFreeze;
 use crate::types::parser::{clock_time, uvint32};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{StopFreezeFrozenBehavior, StopFreezeReason};
-use nom::bits::complete::take;
 use nom::IResult;
+use nom::bits::complete::take;
 
 pub(crate) fn stop_freeze_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, originating_id) = entity_identification(input)?;

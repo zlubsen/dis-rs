@@ -1,7 +1,7 @@
 use crate::constants::{
     EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS,
 };
-use crate::parsing::{field_present, parse_field_when_present, BitInput};
+use crate::parsing::{BitInput, field_present, parse_field_when_present};
 use crate::records::parser::{
     beam_antenna_pattern, entity_coordinate_vector, entity_identification, entity_type,
     world_coordinates,
@@ -11,7 +11,7 @@ use crate::transmitter::model::{
     TransmitterFieldsPresent, TransmitterFrequencyFloat, TransmitterUnits,
 };
 use crate::types::model::CdisFloat;
-use crate::types::parser::{uvint16, uvint8};
+use crate::types::parser::{uvint8, uvint16};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{
     TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterTransmitState,

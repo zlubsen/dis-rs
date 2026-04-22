@@ -1,14 +1,14 @@
 use crate::constants::{ONE_BIT, THIRTY_TWO_BITS, TWO_BITS};
 use crate::parsing::BitInput;
 use crate::types::model::{
-    Svint12BitSize, Svint13BitSize, Svint14BitSize, Svint16BitSize, Svint24BitSize, Uvint16BitSize,
-    Uvint32BitSize, Uvint8BitSize, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT32,
-    UVINT8,
+    SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, Svint12BitSize, Svint13BitSize, Svint14BitSize,
+    Svint16BitSize, Svint24BitSize, UVINT8, UVINT16, UVINT32, Uvint8BitSize, Uvint16BitSize,
+    Uvint32BitSize,
 };
 use dis_rs::model::ClockTime;
+use nom::IResult;
 use nom::bits::complete::bool;
 use nom::bits::complete::take;
-use nom::IResult;
 
 pub(crate) fn uvint8(input: BitInput) -> IResult<BitInput, UVINT8> {
     let (input, flag_bits): (BitInput, u8) = take(ONE_BIT)(input)?;
@@ -100,16 +100,16 @@ pub(crate) fn clock_time(input: BitInput) -> IResult<BitInput, ClockTime> {
 
 #[cfg(test)]
 mod tests {
+    use crate::BitBuffer;
     use crate::constants::{FOURTEEN_BITS, THREE_BITS};
-    use crate::parsing::{take_signed, BitInput};
+    use crate::parsing::{BitInput, take_signed};
     use crate::types::model::VarInt;
     use crate::types::model::{
-        CdisFloat, Svint12BitSize, Uvint16BitSize, Uvint32BitSize, Uvint8BitSize, SVINT12, UVINT16,
-        UVINT32, UVINT8,
+        CdisFloat, SVINT12, Svint12BitSize, UVINT8, UVINT16, UVINT32, Uvint8BitSize,
+        Uvint16BitSize, Uvint32BitSize,
     };
-    use crate::types::parser::{svint12, uvint16, uvint32, uvint8};
+    use crate::types::parser::{svint12, uvint8, uvint16, uvint32};
     use crate::writing::write_value_signed;
-    use crate::BitBuffer;
     use nom::IResult;
 
     #[test]

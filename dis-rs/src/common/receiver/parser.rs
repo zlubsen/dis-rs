@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::common::receiver::model::Receiver;
 use crate::enumerations::ReceiverState;
-use crate::BodyRaw;
-use nom::number::complete::{be_f32, be_u16};
 use nom::IResult;
+use nom::number::complete::{be_f32, be_u16};
 
 pub(crate) fn receiver_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, radio_reference_id) = entity_id(input)?;

@@ -7,24 +7,24 @@ use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::data_query::model::DataQuery;
 use crate::designator::codec::{
-    decode_designator_body_and_update_state, encode_designator_body_and_update_state,
-    DecoderStateDesignator, EncoderStateDesignator,
+    DecoderStateDesignator, EncoderStateDesignator, decode_designator_body_and_update_state,
+    encode_designator_body_and_update_state,
 };
 use crate::detonation::model::Detonation;
 use crate::electromagnetic_emission::codec::{
+    DecoderStateElectromagneticEmission, EncoderStateElectromagneticEmission,
     decode_electromagnetic_emission_body_and_update_state,
-    encode_electromagnetic_emission_body_and_update_state, DecoderStateElectromagneticEmission,
-    EncoderStateElectromagneticEmission,
+    encode_electromagnetic_emission_body_and_update_state,
 };
 use crate::entity_state::codec::{
-    decode_entity_state_body_and_update_state, encode_entity_state_body_and_update_state,
-    DecoderStateEntityState, EncoderStateEntityState,
+    DecoderStateEntityState, EncoderStateEntityState, decode_entity_state_body_and_update_state,
+    encode_entity_state_body_and_update_state,
 };
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::iff::codec::{
-    decode_iff_body_and_update_state, encode_iff_body_and_update_state, DecoderStateIff,
-    EncoderStateIff,
+    DecoderStateIff, EncoderStateIff, decode_iff_body_and_update_state,
+    encode_iff_body_and_update_state,
 };
 use crate::receiver::model::Receiver;
 use crate::records::model::CdisHeader;
@@ -34,8 +34,8 @@ use crate::signal::model::Signal;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
 use crate::transmitter::codec::{
-    decode_transmitter_body_and_update_state, encode_transmitter_body_and_update_state,
-    DecoderStateTransmitter, EncoderStateTransmitter,
+    DecoderStateTransmitter, EncoderStateTransmitter, decode_transmitter_body_and_update_state,
+    encode_transmitter_body_and_update_state,
 };
 use crate::unsupported::Unsupported;
 use crate::{BodyProperties, CdisBody, CdisPdu};
@@ -604,15 +604,15 @@ mod tests {
         CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisTimestamp, LinearVelocity,
         Orientation, UnitsDekameters, WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
     use crate::{BodyProperties, CdisBody, CdisPdu};
+    use dis_rs::BodyRaw;
     use dis_rs::entity_state::model::{EntityMarking, EntityState};
     use dis_rs::enumerations::{
         Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType,
         PlatformDomain, ProtocolVersion,
     };
     use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, PduStatus, Timestamp};
-    use dis_rs::BodyRaw;
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {

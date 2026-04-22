@@ -8,7 +8,7 @@ use crate::records::model::FrequencyFloat;
 use crate::records::parser;
 use crate::records::parser::{entity_coordinate_vector, entity_identification};
 use crate::types::model::CdisFloat;
-use crate::types::parser::{uvint16, uvint8};
+use crate::types::parser::{uvint8, uvint16};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{
     ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName,

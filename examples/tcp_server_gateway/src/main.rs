@@ -55,10 +55,13 @@ async fn main() {
     const SERVER_ADDRESS: &str = "127.0.0.1:3030";
 
     let mut infra_runtime_builder = InfraBuilder::new();
-    if let Err(err) = infra_runtime_builder.build_from_str(spec) {
-        panic!("{err}");
-    } else {
-        trace!("Gateway build from spec Ok");
+    match infra_runtime_builder.build_from_str(spec) {
+        Err(err) => {
+            panic!("{err}");
+        }
+        _ => {
+            trace!("Gateway build from spec Ok");
+        }
     }
 
     let cmd_tx = infra_runtime_builder.command_channel();

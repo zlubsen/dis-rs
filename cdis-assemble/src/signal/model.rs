@@ -1,6 +1,6 @@
 use crate::constants::{EIGHT_BITS, TWO_BITS};
 use crate::records::model::{CdisRecord, EncodingScheme, EntityId};
-use crate::types::model::{VarInt, UVINT16, UVINT32};
+use crate::types::model::{UVINT16, UVINT32, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::SignalTdlType;
 

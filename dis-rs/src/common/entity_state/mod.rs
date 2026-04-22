@@ -6,6 +6,7 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::entity_state::model::{
         DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
         EntityMarking, EntityState,
@@ -16,7 +17,6 @@ mod tests {
     };
     use crate::common::parser::parse_pdu;
     use crate::enumerations::*;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

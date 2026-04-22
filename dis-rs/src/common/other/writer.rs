@@ -14,10 +14,10 @@ impl SerializePdu for Other {
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::enumerations::PduType;
     use crate::other::model::Other;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

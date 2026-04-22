@@ -2,8 +2,8 @@ use crate::codec::Codec;
 use crate::data_query::model::DataQuery;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
-use dis_rs::model::Timestamp;
 use dis_rs::BodyRaw;
+use dis_rs::model::Timestamp;
 
 type Counterpart = dis_rs::data_query::model::DataQuery;
 

@@ -6,9 +6,9 @@ use crate::records::parser::{
     entity_identification, entity_type, linear_velocity, world_coordinates,
 };
 use crate::types::parser::uvint32;
-use crate::{parsing, BodyProperties, CdisBody};
-use nom::bits::complete::take;
+use crate::{BodyProperties, CdisBody, parsing};
 use nom::IResult;
+use nom::bits::complete::take;
 
 #[allow(clippy::redundant_closure)]
 pub(crate) fn fire_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -81,10 +81,10 @@ pub(crate) fn fire_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
 #[cfg(test)]
 mod tests {
+    use crate::CdisBody;
     use crate::fire::parser::fire_body;
     use crate::records::model::{EntityId, EntityType, LinearVelocity, UnitsDekameters};
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
-    use crate::CdisBody;
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
 
     #[test]
     fn parse_fire_no_fields_present() {

@@ -1,9 +1,9 @@
+use crate::BodyRaw;
 use crate::common::model::{EntityId, PduBody, PduHeader};
 use crate::common::other::model::Other;
 use crate::common::parser::entity_id;
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::enumerations::PduType;
-use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::{IResult, Parser};

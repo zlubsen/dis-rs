@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{
@@ -5,7 +6,6 @@ use crate::enumerations::{
 };
 use crate::model::{EntityId, PduBody, Timestamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

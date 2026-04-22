@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::model::PduBody;
 use crate::common::parser::{entity_id, supply_quantity};
 use crate::common::service_request::model::ServiceRequest;
 use crate::enumerations::ServiceRequestServiceTypeRequested;
-use crate::BodyRaw;
 use nom::multi::count;
-use nom::number::complete::{be_u16, be_u8};
+use nom::number::complete::{be_u8, be_u16};
 use nom::{IResult, Parser};
 
 pub(crate) fn service_request_body(input: &[u8]) -> IResult<&[u8], PduBody> {

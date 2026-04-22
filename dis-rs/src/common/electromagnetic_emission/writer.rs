@@ -102,18 +102,18 @@ impl Serialize for TrackJam {
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
+    use crate::common::BodyInfo;
     use crate::common::electromagnetic_emission::model::{
         Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam,
     };
     use crate::common::model::{
         BeamData, EntityId, EventId, Pdu, PduHeader, TimeUnits, Timestamp, VectorF32,
     };
-    use crate::common::BodyInfo;
     use crate::enumerations::{
         ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction,
         HighDensityTrackJam,
     };
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

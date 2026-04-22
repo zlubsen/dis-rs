@@ -1,7 +1,7 @@
 use crate::common::model::length_padded_to_num;
 use crate::common::transmitter::model::{
-    BeamAntennaPattern, CryptoKeyId, CryptoMode, ModulationType, SpreadSpectrum, Transmitter,
-    VariableTransmitterParameter, BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS,
+    BASE_VTP_RECORD_LENGTH, BEAM_ANTENNA_PATTERN_OCTETS, BeamAntennaPattern, CryptoKeyId,
+    CryptoMode, ModulationType, SpreadSpectrum, Transmitter, VariableTransmitterParameter,
 };
 use crate::common::{Serialize, SerializePdu, SupportedVersion};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};

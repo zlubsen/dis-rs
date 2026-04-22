@@ -1,15 +1,15 @@
 pub use super::timestamp::{CdisTimeUnits, CdisTimestamp};
+use crate::BitBuffer;
 use crate::constants::{
-    EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, ONE_BIT, SEVENTEEN_BITS,
+    EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, ONE_BIT, SEVENTEEN_BITS,
     SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWENTY_SIX_BITS, TWO_BITS,
 };
-use crate::parsing::{take_signed, BitInput};
-use crate::records::model::CdisProtocolVersion::{Reserved, StandardDis, SISO_023_2023};
+use crate::parsing::{BitInput, take_signed};
+use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{
-    CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8,
+    CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16, VarInt,
 };
 use crate::writing::{write_value_signed, write_value_unsigned};
-use crate::BitBuffer;
 use dis_rs::enumerations::{
     ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator,
     AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus,
@@ -21,7 +21,7 @@ use dis_rs::enumerations::{
 use dis_rs::model::{
     DatumSpecification, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum,
 };
-use nom::{bits::complete::take, IResult};
+use nom::{IResult, bits::complete::take};
 use num_traits::FromPrimitive;
 
 pub(crate) trait CdisRecord {

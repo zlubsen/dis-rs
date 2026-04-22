@@ -2,9 +2,9 @@ use crate::codec::Codec;
 use crate::event_report::model::EventReport;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
+use dis_rs::BodyRaw;
 use dis_rs::enumerations::EventType;
 use dis_rs::model::DatumSpecification;
-use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::event_report::model::EventReport;
 

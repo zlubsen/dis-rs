@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::create_entity_r::builder::CreateEntityRBuilder;
 use crate::enumerations::{PduType, RequiredReliabilityService};
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

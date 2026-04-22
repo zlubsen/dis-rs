@@ -3,11 +3,11 @@ use crate::fire::model::Fire;
 use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
 use crate::records::model::{EntityId, EntityType, LinearVelocity};
 use crate::types::model::UVINT32;
+use dis_rs::BodyRaw;
+use dis_rs::NO_FIRE_MISSION;
 use dis_rs::enumerations::{EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead};
 use dis_rs::fire::model::FireDescriptor;
 use dis_rs::model::{EventId, ExpendableDescriptor, MunitionDescriptor};
-use dis_rs::BodyRaw;
-use dis_rs::NO_FIRE_MISSION;
 use num::{ToPrimitive, Zero};
 
 type Counterpart = dis_rs::fire::model::Fire;
@@ -146,8 +146,9 @@ mod tests {
     use crate::records::model::{
         EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
     use crate::{BodyProperties, CdisBody};
+    use dis_rs::BodyRaw;
     use dis_rs::enumerations::{
         EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead, PlatformDomain,
     };
@@ -157,7 +158,6 @@ mod tests {
         EntityId as DisEntityId, EntityType as DisEntityType, EventId, ExpendableDescriptor,
         Location, MunitionDescriptor, PduBody,
     };
-    use dis_rs::BodyRaw;
 
     fn create_basic_dis_fire_body() -> FireBuilder {
         DisFire::builder()

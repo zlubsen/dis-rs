@@ -1,10 +1,10 @@
 use crate::constants::{
-    EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, NINE_BITS, ONE_BIT, SIXTEEN_BITS,
-    SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS,
-    TWENTY_SIX_BITS, TWO_BITS,
+    EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, NINE_BITS, ONE_BIT, SIX_BITS,
+    SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS, THIRTY_TWO_BITS, THREE_BITS,
+    TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS,
 };
-use crate::parsing::take_signed;
 use crate::parsing::BitInput;
+use crate::parsing::take_signed;
 use crate::records::model::{
     AngularVelocity, BeamAntennaPattern, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP,
     CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP,
@@ -12,8 +12,8 @@ use crate::records::model::{
     EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration,
     LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates,
 };
-use crate::types::model::{CdisFloat, SVINT24, UVINT16, UVINT8};
-use crate::types::parser::{svint12, svint13, svint14, svint16, svint24, uvint16, uvint8};
+use crate::types::model::{CdisFloat, SVINT24, UVINT8, UVINT16};
+use crate::types::parser::{svint12, svint13, svint14, svint16, svint24, uvint8, uvint16};
 use bitvec::macros::internal::funty::Floating;
 use dis_rs::enumerations::{
     ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator,

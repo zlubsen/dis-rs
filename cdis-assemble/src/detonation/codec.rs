@@ -5,14 +5,14 @@ use crate::records::codec::{
     encode_world_coordinates,
 };
 use crate::records::model::{CdisVariableParameter, EntityId, EntityType, LinearVelocity};
-use crate::types::model::{CdisFloat, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, UVINT8, UVINT16};
+use dis_rs::BodyRaw;
 use dis_rs::detonation::model::DetonationDescriptor;
 use dis_rs::enumerations::{
     DetonationResult, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse,
     MunitionDescriptorWarhead,
 };
 use dis_rs::model::{EventId, ExpendableDescriptor, ExplosionDescriptor, MunitionDescriptor};
-use dis_rs::BodyRaw;
 use num_traits::Zero;
 
 type Counterpart = dis_rs::detonation::model::Detonation;
@@ -207,8 +207,9 @@ mod tests {
         EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters,
         WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
     use crate::{BodyProperties, CdisBody};
+    use dis_rs::BodyRaw;
     use dis_rs::detonation::builder::DetonationBuilder;
     use dis_rs::detonation::model::{Detonation as DisDetonation, DetonationDescriptor};
     use dis_rs::enumerations::{
@@ -219,7 +220,6 @@ mod tests {
         EntityId as DisEntityId, EntityType as DisEntityType, EventId, ExplosionDescriptor,
         Location, PduBody, VectorF32,
     };
-    use dis_rs::BodyRaw;
 
     fn create_basic_dis_detonation_body() -> DetonationBuilder {
         DisDetonation::builder()

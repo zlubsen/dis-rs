@@ -3,7 +3,7 @@ use crate::records::model::{
     CdisRecord, EntityCoordinateVector, EntityId, LinearAcceleration, UnitsDekameters, UnitsMeters,
     WorldCoordinates,
 };
-use crate::types::model::{VarInt, UVINT16, UVINT32};
+use crate::types::model::{UVINT16, UVINT32, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, DesignatorSystemName};
 

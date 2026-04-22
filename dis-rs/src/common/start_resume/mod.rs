@@ -5,12 +5,12 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::PduType;
     use crate::model::{ClockTime, EntityId};
     use crate::start_resume::model::StartResume;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

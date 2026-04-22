@@ -1,4 +1,4 @@
-use crate::sees::model::{PropulsionSystemData, VectoringNozzleSystemData, SEES};
+use crate::sees::model::{PropulsionSystemData, SEES, VectoringNozzleSystemData};
 use crate::{Serialize, SerializePdu, SupportedVersion};
 use bytes::{BufMut, BytesMut};
 

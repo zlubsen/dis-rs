@@ -5,8 +5,8 @@ use crate::records::parser::{entity_coordinate_vector, entity_identification, li
 use crate::types::parser::uvint32;
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::CollisionType;
-use nom::bits::complete::take;
 use nom::IResult;
+use nom::bits::complete::take;
 
 pub(crate) fn collision_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, units): (BitInput, u8) = take(TWO_BITS)(input)?;
@@ -41,10 +41,10 @@ pub(crate) fn collision_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
 #[cfg(test)]
 mod tests {
+    use crate::CdisBody;
     use crate::collision::parser::collision_body;
     use crate::records::model::{EntityId, UnitsMass, UnitsMeters};
     use crate::types::model::{SVINT16, UVINT16, UVINT32};
-    use crate::CdisBody;
     use dis_rs::enumerations::CollisionType;
 
     #[test]

@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::model::PduBody;
 use crate::common::parser::{datum_specification, entity_id};
 use crate::enumerations::RequiredReliabilityService;
 use crate::set_data_r::model::SetDataR;
-use crate::BodyRaw;
-use nom::number::complete::{be_u16, be_u32, be_u8};
 use nom::IResult;
+use nom::number::complete::{be_u8, be_u16, be_u32};
 
 pub(crate) fn set_data_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

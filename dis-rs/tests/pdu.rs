@@ -1,9 +1,9 @@
 use bytes::BytesMut;
 use dis_rs::{
+    BodyRaw, DisError,
     enumerations::{PduType, SignalEncodingClass, SignalEncodingType},
     model::{Pdu, PduBody, PduHeader},
     signal::model::{EncodingScheme, Signal},
-    BodyRaw, DisError,
 };
 use nom::AsBytes;
 

@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::fire::model::{Fire, FireDescriptor};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser;
 use crate::enumerations::FireTypeIndicator;
-use crate::BodyRaw;
-use nom::number::complete::{be_f32, be_u32};
 use nom::IResult;
+use nom::number::complete::{be_f32, be_u32};
 
 pub(crate) fn fire_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '_ {
     move |input: &[u8]| {

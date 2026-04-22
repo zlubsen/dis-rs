@@ -1,5 +1,5 @@
 use gateway_core::error::{CreationError, GatewayError, SpecificationError};
-use gateway_core::runtime::{run_from_builder, Command, InfraBuilder};
+use gateway_core::runtime::{Command, InfraBuilder, run_from_builder};
 use std::time::Duration;
 
 #[tokio::test]

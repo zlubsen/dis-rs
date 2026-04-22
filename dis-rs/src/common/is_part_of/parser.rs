@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::parser::{entity_id, entity_type, vec3_f32};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, StationName};
 use crate::is_part_of::model::{IsPartOf, NamedLocationId, Relationship};
 use crate::model::PduBody;
-use crate::BodyRaw;
-use nom::number::complete::be_u16;
 use nom::IResult;
+use nom::number::complete::be_u16;
 
 pub(crate) fn is_part_of_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_sim_id) = entity_id(input)?;

@@ -2,7 +2,7 @@ use crate::constants::{EIGHT_BITS, SIXTEEN_BITS};
 use crate::records::model::{
     CdisRecord, EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
 };
-use crate::types::model::{VarInt, UVINT32};
+use crate::types::model::{UVINT32, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
 
 #[derive(Clone, Default, Debug, PartialEq)]

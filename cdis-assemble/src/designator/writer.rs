@@ -1,6 +1,6 @@
 use crate::constants::{FOUR_BITS, ONE_BIT, SIXTEEN_BITS};
 use crate::designator::model::Designator;
-use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, serialize_when_present, write_value_unsigned};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 use dis_rs::enumerations::DesignatorSystemName;
 

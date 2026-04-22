@@ -5,11 +5,11 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::designator::model::Designator;
     use crate::common::model::{EntityId, Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{DeadReckoningAlgorithm, PduType};
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]

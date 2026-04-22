@@ -2,9 +2,9 @@ use crate::action_response::model::ActionResponse;
 use crate::codec::Codec;
 use crate::records::model::EntityId;
 use crate::types::model::UVINT32;
+use dis_rs::BodyRaw;
 use dis_rs::enumerations::RequestStatus;
 use dis_rs::model::DatumSpecification;
-use dis_rs::BodyRaw;
 
 type Counterpart = dis_rs::action_response::model::ActionResponse;
 

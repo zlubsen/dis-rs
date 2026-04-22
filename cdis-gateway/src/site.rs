@@ -1,19 +1,19 @@
+use crate::Command;
 use crate::config::Config;
 use crate::site::templates::{
     CodecStatsTemplate, CodecStatsValues, ConfigMetaTemplate, ConfigTemplate, HomeTemplate,
     SocketStatsTemplate, SocketStatsValues, UdpEndpointValues,
 };
 use crate::stats::SseStat;
-use crate::Command;
 use askama::Template;
+use axum::Router;
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::sse::{Event as SseEvent, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use axum::Router;
-use axum_extra::{headers, TypedHeader};
+use axum_extra::{TypedHeader, headers};
 use futures::stream::Stream;
 use std::convert::Infallible;
 use std::sync::Arc;

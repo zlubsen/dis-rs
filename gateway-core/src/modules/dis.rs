@@ -1,7 +1,7 @@
 use crate::core::{
-    BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer, NodeData,
-    NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
-    DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    BaseNode, BaseStatistics, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+    DEFAULT_OUTPUT_STATS_INTERVAL_MS, InstanceId, NodeConstructor, NodeConstructorPointer,
+    NodeData, NodeRunner, UntypedNode,
 };
 use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
 use crate::node_data_impl;
@@ -13,7 +13,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
 use std::time::Duration;
 use thiserror::Error;
-use tokio::sync::broadcast::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 
 const SPEC_DIS_RECEIVER_NODE_TYPE: &str = "dis_receiver";

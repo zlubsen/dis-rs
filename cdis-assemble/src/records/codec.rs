@@ -10,7 +10,7 @@ use crate::records::model::{
 };
 use crate::records::model::{BeamData, EncodingScheme, LayerHeader, UnitsMeters};
 use crate::types::model::{
-    CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8,
+    CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16,
 };
 use dis_rs::enumerations::{Country, EntityKind, PlatformDomain};
 use dis_rs::model::{

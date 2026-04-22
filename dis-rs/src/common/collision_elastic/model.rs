@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::collision_elastic::builder::CollisionElasticBuilder;
 use crate::common::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

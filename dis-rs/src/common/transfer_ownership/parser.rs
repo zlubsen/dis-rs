@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::parser::{entity_id, record_specification};
 use crate::enumerations::{RequiredReliabilityService, TransferControlTransferType};
 use crate::model::PduBody;
 use crate::transfer_ownership::model::TransferOwnership;
-use crate::BodyRaw;
-use nom::number::complete::{be_u32, be_u8};
 use nom::IResult;
+use nom::number::complete::{be_u8, be_u32};
 
 pub(crate) fn transfer_ownership_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;

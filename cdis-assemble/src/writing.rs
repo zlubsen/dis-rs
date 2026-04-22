@@ -144,8 +144,8 @@ impl SerializeCdis for u16 {
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::{SIXTEEN_BITS, SIX_BITS};
-    use crate::writing::{write_value_signed, write_value_unsigned, BitBuffer};
+    use crate::constants::{SIX_BITS, SIXTEEN_BITS};
+    use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
     use bitvec::prelude::BitArray;
 
     #[test]

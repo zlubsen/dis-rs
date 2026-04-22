@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use gateway_core::runtime::{
-    downcast_external_input, downcast_external_output, run_from_builder, Command, InfraBuilder,
+    Command, InfraBuilder, downcast_external_input, downcast_external_output, run_from_builder,
 };
 use std::net::SocketAddr;
 use std::time::Duration;

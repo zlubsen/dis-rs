@@ -8,8 +8,8 @@ use crate::records::parser::{
     variable_parameter, world_coordinates,
 };
 use crate::types::model::CdisFloat;
-use crate::types::parser::{uvint16, uvint8};
-use crate::{parsing, BodyProperties, CdisBody};
+use crate::types::parser::{uvint8, uvint16};
+use crate::{BodyProperties, CdisBody, parsing};
 use nom::bits::complete::take;
 use nom::multi::count;
 use nom::{IResult, Parser};
@@ -101,12 +101,12 @@ pub(crate) fn detonation_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
 #[cfg(test)]
 mod tests {
+    use crate::CdisBody;
     use crate::detonation::parser::detonation_body;
     use crate::records::model::{
         EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT8};
-    use crate::CdisBody;
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
     use dis_rs::enumerations::DetonationResult;
 
     #[test]
