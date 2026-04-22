@@ -196,8 +196,8 @@ pub(crate) fn entity_marking(input: BitInput) -> IResult<BitInput, CdisEntityMar
 }
 
 #[allow(clippy::cast_precision_loss)]
-const WORLD_COORDINATES_LAT_SCALE: f32 = ((2 ^ 30) - 1) as f32 / (f32::PI / 2.0);
-const WORLD_COORDINATES_LON_SCALE: f32 = ((2 ^ 31) - 1) as f32 / (f32::PI);
+const WORLD_COORDINATES_LAT_SCALE: f32 = (2usize.pow(30) - 1) as f32 / (f32::PI / 2.0);
+const WORLD_COORDINATES_LON_SCALE: f32 = (2usize.pow(31) - 1) as f32 / (f32::PI);
 
 #[allow(clippy::cast_precision_loss)]
 pub(crate) fn world_coordinates(input: BitInput) -> IResult<BitInput, WorldCoordinates> {
