@@ -1065,21 +1065,22 @@ mod tests {
 
     #[test]
     fn beam_data_list() {
-        let beam_data_1 = DisBeamData::default()
+        let beam_data_0 = DisBeamData::default()
             .with_azimuth_center(0.0)
-            .with_azimuth_sweep(20.0)
+            .with_azimuth_sweep(std::f32::consts::PI / 2f32)
             .with_elevation_center(0.0)
             .with_elevation_sweep(20.0)
             .with_sweep_sync(50.0);
-        let beam_data_2 = DisBeamData::default()
-            .with_azimuth_center(20.0)
+        let beam_data_1 = DisBeamData::default()
+            .with_azimuth_center(std::f32::consts::PI - 0.0014)
             .with_azimuth_sweep(30.0)
             .with_elevation_center(10.0)
             .with_elevation_sweep(30.0)
             .with_sweep_sync(10.0);
-        let beam_data_3 = DisBeamData::default()
+        // beam_data_2 is equal to beam_data_1, so it will be de-duplicated by the encoding.
+        let beam_data_2 = DisBeamData::default()
             .with_azimuth_center(0.0)
-            .with_azimuth_sweep(20.0)
+            .with_azimuth_sweep(std::f32::consts::PI / 2f32)
             .with_elevation_center(0.0)
             .with_elevation_sweep(20.0)
             .with_sweep_sync(50.0);
@@ -1087,21 +1088,22 @@ mod tests {
         let body = DisEE::builder()
             .with_emitter_system(
                 EmitterSystem::default()
-                    .with_beam(Beam::default().with_beam_data(beam_data_1))
-                    .with_beam(Beam::default().with_beam_data(beam_data_2)),
+                    .with_beam(Beam::default().with_beam_data(beam_data_0))
+                    .with_beam(Beam::default().with_beam_data(beam_data_1)),
             )
             .with_emitter_system(
-                EmitterSystem::default().with_beam(Beam::default().with_beam_data(beam_data_3)),
+                EmitterSystem::default().with_beam(Beam::default().with_beam_data(beam_data_2)),
             )
             .build();
 
         let beam_data_list = construct_beam_data_list_full(&body);
 
-        assert_eq!(beam_data_list.len(), 2);
+        assert_eq!(beam_data_list.len(), 2); // only 2, due to de-duplication
         assert_eq!(beam_data_list.first().unwrap().az_center.value, 0);
+        assert_eq!(beam_data_list.first().unwrap().az_sweep.value, 2048);
         assert_eq!(beam_data_list.first().unwrap().sweep_sync, 511);
-        assert_eq!(beam_data_list.get(1).unwrap().az_center.value, 83);
-        assert_eq!(beam_data_list.get(1).unwrap().sweep_sync, 102);
+        assert_eq!(beam_data_list.get(1).unwrap().az_center.value, 4093);
+        assert_eq!(beam_data_list.get(1).unwrap().sweep_sync, 102); // 1024 max value ~ 100%; 10% equals rounded 102.
     }
 
     #[test]

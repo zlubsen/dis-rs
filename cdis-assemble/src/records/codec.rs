@@ -1,7 +1,6 @@
 use crate::codec::Codec;
 use crate::constants::{
     ALTITUDE_CM_THRESHOLD, CENTER_OF_EARTH_ALTITUDE, CENTIMETER_PER_METER, DECIMETERS_IN_METER,
-    RADIANS_SEC_TO_DEGREES_SEC,
 };
 use crate::records::model::{
     AngularVelocity, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP,
@@ -209,8 +208,9 @@ impl Codec for LinearAcceleration {
 #[allow(clippy::cast_possible_truncation)]
 impl Codec for AngularVelocity {
     type Counterpart = VectorF32;
-    const SCALING: f32 = ((2 ^ 11) - 1) as f32 / (4.0 * std::f32::consts::PI);
-    const CONVERSION: f32 = RADIANS_SEC_TO_DEGREES_SEC;
+    const SCALING: f32 = (2usize.pow(11) - 1) as f32 / (4.0 * std::f32::consts::PI);
+    const CONVERSION: f32 = 1.0;
+    // const CONVERSION: f32 = RADIANS_SEC_TO_DEGREES_SEC;
 
     // FIXME: possibly the rounding is off from the spec, as the example at page 27 of the standard uses +0.5 for positive numbers, and -0.5 for negative numbers
     fn encode(item: &Self::Counterpart) -> Self {
@@ -630,7 +630,7 @@ impl Codec for BeamData {
     type Counterpart = dis_rs::model::BeamData;
 
     #[allow(clippy::cast_precision_loss)]
-    const SCALING: f32 = ((2 ^ 12) - 1) as f32 / std::f32::consts::PI;
+    const SCALING: f32 = (2usize.pow(12) - 1) as f32 / std::f32::consts::PI;
     const SCALING_2: f32 = 1023f32 / 100.0;
 
     #[allow(clippy::cast_possible_truncation)]
@@ -767,39 +767,27 @@ mod tests {
 
     #[test]
     fn angular_velocity_encode() {
-        const ANGULAR_VELOCITY_SCALE: f32 = (2 ^ (11 - 1)) as f32 / (4.0 * std::f32::consts::PI);
-        let dis = VectorF32::new(1.0, 4.0 * std::f32::consts::PI, -std::f32::consts::PI);
+        // const ANGULAR_VELOCITY_SCALE: f32 =
+        //     ((2usize.pow(11)) - 1) as f32 / (4.0 * std::f32::consts::PI);
+        let dis = VectorF32::new(0f32, 4.0 * std::f32::consts::PI, -std::f32::consts::PI);
         let cdis = AngularVelocity::encode(&dis);
 
-        assert_eq!(cdis.x.value, (57f32 * ANGULAR_VELOCITY_SCALE) as i16);
-        assert_eq!(cdis.y.value, (720f32 * ANGULAR_VELOCITY_SCALE) as i16);
-        assert_eq!(cdis.z.value, (-180f32 * ANGULAR_VELOCITY_SCALE) as i16);
-
-        assert!((56.5f32..57.0f32).contains(&(f32::from(cdis.x.value) / AngularVelocity::SCALING)));
-        assert!(
-            (719.4f32..720.0f32).contains(&(f32::from(cdis.y.value) / AngularVelocity::SCALING))
-        );
-        assert!(
-            (-180.35f32..-179.0f32).contains(&(f32::from(cdis.z.value) / AngularVelocity::SCALING))
-        );
-
-        let back_to_dis = cdis.decode();
-        assert!((0.95f32..1.0f32).contains(&back_to_dis.first_vector_component));
-        assert!((12.5f32..12.6f32).contains(&back_to_dis.second_vector_component));
-        assert!((-3.14f32..-3.11f32).contains(&back_to_dis.third_vector_component));
+        assert_eq!(cdis.x.value, 0i16);
+        assert_eq!(cdis.y.value, 2047i16);
+        assert_eq!(cdis.z.value, -511);
     }
 
     #[test]
     fn angular_velocity_decode() {
         let cdis = AngularVelocity::new(
-            SVINT12::from((57f32 * AngularVelocity::SCALING) as i16),
-            SVINT12::from((720f32 * AngularVelocity::SCALING) as i16),
-            SVINT12::from((-180f32 * AngularVelocity::SCALING) as i16),
+            SVINT12::from((0f32 * AngularVelocity::SCALING) as i16), // 0 degrees/sec
+            SVINT12::from((4f32 * std::f32::consts::PI * AngularVelocity::SCALING) as i16), // 720 degrees/sec (4pi)
+            SVINT12::from((-std::f32::consts::PI * AngularVelocity::SCALING) as i16), // -180 degrees/sec (-pi)
         );
         let dis = cdis.decode();
 
-        assert!((0.95f32..1.0f32).contains(&dis.first_vector_component));
-        assert!((12.5f32..12.6f32).contains(&dis.second_vector_component));
+        assert_eq!(0f32, dis.first_vector_component);
+        assert_eq!(4f32 * std::f32::consts::PI, dis.second_vector_component);
         assert!((-3.14f32..-3.11f32).contains(&dis.third_vector_component));
     }
 
