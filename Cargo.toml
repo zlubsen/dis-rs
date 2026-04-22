@@ -1,17 +1,26 @@
 [workspace]
-members = ["cdis-assemble", "cdis-gateway", "dis-rs", "gateway-core", "examples/*"]
+members = [
+    "cdis-assemble",
+    "cdis-gateway",
+    "dis-rs",
+    "gateway-core",
+    "examples/*",
+]
 resolver = "2"
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.76"
+rust-version = "1.91"
 license = "MIT"
 authors = ["Zeeger Lubsen <zeeger@lubsen.eu>"]
 repository = "https://github.com/zlubsen/dis-rs"
 categories = ["network-programming"]
 
+[workspace.dependencies]
+rstest = "0.26.1"
+
 [workspace.lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "deny"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }

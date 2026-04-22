@@ -11,10 +11,14 @@ impl SerializePdu for RecordQueryR {
         buf.put_u8(self.required_reliability_service.into());
         buf.put_u8(0u8);
         buf.put_u16(self.event_type.into());
-        buf.put_u32(self.time.raw_timestamp);
-        let record_query_specification = self.record_query_specification.serialize(buf);
+        let time_bytes = self.time.serialize(buf);
+        let record_query_specification_bytes = self.record_query_specification.serialize(buf);
 
-        origination_id_bytes + receiving_id_bytes + 12 + record_query_specification
+        origination_id_bytes
+            + receiving_id_bytes
+            + 8
+            + time_bytes
+            + record_query_specification_bytes
     }
 }
 

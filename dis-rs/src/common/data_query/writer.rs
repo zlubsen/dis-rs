@@ -7,7 +7,7 @@ impl SerializePdu for DataQuery {
         let originating_bytes = self.originating_id.serialize(buf);
         let receiving_bytes = self.receiving_id.serialize(buf);
         buf.put_u32(self.request_id);
-        buf.put_u32(self.time_interval);
+        let time_interval_bytes = self.time_interval.serialize(buf);
         buf.put_u32(self.fixed_datum_records.len() as u32);
         buf.put_u32(self.variable_datum_records.len() as u32);
         let fixed_datum_bytes = self
@@ -27,6 +27,12 @@ impl SerializePdu for DataQuery {
             })
             .sum::<u16>();
 
-        originating_bytes + receiving_bytes + 16 + fixed_datum_bytes + variable_datum_bytes
+        originating_bytes
+            + receiving_bytes
+            + 4
+            + time_interval_bytes
+            + 8
+            + fixed_datum_bytes
+            + variable_datum_bytes
     }
 }

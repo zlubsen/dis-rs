@@ -213,7 +213,7 @@ impl CdisFloat for TransmitterFrequencyFloat {
         let mut mantissa = float;
         let mut exponent = 0usize;
         let max_mantissa = 2f64.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
             mantissa /= 10.0;
             exponent += 1;
         }
@@ -265,7 +265,7 @@ impl CdisFloat for TransmitFrequencyBandwidthFloat {
         let mut mantissa = float;
         let mut exponent = 0usize;
         let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
             mantissa /= 10.0;
             exponent += 1;
         }

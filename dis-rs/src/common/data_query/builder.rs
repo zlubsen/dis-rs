@@ -1,5 +1,5 @@
 use crate::common::data_query::model::DataQuery;
-use crate::common::model::EntityId;
+use crate::common::model::{EntityId, Timestamp};
 use crate::enumerations::VariableRecordType;
 
 pub struct DataQueryBuilder(DataQuery);
@@ -45,7 +45,7 @@ impl DataQueryBuilder {
     }
 
     #[must_use]
-    pub fn with_time_interval(mut self, time_interval: u32) -> Self {
+    pub fn with_time_interval(mut self, time_interval: Timestamp) -> Self {
         self.0.time_interval = time_interval;
         self
     }

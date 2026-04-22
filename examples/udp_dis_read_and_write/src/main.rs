@@ -1,6 +1,6 @@
 use dis_rs::entity_state::model::EntityState;
 use dis_rs::enumerations::PduType;
-use dis_rs::model::{Pdu, PduHeader, PduStatus};
+use dis_rs::model::{Pdu, PduHeader, PduStatus, Timestamp};
 use dis_rs::BodyRaw;
 use gateway_core::error::GatewayError;
 use gateway_core::runtime;
@@ -144,5 +144,5 @@ fn entity_state_pdu() -> Pdu {
         .build()
         .into_pdu_body();
 
-    Pdu::finalize_from_parts(header, body, 100)
+    Pdu::finalize_from_parts(header, body, Timestamp::new(100))
 }

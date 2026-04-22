@@ -156,8 +156,8 @@ mod tests {
         DrOtherParameters, DrParameters, EntityAppearance, EntityMarking, EntityState,
     };
     use crate::common::model::{
-        ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader,
-        VariableParameter, VectorF32,
+        ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader, TimeUnits,
+        Timestamp, VariableParameter, VectorF32,
     };
     use crate::common::Serialize;
     use crate::enumerations::{
@@ -278,7 +278,6 @@ mod tests {
                 marking_string: "EYE 10".to_string()
             })
             .with_capabilities_flags(false, false, false, false)
-
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
                 change_indicator: ChangeIndicator::from(0u8),
                 attachment_id: 0,
@@ -309,14 +308,18 @@ mod tests {
             }))
             .build()
             .into_pdu_body();
-        let pdu = Pdu::finalize_from_parts(header, body, 0);
+        let pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
 
         let mut buf = BytesMut::with_capacity(208);
 
         pdu.serialize(&mut buf).unwrap();
 
         let expected: [u8; 208] = [
-            0x06, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4,
+            0x06, 0x01, 0x01, 0x01, 0x04, 0x44, 0x44, 0x45, 0x00, 0xd0, 0x00, 0x00, 0x01, 0xf4,
             0x03, 0x84, 0x00, 0x0e, 0x01, 0x04, 0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00,
             0x01, 0x02, 0x00, 0x99, 0x32, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

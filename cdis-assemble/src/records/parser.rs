@@ -8,7 +8,7 @@ use crate::parsing::BitInput;
 use crate::records::model::{
     AngularVelocity, BeamAntennaPattern, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP,
     CdisEntityAssociationVP, CdisEntityMarking, CdisEntitySeparationVP, CdisEntityTypeVP,
-    CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisVariableParameter,
+    CdisHeader, CdisMarkingCharEncoding, CdisProtocolVersion, CdisTimestamp, CdisVariableParameter,
     EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration,
     LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates,
 };
@@ -23,8 +23,10 @@ use dis_rs::enumerations::{
     SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName,
     TransmitterAntennaPatternReferenceSystem, VariableParameterRecordType, VariableRecordType,
 };
-use dis_rs::model::{FixedDatum, TimeStamp, VariableDatum};
-use dis_rs::parse_pdu_status_fields;
+use dis_rs::{
+    model::{FixedDatum, VariableDatum},
+    parse_pdu_status_fields,
+};
 use nom::bits::complete::take;
 use nom::multi::count;
 use nom::{IResult, Parser};
@@ -47,7 +49,7 @@ pub(crate) fn cdis_header(input: BitInput) -> IResult<BitInput, CdisHeader> {
             protocol_version: CdisProtocolVersion::from(protocol_version),
             exercise_id,
             pdu_type: PduType::from(pdu_type),
-            timestamp: TimeStamp::from(timestamp),
+            timestamp: CdisTimestamp::from(timestamp),
             length,
             pdu_status,
         },
@@ -641,7 +643,7 @@ pub fn layer_header(input: BitInput) -> IResult<BitInput, LayerHeader> {
 
 #[cfg(test)]
 mod tests {
-    use crate::records::model::CdisProtocolVersion;
+    use crate::records::model::{CdisProtocolVersion, CdisTimestamp};
     use crate::records::parser::cdis_header;
     use crate::types::model::UVINT8;
     use dis_rs::enumerations::PduType;
@@ -664,10 +666,7 @@ mod tests {
         assert_eq!(header.protocol_version, CdisProtocolVersion::SISO_023_2023);
         assert_eq!(header.exercise_id, UVINT8::from(7));
         assert_eq!(header.pdu_type, PduType::EntityState);
-        assert_eq!(
-            header.timestamp,
-            dis_rs::model::TimeStamp { raw_timestamp: 0 }
-        );
+        assert_eq!(header.timestamp, CdisTimestamp::default());
         assert_eq!(header.length, 0);
     }
 }

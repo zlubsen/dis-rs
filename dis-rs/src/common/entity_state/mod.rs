@@ -12,7 +12,7 @@ mod tests {
     };
     use crate::common::model::{
         ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader,
-        SimulationAddress, VariableParameter, VectorF32,
+        SimulationAddress, TimeUnits, Timestamp, VariableParameter, VectorF32,
     };
     use crate::common::parser::parse_pdu;
     use crate::enumerations::*;
@@ -121,7 +121,11 @@ mod tests {
             }))
             .build()
             .into_pdu_body();
-        let original_pdu = Pdu::finalize_from_parts(header, body, 0);
+        let original_pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = original_pdu.header.pdu_length;
         let original_length = original_pdu.pdu_length();
 

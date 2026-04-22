@@ -9,7 +9,7 @@ mod tests {
         FundamentalOperationalData, Iff, IffLayer2, InformationLayers, LayerHeader,
         LayersPresenceApplicability, SystemId,
     };
-    use crate::common::model::{EntityId, EventId, Pdu, PduHeader};
+    use crate::common::model::{EntityId, EventId, Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{
         ActiveInterrogationIndicator, CoupledExtensionIndicator, IffSimulationMode, IffSystemType,
@@ -66,7 +66,11 @@ mod tests {
             )
             .build()
             .into_pdu_body();
-        let original_pdu = Pdu::finalize_from_parts(header, iff_body, 1);
+        let original_pdu = Pdu::finalize_from_parts(
+            header,
+            iff_body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = original_pdu.header.pdu_length;
         let original_length = original_pdu.pdu_length();
 
