@@ -44,7 +44,6 @@ pub(crate) mod parsing;
 pub(crate) mod writing;
 
 use dis_rs::enumerations::PduType;
-use dis_rs::model::TimeStamp;
 use thiserror::Error;
 
 use crate::acknowledge::model::Acknowledge;
@@ -63,7 +62,7 @@ use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::iff::model::Iff;
 use crate::receiver::model::Receiver;
-use crate::records::model::{CdisHeader, CdisRecord, EntityId};
+use crate::records::model::{CdisHeader, CdisRecord, CdisTimestamp, EntityId};
 use crate::remove_entity::model::RemoveEntity;
 use crate::set_data::model::SetData;
 use crate::signal::model::Signal;
@@ -103,19 +102,15 @@ pub struct CdisPdu {
 }
 
 impl CdisPdu {
+    #[must_use]
     pub fn finalize_from_parts(
         header: CdisHeader,
         body: CdisBody,
-        time_stamp: Option<impl Into<TimeStamp>>,
+        timestamp: CdisTimestamp,
     ) -> Self {
-        let time_stamp: TimeStamp = if let Some(time_stamp) = time_stamp {
-            time_stamp.into()
-        } else {
-            header.timestamp
-        };
         Self {
             header: CdisHeader {
-                timestamp: time_stamp,
+                timestamp,
                 length: (header.record_length() + body.body_length()) as u16,
                 ..header
             },

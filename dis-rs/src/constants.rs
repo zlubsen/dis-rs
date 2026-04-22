@@ -17,12 +17,6 @@ pub const TWENTY_OCTETS: usize = 20;
 pub const THIRTY_TWO_OCTETS: usize = 32;
 pub const LEAST_SIGNIFICANT_BIT: u32 = 0x001;
 pub const FIVE_LEAST_SIGNIFICANT_BITS: u32 = 0x1f;
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::cast_sign_loss)]
-pub const NANOSECONDS_PER_HOUR: u32 = 3600 * 1e6 as u32;
-pub const TIME_UNITS_PER_HOUR: u32 = 2u32.pow(31) - 1;
-#[allow(clippy::cast_precision_loss)]
-pub const NANOSECONDS_PER_TIME_UNIT: f32 = NANOSECONDS_PER_HOUR as f32 / TIME_UNITS_PER_HOUR as f32;
 #[allow(dead_code)]
 pub const MAXIMUM_PDU_SIZE_OCTETS: usize = 8_192;
 #[allow(dead_code)]

@@ -1,9 +1,8 @@
-use crate::constants::{THIRTY_TWO_BITS, TWENTY_SIX_BITS, TWO_BITS};
+use crate::constants::{THIRTY_TWO_BITS, TWO_BITS};
 use crate::data_query::model::DataQuery;
 use crate::types::model::UVINT8;
 use crate::writing::{write_value_unsigned, SerializeCdis};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
-use dis_rs::model::TimeStamp;
 
 impl SerializeCdisPdu for DataQuery {
     #[allow(clippy::let_and_return)]
@@ -13,10 +12,7 @@ impl SerializeCdisPdu for DataQuery {
         let cursor = self.originating_id.serialize(buf, cursor);
         let cursor = self.receiving_id.serialize(buf, cursor);
         let cursor = self.request_id.serialize(buf, cursor);
-        let time_interval = TimeStamp::from(self.time_interval);
-        let cursor =
-            write_value_unsigned::<u32>(buf, cursor, TWENTY_SIX_BITS, time_interval.raw_timestamp);
-
+        let cursor = self.time_interval.serialize(buf, cursor);
         let cursor = if !self.fixed_datum_ids.is_empty() {
             UVINT8::from(self.fixed_datum_ids.len() as u8).serialize(buf, cursor)
         } else {

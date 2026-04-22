@@ -5,8 +5,8 @@ use cdis_assemble::codec::{CodecOptions, CodecStateResult, DecoderState, Encoder
 use cdis_assemble::constants::EIGHT_BITS;
 use cdis_assemble::entity_state::model::CdisEntityCapabilities;
 use cdis_assemble::records::model::{
-    CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation,
-    UnitsDekameters, WorldCoordinates,
+    CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisTimeUnits, CdisTimestamp,
+    LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates,
 };
 use cdis_assemble::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
 use cdis_assemble::{BitBuffer, BodyProperties, CdisBody, CdisPdu, SerializeCdisPdu};
@@ -34,7 +34,8 @@ use dis_rs::iff::model::{
 };
 use dis_rs::model::{
     ClockTime, EntityId, EntityType, EventId, ExplosionDescriptor, FixedDatum, Location,
-    MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, TimeStamp, VariableDatum, VectorF32,
+    MunitionDescriptor, Pdu, PduBody, PduHeader, PduStatus, TimeUnits, Timestamp, VariableDatum,
+    VectorF32,
 };
 use dis_rs::signal::model::EncodingScheme;
 use dis_rs::transmitter::model::{
@@ -60,7 +61,11 @@ fn encode_dis_to_cdis_entity_state_full_mode() {
         .with_marking(EntityMarking::new("TEST", EntityMarkingCharacterSet::ASCII))
         .build()
         .into_pdu_body();
-    let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
+    let dis_pdu = Pdu::finalize_from_parts(
+        dis_header,
+        dis_body,
+        Timestamp::Absolute(TimeUnits::new(512).unwrap()),
+    );
 
     let (cdis_pdu, _state_result) = CdisPdu::encode(&dis_pdu, &mut encoder_state, &codec_options);
 
@@ -99,7 +104,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         protocol_version: CdisProtocolVersion::SISO_023_2023,
         exercise_id: UVINT8::from(7),
         pdu_type: PduType::EntityState,
-        timestamp: TimeStamp::new(968),
+        timestamp: CdisTimestamp::Absolute(CdisTimeUnits::new(512).unwrap()),
         length: 0,
         pdu_status: PduStatus::default(),
     };
@@ -140,7 +145,7 @@ fn decode_cdis_to_dis_entity_state_full_mode() {
         variable_parameters: vec![],
     }
     .into_cdis_body();
-    let cdis_pdu = CdisPdu::finalize_from_parts(cdis_header, cdis_body, None::<TimeStamp>);
+    let cdis_pdu = CdisPdu::finalize_from_parts(cdis_header, cdis_body, cdis_header.timestamp);
 
     let (dis_pdu, _state_result) = cdis_pdu.decode(&mut decoder_state, &codec_options);
     let mut buf = BytesMut::with_capacity(250);
@@ -201,7 +206,7 @@ fn codec_consistency_entity_state_full_mode() {
         ))
         .build()
         .into_pdu_body();
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -267,7 +272,7 @@ fn codec_consistency_fire() {
         .with_range(10000.0)
         .build()
         .into_pdu_body();
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -335,7 +340,7 @@ fn codec_consistency_detonation() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -396,7 +401,7 @@ fn codec_consistency_collision() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -440,7 +445,7 @@ fn codec_consistency_create_entity() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -480,7 +485,7 @@ fn codec_consistency_remove_entity() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -522,7 +527,7 @@ fn codec_consistency_start_resume() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -571,7 +576,7 @@ fn codec_consistency_stop_freeze() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -616,7 +621,7 @@ fn codec_consistency_acknowledge() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -667,7 +672,7 @@ fn codec_consistency_action_request() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -722,7 +727,7 @@ fn codec_consistency_action_response() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -764,13 +769,13 @@ fn codec_consistency_data_query() {
         .with_origination_id(EntityId::new(1, 1, 1))
         .with_receiving_id(EntityId::new(2, 2, 2))
         .with_request_id(1)
-        .with_time_interval(2000)
+        .with_time_interval(Timestamp::Relative(TimeUnits::new(2048).unwrap()))
         .with_fixed_datums(vec![VariableRecordType::AngleOfAttack_610026])
         .with_variable_datums(vec![VariableRecordType::VehicleMass_26000])
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -823,7 +828,7 @@ fn codec_consistency_set_data() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -875,7 +880,7 @@ fn codec_consistency_data() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -928,7 +933,7 @@ fn codec_consistency_event_report() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -975,7 +980,7 @@ fn codec_consistency_comment() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1035,7 +1040,7 @@ fn codec_consistency_electromagnetic_emission_full_mode() {
         .into_pdu_body();
     let dis_header = PduHeader::new_v7(7, PduType::ElectromagneticEmission)
         .with_pdu_status(PduStatus::default());
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1093,7 +1098,7 @@ fn codec_consistency_electromagnetic_emission_partial_mode() {
         )
         .build()
         .into_pdu_body();
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1144,7 +1149,7 @@ fn codec_consistency_designator_full_mode() {
         .into_pdu_body();
     let dis_header =
         PduHeader::new_v7(7, PduType::Designator).with_pdu_status(PduStatus::default());
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1208,7 +1213,7 @@ fn codec_consistency_signal() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1251,7 +1256,7 @@ fn codec_consistency_receiver() {
         .build()
         .into_pdu_body();
 
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1309,7 +1314,7 @@ fn codec_consistency_transmitter_full_mode() {
         .into_pdu_body();
     let dis_header =
         PduHeader::new_v7(7, PduType::Transmitter).with_pdu_status(PduStatus::default());
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1372,7 +1377,7 @@ fn codec_consistency_transmitter_partial_mode() {
         .into_pdu_body();
     let dis_header =
         PduHeader::new_v7(7, PduType::Transmitter).with_pdu_status(PduStatus::default());
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -1443,7 +1448,7 @@ fn codec_consistency_iff_full_mode() {
         .build()
         .into_pdu_body();
     let dis_header = PduHeader::new_v7(7, PduType::IFF).with_pdu_status(PduStatus::default());
-    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+    let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, dis_header.timestamp);
 
     let (cdis_pdu, _state_result) =
         CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);

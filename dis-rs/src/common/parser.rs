@@ -26,8 +26,8 @@ use crate::common::model::{
     length_padded_to_num, ArticulatedPart, AttachedPart, BeamData, ClockTime, DatumSpecification,
     EntityAssociationParameter, EntityId, EntityType, EntityTypeParameter, EventId,
     ExpendableDescriptor, ExplosionDescriptor, FixedDatum, Location, MunitionDescriptor,
-    Orientation, Pdu, PduBody, PduHeader, SeparationParameter, SimulationAddress, VariableDatum,
-    VariableParameter, VectorF32,
+    Orientation, Pdu, PduBody, PduHeader, SeparationParameter, SimulationAddress, Timestamp,
+    VariableDatum, VariableParameter, VectorF32,
 };
 use crate::common::other::parser::other_body;
 use crate::common::receiver::parser::receiver_body;
@@ -170,16 +170,16 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let exercise_id = be_u8;
     let pdu_type = pdu_type;
     let protocol_family = protocol_family;
-    let time_stamp = be_u32;
+    let timestamp = timestamp;
     let pdu_length = be_u16;
 
-    let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
+    let (input, (protocol_version, exercise_id, pdu_type, protocol_family, timestamp, pdu_length)) =
         (
             protocol_version,
             exercise_id,
             pdu_type,
             protocol_family,
-            time_stamp,
+            timestamp,
             pdu_length,
         )
             .parse(input)?;
@@ -209,7 +209,7 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
             exercise_id,
             pdu_type,
             protocol_family,
-            time_stamp,
+            timestamp,
             pdu_length,
             pdu_status,
             padding,
@@ -343,6 +343,12 @@ pub(crate) fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
     let (input, protocol_family) = be_u8(input)?;
     let protocol_family = ProtocolFamily::from(protocol_family);
     Ok((input, protocol_family))
+}
+
+pub(crate) fn timestamp(input: &[u8]) -> IResult<&[u8], Timestamp> {
+    let (input, timestamp) = be_u32(input)?;
+    let timestamp = Timestamp::from(timestamp);
+    Ok((input, timestamp))
 }
 
 /// Skip the bytes of a PDU's body, by calculating the total length minus the length of a header.
@@ -840,7 +846,7 @@ mod tests {
             header.protocol_family,
             ProtocolFamily::EntityInformationInteraction
         );
-        assert_eq!(header.time_stamp, 1_323_973_472);
+        assert_eq!(header.timestamp, 1_323_973_472);
         assert_eq!(header.pdu_length, { PDU_HEADER_LEN_BYTES }); // only the header, 0-bytes pdu body
     }
 
@@ -870,7 +876,7 @@ mod tests {
             header.protocol_family,
             ProtocolFamily::EntityInformationInteraction
         );
-        assert_eq!(header.time_stamp, 1_323_973_472);
+        assert_eq!(header.timestamp, 1_323_973_472);
         assert_eq!(header.pdu_length, { PDU_HEADER_LEN_BYTES }); // only the header, 0-bytes pdu body
     }
 

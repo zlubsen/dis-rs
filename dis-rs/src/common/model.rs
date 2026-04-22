@@ -28,11 +28,11 @@ use crate::common::set_data::model::SetData;
 use crate::common::signal::model::Signal;
 use crate::common::start_resume::model::StartResume;
 use crate::common::stop_freeze::model::StopFreeze;
+pub use crate::common::timestamp::{TimeUnits, Timestamp};
 use crate::common::transmitter::model::Transmitter;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{
-    EIGHT_OCTETS, FIFTEEN_OCTETS, LEAST_SIGNIFICANT_BIT, NANOSECONDS_PER_TIME_UNIT, NO_REMAINDER,
-    PDU_HEADER_LEN_BYTES, SIX_OCTETS,
+    EIGHT_OCTETS, FIFTEEN_OCTETS, NO_REMAINDER, PDU_HEADER_LEN_BYTES, SIX_OCTETS,
 };
 use crate::create_entity_r::model::CreateEntityR;
 use crate::data_query_r::model::DataQueryR;
@@ -85,16 +85,12 @@ pub struct Pdu {
 }
 
 impl Pdu {
-    pub fn finalize_from_parts(
-        header: PduHeader,
-        body: PduBody,
-        time_stamp: impl Into<TimeStamp>,
-    ) -> Self {
-        let time_stamp: TimeStamp = time_stamp.into();
+    #[must_use]
+    pub fn finalize_from_parts(header: PduHeader, body: PduBody, timestamp: Timestamp) -> Self {
         Self {
             header: header
                 .with_pdu_type(body.body_type())
-                .with_time_stamp(time_stamp.raw_timestamp)
+                .with_timestamp(timestamp)
                 .with_length(body.body_length()),
             body,
         }
@@ -124,7 +120,7 @@ pub struct PduHeader {
     pub exercise_id: u8,
     pub pdu_type: PduType,
     pub protocol_family: ProtocolFamily,
-    pub time_stamp: u32,
+    pub timestamp: Timestamp,
     pub pdu_length: u16,
     pub pdu_status: Option<PduStatus>,
     pub padding: u16,
@@ -139,7 +135,7 @@ impl PduHeader {
             exercise_id,
             pdu_type,
             protocol_family,
-            time_stamp: 0u32,
+            timestamp: Timestamp::default(),
             pdu_length: 0u16,
             pdu_status: None,
             padding: 0u16,
@@ -163,10 +159,9 @@ impl PduHeader {
         self
     }
 
-    #[allow(clippy::return_self_not_must_use)]
-    pub fn with_time_stamp(mut self, time_stamp: impl Into<u32>) -> Self {
-        let time_stamp: u32 = time_stamp.into();
-        self.time_stamp = time_stamp;
+    #[must_use]
+    pub fn with_timestamp(mut self, timestamp: Timestamp) -> Self {
+        self.timestamp = timestamp;
         self
     }
 
@@ -1285,168 +1280,6 @@ impl ExpendableDescriptor {
     pub fn with_entity_type(mut self, entity_type: EntityType) -> Self {
         self.entity_type = entity_type;
         self
-    }
-}
-
-/// Custom type to model timestamps, just wrapping a `u32` value. By default,
-/// the `PduHeader` uses this type. Users can decide to convert the raw value
-/// to a `DisTimeStamp`, which models the Absolute and Relative interpretations of the value as defined by the standard.
-///
-/// The standard defines the value to be a number of DIS time units since the top of the hour.
-/// There are 2^31 - 1 time units in an hour.
-/// This results in each time unit representing exactly 3600/(2^31) seconds (approximately 1.67638063 μs).
-///
-/// This raw timestamp could also be interpreted as a Unix timestamp, or something else
-/// like a monotonically increasing timestamp. This is left up to the client applications of the protocol _by this library_.
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct TimeStamp {
-    pub raw_timestamp: u32,
-}
-
-impl TimeStamp {
-    #[must_use]
-    pub fn new(raw_timestamp: u32) -> Self {
-        Self { raw_timestamp }
-    }
-}
-
-impl From<u32> for TimeStamp {
-    fn from(value: u32) -> Self {
-        Self {
-            raw_timestamp: value,
-        }
-    }
-}
-
-impl From<TimeStamp> for u32 {
-    fn from(value: TimeStamp) -> Self {
-        value.raw_timestamp
-    }
-}
-
-impl From<DisTimeStamp> for TimeStamp {
-    fn from(value: DisTimeStamp) -> Self {
-        let raw_timestamp = match value {
-            DisTimeStamp::Absolute {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _,
-            } => (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT,
-            DisTimeStamp::Relative {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _,
-            } => units_past_the_hour << 1,
-        };
-
-        Self { raw_timestamp }
-    }
-}
-
-/// A timestamp type that models the timestamp mechanism as described in the
-/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets an u32 value
-/// as an Absolute or a Relative timestamp based on the Least Significant Bit.
-/// The remaining (upper) bits represent the units of time passed since the
-/// beginning of the current hour in the selected time reference.
-/// The `DisTimeStamp` stores both the units past the hour, and a conversion to
-/// nanoseconds past the hour.
-#[derive(Debug)]
-pub enum DisTimeStamp {
-    Absolute {
-        units_past_the_hour: u32,
-        nanoseconds_past_the_hour: u32,
-    },
-    Relative {
-        units_past_the_hour: u32,
-        nanoseconds_past_the_hour: u32,
-    },
-}
-
-impl DisTimeStamp {
-    #[must_use]
-    pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour =
-            DisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
-        Self::Absolute {
-            units_past_the_hour,
-            nanoseconds_past_the_hour,
-        }
-    }
-
-    #[must_use]
-    pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour = DisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour =
-            DisTimeStamp::nanoseconds_to_dis_time_units(nanoseconds_past_the_hour);
-        Self::Relative {
-            units_past_the_hour,
-            nanoseconds_past_the_hour,
-        }
-    }
-
-    #[must_use]
-    pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
-        Self::Absolute {
-            units_past_the_hour,
-            nanoseconds_past_the_hour: Self::dis_time_units_to_nanoseconds(units_past_the_hour),
-        }
-    }
-
-    #[must_use]
-    pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
-        Self::Relative {
-            units_past_the_hour,
-            nanoseconds_past_the_hour: Self::dis_time_units_to_nanoseconds(units_past_the_hour),
-        }
-    }
-
-    /// Helper function to convert seconds to nanoseconds
-    fn seconds_to_nanoseconds(seconds: u32) -> u32 {
-        seconds * 1_000_000
-    }
-
-    /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
-    #[allow(clippy::cast_possible_truncation)]
-    fn nanoseconds_to_dis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
-        (nanoseconds_past_the_hour as f32 / NANOSECONDS_PER_TIME_UNIT) as u32
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    fn dis_time_units_to_nanoseconds(dis_time_units: u32) -> u32 {
-        (dis_time_units as f32 * NANOSECONDS_PER_TIME_UNIT) as u32
-    }
-}
-
-impl From<u32> for DisTimeStamp {
-    fn from(value: u32) -> Self {
-        let absolute_bit = (value & LEAST_SIGNIFICANT_BIT) == LEAST_SIGNIFICANT_BIT;
-        let units_past_the_hour = value >> 1;
-        let nanoseconds_past_the_hour =
-            (units_past_the_hour as f32 * NANOSECONDS_PER_TIME_UNIT) as u32;
-
-        if absolute_bit {
-            Self::Absolute {
-                units_past_the_hour,
-                nanoseconds_past_the_hour,
-            }
-        } else {
-            Self::Relative {
-                units_past_the_hour,
-                nanoseconds_past_the_hour,
-            }
-        }
-    }
-}
-
-impl From<TimeStamp> for DisTimeStamp {
-    fn from(value: TimeStamp) -> Self {
-        DisTimeStamp::from(value.raw_timestamp)
-    }
-}
-
-impl From<DisTimeStamp> for u32 {
-    fn from(value: DisTimeStamp) -> Self {
-        TimeStamp::from(value).raw_timestamp
     }
 }
 

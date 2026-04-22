@@ -1,6 +1,6 @@
 use crate::common::data_query::model::DataQuery;
 use crate::common::model::PduBody;
-use crate::common::parser::entity_id;
+use crate::common::parser::{entity_id, timestamp};
 use crate::enumerations::VariableRecordType;
 use crate::BodyRaw;
 use nom::multi::count;
@@ -11,7 +11,7 @@ pub(crate) fn data_query_body(input: &[u8]) -> IResult<&[u8], PduBody> {
     let (input, originating_id) = entity_id(input)?;
     let (input, receiving_id) = entity_id(input)?;
     let (input, request_id) = be_u32(input)?;
-    let (input, time_interval) = be_u32(input)?;
+    let (input, time_interval) = timestamp(input)?;
 
     let (input, num_of_fixed_datums) = be_u32(input)?;
     let (input, num_of_variable_datums) = be_u32(input)?;

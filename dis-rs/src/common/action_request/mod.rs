@@ -6,8 +6,9 @@ pub mod writer;
 #[cfg(test)]
 mod tests {
     use crate::common::action_request::model::ActionRequest;
-    use crate::common::model::DisTimeStamp;
-    use crate::common::model::{EntityId, FixedDatum, Pdu, PduHeader, VariableDatum};
+    use crate::common::model::{
+        EntityId, FixedDatum, Pdu, PduHeader, TimeUnits, Timestamp, VariableDatum,
+    };
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{ActionId, PduType, VariableRecordType};
     use crate::BodyRaw;
@@ -29,8 +30,11 @@ mod tests {
             )])
             .build()
             .into_pdu_body();
-        let original_pdu =
-            Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
+        let original_pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = original_pdu.header.pdu_length;
         let original_length = original_pdu.pdu_length();
 

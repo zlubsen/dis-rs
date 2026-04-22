@@ -8,8 +8,7 @@ mod tests {
     use crate::aggregate_state::model::{
         AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem,
     };
-    use crate::common::model::DisTimeStamp;
-    use crate::common::model::{Pdu, PduHeader};
+    use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::entity_state::model::EntityAppearance;
     use crate::enumerations::{
@@ -62,8 +61,11 @@ mod tests {
             .build()
             .into_pdu_body();
 
-        let original_pdu =
-            Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
+        let original_pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = original_pdu.header.pdu_length;
         let original_length = original_pdu.pdu_length();
 
