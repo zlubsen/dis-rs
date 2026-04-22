@@ -1423,7 +1423,7 @@ pub enum VariableParameter {
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ArticulatedPart {
-    pub change_indicator: ChangeIndicator,
+    pub change_indicator: u8,
     pub attachment_id: u16,
     pub type_metric: ArticulatedPartsTypeMetric,
     pub type_class: ArticulatedPartsTypeClass,
@@ -1432,7 +1432,7 @@ pub struct ArticulatedPart {
 
 impl ArticulatedPart {
     #[must_use]
-    pub fn with_change_indicator(mut self, change_indicator: ChangeIndicator) -> Self {
+    pub fn with_change_indicator(mut self, change_indicator: u8) -> Self {
         self.change_indicator = change_indicator;
         self
     }

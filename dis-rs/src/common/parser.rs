@@ -632,7 +632,6 @@ pub(crate) fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParamet
 /// I.2.2 Articulated parts
 fn articulated_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, change_indicator) = be_u8(input)?;
-    let change_indicator = ChangeIndicator::from(change_indicator);
     let (input, attachment_id) = be_u16(input)?;
     let (input, parameter_type) = be_u32(input)?; // Parameter Type = Type Class + Type Metric
     let type_metric: u32 = parameter_type & FIVE_LEAST_SIGNIFICANT_BITS; // 5 least significant bits are the Type Metric

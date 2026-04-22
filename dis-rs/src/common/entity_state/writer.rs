@@ -166,7 +166,7 @@ mod tests {
         AppearancePaintScheme, AppearanceTrailingEffects,
     };
     use crate::enumerations::{
-        ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, ChangeIndicator, Country,
+        ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country,
         DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType,
         PlatformDomain,
     };
@@ -192,7 +192,7 @@ mod tests {
     #[test]
     fn articulated_part() {
         let articulated_part = VariableParameter::Articulated(ArticulatedPart {
-            change_indicator: ChangeIndicator::from(0u8),
+            change_indicator: 0,
             attachment_id: 0,
             type_class: ArticulatedPartsTypeClass::LandingGear,
             type_metric: ArticulatedPartsTypeMetric::Position,
@@ -279,28 +279,28 @@ mod tests {
             })
             .with_capabilities_flags(false, false, false, false)
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::LandingGear,
                 type_metric: ArticulatedPartsTypeMetric::Position,
                 parameter_value: 1.0
             }))
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Azimuth,
                 parameter_value: 2.0
             }))
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::AzimuthRate,
                 parameter_value: 3.0
             }))
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Elevation,
