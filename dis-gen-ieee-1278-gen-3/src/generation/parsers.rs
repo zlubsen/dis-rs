@@ -43,7 +43,7 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
             Ok((input, crate::ExtensionRecord {
                 record_type,
-                record_length: record_length.into(),
+                record_length,
                 body,
             }))
         }

@@ -19,6 +19,24 @@ pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
         use bytes::{BytesMut, BufMut};
 
         #pdu_body_writer
+
+        impl Serialize for Vec<crate::ExtensionRecord> {
+            fn serialize(&self, buf: &mut BytesMut) -> u16 {
+                buf.put_u16_le(self.len());
+                let length_of_records = self.iter().map(|er| er.serialise).sum::<u16>();
+
+                length_of_records
+            }
+        }
+
+        impl Serialize for crate::ExtensionRecord {
+            fn serialize(&self, buf: &mut BytesMut) -> u16 {
+                buf.put_u16_le(self.record_type.into());
+                buf.put_u16_le(self.record_length);
+
+                self.body.serialize(buf)
+            }
+        }
     };
 
     generate_module_with_name(WRITER_MODULE_NAME, &contents)
@@ -340,7 +358,7 @@ fn generate_array_field_type_writer_function(field: &ArrayFieldEnum) -> TokenStr
             generate_numeric_field_writer(f, &to_tokens(&format!("*{ARRAY_ELEMENT_IDENT}")))
         }
         ArrayFieldEnum::Enum(f) => {
-            generate_enum_field_writer(f, &to_tokens(&format!("*{ARRAY_ELEMENT_IDENT}")))
+            generate_enum_field_writer(f, &to_tokens(&format!("{ARRAY_ELEMENT_IDENT}")))
         }
         ArrayFieldEnum::FixedString(f) => {
             generate_fixed_string_field_writer(f, &to_tokens(ARRAY_ELEMENT_IDENT))

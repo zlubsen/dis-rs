@@ -732,17 +732,83 @@ fn generate_type_placeholder() -> TokenStream {
             }
         }
 
-        impl <T: Into<u16>> From<T> for EnumerationU16 {
-            fn from(value: T) -> Self {
+        impl From<EnumerationU8> for u8 {
+            fn from(value: EnumerationU8) -> Self {
+                value.0
+            }
+        }
+
+        impl From<&EnumerationU8> for u8 {
+            fn from(value: &EnumerationU8) -> Self {
+                value.0
+            }
+        }
+
+        impl From<EnumerationU16> for u16 {
+            fn from(value: EnumerationU16) -> Self {
+                value.0
+            }
+        }
+
+        impl From<&EnumerationU16> for u16 {
+            fn from(value: &EnumerationU16) -> Self {
+                value.0
+            }
+        }
+
+        // impl From<u8> for EnumerationU16 {
+        //     fn from(value: u8) -> Self {
+        //         Self(value.into())
+        //     }
+        // }
+
+        impl From<u16> for EnumerationU16 {
+            fn from(value: u16) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<u8> for EnumerationU32 {
+            fn from(value: u8) -> Self {
                 Self(value.into())
             }
         }
 
-        impl <T: Into<u32>> From<T> for EnumerationU32 {
-            fn from(value: T) -> Self {
+        impl From<u16> for EnumerationU32 {
+            fn from(value: u16) -> Self {
                 Self(value.into())
             }
         }
+
+        impl From<u32> for EnumerationU32 {
+            fn from(value: u32) -> Self {
+                Self(value)
+            }
+        }
+        
+        impl From<EnumerationU32> for u32 {
+            fn from(value: EnumerationU32) -> Self {
+                value.0
+            }
+        }
+
+        impl From<&EnumerationU32> for u32 {
+            fn from(value: &EnumerationU32) -> Self {
+                value.0
+            }
+        }
+
+        // impl <T: Into<u16>> From<T> for EnumerationU16 {
+        //     fn from(value: T) -> Self {
+        //         Self(value.into())
+        //     }
+        // }
+
+        // impl <T: Into<u32>> From<T> for EnumerationU32 {
+        //     fn from(value: T) -> Self {
+        //         Self(value.into())
+        //     }
+        // }
 
         impl Display for EnumerationU8 {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

@@ -132,7 +132,7 @@ impl PDUHeader {
 #[cfg_attr(feature = "serde", serde(tag = "type"))]
 pub struct ExtensionRecord {
     pub record_type: crate::enumerations::ExtensionRecordTypes,
-    pub record_length: usize,
+    pub record_length: u16,
     pub body: crate::ExtensionRecordBody,
 }
 
