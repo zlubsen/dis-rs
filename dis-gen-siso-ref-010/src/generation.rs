@@ -716,13 +716,13 @@ fn discriminant_literal(value: usize, data_size: usize) -> Literal {
 /// Generates wrapper types for `u8`/`u16`/`u32` enumerations or bitfields
 fn generate_type_placeholder() -> TokenStream {
     quote! {
-        #[derive(Debug, Default, Clone, PartialEq)]
+        #[derive(Debug, Default, Copy, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct EnumerationU8(u8);
-        #[derive(Debug, Default, Clone, PartialEq)]
+        #[derive(Debug, Default, Copy, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct EnumerationU16(u16);
-        #[derive(Debug, Default, Clone, PartialEq)]
+        #[derive(Debug, Default, Copy, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct EnumerationU32(u32);
 
@@ -785,10 +785,16 @@ fn generate_type_placeholder() -> TokenStream {
                 Self(value)
             }
         }
-        
+
         impl From<EnumerationU32> for u32 {
             fn from(value: EnumerationU32) -> Self {
                 value.0
+            }
+        }
+
+        impl From<EnumerationU32> for u8 {
+            fn from(value: EnumerationU32) -> Self {
+                value.0 as u8
             }
         }
 

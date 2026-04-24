@@ -12,9 +12,11 @@ use quote::{format_ident, quote};
 
 pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
     let pdu_body_writer = generate_common_pdu_body_writer(items);
+    let extension_record_body_writer = generate_common_extension_record_body_writer(items);
 
     let contents = quote! {
         use crate::PduBody;
+        use crate::ExtensionRecordBody;
         use crate::core::writer::Serialize;
         use bytes::{BytesMut, BufMut};
 
@@ -22,10 +24,10 @@ pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
 
         impl Serialize for Vec<crate::ExtensionRecord> {
             fn serialize(&self, buf: &mut BytesMut) -> u16 {
-                buf.put_u16_le(self.len());
-                let length_of_records = self.iter().map(|er| er.serialise).sum::<u16>();
+                buf.put_u16_le(self.len() as u16);
+                let length_of_records = self.iter().map(|er| er.serialize(buf) ).sum::<u16>();
 
-                length_of_records
+                2 + length_of_records
             }
         }
 
@@ -37,6 +39,8 @@ pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
                 self.body.serialize(buf)
             }
         }
+
+        #extension_record_body_writer
     };
 
     generate_module_with_name(WRITER_MODULE_NAME, &contents)
@@ -90,6 +94,36 @@ pub(crate) fn generate_pdu_body_writer(pdu: &Pdu) -> TokenStream {
                 self.body_length()
             }
         }
+    }
+}
+
+fn generate_common_extension_record_body_writer(items: &[GenerationItem]) -> TokenStream {
+    let er_body_arms = items
+        .iter()
+        .filter(|&it| it.is_extension_record())
+        .map(generate_common_extension_record_body_writer_arm)
+        .collect::<TokenStream>();
+
+    quote! {
+        impl Serialize for ExtensionRecordBody {
+            fn serialize(&self, buf: &mut BytesMut) -> u16 {
+                match self {
+                    ExtensionRecordBody::Other(body) => body.serialize(buf),
+                    #er_body_arms
+                }
+            }
+        }
+    }
+}
+
+fn generate_common_extension_record_body_writer_arm(record: &GenerationItem) -> TokenStream {
+    if let GenerationItem::ExtensionRecord(er, _) = record {
+        let er_variant_name = format_ident!("{}", er.record_type_variant_name);
+        quote! {
+            ExtensionRecordBody::#er_variant_name(body) => body.serialize(buf),
+        }
+    } else {
+        quote! {}
     }
 }
 
@@ -358,7 +392,7 @@ fn generate_array_field_type_writer_function(field: &ArrayFieldEnum) -> TokenStr
             generate_numeric_field_writer(f, &to_tokens(&format!("*{ARRAY_ELEMENT_IDENT}")))
         }
         ArrayFieldEnum::Enum(f) => {
-            generate_enum_field_writer(f, &to_tokens(&format!("{ARRAY_ELEMENT_IDENT}")))
+            generate_enum_field_writer(f, &to_tokens(&format!("*{ARRAY_ELEMENT_IDENT}")))
         }
         ArrayFieldEnum::FixedString(f) => {
             generate_fixed_string_field_writer(f, &to_tokens(ARRAY_ELEMENT_IDENT))

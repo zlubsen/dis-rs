@@ -137,9 +137,8 @@ pub struct ExtensionRecord {
 }
 
 impl ExtensionRecord {
-    // TODO match the field value with actual data length (variable fields), when manually constructing an ER.
     pub fn record_length(&self) -> u16 {
-        self.body.record_length() as u16
+        4 + self.body.record_length() as u16
     }
 
     pub fn record_type(&self) -> crate::enumerations::ExtensionRecordTypes {
