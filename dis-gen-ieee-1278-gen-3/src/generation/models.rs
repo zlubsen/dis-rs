@@ -182,6 +182,7 @@ pub(crate) struct AdaptiveRecordField {
     pub discriminant_field_name: String,
     pub discriminant_field_type: TokenStream,
     pub parser_function: TokenStream,
+    pub writer_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -399,7 +400,6 @@ pub(crate) struct AdaptiveRecord {
     pub discriminant_start_value: usize,
     pub discriminant_type: TokenStream,
     pub discriminant_primitive_type: TokenStream,
-    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -728,7 +728,9 @@ fn generate_family_extension_records(items: &[GenerationItem], family: &str) -> 
 
     // Add imports for writers
     let extension_record_writers = quote! {
+        #[allow(unused_imports)]
         use bytes::{BytesMut, BufMut};
+        #[allow(unused_imports)]
         use crate::core::writer::Serialize;
 
         #extension_record_writers
@@ -775,7 +777,7 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
             GenerationItem::AdaptiveRecord(record, _family) => (
                 generate_adaptive_record(record),
                 super::parsers::generate_adaptive_record_parser(record),
-                quote! {}, // TODO adaptive record writer
+                super::writers::generate_adaptive_record_writer(record),
             ),
             GenerationItem::ExtensionRecord(_record, _family) => {
                 panic!("GenerationItem is not a Record (found ExtensionRecord).")
@@ -808,7 +810,9 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
         .collect::<TokenStream>();
     // Add imports for the parser module
     let record_writers = quote! {
+        #[allow(unused_imports)]
         use bytes::{BytesMut, BufMut};
+        #[allow(unused_imports)]
         use crate::core::writer::Serialize;
         #record_writers
     };

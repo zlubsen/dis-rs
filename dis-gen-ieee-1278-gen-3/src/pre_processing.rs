@@ -554,12 +554,16 @@ fn process_bit_record_field(
                     },
                 )
             }
-            BitRecordFieldType::Record(fqn) => (
-                fqn,
-                quote! {
-                    self.#field_name_tokens.serialize(buf);
-                },
-            ),
+            BitRecordFieldType::Record(fqn) => {
+                let put_function = format_primitive_writer_function(primitive_type);
+                (
+                    fqn,
+                    quote! {
+                        buf.#put_function((&self.#field_name_tokens).into());
+                        // self.#field_name_tokens.serialize(buf);
+                    },
+                )
+            }
         };
         (
             to_tokens(&fqn.path),
@@ -583,24 +587,37 @@ fn process_adaptive_record_field(
     lookup: &Lookup,
 ) -> crate::generation::models::AdaptiveRecordField {
     let field_type_fqn = type_for_adaptive_record_field(field, lookup);
+    let field_name = format_field_name(&field.name);
     let discriminant_field_type = if let Some(d_uids) = &field.enum_uid {
         let d_fqn = lookup_enum_fqn_first_uid(d_uids, lookup);
         to_tokens(&d_fqn.to_full_type())
     } else {
         quote! {}
     };
-    let parser_function = to_tokens(&format!(
-        "{NOM_LE_PARSER_PATH}{}",
-        field_length_to_primitive(field.length)
-    ));
+    let primitive_type = field_length_to_primitive(field.length);
+    let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{primitive_type}"));
+    let writer_function = {
+        let put_function = format_primitive_writer_function(primitive_type);
+        let field_name_tokens = to_tokens(&field_name);
+        if field.enum_uid.is_some() {
+            quote! {
+                buf.#put_function(self.#field_name_tokens.into());
+            }
+        } else {
+            quote! {
+                buf.#put_function((&(self.#field_name_tokens)).into());
+            }
+        }
+    };
     crate::generation::models::AdaptiveRecordField {
-        field_name: format_field_name(&field.name),
+        field_name,
         type_name: to_tokens(&field_type_fqn.type_name),
         type_path: to_tokens(&field_type_fqn.path),
         length: field.length,
         discriminant_field_name: format_field_name(&field.discriminant),
         discriminant_field_type,
         parser_function,
+        writer_function,
     }
 }
 
@@ -754,9 +771,6 @@ fn process_adaptive_record(
     let discriminant_type = quote! { #discriminant_path::#discriminant_name };
     let discriminant_primitive_type = to_tokens(discriminant_primitive_type);
 
-    let value_primitive_type = field_length_to_primitive(record.length);
-    let parser_function = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
-
     crate::generation::models::AdaptiveRecord {
         variants,
         type_name,
@@ -765,7 +779,6 @@ fn process_adaptive_record(
         discriminant_start_value: record.discriminant_start_value,
         discriminant_type,
         discriminant_primitive_type,
-        parser_function,
     }
 }
 

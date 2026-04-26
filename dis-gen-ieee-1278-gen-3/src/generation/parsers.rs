@@ -422,7 +422,6 @@ pub(crate) fn generate_adaptive_record_parser(record: &AdaptiveRecord) -> TokenS
             let variant_type_path = &variant.type_path;
             let variant_type_name = &variant.type_name;
             quote! { #index => #type_path::#type_name::#variant_type_name(#variant_type_path::#variant_type_name::from(value)), }
-            // quote! { #discriminant_type::#variant_type_name => #type_path::#type_name::#variant_type_name(#variant_type_path::#variant_type_name::from(value)), }
         })
         .collect::<Vec<TokenStream>>();
 
