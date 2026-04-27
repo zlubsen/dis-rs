@@ -89,21 +89,6 @@ impl ExtractionItem {
             ExtractionItem::ExtensionRecord(item, _) => item.name_attr.clone(),
         }
     }
-
-    /// Returns true when the item is a `PDU`
-    pub(crate) fn is_pdu(&self) -> bool {
-        matches!(self, ExtractionItem::Pdu(_, _))
-    }
-
-    /// Returns true when the item is an `ExtensionRecord`
-    pub(crate) fn is_extension_record(&self) -> bool {
-        matches!(self, ExtractionItem::ExtensionRecord(_, _))
-    }
-
-    /// Returns true when the item is not a PDU or an `ExtensionRecord`
-    fn is_record(&self) -> bool {
-        !self.is_pdu() && !self.is_extension_record()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -124,6 +109,7 @@ pub struct EnumField {
     pub name: String,
     pub field_type: String,
     pub enum_uid: Option<Vec<usize>>,
+    #[expect(unused, reason = "Not needed for generation at this moment.")]
     pub hierarchy_dependency: Option<String>,
     pub is_discriminant: Option<bool>,
 }

@@ -5,7 +5,7 @@ pub(crate) mod writer;
 use crate::common_records::{PDUHeader, PDUStatus};
 use crate::core::errors::DisError;
 use crate::core::parser::parse_multiple_pdu;
-use crate::enumerations::{DISPDUType, DISProtocolVersion};
+use crate::enumerations::{DISPDUType, DISProtocolFamily, DISProtocolVersion};
 use crate::{PduBody, PDU_HEADER_LEN_BYTES};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -65,6 +65,7 @@ pub struct Pdu {
 }
 
 impl Pdu {
+    #[must_use]
     pub fn finalize_from_parts(header: PDUHeader, body: PduBody, time_stamp: i64) -> Self {
         Self {
             header: header
@@ -78,6 +79,11 @@ impl Pdu {
     #[must_use]
     pub fn pdu_length(&self) -> u16 {
         PDU_HEADER_LEN_BYTES + self.body.body_length()
+    }
+
+    #[must_use]
+    pub fn protocol_family(&self) -> DISProtocolFamily {
+        self.body.protocol_family()
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::enumerations::DISPDUType;
+use crate::enumerations::{DISPDUType, DISProtocolFamily};
 use crate::{BodyRaw, PduBody};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,13 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", serde(tag = "type"))]
 pub struct Other {
     pub body: Vec<u8>,
+}
+
+impl Other {
+    #[must_use]
+    pub fn protocol_family(&self) -> DISProtocolFamily {
+        DISProtocolFamily::Other
+    }
 }
 
 impl BodyRaw for Other {

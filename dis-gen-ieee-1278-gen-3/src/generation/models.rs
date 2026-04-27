@@ -145,7 +145,8 @@ pub(crate) struct EnumBitField {
     pub type_path: TokenStream,
     pub bit_position: usize,
     pub size: usize,
-    pub is_discriminant: bool, // FIXME 'true' does not occur in the schemas
+    #[expect(unused, reason = "Draft 5: 'true' does not occur in the schemas")]
+    pub is_discriminant: bool,
 }
 
 #[derive(Clone)]
@@ -178,8 +179,10 @@ pub(crate) struct AdaptiveRecordField {
     pub field_name: String,
     pub type_name: TokenStream,
     pub type_path: TokenStream,
+    #[expect(unused)]
     pub length: usize,
     pub discriminant_field_name: String,
+    #[expect(unused)]
     pub discriminant_field_type: TokenStream,
     pub parser_function: TokenStream,
     pub writer_function: TokenStream,
@@ -194,8 +197,10 @@ pub(crate) struct VariableString {
 #[derive(Clone)]
 pub(crate) struct VariableStringField {
     pub field_name: String,
-    pub field_type: &'static str,       // `String`
-    pub fixed_number_of_strings: usize, // FIXME attribute does not occur in the schemas
+    #[expect(unused, reason = "Hardcoded type in pre-processor")]
+    pub field_type: &'static str, // `String`
+    #[expect(unused, reason = "Draft 5: attribute does not occur in the schemas")]
+    pub fixed_number_of_strings: usize,
     pub parser_function: TokenStream,
 }
 
@@ -228,6 +233,10 @@ impl PduAndFixedRecordFieldsEnum {
         }
     }
 
+    #[expect(
+        unused,
+        reason = "Handling of discriminants and adaptive fields can be refactored at some point"
+    )]
     pub(crate) fn is_discriminant(&self) -> Option<&EnumField> {
         match self {
             PduAndFixedRecordFieldsEnum::Enum(field) => {
@@ -241,6 +250,10 @@ impl PduAndFixedRecordFieldsEnum {
         }
     }
 
+    #[expect(
+        unused,
+        reason = "Handling of discriminants and adaptive fields can be refactored at some point"
+    )]
     pub(crate) fn has_discriminant(&self) -> Option<&AdaptiveRecordField> {
         match self {
             PduAndFixedRecordFieldsEnum::AdaptiveRecord(field) => Some(field),
@@ -386,9 +399,6 @@ pub(crate) struct BitRecord {
     pub type_name: TokenStream,
     pub type_path: TokenStream,
     pub size: usize,
-    pub parser_function: TokenStream,
-    pub value_parser: TokenStream,
-    pub writer_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -404,6 +414,10 @@ pub(crate) struct AdaptiveRecord {
 
 #[derive(Clone)]
 pub(crate) struct ExtensionRecordSet {
+    #[expect(
+        unused,
+        reason = "Field is extracted from the schema but at runtime derived from the size actual of the ExtensionRecords array"
+    )]
     pub count_field: CountField,
 }
 
@@ -424,9 +438,21 @@ pub(crate) struct ExtensionRecord {
     pub record_type_variant_name: String,
     pub base_length: usize,
     pub is_variable: bool,
+    #[expect(
+        unused,
+        reason = "Field is hardcoded instead of generated for each ExtensionRecord"
+    )]
     pub record_type_field: EnumField,
+    #[expect(
+        unused,
+        reason = "Field is hardcoded instead of generated for each ExtensionRecord"
+    )]
     pub record_length_field: NumericField,
     pub fields: Vec<ExtensionRecordFieldEnum>,
+    #[expect(
+        unused,
+        reason = "Padding is always applied, becomes zero when the ExtensionRecord is already byte-aligned"
+    )]
     pub padding_to_64_field: Option<PaddingTo64>,
     pub parser_function: TokenStream,
 }
@@ -437,12 +463,21 @@ pub(crate) struct Pdu {
     pub pdu_module_name: String,
     pub type_name: String,
     pub type_path: TokenStream,
+    #[expect(unused, reason = "The PDU Type value is not used in its integer form.")]
     pub pdu_type: usize,
     pub pdu_type_name: TokenStream,
     pub protocol_family: usize,
     pub base_length: usize,
+    #[expect(
+        unused,
+        reason = "Headers are handled separately in non-generated code, not part of the PDU"
+    )]
     pub header_field: FixedRecordField,
     pub fields: Vec<PduAndFixedRecordFieldsEnum>,
+    #[expect(
+        unused,
+        reason = "Field is extracted from the schema but at runtime derived from the size actual of the ExtensionRecords array"
+    )]
     pub extension_record_set: ExtensionRecordSet,
     pub parser_function: TokenStream,
 }
@@ -488,7 +523,12 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
 }
 
 fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
-    let (pdu_body_variants, pdu_body_type_variants, pdu_body_length_variants) = items
+    let (
+        pdu_body_variants,
+        pdu_body_type_variants,
+        pdu_body_length_variants,
+        pdu_body_protocol_family_variants,
+    ) = items
         .iter()
         .filter(|&it| it.is_pdu())
         .map(|pdu| {
@@ -496,13 +536,14 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
                 generate_body_variant(pdu),
                 generate_body_type_variant(pdu),
                 generate_body_length_variant(pdu),
+                generate_body_protocol_family_variant(pdu),
             )
         })
-        .collect::<(TokenStream, TokenStream, TokenStream)>();
+        .collect::<(TokenStream, TokenStream, TokenStream, TokenStream)>();
 
     let (
         extension_record_variants,
-        extension_record_type_variants, // TODO record_type impl for determining header values
+        _extension_record_type_variants, // TODO record_type impl for determining header values
         extension_record_length_variants,
     ) = items
         .iter()
@@ -527,6 +568,7 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
         }
 
         impl PduBody {
+            #[must_use]
             pub fn body_length(&self) -> u16 {
                 match self {
                     #pdu_body_length_variants
@@ -534,10 +576,19 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
                 }
             }
 
+            #[must_use]
             pub fn body_type(&self) -> crate::enumerations::DISPDUType {
                 match self {
                     #pdu_body_type_variants
                     PduBody::Other(body) => body.body_type(),
+                }
+            }
+
+            #[must_use]
+            pub fn protocol_family(&self) -> crate::enumerations::DISProtocolFamily {
+                match self {
+                    #pdu_body_protocol_family_variants
+                    PduBody::Other(body) => body.protocol_family(),
                 }
             }
         }
@@ -610,6 +661,22 @@ fn generate_body_length_variant(variant: &GenerationItem) -> TokenStream {
             (quote! { ExtensionRecordBody }, quote! { record_length })
         }
         _ => panic!("Body length for variants can only be called for PDUs and ExtensionRecords"),
+    };
+
+    quote! {
+        #body_type::#variant_name(body) => body.#function(),
+    }
+}
+
+fn generate_body_protocol_family_variant(variant: &GenerationItem) -> TokenStream {
+    let variant_name = to_tokens(
+        variant
+            .variant_name()
+            .expect("Variant name for variants can only be called for PDUs and ExtensionRecords"),
+    );
+    let (body_type, function) = match variant {
+        GenerationItem::Pdu(_, _) => (quote! { PduBody }, quote! { protocol_family }),
+        _ => panic!("Protocol Family for variants can only be called for PDUs"),
     };
 
     quote! {
@@ -843,6 +910,7 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
 /// Generates all code related a PDU
 fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     let pdu_name_ident = format_ident!("{}", pdu.type_name);
+    let protocol_family = Literal::usize_unsuffixed(pdu.protocol_family);
     let pdu_module_name = &pdu.pdu_module_name;
     let builder_name_ident = format_ident!("{}{BUILDER_TYPE_SUFFIX}", pdu.type_name);
 
@@ -889,6 +957,12 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
         pub struct #pdu_name_ident {
             #(#fields)*
             pub extension_records: Vec<crate::ExtensionRecord>,
+        }
+
+        impl #pdu_name_ident {
+            pub fn protocol_family(&self) -> crate::enumerations::DISProtocolFamily {
+                crate::enumerations::DISProtocolFamily::from(#protocol_family)
+            }
         }
 
         #pdu_trait_impls
@@ -1199,9 +1273,10 @@ fn generate_array_field_decl(field: &Array) -> TokenStream {
 
 fn generate_opaque_field_decl(field: &OpaqueData) -> TokenStream {
     let field_ident = format_ident!("{}", field.opaque_data_field.field_name);
+    let field_type = to_tokens(&field.opaque_data_field.field_type);
 
     quote! {
-        pub #field_ident : Vec<u8>,
+        pub #field_ident : #field_type,
     }
 }
 

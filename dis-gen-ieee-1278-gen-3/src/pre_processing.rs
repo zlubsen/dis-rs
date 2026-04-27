@@ -249,11 +249,6 @@ pub(crate) fn field_size_to_primitive_type(size: usize) -> &'static str {
     }
 }
 
-/// Maps DIS field sizes (in number of bits) to the corresponding length in bytes.
-pub(crate) fn field_size_to_number_of_octets(size: usize) -> usize {
-    size.div_ceil(8)
-}
-
 /// Maps DIS field lengths (in number of bytes) to Rust primitive data types.
 pub(crate) fn field_length_to_primitive(length: usize) -> &'static str {
     match length {
@@ -723,21 +718,12 @@ fn process_bit_record(
         .collect();
     let type_name = to_tokens(&record_type_fqn.type_name);
     let type_path = to_tokens(&record_type_fqn.path);
-    let parser_function = to_tokens(&record_type_fqn.field_name);
-
-    let value_primitive_type = field_size_to_primitive_type(record.size);
-    let value_parser = to_tokens(&format!("{NOM_LE_PARSER_PATH}{value_primitive_type}"));
-
-    let writer_function = format_primitive_writer_function(value_primitive_type);
 
     crate::generation::models::BitRecord {
         fields,
         type_name,
         type_path,
         size: record.size,
-        parser_function,
-        value_parser,
-        writer_function,
     }
 }
 
