@@ -1,6 +1,6 @@
 [package]
 name = "dis-assemble-gen-3"
-version = "0.14.0"
+version = "0.15.0"
 description = """
 A generation 3 implementation of the Distributed Interactive Simulation protocol (IEEE-1278.1) in Rust.
 

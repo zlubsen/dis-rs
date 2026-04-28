@@ -1,6 +1,6 @@
 [package]
 name = "dis-assemble-gen-2"
-version = "0.13.0"
+version = "0.15.0"
 description = """
 A generation 2 implementation of the Distributed Interactive Simulation protocol (IEEE-1278.1) in Rust.
 
