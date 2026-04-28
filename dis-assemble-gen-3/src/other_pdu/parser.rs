@@ -7,7 +7,7 @@ pub fn other_body(
     move |input: &[u8]| {
         let body_length = header
             .pdu_length
-            .saturating_sub(header.pdu_header_length as u16);
+            .saturating_sub(u16::from(header.pdu_header_length));
         let (input, body) = nom::bytes::complete::take(body_length)(input)?;
 
         Ok((

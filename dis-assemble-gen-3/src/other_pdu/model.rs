@@ -33,6 +33,10 @@ impl BodyRaw for Other {
         todo!()
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "MTU of PDUs and Records is well within u16::MAX"
+    )]
     fn body_length(&self) -> u16 {
         self.body.len() as u16
     }

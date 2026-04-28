@@ -3,6 +3,8 @@ use crate::constants::NO_REMAINDER;
 /// Struct to hold the length (in bits or bytes) of parts of a padded record.
 /// Such that `data_length` + `padding_length` = `record_length`.
 #[derive(Debug)]
+#[expect(clippy::struct_field_names)]
+#[expect(unused)]
 pub struct PaddedRecordLengths {
     pub data_length: usize,
     pub padding_length: usize,

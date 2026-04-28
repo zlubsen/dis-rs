@@ -375,7 +375,7 @@ fn create_extension_record_types_index(
 /// Generates code for all provided `GenerationItem`s, formats the code and stores it in `OUT_DIR`.
 fn generate_and_save(generation_items: &[GenerationItem], overrides: &Overrides) {
     // Generate all code for enums
-    let generated = generation::generate(generation_items, &overrides);
+    let generated = generation::generate(generation_items, overrides);
 
     // format generated code using prettyplease
     let ast = syn::parse_file(&generated.to_string())

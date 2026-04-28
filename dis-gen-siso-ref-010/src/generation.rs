@@ -330,7 +330,7 @@ where
         arms.push(quote!(
             #unspecified_ident => #name_ident::Unspecified(#unspecified_ident)
         ));
-    };
+    }
     arms
 }
 

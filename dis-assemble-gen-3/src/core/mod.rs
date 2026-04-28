@@ -97,7 +97,7 @@ impl PDUHeader {
         // TODO set the right values for fields
         Self {
             protocol_version,
-            compatibility_version: Default::default(),
+            compatibility_version: DISProtocolVersion::default(),
             pdu_type,
             pdu_length: 0u16,
             pdu_status: PDUStatus::default(),
@@ -143,10 +143,12 @@ pub struct ExtensionRecord {
 }
 
 impl ExtensionRecord {
+    #[must_use]
     pub fn record_length(&self) -> u16 {
-        4 + self.body.record_length() as u16
+        4 + self.body.record_length()
     }
 
+    #[must_use]
     pub fn record_type(&self) -> crate::enumerations::ExtensionRecordTypes {
         self.record_type
     }

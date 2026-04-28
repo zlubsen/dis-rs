@@ -50,13 +50,11 @@ pub fn extract(reader: &mut Reader<BufReader<File>>) -> Vec<GenerationItem> {
             Ok(Event::End(ref _element)) => {
                 // REVISIONS, REVISION, DICT, EBV, etc
             }
-            Ok(Event::Empty(ref element)) => {
-                if element.name() == BITFIELD_ELEMENT {
-                    items.push(GenerationItem::Bitfield(extract_bitfield(
-                        element, reader, true,
-                    )));
-                    // CR, CR_RANGE
-                }
+            Ok(Event::Empty(ref element)) if element.name() == BITFIELD_ELEMENT => {
+                items.push(GenerationItem::Bitfield(extract_bitfield(
+                    element, reader, true,
+                )));
+                // CR, CR_RANGE
             }
             Ok(Event::Eof) => break, // exits the loop when reaching end of file
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
@@ -98,10 +96,8 @@ fn extract_enum_rows(reader: &mut Reader<BufReader<File>>) -> Vec<EnumItem> {
                 ENUM_ROW_RANGE_ELEMENT => rows.push(extract_enum_range_row(element, reader)),
                 _ => (), // HEADER element
             },
-            Ok(Event::End(ref element)) => {
-                if element.name() == ENUM_ELEMENT {
-                    break;
-                }
+            Ok(Event::End(ref element)) if element.name() == ENUM_ELEMENT => {
+                break;
             }
             Ok(Event::Empty(ref element)) => match element.name() {
                 ENUM_ROW_ELEMENT => rows.push(extract_enum_row(element, reader)),
@@ -197,10 +193,12 @@ fn extract_bitfield_rows(reader: &mut Reader<BufReader<File>>) -> Vec<BitfieldIt
 
     loop {
         match reader.read_event_into(&mut buf) {
+            #[expect(clippy::single_match)]
             Ok(Event::Start(ref element)) => match element.name() {
                 BITFIELD_ROW_ELEMENT => rows.push(extract_bitfield_row(element, reader)),
                 _ => (),
             },
+            #[expect(clippy::single_match)]
             Ok(Event::End(ref element)) => match element.name() {
                 BITFIELD_ELEMENT => break,
                 _ => (),
@@ -294,7 +292,7 @@ mod tests {
         let extracted = extract(&mut reader);
         let item = extracted.first().expect("At least one extracted item");
         assert_eq!(item.uid(), 3);
-        assert_eq!(item.name(), "ProtocolVersion");
+        assert_eq!(item.name(), "DIS-Protocol Version");
         if let GenerationItem::Enum(e) = item {
             assert_eq!(e.size, 8);
             assert_eq!(e.items.len(), 9);

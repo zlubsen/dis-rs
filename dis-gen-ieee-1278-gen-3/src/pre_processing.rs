@@ -131,7 +131,7 @@ fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
     val
 }
 
-/// Look up the path and name for the given _Record_ (BitRecord, FixedRecord, AdaptiveRecord) type name.
+/// Look up the path and name for the given _Record_ (`BitRecord`, `FixedRecord`, `AdaptiveRecord`) type name.
 #[inline]
 fn lookup_record_fqn<'fqn>(type_name: &str, lookup: &'fqn Lookup) -> &'fqn Fqn {
     if let Some(fqn) = lookup.records_fqn.get(type_name) {
@@ -188,7 +188,7 @@ fn lookup_pdu_type(uid: usize, lookup: &Lookup) -> &str {
 pub(crate) fn to_tokens(token_string: &str) -> TokenStream {
     token_string
         .parse()
-        .expect(format!("Could not parse TokenStream '{token_string}'").as_str())
+        .unwrap_or_else(|_| panic!("Could not parse TokenStream '{token_string}'"))
 }
 
 pub(crate) fn finalise_type<'a>(path: &'a TokenStream, name: &'a TokenStream) -> TokenStream {
@@ -273,7 +273,7 @@ fn type_for_enum_field<'l>(
     lookup: &'l Lookup,
 ) -> EnumFieldType<'l, 'static> {
     if let Some(uids) = &field.enum_uid {
-        let fqn = lookup_enum_fqn_first_uid(&uids, lookup);
+        let fqn = lookup_enum_fqn_first_uid(uids, lookup);
         EnumFieldType::Enum(fqn)
     } else {
         let ty = enum_type_to_primitive_type(&field.field_type)
@@ -1007,14 +1007,13 @@ fn process_array_field_enum(
 #[cfg(test)]
 mod tests {
     use super::field_size_to_primitive_type;
-    use std::any::Any;
 
     use crate::extraction::{
         CountField, ExtensionRecordSet, ExtractionItem, FixedRecordField, Pdu,
     };
 
     #[test]
-    fn format_full_qualified_name() {
+    fn format_full_qualified_name_path() {
         let pdu = ExtractionItem::Pdu(
             Pdu {
                 name_attr: "Entity State".to_string(),
@@ -1036,46 +1035,22 @@ mod tests {
             },
             "entity_info_interaction".to_string(),
         );
-        let pdu_fqn = crate::pre_processing::format_fqn_path_pdu(&pdu);
+        let pdu_fqn_path = crate::pre_processing::format_fqn_path_pdu(&pdu);
         assert_eq!(
-            pdu_fqn.as_str(),
-            "crate::entity_info_interaction::entity_state::EntityState"
+            pdu_fqn_path.as_str(),
+            "crate::entity_info_interaction::entity_state"
         );
     }
 
     #[test]
     fn test_int_bit_field_type_to_primitive() {
-        let type_u8: syn::Type = syn::parse_str("u8").unwrap();
-        let type_u16: syn::Type = syn::parse_str("u16").unwrap();
-        let type_u32: syn::Type = syn::parse_str("u32").unwrap();
-        let type_u64: syn::Type = syn::parse_str("u64").unwrap();
-        let type_u128: syn::Type = syn::parse_str("u128").unwrap();
-
-        assert_eq!(field_size_to_primitive_type(4).type_id(), type_u8.type_id());
-        assert_eq!(field_size_to_primitive_type(8).type_id(), type_u8.type_id());
-        assert_eq!(
-            field_size_to_primitive_type(9).type_id(),
-            type_u16.type_id()
-        );
-        assert_eq!(
-            field_size_to_primitive_type(16).type_id(),
-            type_u16.type_id()
-        );
-        assert_eq!(
-            field_size_to_primitive_type(17).type_id(),
-            type_u32.type_id()
-        );
-        assert_eq!(
-            field_size_to_primitive_type(32).type_id(),
-            type_u32.type_id()
-        );
-        assert_eq!(
-            field_size_to_primitive_type(33).type_id(),
-            type_u64.type_id()
-        );
-        assert_eq!(
-            field_size_to_primitive_type(100).type_id(),
-            type_u128.type_id()
-        );
+        assert_eq!(field_size_to_primitive_type(4), "u8");
+        assert_eq!(field_size_to_primitive_type(8), "u8");
+        assert_eq!(field_size_to_primitive_type(9), "u16");
+        assert_eq!(field_size_to_primitive_type(16), "u16");
+        assert_eq!(field_size_to_primitive_type(17), "u32");
+        assert_eq!(field_size_to_primitive_type(32), "u32");
+        assert_eq!(field_size_to_primitive_type(33), "u64");
+        assert_eq!(field_size_to_primitive_type(100), "u128");
     }
 }

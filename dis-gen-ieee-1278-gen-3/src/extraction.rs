@@ -71,6 +71,7 @@ pub enum ExtractionItem {
 
 impl ExtractionItem {
     pub(crate) fn family(&self) -> String {
+        #[expect(clippy::match_same_arms)]
         match self {
             ExtractionItem::Pdu(_, fam) => fam.clone(),
             ExtractionItem::FixedRecord(_, fam) => fam.clone(),
@@ -327,7 +328,7 @@ pub(crate) fn extract_from_file(path: &PathBuf) -> (Vec<ExtractionItem>, String)
 /// Extracts the PDU Family name from a `PathBuf`.
 ///
 /// A path like `some/path/to/a/file/DIS_FamilyName.xml` will result in `family_name`.
-/// The function converts the CamelCase file name to snake_case. Each uppercase character
+/// The function converts the CamelCase file name to `snake_case`. Each uppercase character
 /// is replaced by an underscore and the lowercase character. Names in all uppercase
 /// characters (abbreviations such as IFF or SIMAN) are converted to lowercase characters.
 fn pdu_family_name_from_path(path: &Path) -> Result<String, ()> {

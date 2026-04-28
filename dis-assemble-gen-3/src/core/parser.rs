@@ -108,7 +108,7 @@ fn pdu_header_skip_body(input: &[u8]) -> IResult<&[u8], PDUHeader> {
 pub(crate) fn parse_peek_protocol_version(input: &[u8]) -> Result<DISProtocolVersion, DisError> {
     let parse_result = peek_protocol_version(input);
     match parse_result {
-        Ok((_, protocol_version)) => Ok(DISProtocolVersion::from(protocol_version)),
+        Ok((_, protocol_version)) => Ok(protocol_version),
         Err(err) => Err(DisError::ParseError(err.to_string())),
     }
 }

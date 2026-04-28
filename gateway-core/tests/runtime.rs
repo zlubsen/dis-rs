@@ -234,7 +234,10 @@ async fn build_spec_channel_incompatible_data_between_nodes() {
     {
         assert_eq!(instance_id, 1);
         assert_eq!(node_name.as_str(), "Receives PDU");
-        assert_eq!(data_type_expected.as_str(), "dis_rs::common::model::Pdu");
+        assert_eq!(
+            data_type_expected.as_str(),
+            "dis_assemble_gen_2::common::model::Pdu"
+        );
     } else {
         panic!();
     }

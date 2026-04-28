@@ -22,7 +22,6 @@ use std::ops::Div;
 ///            `model`
 ///            `parser`
 ///            `writer`
-
 pub(crate) enum GenerationItem {
     Pdu(Pdu, String),
     FixedRecord(FixedRecord, String),
@@ -358,8 +357,9 @@ impl ExtensionRecordFieldEnum {
             ExtensionRecordFieldEnum::AdaptiveRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::Opaque(f) => &f.opaque_data_field.field_name,
             // TODO are these correct names?
-            ExtensionRecordFieldEnum::PaddingTo16 => "padding",
-            ExtensionRecordFieldEnum::PaddingTo32 => "padding",
+            ExtensionRecordFieldEnum::PaddingTo16 | ExtensionRecordFieldEnum::PaddingTo32 => {
+                "padding"
+            }
         }
     }
 
@@ -1069,15 +1069,10 @@ fn generate_extension_record_variable_field_length_calculation(
     const OCTET_IN_BITS: usize = 8;
 
     match field {
-        ExtensionRecordFieldEnum::Numeric(_) => None,
-        ExtensionRecordFieldEnum::Enum(_) => None,
-        ExtensionRecordFieldEnum::FixedString(_) => None,
         ExtensionRecordFieldEnum::VariableString(f) => {
             let field_name = to_tokens(&f.string_field.field_name);
             Some(quote! { (self.#field_name.len() as u16) })
         }
-        ExtensionRecordFieldEnum::FixedRecord(_) => None,
-        ExtensionRecordFieldEnum::BitRecord(_) => None,
         ExtensionRecordFieldEnum::Array(f) => {
             let element_length = match &f.type_field {
                 ArrayFieldEnum::Numeric(af) => af.length,
@@ -1089,13 +1084,18 @@ fn generate_extension_record_variable_field_length_calculation(
             let field_name = to_tokens(f.type_field.field_name());
             Some(quote! { ((self.#field_name.len() * #element_length) as u16) })
         }
-        ExtensionRecordFieldEnum::AdaptiveRecord(_) => None,
         ExtensionRecordFieldEnum::Opaque(f) => {
             let field_name = to_tokens(&f.opaque_data_field.field_name);
             Some(quote! { (self.#field_name.len() as u16) })
         }
-        ExtensionRecordFieldEnum::PaddingTo16 => None,
-        ExtensionRecordFieldEnum::PaddingTo32 => None,
+        ExtensionRecordFieldEnum::Numeric(_)
+        | ExtensionRecordFieldEnum::Enum(_)
+        | ExtensionRecordFieldEnum::FixedString(_)
+        | ExtensionRecordFieldEnum::FixedRecord(_)
+        | ExtensionRecordFieldEnum::BitRecord(_)
+        | ExtensionRecordFieldEnum::AdaptiveRecord(_)
+        | ExtensionRecordFieldEnum::PaddingTo16
+        | ExtensionRecordFieldEnum::PaddingTo32 => None,
     }
 }
 
@@ -1153,10 +1153,7 @@ fn generate_extension_record_field_decl(field: &ExtensionRecordFieldEnum) -> Tok
             generate_adaptive_record_field_decl(field)
         }
         ExtensionRecordFieldEnum::Opaque(field) => generate_opaque_field_decl(field),
-        ExtensionRecordFieldEnum::PaddingTo16 => {
-            quote! {}
-        }
-        ExtensionRecordFieldEnum::PaddingTo32 => {
+        ExtensionRecordFieldEnum::PaddingTo16 | ExtensionRecordFieldEnum::PaddingTo32 => {
             quote! {}
         }
     }
@@ -1273,7 +1270,7 @@ fn generate_array_field_decl(field: &Array) -> TokenStream {
 
 fn generate_opaque_field_decl(field: &OpaqueData) -> TokenStream {
     let field_ident = format_ident!("{}", field.opaque_data_field.field_name);
-    let field_type = to_tokens(&field.opaque_data_field.field_type);
+    let field_type = to_tokens(field.opaque_data_field.field_type);
 
     quote! {
         pub #field_ident : #field_type,

@@ -10,6 +10,10 @@ pub struct Other {
 }
 
 impl Other {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "MTU of PDUs and Records is well within u16::MAX"
+    )]
     pub fn record_length(&self) -> u16 {
         self.body.len() as u16
     }
