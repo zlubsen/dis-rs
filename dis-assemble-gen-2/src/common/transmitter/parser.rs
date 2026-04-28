@@ -1,20 +1,20 @@
+use crate::BodyRaw;
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser::{entity_id, entity_type, location, orientation, vec3_f32};
 use crate::common::transmitter::model::{
-    BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum, Transmitter,
-    VariableTransmitterParameter, BASE_VTP_RECORD_LENGTH,
+    BASE_VTP_RECORD_LENGTH, BeamAntennaPattern, CryptoKeyId, ModulationType, SpreadSpectrum,
+    Transmitter, VariableTransmitterParameter,
 };
 use crate::enumerations::{
     ProtocolVersion, TransmitterAntennaPatternReferenceSystem, TransmitterAntennaPatternType,
     TransmitterCryptoSystem, TransmitterInputSource, TransmitterMajorModulation,
     TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
 };
-use crate::BodyRaw;
-use nom::bytes::complete::take;
-use nom::multi::count;
-use nom::number::complete::{be_f32, be_u16, be_u32, be_u64, be_u8};
 use nom::IResult;
 use nom::Parser;
+use nom::bytes::complete::take;
+use nom::multi::count;
+use nom::number::complete::{be_f32, be_u8, be_u16, be_u32, be_u64};
 
 pub(crate) fn transmitter_body(
     header: &PduHeader,

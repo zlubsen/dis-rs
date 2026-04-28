@@ -2,11 +2,10 @@
 name = "dis-rs"
 version = "0.14.0"
 description = """
-Implementations of the Distributed Interactive Simulation protocol (IEEE-1278.1) versions in Rust.
+An implementation of the Distributed Interactive Simulation protocol (IEEE-1278.1) in Rust.
 
 This main crate contains PDU implementations and facilities to read/write PDUs
-from Rust data structures to the wire format and vice versa. It supports versions 6 and 7 of the protocol ('generation 2').
-Support for DIS version 8 ('generation 3') is experimental, based on draft 5. Enable feature 'gen3' to use.
+from Rust data structures to the wire format and vice versa. It supports versions 6 and 7 of the protocol.
 """
 readme = "README.md"
 keywords = ["simulation", "DIS"]

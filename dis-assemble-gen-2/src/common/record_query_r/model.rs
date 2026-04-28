@@ -1,12 +1,11 @@
-use crate::common::model::EntityId;
+use crate::BodyRaw;
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::FOUR_OCTETS;
 use crate::enumerations::{
     PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType,
 };
-use crate::model::{PduBody, TimeStamp};
+use crate::model::{EntityId, PduBody, Timestamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +22,7 @@ pub struct RecordQueryR {
     pub request_id: u32,
     pub required_reliability_service: RequiredReliabilityService,
     pub event_type: RecordQueryREventType,
-    pub time: TimeStamp,
+    pub time: Timestamp,
     pub record_query_specification: RecordQuerySpecification,
 }
 

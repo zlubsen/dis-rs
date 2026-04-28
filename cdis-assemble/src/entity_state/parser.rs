@@ -9,8 +9,8 @@ use crate::records::parser::{
     angular_velocity, entity_identification, entity_marking, entity_type, linear_acceleration,
     linear_velocity, orientation, variable_parameter, world_coordinates,
 };
-use crate::types::parser::{uvint32, uvint8};
-use crate::{parsing, BodyProperties, CdisBody};
+use crate::types::parser::{uvint8, uvint32};
+use crate::{BodyProperties, CdisBody, parsing};
 use dis_rs::enumerations::DeadReckoningAlgorithm;
 use nom::bits::complete::take;
 use nom::multi::count;
@@ -123,10 +123,10 @@ pub(crate) fn entity_state_body(input: BitInput) -> IResult<BitInput, CdisBody> 
 
 #[cfg(test)]
 mod tests {
+    use crate::CdisBody;
     use crate::entity_state::parser::entity_state_body;
     use crate::records::model::{EntityId, UnitsDekameters};
     use crate::types::model::UVINT16;
-    use crate::CdisBody;
 
     #[test]
     fn parse_entity_state_no_fields_present() {

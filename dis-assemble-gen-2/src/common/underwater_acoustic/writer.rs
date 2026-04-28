@@ -1,7 +1,7 @@
 use crate::common::BodyInfo;
 use crate::underwater_acoustic::model::{
-    AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
-    UAFundamentalParameterData, UnderwaterAcoustic, APA,
+    APA, AcousticEmitterSystem, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
+    UAFundamentalParameterData, UnderwaterAcoustic,
 };
 use crate::{Serialize, SerializePdu, SupportedVersion};
 use bytes::{BufMut, BytesMut};

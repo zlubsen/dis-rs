@@ -1,8 +1,8 @@
-use crate::common::model::{EntityId, PduBody, SupplyQuantity, SUPPLY_QUANTITY_RECORD_LENGTH};
+use crate::BodyRaw;
+use crate::common::model::{EntityId, PduBody, SUPPLY_QUANTITY_RECORD_LENGTH, SupplyQuantity};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ServiceRequestServiceTypeRequested};
 use crate::service_request::builder::ServiceRequestBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

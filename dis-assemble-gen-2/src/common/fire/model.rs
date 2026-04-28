@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::model::{
     EntityId, EventId, ExpendableDescriptor, Location, MunitionDescriptor, PduBody, VectorF32,
 };
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::fire::builder::FireBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

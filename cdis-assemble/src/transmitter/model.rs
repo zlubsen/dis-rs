@@ -7,7 +7,7 @@ use crate::records::model::{
     BeamAntennaPattern, CdisRecord, EntityCoordinateVector, EntityId, EntityType, UnitsDekameters,
     UnitsMeters, WorldCoordinates,
 };
-use crate::types::model::{CdisFloat, VarInt, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, UVINT8, UVINT16, VarInt};
 use crate::writing::write_value_unsigned;
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::{
@@ -15,8 +15,8 @@ use dis_rs::enumerations::{
     TransmitterModulationTypeSystem, TransmitterTransmitState,
 };
 use dis_rs::transmitter::model::{CryptoKeyId, SpreadSpectrum, VariableTransmitterParameter};
-use nom::bits::complete::take;
 use nom::IResult;
+use nom::bits::complete::take;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Transmitter {
@@ -213,7 +213,7 @@ impl CdisFloat for TransmitterFrequencyFloat {
         let mut mantissa = float;
         let mut exponent = 0usize;
         let max_mantissa = 2f64.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
             mantissa /= 10.0;
             exponent += 1;
         }
@@ -265,7 +265,7 @@ impl CdisFloat for TransmitFrequencyBandwidthFloat {
         let mut mantissa = float;
         let mut exponent = 0usize;
         let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
             mantissa /= 10.0;
             exponent += 1;
         }

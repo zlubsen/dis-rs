@@ -102,16 +102,18 @@ impl Serialize for TrackJam {
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
+    use crate::common::BodyInfo;
     use crate::common::electromagnetic_emission::model::{
         Beam, ElectromagneticEmission, EmitterSystem, FundamentalParameterData, TrackJam,
     };
-    use crate::common::model::{BeamData, EntityId, EventId, Pdu, PduHeader, VectorF32};
-    use crate::common::BodyInfo;
+    use crate::common::model::{
+        BeamData, EntityId, EventId, Pdu, PduHeader, TimeUnits, Timestamp, VectorF32,
+    };
     use crate::enumerations::{
         ElectromagneticEmissionBeamFunction, EmitterName, EmitterSystemFunction,
         HighDensityTrackJam,
     };
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]
@@ -254,7 +256,11 @@ mod tests {
             .into_pdu_body();
 
         let header = PduHeader::new_v6(1, body.body_type());
-        let pdu = Pdu::finalize_from_parts(header, body, 0);
+        let pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
 
         let mut buf = BytesMut::with_capacity(228);
 
@@ -262,7 +268,7 @@ mod tests {
         assert_eq!(len, 228);
 
         let expected: [u8; 228] = [
-            0x06, 0x01, 0x17, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe4, 0x00, 0x00, 0x01, 0xf4,
+            0x06, 0x01, 0x17, 0x06, 0x04, 0x44, 0x44, 0x45, 0x00, 0xe4, 0x00, 0x00, 0x01, 0xf4,
             0x2b, 0x67, 0x00, 0x3e, 0x01, 0xf4, 0x2b, 0x67, 0x02, 0x41, 0x00, 0x01, 0x00, 0x00,
             0x32, 0x03, 0x00, 0x00, 0x7d, 0xaf, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x40, 0xa0, 0x00, 0x00, 0x0f, 0x02, 0x00, 0x7a, 0x4f, 0xb2, 0xd0, 0x5e,

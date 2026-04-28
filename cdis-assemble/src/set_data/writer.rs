@@ -1,7 +1,7 @@
 use crate::constants::TWO_BITS;
 use crate::set_data::model::SetData;
 use crate::types::model::UVINT8;
-use crate::writing::{write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, write_value_unsigned};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 
 impl SerializeCdisPdu for SetData {

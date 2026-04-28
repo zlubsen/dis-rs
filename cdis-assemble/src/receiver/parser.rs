@@ -1,12 +1,12 @@
 use crate::constants::{NINE_BITS, TWO_BITS};
-use crate::parsing::{take_signed, BitInput};
+use crate::parsing::{BitInput, take_signed};
 use crate::receiver::model::Receiver;
 use crate::records::parser::entity_identification;
 use crate::types::parser::uvint16;
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::ReceiverState;
-use nom::bits::complete::take;
 use nom::IResult;
+use nom::bits::complete::take;
 
 pub(crate) fn receiver_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, radio_reference_id) = entity_identification(input)?;

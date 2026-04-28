@@ -1,9 +1,9 @@
 use crate::v6::entity_state::model::EntityCapabilities;
+use nom::IResult;
 use nom::bits::bits;
 use nom::bits::complete::take as take_bits;
 use nom::bytes::complete::take as take_bytes;
 use nom::error::Error;
-use nom::IResult;
 
 pub(crate) fn entity_capabilities(input: &[u8]) -> IResult<&[u8], EntityCapabilities> {
     let (input, (ammunition_supply, fuel_supply, recovery, repair, _pad_out)): (

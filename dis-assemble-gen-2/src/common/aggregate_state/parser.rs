@@ -1,6 +1,7 @@
+use crate::BodyRaw;
 use crate::aggregate_state::model::{
-    aggregate_state_intermediate_length_padding, AggregateMarking, AggregateState, AggregateType,
-    SilentAggregateSystem, SilentEntitySystem,
+    AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem,
+    aggregate_state_intermediate_length_padding,
 };
 use crate::common::parser::{
     entity_id, entity_type, location, orientation, sanitize_marking, variable_datum, vec3_f32,
@@ -12,10 +13,9 @@ use crate::enumerations::{
     PlatformDomain,
 };
 use crate::model::PduBody;
-use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
-use nom::number::complete::{be_u16, be_u32, be_u8};
+use nom::number::complete::{be_u8, be_u16, be_u32};
 use nom::{IResult, Parser};
 
 pub(crate) fn aggregate_state_body(input: &[u8]) -> IResult<&[u8], PduBody> {

@@ -1,7 +1,7 @@
 use crate::constants::{
-    EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS,
-    NINE_BITS, ONE_BIT, SIXTEEN_BITS, SIX_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS,
-    THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWENTY_SIX_BITS, TWO_BITS,
+    EIGHT_BITS, ELEVEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, MAX_VARIABLE_DATUM_LENGTH_BITS,
+    NINE_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS, TEN_BITS, THIRTEEN_BITS, THIRTY_ONE_BITS,
+    THIRTY_TWO_BITS, THREE_BITS, TWELVE_BITS, TWO_BITS,
 };
 use crate::records::model::{
     AngularVelocity, BeamData, CdisArticulatedPartVP, CdisAttachedPartVP, CdisEntityAssociationVP,
@@ -11,7 +11,7 @@ use crate::records::model::{
 };
 use crate::types::model::{CdisFloat, UVINT8};
 use crate::writing::BitBuffer;
-use crate::writing::{write_value_signed, write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, write_value_signed, write_value_unsigned};
 use dis_rs::enumerations::VariableParameterRecordType;
 use dis_rs::model::{FixedDatum, VariableDatum};
 use num_traits::FromPrimitive;
@@ -23,8 +23,7 @@ impl SerializeCdis for CdisHeader {
             write_value_unsigned::<u8>(buf, cursor, TWO_BITS, self.protocol_version.into());
         let cursor = self.exercise_id.serialize(buf, cursor);
         let cursor = write_value_unsigned::<u8>(buf, cursor, EIGHT_BITS, self.pdu_type.into());
-        let cursor =
-            write_value_unsigned::<u32>(buf, cursor, TWENTY_SIX_BITS, self.timestamp.raw_timestamp);
+        let cursor = self.timestamp.serialize(buf, cursor);
         let cursor = write_value_unsigned(buf, cursor, FOURTEEN_BITS, self.length);
         let cursor = write_value_unsigned(
             buf,
@@ -385,13 +384,15 @@ impl LayerHeader {
 
 #[cfg(test)]
 mod tests {
-    use crate::records::model::{CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisRecord};
+    use crate::records::model::{
+        CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisRecord, CdisTimestamp,
+    };
     use crate::types::model::UVINT8;
     use crate::writing::BitBuffer;
     use crate::writing::SerializeCdis;
     use bitvec::prelude::BitArray;
     use dis_rs::enumerations::PduType;
-    use dis_rs::model::{PduStatus, TimeStamp};
+    use dis_rs::model::PduStatus;
 
     const FOUR_BYTES: usize = 4;
 
@@ -425,7 +426,7 @@ mod tests {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(7),
             pdu_type: PduType::EntityState,
-            timestamp: TimeStamp::default(),
+            timestamp: CdisTimestamp::default(),
             length: 0,
             pdu_status: PduStatus::default(),
         };

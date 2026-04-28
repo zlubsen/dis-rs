@@ -1,10 +1,10 @@
-use crate::common::model::{EntityId, RecordSpecification, BASE_RECORD_SPEC_RECORD_LENGTH};
+use crate::BodyRaw;
+use crate::common::model::{BASE_RECORD_SPEC_RECORD_LENGTH, EntityId, RecordSpecification};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{EventType, PduType, RequiredReliabilityService};
-use crate::model::{length_padded_to_num, PduBody};
+use crate::model::{PduBody, length_padded_to_num};
 use crate::record_r::builder::RecordRBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

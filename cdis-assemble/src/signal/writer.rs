@@ -1,6 +1,6 @@
 use crate::constants::{EIGHT_BITS, FOURTEEN_BITS};
 use crate::signal::model::Signal;
-use crate::writing::{serialize_when_present, write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, serialize_when_present, write_value_unsigned};
 use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
 
 impl SerializeCdisPdu for Signal {

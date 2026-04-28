@@ -1,10 +1,10 @@
+use crate::BodyRaw;
 use crate::common::model::PduBody;
 use crate::common::parser::entity_id;
 use crate::data_query_r::model::DataQueryR;
 use crate::enumerations::{RequiredReliabilityService, VariableRecordType};
-use crate::BodyRaw;
 use nom::multi::count;
-use nom::number::complete::{be_u16, be_u32, be_u8};
+use nom::number::complete::{be_u8, be_u16, be_u32};
 use nom::{IResult, Parser};
 
 pub(crate) fn data_query_r_body(input: &[u8]) -> IResult<&[u8], PduBody> {

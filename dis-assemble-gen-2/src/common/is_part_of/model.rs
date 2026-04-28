@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{IsPartOfNature, IsPartOfPosition, PduType, StationName};
 use crate::is_part_of::builder::IsPartOfBuilder;
 use crate::model::{EntityId, EntityType, PduBody, VectorF32};
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

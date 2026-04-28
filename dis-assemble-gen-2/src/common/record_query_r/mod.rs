@@ -5,15 +5,13 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::DisTimeStamp;
-    use crate::common::model::{EntityId, Pdu, PduHeader};
+    use crate::BodyRaw;
+    use crate::common::model::{EntityId, Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{
         PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType,
     };
-    use crate::model::TimeStamp;
     use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]
@@ -25,7 +23,7 @@ mod tests {
             .with_request_id(15)
             .with_required_reliability_service(RequiredReliabilityService::Unacknowledged)
             .with_event_type(RecordQueryREventType::InternalEntityStateData)
-            .with_time(TimeStamp::new(123_456))
+            .with_time(Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()))
             .with_record_query_specification(RecordQuerySpecification::default().with_record_ids(
                 vec![
                     VariableRecordType::_7_62mmM62Quantity_24005,
@@ -34,8 +32,11 @@ mod tests {
             ))
             .build()
             .into_pdu_body();
-        let original_pdu =
-            Pdu::finalize_from_parts(header, body, DisTimeStamp::new_absolute_from_secs(100));
+        let original_pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = original_pdu.header.pdu_length;
         let original_length = original_pdu.pdu_length();
 

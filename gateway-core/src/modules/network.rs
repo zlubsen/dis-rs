@@ -1,7 +1,7 @@
 use crate::core::{
-    BaseNode, BaseStatistics, InstanceId, NodeConstructor, NodeConstructorPointer, NodeData,
-    NodeRunner, UntypedNode, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
-    DEFAULT_OUTPUT_STATS_INTERVAL_MS,
+    BaseNode, BaseStatistics, DEFAULT_AGGREGATE_STATS_INTERVAL_MS, DEFAULT_NODE_CHANNEL_CAPACITY,
+    DEFAULT_OUTPUT_STATS_INTERVAL_MS, InstanceId, NodeConstructor, NodeConstructorPointer,
+    NodeData, NodeRunner, UntypedNode,
 };
 use crate::error::{CreationError, ExecutionError, NodeError, SpecificationError};
 use crate::node_data_impl;
@@ -16,8 +16,8 @@ use thiserror::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::{TcpListener, TcpSocket, UdpSocket};
-use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::sync::Notify;
+use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 
 const DEFAULT_SOCKET_BUFFER_CAPACITY: usize = 32_768;
@@ -364,12 +364,14 @@ impl NodeRunner for UdpNodeRunner {
             match event {
                 UdpNodeEvent::NoEvent => {}
                 UdpNodeEvent::ReceivedPacket(bytes) => {
-                    if let Ok(_num_receivers) = outgoing.send(bytes) {
-                    } else {
-                        Self::emit_event(
-                            &event_tx,
-                            Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())),
-                        );
+                    match outgoing.send(bytes) {
+                        Ok(_num_receivers) => {}
+                        _ => {
+                            Self::emit_event(
+                                &event_tx,
+                                Event::RuntimeError(ExecutionError::OutputChannelSend(self.id())),
+                            );
+                        }
                     };
                 }
                 UdpNodeEvent::BlockedPacket => {}
@@ -491,18 +493,18 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, UdpNodeError> 
             })?;
         }
         (true, UdpMode::MultiCast) => {
-            if let IpAddr::V4(ip_address_v4) = endpoint.address.ip() {
-                if let IpAddr::V4(interface_v4) = endpoint.interface.ip() {
-                    socket
-                        .join_multicast_v4(&ip_address_v4, &interface_v4)
-                        .map_err(|_| {
-                            UdpNodeError::JoinMulticastV4(
-                                endpoint.base.instance_id,
-                                ip_address_v4,
-                                interface_v4,
-                            )
-                        })?
-                }
+            if let IpAddr::V4(ip_address_v4) = endpoint.address.ip()
+                && let IpAddr::V4(interface_v4) = endpoint.interface.ip()
+            {
+                socket
+                    .join_multicast_v4(&ip_address_v4, &interface_v4)
+                    .map_err(|_| {
+                        UdpNodeError::JoinMulticastV4(
+                            endpoint.base.instance_id,
+                            ip_address_v4,
+                            interface_v4,
+                        )
+                    })?
             }
         }
         (false, UdpMode::UniCast) => socket.bind(&endpoint.interface.into()).map_err(|_| {
@@ -517,17 +519,17 @@ fn create_udp_socket(endpoint: &UdpNodeData) -> Result<UdpSocket, UdpNodeError> 
             })?;
         }
         (false, UdpMode::MultiCast) => {
-            if let IpAddr::V6(ip_address_v6) = endpoint.address.ip() {
-                if let IpAddr::V6(interface_v6) = endpoint.interface.ip() {
-                    // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
-                    socket.join_multicast_v6(&ip_address_v6, 0).map_err(|_| {
-                        UdpNodeError::JoinMulticastV6(
-                            endpoint.base.instance_id,
-                            ip_address_v6,
-                            interface_v6,
-                        )
-                    })?;
-                }
+            if let IpAddr::V6(ip_address_v6) = endpoint.address.ip()
+                && let IpAddr::V6(interface_v6) = endpoint.interface.ip()
+            {
+                // TODO how does IPv6 work with u32 interface numbers - pick 'any' for now.
+                socket.join_multicast_v6(&ip_address_v6, 0).map_err(|_| {
+                    UdpNodeError::JoinMulticastV6(
+                        endpoint.base.instance_id,
+                        ip_address_v6,
+                        interface_v6,
+                    )
+                })?;
             }
         }
     }
@@ -969,15 +971,15 @@ impl NodeRunner for TcpClientNodeRunner {
                             node_id: self.id(),
                             message: "TCP client node disconnected.".to_string(),
                         }));
-                    } else if let Ok(_num_receivers) = outgoing
-                        .send(Bytes::copy_from_slice(&self.buffer[..bytes_received])) {
+                    } else { match outgoing
+                        .send(Bytes::copy_from_slice(&self.buffer[..bytes_received])) { Ok(_num_receivers) => {
                         self.statistics.received_packet(bytes_received);
-                    } else {
+                    } _ => {
                         Self::emit_event(&event_tx, Event::RuntimeError(
                             ExecutionError::OutputChannelSend(self.id())
                         ));
                         break;
-                    };
+                    }}};
                 }
                 // aggregate statistics for the interval
                 _ = aggregate_stats_interval.tick() => {

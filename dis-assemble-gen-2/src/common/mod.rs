@@ -1,5 +1,6 @@
 pub mod model;
 pub(crate) mod parser;
+pub mod timestamp;
 
 pub mod acknowledge;
 pub mod acknowledge_r;

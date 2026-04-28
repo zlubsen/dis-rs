@@ -1,6 +1,6 @@
 [package]
 name = "cdis-assemble"
-version = "0.3.0"
+version = "0.4.0"
 description = """
 An implementation of the Compressed-Distributed Interactive Simulation (SISO-STD-023-2024) protocol in Rust.
 
@@ -19,12 +19,15 @@ categories.workspace = true
 
 [dependencies]
 dis-rs = { path = "../dis-rs" }
-bytes = "1.10.1"
+bytes = "1.11.1"
 nom = "8.0.0"
 bitvec = "1.0.1"
 num = "0.4.3"
 num-traits = "0.2.19"
 thiserror = "2.0"
+
+[dev-dependencies]
+rstest.workspace = true
 
 [lints]
 workspace = true

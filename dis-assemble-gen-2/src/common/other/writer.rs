@@ -14,10 +14,10 @@ impl SerializePdu for Other {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{Pdu, PduHeader};
+    use crate::BodyRaw;
+    use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::enumerations::PduType;
     use crate::other::model::Other;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]
@@ -27,7 +27,11 @@ mod tests {
             .with_body(vec![0x01, 0x02, 0x03])
             .build()
             .into_pdu_body();
-        let pdu = Pdu::finalize_from_parts(header, body, 10);
+        let pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = pdu.header.pdu_length;
 
         let mut buf = BytesMut::with_capacity(pdu_length as usize);
@@ -36,7 +40,7 @@ mod tests {
         assert_eq!(wire_size, pdu_length);
 
         let expected: [u8; 15] = [
-            0x06, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x0f, 0x00, 0x00, 0x01, 0x02,
+            0x06, 0x01, 0x00, 0x00, 0x04, 0x44, 0x44, 0x45, 0x00, 0x0f, 0x00, 0x00, 0x01, 0x02,
             0x03,
         ];
         assert_eq!(buf.as_ref(), expected.as_ref());

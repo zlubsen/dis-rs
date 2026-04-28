@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::entity_state::model::{
     DrEulerAngles, DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
     EntityMarking, EntityState,
@@ -9,12 +10,11 @@ use crate::enumerations::{
     DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion,
 };
 use crate::v6::entity_state::parser::entity_capabilities;
-use crate::BodyRaw;
-use nom::bytes::complete::take;
-use nom::multi::count;
-use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
 use nom::IResult;
 use nom::Parser;
+use nom::bytes::complete::take;
+use nom::multi::count;
+use nom::number::complete::{be_f32, be_u8, be_u16, be_u32};
 
 pub(crate) fn entity_state_body(
     header: &PduHeader,
@@ -309,7 +309,7 @@ mod tests {
             assert_eq!(pdu.variable_parameters.len(), 4);
             let parameter_1 = pdu.variable_parameters.first().unwrap();
             if let VariableParameter::Articulated(part) = parameter_1 {
-                assert_eq!(part.change_indicator, ChangeIndicator::from(0u8));
+                assert_eq!(part.change_indicator, 0u8);
                 assert_eq!(part.attachment_id, 0u16);
                 assert_eq!(part.type_metric, ArticulatedPartsTypeMetric::Position);
                 assert_eq!(part.type_class, ArticulatedPartsTypeClass::LandingGear); // landing gear
@@ -455,10 +455,7 @@ mod tests {
         let (input, parameter) = parameter.expect("should be Ok");
 
         if let VariableParameter::Articulated(articulated_part) = parameter {
-            assert_eq!(
-                articulated_part.change_indicator,
-                ChangeIndicator::from(0u8)
-            );
+            assert_eq!(articulated_part.change_indicator, 0u8);
             assert_eq!(articulated_part.attachment_id, 0);
             assert_eq!(
                 articulated_part.type_class,
@@ -490,10 +487,7 @@ mod tests {
         assert!(parameter.is_ok());
         let (input, parameter) = parameter.expect("should be Ok");
         if let VariableParameter::Articulated(articulated_part) = parameter {
-            assert_eq!(
-                articulated_part.change_indicator,
-                ChangeIndicator::from(0u8)
-            );
+            assert_eq!(articulated_part.change_indicator, 0u8);
             assert_eq!(articulated_part.attachment_id, 0);
             assert_eq!(
                 articulated_part.type_class,

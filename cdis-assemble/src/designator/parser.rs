@@ -1,14 +1,14 @@
 use crate::constants::{FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TWO_BITS};
 use crate::designator::model::{Designator, DesignatorFieldsPresent, DesignatorUnits};
-use crate::parsing::{parse_field_when_present, BitInput};
+use crate::parsing::{BitInput, parse_field_when_present};
 use crate::records::parser::{
     entity_coordinate_vector, entity_identification, linear_acceleration, world_coordinates,
 };
 use crate::types::parser::{uvint16, uvint32};
 use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::{DeadReckoningAlgorithm, DesignatorSystemName};
-use nom::bits::complete::take;
 use nom::IResult;
+use nom::bits::complete::take;
 
 #[allow(clippy::redundant_closure)]
 pub(crate) fn designator_body(input: BitInput) -> IResult<BitInput, CdisBody> {
@@ -95,11 +95,11 @@ pub(crate) fn designator_body(input: BitInput) -> IResult<BitInput, CdisBody> {
 
 #[cfg(test)]
 mod tests {
+    use crate::CdisBody;
     use crate::designator::model::DesignatorUnits;
     use crate::designator::parser::designator_body;
     use crate::records::model::{EntityId, UnitsDekameters, UnitsMeters};
     use crate::types::model::UVINT16;
-    use crate::CdisBody;
 
     #[test]
     fn parse_designator_no_fields_present() {

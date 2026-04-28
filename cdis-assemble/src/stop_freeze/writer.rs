@@ -1,7 +1,7 @@
 use crate::constants::{FOUR_BITS, ONE_BIT};
 use crate::stop_freeze::model::StopFreeze;
 use crate::types::writer::serialize_clock_time;
-use crate::writing::{write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, write_value_unsigned};
 use crate::{BitBuffer, SerializeCdisPdu};
 use dis_rs::enumerations::StopFreezeFrozenBehavior;
 

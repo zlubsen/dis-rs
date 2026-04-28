@@ -7,24 +7,24 @@ use crate::create_entity::model::CreateEntity;
 use crate::data::model::Data;
 use crate::data_query::model::DataQuery;
 use crate::designator::codec::{
-    decode_designator_body_and_update_state, encode_designator_body_and_update_state,
-    DecoderStateDesignator, EncoderStateDesignator,
+    DecoderStateDesignator, EncoderStateDesignator, decode_designator_body_and_update_state,
+    encode_designator_body_and_update_state,
 };
 use crate::detonation::model::Detonation;
 use crate::electromagnetic_emission::codec::{
+    DecoderStateElectromagneticEmission, EncoderStateElectromagneticEmission,
     decode_electromagnetic_emission_body_and_update_state,
-    encode_electromagnetic_emission_body_and_update_state, DecoderStateElectromagneticEmission,
-    EncoderStateElectromagneticEmission,
+    encode_electromagnetic_emission_body_and_update_state,
 };
 use crate::entity_state::codec::{
-    decode_entity_state_body_and_update_state, encode_entity_state_body_and_update_state,
-    DecoderStateEntityState, EncoderStateEntityState,
+    DecoderStateEntityState, EncoderStateEntityState, decode_entity_state_body_and_update_state,
+    encode_entity_state_body_and_update_state,
 };
 use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::iff::codec::{
-    decode_iff_body_and_update_state, encode_iff_body_and_update_state, DecoderStateIff,
-    EncoderStateIff,
+    DecoderStateIff, EncoderStateIff, decode_iff_body_and_update_state,
+    encode_iff_body_and_update_state,
 };
 use crate::receiver::model::Receiver;
 use crate::records::model::CdisHeader;
@@ -34,12 +34,12 @@ use crate::signal::model::Signal;
 use crate::start_resume::model::StartResume;
 use crate::stop_freeze::model::StopFreeze;
 use crate::transmitter::codec::{
-    decode_transmitter_body_and_update_state, encode_transmitter_body_and_update_state,
-    DecoderStateTransmitter, EncoderStateTransmitter,
+    DecoderStateTransmitter, EncoderStateTransmitter, decode_transmitter_body_and_update_state,
+    encode_transmitter_body_and_update_state,
 };
 use crate::unsupported::Unsupported;
 use crate::{BodyProperties, CdisBody, CdisPdu};
-use dis_rs::model::{EntityId, Pdu, PduBody, TimeStamp};
+use dis_rs::model::{EntityId, Pdu, PduBody};
 use dis_rs::{BodyRaw, VariableParameters};
 use std::collections::HashMap;
 
@@ -186,7 +186,7 @@ impl CdisPdu {
     ) -> (Self, CodecStateResult) {
         let header = CdisHeader::encode(&item.header);
         let (body, state_results) = CdisBody::encode(&item.body, state, options);
-        let pdu = CdisPdu::finalize_from_parts(header, body, None::<TimeStamp>);
+        let pdu = CdisPdu::finalize_from_parts(header, body, header.timestamp);
         (pdu, state_results)
     }
 
@@ -196,9 +196,9 @@ impl CdisPdu {
         options: &CodecOptions,
     ) -> (Pdu, CodecStateResult) {
         let header = self.header.decode();
-        let ts = header.time_stamp;
+        let timestamp = header.timestamp;
         let (body, state_result) = self.body.decode(state, options);
-        let pdu = Pdu::finalize_from_parts(header, body, ts);
+        let pdu = Pdu::finalize_from_parts(header, body, timestamp);
         (pdu, state_result)
     }
 }
@@ -601,18 +601,18 @@ mod tests {
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::entity_state::model::CdisEntityCapabilities;
     use crate::records::model::{
-        CdisEntityMarking, CdisHeader, CdisProtocolVersion, LinearVelocity, Orientation,
-        UnitsDekameters, WorldCoordinates,
+        CdisEntityMarking, CdisHeader, CdisProtocolVersion, CdisTimestamp, LinearVelocity,
+        Orientation, UnitsDekameters, WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
     use crate::{BodyProperties, CdisBody, CdisPdu};
+    use dis_rs::BodyRaw;
     use dis_rs::entity_state::model::{EntityMarking, EntityState};
     use dis_rs::enumerations::{
         Country, DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PduType,
         PlatformDomain, ProtocolVersion,
     };
-    use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, PduStatus, TimeStamp};
-    use dis_rs::BodyRaw;
+    use dis_rs::model::{EntityId, EntityType, Pdu, PduBody, PduHeader, PduStatus, Timestamp};
 
     #[test]
     fn cdis_pdu_entity_state_body_encode() {
@@ -632,7 +632,7 @@ mod tests {
             .with_marking(EntityMarking::new("TEST", EntityMarkingCharacterSet::ASCII))
             .build()
             .into_pdu_body();
-        let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, 1000);
+        let dis_pdu = Pdu::finalize_from_parts(dis_header, dis_body, Timestamp::new(1000));
 
         let (cdis_pdu, state_result) = CdisPdu::encode(&dis_pdu, &mut encoder_state, &codec_option);
 
@@ -735,12 +735,11 @@ mod tests {
             protocol_version: CdisProtocolVersion::SISO_023_2023,
             exercise_id: UVINT8::from(8),
             pdu_type: PduType::EntityState,
-            timestamp: TimeStamp::default(),
+            timestamp: CdisTimestamp::default(),
             length: 0,
             pdu_status: PduStatus::default(),
         };
-        let cdis =
-            CdisPdu::finalize_from_parts(cdis_header, cdis_body, Some(TimeStamp::from(20000)));
+        let cdis = CdisPdu::finalize_from_parts(cdis_header, cdis_body, CdisTimestamp::new(20000));
 
         let (dis, state_result) = cdis.decode(&mut decoder_state, &codec_options);
 

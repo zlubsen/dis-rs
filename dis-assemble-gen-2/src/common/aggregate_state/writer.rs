@@ -1,6 +1,6 @@
 use crate::aggregate_state::model::{
-    aggregate_state_intermediate_length_padding, AggregateMarking, AggregateState, AggregateType,
-    SilentAggregateSystem, SilentEntitySystem,
+    AggregateMarking, AggregateState, AggregateType, SilentAggregateSystem, SilentEntitySystem,
+    aggregate_state_intermediate_length_padding,
 };
 use crate::common::BodyInfo;
 use crate::{Serialize, SerializePdu, SupportedVersion};

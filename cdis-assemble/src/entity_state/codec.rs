@@ -8,8 +8,9 @@ use crate::records::model::{
     AngularVelocity, CdisEntityMarking, CdisVariableParameter, EntityId, EntityType,
     LinearAcceleration, LinearVelocity, Orientation, UnitsDekameters,
 };
-use crate::types::model::{UVINT32, UVINT8};
+use crate::types::model::{UVINT8, UVINT32};
 use crate::{BodyProperties, CdisBody};
+use dis_rs::BodyRaw;
 use dis_rs::entity_state::model::{DrParameters, EntityAppearance, EntityMarking};
 use dis_rs::enumerations::{
     DeadReckoningAlgorithm, EntityKind, EntityMarkingCharacterSet, ForceId, PlatformDomain,
@@ -18,7 +19,6 @@ use dis_rs::model::{
     EntityType as DisEntityType, Location as DisLocation, Orientation as DisOrientation, PduBody,
     VectorF32,
 };
-use dis_rs::BodyRaw;
 use std::time::Instant;
 
 type Counterpart = dis_rs::entity_state::model::EntityState;
@@ -554,8 +554,9 @@ mod tests {
         EntityType, LinearAcceleration, LinearVelocity, Orientation, ParameterValueFloat,
         UnitsDekameters, WorldCoordinates,
     };
-    use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8};
+    use crate::types::model::{CdisFloat, SVINT12, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16};
     use crate::{BodyProperties, CdisBody};
+    use dis_rs::BodyRaw;
     use dis_rs::entity_state::builder::EntityStateBuilder;
     use dis_rs::entity_state::model::{
         DrEulerAngles, DrOtherParameters, DrParameters, EntityAppearance, EntityMarking,
@@ -570,7 +571,6 @@ mod tests {
         ArticulatedPart, EntityId as DisEntityId, EntityType as DisEntityType, Location,
         Orientation as DisOrientation, PduBody, VariableParameter,
     };
-    use dis_rs::BodyRaw;
     use std::str::FromStr;
     use std::time::Instant;
 

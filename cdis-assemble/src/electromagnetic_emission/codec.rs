@@ -12,8 +12,9 @@ use crate::records::codec::{
 use crate::records::model::{
     BeamData, EntityCoordinateVector, EntityId, FrequencyFloat, UnitsMeters,
 };
-use crate::types::model::{CdisFloat, UVINT16, UVINT8};
+use crate::types::model::{CdisFloat, UVINT8, UVINT16};
 use crate::{BodyProperties, CdisBody};
+use dis_rs::BodyRaw;
 use dis_rs::electromagnetic_emission::model::{Beam, FundamentalParameterData, JammingTechnique};
 use dis_rs::enumerations::{
     BeamStatusBeamState, EmitterName, EmitterSystemFunction, HighDensityTrackJam,
@@ -22,7 +23,6 @@ use dis_rs::model::{
     BeamData as DisBeamData, EntityId as DisEntityId, EventId, PduBody, SimulationAddress,
     VectorF32,
 };
-use dis_rs::BodyRaw;
 use num_traits::ToPrimitive;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -420,11 +420,10 @@ fn construct_fundamental_params_list_partial(
             if let Some(stored_param) = state
                 .previous_fundamental_params
                 .get(&(emitter_system.number, beam.number))
+                && *stored_param != beam.parameter_data
             {
-                if *stored_param != beam.parameter_data {
-                    // param has changed, so it is included in the list
-                    params.push(FundamentalParameter::encode(&beam.parameter_data));
-                }
+                // param has changed, so it is included in the list
+                params.push(FundamentalParameter::encode(&beam.parameter_data));
             }
         }
     }
@@ -474,11 +473,10 @@ fn construct_beam_data_list_partial(
             if let Some(stored_beam) = state
                 .previous_beam_data
                 .get(&(emitter_system.number, beam.number))
+                && *stored_beam != beam.beam_data
             {
-                if *stored_beam != beam.beam_data {
-                    // beam data has changed, so it is included in the list
-                    beams.push(BeamData::encode(&beam.beam_data));
-                }
+                // beam data has changed, so it is included in the list
+                beams.push(BeamData::encode(&beam.beam_data));
             }
         }
     }
@@ -999,15 +997,16 @@ impl Codec for FundamentalParameter {
 mod tests {
     use crate::codec::{Codec, CodecOptions, CodecStateResult};
     use crate::electromagnetic_emission::codec::{
+        DecoderStateElectromagneticEmission, EncoderStateElectromagneticEmission,
         construct_beam_data_list_full, construct_fundamental_params_list_full,
-        construct_site_app_pairs_list, DecoderStateElectromagneticEmission,
-        EncoderStateElectromagneticEmission,
+        construct_site_app_pairs_list,
     };
     use crate::electromagnetic_emission::model::{
         ElectromagneticEmission, EmitterBeam, FundamentalParameter, SiteAppPair,
     };
     use crate::records::model::{BeamData, EntityCoordinateVector, FrequencyFloat};
-    use crate::types::model::{CdisFloat, SVINT16, UVINT16, UVINT8};
+    use crate::types::model::{CdisFloat, SVINT16, UVINT8, UVINT16};
+    use dis_rs::BodyRaw;
     use dis_rs::electromagnetic_emission::model::{
         Beam, ElectromagneticEmission as DisEE, EmitterSystem, FundamentalParameterData, TrackJam,
     };
@@ -1016,7 +1015,6 @@ mod tests {
         EmitterName, EmitterSystemFunction, HighDensityTrackJam,
     };
     use dis_rs::model::{BeamData as DisBeamData, EntityId, EventId, VectorF32};
-    use dis_rs::BodyRaw;
 
     #[test]
     fn fundamental_params_list() {
@@ -1065,21 +1063,22 @@ mod tests {
 
     #[test]
     fn beam_data_list() {
-        let beam_data_1 = DisBeamData::default()
+        let beam_data_0 = DisBeamData::default()
             .with_azimuth_center(0.0)
-            .with_azimuth_sweep(20.0)
+            .with_azimuth_sweep(std::f32::consts::PI / 2f32)
             .with_elevation_center(0.0)
             .with_elevation_sweep(20.0)
             .with_sweep_sync(50.0);
-        let beam_data_2 = DisBeamData::default()
-            .with_azimuth_center(20.0)
+        let beam_data_1 = DisBeamData::default()
+            .with_azimuth_center(std::f32::consts::PI - 0.0014)
             .with_azimuth_sweep(30.0)
             .with_elevation_center(10.0)
             .with_elevation_sweep(30.0)
             .with_sweep_sync(10.0);
-        let beam_data_3 = DisBeamData::default()
+        // beam_data_2 is equal to beam_data_1, so it will be de-duplicated by the encoding.
+        let beam_data_2 = DisBeamData::default()
             .with_azimuth_center(0.0)
-            .with_azimuth_sweep(20.0)
+            .with_azimuth_sweep(std::f32::consts::PI / 2f32)
             .with_elevation_center(0.0)
             .with_elevation_sweep(20.0)
             .with_sweep_sync(50.0);
@@ -1087,21 +1086,22 @@ mod tests {
         let body = DisEE::builder()
             .with_emitter_system(
                 EmitterSystem::default()
-                    .with_beam(Beam::default().with_beam_data(beam_data_1))
-                    .with_beam(Beam::default().with_beam_data(beam_data_2)),
+                    .with_beam(Beam::default().with_beam_data(beam_data_0))
+                    .with_beam(Beam::default().with_beam_data(beam_data_1)),
             )
             .with_emitter_system(
-                EmitterSystem::default().with_beam(Beam::default().with_beam_data(beam_data_3)),
+                EmitterSystem::default().with_beam(Beam::default().with_beam_data(beam_data_2)),
             )
             .build();
 
         let beam_data_list = construct_beam_data_list_full(&body);
 
-        assert_eq!(beam_data_list.len(), 2);
+        assert_eq!(beam_data_list.len(), 2); // only 2, due to de-duplication
         assert_eq!(beam_data_list.first().unwrap().az_center.value, 0);
+        assert_eq!(beam_data_list.first().unwrap().az_sweep.value, 2048);
         assert_eq!(beam_data_list.first().unwrap().sweep_sync, 511);
-        assert_eq!(beam_data_list.get(1).unwrap().az_center.value, 83);
-        assert_eq!(beam_data_list.get(1).unwrap().sweep_sync, 102);
+        assert_eq!(beam_data_list.get(1).unwrap().az_center.value, 4093);
+        assert_eq!(beam_data_list.get(1).unwrap().sweep_sync, 102); // 1024 max value ~ 100%; 10% equals rounded 102.
     }
 
     #[test]

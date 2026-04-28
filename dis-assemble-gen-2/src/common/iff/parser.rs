@@ -1,28 +1,28 @@
+use crate::BodyRaw;
+use crate::common::DisError;
 use crate::common::iff::model::{
-    ChangeOptionsRecord, DamageStatus, DapSource, DapValue, EnabledStatus, EnhancedMode1Code,
-    FundamentalOperationalData, Iff, IffDataRecord, IffDataSpecification,
-    IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5, IffPresence,
-    InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability,
+    BASE_IFF_DATA_RECORD_LENGTH_OCTETS, ChangeOptionsRecord, DamageStatus, DapSource, DapValue,
+    EnabledStatus, EnhancedMode1Code, FundamentalOperationalData, Iff, IffDataRecord,
+    IffDataSpecification, IffFundamentalParameterData, IffLayer2, IffLayer3, IffLayer4, IffLayer5,
+    IffPresence, InformationLayers, LatLonAltSource, LayerHeader, LayersPresenceApplicability,
     MalfunctionStatus, Mode5BasicData, Mode5InterrogatorBasicData, Mode5InterrogatorStatus,
     Mode5MessageFormats, Mode5TransponderBasicData, Mode5TransponderStatus,
     Mode5TransponderSupplementalData, ModeSAltitude, ModeSBasicData, ModeSInterrogatorBasicData,
     ModeSInterrogatorStatus, ModeSLevelsPresent, ModeSTransponderBasicData, ModeSTransponderStatus,
     OnOffStatus, OperationalStatus, ParameterCapable, SquitterStatus, SystemId, SystemSpecificData,
-    SystemStatus, BASE_IFF_DATA_RECORD_LENGTH_OCTETS,
+    SystemStatus,
 };
 use crate::common::model::PduBody;
 use crate::common::parser::{beam_data, entity_id, event_id, simulation_address, vec3_f32};
-use crate::common::DisError;
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{
     AircraftIdentificationType, AircraftPresentDomain, CapabilityReport, DataCategory,
     IffApplicableModes, IffSystemMode, IffSystemName, IffSystemType, NavigationSource,
     VariableRecordType,
 };
-use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::multi::count;
-use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
+use nom::number::complete::{be_f32, be_u8, be_u16, be_u32};
 use nom::{IResult, Parser};
 
 pub(crate) fn iff_body(input: &[u8]) -> IResult<&[u8], PduBody> {

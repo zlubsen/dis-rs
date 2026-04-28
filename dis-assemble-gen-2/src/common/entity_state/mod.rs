@@ -6,17 +6,17 @@ pub mod writer;
 
 #[cfg(test)]
 mod tests {
+    use crate::BodyRaw;
     use crate::common::entity_state::model::{
         DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
         EntityMarking, EntityState,
     };
     use crate::common::model::{
         ArticulatedPart, EntityId, EntityType, Location, Orientation, Pdu, PduHeader,
-        SimulationAddress, VariableParameter, VectorF32,
+        SimulationAddress, TimeUnits, Timestamp, VariableParameter, VectorF32,
     };
     use crate::common::parser::parse_pdu;
     use crate::enumerations::*;
-    use crate::BodyRaw;
     use bytes::BytesMut;
 
     #[test]
@@ -92,28 +92,28 @@ mod tests {
             })
             .with_capabilities_flags(false, false, false, false)
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::LandingGear,
                 type_metric: ArticulatedPartsTypeMetric::Position,
                 parameter_value: 1.0
             }))
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Azimuth,
                 parameter_value: 2.0
             }))
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryTurretNumber1,
                 type_metric: ArticulatedPartsTypeMetric::AzimuthRate,
                 parameter_value: 3.0
             }))
             .with_variable_parameter(VariableParameter::Articulated(ArticulatedPart {
-                change_indicator: ChangeIndicator::from(0u8),
+                change_indicator: 0,
                 attachment_id: 0,
                 type_class: ArticulatedPartsTypeClass::PrimaryGunNumber1,
                 type_metric: ArticulatedPartsTypeMetric::Elevation,
@@ -121,7 +121,11 @@ mod tests {
             }))
             .build()
             .into_pdu_body();
-        let original_pdu = Pdu::finalize_from_parts(header, body, 0);
+        let original_pdu = Pdu::finalize_from_parts(
+            header,
+            body,
+            Timestamp::Absolute(TimeUnits::new(35_791_394).unwrap()),
+        );
         let pdu_length = original_pdu.header.pdu_length;
         let original_length = original_pdu.pdu_length();
 

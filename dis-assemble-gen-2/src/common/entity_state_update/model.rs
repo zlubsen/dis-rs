@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::entity_state::model::EntityAppearance;
 use crate::common::model::{
     EntityId, Location, Orientation, PduBody, VariableParameter, VectorF32,
@@ -6,7 +7,6 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::entity_state_update::builder::EntityStateUpdateBuilder;
 use crate::enumerations::PduType;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

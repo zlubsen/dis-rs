@@ -23,11 +23,11 @@ use crate::common::event_report::parser::event_report_body;
 use crate::common::fire::parser::fire_body;
 use crate::common::iff::parser::iff_body;
 use crate::common::model::{
-    length_padded_to_num, ArticulatedPart, AttachedPart, BeamData, ClockTime, DatumSpecification,
+    ArticulatedPart, AttachedPart, BeamData, ClockTime, DatumSpecification,
     EntityAssociationParameter, EntityId, EntityType, EntityTypeParameter, EventId,
     ExpendableDescriptor, ExplosionDescriptor, FixedDatum, Location, MunitionDescriptor,
-    Orientation, Pdu, PduBody, PduHeader, SeparationParameter, SimulationAddress, VariableDatum,
-    VariableParameter, VectorF32,
+    Orientation, Pdu, PduBody, PduHeader, SeparationParameter, SimulationAddress, Timestamp,
+    VariableDatum, VariableParameter, VectorF32, length_padded_to_num,
 };
 use crate::common::other::parser::other_body;
 use crate::common::receiver::parser::receiver_body;
@@ -76,12 +76,12 @@ use crate::stop_freeze_r::parser::stop_freeze_r_body;
 use crate::transfer_ownership::parser::transfer_ownership_body;
 use crate::underwater_acoustic::parser::underwater_acoustic_body;
 use crate::v7::parser::parse_pdu_status;
+use nom::IResult;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
-use nom::number::complete::{be_f32, be_f64, be_i32, be_u16, be_u32, be_u64, be_u8};
-use nom::IResult;
+use nom::number::complete::{be_f32, be_f64, be_i32, be_u8, be_u16, be_u32, be_u64};
 use nom::{Err, Parser};
 
 pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
@@ -104,10 +104,10 @@ pub(crate) fn parse_multiple_header(input: &[u8]) -> Result<Vec<PduHeader>, DisE
     match many1(pdu_header_skip_body).parse(input) {
         Ok((_, headers)) => Ok(headers),
         Err(parse_error) => {
-            if let Err::Error(ref error) = parse_error {
-                if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
-                }
+            if let Err::Error(ref error) = parse_error
+                && error.code == Eof
+            {
+                return Err(DisError::InsufficientHeaderLength(input.len() as u16));
             }
             Err(DisError::ParseError(parse_error.to_string()))
         }
@@ -135,10 +135,10 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PduHeader, DisError> {
             Ok(header)
         }
         Err(parse_error) => {
-            if let Err::Error(ref error) = parse_error {
-                if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
-                }
+            if let Err::Error(ref error) = parse_error
+                && error.code == Eof
+            {
+                return Err(DisError::InsufficientHeaderLength(input.len() as u16));
             }
             Err(DisError::ParseError(parse_error.to_string()))
         }
@@ -170,16 +170,16 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
     let exercise_id = be_u8;
     let pdu_type = pdu_type;
     let protocol_family = protocol_family;
-    let time_stamp = be_u32;
+    let timestamp = timestamp;
     let pdu_length = be_u16;
 
-    let (input, (protocol_version, exercise_id, pdu_type, protocol_family, time_stamp, pdu_length)) =
+    let (input, (protocol_version, exercise_id, pdu_type, protocol_family, timestamp, pdu_length)) =
         (
             protocol_version,
             exercise_id,
             pdu_type,
             protocol_family,
-            time_stamp,
+            timestamp,
             pdu_length,
         )
             .parse(input)?;
@@ -209,7 +209,7 @@ fn pdu_header(input: &[u8]) -> IResult<&[u8], PduHeader> {
             exercise_id,
             pdu_type,
             protocol_family,
-            time_stamp,
+            timestamp,
             pdu_length,
             pdu_status,
             padding,
@@ -343,6 +343,12 @@ pub(crate) fn protocol_family(input: &[u8]) -> IResult<&[u8], ProtocolFamily> {
     let (input, protocol_family) = be_u8(input)?;
     let protocol_family = ProtocolFamily::from(protocol_family);
     Ok((input, protocol_family))
+}
+
+pub(crate) fn timestamp(input: &[u8]) -> IResult<&[u8], Timestamp> {
+    let (input, timestamp) = be_u32(input)?;
+    let timestamp = Timestamp::from(timestamp);
+    Ok((input, timestamp))
 }
 
 /// Skip the bytes of a PDU's body, by calculating the total length minus the length of a header.
@@ -626,7 +632,6 @@ pub(crate) fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParamet
 /// I.2.2 Articulated parts
 fn articulated_part(input: &[u8]) -> IResult<&[u8], VariableParameter> {
     let (input, change_indicator) = be_u8(input)?;
-    let change_indicator = ChangeIndicator::from(change_indicator);
     let (input, attachment_id) = be_u16(input)?;
     let (input, parameter_type) = be_u32(input)?; // Parameter Type = Type Class + Type Metric
     let type_metric: u32 = parameter_type & FIVE_LEAST_SIGNIFICANT_BITS; // 5 least significant bits are the Type Metric
@@ -840,7 +845,7 @@ mod tests {
             header.protocol_family,
             ProtocolFamily::EntityInformationInteraction
         );
-        assert_eq!(header.time_stamp, 1_323_973_472);
+        assert_eq!(header.timestamp, 1_323_973_472);
         assert_eq!(header.pdu_length, { PDU_HEADER_LEN_BYTES }); // only the header, 0-bytes pdu body
     }
 
@@ -870,7 +875,7 @@ mod tests {
             header.protocol_family,
             ProtocolFamily::EntityInformationInteraction
         );
-        assert_eq!(header.time_stamp, 1_323_973_472);
+        assert_eq!(header.timestamp, 1_323_973_472);
         assert_eq!(header.pdu_length, { PDU_HEADER_LEN_BYTES }); // only the header, 0-bytes pdu body
     }
 

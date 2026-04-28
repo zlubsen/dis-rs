@@ -1,7 +1,7 @@
 use dis_rs::acknowledge::model::Acknowledge;
 use dis_rs::detonation::model::{Detonation, DetonationDescriptor};
 use dis_rs::enumerations::PduType;
-use dis_rs::model::{EntityType, MunitionDescriptor, Pdu, PduHeader, TimeStamp};
+use dis_rs::model::{EntityType, MunitionDescriptor, Pdu, PduHeader, Timestamp};
 use dis_rs::BodyRaw;
 
 fn main() {
@@ -119,7 +119,7 @@ fn main() {
     let detonation_pdu = Pdu::finalize_from_parts(
         detonation_header,
         detonation_pdu_body.into_pdu_body(),
-        TimeStamp::new(10000),
+        Timestamp::new(10000),
     );
 
     let detonation_full_expected = r#"{
@@ -128,7 +128,7 @@ fn main() {
     "exercise_id": 1,
     "pdu_type": "Detonation",
     "protocol_family": "Warfare",
-    "time_stamp": 10000,
+    "timestamp": 10000,
     "pdu_length": 116,
     "pdu_status": null,
     "padding": 0

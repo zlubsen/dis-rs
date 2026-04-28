@@ -1,13 +1,15 @@
+pub use super::timestamp::{CdisTimeUnits, CdisTimestamp};
+use crate::BitBuffer;
 use crate::constants::{
-    CDIS_NANOSECONDS_PER_TIME_UNIT, CDIS_TIME_UNITS_PER_HOUR, DIS_TIME_UNITS_PER_HOUR, EIGHT_BITS,
-    FIFTEEN_BITS, FIVE_BITS, FOURTEEN_BITS, FOUR_BITS, LEAST_SIGNIFICANT_BIT, ONE_BIT,
-    SEVENTEEN_BITS, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS,
-    TWENTY_SIX_BITS, TWO_BITS,
+    EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, ONE_BIT, SEVENTEEN_BITS,
+    SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWENTY_SIX_BITS, TWO_BITS,
 };
-use crate::records::model::CdisProtocolVersion::{Reserved, StandardDis, SISO_023_2023};
+use crate::parsing::{BitInput, take_signed};
+use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{
-    CdisFloat, VarInt, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT16, UVINT8,
+    CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16, VarInt,
 };
+use crate::writing::{write_value_signed, write_value_unsigned};
 use dis_rs::enumerations::{
     ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator,
     AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus,
@@ -16,17 +18,10 @@ use dis_rs::enumerations::{
     SeparationReasonForSeparation, SignalEncodingClass, SignalEncodingType, StationName,
     TransmitterAntennaPatternReferenceSystem,
 };
-use dis_rs::model::TimeStamp;
 use dis_rs::model::{
-    DatumSpecification, DisTimeStamp, EventId, FixedDatum, Location, PduStatus, SimulationAddress,
-    VariableDatum,
+    DatumSpecification, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum,
 };
-use nom::IResult;
-
-use crate::parsing::{take_signed, BitInput};
-use crate::writing::{write_value_signed, write_value_unsigned};
-use crate::BitBuffer;
-use nom::bits::complete::take;
+use nom::{IResult, bits::complete::take};
 use num_traits::FromPrimitive;
 
 pub(crate) trait CdisRecord {
@@ -39,7 +34,7 @@ pub struct CdisHeader {
     pub protocol_version: CdisProtocolVersion,
     pub exercise_id: UVINT8,
     pub pdu_type: PduType,
-    pub timestamp: TimeStamp,
+    pub timestamp: CdisTimestamp,
     pub length: u16,
     pub pdu_status: PduStatus,
 }
@@ -77,205 +72,6 @@ impl From<CdisProtocolVersion> for u8 {
             Reserved(reserved) => reserved,
         }
     }
-}
-
-/// A timestamp type that models the timestamp mechanism as described in the
-/// DIS standard (section 6.2.88 Timestamp). This timestamp interprets a u32 value
-/// as an Absolute or a Relative timestamp based on the Least Significant Bit.
-/// The remaining (upper) bits represent the units of time passed since the
-/// beginning of the current hour in the selected time reference.
-/// The `DisTimeStamp` stores both the units past the hour, and a conversion to
-/// nanoseconds past the hour.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum CdisTimeStamp {
-    Absolute {
-        units_past_the_hour: u32,
-        nanoseconds_past_the_hour: u32,
-    },
-    Relative {
-        units_past_the_hour: u32,
-        nanoseconds_past_the_hour: u32,
-    },
-}
-
-impl CdisTimeStamp {
-    #[must_use]
-    pub fn new_absolute_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour =
-            CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour =
-            CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
-        Self::Absolute {
-            units_past_the_hour,
-            nanoseconds_past_the_hour,
-        }
-    }
-
-    #[must_use]
-    pub fn new_relative_from_secs(seconds_past_the_hour: u32) -> Self {
-        let nanoseconds_past_the_hour =
-            CdisTimeStamp::seconds_to_nanoseconds(seconds_past_the_hour);
-        let units_past_the_hour =
-            CdisTimeStamp::nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour);
-        Self::Relative {
-            units_past_the_hour,
-            nanoseconds_past_the_hour,
-        }
-    }
-
-    #[must_use]
-    pub fn new_absolute_from_units(units_past_the_hour: u32) -> Self {
-        Self::Absolute {
-            units_past_the_hour,
-            nanoseconds_past_the_hour: Self::cdis_time_units_to_nanoseconds(units_past_the_hour),
-        }
-    }
-
-    #[must_use]
-    pub fn new_relative_from_units(units_past_the_hour: u32) -> Self {
-        Self::Relative {
-            units_past_the_hour,
-            nanoseconds_past_the_hour: Self::cdis_time_units_to_nanoseconds(units_past_the_hour),
-        }
-    }
-
-    /// Helper function to convert seconds to nanoseconds
-    fn seconds_to_nanoseconds(seconds: u32) -> u32 {
-        seconds * 1_000_000
-    }
-
-    /// Helper function to convert nanoseconds pas the hour to DIS Time Units past the hour.
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::cast_precision_loss)]
-    fn nanoseconds_to_cdis_time_units(nanoseconds_past_the_hour: u32) -> u32 {
-        (nanoseconds_past_the_hour as f32 / CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
-    }
-
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_precision_loss)]
-    fn cdis_time_units_to_nanoseconds(cdis_time_units: u32) -> u32 {
-        (cdis_time_units as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32
-    }
-}
-
-impl Default for CdisTimeStamp {
-    fn default() -> Self {
-        CdisTimeStamp::new_relative_from_secs(0)
-    }
-}
-
-impl From<u32> for CdisTimeStamp {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_precision_loss)]
-    #[allow(clippy::cast_sign_loss)]
-    fn from(value: u32) -> Self {
-        let is_absolute_timestamp = (value & LEAST_SIGNIFICANT_BIT) == LEAST_SIGNIFICANT_BIT;
-        let units_past_the_hour = value >> 1;
-        let nanoseconds_past_the_hour =
-            (units_past_the_hour as f32 * CDIS_NANOSECONDS_PER_TIME_UNIT) as u32;
-
-        if is_absolute_timestamp {
-            Self::Absolute {
-                units_past_the_hour,
-                nanoseconds_past_the_hour,
-            }
-        } else {
-            Self::Relative {
-                units_past_the_hour,
-                nanoseconds_past_the_hour,
-            }
-        }
-    }
-}
-
-impl From<TimeStamp> for CdisTimeStamp {
-    fn from(value: TimeStamp) -> Self {
-        CdisTimeStamp::from(value.raw_timestamp)
-    }
-}
-
-impl From<CdisTimeStamp> for TimeStamp {
-    fn from(value: CdisTimeStamp) -> Self {
-        let raw_timestamp = match value {
-            CdisTimeStamp::Absolute {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
-            } => (units_past_the_hour << 1) | LEAST_SIGNIFICANT_BIT,
-            CdisTimeStamp::Relative {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
-            } => units_past_the_hour << 1,
-        };
-
-        Self { raw_timestamp }
-    }
-}
-
-impl From<DisTimeStamp> for CdisTimeStamp {
-    #[allow(clippy::cast_precision_loss)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    fn from(value: DisTimeStamp) -> Self {
-        let dis_to_cdis_time_units =
-            CDIS_TIME_UNITS_PER_HOUR as f32 / DIS_TIME_UNITS_PER_HOUR as f32;
-        match value {
-            DisTimeStamp::Absolute {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
-            } => {
-                let units_past_the_hour = units_past_the_hour as f32 * dis_to_cdis_time_units;
-                CdisTimeStamp::new_absolute_from_units(units_past_the_hour.round() as u32)
-            }
-            DisTimeStamp::Relative {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
-            } => {
-                let units_past_the_hour = units_past_the_hour as f32 * dis_to_cdis_time_units;
-                CdisTimeStamp::new_relative_from_units(units_past_the_hour.round() as u32)
-            }
-        }
-    }
-}
-
-impl From<CdisTimeStamp> for DisTimeStamp {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_precision_loss)]
-    #[allow(clippy::cast_sign_loss)]
-    fn from(value: CdisTimeStamp) -> Self {
-        let cdis_to_dis_time_units =
-            DIS_TIME_UNITS_PER_HOUR as f32 / CDIS_TIME_UNITS_PER_HOUR as f32;
-        match value {
-            CdisTimeStamp::Absolute {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
-            } => {
-                let units_past_the_hour = units_past_the_hour as f32 * cdis_to_dis_time_units;
-                DisTimeStamp::new_absolute_from_units(units_past_the_hour.round() as u32)
-            }
-            CdisTimeStamp::Relative {
-                units_past_the_hour,
-                nanoseconds_past_the_hour: _nanoseconds_past_the_hour,
-            } => {
-                let units_past_the_hour = units_past_the_hour as f32 * cdis_to_dis_time_units;
-                DisTimeStamp::new_relative_from_units(units_past_the_hour.round() as u32)
-            }
-        }
-    }
-}
-
-#[must_use]
-pub fn dis_to_cdis_u32_timestamp(dis_u32: u32) -> u32 {
-    TimeStamp::from(CdisTimeStamp::from(DisTimeStamp::from(dis_u32))).raw_timestamp
-}
-
-#[must_use]
-pub fn cdis_to_dis_u32_timestamp(cdis_u32: u32) -> u32 {
-    TimeStamp::from(DisTimeStamp::from(CdisTimeStamp::from(TimeStamp::from(
-        cdis_u32,
-    ))))
-    .raw_timestamp
 }
 
 /// 11.1 Angular Velocity
@@ -1122,7 +918,7 @@ impl CdisFloat for ParameterValueFloat {
         let mut mantissa = float;
         let mut exponent = 0i32;
         let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent as usize <= Self::EXPONENT_BITS) {
+        while (mantissa > max_mantissa) && (exponent as usize <= Self::EXPONENT_BITS) {
             mantissa /= 10.0;
             exponent += 1;
         }
@@ -1381,7 +1177,7 @@ impl CdisFloat for FrequencyFloat {
         let mut mantissa = float;
         let mut exponent = 0usize;
         let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) & (exponent <= Self::EXPONENT_BITS) {
+        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
             mantissa /= 10.0;
             exponent += 1;
         }

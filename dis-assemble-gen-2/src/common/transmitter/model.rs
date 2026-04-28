@@ -1,5 +1,6 @@
+use crate::BodyRaw;
 use crate::common::model::{
-    length_padded_to_num, EntityId, EntityType, Location, Orientation, PduBody, VectorF32,
+    EntityId, EntityType, Location, Orientation, PduBody, VectorF32, length_padded_to_num,
 };
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::{EIGHT_OCTETS, ZERO_OCTETS};
@@ -13,7 +14,6 @@ use crate::enumerations::{
     TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
 };
 use crate::transmitter::builder::TransmitterBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

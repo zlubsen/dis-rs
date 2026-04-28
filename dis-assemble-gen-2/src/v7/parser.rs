@@ -1,5 +1,5 @@
 use crate::constants::{
-    BITS_2_3_IN_BYTE, BITS_5_6_IN_BYTE, BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_7_IN_BYTE,
+    BIT_2_IN_BYTE, BIT_3_IN_BYTE, BIT_4_IN_BYTE, BIT_7_IN_BYTE, BITS_2_3_IN_BYTE, BITS_5_6_IN_BYTE,
 };
 use crate::enumerations::{
     ActiveInterrogationIndicator, CoupledExtensionIndicator, DetonationTypeIndicator,
@@ -12,8 +12,8 @@ use crate::v7::builder::{
     build_pdu_status_lvc, build_pdu_status_rai_cei_lvc_tei,
 };
 use crate::v7::model::PduStatus;
-use nom::number::complete::be_u8;
 use nom::IResult;
+use nom::number::complete::be_u8;
 
 pub fn parse_pdu_status(pdu_type: PduType) -> impl Fn(&[u8]) -> IResult<&[u8], (PduStatus, u16)> {
     move |input: &[u8]| {

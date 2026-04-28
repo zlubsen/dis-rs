@@ -1,8 +1,8 @@
+use crate::BodyRaw;
 use crate::acknowledge_r::builder::AcknowledgeRBuilder;
 use crate::common::model::{EntityId, PduBody};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AcknowledgeFlag, PduType, ResponseFlag};
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

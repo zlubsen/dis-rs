@@ -1,10 +1,10 @@
+use crate::BodyProperties;
 use crate::constants::{FOUR_BITS, HUNDRED_TWENTY_BITS, ONE_BIT, THIRTY_TWO_BITS};
 use crate::entity_state::model::{CdisEntityAppearance, CdisEntityCapabilities, EntityState};
 use crate::types::model::UVINT8;
 use crate::writing::{
-    serialize_when_present, write_value_unsigned, BitBuffer, SerializeCdis, SerializeCdisPdu,
+    BitBuffer, SerializeCdis, SerializeCdisPdu, serialize_when_present, write_value_unsigned,
 };
-use crate::BodyProperties;
 
 impl SerializeCdisPdu for EntityState {
     #[allow(clippy::let_and_return)]
@@ -69,7 +69,7 @@ mod tests {
     use crate::records::model::{
         CdisEntityMarking, EntityId, LinearVelocity, Orientation, UnitsDekameters, WorldCoordinates,
     };
-    use crate::types::model::{SVINT16, SVINT24, UVINT16, UVINT32, UVINT8};
+    use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
     use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
     use bitvec::prelude::BitArray;
     use dis_rs::enumerations::{

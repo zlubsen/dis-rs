@@ -1,9 +1,9 @@
+use crate::BodyRaw;
 use crate::common::model::{EntityId, PduBody, PduHeader};
 use crate::common::other::model::Other;
 use crate::common::parser::entity_id;
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::enumerations::PduType;
-use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::{IResult, Parser};
@@ -122,14 +122,14 @@ fn peek_originating_receiving_fields(input: &[u8]) -> IResult<&[u8], (EntityId, 
 
 #[cfg(test)]
 mod tests {
-    use crate::common::model::{PduBody, PduHeader};
+    use crate::common::model::{PduBody, PduHeader, Timestamp};
     use crate::common::other::parser::other_body;
     use crate::enumerations::PduType;
 
     #[test]
     fn parse_other_body() {
         let header = PduHeader::new_v6(1, PduType::Other)
-            .with_time_stamp(0u32)
+            .with_timestamp(Timestamp::new(0u32))
             .with_length(10u16);
         let input: [u8; 10] = [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
@@ -145,7 +145,7 @@ mod tests {
         // EntityStatePdu has only an originating EntityId
         let header = PduHeader::new_v6(1, PduType::EntityState)
             .with_length(6u16)
-            .with_time_stamp(0u32);
+            .with_timestamp(Timestamp::new(0u32));
         let input: [u8; 6] = [0x00, 0x10, 0x00, 0x0A, 0x00, 0x01];
         let (input, body) = other_body(&header)(&input).expect("Should be Ok");
         if let PduBody::Other(pdu) = body {
@@ -165,7 +165,7 @@ mod tests {
         // FirePdu has both originating (Firing) and receiving (Target) EntityIds
         let header = PduHeader::new_v6(1, PduType::Fire)
             .with_length(12u16)
-            .with_time_stamp(0u32);
+            .with_timestamp(Timestamp::new(0u32));
         let input: [u8; 12] = [
             0x00, 0x10, 0x00, 0x0A, 0x00, 0x01, 0x00, 0x20, 0x00, 0x0B, 0x00, 0x08,
         ];

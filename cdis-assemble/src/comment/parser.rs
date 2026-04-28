@@ -3,7 +3,7 @@ use crate::constants::TWO_BITS;
 use crate::parsing::BitInput;
 use crate::records::parser::{entity_identification, fixed_datum, variable_datum};
 use crate::types::parser::uvint8;
-use crate::{parsing, BodyProperties, CdisBody};
+use crate::{BodyProperties, CdisBody, parsing};
 use dis_rs::model::DatumSpecification;
 use nom::bits::complete::take;
 use nom::multi::count;

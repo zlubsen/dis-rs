@@ -1,7 +1,7 @@
+use crate::BodyRaw;
 use crate::common::parser::entity_id;
 use crate::model::PduBody;
-use crate::sees::model::{PropulsionSystemData, VectoringNozzleSystemData, SEES};
-use crate::BodyRaw;
+use crate::sees::model::{PropulsionSystemData, SEES, VectoringNozzleSystemData};
 use nom::multi::count;
 use nom::number::complete::{be_f32, be_u16};
 use nom::{IResult, Parser};

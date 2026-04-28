@@ -27,9 +27,9 @@ use crate::types::model::VarInt;
 use crate::unsupported::Unsupported;
 use crate::{CdisBody, CdisError, CdisPdu};
 use dis_rs::enumerations::PduType;
+use nom::IResult;
 use nom::bits::complete::take;
 use nom::error::ErrorKind;
-use nom::IResult;
 use std::ops::BitAnd;
 
 /// Attempts to parse the provided buffer for CDIS PDUs
@@ -201,9 +201,12 @@ mod tests {
     use crate::codec::{CodecOptions, EncoderState};
     use crate::constants::THREE_BITS;
     use crate::parsing::{field_present, parse_field_when_present, take_signed};
-    use crate::records::model::dis_to_cdis_u32_timestamp;
-    use crate::records::parser::entity_identification;
-    use crate::{parse, CdisPdu, SerializeCdisPdu};
+    use crate::records::{
+        model::{CdisTimeUnits, CdisTimestamp},
+        parser::entity_identification,
+    };
+    use crate::{CdisPdu, SerializeCdisPdu, parse};
+    use dis_rs::BodyRaw;
     use dis_rs::enumerations::{
         EntityKind, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType,
         PlatformDomain,
@@ -211,9 +214,8 @@ mod tests {
     use dis_rs::fire::model::{Fire, FireDescriptor};
     use dis_rs::model::{
         EntityId, EntityType, EventId, Location, MunitionDescriptor, Pdu, PduBody, PduHeader,
-        PduStatus, TimeStamp,
+        PduStatus, TimeUnits, Timestamp,
     };
-    use dis_rs::BodyRaw;
 
     fn build_default_fire_header() -> PduHeader {
         PduHeader::new_v7(7, PduType::Fire).with_pdu_status(
@@ -252,7 +254,7 @@ mod tests {
 
         let dis_header = build_default_fire_header();
         let dis_body = build_default_fire_body();
-        let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, 0);
+        let dis_pdu_in = Pdu::finalize_from_parts(dis_header, dis_body, Timestamp::new(0));
 
         let (cdis_pdu, _state_result) =
             CdisPdu::encode(&dis_pdu_in, &mut encoder_state, &codec_options);
@@ -277,8 +279,12 @@ mod tests {
         let dis_header = build_default_fire_header();
         let dis_body = build_default_fire_body();
         let dis_pdu_in_1 =
-            Pdu::finalize_from_parts(dis_header, dis_body.clone(), TimeStamp::new(0));
-        let dis_pdu_in_2 = Pdu::finalize_from_parts(dis_header, dis_body, TimeStamp::new(50));
+            Pdu::finalize_from_parts(dis_header, dis_body.clone(), Timestamp::new(0));
+        let dis_pdu_in_2 = Pdu::finalize_from_parts(
+            dis_header,
+            dis_body,
+            Timestamp::Absolute(TimeUnits::new(64).unwrap()),
+        );
 
         let (cdis_pdu_1, _state_result) =
             CdisPdu::encode(&dis_pdu_in_1, &mut encoder_state, &codec_options);
@@ -296,7 +302,7 @@ mod tests {
         #[allow(clippy::get_first)]
         if let Some(parsed_pdu_1) = parsed_cdis_pdus.get(0) {
             assert_eq!(parsed_pdu_1.header.pdu_type, PduType::Fire);
-            assert_eq!(parsed_pdu_1.header.timestamp, TimeStamp::new(0));
+            assert_eq!(parsed_pdu_1.header.timestamp, CdisTimestamp::new(0));
         } else {
             panic!("Failed to get parsed PDU from vec.")
         }
@@ -304,7 +310,7 @@ mod tests {
             assert_eq!(parsed_pdu_2.header.pdu_type, PduType::Fire);
             assert_eq!(
                 parsed_pdu_2.header.timestamp,
-                TimeStamp::new(dis_to_cdis_u32_timestamp(50))
+                CdisTimestamp::Absolute(CdisTimeUnits::new(1).unwrap())
             );
         } else {
             panic!("Failed to get parsed PDU from vec.")

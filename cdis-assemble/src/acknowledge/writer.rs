@@ -1,6 +1,6 @@
 use crate::acknowledge::model::Acknowledge;
 use crate::constants::{THREE_BITS, TWO_BITS};
-use crate::writing::{write_value_unsigned, SerializeCdis};
+use crate::writing::{SerializeCdis, write_value_unsigned};
 use crate::{BitBuffer, SerializeCdisPdu};
 
 impl SerializeCdisPdu for Acknowledge {

@@ -1,13 +1,13 @@
+use crate::BodyRaw;
 use crate::common::model::{
-    length_padded_to_num, EntityId, FixedDatum, PduBody, VariableDatum, BASE_VARIABLE_DATUM_LENGTH,
-    FIXED_DATUM_LENGTH,
+    BASE_VARIABLE_DATUM_LENGTH, EntityId, FIXED_DATUM_LENGTH, FixedDatum, PduBody, VariableDatum,
+    length_padded_to_num,
 };
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::EventType;
 use crate::enumerations::PduType;
 use crate::event_report::builder::EventReportBuilder;
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

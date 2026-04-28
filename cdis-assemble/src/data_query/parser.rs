@@ -1,10 +1,9 @@
 use crate::constants::{THIRTY_TWO_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::data_query::model::{DataQuery, DataQueryFieldsPresent};
 use crate::parsing::BitInput;
-use crate::records::model::CdisTimeStamp;
-use crate::records::parser::entity_identification;
-use crate::types::parser::{uvint32, uvint8};
-use crate::{parsing, BodyProperties, CdisBody};
+use crate::records::{model::CdisTimestamp, parser::entity_identification};
+use crate::types::parser::{uvint8, uvint32};
+use crate::{BodyProperties, CdisBody, parsing};
 use dis_rs::enumerations::VariableRecordType;
 use nom::bits::complete::take;
 use nom::multi::count;
@@ -17,7 +16,7 @@ pub(crate) fn data_query_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, receiving_id) = entity_identification(input)?;
     let (input, request_id) = uvint32(input)?;
     let (input, time_interval): (BitInput, u32) = take(TWENTY_SIX_BITS)(input)?;
-    let time_interval = CdisTimeStamp::from(time_interval);
+    let time_interval = CdisTimestamp::from(time_interval);
 
     let (input, number_of_fixed_datums) = parsing::parse_field_when_present(
         fields_present,

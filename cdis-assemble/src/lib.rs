@@ -44,7 +44,6 @@ pub(crate) mod parsing;
 pub(crate) mod writing;
 
 use dis_rs::enumerations::PduType;
-use dis_rs::model::TimeStamp;
 use thiserror::Error;
 
 use crate::acknowledge::model::Acknowledge;
@@ -63,7 +62,7 @@ use crate::event_report::model::EventReport;
 use crate::fire::model::Fire;
 use crate::iff::model::Iff;
 use crate::receiver::model::Receiver;
-use crate::records::model::{CdisHeader, CdisRecord, EntityId};
+use crate::records::model::{CdisHeader, CdisRecord, CdisTimestamp, EntityId};
 use crate::remove_entity::model::RemoveEntity;
 use crate::set_data::model::SetData;
 use crate::signal::model::Signal;
@@ -72,9 +71,9 @@ use crate::stop_freeze::model::StopFreeze;
 use crate::transmitter::model::Transmitter;
 use crate::unsupported::Unsupported;
 pub use parsing::parse;
-pub use writing::create_bit_buffer;
 pub use writing::BitBuffer;
 pub use writing::SerializeCdisPdu;
+pub use writing::create_bit_buffer;
 
 pub trait BodyProperties {
     type FieldsPresent;
@@ -103,19 +102,15 @@ pub struct CdisPdu {
 }
 
 impl CdisPdu {
+    #[must_use]
     pub fn finalize_from_parts(
         header: CdisHeader,
         body: CdisBody,
-        time_stamp: Option<impl Into<TimeStamp>>,
+        timestamp: CdisTimestamp,
     ) -> Self {
-        let time_stamp: TimeStamp = if let Some(time_stamp) = time_stamp {
-            time_stamp.into()
-        } else {
-            header.timestamp
-        };
         Self {
             header: CdisHeader {
-                timestamp: time_stamp,
+                timestamp,
                 length: (header.record_length() + body.body_length()) as u16,
                 ..header
             },
@@ -267,7 +262,9 @@ pub enum CdisError {
     InsufficientHeaderLength(u16), // the input was too small to contain a valid CDIS header; (u16 found)
     #[error("C-DIS PDU has insufficient length. Expected {0} bits, found {1} bits.")]
     InsufficientPduLength(u16, u16), // the input was too small to contain a valid CDIS PDU based on the header and parsing; (u16 expected, u16 found)
-    #[error("C-DIS PDU is larger than size of the buffer for serialisation. Needs {0} bits, available {1} bits.")]
+    #[error(
+        "C-DIS PDU is larger than size of the buffer for serialisation. Needs {0} bits, available {1} bits."
+    )]
     InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided CDIS PDU; (u16 PDU size, usize available capacity)
     #[error("Encountered a C-DIS PDU of an unsupported type: {0}.")]
     UnsupportedPdu(u8), // encountered a CDIS PDU of an unsupported type; (u8 PduType found)

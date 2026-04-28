@@ -1,3 +1,4 @@
+use crate::BodyRaw;
 use crate::common::detonation::builder::DetonationBuilder;
 use crate::common::model::{
     EntityId, EventId, ExpendableDescriptor, ExplosionDescriptor, Location, MunitionDescriptor,
@@ -6,7 +7,6 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::enumerations::{DetonationResult, PduType};
-use crate::BodyRaw;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
