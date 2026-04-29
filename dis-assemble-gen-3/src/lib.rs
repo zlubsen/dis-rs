@@ -19,3 +19,9 @@ include!(concat!(
 pub use constants::*;
 pub use core::*;
 pub use other_pdu::*;
+
+// TODO port convenience functions for EntityId and EntityType from gen2
+// TODO model the hierarchy of EntityType (eg domain depends on kind, etc)
+// TODO Tests for PDUs with extension records
+// TODO test writers
+// TODO consistency tests for all PDUs

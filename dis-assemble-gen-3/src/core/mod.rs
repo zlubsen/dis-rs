@@ -165,3 +165,37 @@ impl ExtensionRecord {
 pub fn parse(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
     parse_multiple_pdu(input)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::common_records::PDUStatus;
+    use crate::enumerations::{DISPDUType, DISProtocolVersion};
+
+    #[test]
+    fn test_parse_pdu_header() {
+        let buffer: [u8; 16] = [
+            0x08, // Protocol Version: 8
+            0x08, // Compatibility Version: 8
+            0x01, // Exercise ID
+            0x01, // PDU Type: Entity State
+            0x00, // PDU Status
+            0x10, // HDR length: 16 bytes
+            0x10, 0x00, // PDU length: also 16 bytes
+            0x00, 0x40, 0x20, 0x46, 0x48, 0x47, 0x06,
+            0x00, // Timestamp: 01-01-2026 00:00:00 GMT = 1_767_225_600_000_000
+        ];
+        let (_, header) = crate::common_records::parser::pdu_header(&buffer).unwrap();
+
+        assert_eq!(header.protocol_version, DISProtocolVersion::IEEE1278_1202X);
+        assert_eq!(
+            header.compatibility_version,
+            DISProtocolVersion::IEEE1278_1202X
+        );
+        assert_eq!(header.exercise_identifier, 1);
+        assert_eq!(header.pdu_type, DISPDUType::EntityState);
+        assert_eq!(header.pdu_status, PDUStatus::default());
+        assert_eq!(header.pdu_header_length, 16);
+        assert_eq!(header.pdu_length, 16);
+        assert_eq!(header.timestamp, 1_767_225_600_000_000);
+    }
+}
