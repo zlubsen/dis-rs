@@ -120,12 +120,6 @@ fn peek_protocol_version(input: &[u8]) -> IResult<&[u8], DISProtocolVersion> {
 /// The function will skip zero bytes when the total length provided is less than the length of a header (12 bytes).
 #[allow(dead_code)]
 pub(crate) fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
-    // if total_bytes <= PDU_HEADER_LEN_BYTES {
-    //     return Err(nom::error::Error {
-    //         input: (),
-    //         code: ErrorKind::Tag,
-    //     } )
-    // }
     let bytes_to_skip = total_bytes.saturating_sub(PDU_HEADER_LEN_BYTES);
     move |input| take(bytes_to_skip)(input)
 }

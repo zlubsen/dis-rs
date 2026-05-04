@@ -391,6 +391,7 @@ pub(crate) struct FixedRecord {
     pub length: usize,
     pub parser_function: TokenStream,
     pub has_external_discriminants: bool,
+    pub skip_default_impl: bool,
 }
 
 #[derive(Clone)]
@@ -1109,9 +1110,14 @@ fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
         .collect::<Vec<TokenStream>>();
 
     let record_length = Literal::usize_unsuffixed(record.length);
+    let derive_default = if record.skip_default_impl {
+        quote! {}
+    } else {
+        to_tokens(", Default")
+    };
 
     quote! {
-        #[derive(Debug, Default, Clone, PartialEq)]
+        #[derive(Debug, Clone, PartialEq #derive_default)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {
             #(#fields)*

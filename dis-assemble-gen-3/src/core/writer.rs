@@ -1,3 +1,4 @@
+use crate::Pdu;
 use bytes::BytesMut;
 
 #[allow(
@@ -6,4 +7,13 @@ use bytes::BytesMut;
 )]
 pub trait Serialize {
     fn serialize(&self, buf: &mut BytesMut) -> u16;
+}
+
+impl Serialize for Pdu {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        self.header.serialize(buf);
+        self.body.serialize(buf);
+
+        self.pdu_length()
+    }
 }

@@ -1,8 +1,8 @@
-mod errors;
+pub mod errors;
 mod parser;
-pub(crate) mod writer;
+pub mod writer;
 
-use crate::common_records::{PDUHeader, PDUStatus};
+use crate::common_records::PDUHeader;
 use crate::core::errors::DisError;
 use crate::core::parser::parse_multiple_pdu;
 use crate::enumerations::{DISPDUType, DISProtocolFamily, DISProtocolVersion};
@@ -71,7 +71,7 @@ impl Pdu {
             header: header
                 .with_pdu_type(body.body_type())
                 .with_timestamp(time_stamp)
-                .with_length(body.body_length()),
+                .with_length(PDU_HEADER_LEN_BYTES + body.body_length()),
             body,
         }
     }
@@ -85,51 +85,6 @@ impl Pdu {
     pub fn protocol_family(&self) -> DISProtocolFamily {
         self.body.protocol_family()
     }
-}
-
-impl PDUHeader {
-    #[must_use]
-    pub fn new(
-        protocol_version: DISProtocolVersion,
-        exercise_identifier: u8,
-        pdu_type: DISPDUType,
-    ) -> Self {
-        // TODO set the right values for fields
-        Self {
-            protocol_version,
-            compatibility_version: DISProtocolVersion::default(),
-            pdu_type,
-            pdu_length: 0u16,
-            pdu_status: PDUStatus::default(),
-            exercise_identifier,
-            pdu_header_length: 0,
-            timestamp: 0,
-        }
-    }
-
-    #[must_use]
-    pub fn with_pdu_type(mut self, pdu_type: DISPDUType) -> Self {
-        self.pdu_type = pdu_type;
-        self
-    }
-
-    #[allow(clippy::return_self_not_must_use)]
-    pub fn with_timestamp(mut self, timestamp: impl Into<i64>) -> Self {
-        self.timestamp = timestamp.into();
-        self
-    }
-
-    #[must_use]
-    pub fn with_length(mut self, body_length: u16) -> Self {
-        self.pdu_length = PDU_HEADER_LEN_BYTES + body_length;
-        self
-    }
-
-    // #[must_use]
-    // pub fn with_pdu_status(mut self, pdu_status: PduStatus) -> Self {
-    //     self.pdu_status = Some(pdu_status);
-    //     self
-    // }
 }
 
 #[derive(Debug, Clone, PartialEq)]

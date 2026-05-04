@@ -1,6 +1,7 @@
 pub(crate) mod constants;
 mod extraction;
 mod generation;
+mod overrides;
 mod pre_processing;
 
 use extraction::ExtractionItem;
@@ -11,23 +12,6 @@ const XML_FILE_EXTENSION: &str = "xml";
 const OUT_DIR: &str = "OUT_DIR";
 const TARGET_ENV_VAR: &str = "TARGET_GENERATED_SISO_1278_GEN3_FILENAME";
 const TARGET_OUT_FILE: &str = "siso_1278_gen3.rs";
-
-/// Hardcoded values for the discriminant type values of Adaptive Records.
-/// Tuple consists of ( <type of the AdaptiveRecord> , <UID of the discriminant> , <primitive type of the discriminant> )
-const ADAPTIVE_RECORD_DISCRIMINANT_TYPES: [(&str, usize, &str); 2] = [
-    ("Net ID", 590, "u8"),                                  // Net ID Type
-    ("IFF Interactive Transmission Parameters", 372, "u8"), // Transmission Indicator
-];
-
-/// Tuple: ( <fixed record field type> , <parser call arguments shim> , <parser declaration arguments shim> )
-const SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS: [(&str, &str, &str); 4] = [
-    ("Entity with Extended Appearance",
-     "appearance_type, extended_appearance_type",
-     "appearance_type: crate::enumerations::AppearanceType, extended_appearance_type: crate::enumerations::ExtendedAppearanceType" ),
-    ("Basic Multiple Entity", "appearance_type", "appearance_type: crate::enumerations::AppearanceType"),
-    ("Moving Entity", "appearance_type", "appearance_type: crate::enumerations::AppearanceType"),
-    ("Accelerating Entity", "appearance_type", "appearance_type: crate::enumerations::AppearanceType"),
-];
 
 type UidLookup = HashMap<usize, String>;
 type BodyTypeLookup = HashMap<usize, String>; // TODO merge with Uidlookup again

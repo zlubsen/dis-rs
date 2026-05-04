@@ -2,10 +2,11 @@ use crate::constants::NOM_LE_PARSER_PATH;
 use crate::constants::{EXTENSION_RECORDS_MODULE_NAME, PARSER_MODULE_NAME};
 use crate::extraction::ExtractionItem;
 use crate::generation::models::{AdaptiveFormatEnum, GenerationItem, PduAndFixedRecordFieldsEnum};
-use crate::{
-    Fqn, FqnLookup, Lookup, UidLookup, ADAPTIVE_RECORD_DISCRIMINANT_TYPES,
+use crate::overrides::{
+    ADAPTIVE_RECORD_DISCRIMINANT_TYPES, FIXED_RECORD_SKIP_DEFAULT_IMPL,
     SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS,
 };
+use crate::{Fqn, FqnLookup, Lookup, UidLookup};
 use dis_gen_utils::{
     enum_type_to_length, enum_type_to_primitive_type, format_field_name, format_pdu_module_name,
     format_type_name,
@@ -695,6 +696,10 @@ fn process_fixed_record(
     };
 
     let has_external_discriminants = !external_discriminants.is_empty();
+    let skip_default_impl = FIXED_RECORD_SKIP_DEFAULT_IMPL
+        .iter()
+        .find(|&&a| a == record.record_type)
+        .is_some();
 
     crate::generation::models::FixedRecord {
         fields,
@@ -703,6 +708,7 @@ fn process_fixed_record(
         length: record.length,
         parser_function,
         has_external_discriminants,
+        skip_default_impl,
     }
 }
 

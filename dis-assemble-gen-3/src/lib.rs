@@ -1,5 +1,7 @@
 pub(crate) mod constants;
-mod core;
+pub mod core;
+pub mod fixed_parameters;
+pub mod impls;
 pub(crate) mod other_extension_record;
 pub(crate) mod other_pdu;
 pub(crate) mod utils;
@@ -25,3 +27,4 @@ pub use other_pdu::*;
 // TODO Tests for PDUs with extension records
 // TODO test writers
 // TODO consistency tests for all PDUs
+// TODO model/generate the hierarchy for EntityType elements (enum hierarchy dependencies)
