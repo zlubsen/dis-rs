@@ -38,6 +38,46 @@ publish-dry-dis:
     cargo publish --all-features --dry-run --package dis-rs
 
 [group('lint')]
+clippy-dis-gen-2:
+    cargo clippy --profile dev --all-features --all-targets --package dis-assemble-gen-2
+
+[group('build')]
+check-dis-gen-2:
+    cargo check --all-features --all-targets --package dis-assemble-gen-2
+
+[group('test')]
+test-dis-gen-2:
+    cargo test --all-features --all-targets --package dis-assemble-gen-2
+
+[group('release')]
+publish-dis-gen-2:
+    cargo publish --all-features --package dis-assemble-gen-2
+
+[group('release')]
+publish-dry-dis-gen-2:
+    cargo publish --all-features --dry-run --package dis-assemble-gen-2
+
+[group('lint')]
+clippy-dis-gen-3:
+    cargo clippy --profile dev --all-features --all-targets --package dis-assemble-gen-3
+
+[group('build')]
+check-dis-gen-3:
+    cargo check --all-features --all-targets --package dis-assemble-gen-3
+
+[group('test')]
+test-dis-gen-3:
+    cargo test --all-features --all-targets --package dis-assemble-gen-3
+
+[group('release')]
+publish-dis-gen-3:
+    cargo publish --all-features --package dis-assemble-gen-3
+
+[group('release')]
+publish-dry-dis-gen-3:
+    cargo publish --all-features --dry-run --package dis-assemble-gen-3
+
+[group('lint')]
 clippy-cdis:
     cargo clippy --profile dev --all-features --all-targets --package cdis-assemble
 
