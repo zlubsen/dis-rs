@@ -71,14 +71,14 @@ impl Pdu {
             header: header
                 .with_pdu_type(body.body_type())
                 .with_timestamp(time_stamp)
-                .with_length(PDU_HEADER_LEN_BYTES + body.body_length()),
+                .with_length(u16::from(PDU_HEADER_LEN_BYTES) + body.body_length()),
             body,
         }
     }
 
     #[must_use]
     pub fn pdu_length(&self) -> u16 {
-        PDU_HEADER_LEN_BYTES + self.body.body_length()
+        u16::from(PDU_HEADER_LEN_BYTES) + self.body.body_length()
     }
 
     #[must_use]

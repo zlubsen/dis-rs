@@ -118,18 +118,16 @@ fn lookup_enum_fqn_first_uid<'l>(uids: &[usize], lookup: &'l Lookup) -> &'l Fqn 
     let the_type = the_type
         .first()
         .expect("Expected at least one Type for an UID lookup.");
-    let fqn = lookup_enum_fqn(the_type, lookup);
-    fqn
+    lookup_enum_fqn(the_type, lookup)
 }
 
 /// Looks up the type name of the Enumeration UID `uid`.
 #[inline]
 fn lookup_uid(uid: usize, lookup: &Lookup) -> &str {
-    let val = lookup
+    lookup
         .uid
         .get(&uid)
-        .expect("Expected an existing type for uid.");
-    val
+        .expect("Expected an existing type for uid.")
 }
 
 /// Look up the path and name for the given _Record_ (`BitRecord`, `FixedRecord`, `AdaptiveRecord`) type name.
@@ -325,10 +323,9 @@ fn type_for_adaptive_record_field<'l>(
             .collect::<Vec<usize>>();
         lookup_enum_fqn_first_uid(&uids, lookup)
     } else {
-        let field_fqn = lookup_record_fqn(format_type_name(field.field_type.as_ref().expect(
+        lookup_record_fqn(format_type_name(field.field_type.as_ref().expect(
             "Expected a type name for AdaptiveRecordField to be present as there is also no UID.",
-        )).as_str(), lookup);
-        field_fqn
+        )).as_str(), lookup)
     }
 }
 

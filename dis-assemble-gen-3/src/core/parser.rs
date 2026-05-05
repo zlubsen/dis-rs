@@ -35,10 +35,10 @@ pub(crate) fn parse_multiple_header(input: &[u8]) -> Result<Vec<PDUHeader>, DisE
     match many1(pdu_header_skip_body).parse(input) {
         Ok((_, headers)) => Ok(headers),
         Err(parse_error) => {
-            if let Err::Error(ref error) = parse_error {
-                if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
-                }
+            if let Err::Error(ref error) = parse_error
+                && error.code == Eof
+            {
+                return Err(DisError::InsufficientHeaderLength(input.len() as u16));
             }
             Err(DisError::ParseError(parse_error.to_string()))
         }
@@ -55,7 +55,7 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PDUHeader, DisError> {
             if let Err(Err::Error(error)) = skipped {
                 return if error.code == Eof {
                     Err(DisError::InsufficientPduLength(
-                        header.pdu_length - PDU_HEADER_LEN_BYTES,
+                        header.pdu_length - u16::from(PDU_HEADER_LEN_BYTES),
                         input.len() as u16,
                     ))
                 } else {
@@ -67,10 +67,10 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PDUHeader, DisError> {
             Ok(header)
         }
         Err(parse_error) => {
-            if let Err::Error(ref error) = parse_error {
-                if error.code == Eof {
-                    return Err(DisError::InsufficientHeaderLength(input.len() as u16));
-                }
+            if let Err::Error(ref error) = parse_error
+                && error.code == Eof
+            {
+                return Err(DisError::InsufficientHeaderLength(input.len() as u16));
             }
             Err(DisError::ParseError(parse_error.to_string()))
         }
@@ -120,6 +120,6 @@ fn peek_protocol_version(input: &[u8]) -> IResult<&[u8], DISProtocolVersion> {
 /// The function will skip zero bytes when the total length provided is less than the length of a header (12 bytes).
 #[allow(dead_code)]
 pub(crate) fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[u8]> {
-    let bytes_to_skip = total_bytes.saturating_sub(PDU_HEADER_LEN_BYTES);
+    let bytes_to_skip = total_bytes.saturating_sub(u16::from(PDU_HEADER_LEN_BYTES));
     move |input| take(bytes_to_skip)(input)
 }

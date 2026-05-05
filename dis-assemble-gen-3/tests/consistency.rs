@@ -16,7 +16,7 @@ fn test_consistency_entity_state() {
 
     let mut buf = BytesMut::new();
 
-    let bytes_written = pdu_in.serialize(&mut buf);
+    let _bytes_written = pdu_in.serialize(&mut buf);
 
     let pdu_out = parse(&buf).unwrap();
     let pdu_out = pdu_out.first().unwrap();

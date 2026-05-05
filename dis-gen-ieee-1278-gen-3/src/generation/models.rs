@@ -509,7 +509,7 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
         .expect("Error parsing 'writers' intermediate generated code for pretty printing.");
 
     quote! {
-        #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
+        // #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
         #[cfg(feature = "serde")]
         use serde::{Deserialize, Serialize};
 
@@ -604,6 +604,8 @@ fn generate_core_units(items: &[GenerationItem]) -> TokenStream {
         }
 
         impl ExtensionRecordBody {
+            #[must_use]
+            #[allow(clippy::too_many_lines)]
             pub fn record_length(&self) -> u16 {
                 match self {
                     #extension_record_length_variants
@@ -1053,6 +1055,7 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
         }
 
         impl #record_name {
+            #[must_use]
             pub fn record_length(&self) -> u16 {
                 #length_calculation
             }
@@ -1124,6 +1127,7 @@ fn generate_fixed_record(record: &FixedRecord) -> TokenStream {
         }
 
         impl #record_name {
+            #[must_use]
             pub fn record_length(&self) -> u16 {
                 #record_length
             }
@@ -1302,6 +1306,7 @@ fn generate_bit_record(record: &BitRecord) -> TokenStream {
         }
 
         impl #record_name {
+            #[must_use]
             pub fn record_length(&self) -> u16 {
                 #record_length
             }
@@ -1370,6 +1375,7 @@ fn generate_adaptive_record(record: &AdaptiveRecord) -> TokenStream {
         }
 
         impl #record_name {
+            #[must_use]
             pub fn record_length(&self) -> u16 {
                 #record_length
             }

@@ -956,7 +956,9 @@ fn extract_extension_record_fields(
                     extract_opaque_data_element(reader),
                 )),
                 element => {
-                    panic!("Encountered unexpected start element {element:?} in {EXTENSION_RECORD_ELEMENT:?}.")
+                    panic!(
+                        "Encountered unexpected start element {element:?} in {EXTENSION_RECORD_ELEMENT:?}."
+                    )
                 }
             },
             Ok(Event::End(ref element)) => match element.name() {
@@ -1056,7 +1058,9 @@ fn extract_variable_string_element(reader: &mut Reader<BufReader<File>>) -> Vari
                     string_field = Some(extract_variable_string_field(element, reader));
                 }
                 element => {
-                    panic!("Encountered unexpected empty element {element:?} in {VARIABLE_STRING_ELEMENT:?}.")
+                    panic!(
+                        "Encountered unexpected empty element {element:?} in {VARIABLE_STRING_ELEMENT:?}."
+                    )
                 }
             },
             Ok(Event::End(ref element)) => match element.name() {
@@ -1064,7 +1068,9 @@ fn extract_variable_string_element(reader: &mut Reader<BufReader<File>>) -> Vari
                     break;
                 }
                 element => {
-                    panic!("Encountered unexpected end element {element:?} {VARIABLE_STRING_ELEMENT:?}.")
+                    panic!(
+                        "Encountered unexpected end element {element:?} {VARIABLE_STRING_ELEMENT:?}."
+                    )
                 }
             },
             Ok(Event::Eof) => {
@@ -1137,7 +1143,9 @@ fn extract_array_element(reader: &mut Reader<BufReader<File>>) -> Array {
                     break;
                 }
                 element => {
-                    panic!("Encountered unexpected end element {element:?} {VARIABLE_STRING_ELEMENT:?}.")
+                    panic!(
+                        "Encountered unexpected end element {element:?} {VARIABLE_STRING_ELEMENT:?}."
+                    )
                 }
             },
             Ok(Event::Eof) => {
@@ -1209,19 +1217,21 @@ fn extract_opaque_data_element(reader: &mut Reader<BufReader<File>>) -> OpaqueDa
                     data_field = Some(extract_opaque_data_field(element));
                 }
                 element => {
-                    panic!("Encountered unexpected empty element {element:?} in {OPAQUE_DATA_ELEMENT:?}.")
+                    panic!(
+                        "Encountered unexpected empty element {element:?} in {OPAQUE_DATA_ELEMENT:?}."
+                    )
                 }
             },
-            Ok(Event::End(ref element)) => {
-                match element.name() {
-                    OPAQUE_DATA_ELEMENT => {
-                        break;
-                    }
-                    element => {
-                        panic!("Encountered unexpected end element {element:?} {OPAQUE_DATA_ELEMENT:?}.")
-                    }
+            Ok(Event::End(ref element)) => match element.name() {
+                OPAQUE_DATA_ELEMENT => {
+                    break;
                 }
-            }
+                element => {
+                    panic!(
+                        "Encountered unexpected end element {element:?} {OPAQUE_DATA_ELEMENT:?}."
+                    )
+                }
+            },
             Ok(Event::Eof) => {
                 panic!("Unexpected end of file at element {OPAQUE_DATA_ELEMENT:?}.")
             }
@@ -1273,9 +1283,9 @@ mod tests {
         let path_abbreviation = Path::new("./DIS_EE.xml");
         let path_nok = Path::new("./BlahBlahCommonRecords.xml");
 
-        let actual_ok = pdu_family_name_from_path(&path_ok);
-        let actual_abbreviation = pdu_family_name_from_path(&path_abbreviation);
-        let actual_err = pdu_family_name_from_path(&path_nok);
+        let actual_ok = pdu_family_name_from_path(path_ok);
+        let actual_abbreviation = pdu_family_name_from_path(path_abbreviation);
+        let actual_err = pdu_family_name_from_path(path_nok);
 
         assert_eq!(actual_ok, Ok("common_records".to_string()));
         assert_eq!(actual_abbreviation, Ok("ee".to_string()));

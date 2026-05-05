@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Changed crate to become a re-export of the crates `dis-assemble-gen-2` and `dis-assemble-gen-3`, each implementing
+  different generations of the protocol. `dis-rs` remains available for compatibility.
+
 ### Deprecated
 
 ### Removed

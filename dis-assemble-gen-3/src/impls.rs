@@ -16,8 +16,8 @@ impl Default for PDUHeader {
             exercise_identifier: 1,
             pdu_type: DISPDUType::default(),
             pdu_status: PDUStatus::default(),
-            pdu_header_length: PDU_HEADER_LEN_BYTES as u8,
-            pdu_length: PDU_HEADER_LEN_BYTES,
+            pdu_header_length: PDU_HEADER_LEN_BYTES,
+            pdu_length: u16::from(PDU_HEADER_LEN_BYTES),
             timestamp: 0,
         }
     }
@@ -37,7 +37,7 @@ impl PDUHeader {
             pdu_length: 0u16,
             pdu_status: PDUStatus::default(),
             exercise_identifier,
-            pdu_header_length: PDU_HEADER_LEN_BYTES as u8,
+            pdu_header_length: PDU_HEADER_LEN_BYTES,
             timestamp: 0,
         }
     }
@@ -83,11 +83,11 @@ impl PDUHeader {
     /// The total PDU length is computed and set by this function.
     #[must_use]
     pub fn with_body_length(mut self, body_length: u16) -> Self {
-        self.pdu_length = PDU_HEADER_LEN_BYTES + body_length;
+        self.pdu_length = u16::from(PDU_HEADER_LEN_BYTES) + body_length;
         self
     }
 
-    /// Sets the timestamp of the PDUHeader to the provided value.
+    /// Sets the timestamp of the `PDUHeader` to the provided value.
     /// Whether the timestamp is set to synchronized or unsynchronized in the `PDUStatus` field
     /// is left unaffected.
     #[must_use]
@@ -96,7 +96,7 @@ impl PDUHeader {
         self
     }
 
-    /// Sets the timestamp of the PDUHeader to the provided value, and updates the
+    /// Sets the timestamp of the `PDUHeader` to the provided value, and updates the
     /// `PDUStatus` field to be _synchronized_. The LVC and TEI fields are left unaffected.
     #[must_use]
     pub fn with_timestamp_synchronized(mut self, timestamp: impl Into<i64>) -> Self {
@@ -109,7 +109,7 @@ impl PDUHeader {
         self
     }
 
-    /// Sets the timestamp of the PDUHeader to the provided value, and updates the
+    /// Sets the timestamp of the `PDUHeader` to the provided value, and updates the
     /// `PDUStatus` field to be _unsynchronized_. The LVC and TEI fields are left unaffected.
     #[must_use]
     pub fn with_timestamp_unsynchronized(mut self, timestamp: impl Into<i64>) -> Self {
@@ -415,8 +415,7 @@ impl FromStr for EntityType {
                 .get(1)
                 .expect("Impossible - checked for correct number of digits")
                 .parse::<u8>()
-                .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?
-                .into(),
+                .map_err(|_| DisError::ParseError("Invalid domain digit".to_string()))?,
             country: ss
                 .get(2)
                 .expect("Impossible - checked for correct number of digits")

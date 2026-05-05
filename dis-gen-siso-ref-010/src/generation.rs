@@ -1,6 +1,6 @@
 use super::{
-    escape_description, format_field_name, format_name, format_name_postfix, Bitfield,
-    BitfieldItem, Enum, EnumItem, GenerationItem, OverrideXrefHandling, Overrides,
+    escape_description, format_field_name, format_name, format_name_postfix, Bitfield, BitfieldItem, Enum,
+    EnumItem, GenerationItem, OverrideXrefHandling, Overrides,
 };
 use proc_macro2::{Ident, Literal, TokenStream};
 use quote::{format_ident, quote};
@@ -72,7 +72,11 @@ pub fn generate(items: &[GenerationItem], overrides: &Overrides) -> TokenStream 
         #[allow(clippy::uninlined_format_args)]
         #[allow(clippy::unreadable_literal)]
         #[allow(clippy::write_literal)]
-        #[expect(arithmetic_overflow, reason = "Shifting for bitfields")]
+        #[allow(clippy::unnecessary_cast)]
+        #[allow(clippy::useless_conversion)]
+        #[allow(clippy::match_wildcard_for_single_variants)]
+        #[allow(clippy::cast_possible_truncation)]
+        #[allow(arithmetic_overflow, reason = "Shifting for bitfields")]
         pub mod enumerations {
             use std::fmt::{Display, Formatter};
             #[cfg(feature = "serde")]
