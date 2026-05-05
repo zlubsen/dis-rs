@@ -3,35 +3,36 @@
 [![release](https://github.com/zlubsen/dis-rs/actions/workflows/release.yml/badge.svg)](https://github.com/zlubsen/dis-rs/actions/workflows/release.yml)
 [![codecov](https://codecov.io/github/zlubsen/dis-rs/graph/badge.svg?token=W40X6L5A0D)](https://codecov.io/github/zlubsen/dis-rs)
 
-`dis-rs` is a suite of libraries and applications centered around the Distributed Interactive Simulation protocol (IEEE
+`dis-rs` is a suite of libraries and applications centered around the _Distributed Interactive Simulation_ protocol (
+IEEE
 1278.1 - DIS), implemented in the Rust programming language and for use in Rust-based simulation applications.
 
 This repository hosts a number of subprojects, each located in a specific directory:
 
-- [dis-rs](https://github.com/zlubsen/dis-rs/tree/master/dis-rs)\
+- [dis-rs](https://github.com/zlubsen/dis-rs/tree/main/dis-rs)\
   Crate re-exporting _dis-assemble-gen-2_ and (feature gated) _dis-assemble-gen-3_. Originally contained the main DIS
   implementation for versions 6 and 7, which are now moved to _dis-assemble-gen-2_.
-- [dis-assemble-gen-2](https://github.com/zlubsen/dis-rs/tree/master/dis-assemble-gen-2)\
+- [dis-assemble-gen-2](https://github.com/zlubsen/dis-rs/tree/main/dis-assemble-gen-2)\
   Foundational implementation of DIS (IEEE-1278.1) **Generation 2** (pre-version 8), offering models, parsing,
   serialization and enumerations for DIS
   PDUs.
-- [dis-assemble-gen-3](https://github.com/zlubsen/dis-rs/tree/master/dis-assemble-gen-3)\
+- [dis-assemble-gen-3](https://github.com/zlubsen/dis-rs/tree/main/dis-assemble-gen-3)\
   Foundational implementation of DIS (IEEE-1278.1) **Generation 3** (version 8), offering models, parsing, serialization
   and enumerations for DIS
   PDUs.
-- [cdis-assemble](https://github.com/zlubsen/dis-rs/tree/master/cdis-assemble)\
+- [cdis-assemble](https://github.com/zlubsen/dis-rs/tree/main/cdis-assemble)\
   Foundational implementation of C-DIS (SISO-STD-023-2024), offering models, parsing, serialization and conversion (to
   and from DIS) for C-DIS PDUs.
-- [cdis-gateway](https://github.com/zlubsen/dis-rs/tree/master/cdis-gateway)\
+- [cdis-gateway](https://github.com/zlubsen/dis-rs/tree/main/cdis-gateway)\
   CLI / Web-UI application for encoding/decoding DIS to/from C-DIS.
-- [gateway-core](https://github.com/zlubsen/dis-rs/tree/master/gateway-core)\
+- [gateway-core](https://github.com/zlubsen/dis-rs/tree/main/gateway-core)\
   Core library of traits and components to build network gateways handling (typically simulation) data.
-- [dis-gen-ieee-1278-gen3](https://github.com/zlubsen/dis-rs/tree/master/dis-gen-ieee-1278-gen-3)\
+- [dis-gen-ieee-1278-gen3](https://github.com/zlubsen/dis-rs/tree/main/dis-gen-ieee-1278-gen-3)\
   Generator for all DIS Gen 3 models, parsers, and serializers. The output is the main component of
   _dis-assemble-gen-3_.
-- [dis-gen-siso-ref-010](https://github.com/zlubsen/dis-rs/tree/master/dis-gen-siso-ref-010)\
+- [dis-gen-siso-ref-010](https://github.com/zlubsen/dis-rs/tree/main/dis-gen-siso-ref-010)\
   Generator for DIS SISO-REF-010 enumerations code. Used for both _dis-assemble-gen-2_ and _dis-assemble-gen-3_.
-- [dis-gen-utils](https://github.com/zlubsen/dis-rs/tree/master/dis-gen-utils)\
+- [dis-gen-utils](https://github.com/zlubsen/dis-rs/tree/main/dis-gen-utils)\
   Utils for code generators (_dis-gen-ieee-1278-gen3_ and _dis-gen-siso-ref-010_)
 
 See `README.md` of each project for more details.

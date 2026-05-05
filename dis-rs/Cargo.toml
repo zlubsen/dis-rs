@@ -18,11 +18,11 @@ categories.workspace = true
 
 [features]
 serde = ["dis-assemble-gen-2/serde"]
-#gen3 = ["dep:dis-assemble-gen-3"]
+gen3 = ["dep:dis-assemble-gen-3"]
 
 [dependencies]
 dis-assemble-gen-2 = { path = "../dis-assemble-gen-2" }
-#dis-assemble-gen-3 = { path = "../dis-assemble-gen-3", features = ["serde"], optional = true }
+dis-assemble-gen-3 = { path = "../dis-assemble-gen-3", features = ["serde"], optional = true }
 
 [lints]
 workspace = true
