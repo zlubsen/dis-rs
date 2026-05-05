@@ -1,9 +1,10 @@
 # Format for Overrides. All attributes are optional, absence means no override of the original value.
 # 'postfix', and 'skip' default to <false>.
-# 'xref' indicates how to handle enums with cross-references to other UIDs (for adaptive records / fields). By default the xrefs are ignored.
+# 'xref' indicates how to handle enums with cross-references to other UIDs (for adaptive records / fields). By default, the xrefs are ignored.
 #   The value "embed" generates the enum with the xref'ed item embedded in the enum variant (eg `Variant(XRefItem)` in the code.
 #   The value "wrap" generates the enum normally for use in an EnumField, and also generates a 'wrapper' enum with the contained xref'ed UID for use in an AdaptiveRecordField.
-# uid = { name = "NewName", size = <usize>, postfix = <bool>, skip = <bool>, embed_xref = true }
+# Examples:
+# uid = { name = "NewName", size = <usize>, postfix = <bool>, skip = <bool>, xref = <"embed" | "wrap"> }
 # uid = { name = "NewName" }        ## Override the name of a UID item
 # uid = { size = <usize> }          ## Override the data size of a UID item
 # uid = { postfix = <bool> }        ## Postfix the enum variant value to the variant name, to avoid name clashes.

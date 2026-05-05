@@ -1,23 +1,38 @@
-# DIS for Rust
+# IEEE 1278.1 Distributed Interactive Simulation for Rust
 
 [![release](https://github.com/zlubsen/dis-rs/actions/workflows/release.yml/badge.svg)](https://github.com/zlubsen/dis-rs/actions/workflows/release.yml)
 [![codecov](https://codecov.io/github/zlubsen/dis-rs/graph/badge.svg?token=W40X6L5A0D)](https://codecov.io/github/zlubsen/dis-rs)
 
 `dis-rs` is a suite of libraries and applications centered around the Distributed Interactive Simulation protocol (IEEE
-1278.1), implemented in the Rust programming language and for use in Rust-based simulation applications.
+1278.1 - DIS), implemented in the Rust programming language and for use in Rust-based simulation applications.
 
 This repository hosts a number of subprojects, each located in a specific directory:
 
 - [dis-rs](https://github.com/zlubsen/dis-rs/tree/master/dis-rs)\
-  Foundational implementation of DIS (IEEE-1278.1, offering models, parsing, serialization and enumerations for DIS
+  Crate re-exporting _dis-assemble-gen-2_ and (feature gated) _dis-assemble-gen-3_. Originally contained the main DIS
+  implementation for versions 6 and 7, which are now moved to _dis-assemble-gen-2_.
+- [dis-assemble-gen-2](https://github.com/zlubsen/dis-rs/tree/master/dis-assemble-gen-2)\
+  Foundational implementation of DIS (IEEE-1278.1) **Generation 2** (pre-version 8), offering models, parsing,
+  serialization and enumerations for DIS
+  PDUs.
+- [dis-assemble-gen-3](https://github.com/zlubsen/dis-rs/tree/master/dis-assemble-gen-3)\
+  Foundational implementation of DIS (IEEE-1278.1) **Generation 3** (version 8), offering models, parsing, serialization
+  and enumerations for DIS
   PDUs.
 - [cdis-assemble](https://github.com/zlubsen/dis-rs/tree/master/cdis-assemble)\
   Foundational implementation of C-DIS (SISO-STD-023-2024), offering models, parsing, serialization and conversion (to
   and from DIS) for C-DIS PDUs.
 - [cdis-gateway](https://github.com/zlubsen/dis-rs/tree/master/cdis-gateway)\
-  CLI application for encoding/decoding DIS to/from C-DIS.
+  CLI / Web-UI application for encoding/decoding DIS to/from C-DIS.
 - [gateway-core](https://github.com/zlubsen/dis-rs/tree/master/gateway-core)\
   Core library of traits and components to build network gateways handling (typically simulation) data.
+- [dis-gen-ieee-1278-gen3](https://github.com/zlubsen/dis-rs/tree/master/dis-gen-ieee-1278-gen-3)\
+  Generator for all DIS Gen 3 models, parsers, and serializers. The output is the main component of
+  _dis-assemble-gen-3_.
+- [dis-gen-siso-ref-010](https://github.com/zlubsen/dis-rs/tree/master/dis-gen-siso-ref-010)\
+  Generator for DIS SISO-REF-010 enumerations code. Used for both _dis-assemble-gen-2_ and _dis-assemble-gen-3_.
+- [dis-gen-utils](https://github.com/zlubsen/dis-rs/tree/master/dis-gen-utils)\
+  Utils for code generators (_dis-gen-ieee-1278-gen3_ and _dis-gen-siso-ref-010_)
 
 See `README.md` of each project for more details.
 
@@ -37,8 +52,23 @@ We intend to develop this project into a suite of tools that make it easy to int
 
 ## Supported versions and maturity
 
-`dis-rs` focuses on versions 6 and 7 of the DIS protocol. Version 7 is considered leading, meaning that v6 PDUs are
-mapped to v7 models transparently to the user (regardless of the wire-format version).
+`dis-assemble-gen-2` implements versions 6 and 7 of the DIS protocol. Version 7 is considered leading, meaning that v6
+PDUs are
+mapped to v7 models transparently to the user (regardless of the wire-format version). Some lesser used PDUs are not
+implemented.
+This implementation is relatively mature.
+
+`dis-assemble-gen-3` implements version 8 of the DIS protocol. Currently, it is based on **draft 5** of the future
+standard.
+Most of the code is generated from the DIS v8 schema definitions, and the main structure and functions in the
+implementation are based on the Gen 2 implementation.
+In this sense the library is relatively mature, but being one of the earlier implementations it is not battle-tested (
+e.g., used in exercises and against different implementations). Until the v8 standard is final and used in real-world
+applications, this library is considered experimental.
+
+`cdis-assemble` implements version 1 of the C-DIS protocol.
+We're not aware of other (openly available) C-DIS implementations or practical real-life usage of the standard for that
+matter, so operational maturity is to be considered experimental.
 
 ## Resources
 

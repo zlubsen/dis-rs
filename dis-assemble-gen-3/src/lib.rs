@@ -28,3 +28,6 @@ pub use other_pdu::*;
 // TODO test writers
 // TODO consistency tests for all PDUs
 // TODO model/generate the hierarchy for EntityType elements (enum hierarchy dependencies)
+// TODO fixed and variable strings must be NUL terminated? (page 58)
+// TODO check fixed constants with Table 9 (page 65) (and put in common crate)
+// TODO add/check symbolic names for variable parameters (and put in common crate), tables 10, 11, 12.

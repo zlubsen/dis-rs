@@ -5,6 +5,7 @@ pub(crate) const ADAPTIVE_RECORD_DISCRIMINANT_TYPES: [(&str, usize, &str); 2] = 
     ("IFF Interactive Transmission Parameters", 372, "u8"), // Transmission Indicator
 ];
 
+/// Shims for parser definitions for records that depend on 'external' discriminant fields.
 /// Tuple: ( <fixed record field type> , <parser call arguments shim> , <parser declaration arguments shim> )
 pub(crate) const SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS: [(&str, &str, &str); 4] = [
     (

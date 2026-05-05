@@ -1,6 +1,6 @@
 # dis-gen-utils
 
-Code generator utilities for generating SISO-1278 and SISO-REF-010 code from XML-based schema definitions.
+Code generator utilities for generating IEEE-1278 and SISO-REF-010 code from XML-based schema definitions.
 
 - Formatting type names (`CamelCase`)
 - Formatting field names (`snake_case`)
