@@ -1,9 +1,9 @@
 use crate::constants::{ARRAY_ELEMENT_IDENT, WRITER_MODULE_NAME};
 use crate::generation::models::{
-    generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum,
-    BitRecord, BitRecordField, BitRecordFieldEnum, EnumField, ExtensionRecord,
-    ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField, GenerationItem,
-    NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum, VariableString,
+    generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
+    BitRecordField, BitRecordFieldEnum, EnumField, ExtensionRecord, ExtensionRecordFieldEnum,
+    FixedRecord, FixedRecordField, FixedStringField, GenerationItem, NumericField, OpaqueData,
+    Pdu, PduAndFixedRecordFieldsEnum, VariableString, VariableStringField,
 };
 use crate::pre_processing::{field_length_to_primitive, field_size_to_primitive_type, to_tokens};
 use itertools::Itertools;
@@ -396,11 +396,27 @@ fn generate_adaptive_record_field_writer(field: &AdaptiveRecordField) -> TokenSt
 fn generate_variable_string_field_writer(field: &VariableString) -> TokenStream {
     let count_writer_function = &field.count_field.writer_function;
     let count_primitive_type = &field.count_field.primitive_type;
-    let str_field_name = to_tokens(&field.string_field.field_name);
+    let str_field_name = to_tokens(field.string_field.field_name());
 
-    quote! {
-        buf.#count_writer_function(self.#str_field_name.len() as #count_primitive_type);
-        buf.put(&self.#str_field_name.as_bytes()[..]);
+    match &field.string_field {
+        VariableStringField::Single(_s) => {
+            quote! {
+                buf.#count_writer_function((self.#str_field_name.len() + 1) as #count_primitive_type);
+                buf.put(&self.#str_field_name.as_bytes()[..]);
+                buf.put_u8(0x00);
+            }
+        }
+        VariableStringField::Multiple(_m) => {
+            // FIXME implementation now assumes the field to be filled with the correct amount of strings (attribute 'fixed_number_of_strings')
+            quote! {
+                let total_variable_string_length = &self.#str_field_name.iter().map(std::string::String::len).sum::<usize>() + &self.#str_field_name.len();
+                buf.#count_writer_function(total_variable_string_length as #count_primitive_type);
+                self.#str_field_name.iter().for_each(|s| {
+                    buf.put(s.as_bytes()[..]);
+                    buf.put_u8(0x00);
+                });
+            }
+        }
     }
 }
 

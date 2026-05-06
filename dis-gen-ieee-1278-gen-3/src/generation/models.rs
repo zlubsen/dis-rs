@@ -194,13 +194,29 @@ pub(crate) struct VariableString {
 }
 
 #[derive(Clone)]
-pub(crate) struct VariableStringField {
+pub(crate) enum VariableStringField {
+    Single(VariableStringFieldSingle),
+    Multiple(VariableStringFieldMultiple),
+}
+
+impl VariableStringField {
+    pub(crate) fn field_name(&self) -> &str {
+        match self {
+            VariableStringField::Single(f) => &f.field_name,
+            VariableStringField::Multiple(f) => &f.field_name,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct VariableStringFieldSingle {
     pub field_name: String,
-    #[expect(unused, reason = "Hardcoded type in pre-processor")]
-    pub field_type: &'static str, // `String`
-    #[expect(unused, reason = "Draft 5: attribute does not occur in the schemas")]
+}
+
+#[derive(Clone)]
+pub(crate) struct VariableStringFieldMultiple {
+    pub field_name: String,
     pub fixed_number_of_strings: usize,
-    pub parser_function: TokenStream,
 }
 
 #[derive(Clone)]
@@ -350,16 +366,14 @@ impl ExtensionRecordFieldEnum {
             ExtensionRecordFieldEnum::Numeric(f) => &f.field_name,
             ExtensionRecordFieldEnum::Enum(f) => &f.field_name,
             ExtensionRecordFieldEnum::FixedString(f) => &f.field_name,
-            ExtensionRecordFieldEnum::VariableString(f) => &f.string_field.field_name,
+            ExtensionRecordFieldEnum::VariableString(f) => &f.string_field.field_name(),
             ExtensionRecordFieldEnum::FixedRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::BitRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::Array(f) => f.type_field.field_name(),
             ExtensionRecordFieldEnum::AdaptiveRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::Opaque(f) => &f.opaque_data_field.field_name,
-            // TODO are these correct names?
-            ExtensionRecordFieldEnum::PaddingTo16 | ExtensionRecordFieldEnum::PaddingTo32 => {
-                "padding"
-            }
+            ExtensionRecordFieldEnum::PaddingTo16 => "padding_to_16",
+            ExtensionRecordFieldEnum::PaddingTo32 => "padding_to_32",
         }
     }
 
@@ -487,26 +501,10 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
     let core_contents = generate_core_units(items);
     let family_model_contents: Vec<TokenStream> = families
         .iter()
-        .map(|family| {
-            let generated = generate_family_module(items, family.as_str());
-
-            // FIXME remove when finished
-            let _ = syn::parse_file(&generated.to_string()).expect(
-                "Error parsing 'family modules' intermediate generated code for pretty printing.",
-            );
-            generated
-        })
+        .map(|family| generate_family_module(items, family.as_str()))
         .collect();
     let parsers = super::parsers::generate_common_parsers(items);
     let writers = super::writers::generate_common_writers(items);
-
-    println!("{parsers}");
-    let _ = syn::parse_file(&parsers.to_string())
-        .expect("Error parsing 'parsers' intermediate generated code for pretty printing.");
-
-    println!("{writers}");
-    let _ = syn::parse_file(&writers.to_string())
-        .expect("Error parsing 'writers' intermediate generated code for pretty printing.");
 
     quote! {
         // #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
@@ -705,18 +703,11 @@ fn generate_family_module(items: &[GenerationItem], family: &str) -> TokenStream
     // 1. Filter the PDUs for this family and generate these in separate modules
     let pdus = generate_family_pdus(items, family);
 
-    let _ = syn::parse_file(&pdus.to_string())
-        .expect("Error parsing 'PDU' intermediate generated code for pretty printing.");
-
     let extension_records = generate_family_extension_records(items, family);
 
     let records = generate_family_records(items, family);
 
     let contents = quote! { #pdus #extension_records #records };
-
-    println!("{contents}");
-    let _ = syn::parse_file(&contents.to_string())
-        .expect("Error parsing 'family contents' intermediate generated code for pretty printing.");
 
     generate_module_with_name(family, &contents)
 }
@@ -762,11 +753,6 @@ fn generate_family_extension_records(items: &[GenerationItem], family: &str) -> 
     // Flatten the Vec<TokenStream> to a TokenStream
     let extension_records = extension_records.into_iter().collect::<TokenStream>();
 
-    // TODO remove
-    let _ = syn::parse_file(&extension_records.to_string()).expect(
-        "Error parsing 'extension_records models' intermediate generated code for pretty printing.",
-    );
-
     // Flatten the Vec<TokenStream> to a TokenStream
     let extension_record_parsers = extension_record_parsers
         .into_iter()
@@ -781,11 +767,6 @@ fn generate_family_extension_records(items: &[GenerationItem], family: &str) -> 
 
         #extension_record_parsers
     };
-
-    // TODO remove
-    let _ = syn::parse_file(&extension_record_parsers.to_string()).expect(
-        "Error parsing 'extension_records parsers' intermediate generated code for pretty printing.",
-    );
 
     // Put parsers into a module
     let er_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &extension_record_parsers);
@@ -805,12 +786,6 @@ fn generate_family_extension_records(items: &[GenerationItem], family: &str) -> 
 
         #extension_record_writers
     };
-
-    // TODO remove
-    println!("{extension_record_writers}");
-    let _ = syn::parse_file(&extension_record_writers.to_string()).expect(
-        "Error parsing 'extension_records writers' intermediate generated code for pretty printing.",
-    );
 
     // Put writers into a module
     let er_writer_module = generate_module_with_name(WRITER_MODULE_NAME, &extension_record_writers);
@@ -869,11 +844,6 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
     };
     let records_parser_module = generate_module_with_name(PARSER_MODULE_NAME, &record_parsers);
 
-    // TODO remove
-    println!("{records_parser_module}");
-    let _ = syn::parse_file(&records_parser_module.to_string())
-        .expect("Error parsing 'family record parser module' intermediate generated code for pretty printing.");
-
     let record_writers = record_writers
         .into_iter()
         .flatten()
@@ -888,11 +858,6 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
     };
     let records_writer_module = generate_module_with_name(WRITER_MODULE_NAME, &record_writers);
 
-    // TODO remove
-    println!("{records_writer_module}");
-    let _ = syn::parse_file(&records_writer_module.to_string())
-        .expect("Error parsing 'family record writer module' intermediate generated code for pretty printing.");
-
     // Add imports for the records (not wrapped in a module)
     let records = quote! {
         #[cfg(feature = "serde")]
@@ -902,10 +867,6 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
         #records_parser_module
         #records_writer_module
     };
-
-    println!("{records}");
-    let _ = syn::parse_file(&records.to_string())
-        .expect("Error parsing 'family records and parsers' intermediate generated code for pretty printing.");
 
     records
 }
@@ -921,29 +882,11 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     let builder_content = super::builders::generate_pdu_builder(pdu, &builder_name_ident);
     let builder_module = generate_module_with_name(BUILDER_MODULE_NAME, &builder_content);
 
-    // TODO remove
-    println!("PDU: {}", pdu.type_name);
-    let _ = syn::parse_file(&builder_module.to_string()).expect(
-        "Error parsing 'pdu builder module' intermediate generated code for pretty printing.",
-    );
-
     let parser_content = super::parsers::generate_pdu_body_parser(pdu);
     let parser_module = generate_module_with_name(PARSER_MODULE_NAME, &parser_content);
 
-    // TODO remove
-    println!("{parser_module}");
-    let _ = syn::parse_file(&parser_module.to_string()).expect(
-        "Error parsing 'pdu parser module' intermediate generated code for pretty printing.",
-    );
-
     let writer_content = super::writers::generate_pdu_body_writer(pdu);
     let writer_module = generate_module_with_name(WRITER_MODULE_NAME, &writer_content);
-
-    // TODO remove
-    println!("{writer_module}");
-    let _ = syn::parse_file(&writer_module.to_string()).expect(
-        "Error parsing 'pdu writer module' intermediate generated code for pretty printing.",
-    );
 
     let fields = pdu
         .fields
@@ -980,7 +923,6 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
     generate_module_with_name(pdu_module_name, &contents)
 }
 
-// TODO further develop the core traits (as in gen 2: BodyInfo, Interaction)
 fn generate_pdu_trait_impls(pdu: &Pdu) -> TokenStream {
     const PDU_HEADER_LEN_BYTES: usize = 16;
 
@@ -1074,8 +1016,16 @@ fn generate_extension_record_variable_field_length_calculation(
 
     match field {
         ExtensionRecordFieldEnum::VariableString(f) => {
-            let field_name = to_tokens(&f.string_field.field_name);
-            Some(quote! { (self.#field_name.len() as u16) })
+            let field_name = to_tokens(f.string_field.field_name());
+            match &f.string_field {
+                VariableStringField::Single(_s) => Some(quote! { (self.#field_name.len() as u16) }),
+                VariableStringField::Multiple(m) => {
+                    let number_of_strings = Literal::usize_unsuffixed(m.fixed_number_of_strings);
+                    Some(
+                        quote! { (self.#field_name.iter().map(|s| s.len() as u16).sum::<u16>() + #number_of_strings) },
+                    )
+                }
+            }
         }
         ExtensionRecordFieldEnum::Array(f) => {
             let element_length = match &f.type_field {
@@ -1234,10 +1184,21 @@ fn generate_adaptive_record_field_decl(field: &AdaptiveRecordField) -> TokenStre
 }
 
 fn generate_variable_string_field_decl(field: &VariableStringField) -> TokenStream {
-    let field_ident = format_ident!("{}", field.field_name);
-    quote! {
-        #[doc = "Variable String"]
-        pub #field_ident : String,
+    match field {
+        VariableStringField::Single(single) => {
+            let field_ident = format_ident!("{}", single.field_name);
+            quote! {
+                #[doc = "Variable String (single)"]
+                pub #field_ident : String,
+            }
+        }
+        VariableStringField::Multiple(multiple) => {
+            let field_ident = format_ident!("{}", multiple.field_name);
+            quote! {
+                #[doc = "Variable String (multiple)"]
+                pub #field_ident : Vec<String>,
+            }
+        }
     }
 }
 

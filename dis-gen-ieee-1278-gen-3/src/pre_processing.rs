@@ -39,7 +39,6 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
                     path,
                     type_name: name,
                     field_name,
-                    // data_size: Default::default(),
                 });
             }
             _ => {
@@ -48,7 +47,6 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
                     path,
                     type_name: name,
                     field_name,
-                    // data_size: Default::default(),
                 });
             }
         }
@@ -61,7 +59,6 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
             path: String::default(),
             type_name: "u8".to_string(),
             field_name: String::default(),
-            // data_size: Default::default(),
         },
     );
     rec_lookup.insert(
@@ -70,7 +67,6 @@ pub(crate) fn create_fqn_lookup(items: &[ExtractionItem]) -> (FqnLookup, FqnLook
             path: String::default(),
             type_name: "u16".to_string(),
             field_name: String::default(),
-            // data_size: Default::default(),
         },
     );
 
@@ -440,7 +436,6 @@ fn process_fixed_string_field(
     }
 }
 
-// TODO parser impl and pre-processing
 fn process_int_bitfield(
     field: &crate::extraction::IntBitField,
 ) -> crate::generation::models::IntBitField {
@@ -454,7 +449,6 @@ fn process_int_bitfield(
     }
 }
 
-// TODO parser impl and pre-processing
 fn process_enum_bitfield(
     field: &crate::extraction::EnumBitField,
     lookup: &Lookup,
@@ -483,7 +477,6 @@ fn process_enum_bitfield(
     }
 }
 
-// TODO parser impl and pre-processing
 fn process_bool_bitfield(
     field: &crate::extraction::BoolBitField,
 ) -> crate::generation::models::BoolBitField {
@@ -617,11 +610,18 @@ fn process_adaptive_record_field(
 fn process_variable_string_field(
     field: &crate::extraction::VariableStringField,
 ) -> crate::generation::models::VariableStringField {
-    crate::generation::models::VariableStringField {
-        field_name: format_field_name(&field.name),
-        field_type: "String",
-        fixed_number_of_strings: field.fixed_number_of_strings.unwrap_or(0),
-        parser_function: to_tokens("crate::parser::fixed_string_with_length"),
+    let field_name = format_field_name(&field.name);
+    if field.fixed_number_of_strings.is_some() {
+        crate::generation::models::VariableStringField::Multiple(
+            crate::generation::models::VariableStringFieldMultiple {
+                field_name,
+                fixed_number_of_strings: field.fixed_number_of_strings.unwrap_or(1),
+            },
+        )
+    } else {
+        crate::generation::models::VariableStringField::Single(
+            crate::generation::models::VariableStringFieldSingle { field_name },
+        )
     }
 }
 

@@ -1,10 +1,10 @@
 use crate::constants::{EXTENSION_RECORD_TYPE, PARSER_MODULE_NAME, PDU_TYPE};
 use crate::generation::models::{
-    generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum,
-    BitRecord, BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
+    generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
+    BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
     ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField,
     GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
-    VariableString,
+    VariableString, VariableStringField,
 };
 use crate::pre_processing::{
     field_length_to_primitive, field_size_to_primitive_type, finalise_type, to_tokens,
@@ -56,6 +56,30 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
                 let string = String::from_utf8_lossy(bytes).to_string();
 
                 Ok((input, string))
+            }
+        }
+
+        pub(crate) fn variable_string_single_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
+            move |input: &[u8]| {
+                let (input, bytes) = nom::bytes::complete::take(length)(input)?;
+                let bytes_trim_terminator = &bytes[..bytes.len().saturating_sub(1)];
+                let string = String::from_utf8_lossy(bytes_trim_terminator).to_string();
+
+                Ok((input, string))
+            }
+        }
+
+        #[expect(unused, reason = "No fields with attribute fixed_number_of_strings occur in the schemas")]
+        pub(crate) fn variable_string_multiple_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<String>> {
+            move |input: &[u8]| {
+                let (input, bytes) = nom::bytes::complete::take(length)(input)?;
+                let bytes_without_terminator = &bytes[..bytes.len().saturating_sub(1)];
+                let parts = bytes_without_terminator
+                    .split(|sep| *sep == 0x00)
+                    .map(|s| String::from_utf8_lossy(s).to_string() )
+                    .collect::<Vec<String>>();
+
+                Ok((input, parts))
             }
         }
 
@@ -531,14 +555,25 @@ fn generate_adaptive_record_field_parser(field: &AdaptiveRecordField) -> TokenSt
 }
 
 fn generate_variable_string_field_parser(field: &VariableString) -> TokenStream {
-    let string_field_name = format_ident!("{}", field.string_field.field_name);
+    let string_field_name = format_ident!("{}", field.string_field.field_name());
     let count_field_name = format_ident!("{}", field.count_field.field_name);
     let count_parser = &field.count_field.parser_function;
-    let string_parser = &field.string_field.parser_function;
 
-    quote! {
-        let (input, #count_field_name) = #count_parser(input)?;
-        let (input, #string_field_name) = #string_parser(#count_field_name as usize)(input)?;
+    match &field.string_field {
+        VariableStringField::Single(_single) => {
+            quote! {
+                let (input, #count_field_name) = #count_parser(input)?;
+                let (input, #string_field_name) = crate::parser::variable_string_single_with_length(#count_field_name as usize)(input)?;
+            }
+        }
+        VariableStringField::Multiple(multiple) => {
+            let fixed_number_of_strings =
+                Literal::usize_unsuffixed(multiple.fixed_number_of_strings);
+            quote! {
+                let (input, #count_field_name) = #count_parser(input)?;
+                let (input, #string_field_name) = crate::parser::variable_string_multiple_with_length(#count_field_name as usize, #fixed_number_of_strings)(input)?;
+            }
+        }
     }
 }
 
