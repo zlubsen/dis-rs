@@ -3,7 +3,7 @@ use crate::common_records::{
 };
 use crate::enumerations::{Country, DISPDUType, DISProtocolVersion, EntityKind};
 use crate::errors::DisError;
-use crate::fixed_parameters::NO_ENTITY;
+use crate::symbolic_names::NO_ENTITY;
 use crate::PDU_HEADER_LEN_BYTES;
 use std::fmt::Display;
 use std::str::FromStr;

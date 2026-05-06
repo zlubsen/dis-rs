@@ -1,9 +1,9 @@
 pub(crate) mod constants;
 pub mod core;
-pub mod fixed_parameters;
 pub mod impls;
 pub(crate) mod other_extension_record;
 pub(crate) mod other_pdu;
+pub mod symbolic_names;
 pub(crate) mod utils;
 
 include!(concat!(
@@ -27,6 +27,6 @@ pub use other_pdu::*;
 // TODO consistency tests for all PDUs
 // TODO model/generate the hierarchy for EntityType elements (enum hierarchy dependencies) from SISO-REF-010
 // TODO model the hierarchy of EntityType (eg domain depends on kind, etc)
-// TODO check fixed constants with Table 9 (page 65) (and put in common crate)
-// TODO add/check symbolic names for variable parameters (and put in common crate), tables 10, 11, 12.
+// TODO put symbolic names in common crate for gen2 and gen3
+// TODO add/check symbolic names for variable parameters (and put in common crate for gen2 and gen3), tables 10, 11, 12.
 // TODO further develop the core traits (as in gen 2: BodyInfo, Interaction)
