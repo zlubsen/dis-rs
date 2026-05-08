@@ -85,13 +85,21 @@ pub fn convert_attr_to_usize(reader: &Reader<BufReader<File>>, attr: &Attribute)
 #[inline]
 #[must_use]
 fn convert_attr_to_bool(reader: &Reader<BufReader<File>>, attr: &Attribute) -> bool {
-    bool::from_str(
-        &reader
-            .decoder()
-            .decode(&attr.value)
-            .expect("Expected valid UTF-8"),
-    )
-    .expect("Expected a value able to be parsed to 'bool'")
+    // bool::from_str(
+    //     &reader
+    //         .decoder()
+    //         .decode(&attr.value)
+    //         .expect("Expected valid UTF-8"),
+    // )
+    // .expect("Expected a value able to be parsed to 'bool'")
+    let val = &reader
+        .decoder()
+        .decode(&attr.value)
+        .expect("Expected valid UTF-8");
+    match val.as_ref() {
+        "true" => true,
+        "false" | _ => false,
+    }
 }
 
 /// Helper function to expand a list of UIDs in &str format,
