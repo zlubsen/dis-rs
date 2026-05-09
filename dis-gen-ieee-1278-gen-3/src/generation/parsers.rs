@@ -1,10 +1,10 @@
 use crate::constants::{EXTENSION_RECORD_TYPE, PARSER_MODULE_NAME, PDU_TYPE};
 use crate::generation::models::{
-    generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
-    BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
-    ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField,
-    GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
-    VariableString, VariableStringField,
+    AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord, BitRecordField,
+    BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecord,
+    ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField, GenerationItem,
+    IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum, VariableString,
+    VariableStringField, generate_module_with_name,
 };
 use crate::pre_processing::{
     field_length_to_primitive, field_size_to_primitive_type, finalise_type, to_tokens,
@@ -251,15 +251,11 @@ pub(crate) fn generate_extension_record_body_parser(record: &ExtensionRecord) ->
             },
         )
     } else {
-        let length = Literal::usize_suffixed(record.base_length);
-
         (
             quote! {
                 _record_length
             },
-            quote! {
-                let (input, _padding_to_64) = nom::bytes::complete::take(#length)(input)?;
-            },
+            quote! {},
         )
     };
 

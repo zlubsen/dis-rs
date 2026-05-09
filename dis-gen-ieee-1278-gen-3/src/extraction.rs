@@ -867,7 +867,7 @@ fn extract_extension_record(
         dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_BASE_LENGTH, reader);
     let attr_is_variable =
         dis_gen_utils::extract_attr_as_bool(element, ELEMENT_ATTR_IS_VARIABLE, reader);
-println!("{:?} is var: {:?}", attr_name, attr_is_variable);
+
     let mut buf = Vec::new();
     let record_type_field = if let Ok(Event::Empty(ref element)) = reader.read_event_into(&mut buf)
     {
@@ -1095,7 +1095,7 @@ fn extract_variable_string_field(
     let attr_name = dis_gen_utils::extract_attr_as_string(element, ELEMENT_ATTR_NAME);
     let fixed_number_of_strings =
         dis_gen_utils::extract_attr_as_usize(element, ELEMENT_ATTR_FIXED_NO_OF_STRINGS, reader);
-
+    
     VariableStringField {
         name: attr_name.expect("Expected VariableStringField attribute 'name' to be present."),
         fixed_number_of_strings,
