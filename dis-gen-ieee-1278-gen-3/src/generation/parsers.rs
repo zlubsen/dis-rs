@@ -1,10 +1,10 @@
 use crate::constants::{EXTENSION_RECORD_TYPE, PARSER_MODULE_NAME, PDU_TYPE};
 use crate::generation::models::{
-    AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord, BitRecordField,
-    BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField, ExtensionRecord,
-    ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField, GenerationItem,
-    IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum, VariableString,
-    VariableStringField, generate_module_with_name,
+    generate_module_with_name, AdaptiveRecord, AdaptiveRecordField, Array, ArrayFieldEnum, BitRecord,
+    BitRecordField, BitRecordFieldEnum, BoolBitField, EnumBitField, EnumField,
+    ExtensionRecord, ExtensionRecordFieldEnum, FixedRecord, FixedRecordField, FixedStringField,
+    GenerationItem, IntBitField, NumericField, OpaqueData, Pdu, PduAndFixedRecordFieldsEnum,
+    VariableString, VariableStringField,
 };
 use crate::pre_processing::{
     field_length_to_primitive, field_size_to_primitive_type, finalise_type, to_tokens,
@@ -53,7 +53,9 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
         pub(crate) fn fixed_string_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
             move |input: &[u8]| {
                 let (input, bytes) = nom::bytes::complete::take(length)(input)?;
-                let string = String::from_utf8_lossy(bytes).to_string();
+                let string = String::from_utf8_lossy(bytes)
+                    .trim_end_matches('\0')
+                    .to_string();
 
                 Ok((input, string))
             }

@@ -357,7 +357,7 @@ fn generate_fixed_string_field_writer(
 ) -> TokenStream {
     let length = Literal::usize_suffixed(field.length);
 
-    // Too long strings will be truncated, leaving no padding in the fixed string field
+    // Too long strings will be truncated, leaving no padding/NULs in the fixed string field
     quote! {
         let num_pad = #length.saturating_sub(#field_name.len());
         let string_length = #length - num_pad;
