@@ -169,7 +169,7 @@ mod tests {
             0x02, // Marking Type: CallSign
             0x04, // CharacterSet: UTF8
             0x08, // String length - 8 bytes including NUL terminator
-            0x56, 0x69, 0x70, 0x65, 0x72, 0x30, 0x31, // Text: "Viper01" (note big endian?)
+            0x56, 0x69, 0x70, 0x65, 0x72, 0x30, 0x31, // Text: "Viper01"
             0x00, // String NUL terminator
             0x00, // pad to multiple of 8 bytes (plus 1 byte to 16 total in this case)
         ];

@@ -1018,7 +1018,9 @@ fn generate_extension_record_variable_field_length_calculation(
         ExtensionRecordFieldEnum::VariableString(f) => {
             let field_name = to_tokens(f.string_field.field_name());
             match &f.string_field {
-                VariableStringField::Single(_s) => Some(quote! { (self.#field_name.len() as u16) }),
+                VariableStringField::Single(_s) => {
+                    Some(quote! { ((self.#field_name.len() + 1) as u16) })
+                }
                 VariableStringField::Multiple(m) => {
                     let number_of_strings = Literal::usize_unsuffixed(m.fixed_number_of_strings);
                     Some(

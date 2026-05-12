@@ -57,8 +57,6 @@ pub fn generate(items: &[GenerationItem], overrides: &Overrides) -> TokenStream 
         }
     }
 
-    println!("generated item: {}", generated_items.len());
-
     // FIXME remove after implementing all stuff for v8
     let type_placeholder = generate_type_placeholder();
 
