@@ -139,10 +139,22 @@ pub(crate) fn generate_extension_record_body_writer(record: &ExtensionRecord) ->
         .map(generate_extension_record_field_writer)
         .collect::<Vec<TokenStream>>();
 
+    let _a = ();
+    let padding_to_64 = if record.is_variable {
+        quote! {
+            let num_pad = self.record_length_info().padding_length;
+            (0..num_pad).for_each(|_i| buf.put_u8(0x00));
+        }
+    } else {
+        quote! {}
+    };
+
     quote! {
         impl Serialize for #type_path::#type_name {
             fn serialize(&self, buf: &mut BytesMut) -> u16 {
                 #(#field_writers)*
+
+                #padding_to_64
 
                 self.record_length()
             }
@@ -311,13 +323,6 @@ pub(crate) fn generate_adaptive_record_writer(record: &AdaptiveRecord) -> TokenS
         })
         .collect::<Vec<TokenStream>>();
     quote! {
-        // impl Serialize for #type_path::#type_name {
-        //     fn serialize(&self, buf: &mut BytesMut) -> u16 {
-        //         match self {
-        //             #(#variant_arms)*
-        //         }
-        //     }
-        // }
         impl From<&#type_path::#type_name> for #primitive_type {
             fn from(value: &#type_path::#type_name) -> #primitive_type {
                 match value {

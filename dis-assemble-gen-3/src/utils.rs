@@ -31,7 +31,10 @@ impl PaddedRecordLengths {
 /// The function returns a tuple consisting of the length of the data, the length of the padding, and the total (padded) length of the record.
 ///
 /// For example, a piece of data of 12 bytes that needs to be aligned to 16 bytes will have a
-/// data length of 12 bytes, a padding of 4 bytes and a final length of 12 + 4 bytes. The function will return 16 in this case.
+/// data length of 12 bytes, a padding of 4 bytes and a final length of 12 + 4 bytes.
+///
+/// The function returns a struct `PaddedRecordLengths` containing the total `record_length`,
+/// the amount of padding `padding_length` and the data `data_length`.
 pub(crate) fn length_padded_to_num(data_length: usize, pad_to_num: usize) -> PaddedRecordLengths {
     let data_remaining = data_length % pad_to_num;
     let padding_num = if data_remaining == 0 {

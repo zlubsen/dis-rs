@@ -976,16 +976,21 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
         clippy::cast_possible_truncation,
         reason = "Length are within u16::MAX "
     )]
-    let base_length = Literal::u16_suffixed(record.base_length as u16);
+    let base_length = Literal::usize_unsuffixed(record.base_length);
     let length_calculation = if record.is_variable {
         let variable_fields = record
             .fields
             .iter()
             .filter_map(generate_extension_record_variable_field_length_calculation)
             .collect::<Vec<TokenStream>>();
-        quote! { #base_length + #(#variable_fields)+* }
+        quote! {
+            let data_length = #base_length + #(#variable_fields)+*;
+            crate::utils::length_padded_to_num(data_length.into(), 8)
+        }
     } else {
-        quote! { #base_length }
+        quote! {
+            crate::utils::PaddedRecordLengths::new(#base_length, 0, #base_length)
+        }
     };
 
     quote! {
@@ -997,9 +1002,13 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
         }
 
         impl #record_name {
+            fn record_length_info(&self) -> crate::utils::PaddedRecordLengths {
+                #length_calculation
+            }
+
             #[must_use]
             pub fn record_length(&self) -> u16 {
-                #length_calculation
+                self.record_length_info().record_length as u16
             }
 
             pub fn record_type(&self) -> crate::enumerations::ExtensionRecordTypes {
