@@ -1,6 +1,8 @@
+#![allow(clippy::similar_names)]
+
 pub(crate) mod constants;
 pub mod core;
-pub mod impls;
+mod impls;
 pub(crate) mod other_extension_record;
 pub(crate) mod other_pdu;
 pub mod symbolic_names;
@@ -19,11 +21,7 @@ include!(concat!(
 ));
 
 pub use constants::*;
-pub use core::*;
-pub use other_pdu::*;
 
-// TODO Tests for PDUs with extension records
-// TODO test writers
 // TODO consistency tests for all PDUs
 // TODO model/generate the hierarchy for EntityType elements (enum hierarchy dependencies) from SISO-REF-010
 // TODO model the hierarchy of EntityType (eg domain depends on kind, etc)

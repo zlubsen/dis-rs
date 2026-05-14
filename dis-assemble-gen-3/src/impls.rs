@@ -1,8 +1,8 @@
 use crate::common_records::{
     EntityIdentifier, EntityType, EventIdentifier, PDUHeader, PDUStatus, SimulationAddress,
 };
+use crate::core::errors::DisError;
 use crate::enumerations::{Country, DISPDUType, DISProtocolVersion, EntityKind};
-use crate::errors::DisError;
 use crate::symbolic_names::NO_ENTITY;
 use crate::PDU_HEADER_LEN_BYTES;
 use std::fmt::Display;

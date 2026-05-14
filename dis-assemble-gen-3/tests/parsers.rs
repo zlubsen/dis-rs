@@ -29,7 +29,7 @@ fn test_parse_pdu_es_no_extension_records() {
         0x00, // placement attributes
         0x00, 0x00, // num extension records (0)
     ];
-    let parsed = dis_assemble_gen_3::parse(&buffer).unwrap();
+    let parsed = dis_assemble_gen_3::core::model::parse(&buffer).unwrap();
     let pdu = parsed.first().unwrap();
 
     if let PduBody::EntityState(es) = &pdu.body {
@@ -50,8 +50,11 @@ fn test_parse_pdu_es_no_extension_records() {
         assert_eq!(es.entity_type.specific, 3);
         assert_eq!(es.entity_type.extra, 4);
 
+        #[allow(clippy::float_cmp)]
         assert_eq!(es.entity_location.x_coordinate, 4_395_115.478_805_255f64);
+        #[allow(clippy::float_cmp)]
         assert_eq!(es.entity_location.y_coordinate, 4_401_128.300_594_416f64);
+        #[allow(clippy::float_cmp)]
         assert_eq!(es.entity_location.z_coordinate, 1_407_254.619_050_411_5f64);
     }
 }
@@ -94,7 +97,7 @@ fn test_parse_pdu_es_with_extension_records() {
         0x10, 0x00, 0x00, 0x00, // AdaptiveRecord 4 bytes - bit 4 = adsb
         0x00, 0x00, 0x00, 0x00, // ER 2: 4 byte padding
     ];
-    let parsed = dis_assemble_gen_3::parse(&buffer).unwrap();
+    let parsed = dis_assemble_gen_3::core::model::parse(&buffer).unwrap();
     let pdu = parsed.first().unwrap();
 
     if let PduBody::EntityState(es) = &pdu.body {

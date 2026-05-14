@@ -27,21 +27,21 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
         #pdu_body_parser
 
-        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::ExtensionRecord>> {
+        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::core::model::ExtensionRecord>> {
             let (input, number_of_er) = nom::number::complete::le_u16(input)?;
             let (input, records) = nom::multi::count(extension_record, number_of_er.into()).parse(input)?;
 
             Ok((input, records))
         }
 
-        pub(crate) fn extension_record(input: &[u8]) -> IResult<&[u8], crate::ExtensionRecord> {
+        pub(crate) fn extension_record(input: &[u8]) -> IResult<&[u8], crate::core::model::ExtensionRecord> {
             let (input, record_type) = nom::number::complete::le_u16(input)?;
             let record_type = crate::enumerations::ExtensionRecordTypes::from(record_type);
             let (input, record_length) = nom::number::complete::le_u16(input)?;
 
             let (input, body) = extension_record_body(&record_type, record_length.into())(input)?;
 
-            Ok((input, crate::ExtensionRecord {
+            Ok((input, crate::core::model::ExtensionRecord {
                 record_type,
                 record_length,
                 body,
@@ -190,7 +190,7 @@ pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
     let parser_module = to_tokens(PARSER_MODULE_NAME);
 
     quote! {
-        use crate::BodyRaw;
+        use crate::core::model::BodyRaw;
         use nom::IResult;
         #[allow(unused_imports, reason = "Imported in every parser module instead of finding out the use of specific nom functions per module")]
         use nom::Parser;

@@ -1,13 +1,6 @@
-use crate::Pdu;
-use bytes::BytesMut;
-
-#[allow(
-    unused,
-    reason = "Used by generated code, lints and the compiler don't see the usage."
-)]
-pub trait Serialize {
-    fn serialize(&self, buf: &mut BytesMut) -> u16;
-}
+use crate::core::model::ExtensionRecord;
+pub(crate) use crate::core::model::{Pdu, Serialize};
+use bytes::{BufMut, BytesMut};
 
 impl Serialize for Pdu {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
@@ -18,10 +11,30 @@ impl Serialize for Pdu {
     }
 }
 
+impl Serialize for Vec<ExtensionRecord> {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        #[allow(clippy::cast_possible_truncation)]
+        buf.put_u16_le(self.len() as u16);
+        let length_of_records = self.iter().map(|er| er.serialize(buf)).sum::<u16>();
+
+        2 + length_of_records
+    }
+}
+
+impl Serialize for ExtensionRecord {
+    fn serialize(&self, buf: &mut BytesMut) -> u16 {
+        buf.put_u16_le(self.record_type.into());
+        buf.put_u16_le(self.record_length);
+
+        self.body.serialize(buf)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::common_records::{BeamStatus, EntityIdentifier, EntityType, EulerAngles};
-    use crate::core::writer::Serialize;
+    use crate::core::model::ExtensionRecord;
+    use crate::core::model::Serialize;
     use crate::entity_info_interaction::extension_records::{
         EntityAppearance, EntityMarking, LogicalObjectRelationship,
         MultipleStaticEntitywithExtendedAppearance,
@@ -35,7 +48,7 @@ mod tests {
         ExtensionRecordTypes, MarkingType,
     };
     use crate::siman::extension_records::ApplicationStatusTypeDescription;
-    use crate::{ExtensionRecord, ExtensionRecordBody};
+    use crate::ExtensionRecordBody;
     use bytes::BytesMut;
 
     #[test]

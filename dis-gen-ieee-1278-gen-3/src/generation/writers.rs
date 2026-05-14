@@ -17,29 +17,11 @@ pub(crate) fn generate_common_writers(items: &[GenerationItem]) -> TokenStream {
     let contents = quote! {
         use crate::PduBody;
         use crate::ExtensionRecordBody;
-        use crate::core::writer::Serialize;
+        use crate::core::model::Serialize;
         #[allow(unused_imports)]
         use bytes::{BytesMut, BufMut};
 
         #pdu_body_writer
-
-        impl Serialize for Vec<crate::ExtensionRecord> {
-            fn serialize(&self, buf: &mut BytesMut) -> u16 {
-                buf.put_u16_le(self.len() as u16);
-                let length_of_records = self.iter().map(|er| er.serialize(buf) ).sum::<u16>();
-
-                2 + length_of_records
-            }
-        }
-
-        impl Serialize for crate::ExtensionRecord {
-            fn serialize(&self, buf: &mut BytesMut) -> u16 {
-                buf.put_u16_le(self.record_type.into());
-                buf.put_u16_le(self.record_length);
-
-                self.body.serialize(buf)
-            }
-        }
 
         #extension_record_body_writer
     };
@@ -85,9 +67,9 @@ pub(crate) fn generate_pdu_body_writer(pdu: &Pdu) -> TokenStream {
     quote! {
         #[allow(unused_imports)]
         use bytes::{BytesMut, BufMut};
-        use crate::core::BodyRaw;
+        use crate::core::model::BodyRaw;
         #[allow(unused_imports)]
-        use crate::core::writer::Serialize;
+        use crate::core::model::Serialize;
 
         impl Serialize for #type_path::#type_name {
             fn serialize(&self, buf: &mut BytesMut) -> u16 {

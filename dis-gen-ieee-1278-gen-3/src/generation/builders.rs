@@ -41,13 +41,13 @@ pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStre
             #(#with_functions)*
 
             #[must_use]
-            pub fn with_extension_record(mut self, record: crate::ExtensionRecord) -> Self {
+            pub fn with_extension_record(mut self, record: crate::core::model::ExtensionRecord) -> Self {
                 self.0.extension_records.push(record);
                 self
             }
 
             #[must_use]
-            pub fn with_extension_records(mut self, records: Vec<crate::ExtensionRecord>) -> Self {
+            pub fn with_extension_records(mut self, records: Vec<crate::core::model::ExtensionRecord>) -> Self {
                 self.0.extension_records = records;
                 self
             }
