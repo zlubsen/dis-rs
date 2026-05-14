@@ -139,7 +139,6 @@ pub(crate) fn generate_extension_record_body_writer(record: &ExtensionRecord) ->
         .map(generate_extension_record_field_writer)
         .collect::<Vec<TokenStream>>();
 
-    let _a = ();
     let padding_to_64 = if record.is_variable {
         quote! {
             let num_pad = self.record_length_info().padding_length;

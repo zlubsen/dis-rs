@@ -96,10 +96,7 @@ fn convert_attr_to_bool(reader: &Reader<BufReader<File>>, attr: &Attribute) -> b
         .decoder()
         .decode(&attr.value)
         .expect("Expected valid UTF-8");
-    match val.as_ref() {
-        "true" => true,
-        "false" | _ => false,
-    }
+    matches!(val.as_ref(), "true")
 }
 
 /// Helper function to expand a list of UIDs in &str format,

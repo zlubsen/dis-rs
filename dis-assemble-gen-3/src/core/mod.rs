@@ -100,7 +100,8 @@ pub struct ExtensionRecord {
 impl ExtensionRecord {
     #[must_use]
     pub fn record_length(&self) -> u16 {
-        4 + self.body.record_length()
+        // fields record_type and record_length are counted as part of the body
+        self.body.record_length()
     }
 
     #[must_use]

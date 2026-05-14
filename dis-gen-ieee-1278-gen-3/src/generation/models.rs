@@ -366,7 +366,7 @@ impl ExtensionRecordFieldEnum {
             ExtensionRecordFieldEnum::Numeric(f) => &f.field_name,
             ExtensionRecordFieldEnum::Enum(f) => &f.field_name,
             ExtensionRecordFieldEnum::FixedString(f) => &f.field_name,
-            ExtensionRecordFieldEnum::VariableString(f) => &f.string_field.field_name(),
+            ExtensionRecordFieldEnum::VariableString(f) => f.string_field.field_name(),
             ExtensionRecordFieldEnum::FixedRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::BitRecord(f) => &f.field_name,
             ExtensionRecordFieldEnum::Array(f) => f.type_field.field_name(),
@@ -972,10 +972,6 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
 
     let record_type = to_tokens(&record.record_type_variant_name);
 
-    #[expect(
-        clippy::cast_possible_truncation,
-        reason = "Length are within u16::MAX "
-    )]
     let base_length = Literal::usize_unsuffixed(record.base_length);
     let length_calculation = if record.is_variable {
         let variable_fields = record

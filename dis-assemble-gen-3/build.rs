@@ -2,6 +2,8 @@ const SISO_REF_DIR: &str = "./definitions/enumerations/";
 const SISO_SCHEMA_DIR: &str = "./definitions/v8-schemas";
 
 fn main() {
+    println!("cargo:rerun-if-changed=NULL");
+
     let (uid_index, pdu_types_index, er_types_index) = dis_gen_siso_ref_010::execute(SISO_REF_DIR);
 
     dis_gen_ieee_1278_gen_3::execute(SISO_SCHEMA_DIR, uid_index, pdu_types_index, er_types_index);
