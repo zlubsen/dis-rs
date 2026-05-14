@@ -1,5 +1,5 @@
-use crate::core::writer::Serialize;
-use crate::model::Other;
+use crate::core::model::Serialize;
+use crate::other_pdu::model::Other;
 use bytes::{BufMut, BytesMut};
 
 impl Serialize for Other {

@@ -1,4 +1,5 @@
-use crate::{BodyRaw, PduBody};
+use crate::core::model::BodyRaw;
+use crate::PduBody;
 use nom::IResult;
 
 pub fn other_body(

@@ -29,7 +29,7 @@ fn test_parse_pdu_es_no_extension_records() {
         0x00, // placement attributes
         0x00, 0x00, // num extension records (0)
     ];
-    let parsed = dis_assemble_gen_3::parse(&buffer).unwrap();
+    let parsed = dis_assemble_gen_3::core::model::parse(&buffer).unwrap();
     let pdu = parsed.first().unwrap();
 
     if let PduBody::EntityState(es) = &pdu.body {
@@ -94,7 +94,7 @@ fn test_parse_pdu_es_with_extension_records() {
         0x10, 0x00, 0x00, 0x00, // AdaptiveRecord 4 bytes - bit 4 = adsb
         0x00, 0x00, 0x00, 0x00, // ER 2: 4 byte padding
     ];
-    let parsed = dis_assemble_gen_3::parse(&buffer).unwrap();
+    let parsed = dis_assemble_gen_3::core::model::parse(&buffer).unwrap();
     let pdu = parsed.first().unwrap();
 
     if let PduBody::EntityState(es) = &pdu.body {

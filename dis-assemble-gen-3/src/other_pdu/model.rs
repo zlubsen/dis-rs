@@ -1,5 +1,6 @@
+use crate::core::model::BodyRaw;
 use crate::enumerations::{DISPDUType, DISProtocolFamily};
-use crate::{BodyRaw, PduBody};
+use crate::PduBody;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +13,7 @@ pub struct Other {
 }
 
 impl Other {
+    #[allow(clippy::unused_self)]
     #[must_use]
     pub fn protocol_family(&self) -> DISProtocolFamily {
         DISProtocolFamily::Other

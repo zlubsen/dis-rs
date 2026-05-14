@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use dis_assemble_gen_3::common_records::PDUHeader;
-use dis_assemble_gen_3::{core::writer::Serialize, parse};
-use dis_assemble_gen_3::{BodyRaw, Pdu};
+use dis_assemble_gen_3::core::model::Serialize;
+use dis_assemble_gen_3::core::model::{parse, BodyRaw, Pdu};
 
 const TIMESTAMP_01_01_2026: i64 = 1_767_225_600_000_000;
 

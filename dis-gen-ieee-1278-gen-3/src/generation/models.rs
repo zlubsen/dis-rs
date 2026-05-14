@@ -510,6 +510,7 @@ pub(crate) fn generate(items: &[GenerationItem], families: &[String]) -> TokenSt
         // #[expect(arithmetic_overflow, reason = "Intentionally trigger a lint warning")]
         #[cfg(feature = "serde")]
         use serde::{Deserialize, Serialize};
+        use crate::core::model::BodyRaw;
 
         #core_contents
 
@@ -782,7 +783,7 @@ fn generate_family_extension_records(items: &[GenerationItem], family: &str) -> 
         #[allow(unused_imports)]
         use bytes::{BytesMut, BufMut};
         #[allow(unused_imports)]
-        use crate::core::writer::Serialize;
+        use crate::core::model::Serialize;
 
         #extension_record_writers
     };
@@ -853,7 +854,7 @@ fn generate_family_records(items: &[GenerationItem], family: &str) -> TokenStrea
         #[allow(unused_imports)]
         use bytes::{BytesMut, BufMut};
         #[allow(unused_imports)]
-        use crate::core::writer::Serialize;
+        use crate::core::model::Serialize;
         #record_writers
     };
     let records_writer_module = generate_module_with_name(WRITER_MODULE_NAME, &record_writers);
@@ -902,10 +903,11 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #pdu_name_ident {
             #(#fields)*
-            pub extension_records: Vec<crate::ExtensionRecord>,
+            pub extension_records: Vec<crate::core::model::ExtensionRecord>,
         }
 
         impl #pdu_name_ident {
+            #[must_use]
             pub fn protocol_family(&self) -> crate::enumerations::DISProtocolFamily {
                 crate::enumerations::DISProtocolFamily::from(#protocol_family)
             }
@@ -935,7 +937,7 @@ fn generate_pdu_trait_impls(pdu: &Pdu) -> TokenStream {
     )]
     let base_body_length = Literal::u16_suffixed((pdu.base_length - PDU_HEADER_LEN_BYTES) as u16);
     quote! {
-        impl crate::BodyRaw for #pdu_name_ident {
+        impl crate::core::model::BodyRaw for #pdu_name_ident {
             type Builder = builder::#builder_name_ident;
 
             fn builder() -> Self::Builder {
@@ -1007,6 +1009,7 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
                 self.record_length_info().record_length as u16
             }
 
+            #[must_use]
             pub fn record_type(&self) -> crate::enumerations::ExtensionRecordTypes {
                 crate::enumerations::ExtensionRecordTypes::#record_type
             }

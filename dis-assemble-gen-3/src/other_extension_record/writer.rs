@@ -1,4 +1,4 @@
-use crate::core::writer::Serialize;
+use crate::core::model::Serialize;
 use crate::other_extension_record::model::Other;
 use bytes::{BufMut, BytesMut};
 

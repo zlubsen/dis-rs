@@ -1,7 +1,7 @@
 use crate::common_records::parser::pdu_header;
 use crate::common_records::PDUHeader;
 use crate::core::errors::DisError;
-use crate::core::Pdu;
+use crate::core::model::Pdu;
 use crate::enumerations::DISProtocolVersion;
 use crate::parser::pdu_body;
 use crate::PDU_HEADER_LEN_BYTES;
@@ -126,13 +126,43 @@ pub(crate) fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[
 
 #[cfg(test)]
 mod tests {
+    use crate::common_records::PDUStatus;
     use crate::common_records::{BeamStatus, EntityIdentifier};
     use crate::entity_info_interaction::EntityStatus;
     use crate::enumerations::{
         Appearance, AppearanceType, BeamStabilization, EntityMarkingCharacterSet,
         ExtensionRecordTypes, LogicalObjectRelationship, MarkingType,
     };
+    use crate::enumerations::{DISPDUType, DISProtocolVersion};
     use crate::ExtensionRecordBody;
+
+    #[test]
+    fn test_parse_pdu_header() {
+        let buffer: [u8; 16] = [
+            0x08, // Protocol Version: 8
+            0x08, // Compatibility Version: 8
+            0x01, // Exercise ID
+            0x01, // PDU Type: Entity State
+            0x00, // PDU Status
+            0x10, // HDR length: 16 bytes
+            0x10, 0x00, // PDU length: also 16 bytes
+            0x00, 0x40, 0x20, 0x46, 0x48, 0x47, 0x06,
+            0x00, // Timestamp: 01-01-2026 00:00:00 GMT = 1_767_225_600_000_000
+        ];
+        let (_, header) = crate::common_records::parser::pdu_header(&buffer).unwrap();
+
+        assert_eq!(header.protocol_version, DISProtocolVersion::IEEE1278_1202X);
+        assert_eq!(
+            header.compatibility_version,
+            DISProtocolVersion::IEEE1278_1202X
+        );
+        assert_eq!(header.exercise_identifier, 1);
+        assert_eq!(header.pdu_type, DISPDUType::EntityState);
+        assert_eq!(header.pdu_status, PDUStatus::default());
+        assert_eq!(header.pdu_header_length, 16);
+        assert_eq!(header.pdu_length, 16);
+        assert_eq!(header.timestamp, 1_767_225_600_000_000);
+    }
 
     #[test]
     fn test_parse_extension_record_entity_appearance() {
