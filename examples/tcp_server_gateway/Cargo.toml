@@ -1,12 +1,12 @@
 [package]
 name = "tcp_server_gateway"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [dependencies]
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 gateway-core = { path = "../../gateway-core" }
-bytes = "1.10.1"
-tokio = "1.48.0"
+bytes = "1.11.1"
+tokio = "1.52.3"

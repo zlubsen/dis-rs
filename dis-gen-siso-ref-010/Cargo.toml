@@ -13,14 +13,14 @@ categories.workspace = true
 keywords = ["SISO-REF-010", "generator", "Enummerations", "DIS"]
 
 [dependencies]
-quote = "1.0.41"
-quick-xml = "0.39.0"
-proc-macro2 = "1.0.101"
+quote = "1.0.45"
+quick-xml = "0.40.1"
+proc-macro2 = "1.0.106"
 prettyplease = "0.2.37"
-syn = "2.0.106"
-tempfile = "3.26.0"
+syn = "2.0.117"
+tempfile = "3.27.0"
 dis-gen-utils = { path = "../dis-gen-utils" }
-toml = "1.0.6"
+toml = "1.1.2"
 serde = { version = "1.0.228", features = ["derive"] }
 
 [lints]

@@ -14,11 +14,11 @@ keywords = ["IEEE-1278-1", "generator", "DIS", "v8"]
 
 [dependencies]
 itertools = "0.14.0"
-quote = "1.0.41"
-quick-xml = "0.39.0"
-proc-macro2 = "1.0.101"
+quote = "1.0.45"
+quick-xml = "0.40.1"
+proc-macro2 = "1.0.106"
 prettyplease = "0.2.37"
-syn = "2.0.106"
+syn = "2.0.117"
 dis-gen-utils = { path = "../dis-gen-utils" }
 dis-gen-siso-ref-010 = { path = "../dis-gen-siso-ref-010" }
 
