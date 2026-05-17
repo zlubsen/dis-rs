@@ -17,11 +17,13 @@ repository.workspace = true
 categories.workspace = true
 
 [features]
-serde = ["dis-assemble-gen-2/serde"]
+default = ["gen2"]
+serde = ["dis-assemble-gen-2?/serde", "dis-assemble-gen-3?/serde"]
+gen2 = ["dep:dis-assemble-gen-2"]
 gen3 = ["dep:dis-assemble-gen-3"]
 
 [dependencies]
-dis-assemble-gen-2 = { path = "../dis-assemble-gen-2" }
+dis-assemble-gen-2 = { path = "../dis-assemble-gen-2", features = ["serde"], optional = true }
 dis-assemble-gen-3 = { path = "../dis-assemble-gen-3", features = ["serde"], optional = true }
 
 [lints]
