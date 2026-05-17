@@ -32,6 +32,7 @@ fn test_parse_pdu_es_no_extension_records() {
     let parsed = dis_assemble_gen_3::core::model::parse(&buffer).unwrap();
     let pdu = parsed.first().unwrap();
 
+    #[allow(clippy::float_cmp)]
     if let PduBody::EntityState(es) = &pdu.body {
         assert_eq!(es.entity_id.entity_number, 3);
         assert_eq!(es.entity_id.simulation_address.application_number, 2);
@@ -50,11 +51,11 @@ fn test_parse_pdu_es_no_extension_records() {
         assert_eq!(es.entity_type.specific, 3);
         assert_eq!(es.entity_type.extra, 4);
 
-        #[allow(clippy::float_cmp)]
+        // #[allow(clippy::float_cmp)]
         assert_eq!(es.entity_location.x_coordinate, 4_395_115.478_805_255f64);
-        #[allow(clippy::float_cmp)]
+        // #[allow(clippy::float_cmp)]
         assert_eq!(es.entity_location.y_coordinate, 4_401_128.300_594_416f64);
-        #[allow(clippy::float_cmp)]
+        // #[allow(clippy::float_cmp)]
         assert_eq!(es.entity_location.z_coordinate, 1_407_254.619_050_411_5f64);
     }
 }
