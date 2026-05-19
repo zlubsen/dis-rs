@@ -3,7 +3,7 @@
 This generator extracts PDU and record definitions from a DIS v8 ('gen 3') schema definitions in XML format and
 generates the code to use all these items.
 
-Intended usage is to be called from a build script, as done by the `dis-rs` crate.
+Intended usage is to be called from a build script, as done by the `dis-assemble-gen-3` crate.
 
 ## Usage
 
