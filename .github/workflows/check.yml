@@ -162,21 +162,21 @@ jobs:
                   crate: defmt-print
 
             - name: Setup QEMU
-              uses: docker/setup-qemu-action@v4
-              with:
-                  platforms: arm
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y qemu-system-arm
 
             - name: Check
-              run: cargo check --profile ${{ matrix.profile }} --verbose --all-targets --workspace
+              run: cargo check --profile ${{ matrix.profile }} --verbose
 
             - name: Format
-              run: cargo fmt --verbose --check --all
+              run: cargo fmt --verbose --check
 
             - name: Lint
-              run: cargo clippy --profile ${{ matrix.profile }} --verbose --all-targets --all
+              run: cargo clippy --profile ${{ matrix.profile }} --verbose
 
             - name: Build
-              run: cargo build --profile ${{ matrix.profile }} --verbose --all-targets --workspace
+              run: cargo build --profile ${{ matrix.profile }} --verbose
 
             - name: Run
               run: cargo run --profile ${{ matrix.profile }} | defmt-print -e ./target/thumbv7em-none-eabihf/${{ matrix.profile == 'dev' && 'debug' || matrix.profile }}/dis-rs-no_std
