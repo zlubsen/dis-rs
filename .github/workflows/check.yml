@@ -178,5 +178,8 @@ jobs:
             - name: Build
               run: cargo build --profile ${{ matrix.profile }} --verbose
 
-            - name: Run
-              run: cargo run --profile ${{ matrix.profile }} | defmt-print -e ./target/thumbv7em-none-eabihf/${{ matrix.profile == 'dev' && 'debug' || matrix.profile }}/dis-rs-no_std
+            # FIXME: https://github.com/actions/runner-images/issues/13964
+            # Retry with a newer QEMU when ubuntu-latest is 26.04
+            #
+            # - name: Run
+            #  run: cargo run --profile ${{ matrix.profile }} | defmt-print -e ./target/thumbv7em-none-eabihf/${{ matrix.profile == 'dev' && 'debug' || matrix.profile }}/dis-rs-no_std
