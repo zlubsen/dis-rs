@@ -56,7 +56,7 @@ jobs:
             - name: Rust
               id: rust
               run: |
-                  DIS_RS_RUST_VERSION=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)
+                  DIS_RS_RUST_VERSION=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)
                   if [ -z "$DIS_RS_RUST_VERSION" ]; then
                     printf '[ERROR]: rust-version not found in Cargo.toml\n'
                     exit 1
