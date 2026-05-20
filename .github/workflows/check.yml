@@ -42,8 +42,6 @@ jobs:
 
     info:
         name: Info
-        needs: semver
-        if: always() && (needs.semver.result == 'success' || needs.semver.result == 'skipped')
         outputs:
             rust-version: ${{ steps.rust.outputs.rust-version }}
         runs-on: ubuntu-latest
@@ -56,12 +54,12 @@ jobs:
             - name: Rust
               id: rust
               run: |
-                  DIS_RS_RUST_VERSION=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)
-                  if [ -z "$DIS_RS_RUST_VERSION" ]; then
+                  _rust_version=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)
+                  if [ -z "$_rust_version" ]; then
                     printf '[ERROR]: rust-version not found in Cargo.toml\n'
                     exit 1
                   fi
-                  printf 'rust-version=%s\n' "$DIS_RS_RUST_VERSION" >> "$GITHUB_OUTPUT"
+                  printf 'rust-version=%s\n' "$_rust_version" >> "$GITHUB_OUTPUT"
 
     check:
         name: Build & Format & Lint & Test & Coverage
