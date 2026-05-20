@@ -4,6 +4,7 @@ use crate::entity_state::model::EntityAppearance;
 use crate::enumerations::{IsGroupOfGroupedEntityCategory, PduType};
 use crate::is_group_of::builder::IsGroupOfBuilder;
 use crate::model::{EntityId, PduBody};
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

@@ -793,7 +793,6 @@ mod generation {
             #[allow(clippy::unreadable_literal)]
             #[allow(clippy::write_literal)]
             pub mod enumerations {
-                use std::fmt::{Display, Formatter};
                 #[cfg(feature = "serde")]
                 use serde::{Deserialize, Serialize};
 
@@ -1031,8 +1030,8 @@ mod generation {
     fn quote_enum_display_impl(e: &Enum, name_ident: &Ident) -> TokenStream {
         let arms = quote_enum_display_arms(&e.items, name_ident, e.postfix_items);
         quote!(
-            impl Display for #name_ident {
-                fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            impl ::core::fmt::Display for #name_ident {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         #(#arms),*
                     }
@@ -1286,8 +1285,8 @@ mod generation {
         let name_ident = format_ident!("{}", formatted_name);
 
         quote!(
-            impl Display for #name_ident {
-                fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            impl ::core::fmt::Display for #name_ident {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     write!(f, #formatted_name)
                 }
             }

@@ -13,7 +13,7 @@ const NANOS_PER_HOUR: u64 = 3_600_000_000_000;
 const NANOS_PER_TIME_UNIT: f64 = NANOS_PER_HOUR as f64 / TIME_UNITS_PER_HOUR as f64;
 
 /// Maximum number of nanoseconds.
-const MAX_NANOS: u64 = NANOS_PER_HOUR - (NANOS_PER_TIME_UNIT.round() as u64);
+const MAX_NANOS: u64 = 3_599_999_998_324; // TODO: NANOS_PER_HOUR - (NANOS_PER_TIME_UNIT.round() as u64);
 
 /// Reference time at which the data contained in the *PDU* was generated.
 ///
@@ -153,7 +153,9 @@ impl Timestamp {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn to_duration(self) -> Duration {
+    pub fn to_duration(self) -> Duration {
+        // TODO: const
+
         self.time_units().to_duration()
     }
 }
@@ -210,14 +212,14 @@ impl PartialEq<Timestamp> for u32 {
 
 impl PartialOrd<u32> for Timestamp {
     #[inline]
-    fn partial_cmp(&self, other: &u32) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &u32) -> Option<core::cmp::Ordering> {
         self.to_u32().partial_cmp(other)
     }
 }
 
 impl PartialOrd<Timestamp> for u32 {
     #[inline]
-    fn partial_cmp(&self, other: &Timestamp) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Timestamp) -> Option<core::cmp::Ordering> {
         self.partial_cmp(&other.to_u32())
     }
 }
@@ -329,11 +331,13 @@ impl TimeUnits {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn from_duration(duration: Duration) -> Option<Self> {
+    pub fn from_duration(duration: Duration) -> Option<Self> {
+        // TODO: const
+
         let nanos = duration.as_nanos();
 
-        if nanos <= MAX_NANOS as u128 {
-            let time_units = ((nanos as f64) / NANOS_PER_TIME_UNIT).round() as u32;
+        if nanos <= u128::from(MAX_NANOS) {
+            let time_units = crate::math::round((nanos as f64) / NANOS_PER_TIME_UNIT) as u32;
             Some(Self(time_units))
         } else {
             None
@@ -406,15 +410,19 @@ impl TimeUnits {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn to_duration(self) -> Duration {
-        let nanos = ((self.0 as f64) * NANOS_PER_TIME_UNIT).round() as u64;
+    pub fn to_duration(self) -> Duration {
+        // TODO: const
+
+        let nanos = crate::math::round(f64::from(self.0) * NANOS_PER_TIME_UNIT) as u64;
         Duration::from_nanos(nanos)
     }
 }
 
-const _: () = {
-    assert!(TimeUnits::MAX.to_duration().as_nanos() == MAX_NANOS as u128);
-};
+// TODO: uncomment when `to_duration()` is const
+//
+// const _: () = {
+//     assert!(TimeUnits::MAX.to_duration().as_nanos() == MAX_NANOS as u128);
+// };
 
 impl Default for TimeUnits {
     #[inline]
@@ -460,14 +468,14 @@ impl PartialEq<TimeUnits> for u32 {
 
 impl PartialOrd<u32> for TimeUnits {
     #[inline]
-    fn partial_cmp(&self, other: &u32) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &u32) -> Option<core::cmp::Ordering> {
         self.0.partial_cmp(other)
     }
 }
 
 impl PartialOrd<TimeUnits> for u32 {
     #[inline]
-    fn partial_cmp(&self, other: &TimeUnits) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &TimeUnits) -> Option<core::cmp::Ordering> {
         self.partial_cmp(&other.0)
     }
 }
@@ -476,8 +484,8 @@ impl PartialOrd<TimeUnits> for u32 {
 mod tests {
     use super::*;
     use bytes::BytesMut;
+    use core::cmp::Ordering;
     use rstest::rstest;
-    use std::cmp::Ordering;
 
     #[rstest]
     #[case(Timestamp::Relative(TimeUnits::ZERO), [0x00, 0x00, 0x00, 0x00])]
@@ -488,7 +496,7 @@ mod tests {
     #[case(Timestamp::Absolute(TimeUnits::MAX), [0xff, 0xff, 0xff, 0xff])]
     fn timestamp_parse_and_serialize_roundtrip(
         #[case] timestamp: Timestamp,
-        #[case] expected: [u8; std::mem::size_of::<u32>()],
+        #[case] expected: [u8; core::mem::size_of::<u32>()],
     ) {
         let (slice, timestamp_parse) =
             nom::number::complete::be_u32::<&[u8], nom::error::Error<&[u8]>>(expected.as_slice())
@@ -728,6 +736,7 @@ mod tests {
     #[case(TimeUnits::new(TIME_UNITS_PER_HOUR / 2).unwrap(), "1073741824")]
     #[case(TimeUnits::MAX, "2147483647")]
     fn time_units_display(#[case] time_units: TimeUnits, #[case] expected: &str) {
+        use alloc::string::ToString;
         assert_eq!(time_units.to_string(), expected);
     }
 

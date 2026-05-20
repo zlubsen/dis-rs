@@ -1,0 +1,40 @@
+[workspace]
+
+[package]
+name = "dis-rs-no_std"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+publish = false
+
+[[bin]]
+name = "dis-rs-no_std"
+test = false
+bench = false
+
+[dependencies]
+bytes = { version = "1.11.1", default-features = false }
+cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.5"
+defmt = "1.1.0"
+defmt-semihosting = "0.3.0"
+dis-rs = { path = "..", default-features = false, features = ["libm"] }
+embedded-alloc = "0.7.0"
+semihosting = { version = "0.1.25", features = ["stdio"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+strip = true
+
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+multiple_crate_versions = "allow"

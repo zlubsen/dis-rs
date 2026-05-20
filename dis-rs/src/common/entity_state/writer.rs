@@ -170,6 +170,7 @@ mod tests {
         ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, Country, DeadReckoningAlgorithm,
         EntityKind, EntityMarkingCharacterSet, ForceId, PduType, PlatformDomain,
     };
+    use alloc::string::ToString;
     use bytes::BytesMut;
 
     #[test]

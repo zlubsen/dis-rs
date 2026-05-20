@@ -3,6 +3,7 @@ use crate::common::detonation::model::{Detonation, DetonationDescriptor};
 use crate::common::model::{PduBody, PduHeader};
 use crate::common::parser;
 use crate::enumerations::{DetonationResult, DetonationTypeIndicator};
+use alloc::vec;
 use nom::IResult;
 use nom::Parser;
 use nom::multi::count;

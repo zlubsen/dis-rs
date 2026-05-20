@@ -1,6 +1,7 @@
 use crate::common::model::{EntityId, FixedDatum, VariableDatum};
 use crate::data_r::model::DataR;
 use crate::enumerations::RequiredReliabilityService;
+use alloc::vec::Vec;
 
 pub struct DataRBuilder(DataR);
 

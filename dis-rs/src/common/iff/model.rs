@@ -27,6 +27,7 @@ use crate::enumerations::{
     ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource, PduType,
     VariableRecordType,
 };
+use alloc::{string::String, vec, vec::Vec};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

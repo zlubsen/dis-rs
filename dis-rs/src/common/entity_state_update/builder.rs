@@ -1,6 +1,7 @@
 use crate::entity_state::model::EntityAppearance;
 use crate::entity_state_update::model::EntityStateUpdate;
 use crate::model::{EntityId, Location, Orientation, VariableParameter, VectorF32};
+use alloc::vec::Vec;
 
 pub struct EntityStateUpdateBuilder(EntityStateUpdate);
 

@@ -2,6 +2,7 @@ use crate::common::model::EntityId;
 use crate::common::model::SupplyQuantity;
 use crate::common::service_request::model::ServiceRequest;
 use crate::enumerations::ServiceRequestServiceTypeRequested;
+use alloc::vec::Vec;
 
 pub struct ServiceRequestBuilder(ServiceRequest);
 

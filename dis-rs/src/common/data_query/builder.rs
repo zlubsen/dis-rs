@@ -1,6 +1,7 @@
 use crate::common::data_query::model::DataQuery;
 use crate::common::model::{EntityId, Timestamp};
 use crate::enumerations::VariableRecordType;
+use alloc::vec::Vec;
 
 pub struct DataQueryBuilder(DataQuery);
 

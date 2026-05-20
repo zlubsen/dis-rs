@@ -7,6 +7,7 @@ use crate::enumerations::{
     SignalUserProtocolIdentificationNumber,
 };
 use crate::signal::builder::SignalBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

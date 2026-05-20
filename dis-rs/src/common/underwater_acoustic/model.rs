@@ -9,6 +9,7 @@ use crate::enumerations::{
 };
 use crate::model::{EntityId, EventId, PduBody, VectorF32};
 use crate::underwater_acoustic::builder::UnderwaterAcousticBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

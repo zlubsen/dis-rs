@@ -1,6 +1,7 @@
 use crate::enumerations::EventType;
 use crate::event_report::model::EventReport;
 use crate::model::{EntityId, FixedDatum, VariableDatum};
+use alloc::vec::Vec;
 
 pub struct EventReportBuilder(EventReport);
 

@@ -17,6 +17,7 @@ mod tests {
         APA, PropulsionPlantConfiguration, Shaft, UABeam, UAEmitterSystem,
         UAFundamentalParameterData, UnderwaterAcoustic,
     };
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

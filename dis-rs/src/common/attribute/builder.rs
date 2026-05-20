@@ -1,6 +1,7 @@
 use crate::common::attribute::model::{Attribute, AttributeRecordSet};
 use crate::common::model::SimulationAddress;
 use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, VariableRecordType};
+use alloc::vec::Vec;
 
 pub struct AttributeBuilder(Attribute);
 

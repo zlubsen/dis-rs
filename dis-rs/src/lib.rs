@@ -1,3 +1,6 @@
+// Support without the standard library
+#![cfg_attr(not(feature = "std"), no_std)]
+// Ignore clippy lints
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
@@ -7,11 +10,18 @@
     reason = "Parsing, writing, encoding, decoding PDUs uses many valid conversions"
 )]
 
-extern crate core;
+#[cfg(all(feature = "std", feature = "libm"))]
+compile_error!(r#"features "std" and "libm" are mutually exclusive"#);
+
+#[cfg(all(not(feature = "std"), not(feature = "libm")))]
+compile_error!(r#"feature "libm" is required when feature "std" is disabled"#);
+
+extern crate alloc;
 
 mod common;
 mod constants;
 mod fixed_parameters;
+mod math;
 pub mod utils;
 mod v6;
 mod v7;

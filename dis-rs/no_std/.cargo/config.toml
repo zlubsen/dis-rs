@@ -1,0 +1,9 @@
+[build]
+target = "thumbv7em-none-eabihf"
+
+[target.thumbv7em-none-eabihf]
+runner = "qemu-system-arm -cpu cortex-m4 -machine mps2-an386 -nographic -semihosting-config enable=on,target=native -kernel"
+rustflags = ["-Clink-arg=-Tlink.x", "-Clink-arg=-Tdefmt.x"]
+
+[env]
+DEFMT_LOG = "info"

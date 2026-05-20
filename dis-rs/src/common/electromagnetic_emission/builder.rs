@@ -1,6 +1,7 @@
 use crate::electromagnetic_emission::model::{ElectromagneticEmission, EmitterSystem};
 use crate::enumerations::ElectromagneticEmissionStateUpdateIndicator;
 use crate::model::{EntityId, EventId};
+use alloc::vec::Vec;
 
 pub struct ElectromagneticEmissionBuilder(ElectromagneticEmission);
 

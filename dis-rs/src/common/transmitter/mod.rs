@@ -15,6 +15,7 @@ mod tests {
     use crate::model::{Location, VectorF32};
     use crate::transmitter::model::{Transmitter, VariableTransmitterParameter};
     use crate::v7::model::PduStatus;
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

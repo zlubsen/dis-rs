@@ -1,6 +1,7 @@
 use crate::enumerations::SignalTdlType;
 use crate::model::EntityId;
 use crate::signal::model::{EncodingScheme, Signal};
+use alloc::vec::Vec;
 
 pub struct SignalBuilder(Signal);
 

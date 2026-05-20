@@ -1,6 +1,7 @@
 use crate::action_request_r::model::ActionRequestR;
 use crate::common::model::{EntityId, FixedDatum, VariableDatum};
 use crate::enumerations::{ActionId, RequiredReliabilityService};
+use alloc::vec::Vec;
 
 pub struct ActionRequestRBuilder(ActionRequestR);
 

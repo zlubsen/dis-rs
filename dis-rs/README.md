@@ -19,7 +19,7 @@ and then stored in a `v7` model and put back on the wire based on the version sp
 Here is an overview of the `DIS` `PDU`s/features supported by `dis-rs`:
 
 | PDU                             |      Support       |
-|:--------------------------------|:------------------:|
+| :------------------------------ | :----------------: |
 | Other                           | :heavy_check_mark: |
 | EntityState                     | :heavy_check_mark: |
 | Fire                            | :heavy_check_mark: |
@@ -134,8 +134,21 @@ filter out v6 or v7 version PDUs.
 To serialize a `PDU` to bytes (the `DIS` wire format), simply call the `serialize()` function on a `Pdu`, providing the
 buffer as argument.
 
-## Crate feature flags
+## Feature flags
 
-The crate offers one optional feature:
+| **Feature** |    **Default**     | **Description**                                                                                                                                                                             |
+| :---------- | :----------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `libm`      |        :x:         | Enable the _optional_ [`libm`](https://docs.rs/libm) dependency. This feature should only be enabled in a `no_std` context, since the `std` and `libm` features are mutually exclusive      |
+| `serde`     |        :x:         | Enable the _optional_ [`serde`](https://docs.rs/serde) dependency, adding `Serialize` and `Deserialize` to all `PDU`s. See example [`serde-json`](../examples/serde-json) for more details. |
+| `std`       | :heavy_check_mark: | Enable full compatibility with the `Rust` standard library `std`. This feature should only be enabled in a `std` context, since the `std` and `libm` features are mutually exclusive        |
 
-- "serde": Adds support for `serde` to the models. See the example `serde-json` for details.
+## `no-std` support
+
+In order to use `dis-rs` in a `no_std` context, the `std` feature must be disabled and the `libm` feature enabled.
+
+Modify your `Cargo.toml` accordingly:
+
+```toml
+[dependencies]
+dis-rs = { version = "DIS_RS_VERSION", default-features = false, features = ["libm"] }
+```
