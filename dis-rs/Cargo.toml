@@ -21,7 +21,6 @@ default = ["std"]
 libm = ["dep:libm"]
 serde = ["dep:serde"]
 std = ["bytes/std", "nom/std", "thiserror/std", "serde?/std"]
-pcap-file = ["dep:pcap-file"]
 hotpath = ["dep:hotpath", "hotpath/hotpath", "hotpath/hotpath-alloc"]
 _test_no_instrumentation = []
 
@@ -35,7 +34,6 @@ serde = { version = "1.0.228", optional = true, default-features = false, featur
     "derive",
 ] }
 hotpath = { version = "0.10.1", optional = true }
-pcap-file = { version = "2.0.0", optional = true }
 
 [dev-dependencies]
 rstest.workspace = true
