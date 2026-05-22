@@ -1,6 +1,7 @@
 use crate::common::model::EntityId;
 use crate::data_query_r::model::DataQueryR;
 use crate::enumerations::{RequiredReliabilityService, VariableRecordType};
+use alloc::vec::Vec;
 
 pub struct DataQueryRBuilder(DataQueryR);
 

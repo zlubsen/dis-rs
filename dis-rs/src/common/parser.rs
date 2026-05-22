@@ -76,6 +76,10 @@ use crate::stop_freeze_r::parser::stop_freeze_r_body;
 use crate::transfer_ownership::parser::transfer_ownership_body;
 use crate::underwater_acoustic::parser::underwater_acoustic_body;
 use crate::v7::parser::parse_pdu_status;
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use nom::IResult;
 use nom::bytes::complete::take;
 use nom::combinator::peek;

@@ -1,5 +1,6 @@
 use crate::common::data::model::Data;
 use crate::common::model::{EntityId, FixedDatum, VariableDatum};
+use alloc::vec::Vec;
 
 pub struct DataBuilder(Data);
 

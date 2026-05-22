@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{PduType, VariableRecordType};
     use crate::model::{EntityId, FixedDatum, VariableDatum};
     use crate::set_data::model::SetData;
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

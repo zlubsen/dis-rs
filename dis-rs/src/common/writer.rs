@@ -412,6 +412,7 @@ mod tests {
     use crate::constants::PDU_HEADER_LEN_BYTES;
     use crate::enumerations::{LvcIndicator, PduType};
     use crate::v7::model::PduStatus;
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

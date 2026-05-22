@@ -18,6 +18,7 @@ mod tests {
     use crate::common::model::{Pdu, PduHeader, TimeUnits, Timestamp};
     use crate::enumerations::PduType;
     use crate::other::model::Other;
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

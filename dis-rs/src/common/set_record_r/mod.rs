@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{PduType, RequiredReliabilityService, VariableRecordType};
     use crate::model::{RecordSet, RecordSpecification};
     use crate::set_record_r::model::SetRecordR;
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

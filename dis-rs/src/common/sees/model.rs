@@ -3,6 +3,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{EntityId, PduBody};
 use crate::sees::builder::SeesBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

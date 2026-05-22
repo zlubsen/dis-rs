@@ -7,6 +7,7 @@ use crate::common::model::{
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::VARIABLE_PARAMETER_RECORD_LENGTH;
 use crate::enumerations::{DetonationResult, PduType};
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

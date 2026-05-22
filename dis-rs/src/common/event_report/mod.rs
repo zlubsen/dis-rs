@@ -11,6 +11,7 @@ mod tests {
     use crate::enumerations::{EventType, PduType, VariableRecordType};
     use crate::event_report::model::EventReport;
     use crate::model::{FixedDatum, VariableDatum};
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

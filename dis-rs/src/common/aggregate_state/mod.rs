@@ -18,8 +18,9 @@ mod tests {
     };
     use crate::model::{EntityId, EntityType, Location, Orientation, VariableDatum, VectorF32};
     use crate::v7::model::PduStatus;
+    use alloc::vec;
     use bytes::BytesMut;
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     #[test]
     fn aggregate_state_internal_consistency() {

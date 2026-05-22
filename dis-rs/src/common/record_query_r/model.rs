@@ -6,6 +6,7 @@ use crate::enumerations::{
 };
 use crate::model::{EntityId, PduBody, Timestamp};
 use crate::record_query_r::builder::RecordQueryRBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

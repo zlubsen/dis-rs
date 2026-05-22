@@ -1,5 +1,6 @@
 use crate::common::other::model::Other;
 use crate::model::EntityId;
+use alloc::vec::Vec;
 
 pub struct OtherBuilder(Other);
 

@@ -3,6 +3,7 @@ use crate::aggregate_state::model::{
 };
 use crate::enumerations::{AggregateStateAggregateState, AggregateStateFormation, ForceId};
 use crate::model::{EntityId, Location, Orientation, VariableDatum, VectorF32};
+use alloc::vec::Vec;
 
 pub struct AggregateStateBuilder(AggregateState);
 

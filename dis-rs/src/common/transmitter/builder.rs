@@ -6,6 +6,7 @@ use crate::model::{EntityId, EntityType, Location, VectorF32};
 use crate::transmitter::model::{
     BeamAntennaPattern, CryptoKeyId, ModulationType, Transmitter, VariableTransmitterParameter,
 };
+use alloc::vec::Vec;
 
 pub struct TransmitterBuilder(Transmitter);
 

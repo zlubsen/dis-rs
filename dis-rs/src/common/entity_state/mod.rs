@@ -17,6 +17,7 @@ mod tests {
     };
     use crate::common::parser::parse_pdu;
     use crate::enumerations::*;
+    use alloc::string::ToString;
     use bytes::BytesMut;
 
     #[test]

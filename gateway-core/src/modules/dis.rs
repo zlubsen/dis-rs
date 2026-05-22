@@ -143,7 +143,7 @@ impl NodeData for DisRxNodeData {
                     .map(|&version| ProtocolVersion::from(version))
                     .collect()
             })
-            .unwrap_or(dis_rs::supported_protocol_versions());
+            .unwrap_or_else(|| dis_rs::supported_protocol_versions().to_vec());
 
         Ok(Self {
             base: BaseNode {

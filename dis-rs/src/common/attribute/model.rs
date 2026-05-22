@@ -3,6 +3,7 @@ use crate::common::attribute::builder::AttributeBuilder;
 use crate::common::model::{EntityId, PduBody, SimulationAddress};
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{AttributeActionCode, PduType, ProtocolVersion, VariableRecordType};
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -94,7 +95,7 @@ impl AttributeRecordSet {
     pub fn new() -> Self {
         Self {
             entity_id: EntityId::default(),
-            attribute_records: vec![],
+            attribute_records: Vec::default(),
         }
     }
 
@@ -136,7 +137,7 @@ impl AttributeRecord {
     pub fn new() -> Self {
         Self {
             record_type: VariableRecordType::default(),
-            specific_fields: vec![],
+            specific_fields: Vec::default(),
         }
     }
 

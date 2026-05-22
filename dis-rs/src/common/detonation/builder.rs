@@ -1,6 +1,7 @@
 use crate::common::detonation::model::{Detonation, DetonationDescriptor};
 use crate::common::model::{EntityId, EventId, Location, VariableParameter, VectorF32};
 use crate::enumerations::DetonationResult;
+use alloc::vec::Vec;
 
 pub struct DetonationBuilder(Detonation);
 

@@ -70,10 +70,14 @@ use crate::start_resume_r::model::StartResumeR;
 use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{fmt::Display, str::FromStr};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
-use std::str::FromStr;
 
 pub use crate::v7::model::PduStatus;
 
@@ -691,7 +695,7 @@ impl Default for SimulationAddress {
 }
 
 impl Display for SimulationAddress {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}:{}", self.site_id, self.application_id)
     }
 }
@@ -801,7 +805,7 @@ impl Default for EntityId {
 }
 
 impl Display for EntityId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}:{}", self.simulation_address, self.entity_id)
     }
 }
@@ -884,7 +888,7 @@ impl Default for EventId {
 }
 
 impl Display for EventId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}:{}", self.simulation_address, self.event_id)
     }
 }
@@ -1107,7 +1111,7 @@ impl EntityType {
 }
 
 impl Display for EntityType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "{}:{}:{}:{}:{}:{}:{}",

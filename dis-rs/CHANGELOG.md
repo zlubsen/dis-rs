@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.0] - 2026-04-22
 
+### Added
+
+- `no_std` support
+- `libm` feature \
+  Enable the _optional_ [`libm`](https://docs.rs/libm) dependency. \
+  This feature should only be enabled in a `no_std` context, since the `std` and `libm` features are mutually exclusive
+- `std` feature \
+  Enable full compatibility with the `Rust` standard library `std`. \
+  This feature should only be enabled in a `std` context, since the `std` and `libm` features are mutually exclusive
+
 ### Changed
 
 - `MSRV 1.91`
