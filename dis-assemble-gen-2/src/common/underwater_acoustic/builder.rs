@@ -3,6 +3,7 @@ use crate::model::{EntityId, EventId};
 use crate::underwater_acoustic::model::{
     APA, PropulsionPlantConfiguration, Shaft, UAEmitterSystem, UnderwaterAcoustic,
 };
+use alloc::vec::Vec;
 
 pub struct UnderwaterAcousticBuilder(UnderwaterAcoustic);
 

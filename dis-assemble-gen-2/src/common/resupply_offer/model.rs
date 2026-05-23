@@ -4,6 +4,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::PduType;
 use crate::model::{SUPPLY_QUANTITY_RECORD_LENGTH, SupplyQuantity};
 use crate::resupply_offer::builder::ResupplyOfferBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

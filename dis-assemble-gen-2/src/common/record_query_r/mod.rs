@@ -12,6 +12,7 @@ mod tests {
         PduType, RecordQueryREventType, RequiredReliabilityService, VariableRecordType,
     };
     use crate::record_query_r::model::{RecordQueryR, RecordQuerySpecification};
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

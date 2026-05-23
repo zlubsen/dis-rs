@@ -1,6 +1,7 @@
 use crate::enumerations::IsGroupOfGroupedEntityCategory;
 use crate::is_group_of::model::{GroupEntityDescription, GroupReferencePoint, IsGroupOf};
 use crate::model::EntityId;
+use alloc::vec::Vec;
 
 pub struct IsGroupOfBuilder(IsGroupOf);
 

@@ -19,6 +19,7 @@ use crate::enumerations::{
     ModeSSquitterRecordSource, ModeSSquitterType, ModeSTransmitState, NavigationSource,
     VariableRecordType,
 };
+use alloc::{string::String, vec::Vec};
 
 pub struct IffBuilder(Iff);
 

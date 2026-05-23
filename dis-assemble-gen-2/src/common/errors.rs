@@ -1,6 +1,6 @@
-use thiserror::Error;
-
 use crate::constants::PDU_HEADER_LEN_BYTES;
+use alloc::string::String;
+use thiserror::Error;
 
 #[derive(Debug, PartialEq, Eq, Error)]
 pub enum DisError {

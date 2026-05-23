@@ -64,6 +64,7 @@ use crate::common::model::Pdu;
 use crate::common::parser::parse_multiple_pdu;
 use crate::enumerations::{PduType, ProtocolVersion};
 use crate::model::PduBody;
+use alloc::vec::Vec;
 use bytes::BytesMut;
 
 #[allow(dead_code)]
@@ -83,10 +84,10 @@ impl From<ProtocolVersion> for SupportedVersion {
     }
 }
 
-/// Returns a `Vec` of all `ProtocolVersion`s supported by the crate.
+/// Returns a list of all `ProtocolVersion`s supported by the crate.
 #[must_use]
-pub fn supported_protocol_versions() -> Vec<ProtocolVersion> {
-    vec![
+pub fn supported_protocol_versions() -> &'static [ProtocolVersion] {
+    &[
         ProtocolVersion::IEEE1278_1A1998,
         ProtocolVersion::IEEE1278_12012,
     ]

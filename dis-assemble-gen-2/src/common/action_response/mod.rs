@@ -12,6 +12,7 @@ mod tests {
     };
     use crate::common::parser::parse_pdu;
     use crate::enumerations::{PduType, RequestStatus, VariableRecordType};
+    use alloc::vec;
     use bytes::BytesMut;
 
     #[test]

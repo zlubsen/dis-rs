@@ -24,7 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-## [0.14.0] - 2026-04-22
+## [0.14.0] - 2026-05-22
+
+### Added
+
+- `no_std` support (by [@carlocorradini](https://github.com/carlocorradini))
+- `libm` feature \
+  Enable the _optional_ [`libm`](https://docs.rs/libm) dependency. \
+  This feature should only be enabled in a `no_std` context, since the `std` and `libm` features are mutually exclusive
+- `std` feature \
+  Enable full compatibility with the `Rust` standard library `std`. \
+  This feature should only be enabled in a `std` context, since the `std` and `libm` features are mutually exclusive
 
 ### Changed
 
@@ -34,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DataQuery` PDU `timestamp` field type is `Timestamp` instead of `u32`.
 - Removed constants related to `TimeStamp` and `CdisTimeStamp`.
 - Upgraded to Rust Edition 2024
+- Moved `allocations.rs` from `src/bin` to its own binary crate `alloc_profiling`. Removed `pcap-file` dependency from
+  the main library.
 
 ### Fixed
 

@@ -3,6 +3,7 @@ use crate::common::model::{EntityId, PduBody, SUPPLY_QUANTITY_RECORD_LENGTH, Sup
 use crate::common::{BodyInfo, Interaction};
 use crate::enumerations::{PduType, ServiceRequestServiceTypeRequested};
 use crate::service_request::builder::ServiceRequestBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

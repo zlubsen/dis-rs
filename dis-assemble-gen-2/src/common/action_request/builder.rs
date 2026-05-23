@@ -1,6 +1,7 @@
 use crate::common::action_request::model::ActionRequest;
 use crate::common::model::{EntityId, FixedDatum, VariableDatum};
 use crate::enumerations::ActionId;
+use alloc::vec::Vec;
 
 pub struct ActionRequestBuilder(ActionRequest);
 

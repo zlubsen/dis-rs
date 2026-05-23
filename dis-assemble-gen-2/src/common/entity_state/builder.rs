@@ -1,6 +1,7 @@
 use crate::entity_state::model::{DrParameters, EntityAppearance, EntityMarking, EntityState};
 use crate::enumerations::{EntityCapabilities, ForceId};
 use crate::model::{EntityId, EntityType, Location, Orientation, VariableParameter, VectorF32};
+use alloc::vec::Vec;
 
 pub struct EntityStateBuilder(EntityState);
 

@@ -24,10 +24,10 @@ pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64,
     // TODO handle special case for centre of earth, where lat/lon are ignored (CDIS 7.1 ad. c).
     let zp = ecef_z.abs();
     let w2 = ecef_x * ecef_x + ecef_y * ecef_y;
-    let w = w2.sqrt();
+    let w = crate::math::sqrt(w2);
     let r2 = w2 + ecef_z * ecef_z;
-    let r = r2.sqrt();
-    let longitude = ecef_y.atan2(ecef_x);
+    let r = crate::math::sqrt(r2);
+    let longitude = crate::math::atan2(ecef_y, ecef_x);
 
     let s2 = ecef_z * ecef_z / r2;
     let c2 = w2 / r2;
@@ -35,20 +35,20 @@ pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64,
     let v = EcefToGeoConstants::A3 - EcefToGeoConstants::A4 / r;
     let (latitude, s, ss, c) = if c2 > 0.3 {
         let s = (zp / r) * (1.0 + c2 * (EcefToGeoConstants::A1 + u + s2 * v) / r);
-        let latitude = s.asin(); //Lat
+        let latitude = crate::math::asin(s); //Lat
         let ss = s * s;
-        let c = (1.0 - ss).sqrt();
+        let c = crate::math::sqrt(1.0 - ss);
         (latitude, s, ss, c)
     } else {
         let c = (w / r) * (1.0 - s2 * (EcefToGeoConstants::A5 - u - c2 * v) / r);
-        let latitude = c.acos(); //Lat
+        let latitude = crate::math::acos(c); //Lat
         let ss = 1.0 - c * c;
-        let s = ss.sqrt();
+        let s = crate::math::sqrt(ss);
         (latitude, s, ss, c)
     };
 
     let g = 1.0 - EcefToGeoConstants::E2 * ss;
-    let rg = EcefToGeoConstants::WGS_84_SEMI_MAJOR_AXIS / g.sqrt();
+    let rg = EcefToGeoConstants::WGS_84_SEMI_MAJOR_AXIS / crate::math::sqrt(g);
     let rf = EcefToGeoConstants::A6 * rg;
     let u = w - rg * c;
     let v = zp - rf * s;
@@ -75,10 +75,12 @@ pub fn ecef_to_geodetic_lla(ecef_x: f64, ecef_y: f64, ecef_z: f64) -> (f64, f64,
 #[must_use]
 pub fn geodetic_lla_to_ecef(latitude: f64, longitude: f64, altitude_msl: f64) -> (f64, f64, f64) {
     let n = EcefToGeoConstants::WGS_84_SEMI_MAJOR_AXIS
-        / (1.0 - EcefToGeoConstants::E2 * latitude.sin() * latitude.sin()).sqrt();
-    let ecef_x = (n + altitude_msl) * latitude.cos() * longitude.cos(); //ECEF x
-    let ecef_y = (n + altitude_msl) * latitude.cos() * longitude.sin(); //ECEF y
-    let ecef_z = (n * (1.0 - EcefToGeoConstants::E2) + altitude_msl) * latitude.sin(); //ECEF z
+        / crate::math::sqrt(
+            1.0 - EcefToGeoConstants::E2 * crate::math::sin(latitude) * crate::math::sin(latitude),
+        );
+    let ecef_x = (n + altitude_msl) * crate::math::cos(latitude) * crate::math::cos(longitude); //ECEF x
+    let ecef_y = (n + altitude_msl) * crate::math::cos(latitude) * crate::math::sin(longitude); //ECEF y
+    let ecef_z = (n * (1.0 - EcefToGeoConstants::E2) + altitude_msl) * crate::math::sin(latitude); //ECEF z
 
     (ecef_x, ecef_y, ecef_z)
 }

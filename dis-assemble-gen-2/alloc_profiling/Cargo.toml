@@ -1,0 +1,17 @@
+[workspace]
+
+[package]
+name = "dis-rs-alloc-profiling"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+publish = false
+
+[[bin]]
+name = "dis-rs-alloc-profiling"
+test = false
+bench = false
+
+[dependencies]
+dis-assemble-gen-2 = { path = "..", features = ["hotpath"] }
+pcap-file = { version = "2.0.0" }

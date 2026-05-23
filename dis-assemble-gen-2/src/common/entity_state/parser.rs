@@ -10,6 +10,7 @@ use crate::enumerations::{
     DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion,
 };
 use crate::v6::entity_state::parser::entity_capabilities;
+use alloc::vec;
 use nom::IResult;
 use nom::Parser;
 use nom::bytes::complete::take;
@@ -224,6 +225,7 @@ mod tests {
     use crate::common::parser::{location, parse_pdu, variable_parameter};
     use crate::enumerations::*;
     use crate::v6::entity_state::parser::entity_capabilities;
+    use alloc::string::String;
 
     #[test]
     fn parse_pdu_entity_state() {

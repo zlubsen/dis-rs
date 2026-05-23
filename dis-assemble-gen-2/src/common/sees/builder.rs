@@ -1,5 +1,6 @@
 use crate::model::EntityId;
 use crate::sees::model::{PropulsionSystemData, SEES, VectoringNozzleSystemData};
+use alloc::vec::Vec;
 
 pub struct SeesBuilder(SEES);
 

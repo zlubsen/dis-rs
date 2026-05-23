@@ -12,10 +12,14 @@ use crate::model::{
     VariableDatum, VectorF32, length_padded_to_num,
 };
 use crate::{BodyRaw, DisError};
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{fmt::Display, str::FromStr};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 
 pub(crate) const BASE_AGGREGATE_STATE_BODY_LENGTH: u16 = 124;
 
@@ -140,7 +144,7 @@ impl AggregateMarking {
 }
 
 impl Display for AggregateMarking {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(self.marking_string.as_str())
     }
 }
@@ -226,7 +230,7 @@ impl AggregateType {
 }
 
 impl Display for AggregateType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "{}:{}:{}:{}:{}:{}:{}",

@@ -7,6 +7,7 @@ use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::PduType;
 use crate::set_data::builder::SetDataBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

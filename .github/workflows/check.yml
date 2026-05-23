@@ -25,25 +25,45 @@ jobs:
         if: startsWith(github.ref_name, 'v')
         runs-on: ubuntu-latest
         steps:
-            -   name: Checkout
-                uses: actions/checkout@v6
-                with:
-                    fetch-depth: 0
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
 
-            -   name: Git tag is Semantic Versioning
-                env:
-                    DIS_RS_REF_NAME: ${{ github.ref_name }}
-                run: |
-                    _tag="$DIS_RS_REF_NAME"
-                    if ! printf "%s\n" "$_tag" | grep -q -P '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$'; then
-                      printf '[ERROR]: Git tag (%s) wrong format\n' "$_tag"
-                      exit 1
-                    fi
+            - name: Git tag is Semantic Versioning
+              env:
+                  DIS_RS_REF_NAME: ${{ github.ref_name }}
+              run: |
+                  _tag="$DIS_RS_REF_NAME"
+                  if ! printf "%s\n" "$_tag" | grep -q -P '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$'; then
+                    printf '[ERROR]: Git tag (%s) wrong format\n' "$_tag"
+                    exit 1
+                  fi
+
+    info:
+        name: Info
+        outputs:
+            rust-version: ${{ steps.rust.outputs.rust-version }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Rust
+              id: rust
+              run: |
+                  _rust_version=$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml)
+                  if [ -z "$_rust_version" ]; then
+                    printf '[ERROR]: rust-version not found in Cargo.toml\n'
+                    exit 1
+                  fi
+                  printf 'rust-version=%s\n' "$_rust_version" >> "$GITHUB_OUTPUT"
 
     check:
         name: Build & Format & Lint & Test & Coverage
-        needs: semver
-        if: always() && (needs.semver.result == 'success' || needs.semver.result == 'skipped')
+        needs: info
         strategy:
             fail-fast: true
             matrix:
@@ -52,55 +72,114 @@ jobs:
                     - ubuntu-latest
                     - windows-latest
                 toolchain:
-                    - "1.91"
+                    - ${{ needs.info.outputs.rust-version }}
                     - stable
                 profile:
                     - dev
                     - release
         runs-on: ${{ matrix.os }}
         steps:
-            -   name: Checkout
-                uses: actions/checkout@v6
-                with:
-                    fetch-depth: 0
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
 
-            -   name: Setup Rust
-                uses: dtolnay/rust-toolchain@master
-                with:
-                    toolchain: ${{ matrix.toolchain }}
-                    components: clippy, rustfmt
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: ${{ matrix.toolchain }}
+                  components: clippy, rustfmt
 
-            -   name: Setup Tarpaulin
-                if: matrix.toolchain == 'stable'
-                run: cargo install cargo-tarpaulin
+            - name: Setup Tarpaulin
+              if: matrix.toolchain == 'stable'
+              uses: baptiste0928/cargo-install@v3
+              with:
+                  crate: cargo-tarpaulin
 
-            -   name: Setup Bun
-                uses: oven-sh/setup-bun@v2
-                with:
-                    bun-version: latest
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
 
-            -   name: Install Bun dependencies
-                working-directory: ./cdis-gateway
-                run: bun install
+            - name: Install Bun dependencies
+              working-directory: ./cdis-gateway
+              run: bun install
 
-            -   name: Check
-                run: cargo check --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
+            - name: Check
+              run: cargo check --profile ${{ matrix.profile }} --verbose --features=serde --all-targets --workspace
 
-            -   name: Format
-                run: cargo fmt --verbose --check --all
+            - name: Format
+              run: cargo fmt --verbose --check --all
 
-            -   name: Lint
-                run: cargo clippy --profile ${{ matrix.profile }} --verbose --all-features --all-targets --all
+            - name: Lint
+              run: cargo clippy --profile ${{ matrix.profile }} --verbose --features=serde --all-targets --all
 
-            -   name: Test
-                run: cargo test --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace
+            - name: Test
+              run: cargo test --profile ${{ matrix.profile }} --verbose --features=serde --all-targets --workspace
 
-            -   name: Coverage
-                if: matrix.toolchain == 'stable'
-                run: cargo tarpaulin --profile ${{ matrix.profile }} --verbose --all-features --all-targets --workspace --out xml
+            - name: Coverage
+              if: matrix.toolchain == 'stable'
+              run: cargo tarpaulin --profile ${{ matrix.profile }} --verbose --features=serde --all-targets --workspace --out xml
 
-            -   name: Upload coverage
-                if: matrix.toolchain == 'stable'
-                uses: codecov/codecov-action@v5
-                with:
-                    token: ${{ secrets.CODECOV_TOKEN }}
+            - name: Upload coverage
+              if: matrix.toolchain == 'stable'
+              uses: codecov/codecov-action@v5
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+
+    no_std:
+        name: no_std
+        needs: info
+        strategy:
+            fail-fast: true
+            matrix:
+                toolchain:
+                    - ${{ needs.info.outputs.rust-version }}
+                    - stable
+                profile:
+                    - dev
+                    - release
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./dis-rs/no_std
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: ${{ matrix.toolchain }}
+                  targets: thumbv7em-none-eabihf
+                  components: clippy, rustfmt
+
+            - name: Setup defmt-print
+              uses: baptiste0928/cargo-install@v3
+              with:
+                  crate: defmt-print
+
+            - name: Setup QEMU
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y qemu-system-arm
+
+            - name: Check
+              run: cargo check --profile ${{ matrix.profile }} --verbose
+
+            - name: Format
+              run: cargo fmt --verbose --check
+
+            - name: Lint
+              run: cargo clippy --profile ${{ matrix.profile }} --verbose
+
+            - name: Build
+              run: cargo build --profile ${{ matrix.profile }} --verbose
+
+            # FIXME: https://github.com/actions/runner-images/issues/13964
+            # Retry with a newer QEMU when ubuntu-latest is 26.04
+            #
+            # - name: Run
+            #  run: cargo run --profile ${{ matrix.profile }} | defmt-print -e ./target/thumbv7em-none-eabihf/${{ matrix.profile == 'dev' && 'debug' || matrix.profile }}/dis-rs-no_std

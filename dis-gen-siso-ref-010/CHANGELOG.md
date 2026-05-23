@@ -25,4 +25,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Lifted generator out of the main `dis-rs` library into a separate crate, to allow running unit test. 
+- Lifted generator out of the main `dis-rs` library into a separate crate, to allow running unit test
+- Adaptions to accommodate v36

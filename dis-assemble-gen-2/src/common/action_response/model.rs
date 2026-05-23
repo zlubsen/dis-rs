@@ -5,6 +5,7 @@ use crate::common::model::{EntityId, FixedDatum, PduBody, VariableDatum};
 use crate::common::{BodyInfo, Interaction};
 use crate::constants::EIGHT_OCTETS;
 use crate::enumerations::{PduType, RequestStatus};
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

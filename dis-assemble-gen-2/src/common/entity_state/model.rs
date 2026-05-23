@@ -13,9 +13,14 @@ use crate::enumerations::{
     SupplyAppearance, SurfacePlatformAppearance,
 };
 use crate::{BodyRaw, DisError};
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::str::FromStr;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 const BASE_ENTITY_STATE_BODY_LENGTH: u16 = 132;
 

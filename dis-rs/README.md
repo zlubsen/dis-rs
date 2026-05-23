@@ -34,9 +34,23 @@ See the bundled crates' README.md files for usage information:
 - [dis-assemble-gen-2](https://github.com/zlubsen/dis-rs/blob/main/dis-assemble-gen-2/README.md)
 - [dis-assemble-gen-3](https://github.com/zlubsen/dis-rs/blob/main/dis-assemble-gen-3/README.md)
 
-## Crate feature flags
+## Feature flags
 
-The crate offers optional feature flags:
+| **Feature** |    **Default**     | **Description**                                                                                                                                                                             |
+|:------------|:------------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `gen2`      | :heavy_check_mark: | Enable DIS Generation 2                                                                                                                                                                     |
+| `gen3`      |        :x:         | Enable DIS Generation 3                                                                                                                                                                     |
+| `serde`     |        :x:         | Enable the _optional_ [`serde`](https://docs.rs/serde) dependency, adding `Serialize` and `Deserialize` to all `PDU`s. See example [`serde-json`](../examples/serde-json) for more details. |
+| `std`       | :heavy_check_mark: | Enable full compatibility with the `Rust` standard library `std`. This feature should only be enabled in a `std` context, since the `std` and `libm` features are mutually exclusive        |
+| `libm`      |        :x:         | Enable the _optional_ [`libm`](https://docs.rs/libm) dependency. This feature should only be enabled in a `no_std` context, since the `std` and `libm` features are mutually exclusive      |
 
-- "serde": Adds support for `serde` to the models. See the example `serde-json` for details.
-- "gen3": Adds support for v8/generation 3 of the protocol.
+## `no-std` support
+
+In order to use `dis-rs` in a `no_std` context, the `std` feature must be disabled and the `libm` feature enabled.
+
+Modify your `Cargo.toml` accordingly:
+
+```toml
+[dependencies]
+dis-rs = { version = "DIS_RS_VERSION", default-features = false, features = ["libm"] }
+```

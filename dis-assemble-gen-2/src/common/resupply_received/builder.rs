@@ -1,6 +1,7 @@
 use crate::common::model::EntityId;
 use crate::common::model::SupplyQuantity;
 use crate::resupply_received::model::ResupplyReceived;
+use alloc::vec::Vec;
 
 pub struct ResupplyReceivedBuilder(ResupplyReceived);
 

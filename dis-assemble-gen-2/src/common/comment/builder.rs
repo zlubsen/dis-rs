@@ -1,5 +1,6 @@
 use crate::common::comment::model::Comment;
 use crate::common::model::{EntityId, VariableDatum};
+use alloc::vec::Vec;
 
 pub struct CommentBuilder(Comment);
 

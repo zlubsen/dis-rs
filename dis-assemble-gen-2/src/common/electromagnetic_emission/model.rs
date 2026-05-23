@@ -7,6 +7,7 @@ use crate::enumerations::{
     ElectromagneticEmissionStateUpdateIndicator, EmitterName, EmitterSystemFunction,
     HighDensityTrackJam, PduType,
 };
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -106,7 +107,7 @@ impl EmitterSystem {
             function: EmitterSystemFunction::default(),
             number: 0,
             location: VectorF32::default(),
-            beams: vec![],
+            beams: Vec::default(),
         }
     }
 
@@ -183,7 +184,7 @@ impl Beam {
             high_density_track_jam: HighDensityTrackJam::default(),
             beam_status: BeamStatusBeamState::default(),
             jamming_technique: JammingTechnique::default(),
-            track_jam_data: vec![],
+            track_jam_data: Vec::default(),
         }
     }
 

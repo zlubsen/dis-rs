@@ -14,6 +14,7 @@ use crate::enumerations::{
     TransmitterModulationTypeSystem, TransmitterTransmitState, VariableRecordType,
 };
 use crate::transmitter::builder::TransmitterBuilder;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
