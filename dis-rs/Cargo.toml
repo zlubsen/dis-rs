@@ -19,7 +19,7 @@ categories.workspace = true
 [features]
 default = ["std", "gen2"]
 serde = ["dis-assemble-gen-2?/serde", "dis-assemble-gen-3?/serde"]
-std = ["dis-assemble-gen-2?/std"]
+std = ["dis-assemble-gen-2?/std", "dis-assemble-gen-3?/std"]
 libm = ["dis-assemble-gen-2?/libm"]
 gen2 = ["dep:dis-assemble-gen-2"]
 gen3 = ["dep:dis-assemble-gen-3"]

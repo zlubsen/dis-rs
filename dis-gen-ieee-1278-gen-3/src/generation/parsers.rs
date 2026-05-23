@@ -27,7 +27,7 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
 
         #pdu_body_parser
 
-        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], Vec<crate::core::model::ExtensionRecord>> {
+        pub(crate) fn extension_record_set(input: &[u8]) -> IResult<&[u8], alloc::vec::Vec<crate::core::model::ExtensionRecord>> {
             let (input, number_of_er) = nom::number::complete::le_u16(input)?;
             let (input, records) = nom::multi::count(extension_record, number_of_er.into()).parse(input)?;
 
@@ -61,6 +61,7 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
             }
         }
 
+        #[allow(unused, reason = "There are no occurrences of multiple variable strings in the definition")]
         pub(crate) fn variable_string_single_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], String> {
             move |input: &[u8]| {
                 let (input, bytes) = nom::bytes::complete::take(length)(input)?;
@@ -71,21 +72,21 @@ pub(crate) fn generate_common_parsers(items: &[GenerationItem]) -> TokenStream {
             }
         }
 
-        #[expect(unused, reason = "No fields with attribute fixed_number_of_strings occur in the schemas")]
-        pub(crate) fn variable_string_multiple_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<String>> {
+        // No fields with attribute fixed_number_of_strings occur in the schemas; there is a test nevertheless
+        pub(crate) fn variable_string_multiple_with_length(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], alloc::vec::Vec<String>> {
             move |input: &[u8]| {
                 let (input, bytes) = nom::bytes::complete::take(length)(input)?;
                 let bytes_without_terminator = &bytes[..bytes.len().saturating_sub(1)];
                 let parts = bytes_without_terminator
                     .split(|sep| *sep == 0x00)
                     .map(|s| String::from_utf8_lossy(s).to_string() )
-                    .collect::<Vec<String>>();
+                    .collect::<alloc::vec::Vec<String>>();
 
                 Ok((input, parts))
             }
         }
 
-        pub(crate) fn opaque_data(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], Vec<u8>> {
+        pub(crate) fn opaque_data(length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], alloc::vec::Vec<u8>> {
             move |input: &[u8]| {
                 let (input, bytes) = nom::bytes::complete::take(length)(input)?;
                 Ok((input, bytes.to_vec()))
@@ -106,6 +107,7 @@ fn generate_common_pdu_body_parser(items: &[GenerationItem]) -> TokenStream {
     let dis_pdu_type_ident = format_ident!("{PDU_TYPE}");
 
     quote! {
+        #[allow(clippy::too_many_lines)]
         pub fn pdu_body(header: &PDUHeader) -> impl Fn(&[u8]) -> IResult<&[u8], crate::PduBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match header.pdu_type {
@@ -143,6 +145,7 @@ fn generate_common_extension_record_body_parser(items: &[GenerationItem]) -> Tok
         .collect::<TokenStream>();
 
     quote! {
+        #[allow(clippy::too_many_lines)]
         pub fn extension_record_body(record_type: &ExtensionRecordTypes, record_length: usize) -> impl Fn(&[u8]) -> IResult<&[u8], crate::ExtensionRecordBody> + '_ {
             move |input: &[u8]| {
                 let (input, body) = match record_type {
@@ -195,6 +198,7 @@ pub(crate) fn generate_pdu_body_parser(pdu: &Pdu) -> TokenStream {
         #[allow(unused_imports, reason = "Imported in every parser module instead of finding out the use of specific nom functions per module")]
         use nom::Parser;
 
+        #[allow(clippy::missing_errors_doc)]
         pub fn #parser_function(input: &[u8]) -> IResult<&[u8], crate::PduBody> {
             #(#field_parsers)*
             let (input, extension_records) = crate::#parser_module::extension_record_set(input)?;
@@ -335,6 +339,7 @@ pub(crate) fn generate_bit_record_parser(record: &BitRecord) -> TokenStream {
     let field_extractors = record
         .fields
         .iter()
+        .filter(|f| !f.is_padding())
         .map(bit_record_field_enum_parser)
         .collect::<TokenStream>();
 
@@ -604,14 +609,14 @@ fn generate_array_field_type_conversion_function(e: &ArrayFieldEnum) -> TokenStr
             let field_name = to_tokens(&f.field_name);
             let field_type = finalise_type(&f.type_path, &f.type_name);
             quote! {
-                let #field_name = #field_name.iter().map(|&item| #field_type::from(item) ).collect::<Vec<#field_type>>();
+                let #field_name = #field_name.iter().map(|&item| #field_type::from(item) ).collect::<alloc::vec::Vec<#field_type>>();
             }
         }
         ArrayFieldEnum::BitRecord(f) => {
             let field_name = to_tokens(&f.field_name);
             let field_type = finalise_type(&f.type_path, &f.type_name);
             quote! {
-                let #field_name = #field_name.iter().map(|&item| #field_type::from(item) ).collect::<Vec<#field_type>>();
+                let #field_name = #field_name.iter().map(|&item| #field_type::from(item) ).collect::<alloc::vec::Vec<#field_type>>();
             }
         }
         _ => quote! {},

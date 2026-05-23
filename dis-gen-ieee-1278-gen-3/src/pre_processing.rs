@@ -430,7 +430,7 @@ fn process_fixed_string_field(
         field_type: "String",
         length: field.length,
         parser_function: to_tokens(&format!(
-            "crate::parser::fixed_string_with_length({} as usize)",
+            "crate::parser::fixed_string_with_length({}_usize)",
             field.length
         )),
     }

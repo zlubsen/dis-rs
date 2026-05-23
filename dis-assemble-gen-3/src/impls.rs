@@ -5,6 +5,7 @@ use crate::core::errors::DisError;
 use crate::enumerations::{Country, DISPDUType, DISProtocolVersion, EntityKind};
 use crate::symbolic_names::NO_ENTITY;
 use crate::PDU_HEADER_LEN_BYTES;
+use alloc::vec::Vec;
 use std::fmt::Display;
 use std::str::FromStr;
 

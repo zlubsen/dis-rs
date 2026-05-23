@@ -5,6 +5,7 @@ use crate::core::model::Pdu;
 use crate::enumerations::DISProtocolVersion;
 use crate::parser::pdu_body;
 use crate::PDU_HEADER_LEN_BYTES;
+use alloc::vec::Vec;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::error::ErrorKind::Eof;
@@ -77,10 +78,6 @@ pub(crate) fn parse_header(input: &[u8]) -> Result<PDUHeader, DisError> {
     }
 }
 
-#[cfg_attr(
-    all(feature = "hotpath", not(feature = "_test_no_instrumentation")),
-    hotpath::measure
-)]
 fn pdu(input: &[u8]) -> IResult<&[u8], Pdu> {
     // parse the header
     let (input, header) = pdu_header(input)?;

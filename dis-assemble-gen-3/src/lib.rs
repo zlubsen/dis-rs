@@ -1,4 +1,8 @@
+// Support without the standard library
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::similar_names)]
+
+extern crate alloc;
 
 pub(crate) mod constants;
 pub mod core;

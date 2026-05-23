@@ -3,6 +3,7 @@ use crate::core::errors::DisError;
 use crate::core::parser::parse_multiple_pdu;
 use crate::enumerations::{DISPDUType, DISProtocolFamily, DISProtocolVersion};
 use crate::{PduBody, PDU_HEADER_LEN_BYTES};
+use alloc::vec::Vec;
 use bytes::BytesMut;
 #[cfg(feature = "serde")]
 use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};

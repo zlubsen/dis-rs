@@ -903,7 +903,7 @@ fn generate_pdu_module(pdu: &Pdu) -> TokenStream {
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #pdu_name_ident {
             #(#fields)*
-            pub extension_records: Vec<crate::core::model::ExtensionRecord>,
+            pub extension_records: alloc::vec::Vec<crate::core::model::ExtensionRecord>,
         }
 
         impl #pdu_name_ident {
@@ -953,7 +953,7 @@ fn generate_pdu_trait_impls(pdu: &Pdu) -> TokenStream {
             }
 
             fn body_length(&self) -> u16 {
-                #base_body_length + self.extension_records.iter().map(|er| er.record_length() as u16).sum::<u16>()
+                #base_body_length + self.extension_records.iter().map(super::super::core::model::ExtensionRecord::record_length).sum::<u16>()
             }
 
             fn body_type(&self) -> crate::enumerations::DISPDUType {
@@ -1000,6 +1000,7 @@ fn generate_extension_record(record: &ExtensionRecord) -> TokenStream {
         }
 
         impl #record_name {
+            #[allow(clippy::unused_self)]
             fn record_length_info(&self) -> crate::utils::PaddedRecordLengths {
                 #length_calculation
             }
@@ -1206,7 +1207,7 @@ fn generate_variable_string_field_decl(field: &VariableStringField) -> TokenStre
             let field_ident = format_ident!("{}", multiple.field_name);
             quote! {
                 #[doc = "Variable String (multiple)"]
-                pub #field_ident : Vec<String>,
+                pub #field_ident : alloc::vec::Vec<String>,
             }
         }
     }
@@ -1245,7 +1246,7 @@ fn generate_array_field_decl(field: &Array) -> TokenStream {
     };
 
     quote! {
-        pub #field_ident : Vec<#field_type>,
+        pub #field_ident : alloc::vec::Vec<#field_type>,
     }
 }
 
@@ -1270,6 +1271,7 @@ fn generate_bit_record(record: &BitRecord) -> TokenStream {
     let record_length = Literal::usize_unsuffixed(record.size.div(8));
 
     quote! {
+        #[allow(clippy::struct_excessive_bools)]
         #[derive(Debug, Default, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct #record_name {

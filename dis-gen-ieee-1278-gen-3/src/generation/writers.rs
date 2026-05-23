@@ -72,6 +72,7 @@ pub(crate) fn generate_pdu_body_writer(pdu: &Pdu) -> TokenStream {
         use crate::core::model::Serialize;
 
         impl Serialize for #type_path::#type_name {
+            #[allow(clippy::too_many_lines)]
             fn serialize(&self, buf: &mut BytesMut) -> u16 {
                 #(#field_writers)*
                 self.extension_records.serialize(buf);
@@ -91,6 +92,7 @@ fn generate_common_extension_record_body_writer(items: &[GenerationItem]) -> Tok
 
     quote! {
         impl Serialize for ExtensionRecordBody {
+            #[allow(clippy::too_many_lines)]
             fn serialize(&self, buf: &mut BytesMut) -> u16 {
                 match self {
                     ExtensionRecordBody::Other(body) => body.serialize(buf),
@@ -388,7 +390,7 @@ fn generate_variable_string_field_writer(field: &VariableString) -> TokenStream 
         VariableStringField::Single(_s) => {
             quote! {
                 buf.#count_writer_function((self.#str_field_name.len() + 1) as #count_primitive_type);
-                buf.put(&self.#str_field_name.as_bytes()[..]);
+                buf.put(self.#str_field_name.as_bytes());
                 buf.put_u8(0x00);
             }
         }

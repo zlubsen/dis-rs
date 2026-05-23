@@ -47,7 +47,7 @@ pub fn generate_pdu_builder(item: &Pdu, builder_name_ident: &Ident) -> TokenStre
             }
 
             #[must_use]
-            pub fn with_extension_records(mut self, records: Vec<crate::core::model::ExtensionRecord>) -> Self {
+            pub fn with_extension_records(mut self, records: alloc::vec::Vec<crate::core::model::ExtensionRecord>) -> Self {
                 self.0.extension_records = records;
                 self
             }

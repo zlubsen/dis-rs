@@ -1,6 +1,7 @@
 use crate::core::model::BodyRaw;
 use crate::enumerations::{DISPDUType, DISProtocolFamily};
 use crate::PduBody;
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

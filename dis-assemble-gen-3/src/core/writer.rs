@@ -1,5 +1,6 @@
 use crate::core::model::ExtensionRecord;
 pub(crate) use crate::core::model::{Pdu, Serialize};
+use alloc::vec::Vec;
 use bytes::{BufMut, BytesMut};
 
 impl Serialize for Pdu {
