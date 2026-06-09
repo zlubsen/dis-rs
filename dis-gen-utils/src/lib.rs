@@ -32,7 +32,7 @@ pub fn extract_attr_as_usize(
     }
 }
 
-/// Helper function to extract an attribute from `element` containing one ore more UID values as 'String'
+/// Helper function to extract an attribute from `element` containing one or more UID values as 'String'
 #[must_use]
 pub fn extract_attr_as_enum_uid(element: &BytesStart, attr_name: QName) -> Option<Vec<usize>> {
     if let Ok(Some(attr)) = element.try_get_attribute(attr_name) {
