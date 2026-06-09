@@ -8,7 +8,7 @@ members = ["cdis-assemble",
     "examples/*",
     "dis-gen-siso-ref-010",
     "dis-gen-ieee-1278-gen-3",
-    "dis-gen-utils"]
+    "dis-gen-utils", "common-entity-types"]
 resolver = "2"
 
 [workspace.package]

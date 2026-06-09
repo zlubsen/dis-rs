@@ -1,0 +1,16 @@
+[package]
+name = "common-entity-types"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+categories.workspace = true
+
+[dependencies]
+quick-xml = "0.40.1"
+dis-gen-utils = { path = "../dis-gen-utils" }
+
+[lints]
+workspace = true
