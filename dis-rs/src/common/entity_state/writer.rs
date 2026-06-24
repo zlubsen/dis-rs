@@ -141,11 +141,10 @@ impl Serialize for EntityType {
 impl Serialize for EntityMarking {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.marking_character_set.into());
-        let num_pad = 11 - self.marking_string.len();
-        let marking = self.marking_string.clone(); // clone necessary because into_bytes consumes self.
-
-        buf.put_slice(&marking.into_bytes()[..]);
-        (0..num_pad).for_each(|_i| buf.put_u8(0x20));
+        let bytes = self.marking_string.as_bytes();
+        let len = bytes.len().min(11);
+        buf.put_slice(&bytes[..len]);
+        buf.put_bytes(0x20, 11 - len);
         12
     }
 }
@@ -185,6 +184,23 @@ mod tests {
 
         let expected: [u8; 12] = [
             0x01, 0x45, 0x59, 0x45, 0x20, 0x31, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20,
+        ];
+        assert_eq!(buf.as_ref(), expected.as_ref());
+    }
+
+    #[test]
+    fn entity_marking_longer_than_field_is_clamped() {
+        let marking = EntityMarking {
+            marking_character_set: EntityMarkingCharacterSet::ASCII,
+            marking_string: "ABCDEFGHIJKLMN".to_string(), // 14 > 11
+        };
+        let mut buf = BytesMut::with_capacity(12);
+
+        marking.serialize(&mut buf);
+
+        // Charset byte + first 11 marking bytes, no padding; must not panic/overflow.
+        let expected: [u8; 12] = [
+            0x01, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b,
         ];
         assert_eq!(buf.as_ref(), expected.as_ref());
     }
