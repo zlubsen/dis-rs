@@ -75,11 +75,10 @@ impl Serialize for AggregateType {
 impl Serialize for AggregateMarking {
     fn serialize(&self, buf: &mut BytesMut) -> u16 {
         buf.put_u8(self.marking_character_set.into());
-        let num_pad = 31 - self.marking_string.len();
-        let marking = self.marking_string.clone(); // clone necessary because into_bytes consumes self.
-
-        buf.put_slice(&marking.into_bytes()[..]);
-        (0..num_pad).for_each(|_i| buf.put_u8(0x20));
+        let bytes = self.marking_string.as_bytes();
+        let len = bytes.len().min(31);
+        buf.put_slice(&bytes[..len]);
+        buf.put_bytes(0x20, 31 - len);
 
         self.record_length()
     }
@@ -106,5 +105,28 @@ impl Serialize for SilentEntitySystem {
             .sum::<u16>();
 
         self.record_length()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Serialize;
+    use crate::aggregate_state::model::AggregateMarking;
+    use crate::enumerations::EntityMarkingCharacterSet;
+    use bytes::BytesMut;
+
+    #[test]
+    fn aggregate_marking_longer_than_field_is_clamped() {
+        let marking = AggregateMarking {
+            marking_character_set: EntityMarkingCharacterSet::ASCII,
+            marking_string: "A".repeat(40), // 40 > 31
+        };
+        let mut buf = BytesMut::with_capacity(32);
+
+        marking.serialize(&mut buf);
+
+        // Charset byte + 31 marking bytes = 32-octet field; must not panic/overflow.
+        assert_eq!(buf.len(), 32);
+        assert!(buf[1..].iter().all(|&b| b == b'A'));
     }
 }
