@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Clamp marking strings to field with when serializing (`EntityMarking` and `AggregateMarking`). Thanks
+  to [@esteban-noda](https://github.com/esteban-noda).
+
 ### Security
 
 ## [0.14.0] - 2026-05-22
