@@ -1,4 +1,3 @@
-use crate::DisError;
 use crate::acknowledge_r::model::AcknowledgeR;
 use crate::action_request_r::model::ActionRequestR;
 use crate::action_response_r::model::ActionResponseR;
@@ -70,6 +69,7 @@ use crate::start_resume_r::model::StartResumeR;
 use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
+use crate::DisError;
 use alloc::{
     format,
     string::{String, ToString},
@@ -660,6 +660,12 @@ impl From<PduType> for ProtocolFamily {
             PduType::InformationOperationsAction => ProtocolFamily::InformationOperations,
             PduType::InformationOperationsReport => ProtocolFamily::InformationOperations,
             PduType::Attribute => ProtocolFamily::EntityInformationInteraction,
+            PduType::ApplicationControl => ProtocolFamily::SimulationManagement,
+            PduType::CommunicationsNode => ProtocolFamily::RadioCommunications,
+            PduType::IFFInteractive => ProtocolFamily::RadioCommunications,
+            PduType::LogicalObjectState => ProtocolFamily::EntityInformationInteraction,
+            PduType::LogicalNetworkState => ProtocolFamily::RadioCommunications,
+            PduType::Weather => ProtocolFamily::SyntheticEnvironment,
             PduType::Unspecified(unspecified_value) => {
                 ProtocolFamily::Unspecified(unspecified_value)
             }

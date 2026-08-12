@@ -1,4 +1,3 @@
-use crate::BodyRaw;
 use crate::common::entity_state::model::{
     DrEulerAngles, DrOtherParameters, DrParameters, DrWorldOrientationQuaternion, EntityAppearance,
     EntityMarking, EntityState,
@@ -10,12 +9,13 @@ use crate::enumerations::{
     DeadReckoningAlgorithm, EntityMarkingCharacterSet, ForceId, ProtocolVersion,
 };
 use crate::v6::entity_state::parser::entity_capabilities;
+use crate::BodyRaw;
 use alloc::vec;
-use nom::IResult;
-use nom::Parser;
 use nom::bytes::complete::take;
 use nom::multi::count;
-use nom::number::complete::{be_f32, be_u8, be_u16, be_u32};
+use nom::number::complete::{be_f32, be_u16, be_u32, be_u8};
+use nom::IResult;
+use nom::Parser;
 
 pub(crate) fn entity_state_body(
     header: &PduHeader,
@@ -170,6 +170,7 @@ pub fn dr_other_parameters(
         DeadReckoningAlgorithm::DRM_RVBSimilarToRVWExceptInBodyCoordinates => {
             dr_other_parameters_quaternion(input)?
         }
+        DeadReckoningAlgorithm::CombinedParabolicCircular_CPC => { unimplemented!("DIS Gen-3 DR algorithm") }
         DeadReckoningAlgorithm::Other | DeadReckoningAlgorithm::Unspecified(_) => {
             dr_other_parameters_none(input)?
         }

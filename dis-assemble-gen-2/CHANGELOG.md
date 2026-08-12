@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Separated the main generation 2 code into a separate crate: `dis-assemble-gen-2`
 - Generation of SISO-REF-010 enumerations split into separate crate: `dis-gen-siso-ref-010`
+- Adaptions for compatibility with SISO-REF-010 post-v36 enumeration changes.
 
 ### Deprecated
 
