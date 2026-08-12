@@ -298,8 +298,8 @@ fn create_uid_index(generation_items: &[GenerationItem]) -> HashMap<usize, Strin
     uid_index.insert(94, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - TCAS/ACAS system Type - p440 l22 - u8
     uid_index.insert(95, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Mode 4 Status - Active Cde Key - p418 l20 - u8
     uid_index.insert(490, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - SIMAN Radar Track Status - u8
-    uid_index.insert(544, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EII Thermal Part Part - u8
-    uid_index.insert(554, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Current/Requested Application Mode - p341 l12 - u8
+    // uid_index.insert(544, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EII Thermal Part Part - u8       >> v37 - High-Fidelity Thermal Part - u8
+    // uid_index.insert(554, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Current/Requested Application Mode - p341 l12 - u8    >> v37 - Application Mode - u8
     uid_index.insert(567, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Current/Requested Application/exercise State - p339 - u8
     uid_index.insert(569, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Application General Status - p189/354/357 - u8
     uid_index.insert(570, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Application Specific Status - p189/354/357 - u8
@@ -310,8 +310,8 @@ fn create_uid_index(generation_items: &[GenerationItem]) -> HashMap<usize, Strin
     uid_index.insert(657, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - Synth Env Cloud Type - u8
     uid_index.insert(665, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Layer type - p509 l31 - u8
     uid_index.insert(702, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Collision Origin - p78 l16 - u8
-    uid_index.insert(790, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EE Shape - u8
-    uid_index.insert(791, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EE Lobe Type - u8
+    // uid_index.insert(790, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EE Shape - u8        >> v37 - Beam Shape - u32
+    // uid_index.insert(791, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - not in draft 5 doc - EE Lobe Type - u8    >> v37 - Lobe Type - u32
     uid_index.insert(880, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - Motion Pattern - p454 l30 - u8
     uid_index.insert(881, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Beam Shape - p454 l6 - u8
     uid_index.insert(882, "EnumerationU8".to_string()); // FIXME not defined in SISO-REF-010 v36 - (Laser) Spot Type - p454 l28 - u8
@@ -412,6 +412,7 @@ fn format_name_postfix(value: &str, uid: usize, needs_postfix: bool) -> String {
         .replace('–', "_")
         .replace('+', "plus")
         .replace('%', "pct")
+        .replace('*', "_mul_")
         // Split by white space (1), capitalize each substring (2), then merge (3).
         // Example procedure for "Life form":
         // 1 | Split      : ["Life", "form"]
