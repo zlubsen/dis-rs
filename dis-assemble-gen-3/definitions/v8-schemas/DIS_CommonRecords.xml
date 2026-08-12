@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
   title="DIS Syntax Common Records"
-  release="0.3"
-  date="2025-12-29"
-  description="Records used by multiple PDUs and extension records. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  release="0.4"
+  date="2026-07-09"
+  description="Records used by multiple PDUs and extension records. Conforms to 1278.1-202X Draft 6 and SISO-REF-030 Version 1.0."
   organization="Simulation Interoperability Standards Organization">
 
   <copyright><![CDATA[
-Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+Copyright © 2026 by the Simulation Interoperability Standards Organization, Inc.
 7901 4th St N, Suite 300-4043
 St. Petersburg, FL 33702
 All rights reserved.
@@ -89,15 +89,15 @@ St. Petersburg, FL 33702
   </FixedRecord>
 
   <FixedRecord type="Linear Acceleration Vector" length="12">
-    <NumericField name="Acceleration x-coordinate" type="float32" units="meters/sec/sec"/>
-    <NumericField name="Acceleration y-coordinate" type="float32" units="meters/sec/sec"/>
-    <NumericField name="Acceleration z-coordinate" type="float32" units="meters/sec/sec"/>
+    <NumericField name="Acceleration x-component" type="float32" units="meters/sec/sec"/>
+    <NumericField name="Acceleration y-component" type="float32" units="meters/sec/sec"/>
+    <NumericField name="Acceleration z-component" type="float32" units="meters/sec/sec"/>
   </FixedRecord>
 
   <FixedRecord type="Linear Velocity Vector" length="12">
-    <NumericField name="Velocity x-coordinate" type="float32" units="meters/sec"/>
-    <NumericField name="Velocity y-coordinate" type="float32" units="meters/sec"/>
-    <NumericField name="Velocity z-coordinate" type="float32" units="meters/sec"/>
+    <NumericField name="Velocity x-component" type="float32" units="meters/sec"/>
+    <NumericField name="Velocity y-component" type="float32" units="meters/sec"/>
+    <NumericField name="Velocity z-component" type="float32" units="meters/sec"/>
   </FixedRecord>
 
   <FixedRecord type="Named Location Identification" length="4">

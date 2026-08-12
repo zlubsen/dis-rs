@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
   title="DIS Syntax Synthetic Environment"
-  release="0.3"
-  date="2025-12-29"
-  description="PDUs and records for the Synthetic Environment family. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  release="0.4"
+  date="2026-07-09"
+  description="PDUs and records for the Synthetic Environment family. Conforms to 1278.1-202X Draft 6 and SISO-REF-030 Version 1.0."
   organization="Simulation Interoperability Standards Organization">
 
   <copyright><![CDATA[
-Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+Copyright © 2026 by the Simulation Interoperability Standards Organization, Inc.
 7901 4th St N, Suite 300-4043
 St. Petersburg, FL 33702
 All rights reserved.
@@ -47,8 +47,8 @@ St. Petersburg, FL 33702
 
   <PDU name="Gridded Data" PDUType="42" protocolFamily="9" baseLength="72">
     <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
-    <FixedRecordField name="Environmental Simulation ID" length="6" type="Entity Identifier"/>
-    <NumericField name="Tile ID" type="uint16"/>
+    <FixedRecordField name="Environmental Simulation Address" length="4" type="Simulation Address"/>
+    <NumericField name="Tile ID" type="uint32"/>
     <NumericField name="Sample Time" type="int64" units="microseconds"/>
     <EnumField name="Domain" type="enum8" enumTableUID="898"/>
     <EnumField name="Category" type="enum8"  hierarchyDependency="Domain"/>
@@ -111,7 +111,7 @@ St. Petersburg, FL 33702
     <NumericField name="Coverage" type="uint8"/>
     <NumericField name="Humidity" type="uint8"/>
     <EnumField name="Cloud Type" type="enum8" enumTableUID="657"/>
-    <NumericField name="Air Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Air Temperature" type="int16" units="degrees Celsius x 100"/>
     <NumericField name="Barometric Pressure" type="uint16" units="millibars x 10"/>
     <NumericField name="Visibility Range" type="float32" units="meters"/>
     <NumericField name="Aerosol Concentration" type="uint8" units="percent"/>
@@ -180,7 +180,7 @@ St. Petersburg, FL 33702
   <FixedRecord type="Temp/Baro/Humidity Layer" length="6">
     <NumericField name="Layer ID" type="uint8"/>
     <NumericField name="Humidity" type="uint8" units="percent"/>
-    <NumericField name="Air Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Air Temperature" type="int16" units="degrees Celsius x 100"/>
     <NumericField name="Barometric Pressure" type="uint16" units="millibars x 10"/>
   </FixedRecord>
 
@@ -229,7 +229,7 @@ St. Petersburg, FL 33702
     <NumericField name="Padding" type="uint8"/>
     <NumericField name="Atmosphere Enabled" type="uint8"/>
     <NumericField name="Humidity" type="uint8" units="percent"/>
-    <NumericField name="Air Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Air Temperature" type="int16" units="degrees Celsius x 100"/>
     <NumericField name="Barometric Pressure" type="uint16" units="millibars x 10"/>
     <NumericField name="East Wind Speed" type="int16" units="centimeters/sec"/>
     <NumericField name="North Wind Speed" type="int16" units="centimeters/sec"/>
@@ -246,7 +246,7 @@ St. Petersburg, FL 33702
     <NumericField name="White Caps Enabled" type="uint8"/>
     <NumericField name="Surface Clarity" type="uint8" units="percent"/>
     <NumericField name="Sea Surface Height" type="int16" units="centimeters MSL"/>
-    <NumericField name="Surface Water Temperature" type="int16" units="degrees C x 100"/>
+    <NumericField name="Surface Water Temperature" type="int16" units="degrees Celsius x 100"/>
     <NumericField name="Padding" type="uint16"/>
   </ExtensionRecord>
 
@@ -491,8 +491,8 @@ St. Petersburg, FL 33702
     <NumericField name="ID" type="uint16"/>
     <EnumField name="ID type" type="enum8" enumTableUID="666"/>
     <NumericField name="Padding" type="uint8"/>
-    <NumericField name="East Velocity" type="int16" units="centimeters/second"/>
-    <NumericField name="North Velocity" type="int16" units="centimeters/second"/>
+    <NumericField name="East Velocity" type="int16" units="centimeters/sec"/>
+    <NumericField name="North Velocity" type="int16" units="centimeters/sec"/>
   </FixedRecord>
 
   <ExtensionRecord name="Region Group" recordTypeEnum="8233" baseLength="8" isVariable="true">
@@ -524,8 +524,8 @@ St. Petersburg, FL 33702
     <NumericField name="Number of v Axis Points" type="uint16"/>
     <NumericField name="u Axis Delta" type="float32" units="meters"/>
     <NumericField name="v Axis Delta" type="float32" units="meters"/>
-    <NumericField name="Origin Longitude" type="float64" units="degrees"/>
     <NumericField name="Origin Latitude" type="float64" units="degrees"/>
+    <NumericField name="Origin Longitude" type="float64" units="degrees"/>
     <NumericField name="Rotation" type="float32" units="degrees"/>
     <NumericField name="Padding" type="uint32"/>
   </ExtensionRecord>
@@ -552,13 +552,11 @@ St. Petersburg, FL 33702
     <PaddingTo64/>
   </ExtensionRecord>
 
-  <ExtensionRecord name="Gridded Data 2D Wind" recordTypeEnum="8520" baseLength="8" isVariable="true">
+  <ExtensionRecord name="Gridded Data 2D Wind" recordTypeEnum="8520" baseLength="6" isVariable="true">
     <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
     <NumericField name="Record Length" type="uint16"/>
-    <NumericField name="Padding" type="uint16"/>
-    <NumericField name="Padding" type="uint8"/>
     <Array>
-      <CountField name="Number of Samples" type="uint8"/>
+      <CountField name="Number of Samples" type="uint16"/>
       <FixedRecordField name="2D Wind Sample" length="4" type="2D Wind Sample"/>
     </Array>
     <PaddingTo64/>

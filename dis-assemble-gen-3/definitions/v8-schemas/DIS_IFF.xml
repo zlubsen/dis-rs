@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
   title="DIS Syntax Identification Friend or Foe PDUs"
-  release="0.3"
-  date="2025-12-29"
-  description="IFF and IFF-I PDUs and associated records. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  release="0.4"
+  date="2026-07-09"
+  description="IFF and IFF-I PDUs and associated records. Conforms to 1278.1-202X Draft 6 and SISO-REF-030 Version 1.0."
   organization="Simulation Interoperability Standards Organization">
 
   <copyright><![CDATA[
-Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+Copyright © 2026 by the Simulation Interoperability Standards Organization, Inc.
 7901 4th St N, Suite 300-4043
 St. Petersburg, FL 33702
 All rights reserved.
@@ -120,10 +120,10 @@ St. Petersburg, FL 33702
     <BooleanBitField name="Mode C" bitPosition="5"/>
     <BooleanBitField name="Mode S" bitPosition="6"/>
     <BooleanBitField name="TCAS/ACAS" bitPosition="7"/>
-    <IntBitField name="Not used" bitPosition="8"/>
+    <IntBitField name="Reserved" bitPosition="8"/>
     <BooleanBitField name="Soviet" bitPosition="9"/>
     <IntBitField name="Padding" bitPosition="10" size="6"/>
-    <IntBitField name="Not used" bitPosition="16" size="3"/>
+    <IntBitField name="Reserved" bitPosition="16" size="3"/>
     <IntBitField name="Padding" bitPosition="19" size="13"/>
   </BitRecord>
 
@@ -147,11 +147,15 @@ St. Petersburg, FL 33702
   </BitRecord>
 
   <BitRecord type="IFF Interactive Squitter Transmission" size="32">
+    <IntBitField name="Reserved" bitPosition="0" size="4"/>
     <BooleanBitField name="Mode 5" bitPosition="4"/>
+    <IntBitField name="Reserved" bitPosition="5"/>
     <BooleanBitField name="Mode S" bitPosition="6"/>
     <BooleanBitField name="TCAS/ACAS" bitPosition="7"/>
+    <IntBitField name="Reserved" bitPosition="8"/>
     <BooleanBitField name="Soviet" bitPosition="9"/>
     <IntBitField name="Padding" bitPosition="10" size="6"/>
+    <IntBitField name="Reserved" bitPosition="16" size="3"/>
     <IntBitField name="Padding" bitPosition="19" size="13"/>
   </BitRecord>
 

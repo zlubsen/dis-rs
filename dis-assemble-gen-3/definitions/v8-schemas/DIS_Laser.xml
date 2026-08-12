@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
   title="DIS Syntax Laser PDU"
-  release="0.3"
-  date="2025-12-29"
-  description="Laser PDU and associated records. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  release="0.4"
+  date="2026-07-09"
+  description="Laser PDU and associated records. Conforms to 1278.1-202X Draft 6 and SISO-REF-030 Version 1.0."
   organization="Simulation Interoperability Standards Organization">
 
   <copyright><![CDATA[
-Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+Copyright © 2026 by the Simulation Interoperability Standards Organization, Inc.
 7901 4th St N, Suite 300-4043
 St. Petersburg, FL 33702
 All rights reserved.
@@ -64,9 +64,9 @@ St. Petersburg, FL 33702
     <EnumField name="Flash Pattern" type="enum8" enumTableUID="884"/>
     <NumericField name="Padding" type="uint8"/>
     <NumericField name="Padding" type="uint16"/>
-    <NumericField name="Power" type="float32" units="Watts"/>
+    <NumericField name="Power" type="float32" units="watts"/>
     <NumericField name="Wavelength" type="float32" units="microns"/>
-    <NumericField name="Pulse Repetition Frequency" type="float32" units="Hertz"/>
+    <NumericField name="Pulse Repetition Frequency" type="float32" units="hertz"/>
     <NumericField name="Pulse Width" type="float32" units="microseconds"/>
     <NumericField name="Beamwidth" type="float32" units="radians"/>
     <NumericField name="Aperture" type="float32" units="meters"/>

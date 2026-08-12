@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
   title="DIS Syntax Information Operations"
-  release="0.3"
-  date="2025-12-29"
-  description="PDUs and records for the Information Operations family. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  release="0.4"
+  date="2026-07-09"
+  description="PDUs and records for the Information Operations family. Conforms to 1278.1-202X Draft 6 and SISO-REF-030 Version 1.0."
   organization="Simulation Interoperability Standards Organization">
 
   <copyright><![CDATA[
-Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+Copyright © 2026 by the Simulation Interoperability Standards Organization, Inc.
 7901 4th St N, Suite 300-4043
 St. Petersburg, FL 33702
 All rights reserved.
@@ -35,8 +35,8 @@ St. Petersburg, FL 33702
     <FixedRecordField name="PDU Header" length="16" type="PDU Header"/>
     <FixedRecordField name="IO Attacker Entity ID" length="6" type="Entity Identifier"/>
     <FixedRecordField name="IO Primary Target Entity ID" length="6" type="Entity Identifier"/>
-    <FixedRecordField name="Originating Simulation ID" length="4" type="Simulation Address"/>
-    <FixedRecordField name="Receiving Simulation ID" length="4" type="Simulation Address"/>
+    <FixedRecordField name="Originating Simulation" length="4" type="Simulation Address"/>
+    <FixedRecordField name="Receiving Simulation" length="4" type="Simulation Address"/>
     <NumericField name="Request ID" type="uint32"/>
     <EnumField name="IO Warfare Type" type="enum16" enumTableUID="285"/>
     <EnumField name="IO Simulation Source" type="enum16" enumTableUID="286"/>

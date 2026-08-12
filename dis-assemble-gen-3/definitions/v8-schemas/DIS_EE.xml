@@ -4,13 +4,13 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="DISsyntax.xsd"
   title="DIS Syntax Electromagnetic Emission PDU"
-  release="0.3"
-  date="2025-12-29"
-  description="EE PDU and associated records. Conforms to 1278.1-202X Draft 5 and SISO-REF-030 Version 1.0."
+  release="0.4"
+  date="2026-07-09"
+  description="EE PDU and associated records. Conforms to 1278.1-202X Draft 6 and SISO-REF-030 Version 1.0."
   organization="Simulation Interoperability Standards Organization">
 
   <copyright><![CDATA[
-Copyright © 2025 by the Simulation Interoperability Standards Organization, Inc.
+Copyright © 2026 by the Simulation Interoperability Standards Organization, Inc.
 7901 4th St N, Suite 300-4043
 St. Petersburg, FL 33702
 All rights reserved.
@@ -90,8 +90,8 @@ St. Petersburg, FL 33702
     <EnumField name="Record Type" type="enum16" enumTableUID="99"/>
     <NumericField name="Record Length" type="uint16"/>
     <NumericField name="Jammer Parameters ID" type="uint8"/>
-    <EnumField name="Jamming Architecture" type="enum8" enumTableUID="718"/>
-    <BitRecordField name="Jammer Attributes" size="16" type="Jamming Attributes"/>
+    <EnumField name="Jammer Architecture" type="enum8" enumTableUID="718"/>
+    <BitRecordField name="Jamming Attributes" size="16" type="Jamming Attributes"/>
     <Array>
       <CountField name="Number of Jamming Techniques" type="uint8"/>
       <FixedRecordField name="Jamming Technique" length="5" type="Jamming Technique"/>
@@ -166,7 +166,7 @@ St. Petersburg, FL 33702
     <NumericField name="Duration" type="float32" units="seconds"/>
     <NumericField name="Amplitude" type="float32" units="percentage"/>
     <NumericField name="Phase" type="float32" units="radians"/>
-    <NumericField name="Frequency" type="float64" units="Hertz"/>
+    <NumericField name="Frequency" type="float64" units="hertz"/>
   </FixedRecord>
 
   <BitRecord type="Pulse Table Flags" size="8">
@@ -196,8 +196,8 @@ St. Petersburg, FL 33702
   </ExtensionRecord>
 
   <FixedRecord type="Polarization Vector" length="12">
-    <NumericField name="Ez" type="float32" units="percentage"/>
-    <NumericField name="Ey" type="float32" units="percentage"/>
+    <NumericField name="Ez" type="float32" units="percent"/>
+    <NumericField name="Ey" type="float32" units="percent"/>
     <NumericField name="Phase" type="float32" units="radians"/>
   </FixedRecord>
 
@@ -232,8 +232,8 @@ St. Petersburg, FL 33702
   </ExtensionRecord>
 
   <FixedRecord type="EE Fundamental Parameter Data" length="20">
-    <NumericField name="Frequency" type="float32" units="Hertz"/>
-    <NumericField name="Frequency Range" type="float32" units="Hertz"/>
+    <NumericField name="Frequency" type="float32" units="hertz"/>
+    <NumericField name="Frequency Range" type="float32" units="hertz"/>
     <NumericField name="Pulse Repetition Interval" type="float32" units="microseconds"/>
     <NumericField name="Pulse Width" type="float32" units="microseconds"/>
     <NumericField name="Effective Radiated Power" type="float32" units="dBm"/>
@@ -296,8 +296,8 @@ St. Petersburg, FL 33702
     <NumericField name="Padding" type="uint8"/>
     <NumericField name="Padding" type="uint16"/>
     <NumericField name="Receiver Sensitivity" type="float32" units="dBm"/>
-    <NumericField name="Min Receiver Frequency" type="float32" units="Hertz"/>
-    <NumericField name="Max Receiver Frequency" type="float32" units="Hertz"/>
+    <NumericField name="Min Receiver Frequency" type="float32" units="hertz"/>
+    <NumericField name="Max Receiver Frequency" type="float32" units="hertz"/>
     <NumericField name="Padding" type="uint32"/>
   </ExtensionRecord>
 
