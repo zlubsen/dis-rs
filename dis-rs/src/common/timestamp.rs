@@ -13,7 +13,11 @@ const NANOS_PER_HOUR: u64 = 3_600_000_000_000;
 const NANOS_PER_TIME_UNIT: f64 = NANOS_PER_HOUR as f64 / TIME_UNITS_PER_HOUR as f64;
 
 /// Maximum number of nanoseconds.
-const MAX_NANOS: u64 = 3_599_999_998_324; // TODO: NANOS_PER_HOUR - (NANOS_PER_TIME_UNIT.round() as u64);
+const MAX_NANOS: u64 = NANOS_PER_HOUR - (crate::math::round(NANOS_PER_TIME_UNIT) as u64);
+
+const _: () = {
+    assert!(MAX_NANOS as u128 == TimeUnits::MAX.to_duration().as_nanos());
+};
 
 /// Reference time at which the data contained in the *PDU* was generated.
 ///
@@ -331,12 +335,10 @@ impl TimeUnits {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_duration(duration: Duration) -> Option<Self> {
-        // TODO: const
-
+    pub const fn from_duration(duration: Duration) -> Option<Self> {
         let nanos = duration.as_nanos();
 
-        if nanos <= u128::from(MAX_NANOS) {
+        if nanos <= MAX_NANOS as u128 {
             let time_units = crate::math::round((nanos as f64) / NANOS_PER_TIME_UNIT) as u32;
             Some(Self(time_units))
         } else {
@@ -410,19 +412,11 @@ impl TimeUnits {
     /// ```
     #[inline]
     #[must_use]
-    pub fn to_duration(self) -> Duration {
-        // TODO: const
-
-        let nanos = crate::math::round(f64::from(self.0) * NANOS_PER_TIME_UNIT) as u64;
-        Duration::from_nanos(nanos)
+    pub const fn to_duration(self) -> Duration {
+        let nanos = crate::math::round(self.0 as f64 * NANOS_PER_TIME_UNIT);
+        Duration::from_nanos(nanos as u64)
     }
 }
-
-// TODO: uncomment when `to_duration()` is const
-//
-// const _: () = {
-//     assert!(TimeUnits::MAX.to_duration().as_nanos() == MAX_NANOS as u128);
-// };
 
 impl Default for TimeUnits {
     #[inline]

@@ -42,7 +42,7 @@ mod fns {
 
     /// Round `x` to the nearest integer, breaking ties away from zero.
     #[inline]
-    pub fn round(x: f64) -> f64 {
+    pub const fn round(x: f64) -> f64 {
         x.round()
     }
 
