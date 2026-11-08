@@ -85,7 +85,7 @@ use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::error::ErrorKind::Eof;
 use nom::multi::{count, many1};
-use nom::number::complete::{be_f32, be_f64, be_i32, be_u8, be_u16, be_u32, be_u64};
+use nom::number::complete::{be_f32, be_f64, be_i32, be_u16, be_u32, be_u64, be_u8};
 use nom::{Err, Parser};
 
 pub(crate) fn parse_multiple_pdu(input: &[u8]) -> Result<Vec<Pdu>, DisError> {
@@ -258,12 +258,12 @@ fn pdu_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8], PduBody> + '
             PduType::EventReport => event_report_body(input)?,
             PduType::Comment => comment_body(input)?,
             PduType::ElectromagneticEmission => emission_body(header)(input)?,
-            PduType::Designator => designator_body(input)?,
+            PduType::Laser => designator_body(input)?,
             PduType::Transmitter => transmitter_body(header)(input)?,
             PduType::Signal => signal_body(input)?,
             PduType::Receiver => receiver_body(input)?,
             PduType::IFF => iff_body(input)?,
-            PduType::UnderwaterAcoustic => underwater_acoustic_body(input)?,
+            PduType::Acoustic => underwater_acoustic_body(input)?,
             PduType::SupplementalEmissionEntityState => sees_body(input)?,
             // PduType::IntercomSignal => {}
             // PduType::IntercomControl => {}
@@ -618,6 +618,9 @@ pub(crate) fn variable_parameter(input: &[u8]) -> IResult<&[u8], VariableParamet
         VariableParameterRecordType::Separation => separation(input)?,
         VariableParameterRecordType::EntityType => entity_type_variable_parameter(input)?,
         VariableParameterRecordType::EntityAssociation => entity_association(input)?,
+        VariableParameterRecordType::EntityStateExtendedV8FixedBody => {
+            unimplemented!("Invalid value 'EntityStateExtendedV8FixedBody' for DIS V7.")
+        }
         VariableParameterRecordType::Unspecified(_) => {
             let (input, bytes) = take(15usize)(input)?;
             (

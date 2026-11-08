@@ -1,9 +1,9 @@
+use crate::BodyRaw;
 use crate::common::model::{EntityId, PduBody, PduHeader};
 use crate::common::other::model::Other;
 use crate::common::parser::entity_id;
 use crate::constants::PDU_HEADER_LEN_BYTES;
 use crate::enumerations::PduType;
-use crate::BodyRaw;
 use nom::bytes::complete::take;
 use nom::combinator::peek;
 use nom::{IResult, Parser};
@@ -16,12 +16,12 @@ pub(crate) fn other_body(header: &PduHeader) -> impl Fn(&[u8]) -> IResult<&[u8],
             PduType::EntityState
             | PduType::EntityStateUpdate
             | PduType::ElectromagneticEmission
-            | PduType::Designator
+            | PduType::Laser
             | PduType::Transmitter
             | PduType::Signal
             | PduType::Receiver
             | PduType::SupplementalEmissionEntityState
-            | PduType::UnderwaterAcoustic
+            | PduType::Acoustic
             | PduType::IsGroupOf
             | PduType::CreateEntityR
             | PduType::RemoveEntityR

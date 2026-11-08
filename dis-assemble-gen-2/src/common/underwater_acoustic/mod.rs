@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn underwater_acoustic_internal_consistency() {
-        let header = PduHeader::new_v6(1, PduType::UnderwaterAcoustic);
+        let header = PduHeader::new_v6(1, PduType::Acoustic);
 
         let body = UnderwaterAcoustic::builder()
             .with_emitting_entity_id(EntityId::new(10, 10, 10))

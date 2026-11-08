@@ -60,7 +60,7 @@ impl BodyInfo for UnderwaterAcoustic {
     }
 
     fn body_type(&self) -> PduType {
-        PduType::UnderwaterAcoustic
+        PduType::Acoustic
     }
 }
 

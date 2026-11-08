@@ -1,3 +1,4 @@
+use crate::DisError;
 use crate::acknowledge_r::model::AcknowledgeR;
 use crate::action_request_r::model::ActionRequestR;
 use crate::action_response_r::model::ActionResponseR;
@@ -69,7 +70,6 @@ use crate::start_resume_r::model::StartResumeR;
 use crate::stop_freeze_r::model::StopFreezeR;
 use crate::transfer_ownership::model::TransferOwnership;
 use crate::underwater_acoustic::model::UnderwaterAcoustic;
-use crate::DisError;
 use alloc::{
     format,
     string::{String, ToString},
@@ -609,12 +609,12 @@ impl From<PduType> for ProtocolFamily {
             PduType::EventReport => ProtocolFamily::SimulationManagement,
             PduType::Comment => ProtocolFamily::SimulationManagement,
             PduType::ElectromagneticEmission => ProtocolFamily::DistributedEmissionRegeneration,
-            PduType::Designator => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::Laser => ProtocolFamily::DistributedEmissionRegeneration,
             PduType::Transmitter => ProtocolFamily::RadioCommunications,
             PduType::Signal => ProtocolFamily::RadioCommunications,
             PduType::Receiver => ProtocolFamily::RadioCommunications,
             PduType::IFF => ProtocolFamily::DistributedEmissionRegeneration,
-            PduType::UnderwaterAcoustic => ProtocolFamily::DistributedEmissionRegeneration,
+            PduType::Acoustic => ProtocolFamily::DistributedEmissionRegeneration,
             PduType::SupplementalEmissionEntityState => {
                 ProtocolFamily::DistributedEmissionRegeneration
             }

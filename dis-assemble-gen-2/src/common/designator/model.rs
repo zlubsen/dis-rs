@@ -49,7 +49,7 @@ impl BodyInfo for Designator {
     }
 
     fn body_type(&self) -> PduType {
-        PduType::Designator
+        PduType::Laser
     }
 }
 
