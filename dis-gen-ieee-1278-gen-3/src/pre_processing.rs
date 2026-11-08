@@ -328,7 +328,7 @@ fn type_for_adaptive_record_field<'l>(
 /// Returns true when the `field_name` contains name patterns that indicate the field is not used or used as padding.
 #[inline]
 fn must_skip_field_decl(field_name: &str) -> bool {
-    ["Padding", "Padding1", "Padding2", "Not used"].contains(&field_name)
+    ["Padding", "Padding1", "Padding2", "Not used", "Reserved"].contains(&field_name)
 }
 
 /// Formats, as tokens, the function used to write primitive types to the wire format.

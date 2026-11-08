@@ -558,6 +558,10 @@ where
     let formatted_name = format_name(item.name.as_str(), item.uid);
     let name_ident = format_ident!("{}", formatted_name);
     let size_type = size_to_type(item.size);
+    // println!(
+    //     "bitfield {formatted_name} - size {} type {size_type}",
+    //     item.size
+    // );
     let size_ident = format_ident!("{}", size_type);
     let field_assignments = quote_bitfield_from_fields(&item.fields, lookup_xref);
     let field_names: Vec<TokenStream> = item
