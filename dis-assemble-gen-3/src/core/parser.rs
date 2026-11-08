@@ -124,12 +124,12 @@ pub(crate) fn skip_body(total_bytes: u16) -> impl Fn(&[u8]) -> IResult<&[u8], &[
 #[cfg(test)]
 mod tests {
     use crate::ExtensionRecordBody;
+    use crate::common_records::BeamStatus;
     use crate::common_records::PDUStatus;
-    use crate::common_records::{BeamStatus, EntityIdentifier};
     use crate::entity_info_interaction::EntityStatus;
     use crate::enumerations::{
         Appearance, AppearanceType, BeamStabilization, EntityMarkingCharacterSet,
-        ExtensionRecordTypes, LogicalObjectRelationship, MarkingType,
+        ExtensionRecordTypes, MarkingType,
     };
     use crate::enumerations::{DISPDUType, DISProtocolVersion};
 
@@ -215,48 +215,31 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn test_parse_extension_record_with_array() {
-    //     #[rustfmt::skip]
-    //     let buffer: [u8; 24] = [
-    //         0x2A, 0x0A, // ER 1: record type 2602 - Logical Object Relationship
-    //         0x18, 0x00, // ER 1: length 24 bytes - variable length padded to 64 bits
-    //         0x02, // Relationship - PeerPeer - 2
-    //         0x03, // Array length - 3
-    //         0x01, 0x00, 0x10, 0x00, 0x02, 0x00, // Entity ID 1 - 1:16:2
-    //         0x01, 0x00, 0x10, 0x00, 0x04, 0x00, // Entity ID 2 - 1:16:4
-    //         0x01, 0x00, 0x10, 0x00, 0x06, 0x00, // Entity ID 3 - 1:16:6
-    //         // pad to multiple of 8 bytes (0 in this case, 24 total)
-    //     ];
-    //
-    //     let (_input, er) = crate::parser::extension_record(&buffer).unwrap();
-    //
-    //     assert_eq!(
-    //         er.record_type,
-    //         ExtensionRecordTypes::LogicalObjectRelationship
-    //     );
-    //     assert_eq!(er.record_length, 24);
-    //     if let ExtensionRecordBody::LogicalObjectRelationship(relationship) = &er.body {
-    //         assert_eq!(
-    //             relationship.relationship,
-    //             LogicalObjectRelationship::PeerPeer
-    //         );
-    //         assert_eq!(
-    //             relationship.related_logical_object.first().unwrap(),
-    //             &EntityIdentifier::new(1, 16, 2)
-    //         );
-    //         assert_eq!(
-    //             relationship.related_logical_object.get(1).unwrap(),
-    //             &EntityIdentifier::new(1, 16, 4)
-    //         );
-    //         assert_eq!(
-    //             relationship.related_logical_object.get(2).unwrap(),
-    //             &EntityIdentifier::new(1, 16, 6)
-    //         );
-    //     } else {
-    //         panic!("ExtensionRecord is not of type EntityAppearance")
-    //     }
-    // }
+    #[test]
+    fn test_parse_extension_record_with_array() {
+        #[rustfmt::skip]
+        let buffer: [u8; 48] = [
+            0x70, 0x17, // ER 1: record type 6000 - Supply Quantity
+            0x18, 0x00, // ER 1: length 24 bytes - variable length padded to 64 bits
+            0x00, 0x00, 0x00, // padding 16 + 8
+            0x03, // Array length - 3
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Suppy: supply type 1, value 0.0f32
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Suppy: supply type 1, value 0.0f32
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Suppy: supply type 1, value 0.0f32
+            0x00, 0x00, 0x00, 0x00 // pad to multiple of 8 bytes (4 in this case, 48 total)
+        ];
+
+        let (_input, er) = crate::parser::extension_record(&buffer).unwrap();
+
+        assert_eq!(er.record_type, ExtensionRecordTypes::SupplyQuantity);
+        assert_eq!(er.record_length, 24);
+        if let ExtensionRecordBody::SupplyQuantity(supply_quantity) = &er.body {
+            // TODO check contents of array
+            assert!(supply_quantity.supply.first().is_some());
+        } else {
+            panic!("ExtensionRecord is not of type EntityAppearance")
+        }
+    }
 
     #[test]
     fn test_parse_extension_record_with_external_discriminants() {

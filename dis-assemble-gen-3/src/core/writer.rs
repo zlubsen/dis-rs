@@ -34,19 +34,18 @@ impl Serialize for ExtensionRecord {
 #[cfg(test)]
 mod tests {
     use crate::ExtensionRecordBody;
-    use crate::common_records::{BeamStatus, EntityIdentifier, EntityType, EulerAngles};
+    use crate::common_records::{BeamStatus, EntityType, EulerAngles};
     use crate::core::model::ExtensionRecord;
     use crate::core::model::Serialize;
     use crate::entity_info_interaction::extension_records::{
-        EntityAppearance, EntityMarking, LogicalObjectRelationship,
-        MultipleStaticEntitywithExtendedAppearance,
+        EntityAppearance, EntityMarking, MultipleStaticEntitywithExtendedAppearance,
     };
     use crate::entity_info_interaction::{
         BasicMultipleEntity, EntityStatus, EntitywithExtendedAppearance, WorldLocationOffset,
     };
     use crate::enumerations::{
         AirPlatformAppearance, Appearance, AppearanceType, BeamStabilization,
-        EntityMarkingCharacterSet, EnumerationU16, ExtensionRecordTypes, MarkingType,
+        EntityMarkingCharacterSet, ExtensionRecordTypes, MarkingType, StatusType,
     };
     use crate::siman::extension_records::ApplicationStatusTypeDescription;
     use bytes::BytesMut;
@@ -236,7 +235,7 @@ mod tests {
             record_length: ER_LENGTH,
             body: ExtensionRecordBody::ApplicationStatusTypeDescriptionExtensionRecord(
                 ApplicationStatusTypeDescription {
-                    status_type: EnumerationU16::default(),
+                    status_type: StatusType::default(),
                     status_name: "Status Name".to_string(),
                     status_description: String::new(),
                 },
@@ -272,7 +271,7 @@ mod tests {
             record_length: ER_LENGTH,
             body: ExtensionRecordBody::ApplicationStatusTypeDescriptionExtensionRecord(
                 ApplicationStatusTypeDescription {
-                    status_type: EnumerationU16::default(),
+                    status_type: StatusType::default(),
                     status_name: "Status Name".to_string(),
                     status_description: "This is a description".to_string(),
                 },
