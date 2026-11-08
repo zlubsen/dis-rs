@@ -11,7 +11,7 @@ pub(crate) const SHIMS_FOR_DISCRIMINANT_DEPENDENT_RECORDS: [(&str, &str, &str); 
     (
         "Entity with Extended Appearance",
         "appearance_type, extended_appearance_type",
-        "appearance_type: crate::enumerations::AppearanceType, extended_appearance_type: crate::enumerations::ExtendedAppearanceType",
+        "appearance_type: crate::enumerations::AppearanceType, extended_appearance_type: crate::enumerations::AppearanceType",
     ),
     (
         "Basic Multiple Entity",

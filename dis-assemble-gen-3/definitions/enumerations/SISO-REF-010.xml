@@ -15,7 +15,7 @@ a reader require additional information, contact the SISO Inc. Board of Director
 
 Documentation: SISO hereby grants a general, royalty-free license to copy, distribute,
 display, and make derivative works from this material, for noncommercial purposes, provided that
-any use of the material contains the following attribution: “Reprinted with permission from SISO Inc.” 
+any use of the material contains the following attribution: “Reprinted with permission from SISO Inc.”
 The material may not be used for a commercial purpose without express written
 permission from the SISO Inc Board of Directors.
 
@@ -4357,7 +4357,7 @@ St. Petersburg, FL 33702
     </enumrow>
   </enum>
   <!--
-	// Removed by CR03683 in v24  
+	// Removed by CR03683 in v24
   <enum uid="24" name="Radio Specific" applicability="7.X.X.0-20.0-3" size="8">
     <cr value="2700" />
     <cr value="3093" />
@@ -4368,7 +4368,7 @@ St. Petersburg, FL 33702
     <enumrow value="4" description="Generic Ground Mobile Transmitter" uuid="c41b20a4-5269-11df-861b-080069138b88" />
   </enum>
 -->
-  <enum uid="24" name="Datum Enumeration Source" size="8">
+  <enum uid="24" name="Datum Enumeration Source" size="16">
     <cr value="5195" />
     <enumrow value="0" description="Other" uuid="c4c78882-efcc-411a-8d9b-a6a183404aa3">
       <cr value="5195" />
@@ -73640,7 +73640,7 @@ St. Petersburg, FL 33702
       <cr value="5608" />
     </enumrow>
   </enum>
-  <enum uid="57" name="Attached Parts" size="32">
+  <enum uid="57" name="Attached Parts" size="16">
     <enumrow value="0" description="Nothing, Empty" uuid="049aa79e-526a-11df-92b1-080069138b88" />
     <enumrow_range value_min="1" value_max="511" description="Sequential IDs for model-specific stations" uuid="049bb436-526a-11df-8191-080069138b88" />
     <enumrow_range value_min="512" value_max="639" description="Fuselage Stations" uuid="049cc6f0-526a-11df-a0fa-080069138b88" />
@@ -87754,6 +87754,9 @@ St. Petersburg, FL 33702
     <enumrow value="3101" description="Database Index" uuid="8a5be4d3-d081-4fee-b244-3d3a115a1fa8">
       <cr value="5068" />
     </enumrow>
+    <enumrow value="3102" description="Multiple Nodes" uuid="8a5be4d3-d081-4fee-b244-3d3a115a1fa9">
+      <cr value="9999" />
+    </enumrow>
     <enumrow value="3201" description="Intercom Group Destination" uuid="4a14d215-a8cc-413c-b21d-9c2380225cf5">
       <cr value="5068" />
     </enumrow>
@@ -87899,13 +87902,13 @@ St. Petersburg, FL 33702
     <enumrow value="4500" description="DE Damage Description" uuid="4d12429d-9ada-4639-95d2-c09166359287">
       <cr value="5068" />
     </enumrow>
-    <enumrow value="5003" description="IFF Extended Squitter Airborne Position Report" uuid="5c817886-bf1f-474f-95a9-d6406f068565">
+    <enumrow value="5003" description="IFF Extended Squitter Airborne Position Report 5003" uuid="5c817886-bf1f-474f-95a9-d6406f068565">
       <cr value="5068" />
     </enumrow>
-    <enumrow value="5004" description="IFF Extended Squitter Airborne Velocity Report" uuid="b907a280-73fb-4500-b588-1de39336bff3">
+    <enumrow value="5004" description="IFF Extended Squitter Airborne Velocity Report 5004" uuid="b907a280-73fb-4500-b588-1de39336bff3">
       <cr value="5068" />
     </enumrow>
-    <enumrow value="5006" description="IFF Extended Squitter Identification Report" uuid="5f9efa90-f1fb-40b1-8abc-319a62d42a1d">
+    <enumrow value="5006" description="IFF Extended Squitter Identification Report 5006" uuid="5f9efa90-f1fb-40b1-8abc-319a62d42a1d">
       <cr value="5068" />
     </enumrow>
     <enumrow value="5015" description="IFF Mark XII Transponder" uuid="8dd52fba-d614-4758-9de9-af1a2ec008de">
@@ -87959,13 +87962,13 @@ St. Petersburg, FL 33702
     <enumrow value="5031" description="IFF Transponder Location Error" uuid="f9f701e3-3e8c-44d7-bcf4-4d1d2e3fffa1">
       <cr value="5068" />
     </enumrow>
-    <enumrow value="5032" description="IFF Extended Squitter Airborne Position Report" status="new" uuid="a665d7d3-ddba-47b5-8b99-4c0be46f1a34">
+    <enumrow value="5032" description="IFF Extended Squitter Airborne Position Report 5032" status="new" uuid="a665d7d3-ddba-47b5-8b99-4c0be46f1a34">
       <cr value="5612" />
     </enumrow>
-    <enumrow value="5033" description="IFF Extended Squitter Airborne Velocity Report" status="new" uuid="34b520b2-7c9b-48dd-b8d5-74dd51b72fbb">
+    <enumrow value="5033" description="IFF Extended Squitter Airborne Velocity Report 5033" status="new" uuid="34b520b2-7c9b-48dd-b8d5-74dd51b72fbb">
       <cr value="5612" />
     </enumrow>
-    <enumrow value="5034" description="IFF Extended Squitter Surface Position Report" uuid="c9248ff9-1ba5-410b-9c75-703006abe257">
+    <enumrow value="5034" description="IFF Extended Squitter Surface Position Report 5034" uuid="c9248ff9-1ba5-410b-9c75-703006abe257">
       <cr value="5068" />
     </enumrow>
     <enumrow value="5035" description="IFF Extended Squitter Identification Report" status="new" uuid="400b3825-0c8d-476d-abc3-cd73a55151bf">
@@ -87991,6 +87994,9 @@ St. Petersburg, FL 33702
     </enumrow>
     <enumrow value="5501" description="IO Communications Node" uuid="c5fa9679-4b1e-44b0-b60f-599f0bf7dc13">
       <cr value="5068" />
+    </enumrow>
+    <enumrow value="5503" description="IO Computed Effects" uuid="c5fa9679-4b1e-44b0-b60f-599f0bf7dc19">
+      <cr value="9999" />
     </enumrow>
     <enumrow value="6000" description="Supply Quantity" uuid="f8a82587-0ce6-446b-b6a4-23daa606d19e">
       <cr value="5068" />
@@ -89590,7 +89596,7 @@ St. Petersburg, FL 33702
     <cr value="3093" />
     <enumrow value="0" description="Other" uuid="187bb258-526a-11df-aad8-080069138b88" />
   </enum>
-  <bitfield uid="149" name="UA-Propulsion Plant Configuration" size="16">
+  <bitfield uid="149" name="UA-Propulsion Plant Configuration" size="8">
     <cr value="3093" />
     <bitfieldrow name="Configuration" bit_position="0" length="7" description="Describes the configuration of the power plant" xref="335" uuid="187e0666-526a-11df-af79-080069138b88">
       <cr value="2640" />
