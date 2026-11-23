@@ -3,7 +3,6 @@ use crate::action_request::parser::action_request_body;
 use crate::action_response::parser::action_response_body;
 use crate::collision::parser::collision_body;
 use crate::comment::parser::comment_body;
-use crate::constants::ONE_BIT;
 use crate::create_entity::parser::create_entity_body;
 use crate::data::parser::data_body;
 use crate::data_query::parser::data_query_body;
@@ -30,7 +29,7 @@ use dis_rs::enumerations::PduType;
 use nom::IResult;
 use nom::bits::complete::take;
 use nom::error::ErrorKind;
-use std::ops::BitAnd;
+use std::ops::{AddAssign, BitAnd};
 
 /// Attempts to parse the provided buffer for CDIS PDUs
 ///
@@ -174,23 +173,27 @@ where
     }
 }
 
-/// Parse a signed value from the bit stream, formatted in `count` bits.
-/// MSB is the sign bit, the remaining bits form the value.
-/// This function then converts these two components to a signed value of type `isize`.
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::cast_possible_wrap)]
-pub(crate) fn take_signed(count: usize) -> impl Fn(BitInput) -> IResult<BitInput, isize> {
-    move |input| {
-        let (input, sign_bit): (BitInput, isize) = take(ONE_BIT)(input)?;
-        let (input, value_bits): (BitInput, isize) = take(count - ONE_BIT)(input)?;
+/// Unpacks a signed integer of `count` bits from the bit stream.
+/// The generic type `O` is strictly constrained to signed primitive integers.
+pub(crate) fn take_signed<O>(count: usize) -> impl Fn(BitInput) -> IResult<BitInput, O>
+where
+    O: From<u8> + AddAssign + num::PrimInt + num::Signed,
+{
+    let type_bits = std::mem::size_of::<O>() * 8;
+    debug_assert!(
+        count <= type_bits,
+        "Cannot unpack {count} bits into a {type_bits}-bit signed integer"
+    );
 
-        let max_value = 2usize.pow((count - 1) as u32) - 1;
-        let min_value = -(max_value as isize + 1);
-        let value = if sign_bit != 0 {
-            min_value + value_bits
-        } else {
-            value_bits
-        };
+    move |input| {
+        if count == 0 {
+            return Ok((input, O::zero()));
+        }
+
+        let (input, raw_bits): (BitInput, O) = take(count)(input)?;
+
+        let shift_amount = type_bits - count;
+        let value = (raw_bits << shift_amount) >> shift_amount;
 
         Ok((input, value))
     }
@@ -205,7 +208,7 @@ mod tests {
         model::{CdisTimeUnits, CdisTimestamp},
         parser::entity_identification,
     };
-    use crate::{CdisPdu, SerializeCdisPdu, parse};
+    use crate::{CdisPdu, SerializeCdis, parse};
     use dis_rs::BodyRaw;
     use dis_rs::enumerations::{
         EntityKind, FireTypeIndicator, MunitionDescriptorFuse, MunitionDescriptorWarhead, PduType,

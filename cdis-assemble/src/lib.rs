@@ -72,21 +72,20 @@ use crate::transmitter::model::Transmitter;
 use crate::unsupported::Unsupported;
 pub use parsing::parse;
 pub use writing::BitBuffer;
-pub use writing::SerializeCdisPdu;
+pub use writing::SerializeCdis;
 pub use writing::create_bit_buffer;
 
 pub trait BodyProperties {
-    type FieldsPresent;
-    type FieldsPresentOutput;
-    const FIELDS_PRESENT_LENGTH: usize;
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput;
-
-    fn body_length_bits(&self) -> usize;
-
-    fn fields_present_length(&self) -> usize {
-        Self::FIELDS_PRESENT_LENGTH
+    type FieldsPresentFlags;
+    type FieldsPresentField: Default;
+    const FIELDS_PRESENT_FLAGS_LENGTH: usize = 0;
+    fn fields_present_field(&self) -> Self::FieldsPresentField {
+        Default::default()
     }
-
+    fn body_length_bits(&self) -> usize;
+    fn fields_present_length(&self) -> usize {
+        Self::FIELDS_PRESENT_FLAGS_LENGTH
+    }
     fn into_cdis_body(self) -> CdisBody;
 }
 
@@ -268,6 +267,8 @@ pub enum CdisError {
     InsufficientBufferSize(u16, usize), // the buffer for serialisation has insufficient capacity to hold the provided CDIS PDU; (u16 PDU size, usize available capacity)
     #[error("Encountered a C-DIS PDU of an unsupported type: {0}.")]
     UnsupportedPdu(u8), // encountered a CDIS PDU of an unsupported type; (u8 PduType found)
+    #[error("C-DIS encoding constraint exceeded: {0}")]
+    EncodingConstraintExceeded(String), // the encoding failed because the input DIS PDU exceeded constraints/limits defined by the C-DIS standard (e.g. more elements than can be fitted)
 }
 
 /// Trait that indicates whether a PDU is supported in the C-DIS standard
@@ -317,7 +318,7 @@ impl Implemented for PduType {
     /// - There is a model for the pdu body
     /// - `CdisBody` enum is adapted, including the trait implementation for `CdisInteraction` and method `body_length(..)`
     /// - There is a parser, and it is called in function `crate::parsing::cdis_body(..)`
-    /// - There is a serializer, and it is called in the `SerializeCdisPdu` trait impl for `CdisBody` in `crate::writing`.
+    /// - There is a serializer, and it is called in the `SerializeCdis` trait impl for `CdisBody` in `crate::writing`.
     /// - The codec implementations are present, and are called in `crate::codec` in the `CdisBody::encode` and `CdisBody::decode` implementations.
     fn is_implemented(&self) -> bool {
         matches!(

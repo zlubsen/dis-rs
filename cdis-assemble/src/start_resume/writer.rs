@@ -1,9 +1,8 @@
 use crate::start_resume::model::StartResume;
 use crate::types::writer::serialize_clock_time;
-use crate::writing::SerializeCdis;
-use crate::{BitBuffer, SerializeCdisPdu};
+use crate::writing::{BitBuffer, SerializeCdis};
 
-impl SerializeCdisPdu for StartResume {
+impl SerializeCdis for StartResume {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.originating_id.serialize(buf, cursor);

@@ -1,9 +1,9 @@
 use crate::constants::{THIRTY_TWO_BITS, TWENTY_SIX_BITS, TWO_BITS};
 use crate::data_query::model::{DataQuery, DataQueryFieldsPresent};
-use crate::parsing::BitInput;
+use crate::parsing::{BitInput, parse_field_when_present, varint_to_type};
 use crate::records::{model::CdisTimestamp, parser::entity_identification};
 use crate::types::parser::{uvint8, uvint32};
-use crate::{BodyProperties, CdisBody, parsing};
+use crate::{BodyProperties, CdisBody};
 use dis_rs::enumerations::VariableRecordType;
 use nom::bits::complete::take;
 use nom::multi::count;
@@ -18,18 +18,18 @@ pub(crate) fn data_query_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, time_interval): (BitInput, u32) = take(TWENTY_SIX_BITS)(input)?;
     let time_interval = CdisTimestamp::from(time_interval);
 
-    let (input, number_of_fixed_datums) = parsing::parse_field_when_present(
+    let (input, number_of_fixed_datums) = parse_field_when_present(
         fields_present,
         DataQueryFieldsPresent::FIXED_DATUMS_BIT,
         uvint8,
     )(input)?;
-    let number_of_fixed_datums = parsing::varint_to_type::<_, _, usize>(number_of_fixed_datums);
-    let (input, number_of_var_datums) = parsing::parse_field_when_present(
+    let number_of_fixed_datums = varint_to_type::<_, _, usize>(number_of_fixed_datums);
+    let (input, number_of_var_datums) = parse_field_when_present(
         fields_present,
         DataQueryFieldsPresent::VARIABLE_DATUMS_BIT,
         uvint8,
     )(input)?;
-    let number_of_var_datums = parsing::varint_to_type::<_, _, usize>(number_of_var_datums);
+    let number_of_var_datums = varint_to_type::<_, _, usize>(number_of_var_datums);
 
     let (input, fixed_datum_ids): (BitInput, Vec<u32>) =
         if let Some(num_datums) = number_of_fixed_datums {

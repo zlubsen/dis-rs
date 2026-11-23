@@ -718,7 +718,7 @@ mod tests {
                 SVINT16::from(5),
                 SVINT16::from(-5),
             )),
-            entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
+            entity_location: Some(WorldCoordinates::new(52, 5, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(4, 3, 2)),
             entity_appearance: None,
             dr_algorithm:
@@ -726,7 +726,7 @@ mod tests {
             dr_params_other: None,
             dr_params_entity_linear_acceleration: None,
             dr_params_entity_angular_velocity: None,
-            entity_marking: Some(CdisEntityMarking::new("TEST".to_string())),
+            entity_marking: Some(CdisEntityMarking::new("TEST")),
             capabilities: Some(CdisEntityCapabilities(UVINT32::from(0x15D))),
             variable_parameters: vec![],
         }

@@ -3,12 +3,12 @@ use tracing::error;
 
 use cdis_assemble::codec::{CodecOptions, CodecUpdateMode, DecoderState, EncoderState};
 use cdis_assemble::constants::MTU_BYTES;
-use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Implemented, SerializeCdisPdu, Supported};
+use cdis_assemble::{BitBuffer, CdisError, CdisPdu, Implemented, SerializeCdis, Supported};
 use dis_rs::model::Pdu;
-use dis_rs::{DisError, parse};
+use dis_rs::{parse, DisError};
 
-use crate::Event;
 use crate::config::Config;
+use crate::Event;
 
 /// The `Encoder` manages the configuration and state of the encoding of DIS PDUs to C-DIS PDUs.
 pub struct Encoder {

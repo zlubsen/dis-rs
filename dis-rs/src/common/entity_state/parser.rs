@@ -112,40 +112,16 @@ pub(crate) fn dr_parameters(input: &[u8]) -> IResult<&[u8], DrParameters> {
     let algorithm = DeadReckoningAlgorithm::from(algorithm);
 
     let (input, other_parameters) = dr_other_parameters(input, algorithm)?;
-
-    // // This match statement basically determines the value of the DrParametersType field for Euler and Quaternion variants
-    // let (input, other_parameters) = match algorithm {
-    //     DeadReckoningAlgorithm::StaticNonmovingEntity |
-    //         DeadReckoningAlgorithm::DRM_FPW_ConstantVelocityLowAccelerationLinearMotionEntity |
-    //         DeadReckoningAlgorithm::DRM_FVW_HighSpeedorManeuveringEntity |
-    //         DeadReckoningAlgorithm::DRM_FPB_SimilartoFPWexceptinBodyCoordinates |
-    //         DeadReckoningAlgorithm::DRM_FVB_SimilartoFVWexceptinBodyCoordinates => {
-    //         dr_other_parameters_euler(input)?
-    //     }
-    //     DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntitywithExtrapolationofOrientation |
-    //         DeadReckoningAlgorithm::DRM_RVW_HighSpeedorManeuveringEntitywithExtrapolationofOrientation |
-    //         DeadReckoningAlgorithm::DRM_RPB_SimilartoRPWexceptinBodyCoordinates |
-    //         DeadReckoningAlgorithm::DRM_RVB_SimilartoRVWexceptinBodyCoordinates => {
-    //         dr_other_parameters_quaternion(input)?
-    //     }
-    //     DeadReckoningAlgorithm::Other => {
-    //         dr_other_parameters_none(input)?
-    //     }
-    //     _ => {
-    //         dr_other_parameters_none(input)?
-    //     }
-    // };
-
-    let (input, acceleration) = vec3_f32(input)?;
-    let (input, velocity) = vec3_f32(input)?;
+    let (input, linear_acceleration) = vec3_f32(input)?;
+    let (input, angular_velocity) = vec3_f32(input)?;
 
     Ok((
         input,
         DrParameters {
             algorithm,
             other_parameters,
-            linear_acceleration: acceleration,
-            angular_velocity: velocity,
+            linear_acceleration,
+            angular_velocity,
         },
     ))
 }

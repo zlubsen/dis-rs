@@ -5,9 +5,9 @@ use crate::records::codec::{
     decode_entity_coordinate_vector, decode_world_coordinates, encode_entity_coordinate_vector,
     encode_world_coordinates,
 };
-use crate::records::model::{BeamAntennaPattern, EntityId, EntityType};
+use crate::records::model::{BeamAntennaPattern, EntityId, EntityType, FrequencyFloat};
 use crate::transmitter::model::{
-    ModulationType, TransmitFrequencyBandwidthFloat, Transmitter, TransmitterFrequencyFloat,
+    ModulationType, Transmitter, TransmitterFrequencyFloat,
     TransmitterUnits,
 };
 use crate::types::model::{CdisFloat, UVINT8, UVINT16};
@@ -127,7 +127,7 @@ impl Transmitter {
                 Some(antenna_location),
                 Some(relative_antenna_location),
                 Some(TransmitterFrequencyFloat::from_float(item.frequency as f64)),
-                Some(TransmitFrequencyBandwidthFloat::from_float(
+                Some(FrequencyFloat::from_float(
                     item.transmit_frequency_bandwidth,
                 )),
                 Some(item.power as u8),
@@ -423,15 +423,15 @@ impl Codec for BeamAntennaPattern {
 
     fn encode(item: &Self::Counterpart) -> Self {
         Self {
-            beam_direction_psi: (item.beam_direction.psi * Self::SCALING) as i16,
-            beam_direction_theta: (item.beam_direction.theta * Self::SCALING) as i16,
-            beam_direction_phi: (item.beam_direction.phi * Self::SCALING) as i16,
-            az_beamwidth: (item.azimuth_beamwidth * Self::SCALING) as i16,
-            el_beamwidth: (item.elevation_beamwidth * Self::SCALING) as i16,
+            beam_direction_psi: (item.beam_direction.psi * Self::SCALING).round() as i16,
+            beam_direction_theta: (item.beam_direction.theta * Self::SCALING).round() as i16,
+            beam_direction_phi: (item.beam_direction.phi * Self::SCALING).round() as i16,
+            az_beamwidth: (item.azimuth_beamwidth * Self::SCALING).round() as i16,
+            el_beamwidth: (item.elevation_beamwidth * Self::SCALING).round() as i16,
             reference_system: item.reference_system,
-            e_z: item.e_z as i16, // TODO is this encoding correct?)
-            e_x: item.e_x as i16, // TODO is this encoding correct?)
-            phase: (item.phase * Self::SCALING) as i16,
+            e_z: item.e_z.round() as i16, // TODO is this encoding correct?)
+            e_x: item.e_x.round() as i16, // TODO is this encoding correct?)
+            phase: (item.phase * Self::SCALING).round() as i16,
         }
     }
 

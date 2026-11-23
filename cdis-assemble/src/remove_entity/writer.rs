@@ -1,8 +1,7 @@
 use crate::remove_entity::model::RemoveEntity;
-use crate::writing::SerializeCdis;
-use crate::{BitBuffer, SerializeCdisPdu};
+use crate::writing::{BitBuffer, SerializeCdis};
 
-impl SerializeCdisPdu for RemoveEntity {
+impl SerializeCdis for RemoveEntity {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.originating_id.serialize(buf, cursor);

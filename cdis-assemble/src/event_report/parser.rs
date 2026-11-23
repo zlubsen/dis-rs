@@ -1,9 +1,9 @@
 use crate::constants::TWO_BITS;
 use crate::event_report::model::{EventReport, EventReportFieldsPresent};
-use crate::parsing::BitInput;
+use crate::parsing::{BitInput, parse_field_when_present, varint_to_type};
 use crate::records::parser::{entity_identification, fixed_datum, variable_datum};
 use crate::types::parser::{uvint8, uvint32};
-use crate::{BodyProperties, CdisBody, parsing};
+use crate::{BodyProperties, CdisBody};
 use dis_rs::model::DatumSpecification;
 use nom::bits::complete::take;
 use nom::multi::count;
@@ -16,18 +16,18 @@ pub(crate) fn event_report_body(input: BitInput) -> IResult<BitInput, CdisBody> 
     let (input, receiving_id) = entity_identification(input)?;
     let (input, event_type) = uvint32(input)?;
 
-    let (input, number_of_fixed_datums) = parsing::parse_field_when_present(
+    let (input, number_of_fixed_datums) = parse_field_when_present(
         fields_present,
         EventReportFieldsPresent::FIXED_DATUMS_BIT,
         uvint8,
     )(input)?;
-    let number_of_fixed_datums = parsing::varint_to_type::<_, _, usize>(number_of_fixed_datums);
-    let (input, number_of_var_datums) = parsing::parse_field_when_present(
+    let number_of_fixed_datums = varint_to_type::<_, _, usize>(number_of_fixed_datums);
+    let (input, number_of_var_datums) = parse_field_when_present(
         fields_present,
         EventReportFieldsPresent::VARIABLE_DATUMS_BIT,
         uvint8,
     )(input)?;
-    let number_of_var_datums = parsing::varint_to_type::<_, _, usize>(number_of_var_datums);
+    let number_of_var_datums = varint_to_type::<_, _, usize>(number_of_var_datums);
 
     let (input, fixed_datums) = if let Some(num_datums) = number_of_fixed_datums {
         count(fixed_datum, num_datums).parse(input)?

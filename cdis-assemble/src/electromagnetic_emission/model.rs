@@ -4,7 +4,7 @@ use crate::records::model::{
     BeamData, CdisRecord, EntityCoordinateVector, EntityId, FrequencyFloat,
 };
 use crate::types::model::{CdisFloat, UVINT8, UVINT16, VarInt};
-use crate::writing::{write_value_signed, write_value_unsigned};
+use crate::writing::write_integer_bits;
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::{
     ElectromagneticEmissionBeamFunction, ElectromagneticEmissionStateUpdateIndicator, EmitterName,
@@ -26,13 +26,8 @@ pub struct ElectromagneticEmission {
 }
 
 impl BodyProperties for ElectromagneticEmission {
-    type FieldsPresent = ();
-    type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = 0;
-
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        0
-    }
+    type FieldsPresentFlags = ();
+    type FieldsPresentField = ();
 
     fn body_length_bits(&self) -> usize {
         const FIXED_FIELDS_BITS: usize = 18;
@@ -226,37 +221,64 @@ impl CdisFloat for PulseWidthFloat {
         Self { mantissa, exponent }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
-        let mut mantissa = float;
-        let mut exponent = 0usize;
-        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
-            mantissa /= 10.0;
-            exponent += 1;
+        let max_mantissa = ((1usize << Self::MANTISSA_BITS) - 1) as Self::Mantissa;
+        let min_exponent = -(1isize << (Self::EXPONENT_BITS - 1)) as Self::Exponent;
+        let max_exponent = ((1isize << (Self::EXPONENT_BITS - 1)) - 1) as Self::Exponent;
+
+        let mut x = float.abs();
+        let mut exponent: Self::Exponent = 0;
+        let mut overflow = false;
+
+        if x != 0.0 {
+            while (x * 10.0).round() <= Self::InnerFloat::from(max_mantissa)
+                && exponent > min_exponent
+            {
+                x *= 10.0;
+                exponent -= 1;
+            }
         }
 
-        Self {
-            mantissa: mantissa as Self::Mantissa,
-            exponent: exponent as Self::Exponent,
+        while x.round() > Self::InnerFloat::from(max_mantissa) {
+            if exponent < max_exponent {
+                x /= 10.0;
+                exponent += 1;
+            } else {
+                overflow = true;
+                break;
+            }
         }
+
+        let mantissa = if !overflow {
+            x.round() as Self::Mantissa
+        } else {
+            max_mantissa
+        };
+        if mantissa == 0 {
+            exponent = 0;
+        }
+
+        Self { mantissa, exponent }
     }
 
     fn to_float(&self) -> Self::InnerFloat {
-        f32::from(self.mantissa) * 10f32.powf(f32::from(self.exponent))
+        Self::InnerFloat::from(self.mantissa) * 10f32.powi(i32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
         let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
-        let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
+        let (input, exponent) = take_signed::<i16>(Self::EXPONENT_BITS)(input)?;
 
-        let exponent = exponent as Self::Exponent;
-        Ok((input, Self { mantissa, exponent }))
+        Ok((input, Self::new(mantissa, exponent as Self::Exponent)))
     }
 
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-        let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+        let cursor = write_integer_bits(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_integer_bits(buf, cursor, Self::EXPONENT_BITS, self.exponent);
 
         cursor
     }

@@ -1,14 +1,14 @@
 use crate::constants::{
-    EIGHT_BITS, FORTY_EIGHT_BITS, FOUR_BITS, SEVENTEEN_BITS, SIXTEEN_BITS, TWENTY_EIGHT_BITS,
-    TWENTY_FOUR_BITS, TWENTY_ONE_BITS,
+    EIGHT_BITS, FORTY_EIGHT_BITS, FOUR_BITS, SIXTEEN_BITS, TWENTY_EIGHT_BITS, TWENTY_FOUR_BITS,
+    TWENTY_ONE_BITS,
 };
 use crate::parsing::BitInput;
 use crate::records::model::{
-    BeamAntennaPattern, CdisRecord, EntityCoordinateVector, EntityId, EntityType, UnitsDekameters,
-    UnitsMeters, WorldCoordinates,
+    BeamAntennaPattern, CdisRecord, EntityCoordinateVector, EntityId, EntityType, FrequencyFloat,
+    UnitsDekameters, UnitsMeters, WorldCoordinates,
 };
 use crate::types::model::{CdisFloat, UVINT8, UVINT16, VarInt};
-use crate::writing::write_value_unsigned;
+use crate::writing::write_integer_bits;
 use crate::{BitBuffer, BodyProperties, CdisBody, CdisInteraction};
 use dis_rs::enumerations::{
     TransmitterAntennaPatternType, TransmitterCryptoSystem, TransmitterMajorModulation,
@@ -31,7 +31,7 @@ pub struct Transmitter {
     pub relative_antenna_location: Option<EntityCoordinateVector>,
     pub antenna_pattern_type: Option<TransmitterAntennaPatternType>,
     pub frequency: Option<TransmitterFrequencyFloat>,
-    pub transmit_frequency_bandwidth: Option<TransmitFrequencyBandwidthFloat>,
+    pub transmit_frequency_bandwidth: Option<FrequencyFloat>,
     pub power: Option<u8>,
     pub modulation_type: Option<ModulationType>,
     pub crypto_system: Option<TransmitterCryptoSystem>,
@@ -42,29 +42,29 @@ pub struct Transmitter {
 }
 
 impl BodyProperties for Transmitter {
-    type FieldsPresent = TransmitterFieldsPresent;
-    type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = EIGHT_BITS;
+    type FieldsPresentFlags = TransmitterFieldsPresent;
+    type FieldsPresentField = u8;
+    const FIELDS_PRESENT_FLAGS_LENGTH: usize = EIGHT_BITS;
 
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
+    fn fields_present_field(&self) -> Self::FieldsPresentField {
         (if self.radio_type.is_some() {
-            Self::FieldsPresent::RADIO_TYPE_BIT
+            Self::FieldsPresentFlags::RADIO_TYPE_BIT
         } else {
             0
         }) | (if !self.variable_transmitter_parameters.is_empty() {
-            Self::FieldsPresent::VARIABLE_PARAMETERS_BIT
+            Self::FieldsPresentFlags::VARIABLE_PARAMETERS_BIT
         } else {
             0
         }) | (if self.antenna_location.is_some() {
-            Self::FieldsPresent::ANTENNA_LOCATION_BIT
+            Self::FieldsPresentFlags::ANTENNA_LOCATION_BIT
         } else {
             0
         }) | (if self.relative_antenna_location.is_some() {
-            Self::FieldsPresent::RELATIVE_ANTENNA_LOCATION_BIT
+            Self::FieldsPresentFlags::RELATIVE_ANTENNA_LOCATION_BIT
         } else {
             0
         }) | (if self.antenna_pattern_type.is_some() && self.antenna_pattern.is_some() {
-            Self::FieldsPresent::ANTENNA_PATTERN_BIT
+            Self::FieldsPresentFlags::ANTENNA_PATTERN_BIT
         } else {
             0
         }) | (if self.frequency.is_some()
@@ -72,15 +72,15 @@ impl BodyProperties for Transmitter {
             && self.power.is_some()
             && self.modulation_type.is_some()
         {
-            Self::FieldsPresent::TRANSMITTER_DETAILS_BIT
+            Self::FieldsPresentFlags::TRANSMITTER_DETAILS_BIT
         } else {
             0
         }) | (if self.crypto_system.is_some() && self.crypto_key_id.is_some() {
-            Self::FieldsPresent::CRYPTO_DETAILS_BIT
+            Self::FieldsPresentFlags::CRYPTO_DETAILS_BIT
         } else {
             0
         }) | (if !self.modulation_parameters.is_empty() {
-            Self::FieldsPresent::MODULATION_PARAMETERS_BIT
+            Self::FieldsPresentFlags::MODULATION_PARAMETERS_BIT
         } else {
             0
         })
@@ -209,75 +209,38 @@ impl CdisFloat for TransmitterFrequencyFloat {
         Self { mantissa, exponent }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
-        let mut mantissa = float;
-        let mut exponent = 0usize;
-        let max_mantissa = 2f64.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
-            mantissa /= 10.0;
-            exponent += 1;
+        let max_mantissa = ((1usize << Self::MANTISSA_BITS) - 1) as Self::Mantissa;
+        let max_exponent = ((1usize << Self::EXPONENT_BITS) - 1) as Self::Exponent;
+
+        let mut x = float.abs();
+        let mut exponent: Self::Exponent = 0;
+        let mut overflow = false;
+
+        while x.round() > Self::InnerFloat::from(max_mantissa) {
+            if exponent < max_exponent {
+                x /= 10.0;
+                exponent += 1;
+            } else {
+                overflow = true;
+                break;
+            }
         }
 
-        Self {
-            mantissa: mantissa as Self::Mantissa,
-            exponent: exponent as Self::Exponent,
-        }
-    }
+        let mantissa = if !overflow {
+            x.round() as Self::Mantissa
+        } else {
+            max_mantissa
+        };
 
-    fn to_float(&self) -> Self::InnerFloat {
-        f64::from(self.mantissa) * 10f64.powf(f64::from(self.exponent))
-    }
-
-    fn parse(input: BitInput) -> IResult<BitInput, Self> {
-        let (input, mantissa) = take(Self::MANTISSA_BITS)(input)?;
-        let (input, exponent) = take(Self::EXPONENT_BITS)(input)?;
-
-        Ok((input, Self { mantissa, exponent }))
-    }
-
-    #[allow(clippy::let_and_return)]
-    fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
-
-        cursor
-    }
-}
-
-#[derive(Copy, Clone, Default, Debug, PartialEq, Ord, PartialOrd, Eq)]
-pub struct TransmitFrequencyBandwidthFloat {
-    mantissa: u32,
-    exponent: u8,
-}
-
-impl CdisFloat for TransmitFrequencyBandwidthFloat {
-    type Mantissa = u32;
-    type Exponent = u8;
-    type InnerFloat = f32;
-    const MANTISSA_BITS: usize = SEVENTEEN_BITS;
-    const EXPONENT_BITS: usize = FOUR_BITS;
-
-    fn new(mantissa: Self::Mantissa, exponent: Self::Exponent) -> Self {
         Self { mantissa, exponent }
     }
 
-    fn from_float(float: Self::InnerFloat) -> Self {
-        let mut mantissa = float;
-        let mut exponent = 0usize;
-        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
-            mantissa /= 10.0;
-            exponent += 1;
-        }
-
-        Self {
-            mantissa: mantissa as Self::Mantissa,
-            exponent: exponent as Self::Exponent,
-        }
-    }
-
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
+        Self::InnerFloat::from(self.mantissa) * 10f64.powi(i32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -289,8 +252,8 @@ impl CdisFloat for TransmitFrequencyBandwidthFloat {
 
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+        let cursor = write_integer_bits(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_integer_bits(buf, cursor, Self::EXPONENT_BITS, self.exponent);
 
         cursor
     }

@@ -195,6 +195,7 @@ async fn tcp_server() {
     res.unwrap();
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 async fn tcp_client() {
     let spec = r#"

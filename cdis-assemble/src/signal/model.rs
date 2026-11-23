@@ -16,25 +16,25 @@ pub struct Signal {
 }
 
 impl BodyProperties for Signal {
-    type FieldsPresent = SignalFieldsPresent;
-    type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = TWO_BITS;
+    type FieldsPresentFlags = SignalFieldsPresent;
+    type FieldsPresentField = u8;
+    const FIELDS_PRESENT_FLAGS_LENGTH: usize = TWO_BITS;
 
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
+    fn fields_present_field(&self) -> Self::FieldsPresentField {
         (if self.sample_rate.is_some() {
-            Self::FieldsPresent::SAMPLE_RATE_BIT
+            Self::FieldsPresentFlags::SAMPLE_RATE_BIT
         } else {
             0
         }) | (if self.samples.is_some() {
-            Self::FieldsPresent::SAMPLES_BIT
+            Self::FieldsPresentFlags::SAMPLES_BIT
         } else {
             0
         })
     }
 
     fn body_length_bits(&self) -> usize {
-        const CONST_BIT_SIZE: usize = 24; // encoding scheme class, tdl type, data length
-        Self::FIELDS_PRESENT_LENGTH
+        const CONST_BIT_SIZE: usize = 22; // tdl type, data length
+        Self::FIELDS_PRESENT_FLAGS_LENGTH
             + CONST_BIT_SIZE
             + self.radio_reference_id.record_length()
             + self.radio_number.record_length()

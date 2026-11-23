@@ -1,13 +1,13 @@
+use crate::BodyProperties;
 use crate::constants::TWO_BITS;
 use crate::event_report::model::EventReport;
 use crate::types::model::UVINT8;
-use crate::writing::{SerializeCdis, write_value_unsigned};
-use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
+use crate::writing::{BitBuffer, SerializeCdis, write_integer_bits};
 
-impl SerializeCdisPdu for EventReport {
+impl SerializeCdis for EventReport {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, TWO_BITS, self.fields_present_field());
+        let cursor = write_integer_bits(buf, cursor, TWO_BITS, self.fields_present_field());
 
         let cursor = self.originating_id.serialize(buf, cursor);
         let cursor = self.receiving_id.serialize(buf, cursor);

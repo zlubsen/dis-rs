@@ -1,4 +1,4 @@
-use crate::writing::{BitBuffer, SerializeCdis, write_value_unsigned};
+use crate::writing::{BitBuffer, SerializeCdis, write_integer_bits};
 use core::{fmt::Display, time::Duration};
 use dis_rs::timestamp::{TIME_UNITS_PER_HOUR, TimeUnits, Timestamp};
 
@@ -168,7 +168,7 @@ impl CdisTimestamp {
 impl SerializeCdis for CdisTimestamp {
     #[inline]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        write_value_unsigned(buf, cursor, Self::BITS, self.to_u32())
+        write_integer_bits(buf, cursor, Self::BITS, self.to_u32())
     }
 }
 

@@ -23,7 +23,6 @@ use dis_rs::model::{
     BeamData as DisBeamData, EntityId as DisEntityId, EventId, PduBody, SimulationAddress,
     VectorF32,
 };
-use num_traits::ToPrimitive;
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -295,6 +294,10 @@ impl ElectromagneticEmission {
                 },
             )
         };
+
+        // TODO return an EncodingConstraintExceeded error when:
+        //      - the lists exceed their maximum lengths (see constants.rs for max list lengths)
+        //      - the number of beams exceeds the maximum (see constants::MAX_NUMBER_OF_BEAMS)
 
         (
             Self {
@@ -977,8 +980,8 @@ impl Codec for FundamentalParameter {
         Self {
             frequency: FrequencyFloat::from_float(item.frequency),
             frequency_range: FrequencyFloat::from_float(item.frequency_range),
-            erp: item.effective_power.to_u8().unwrap_or(0), // TODO check if conversion is correct
-            prf: UVINT16::from(item.pulse_repetition_frequency.to_u16().unwrap_or(0)), // TODO check if conversion is correct
+            erp: item.effective_power.round() as u8,
+            prf: UVINT16::from((item.pulse_repetition_frequency / 100.0).round() as u16),
             pulse_width: PulseWidthFloat::from_float(item.pulse_width),
         }
     }
@@ -987,8 +990,8 @@ impl Codec for FundamentalParameter {
         Self::Counterpart::default()
             .with_frequency(self.frequency.to_float())
             .with_frequency_range(self.frequency_range.to_float())
-            .with_effective_power(self.erp.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
-            .with_pulse_repetition_frequency(self.prf.value.to_f32().unwrap_or(0.0)) // TODO check if conversion is correct
+            .with_effective_power(self.erp.into())
+            .with_pulse_repetition_frequency((self.prf.value * 100).into())
             .with_pulse_width(self.pulse_width.to_float())
     }
 }

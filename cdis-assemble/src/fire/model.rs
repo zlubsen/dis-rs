@@ -1,94 +1,83 @@
-use crate::constants::{EIGHT_BITS, SIXTEEN_BITS};
+use crate::constants::{FOUR_BITS, ONE_BIT};
 use crate::records::model::{
-    CdisRecord, EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
+    CdisRecord, DescriptorQuantityRate, DescriptorWarheadFuse, EntityId, EntityType,
+    LinearVelocity, UnitsDekameters, WorldCoordinates,
 };
 use crate::types::model::{UVINT32, VarInt};
 use crate::{BodyProperties, CdisBody, CdisInteraction};
+use bitflags::bitflags;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Fire {
     pub units: UnitsDekameters,
     pub firing_entity_id: EntityId,
     pub target_entity_id: EntityId,
-    pub munition_expandable_entity_id: EntityId,
+    pub munition_expendable_entity_id: EntityId,
     pub event_id: EntityId,
     pub fire_mission_index: Option<UVINT32>,
     pub location_world_coordinates: WorldCoordinates,
     pub descriptor_entity_type: EntityType,
-    pub descriptor_warhead: Option<u16>,
-    pub descriptor_fuze: Option<u16>,
-    pub descriptor_quantity: Option<u8>,
-    pub descriptor_rate: Option<u8>,
+    pub descriptor_warhead_fuse: Option<DescriptorWarheadFuse>,
+    pub descriptor_quantity_rate: Option<DescriptorQuantityRate>,
     pub velocity: LinearVelocity,
     pub range: Option<UVINT32>,
 }
 
 impl BodyProperties for Fire {
-    type FieldsPresent = FireFieldsPresent;
-    type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = 4;
+    type FieldsPresentFlags = FireFieldsPresentFlags;
+    type FieldsPresentField = u8;
+    const FIELDS_PRESENT_FLAGS_LENGTH: usize = FOUR_BITS;
 
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        (if self.fire_mission_index.is_some() {
-            Self::FieldsPresent::FIRE_MISSION_INDEX_BIT
-        } else {
-            0
-        }) | (if self.descriptor_warhead.is_some() && self.descriptor_fuze.is_some() {
-            Self::FieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT
-        } else {
-            0
-        }) | (if self.descriptor_quantity.is_some() && self.descriptor_rate.is_some() {
-            Self::FieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT
-        } else {
-            0
-        }) | (if self.range.is_some() {
-            Self::FieldsPresent::RANGE_BIT
-        } else {
-            0
-        })
+    fn fields_present_field(&self) -> Self::FieldsPresentField {
+        let mut flags = Self::FieldsPresentFlags::empty();
+
+        if self.fire_mission_index.is_some() {
+            flags.insert(Self::FieldsPresentFlags::FIRE_MISSION_INDEX);
+        }
+        if self.descriptor_warhead_fuse.is_some() {
+            flags.insert(Self::FieldsPresentFlags::DESCRIPTOR_WARHEAD_FUSE);
+        }
+        if self.descriptor_quantity_rate.is_some() {
+            flags.insert(Self::FieldsPresentFlags::DESCRIPTOR_QUANTITY_RATE);
+        }
+        if self.range.is_some() {
+            flags.insert(Self::FieldsPresentFlags::RANGE);
+        }
+
+        flags.bits()
     }
 
     fn body_length_bits(&self) -> usize {
-        const CONST_BIT_SIZE: usize = 1; // Units flag
-        Self::FIELDS_PRESENT_LENGTH
-            + CONST_BIT_SIZE
-            + self.firing_entity_id.record_length()
+        // 1 bit = Units
+        let mut length = Self::FIELDS_PRESENT_FLAGS_LENGTH + ONE_BIT;
+
+        length += self.firing_entity_id.record_length()
             + self.target_entity_id.record_length()
-            + self.munition_expandable_entity_id.record_length()
-            + self.event_id.record_length()
-            + (if let Some(record) = &self.fire_mission_index {
-                record.record_length()
-            } else {
-                0
-            })
-            + self.location_world_coordinates.record_length()
-            + self.descriptor_entity_type.record_length()
-            + (if self.descriptor_warhead.is_some() {
-                SIXTEEN_BITS
-            } else {
-                0
-            })
-            + (if self.descriptor_fuze.is_some() {
-                SIXTEEN_BITS
-            } else {
-                0
-            })
-            + (if self.descriptor_quantity.is_some() {
-                EIGHT_BITS
-            } else {
-                0
-            })
-            + (if self.descriptor_rate.is_some() {
-                EIGHT_BITS
-            } else {
-                0
-            })
-            + self.velocity.record_length()
-            + (if let Some(record) = &self.range {
-                record.record_length()
-            } else {
-                0
-            })
+            + self.munition_expendable_entity_id.record_length()
+            + self.event_id.record_length();
+
+        if let Some(fire_mission_index) = self.fire_mission_index {
+            length += fire_mission_index.record_length();
+        }
+
+        length += self.location_world_coordinates.record_length()
+            + self.descriptor_entity_type.record_length();
+
+        if let Some(descriptor_warhead_fuse) = self.descriptor_warhead_fuse {
+            length += descriptor_warhead_fuse.record_length();
+        }
+
+        if let Some(descriptor_quantity_rate) = self.descriptor_quantity_rate {
+            length += descriptor_quantity_rate.record_length();
+        }
+
+        length += self.velocity.record_length();
+
+        if let Some(range) = self.range {
+            length += range.record_length();
+        }
+
+        length
     }
 
     fn into_cdis_body(self) -> CdisBody {
@@ -106,11 +95,12 @@ impl CdisInteraction for Fire {
     }
 }
 
-pub struct FireFieldsPresent;
-
-impl FireFieldsPresent {
-    pub const FIRE_MISSION_INDEX_BIT: u8 = 0x0008;
-    pub const DESCRIPTOR_WARHEAD_FUZE_BIT: u8 = 0x0004;
-    pub const DESCRIPTOR_QUANTITY_RATE_BIT: u8 = 0x0002;
-    pub const RANGE_BIT: u8 = 0x0001;
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct FireFieldsPresentFlags: <Fire as BodyProperties>::FieldsPresentField {
+        const FIRE_MISSION_INDEX = 0x08;
+        const DESCRIPTOR_WARHEAD_FUSE = 0x04;
+        const DESCRIPTOR_QUANTITY_RATE = 0x02;
+        const RANGE = 0x01;
+    }
 }

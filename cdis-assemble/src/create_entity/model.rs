@@ -10,13 +10,8 @@ pub struct CreateEntity {
 }
 
 impl BodyProperties for CreateEntity {
-    type FieldsPresent = ();
-    type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = 0;
-
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        0
-    }
+    type FieldsPresentFlags = ();
+    type FieldsPresentField = ();
 
     fn body_length_bits(&self) -> usize {
         self.originating_id.record_length()

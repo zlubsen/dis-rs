@@ -2,15 +2,14 @@ use crate::constants::THIRTY_TWO_BITS;
 use crate::types::model::VarInt;
 use crate::types::model::{SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
 use crate::writing::SerializeCdis;
-use crate::writing::{BitBuffer, write_value_signed, write_value_unsigned};
+use crate::writing::{BitBuffer, write_integer_bits};
 use dis_rs::model::ClockTime;
 
 impl SerializeCdis for UVINT8 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_unsigned(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -19,9 +18,8 @@ impl SerializeCdis for UVINT8 {
 impl SerializeCdis for UVINT16 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_unsigned(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -30,9 +28,8 @@ impl SerializeCdis for UVINT16 {
 impl SerializeCdis for UVINT32 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_unsigned(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -41,9 +38,8 @@ impl SerializeCdis for UVINT32 {
 impl SerializeCdis for SVINT12 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -52,9 +48,8 @@ impl SerializeCdis for SVINT12 {
 impl SerializeCdis for SVINT13 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -63,9 +58,8 @@ impl SerializeCdis for SVINT13 {
 impl SerializeCdis for SVINT14 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -74,9 +68,8 @@ impl SerializeCdis for SVINT14 {
 impl SerializeCdis for SVINT16 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -85,9 +78,8 @@ impl SerializeCdis for SVINT16 {
 impl SerializeCdis for SVINT24 {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor =
-            write_value_unsigned(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
-        let cursor = write_value_signed(buf, cursor, self.bit_size(), self.value);
+        let cursor = write_integer_bits(buf, cursor, self.flag_bits_size(), self.flag_bits_value());
+        let cursor = write_integer_bits(buf, cursor, self.bit_size(), self.value);
 
         cursor
     }
@@ -96,8 +88,8 @@ impl SerializeCdis for SVINT24 {
 /// Serializes a C-DIS Clock Time Record (11.4).
 #[allow(clippy::let_and_return)]
 pub(crate) fn serialize_clock_time(buf: &mut BitBuffer, cursor: usize, time: ClockTime) -> usize {
-    let cursor = write_value_signed(buf, cursor, THIRTY_TWO_BITS, time.hour);
-    let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, time.time_past_hour);
+    let cursor = write_integer_bits(buf, cursor, THIRTY_TWO_BITS, time.hour);
+    let cursor = write_integer_bits(buf, cursor, THIRTY_TWO_BITS, time.time_past_hour);
 
     cursor
 }

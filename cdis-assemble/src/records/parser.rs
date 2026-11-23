@@ -12,9 +12,8 @@ use crate::records::model::{
     EncodingScheme, EntityCoordinateVector, EntityId, EntityType, LayerHeader, LinearAcceleration,
     LinearVelocity, Orientation, ParameterValueFloat, WorldCoordinates,
 };
-use crate::types::model::{CdisFloat, SVINT24, UVINT8, UVINT16};
+use crate::types::model::{CdisFloat, UVINT8, UVINT16};
 use crate::types::parser::{svint12, svint13, svint14, svint16, svint24, uvint8, uvint16};
-use bitvec::macros::internal::funty::Floating;
 use dis_rs::enumerations::{
     ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator,
     AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus,
@@ -173,14 +172,11 @@ pub(crate) fn linear_acceleration(input: BitInput) -> IResult<BitInput, LinearAc
 #[allow(clippy::similar_names)]
 #[allow(clippy::cast_possible_truncation)]
 pub(crate) fn orientation(input: BitInput) -> IResult<BitInput, Orientation> {
-    let (input, psi): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
-    let (input, theta): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
-    let (input, phi): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, psi) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, theta) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, phi) = take_signed(THIRTEEN_BITS)(input)?;
 
-    Ok((
-        input,
-        Orientation::new(psi as i16, theta as i16, phi as i16),
-    ))
+    Ok((input, Orientation { psi, theta, phi }))
 }
 
 pub(crate) fn entity_marking(input: BitInput) -> IResult<BitInput, CdisEntityMarking> {
@@ -196,16 +192,10 @@ pub(crate) fn entity_marking(input: BitInput) -> IResult<BitInput, CdisEntityMar
 }
 
 #[allow(clippy::cast_precision_loss)]
-const WORLD_COORDINATES_LAT_SCALE: f32 = (2usize.pow(30) - 1) as f32 / (f32::PI / 2.0);
-const WORLD_COORDINATES_LON_SCALE: f32 = (2usize.pow(31) - 1) as f32 / (f32::PI);
-
-#[allow(clippy::cast_precision_loss)]
 pub(crate) fn world_coordinates(input: BitInput) -> IResult<BitInput, WorldCoordinates> {
-    let (input, latitude): (BitInput, isize) = take_signed(THIRTY_ONE_BITS)(input)?;
-    let latitude = latitude as f32 / WORLD_COORDINATES_LAT_SCALE;
-    let (input, longitude): (BitInput, isize) = take_signed(THIRTY_TWO_BITS)(input)?;
-    let longitude = longitude as f32 / WORLD_COORDINATES_LON_SCALE;
-    let (input, altitude_msl): (BitInput, SVINT24) = svint24(input)?;
+    let (input, latitude) = take_signed(THIRTY_ONE_BITS)(input)?;
+    let (input, longitude) = take_signed(THIRTY_TWO_BITS)(input)?;
+    let (input, altitude_msl) = svint24(input)?;
 
     Ok((
         input,
@@ -578,29 +568,29 @@ pub(crate) fn encoding_scheme(input: BitInput) -> IResult<BitInput, EncodingSche
 
 #[allow(clippy::similar_names)]
 pub(crate) fn beam_antenna_pattern(input: BitInput) -> IResult<BitInput, BeamAntennaPattern> {
-    let (input, beam_direction_psi): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
-    let (input, beam_direction_theta): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
-    let (input, beam_direction_phi): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
-    let (input, az_beamwidth): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
-    let (input, el_beamwidth): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_psi) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_theta) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, beam_direction_phi) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, az_beamwidth) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, el_beamwidth) = take_signed(THIRTEEN_BITS)(input)?;
     let (input, reference_system): (BitInput, u8) = take(TWO_BITS)(input)?;
     let reference_system = TransmitterAntennaPatternReferenceSystem::from(reference_system);
-    let (input, e_z): (BitInput, isize) = take_signed(SIXTEEN_BITS)(input)?;
-    let (input, e_y): (BitInput, isize) = take_signed(SIXTEEN_BITS)(input)?;
-    let (input, phase): (BitInput, isize) = take_signed(THIRTEEN_BITS)(input)?;
+    let (input, e_z) = take_signed(SIXTEEN_BITS)(input)?;
+    let (input, e_x) = take_signed(SIXTEEN_BITS)(input)?;
+    let (input, phase) = take_signed(THIRTEEN_BITS)(input)?;
 
     Ok((
         input,
         BeamAntennaPattern {
-            beam_direction_psi: beam_direction_psi as i16,
-            beam_direction_theta: beam_direction_theta as i16,
-            beam_direction_phi: beam_direction_phi as i16,
-            az_beamwidth: az_beamwidth as i16,
-            el_beamwidth: el_beamwidth as i16,
+            beam_direction_psi,
+            beam_direction_theta,
+            beam_direction_phi,
+            az_beamwidth,
+            el_beamwidth,
             reference_system,
-            e_z: e_z as i16,
-            e_x: e_y as i16,
-            phase: phase as i16,
+            e_z,
+            e_x,
+            phase,
         },
     ))
 }

@@ -1,42 +1,38 @@
 use crate::codec::Codec;
-use crate::detonation::model::{Detonation, DetonationUnits, ExplosiveForceFloat};
+use crate::detonation::model::{Detonation, DetonationUnits};
 use crate::records::codec::{
-    decode_entity_coordinate_vector, decode_world_coordinates, encode_entity_coordinate_vector,
-    encode_world_coordinates,
+    decode_entity_coordinate_vector, decode_munition_descriptor, decode_world_coordinates,
+    encode_entity_coordinate_vector, encode_munition_descriptor, encode_world_coordinates,
 };
-use crate::records::model::{CdisVariableParameter, EntityId, EntityType, LinearVelocity};
-use crate::types::model::{CdisFloat, UVINT8, UVINT16};
+use crate::records::model::{
+    CdisVariableParameter, DescriptorQuantityRate, DescriptorWarheadFuse, EntityId, EntityType,
+    LinearVelocity,
+};
+use crate::types::model::UVINT8;
 use dis_rs::BodyRaw;
 use dis_rs::detonation::model::DetonationDescriptor;
-use dis_rs::enumerations::{
-    DetonationResult, EntityKind, ExplosiveMaterialCategories, MunitionDescriptorFuse,
-    MunitionDescriptorWarhead,
-};
-use dis_rs::model::{EventId, ExpendableDescriptor, ExplosionDescriptor, MunitionDescriptor};
-use num_traits::Zero;
+use dis_rs::enumerations::{DetonationResult, EntityKind, ExplosiveMaterialCategories};
+use dis_rs::model::{EventId, ExpendableDescriptor, ExplosionDescriptor};
 
 type Counterpart = dis_rs::detonation::model::Detonation;
 
 impl Detonation {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let (location_in_world_coordinates, units_world) =
             encode_world_coordinates(&item.location_in_world_coordinates);
+
         let (location_in_entity_coordinates, units_entity) =
             encode_entity_coordinate_vector(&item.location_in_entity_coordinates);
+
         let units = DetonationUnits {
             world_location_altitude: units_world,
             location_entity_coordinates: units_entity,
         };
-        let (
-            descriptor_entity_type,
-            descriptor_warhead,
-            descriptor_fuze,
-            descriptor_quantity,
-            descriptor_rate,
-            descriptor_explosive_material,
-            descriptor_explosive_force,
-        ) = encode_detonation_descriptor(&item.descriptor);
-        let detonation_result: u8 = item.detonation_result.into();
+
+        let (descriptor_entity_type, descriptor_warhead_fuse, descriptor_quantity_rate) =
+            encode_detonation_descriptor(&item.descriptor);
+
         let variable_parameters = item
             .variable_parameters
             .iter()
@@ -52,150 +48,99 @@ impl Detonation {
             entity_linear_velocity: LinearVelocity::encode(&item.velocity),
             location_in_world_coordinates,
             descriptor_entity_type,
-            descriptor_warhead,
-            descriptor_fuze,
-            descriptor_quantity,
-            descriptor_rate,
-            descriptor_explosive_material,
-            descriptor_explosive_force,
+            descriptor_warhead_fuse,
+            descriptor_quantity_rate,
             location_in_entity_coordinates,
-            detonation_results: UVINT8::from(detonation_result),
+            detonation_results: UVINT8::from(u8::from(item.detonation_result)),
             variable_parameters,
         }
     }
 
     #[must_use]
     pub fn decode(&self) -> Counterpart {
+        let location_in_world_coordinates = decode_world_coordinates(
+            &self.location_in_world_coordinates,
+            self.units.world_location_altitude,
+        );
+
+        let descriptor = decode_detonation_descriptor(
+            &self.descriptor_entity_type,
+            self.descriptor_warhead_fuse.as_ref(),
+            self.descriptor_quantity_rate.as_ref(),
+        );
+
+        let location_in_entity_coordinates = decode_entity_coordinate_vector(
+            &self.location_in_entity_coordinates,
+            self.units.location_entity_coordinates,
+        );
+
+        let variable_parameters = self
+            .variable_parameters
+            .iter()
+            .map(crate::codec::Codec::decode)
+            .collect();
+
         Counterpart::builder()
             .with_source_entity_id(self.source_entity_id.decode())
             .with_target_entity_id(self.target_entity_id.decode())
             .with_exploding_entity_id(self.exploding_entity_id.decode())
             .with_event_id(EventId::from(&self.event_id))
             .with_velocity(self.entity_linear_velocity.decode())
-            .with_world_location(decode_world_coordinates(
-                &self.location_in_world_coordinates,
-                self.units.world_location_altitude,
-            ))
-            .with_descriptor(decode_detonation_descriptor(
-                self,
-                self.descriptor_entity_type.decode(),
-            ))
-            .with_entity_location(decode_entity_coordinate_vector(
-                &self.location_in_entity_coordinates,
-                self.units.location_entity_coordinates,
-            ))
+            .with_world_location(location_in_world_coordinates)
+            .with_descriptor(descriptor)
+            .with_entity_location(location_in_entity_coordinates)
             .with_detonation_result(DetonationResult::from(self.detonation_results.value))
-            .with_variable_parameters(
-                self.variable_parameters
-                    .iter()
-                    .map(crate::codec::Codec::decode)
-                    .collect(),
-            )
+            .with_variable_parameters(variable_parameters)
             .build()
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn encode_detonation_descriptor(
     item: &DetonationDescriptor,
 ) -> (
     EntityType,
-    Option<u16>,
-    Option<u16>,
-    Option<u8>,
-    Option<u8>,
-    Option<UVINT16>,
-    Option<ExplosiveForceFloat>,
+    Option<DescriptorWarheadFuse>,
+    Option<DescriptorQuantityRate>,
 ) {
     match item {
-        DetonationDescriptor::Munition(munition) => {
-            let warhead = Some(munition.warhead.into());
-            let fuze = Some(munition.fuse.into());
-            let quantity = if munition.quantity.is_zero() {
-                None
-            } else {
-                Some(munition.quantity.min(u16::from(u8::MAX)) as u8)
-            };
-            let rate = if munition.rate.is_zero() {
-                None
-            } else {
-                Some(munition.rate.min(u16::from(u8::MAX)) as u8)
-            };
-            (
-                EntityType::encode(&munition.entity_type),
-                warhead,
-                fuze,
-                quantity,
-                rate,
-                None,
-                None,
-            )
+        DetonationDescriptor::Munition(munition) => encode_munition_descriptor(munition),
+        DetonationDescriptor::Expendable(expendable) => {
+            (EntityType::encode(&expendable.entity_type), None, None)
         }
-        DetonationDescriptor::Expendable(expendable) => (
-            EntityType::encode(&expendable.entity_type),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        ),
+        // TODO SISO-STD-023-2023: [13.4] & [11.21] do not describe an encoding for the Explosion
+        //      Descriptor record. Only the Munition Descriptor record is covered by the standard
+        //      (the Expendable Descriptor record is also implicitly covered as a subset of the
+        //      Munition Descriptor). The document is ambiguous, but seems to suggest that the
+        //      Explosion Descriptor should be encoded as a Munition Descriptor with
+        //      Warhead/Fuze/Quantity/Rate all zero.
         DetonationDescriptor::Explosion(explosion) => {
-            let explosive_material: u16 = explosion.explosive_material.into();
-            let explosive_material = UVINT16::from(explosive_material);
-            (
-                EntityType::encode(&explosion.entity_type),
-                None,
-                None,
-                None,
-                None,
-                Some(explosive_material),
-                Some(ExplosiveForceFloat::from_float(explosion.explosive_force)),
-            )
+            (EntityType::encode(&explosion.entity_type), None, None)
         }
     }
 }
 
 fn decode_detonation_descriptor(
-    detonation_body: &Detonation,
-    entity_type: dis_rs::model::EntityType,
+    descriptor_entity_type: &EntityType,
+    descriptor_warhead_fuse: Option<&DescriptorWarheadFuse>,
+    descriptor_quantity_rate: Option<&DescriptorQuantityRate>,
 ) -> DetonationDescriptor {
-    match entity_type.kind {
-        EntityKind::Munition => DetonationDescriptor::Munition(
-            MunitionDescriptor::default()
-                .with_entity_type(entity_type)
-                .with_warhead(MunitionDescriptorWarhead::from(
-                    detonation_body.descriptor_warhead.unwrap_or_default(),
-                ))
-                .with_fuse(MunitionDescriptorFuse::from(
-                    detonation_body.descriptor_fuze.unwrap_or_default(),
-                ))
-                .with_quantity(u16::from(
-                    detonation_body.descriptor_quantity.unwrap_or_default(),
-                ))
-                .with_rate(u16::from(
-                    detonation_body.descriptor_rate.unwrap_or_default(),
-                )),
-        ),
+    let entity_type = descriptor_entity_type.decode();
 
+    match entity_type.kind {
+        EntityKind::Munition => DetonationDescriptor::Munition(decode_munition_descriptor(
+            descriptor_entity_type,
+            descriptor_warhead_fuse,
+            descriptor_quantity_rate,
+        )),
         EntityKind::Expendable => {
             DetonationDescriptor::Expendable(ExpendableDescriptor { entity_type })
         }
-        _ => {
-            let explosive_material = detonation_body
-                .descriptor_explosive_material
-                .map(|record| record.value)
-                .unwrap_or_default();
-            let explosive_force = detonation_body
-                .descriptor_explosive_force
-                .map(|float| float.to_float())
-                .unwrap_or_default();
-            DetonationDescriptor::Explosion(ExplosionDescriptor {
-                entity_type,
-                explosive_material: ExplosiveMaterialCategories::from(explosive_material),
-                explosive_force,
-            })
-        }
+        // EntityType describes the non-munition/-expendable entity that has exploded
+        _ => DetonationDescriptor::Explosion(ExplosionDescriptor {
+            entity_type,
+            explosive_material: ExplosiveMaterialCategories::default(),
+            explosive_force: f32::default(),
+        }),
     }
 }
 
@@ -204,8 +149,8 @@ mod tests {
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
     use crate::detonation::model::{Detonation, DetonationUnits};
     use crate::records::model::{
-        EntityCoordinateVector, EntityId, EntityType, LinearVelocity, UnitsDekameters, UnitsMeters,
-        WorldCoordinates,
+        DescriptorQuantityRate, DescriptorWarheadFuse, EntityCoordinateVector, EntityId,
+        EntityType, LinearVelocity, UnitsDekameters, UnitsMeters, WorldCoordinates,
     };
     use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
     use crate::{BodyProperties, CdisBody};
@@ -327,8 +272,8 @@ mod tests {
                 SVINT16::from(1),
             ),
             location_in_world_coordinates: WorldCoordinates::new(
-                620_384_200_f32,
-                59_652_240_f32,
+                620_384_200,
+                59_652_240,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -340,12 +285,14 @@ mod tests {
                 UVINT8::from(0),
                 UVINT8::from(0),
             ),
-            descriptor_warhead: Some(u16::from(MunitionDescriptorWarhead::Dummy)),
-            descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
-            descriptor_quantity: Some(1),
-            descriptor_rate: Some(0),
-            descriptor_explosive_material: None,
-            descriptor_explosive_force: None,
+            descriptor_warhead_fuse: Some(DescriptorWarheadFuse {
+                warhead: u16::from(MunitionDescriptorWarhead::Dummy),
+                fuse: u16::from(MunitionDescriptorFuse::Dummy_8110),
+            }),
+            descriptor_quantity_rate: Some(DescriptorQuantityRate {
+                quantity: 1,
+                rate: 0,
+            }),
             location_in_entity_coordinates: EntityCoordinateVector::new(
                 SVINT16::from(10),
                 SVINT16::from(10),
@@ -433,8 +380,8 @@ mod tests {
                 SVINT16::from(1),
             ),
             location_in_world_coordinates: WorldCoordinates::new(
-                620_384_200_f32,
-                59_652_240_f32,
+                620_384_200,
+                59_652_240,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -446,12 +393,14 @@ mod tests {
                 UVINT8::from(0),
                 UVINT8::from(0),
             ),
-            descriptor_warhead: Some(u16::from(MunitionDescriptorWarhead::Dummy)),
-            descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
-            descriptor_quantity: Some(1),
-            descriptor_rate: Some(0),
-            descriptor_explosive_material: None,
-            descriptor_explosive_force: None,
+            descriptor_warhead_fuse: Some(DescriptorWarheadFuse {
+                warhead: u16::from(MunitionDescriptorWarhead::Dummy),
+                fuse: u16::from(MunitionDescriptorFuse::Dummy_8110),
+            }),
+            descriptor_quantity_rate: Some(DescriptorQuantityRate {
+                quantity: 1,
+                rate: 0,
+            }),
             location_in_entity_coordinates: EntityCoordinateVector::new(
                 SVINT16::from(10),
                 SVINT16::from(10),

@@ -25,6 +25,7 @@ bitvec = "1.0.1"
 num = "0.4.3"
 num-traits = "0.2.19"
 thiserror = "2.0"
+bitflags = "2.13.2"
 
 [dev-dependencies]
 rstest.workspace = true

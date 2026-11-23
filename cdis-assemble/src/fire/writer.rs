@@ -1,34 +1,30 @@
+use crate::BodyProperties;
 use crate::constants::ONE_BIT;
 use crate::fire::model::Fire;
-use crate::writing::{SerializeCdis, serialize_when_present, write_value_unsigned};
-use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
+use crate::writing::{BitBuffer, SerializeCdis, serialize_when_present, write_integer_bits};
 
-impl SerializeCdisPdu for Fire {
+impl SerializeCdis for Fire {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let fields_present = self.fields_present_field();
+        let cursor = write_integer_bits(buf, cursor, self.fields_present_length(), fields_present);
 
-        let cursor =
-            write_value_unsigned(buf, cursor, self.fields_present_length(), fields_present);
-        let cursor = write_value_unsigned::<u8>(buf, cursor, ONE_BIT, self.units.into());
+        let cursor = write_integer_bits(buf, cursor, ONE_BIT, u8::from(self.units));
 
         let cursor = self.firing_entity_id.serialize(buf, cursor);
         let cursor = self.target_entity_id.serialize(buf, cursor);
-        let cursor = self.munition_expandable_entity_id.serialize(buf, cursor);
+        let cursor = self.munition_expendable_entity_id.serialize(buf, cursor);
         let cursor = self.event_id.serialize(buf, cursor);
 
         let cursor = serialize_when_present(&self.fire_mission_index, buf, cursor);
+
         let cursor = self.location_world_coordinates.serialize(buf, cursor);
         let cursor = self.descriptor_entity_type.serialize(buf, cursor);
 
-        let cursor = serialize_when_present(&self.descriptor_warhead, buf, cursor);
-        let cursor = serialize_when_present(&self.descriptor_fuze, buf, cursor);
-
-        let cursor = serialize_when_present(&self.descriptor_quantity, buf, cursor);
-        let cursor = serialize_when_present(&self.descriptor_rate, buf, cursor);
+        let cursor = serialize_when_present(&self.descriptor_warhead_fuse, buf, cursor);
+        let cursor = serialize_when_present(&self.descriptor_quantity_rate, buf, cursor);
 
         let cursor = self.velocity.serialize(buf, cursor);
-
         let cursor = serialize_when_present(&self.range, buf, cursor);
 
         cursor
@@ -42,7 +38,7 @@ mod tests {
         EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
     };
     use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16};
-    use crate::{BitBuffer, BodyProperties, SerializeCdisPdu};
+    use crate::{BitBuffer, BodyProperties, SerializeCdis};
     use bitvec::prelude::BitArray;
 
     #[test]
@@ -51,14 +47,14 @@ mod tests {
             units: UnitsDekameters::Dekameter,
             firing_entity_id: EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(1)),
             target_entity_id: EntityId::new(UVINT16::from(2), UVINT16::from(2), UVINT16::from(2)),
-            munition_expandable_entity_id: EntityId::new(
+            munition_expendable_entity_id: EntityId::new(
                 UVINT16::from(1),
                 UVINT16::from(1),
                 UVINT16::from(2),
             ),
             event_id: EntityId::new(UVINT16::from(1), UVINT16::from(1), UVINT16::from(3)),
             fire_mission_index: None,
-            location_world_coordinates: WorldCoordinates::new(0.0, 0.0, SVINT24::from(1)),
+            location_world_coordinates: WorldCoordinates::new(0, 0, SVINT24::from(1)),
             descriptor_entity_type: EntityType::new(
                 2,
                 2,
@@ -68,10 +64,8 @@ mod tests {
                 UVINT8::from(0),
                 UVINT8::from(0),
             ),
-            descriptor_warhead: None,
-            descriptor_fuze: None,
-            descriptor_quantity: None,
-            descriptor_rate: None,
+            descriptor_warhead_fuse: None,
+            descriptor_quantity_rate: None,
             velocity: LinearVelocity::new(SVINT16::from(1), SVINT16::from(1), SVINT16::from(1)),
             range: None,
         }

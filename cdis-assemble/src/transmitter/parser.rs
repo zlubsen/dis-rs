@@ -2,13 +2,14 @@ use crate::constants::{
     EIGHT_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS, TEN_BITS, THIRTY_TWO_BITS, THREE_BITS, TWO_BITS,
 };
 use crate::parsing::{BitInput, field_present, parse_field_when_present};
+use crate::records::model::FrequencyFloat;
 use crate::records::parser::{
     beam_antenna_pattern, entity_coordinate_vector, entity_identification, entity_type,
     world_coordinates,
 };
 use crate::transmitter::model::{
-    CdisSpreadSpectrum, ModulationType, TransmitFrequencyBandwidthFloat, Transmitter,
-    TransmitterFieldsPresent, TransmitterFrequencyFloat, TransmitterUnits,
+    CdisSpreadSpectrum, ModulationType, Transmitter, TransmitterFieldsPresent,
+    TransmitterFrequencyFloat, TransmitterUnits,
 };
 use crate::types::model::CdisFloat;
 use crate::types::parser::{uvint8, uvint16};
@@ -83,7 +84,7 @@ pub(crate) fn transmitter_body(input: BitInput) -> IResult<BitInput, CdisBody> {
         fields_present,
         TransmitterFieldsPresent::TRANSMITTER_DETAILS_BIT,
     ) {
-        let (input, transmit_frequency_bandwidth) = TransmitFrequencyBandwidthFloat::parse(input)?;
+        let (input, transmit_frequency_bandwidth) = FrequencyFloat::parse(input)?;
         (input, Some(transmit_frequency_bandwidth))
     } else {
         (input, None)

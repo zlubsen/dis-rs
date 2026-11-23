@@ -13,13 +13,8 @@ pub struct StartResume {
 }
 
 impl BodyProperties for StartResume {
-    type FieldsPresent = ();
-    type FieldsPresentOutput = u8;
-    const FIELDS_PRESENT_LENGTH: usize = 0;
-
-    fn fields_present_field(&self) -> Self::FieldsPresentOutput {
-        0
-    }
+    type FieldsPresentFlags = ();
+    type FieldsPresentField = ();
 
     fn body_length_bits(&self) -> usize {
         const CLOCK_TIME_LENGTH_BITS: usize = 64;

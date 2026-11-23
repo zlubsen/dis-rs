@@ -181,9 +181,7 @@ impl EntityState {
                 Some(entity_location),
                 Some(Orientation::encode(&item.entity_orientation)),
                 Some((&item.entity_appearance).into()),
-                Some(CdisEntityMarking::new(
-                    item.entity_marking.marking_string.clone(),
-                )),
+                Some(CdisEntityMarking::new(&item.entity_marking.marking_string)),
                 if options.update_mode == CodecUpdateMode::PartialUpdate {
                     CodecStateResult::StateUpdateEntityState
                 } else {
@@ -485,13 +483,21 @@ pub(crate) fn encode_dr_linear_acceleration(
     }
 }
 
-/// Encodes the Dead Reckoning Angular Velocity field when the Dead Reckoning Algorithm requires it (no 3, 4, 7 and 8).
+/// Encodes the Dead Reckoning Angular Velocity field when the Dead Reckoning Algorithm requires it (no 3, 4, 6, 7, 8 and 9).
 fn encode_dr_angular_velocity(item: &Counterpart) -> Option<AngularVelocity> {
     match item.dead_reckoning_parameters.algorithm {
+        // The Angular Velocity is used by all rotating algorithms (DRM_Rxx) and algorithms where
+        // the linear velocity and acceleration are given in entity body coordinates (DRM_xxB).
+        // Refs:
+        //  - IEEE Std 1278.1-2012: §E.6 "Dead reckoning formulas", §E.7 "Dead reckoning
+        //      mathematics"
+        //  - SISO-REF-010-2023: §17.1.1 "Dead Reckoning Algorithm [UID 44]"
         DeadReckoningAlgorithm::DRM_RPW_ConstantVelocityLowAccelerationLinearMotionEntityWithExtrapolationOfOrientation |
         DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation |
+        DeadReckoningAlgorithm::DRM_FPB_SimilarToFPWExceptInBodyCoordinates |
         DeadReckoningAlgorithm::DRM_RPB_SimilarToRPWExceptInBodyCoordinates |
-        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates => {
+        DeadReckoningAlgorithm::DRM_RVB_SimilarToRVWExceptInBodyCoordinates |
+        DeadReckoningAlgorithm::DRM_FVB_SimilarToFVWExceptInBodyCoordinates => {
             Some(AngularVelocity::encode(&item.dead_reckoning_parameters.angular_velocity))
         }
         _ => { None }
@@ -614,7 +620,7 @@ mod tests {
             );
             assert!(es.alternate_entity_type.is_none());
             assert!(es.entity_orientation.is_some());
-            assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
+            assert_eq!(es.entity_marking.unwrap().marking, "ENCODE01".to_string());
             assert_eq!(es.dr_algorithm, DeadReckoningAlgorithm::Other);
             assert!(es.dr_params_other.is_none());
         } else {
@@ -649,7 +655,7 @@ mod tests {
             );
             assert!(es.alternate_entity_type.is_none());
             assert!(es.entity_orientation.is_some());
-            assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
+            assert_eq!(es.entity_marking.unwrap().marking, "ENCODE01".to_string());
         } else {
             panic!()
         }
@@ -716,7 +722,7 @@ mod tests {
             );
             assert!(es.alternate_entity_type.is_none());
             assert!(es.entity_orientation.is_some());
-            assert_eq!(es.entity_marking.unwrap().marking, "Encode01".to_string());
+            assert_eq!(es.entity_marking.unwrap().marking, "ENCODE01".to_string());
             assert_eq!(
                 es.dr_algorithm,
                 DeadReckoningAlgorithm::DRM_FVW_HighSpeedOrManeuveringEntity
@@ -818,14 +824,14 @@ mod tests {
             entity_type: Some(EntityType::new(1,1, 1, UVINT8::from(1), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1))),
             alternate_entity_type: Some(EntityType::new(2,2, 2, UVINT8::from(2), UVINT8::from(2), UVINT8::from(2), UVINT8::from(2))),
             entity_linear_velocity: Some(LinearVelocity::new(SVINT16::from(10), SVINT16::from(10), SVINT16::from(10))),
-            entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
+            entity_location: Some(WorldCoordinates::new(52, 5, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(1, 1, 1)),
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
             dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
-            entity_marking: Some(CdisEntityMarking::new("CDIS01".to_string())),
+            entity_marking: Some(CdisEntityMarking::new("CDIS01")),
             capabilities: None,
             variable_parameters: vec![],
         }.into_cdis_body();
@@ -863,14 +869,14 @@ mod tests {
             entity_type: Some(EntityType::new(1,1, 1, UVINT8::from(1), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1))),
             alternate_entity_type: Some(EntityType::new(2,2, 2, UVINT8::from(2), UVINT8::from(2), UVINT8::from(2), UVINT8::from(2))),
             entity_linear_velocity: Some(LinearVelocity::new(SVINT16::from(10), SVINT16::from(10), SVINT16::from(10))),
-            entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
+            entity_location: Some(WorldCoordinates::new(52, 5, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(1, 1, 1)),
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
             dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
-            entity_marking: Some(CdisEntityMarking::new("CDIS01".to_string())),
+            entity_marking: Some(CdisEntityMarking::new("CDIS01")),
             capabilities: None,
             variable_parameters: vec![CdisVariableParameter::ArticulatedPart(CdisArticulatedPartVP {
                 change_indicator: 0,
@@ -915,14 +921,14 @@ mod tests {
             entity_type: Some(EntityType::new(1,1, 1, UVINT8::from(1), UVINT8::from(1), UVINT8::from(1), UVINT8::from(1))),
             alternate_entity_type: Some(EntityType::new(2,2, 2, UVINT8::from(2), UVINT8::from(2), UVINT8::from(2), UVINT8::from(2))),
             entity_linear_velocity: Some(LinearVelocity::new(SVINT16::from(10), SVINT16::from(10), SVINT16::from(10))),
-            entity_location: Some(WorldCoordinates::new(52.0, 5.0, SVINT24::from(1000))),
+            entity_location: Some(WorldCoordinates::new(52, 5, SVINT24::from(1000))),
             entity_orientation: Some(Orientation::new(1, 1, 1)),
             entity_appearance: Some(CdisEntityAppearance(0x1F00)),
             dr_algorithm: DeadReckoningAlgorithm::DRM_RVW_HighSpeedOrManeuveringEntityWithExtrapolationOfOrientation,
             dr_params_other: Some(CdisDRParametersOther::from(0)),
             dr_params_entity_linear_acceleration: Some(LinearAcceleration::new(SVINT14::from(10), SVINT14::from(10), SVINT14::from(10))),
             dr_params_entity_angular_velocity: Some(AngularVelocity::new(SVINT12::from(1), SVINT12::from(2), SVINT12::from(3))),
-            entity_marking: Some(CdisEntityMarking::new("CDIS01".to_string())),
+            entity_marking: Some(CdisEntityMarking::new("CDIS01")),
             capabilities: None,
             variable_parameters: vec![],
         }.into_cdis_body();

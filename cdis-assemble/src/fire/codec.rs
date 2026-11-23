@@ -1,34 +1,36 @@
 use crate::codec::Codec;
 use crate::fire::model::Fire;
-use crate::records::codec::{decode_world_coordinates, encode_world_coordinates};
-use crate::records::model::{EntityId, EntityType, LinearVelocity};
+use crate::records::codec::{
+    decode_munition_descriptor, decode_world_coordinates, encode_munition_descriptor,
+    encode_world_coordinates,
+};
+use crate::records::model::{
+    DescriptorQuantityRate, DescriptorWarheadFuse, EntityId, EntityType, LinearVelocity,
+};
 use crate::types::model::UVINT32;
-use dis_rs::BodyRaw;
-use dis_rs::NO_FIRE_MISSION;
-use dis_rs::enumerations::{EntityKind, MunitionDescriptorFuse, MunitionDescriptorWarhead};
+use dis_rs::enumerations::EntityKind;
 use dis_rs::fire::model::FireDescriptor;
 use dis_rs::model::{EventId, ExpendableDescriptor, MunitionDescriptor};
-use num::{ToPrimitive, Zero};
+use dis_rs::{BodyRaw, NO_FIRE_MISSION};
 
 type Counterpart = dis_rs::fire::model::Fire;
 
 impl Fire {
+    #[must_use]
     pub fn encode(item: &Counterpart) -> Self {
         let fire_mission_index = if item.fire_mission_index != NO_FIRE_MISSION {
             Some(UVINT32::from(item.fire_mission_index))
         } else {
             None
         };
+
         let (location_world_coordinates, units) = encode_world_coordinates(&item.location_in_world);
-        let (
-            descriptor_entity_type,
-            descriptor_warhead,
-            descriptor_fuze,
-            descriptor_quantity,
-            descriptor_rate,
-        ) = encode_fire_descriptor(&item.descriptor);
+
+        let (descriptor_entity_type, descriptor_warhead_fuse, descriptor_quantity_rate) =
+            encode_fire_descriptor(&item.descriptor);
+
         let range = if item.range.is_normal() {
-            item.range.to_u32().map(UVINT32::from)
+            Some(UVINT32::from(item.range.round() as u32))
         } else {
             None
         };
@@ -37,15 +39,13 @@ impl Fire {
             units,
             firing_entity_id: EntityId::encode(&item.firing_entity_id),
             target_entity_id: EntityId::encode(&item.target_entity_id),
-            munition_expandable_entity_id: EntityId::encode(&item.entity_id),
+            munition_expendable_entity_id: EntityId::encode(&item.entity_id),
             event_id: EntityId::from(&item.event_id),
             fire_mission_index,
             location_world_coordinates,
             descriptor_entity_type,
-            descriptor_warhead,
-            descriptor_fuze,
-            descriptor_quantity,
-            descriptor_rate,
+            descriptor_warhead_fuse,
+            descriptor_quantity_rate,
             velocity: LinearVelocity::encode(&item.velocity),
             range,
         }
@@ -53,7 +53,6 @@ impl Fire {
 
     #[must_use]
     pub fn decode(&self) -> Counterpart {
-        let entity_type = self.descriptor_entity_type.decode();
         let fire_mission_index = {
             if let Some(fmi) = self.fire_mission_index {
                 fmi.value
@@ -61,17 +60,23 @@ impl Fire {
                 NO_FIRE_MISSION
             }
         };
-        let descriptor = decode_fire_descriptor(self, entity_type);
+
+        let location_in_world_coordinates =
+            decode_world_coordinates(&self.location_world_coordinates, self.units);
+
+        let descriptor = decode_fire_descriptor(
+            &self.descriptor_entity_type,
+            self.descriptor_warhead_fuse.as_ref(),
+            self.descriptor_quantity_rate.as_ref(),
+        );
+
         Counterpart::builder()
             .with_firing_entity_id(self.firing_entity_id.decode())
             .with_target_entity_id(self.target_entity_id.decode())
-            .with_entity_id(self.munition_expandable_entity_id.decode())
+            .with_entity_id(self.munition_expendable_entity_id.decode())
             .with_event_id(EventId::from(&self.event_id))
             .with_fire_mission_index(fire_mission_index)
-            .with_location_in_world(decode_world_coordinates(
-                &self.location_world_coordinates,
-                self.units,
-            ))
+            .with_location_in_world(location_in_world_coordinates)
             .with_descriptor(descriptor)
             .with_velocity(self.velocity.decode())
             .with_range(self.range.unwrap_or_default().value as f32)
@@ -81,59 +86,36 @@ impl Fire {
 
 fn encode_fire_descriptor(
     item: &FireDescriptor,
-) -> (EntityType, Option<u16>, Option<u16>, Option<u8>, Option<u8>) {
+) -> (
+    EntityType,
+    Option<DescriptorWarheadFuse>,
+    Option<DescriptorQuantityRate>,
+) {
     match item {
-        FireDescriptor::Munition(munition) => {
-            let warhead = Some(munition.warhead.into());
-            let fuze = Some(munition.fuse.into());
-            let quantity = if munition.quantity.is_zero() {
-                None
-            } else {
-                Some(munition.quantity.min(u16::from(u8::MAX)) as u8)
-            };
-            let rate = if munition.rate.is_zero() {
-                None
-            } else {
-                Some(munition.rate.min(u16::from(u8::MAX)) as u8)
-            };
-            (
-                EntityType::encode(&munition.entity_type),
-                warhead,
-                fuze,
-                quantity,
-                rate,
-            )
+        FireDescriptor::Munition(munition) => encode_munition_descriptor(munition),
+        FireDescriptor::Expendable(expendable) => {
+            (EntityType::encode(&expendable.entity_type), None, None)
         }
-        FireDescriptor::Expendable(expendable) => (
-            EntityType::encode(&expendable.entity_type),
-            None,
-            None,
-            None,
-            None,
-        ),
     }
 }
 
 fn decode_fire_descriptor(
-    fire_body: &Fire,
-    entity_type: dis_rs::model::EntityType,
+    descriptor_entity_type: &EntityType,
+    descriptor_warhead_fuse: Option<&DescriptorWarheadFuse>,
+    descriptor_quantity_rate: Option<&DescriptorQuantityRate>,
 ) -> FireDescriptor {
+    let entity_type = descriptor_entity_type.decode();
+
     match entity_type.kind {
-        EntityKind::Munition => FireDescriptor::Munition(
-            MunitionDescriptor::default()
-                .with_entity_type(entity_type)
-                .with_warhead(MunitionDescriptorWarhead::from(
-                    fire_body.descriptor_warhead.unwrap_or_default(),
-                ))
-                .with_fuse(MunitionDescriptorFuse::from(
-                    fire_body.descriptor_fuze.unwrap_or_default(),
-                ))
-                .with_quantity(u16::from(fire_body.descriptor_quantity.unwrap_or_default()))
-                .with_rate(u16::from(fire_body.descriptor_rate.unwrap_or_default())),
-        ),
+        EntityKind::Munition => FireDescriptor::Munition(decode_munition_descriptor(
+            descriptor_entity_type,
+            descriptor_warhead_fuse,
+            descriptor_quantity_rate,
+        )),
         EntityKind::Expendable => FireDescriptor::Expendable(ExpendableDescriptor { entity_type }),
         _ => {
-            // Fire PDU should not have other EntityKinds than Munition or Expandable, so any others are decoded into munition by default
+            // Fire PDU should not have other EntityKinds than Munition or Expendable, so any others
+            // are decoded into munition by default
             FireDescriptor::Munition(MunitionDescriptor::default().with_entity_type(entity_type))
         }
     }
@@ -142,9 +124,10 @@ fn decode_fire_descriptor(
 #[cfg(test)]
 mod tests {
     use crate::codec::{CodecOptions, CodecStateResult, DecoderState, EncoderState};
-    use crate::fire::model::{Fire, FireFieldsPresent};
+    use crate::fire::model::{Fire, FireFieldsPresentFlags};
     use crate::records::model::{
-        EntityId, EntityType, LinearVelocity, UnitsDekameters, WorldCoordinates,
+        DescriptorQuantityRate, DescriptorWarheadFuse, EntityId, EntityType, LinearVelocity,
+        UnitsDekameters, WorldCoordinates,
     };
     use crate::types::model::{SVINT16, SVINT24, UVINT8, UVINT16, UVINT32};
     use crate::{BodyProperties, CdisBody};
@@ -195,11 +178,13 @@ mod tests {
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         if let CdisBody::Fire(fire) = cdis_body {
             assert_ne!(
-                fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT,
+                fire.fields_present_field()
+                    & FireFieldsPresentFlags::DESCRIPTOR_WARHEAD_FUSE.bits(),
                 0u8
             );
             assert_ne!(
-                fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT,
+                fire.fields_present_field()
+                    & FireFieldsPresentFlags::DESCRIPTOR_QUANTITY_RATE.bits(),
                 0u8
             );
 
@@ -213,7 +198,7 @@ mod tests {
                 EntityId::new(UVINT16::from(20), UVINT16::from(20), UVINT16::from(20))
             );
             assert_eq!(
-                fire.munition_expandable_entity_id,
+                fire.munition_expendable_entity_id,
                 EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(500))
             );
             assert_eq!(
@@ -233,10 +218,10 @@ mod tests {
                     UVINT8::from(0)
                 )
             );
-            assert_eq!(fire.descriptor_warhead.unwrap(), 4002u16);
-            assert_eq!(fire.descriptor_fuze.unwrap(), 8110u16);
-            assert_eq!(fire.descriptor_quantity.unwrap(), 1);
-            assert_eq!(fire.descriptor_rate.unwrap(), 1);
+            assert_eq!(fire.descriptor_warhead_fuse.unwrap().warhead, 4002u16);
+            assert_eq!(fire.descriptor_warhead_fuse.unwrap().fuse, 8110u16);
+            assert_eq!(fire.descriptor_quantity_rate.unwrap().quantity, 1);
+            assert_eq!(fire.descriptor_quantity_rate.unwrap().rate, 1);
             assert_eq!(fire.range.unwrap(), UVINT32::from(10000));
         } else {
             panic!()
@@ -269,11 +254,13 @@ mod tests {
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         if let CdisBody::Fire(fire) = cdis_body {
             assert_ne!(
-                fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT,
+                fire.fields_present_field()
+                    & FireFieldsPresentFlags::DESCRIPTOR_WARHEAD_FUSE.bits(),
                 0u8
             );
             assert_eq!(
-                fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT,
+                fire.fields_present_field()
+                    & FireFieldsPresentFlags::DESCRIPTOR_QUANTITY_RATE.bits(),
                 0u8
             );
 
@@ -290,17 +277,16 @@ mod tests {
                     UVINT8::from(0)
                 )
             );
-            assert_eq!(fire.descriptor_warhead.unwrap(), 4002u16);
-            assert_eq!(fire.descriptor_fuze.unwrap(), 8110u16);
-            assert!(fire.descriptor_quantity.is_none());
-            assert!(fire.descriptor_rate.is_none());
+            assert_eq!(fire.descriptor_warhead_fuse.unwrap().warhead, 4002u16);
+            assert_eq!(fire.descriptor_warhead_fuse.unwrap().fuse, 8110u16);
+            assert!(fire.descriptor_quantity_rate.is_none());
         } else {
             panic!()
         }
     }
 
     #[test]
-    fn fire_body_encode_expandable() {
+    fn fire_body_encode_expendable() {
         let mut state = EncoderState::new();
         let options = CodecOptions::new_partial_update();
 
@@ -319,11 +305,13 @@ mod tests {
         assert_eq!(state_result, CodecStateResult::StateUnaffected);
         if let CdisBody::Fire(fire) = cdis_body {
             assert_eq!(
-                fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_WARHEAD_FUZE_BIT,
+                fire.fields_present_field()
+                    & FireFieldsPresentFlags::DESCRIPTOR_WARHEAD_FUSE.bits(),
                 0u8
             );
             assert_eq!(
-                fire.fields_present_field() & FireFieldsPresent::DESCRIPTOR_QUANTITY_RATE_BIT,
+                fire.fields_present_field()
+                    & FireFieldsPresentFlags::DESCRIPTOR_QUANTITY_RATE.bits(),
                 0u8
             );
 
@@ -340,10 +328,8 @@ mod tests {
                     UVINT8::from(0)
                 )
             );
-            assert!(fire.descriptor_warhead.is_none());
-            assert!(fire.descriptor_fuze.is_none());
-            assert!(fire.descriptor_quantity.is_none());
-            assert!(fire.descriptor_rate.is_none());
+            assert!(fire.descriptor_warhead_fuse.is_none());
+            assert!(fire.descriptor_quantity_rate.is_none());
             assert_eq!(fire.range.unwrap(), UVINT32::from(10000));
         } else {
             panic!()
@@ -367,7 +353,7 @@ mod tests {
                 UVINT16::from(20),
                 UVINT16::from(20),
             ),
-            munition_expandable_entity_id: EntityId::new(
+            munition_expendable_entity_id: EntityId::new(
                 UVINT16::from(10),
                 UVINT16::from(10),
                 UVINT16::from(500),
@@ -375,8 +361,8 @@ mod tests {
             event_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(1)),
             fire_mission_index: Some(UVINT32::from(100)),
             location_world_coordinates: WorldCoordinates::new(
-                620_384_200_f32,
-                59_652_240_f32,
+                620_384_200,
+                59_652_240,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -388,10 +374,14 @@ mod tests {
                 UVINT8::from(0),
                 UVINT8::from(0),
             ),
-            descriptor_warhead: Some(u16::from(MunitionDescriptorWarhead::Dummy)),
-            descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
-            descriptor_quantity: Some(1),
-            descriptor_rate: Some(0),
+            descriptor_warhead_fuse: Some(DescriptorWarheadFuse {
+                warhead: u16::from(MunitionDescriptorWarhead::Dummy),
+                fuse: u16::from(MunitionDescriptorFuse::Dummy_8110),
+            }),
+            descriptor_quantity_rate: Some(DescriptorQuantityRate {
+                quantity: 1,
+                rate: 0,
+            }),
             velocity: LinearVelocity::new(SVINT16::from(100), SVINT16::from(100), SVINT16::from(0)),
             range: Some(UVINT32::from(10000)),
         }
@@ -423,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn fire_body_decode_expandable() {
+    fn fire_body_decode_expendable() {
         let mut state = DecoderState::new();
         let options = CodecOptions::new_full_update();
 
@@ -439,7 +429,7 @@ mod tests {
                 UVINT16::from(20),
                 UVINT16::from(20),
             ),
-            munition_expandable_entity_id: EntityId::new(
+            munition_expendable_entity_id: EntityId::new(
                 UVINT16::from(10),
                 UVINT16::from(10),
                 UVINT16::from(500),
@@ -447,8 +437,8 @@ mod tests {
             event_id: EntityId::new(UVINT16::from(10), UVINT16::from(10), UVINT16::from(1)),
             fire_mission_index: Some(UVINT32::from(100)),
             location_world_coordinates: WorldCoordinates::new(
-                620_384_200_f32,
-                59_652_240_f32,
+                620_384_200,
+                59_652_240,
                 SVINT24::from(1987),
             ),
             descriptor_entity_type: EntityType::new(
@@ -460,10 +450,15 @@ mod tests {
                 UVINT8::from(0),
                 UVINT8::from(0),
             ),
-            descriptor_warhead: Some(u16::from(MunitionDescriptorWarhead::Dummy)),
-            descriptor_fuze: Some(u16::from(MunitionDescriptorFuse::Dummy_8110)),
-            descriptor_quantity: Some(1),
-            descriptor_rate: Some(1),
+            descriptor_warhead_fuse: Some(DescriptorWarheadFuse {
+                warhead: u16::from(MunitionDescriptorWarhead::Dummy),
+                fuse: u16::from(MunitionDescriptorFuse::Dummy_8110),
+            }),
+
+            descriptor_quantity_rate: Some(DescriptorQuantityRate {
+                quantity: 1,
+                rate: 1,
+            }),
             velocity: LinearVelocity::new(SVINT16::from(100), SVINT16::from(100), SVINT16::from(0)),
             range: Some(UVINT32::from(10000)),
         }

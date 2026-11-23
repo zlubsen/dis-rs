@@ -2,14 +2,15 @@ pub use super::timestamp::{CdisTimeUnits, CdisTimestamp};
 use crate::BitBuffer;
 use crate::constants::{
     EIGHT_BITS, FIFTEEN_BITS, FIVE_BITS, FOUR_BITS, FOURTEEN_BITS, ONE_BIT, SEVENTEEN_BITS,
-    SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWENTY_SIX_BITS, TWO_BITS,
+    SIXTEEN_BITS, SIXTY_FOUR_BITS, THIRTY_NINE_BITS, THIRTY_TWO_BITS, THREE_BITS, TWENTY_SIX_BITS,
+    TWO_BITS,
 };
 use crate::parsing::{BitInput, take_signed};
 use crate::records::model::CdisProtocolVersion::{Reserved, SISO_023_2023, StandardDis};
 use crate::types::model::{
     CdisFloat, SVINT12, SVINT13, SVINT14, SVINT16, SVINT24, UVINT8, UVINT16, VarInt,
 };
-use crate::writing::{write_value_signed, write_value_unsigned};
+use crate::writing::write_integer_bits;
 use dis_rs::enumerations::{
     ArticulatedPartsTypeClass, ArticulatedPartsTypeMetric, AttachedPartDetachedIndicator,
     AttachedParts, ChangeIndicator, EntityAssociationAssociationStatus,
@@ -19,7 +20,7 @@ use dis_rs::enumerations::{
     TransmitterAntennaPatternReferenceSystem,
 };
 use dis_rs::model::{
-    DatumSpecification, EventId, FixedDatum, Location, PduStatus, SimulationAddress, VariableDatum,
+    DatumSpecification, EventId, FixedDatum, PduStatus, SimulationAddress, VariableDatum,
 };
 use nom::{IResult, bits::complete::take};
 use num_traits::FromPrimitive;
@@ -396,6 +397,52 @@ impl CdisRecord for LinearVelocity {
     }
 }
 
+/// 11.21 Munition Descriptor (Warhead, Fuse)
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
+pub struct DescriptorWarheadFuse {
+    pub warhead: u16,
+    pub fuse: u16,
+}
+
+impl DescriptorWarheadFuse {
+    #[must_use]
+    pub fn new(warhead: Option<u16>, fuse: Option<u16>) -> Option<Self> {
+        Some(Self {
+            warhead: warhead?,
+            fuse: fuse?,
+        })
+    }
+}
+
+impl CdisRecord for DescriptorWarheadFuse {
+    fn record_length(&self) -> usize {
+        SIXTEEN_BITS + SIXTEEN_BITS
+    }
+}
+
+/// 11.21 Munition Descriptor (Quantity, Rate)
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
+pub struct DescriptorQuantityRate {
+    pub quantity: u8,
+    pub rate: u8,
+}
+
+impl DescriptorQuantityRate {
+    #[must_use]
+    pub fn new(quantity: Option<u8>, rate: Option<u8>) -> Option<Self> {
+        Some(Self {
+            quantity: quantity?,
+            rate: rate?,
+        })
+    }
+}
+
+impl CdisRecord for DescriptorQuantityRate {
+    fn record_length(&self) -> usize {
+        EIGHT_BITS + EIGHT_BITS
+    }
+}
+
 /// 11.22 Orientation
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Orientation {
@@ -509,15 +556,15 @@ pub struct CdisEntityMarking {
 
 impl CdisEntityMarking {
     #[must_use]
-    pub fn new(marking: String) -> Self {
+    pub fn new(marking: &str) -> Self {
         const MAX_MARKING_LENGTH: usize = 11;
-        let marking = if marking.len() > MAX_MARKING_LENGTH {
-            let mut marking = marking;
-            marking.truncate(MAX_MARKING_LENGTH);
-            marking
-        } else {
-            marking
-        };
+        // Safely keep only the first 11 chars (regardless of individual UTF-8 character byte size)
+        // and uppercase them
+        let marking: String = marking
+            .chars()
+            .take(MAX_MARKING_LENGTH)
+            .map(|c| c.to_ascii_uppercase())
+            .collect();
 
         Self {
             char_encoding: Self::check_char_encoding(&marking),
@@ -575,7 +622,7 @@ impl From<(&[u8], CdisMarkingCharEncoding)> for CdisEntityMarking {
 
 impl From<&str> for CdisEntityMarking {
     fn from(value: &str) -> Self {
-        CdisEntityMarking::new(value.into())
+        CdisEntityMarking::new(value)
     }
 }
 
@@ -833,14 +880,14 @@ impl CdisMarkingCharEncoding {
 /// 11.27 World Coordinates Record
 #[derive(Default, Copy, Clone, Debug, PartialEq)]
 pub struct WorldCoordinates {
-    pub latitude: f32,
-    pub longitude: f32,
+    pub latitude: i32,
+    pub longitude: i32,
     pub altitude_msl: SVINT24,
 }
 
 impl WorldCoordinates {
     #[must_use]
-    pub fn new(latitude: f32, longitude: f32, altitude_msl: SVINT24) -> Self {
+    pub fn new(latitude: i32, longitude: i32, altitude_msl: SVINT24) -> Self {
         Self {
             latitude,
             longitude,
@@ -856,31 +903,9 @@ impl CdisRecord for WorldCoordinates {
     }
 }
 
-impl From<WorldCoordinates> for Location {
-    /// Applies Geo to ECEF conversion
-    ///
-    /// Adapted from <https://danceswithcode.net/engineeringnotes/geodetic_to_ecef/geodetic_to_ecef.html>
-    fn from(value: WorldCoordinates) -> Self {
-        // TODO account for the scaling of lat
-        // TODO account for the scaling of lon
-        // TODO use of the Units flag - correct calculation of Altitude MSL
-        let (ecef_x, ecef_y, ecef_z) = dis_rs::utils::geodetic_lla_to_ecef(
-            f64::from(value.latitude),
-            f64::from(value.longitude),
-            f64::from(value.altitude_msl.value),
-        );
-
-        Self {
-            x_coordinate: ecef_x,
-            y_coordinate: ecef_y,
-            z_coordinate: ecef_z,
-        }
-    }
-}
-
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ParameterValueFloat {
-    mantissa: i32,
+    mantissa: i16,
     exponent: i8,
     uncompressed: Option<f32>,
 }
@@ -897,7 +922,7 @@ impl ParameterValueFloat {
 }
 
 impl CdisFloat for ParameterValueFloat {
-    type Mantissa = i32;
+    type Mantissa = i16;
     type Exponent = i8;
     type InnerFloat = f32;
     const MANTISSA_BITS: usize = FIFTEEN_BITS;
@@ -912,20 +937,58 @@ impl CdisFloat for ParameterValueFloat {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_possible_wrap)]
+    #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::collapsible_else_if)]
     fn from_float(float: Self::InnerFloat) -> Self {
-        let mut mantissa = float;
-        let mut exponent = 0i32;
-        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) && (exponent as usize <= Self::EXPONENT_BITS) {
-            mantissa /= 10.0;
-            exponent += 1;
+        // the maximum positive value is 1 less than the absolute minimum negative value in 2's
+        // complement integer representation; therefore, it is safe to use as the symmetrical bounds
+        // for the mantissa range
+        let max_abs_mantissa = ((1isize << (Self::MANTISSA_BITS - 1)) - 1) as Self::Mantissa;
+        let min_exponent = -(1isize << (Self::EXPONENT_BITS - 1)) as Self::Exponent;
+        let max_exponent = ((1isize << (Self::EXPONENT_BITS - 1)) - 1) as Self::Exponent;
+
+        let mut x = float;
+        let mut exponent: Self::Exponent = 0;
+        let mut overflow = false;
+
+        // scale up to preserve as much precision as possible (use all mantissa digits if possible)
+        if x != 0.0 {
+            while ((x * 10.0).round().abs() <= Self::InnerFloat::from(max_abs_mantissa))
+                && (exponent > min_exponent)
+            {
+                x *= 10.0;
+                exponent -= 1;
+            }
+        }
+
+        // scale down to fit mantissa (with overflow check)
+        while x.round().abs() > Self::InnerFloat::from(max_abs_mantissa) {
+            if exponent < max_exponent {
+                x /= 10.0;
+                exponent += 1;
+            } else {
+                overflow = true;
+                break;
+            }
+        }
+
+        let mantissa = if !overflow {
+            x.round() as Self::Mantissa
+        } else {
+            if x.is_sign_positive() {
+                max_abs_mantissa
+            } else {
+                -max_abs_mantissa
+            }
+        };
+        if mantissa == 0 {
+            exponent = 0;
         }
 
         Self {
-            mantissa: mantissa as Self::Mantissa,
-            exponent: exponent as Self::Exponent,
+            mantissa,
+            exponent,
             uncompressed: None,
         }
     }
@@ -933,27 +996,25 @@ impl CdisFloat for ParameterValueFloat {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_precision_loss)]
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
+        Self::InnerFloat::from(self.mantissa) * 10f32.powi(i32::from(self.exponent))
     }
 
     #[allow(clippy::cast_possible_truncation)]
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
         let (input, mantissa) = take_signed(Self::MANTISSA_BITS)(input)?;
-        let (input, exponent) = take_signed(Self::EXPONENT_BITS)(input)?;
-        let mantissa = mantissa as Self::Mantissa;
-        let exponent = exponent as Self::Exponent;
+        let (input, exponent) = take_signed::<i16>(Self::EXPONENT_BITS)(input)?;
 
-        Ok((input, Self::new(mantissa, exponent)))
+        Ok((input, Self::new(mantissa, exponent as Self::Exponent)))
     }
 
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         if let Some(float) = self.uncompressed {
-            let cursor = write_value_unsigned(buf, cursor, THIRTY_TWO_BITS, float.to_bits());
+            let cursor = write_integer_bits(buf, cursor, THIRTY_TWO_BITS, float.to_bits());
             cursor
         } else {
-            let cursor = write_value_signed(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-            let cursor = write_value_signed(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+            let cursor = write_integer_bits(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+            let cursor = write_integer_bits(buf, cursor, Self::EXPONENT_BITS, self.exponent);
             cursor
         }
     }
@@ -1170,27 +1231,38 @@ impl CdisFloat for FrequencyFloat {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_possible_wrap)]
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::cast_sign_loss)]
     fn from_float(float: Self::InnerFloat) -> Self {
-        let mut mantissa = float;
-        let mut exponent = 0usize;
-        let max_mantissa = 2f32.powi(Self::MANTISSA_BITS as i32) - 1.0;
-        while (mantissa > max_mantissa) && (exponent <= Self::EXPONENT_BITS) {
-            mantissa /= 10.0;
-            exponent += 1;
+        let max_mantissa = ((1usize << Self::MANTISSA_BITS) - 1) as Self::Mantissa;
+        let max_exponent = ((1usize << Self::EXPONENT_BITS) - 1) as Self::Exponent;
+
+        let mut x = float.abs();
+        let mut exponent: Self::Exponent = 0;
+        let mut overflow = false;
+
+        while x.round() > max_mantissa as Self::InnerFloat {
+            if exponent < max_exponent {
+                x /= 10.0;
+                exponent += 1;
+            } else {
+                overflow = true;
+                break;
+            }
         }
 
-        Self {
-            mantissa: mantissa as Self::Mantissa,
-            exponent: exponent as Self::Exponent,
-        }
+        let mantissa = if !overflow {
+            x.round() as Self::Mantissa
+        } else {
+            max_mantissa
+        };
+
+        Self { mantissa, exponent }
     }
 
     #[allow(clippy::cast_precision_loss)]
     fn to_float(&self) -> Self::InnerFloat {
-        self.mantissa as f32 * 10f32.powf(f32::from(self.exponent))
+        self.mantissa as Self::InnerFloat * 10f32.powi(i32::from(self.exponent))
     }
 
     fn parse(input: BitInput) -> IResult<BitInput, Self> {
@@ -1202,8 +1274,8 @@ impl CdisFloat for FrequencyFloat {
 
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
-        let cursor = write_value_unsigned(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
-        let cursor = write_value_unsigned(buf, cursor, Self::EXPONENT_BITS, self.exponent);
+        let cursor = write_integer_bits(buf, cursor, Self::MANTISSA_BITS, self.mantissa);
+        let cursor = write_integer_bits(buf, cursor, Self::EXPONENT_BITS, self.exponent);
 
         cursor
     }

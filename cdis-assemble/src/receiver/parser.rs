@@ -12,10 +12,10 @@ pub(crate) fn receiver_body(input: BitInput) -> IResult<BitInput, CdisBody> {
     let (input, radio_reference_id) = entity_identification(input)?;
     let (input, radio_number) = uvint16(input)?;
 
-    let (input, receiver_state): (BitInput, u16) = take(TWO_BITS)(input)?;
+    let (input, receiver_state): (_, u16) = take(TWO_BITS)(input)?;
     let receiver_state = ReceiverState::from(receiver_state);
 
-    let (input, received_power): (BitInput, isize) = take_signed(NINE_BITS)(input)?;
+    let (input, received_power) = take_signed(NINE_BITS)(input)?;
 
     let (input, transmitter_radio_reference_id) = entity_identification(input)?;
     let (input, transmitter_radio_number) = uvint16(input)?;
@@ -26,7 +26,7 @@ pub(crate) fn receiver_body(input: BitInput) -> IResult<BitInput, CdisBody> {
             radio_reference_id,
             radio_number,
             receiver_state,
-            received_power: received_power as i16,
+            received_power,
             transmitter_radio_reference_id,
             transmitter_radio_number,
         }

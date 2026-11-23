@@ -1,8 +1,7 @@
 use crate::create_entity::model::CreateEntity;
-use crate::writing::SerializeCdis;
-use crate::{BitBuffer, SerializeCdisPdu};
+use crate::writing::{BitBuffer, SerializeCdis};
 
-impl SerializeCdisPdu for CreateEntity {
+impl SerializeCdis for CreateEntity {
     #[allow(clippy::let_and_return)]
     fn serialize(&self, buf: &mut BitBuffer, cursor: usize) -> usize {
         let cursor = self.originating_id.serialize(buf, cursor);

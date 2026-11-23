@@ -1,4 +1,4 @@
-use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIXTEEN_BITS};
+use crate::constants::{EIGHT_BITS, FIVE_BITS, FOUR_BITS, ONE_BIT, SIX_BITS, SIXTEEN_BITS};
 use crate::electromagnetic_emission::model::{
     ElectromagneticEmission, EmitterBeam, EmitterSystem, FundamentalParameter, PulseWidthFloat,
     SiteAppPair, TrackJam,
@@ -25,7 +25,7 @@ pub(crate) fn electromagnetic_emission_body(input: BitInput) -> IResult<BitInput
 
     let (input, number_of_fundamental_params): (BitInput, usize) = take(FIVE_BITS)(input)?;
     let (input, number_of_beam_params): (BitInput, usize) = take(FIVE_BITS)(input)?;
-    let (input, number_of_site_app_pairs): (BitInput, usize) = take(FIVE_BITS)(input)?;
+    let (input, number_of_site_app_pairs): (BitInput, usize) = take(SIX_BITS)(input)?;
 
     let (input, emitting_id) = entity_identification(input)?;
     let (input, event_id) = entity_identification(input)?;
@@ -146,6 +146,7 @@ fn emitter_beam(input: BitInput) -> IResult<BitInput, EmitterBeam> {
     } else {
         (input, None)
     };
+
     let (input, beam_data_index) = if beam_data_details_present_flag {
         let (input, index): (BitInput, u8) = take(FIVE_BITS)(input)?;
         (input, Some(index))
@@ -157,8 +158,10 @@ fn emitter_beam(input: BitInput) -> IResult<BitInput, EmitterBeam> {
     let beam_function = ElectromagneticEmissionBeamFunction::from(beam_function);
 
     let (input, number_of_targets): (BitInput, usize) = take(FOUR_BITS)(input)?;
+
     let (input, high_density_track_jam): (BitInput, u8) = take(ONE_BIT)(input)?;
     let high_density_track_jam = HighDensityTrackJam::from(high_density_track_jam);
+
     let (input, beam_status): (BitInput, u8) = take(ONE_BIT)(input)?;
     let beam_status = beam_status != 0;
 
@@ -208,11 +211,13 @@ fn emitter_beam(input: BitInput) -> IResult<BitInput, EmitterBeam> {
 
 fn track_jam(jamming_track_present_flag: bool) -> impl Fn(BitInput) -> IResult<BitInput, TrackJam> {
     move |input: BitInput| {
-        let (input, site_app_pair_index): (BitInput, u8) = take(FOUR_BITS)(input)?;
+        let (input, site_app_pair_index): (BitInput, u8) = take(SIX_BITS)(input)?;
         let (input, entity_id) = uvint16(input)?;
+
         let (input, emitter_number, beam_number) = if jamming_track_present_flag {
             let (input, emitter_number) = uvint8(input)?;
             let (input, beam_number) = uvint8(input)?;
+
             (input, Some(emitter_number), Some(beam_number))
         } else {
             (input, None, None)
