@@ -1,6 +1,7 @@
 pub(crate) mod constants;
 mod extraction;
 mod generation;
+mod ir;
 mod overrides;
 mod pre_processing;
 
