@@ -13,14 +13,15 @@ categories.workspace = true
 keywords = ["IEEE-1278-1", "generator", "DIS", "v8"]
 
 [dependencies]
-itertools = "0.14.0"
-quote = "1.0.45"
+itertools = "0.15.0"
+quote = "1.0.47"
 quick-xml = "0.40.1"
-proc-macro2 = "1.0.106"
-prettyplease = "0.2.37"
-syn = "2.0.117"
+proc-macro2 = "1.0.107"
+prettyplease = "0.3.0"
+syn = "3.0.10"
 dis-gen-utils = { path = "../dis-gen-utils" }
 dis-gen-siso-ref-010 = { path = "../dis-gen-siso-ref-010" }
+slotmap = "1.1.1"
 
 [lints]
 workspace = true
